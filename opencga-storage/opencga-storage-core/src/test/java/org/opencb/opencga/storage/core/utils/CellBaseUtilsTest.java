@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -17,7 +18,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Created on 15/03/19.
@@ -79,4 +81,22 @@ public class CellBaseUtilsTest {
         thrown.expect(e.getClass());
         VariantQueryUtils.convertGenesToRegionsQuery(query, cellBaseUtils);
     }
+
+    @Test
+    public void testGetVariant() throws Exception {
+        assertEquals(new Variant("19:44934489:G:A"), cellBaseUtils.getVariant("rs2571174"));
+        assertEquals(Arrays.asList(new Variant("19:44934489:G:A"), new Variant("1:7797503:C:G")),
+                cellBaseUtils.getVariants(Arrays.asList("rs2571174", "rs41278952")));
+        assertEquals(Arrays.asList(new Variant("1:7797503:C:G"), new Variant("19:44934489:G:A")),
+                cellBaseUtils.getVariants(Arrays.asList("rs41278952", "rs2571174")));
+
+//        assertEquals(Arrays.asList(new Variant("1:7797503:C:G"), new Variant("19:44934489:G:A")),
+//                cellBaseUtils.getVariants(Arrays.asList("COSM5828004", "rs2571174")));
+
+        thrown.expectMessage("Unknown variant 'rs_NON_EX'");
+        // Test some missing variant
+        assertEquals(Arrays.asList(new Variant("1:7797503:C:G"), new Variant("19:44934489:G:A")),
+                cellBaseUtils.getVariants(Arrays.asList("rs41278952", "rs_NON_EX", "rs2571174")));
+    }
+
 }

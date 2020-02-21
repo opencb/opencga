@@ -16,6 +16,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -44,11 +45,13 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final VariantStorageMetadataManager metadataManager;
+    private final CellBaseUtils cellBaseUtils;
 
-    public HBaseVariantSampleDataManager(VariantHadoopDBAdaptor dbAdaptor) {
+    public HBaseVariantSampleDataManager(VariantHadoopDBAdaptor dbAdaptor, CellBaseUtils cellBaseUtils) {
         super(dbAdaptor);
         this.dbAdaptor = dbAdaptor;
         metadataManager = dbAdaptor.getMetadataManager();
+        this.cellBaseUtils = cellBaseUtils;
     }
 
     @Override
@@ -58,7 +61,12 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                                                 int sampleLimit) {
         StopWatch stopWatch = StopWatch.createStarted();
 
-        Variant variant = new Variant(variantStr);
+        final Variant variant;
+        if (VariantQueryUtils.isVariantId(variantStr)) {
+            variant = new Variant(variantStr);
+        } else {
+            variant = cellBaseUtils.getVariant(variantStr);
+        }
 
         int studyId = metadataManager.getStudyId(study);
 

@@ -28,6 +28,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -184,31 +185,51 @@ public class ArchiveTableHelper extends GenomeHelper {
         return fileId + REF_COLUMN_SUFIX;
     }
 
-    public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
-        try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
-            return createArchiveTableIfNeeded(genomeHelper, tableName, con);
+    public static boolean createArchiveTableIfNeeded(Configuration conf, String tableName) throws IOException {
+        try (Connection con = ConnectionFactory.createConnection(conf)) {
+            return createArchiveTableIfNeeded(conf, tableName, con);
         }
     }
 
-    public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
+    public static boolean createArchiveTableIfNeeded(Configuration conf, String tableName, Connection con) throws IOException {
         Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(
-                genomeHelper.getConf().get(ARCHIVE_TABLE_COMPRESSION.key(), ARCHIVE_TABLE_COMPRESSION.defaultValue()));
-        final List<byte[]> preSplits = generateArchiveTableBootPreSplitHuman(genomeHelper.getConf());
+                conf.get(ARCHIVE_TABLE_COMPRESSION.key(), ARCHIVE_TABLE_COMPRESSION.defaultValue()));
+        final List<byte[]> preSplits = generateArchiveTableBootPreSplitHuman(conf);
+        return HBaseManager.createTableIfNeeded(con, tableName, COLUMN_FAMILY_BYTES, preSplits, compression);
+    }
+
+    public static boolean createArchiveTableIfNeeded(ObjectMap conf, String tableName, Connection con) throws IOException {
+        Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(
+                conf.getString(ARCHIVE_TABLE_COMPRESSION.key(), ARCHIVE_TABLE_COMPRESSION.defaultValue()));
+        final List<byte[]> preSplits = generateArchiveTableBootPreSplitHuman(conf);
         return HBaseManager.createTableIfNeeded(con, tableName, COLUMN_FAMILY_BYTES, preSplits, compression);
     }
 
     public static List<byte[]> generateArchiveTableBootPreSplitHuman(Configuration conf) {
-        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(conf);
-
+        final ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(conf);
         int nSplits = conf.getInt(ARCHIVE_TABLE_PRESPLIT_SIZE.key(), ARCHIVE_TABLE_PRESPLIT_SIZE.defaultValue());
+        int expectedFiles = conf.getInt(EXPECTED_FILES_NUMBER.key(), EXPECTED_FILES_NUMBER.defaultValue());
+        return generateArchiveTableBootPreSplitHuman(rowKeyFactory, nSplits, expectedFiles);
+    }
+
+    public static List<byte[]> generateArchiveTableBootPreSplitHuman(ObjectMap conf) {
+        final ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(conf);
+        int nSplits = conf.getInt(ARCHIVE_TABLE_PRESPLIT_SIZE.key(), ARCHIVE_TABLE_PRESPLIT_SIZE.defaultValue());
+        int expectedFiles = conf.getInt(EXPECTED_FILES_NUMBER.key(), EXPECTED_FILES_NUMBER.defaultValue());
+        return generateArchiveTableBootPreSplitHuman(rowKeyFactory, nSplits, expectedFiles);
+    }
+
+    private static List<byte[]> generateArchiveTableBootPreSplitHuman(ArchiveRowKeyFactory rowKeyFactory, int nSplits, int expectedFiles) {
         int expectedNumBatches = rowKeyFactory.getFileBatch(
-                conf.getInt(EXPECTED_FILES_NUMBER.key(), EXPECTED_FILES_NUMBER.defaultValue()));
+                expectedFiles);
 
         final List<byte[]> preSplits = new ArrayList<>(nSplits * expectedNumBatches);
         for (int batch = 0; batch <= expectedNumBatches; batch++) {
             int finalBatch = batch;
-            preSplits.addAll(generateBootPreSplitsHuman(nSplits, (chr, start) ->
-                    Bytes.toBytes(rowKeyFactory.generateBlockIdFromSliceAndBatch(finalBatch, chr, start))));
+            preSplits.addAll(generateBootPreSplitsHuman(nSplits, (chr, position) -> {
+                long slice = rowKeyFactory.getSliceId(position);
+                return Bytes.toBytes(rowKeyFactory.generateBlockIdFromSliceAndBatch(finalBatch, chr, slice));
+            }));
         }
         return preSplits;
     }

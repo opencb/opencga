@@ -69,12 +69,12 @@ public class AbstractSolrManagerTest extends GenericTest {
         Project project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdOwner).first();
         studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null,
-                null, null, null, null, null, null, null, sessionIdOwner).first().getFqn();
+                null, null, null, null, null, null, sessionIdOwner).first().getFqn();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("admin1")), sessionIdOwner);
-        catalogManager.getStudyManager().createGroup(studyFqn, "@study_allow", "@study_allow", Collections.singletonList("user1"), sessionIdAdmin);
-        catalogManager.getStudyManager().createGroup(studyFqn, "@study_deny", "@study_deny", Collections.singletonList("user2"), sessionIdAdmin);
+        catalogManager.getStudyManager().createGroup(studyFqn, "@study_allow", Collections.singletonList("user1"), sessionIdAdmin);
+        catalogManager.getStudyManager().createGroup(studyFqn, "@study_deny", Collections.singletonList("user2"), sessionIdAdmin);
 
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "@study_allow",
                 new Study.StudyAclParams(null, AclParams.Action.ADD, "view_only"), sessionIdAdmin);

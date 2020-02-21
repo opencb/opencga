@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -66,8 +67,8 @@ public class AuthorizationDaemon extends MonitorParentDaemon {
 
         logger.info("Analysing study {} ({})", study.getId(), study.getUid());
 
-        for (Map.Entry<Study.Entity, List<PermissionRule>> myMap : study.getPermissionRules().entrySet()) {
-            Study.Entity entry = myMap.getKey();
+        for (Map.Entry<Enums.Entity, List<PermissionRule>> myMap : study.getPermissionRules().entrySet()) {
+            Enums.Entity entry = myMap.getKey();
             for (PermissionRule permissionRule : myMap.getValue()) {
                 try {
                     String[] split = permissionRule.getId().split(INTERNAL_DELIMITER, 2);

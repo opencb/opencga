@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
@@ -52,7 +52,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.job.JobAclEntry;
-import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.*;
@@ -162,7 +161,7 @@ public class StudyManager extends AbstractManager {
         }
 
         if (StringUtils.isNotEmpty(studyStr)) {
-            if (UUIDUtils.isOpenCGAUUID(studyStr)) {
+            if (UuidUtils.isOpenCgaUuid(studyStr)) {
                 query.putIfNotEmpty(StudyDBAdaptor.QueryParams.UUID.key(), studyStr);
             } else {
                 String study;
@@ -244,8 +243,8 @@ public class StudyManager extends AbstractManager {
 
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, Study.Type type, String creationDate,
                                        String description, StudyNotification notification, Status status, String cipher, String uriScheme,
-                                       URI uri, Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
-                                       Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
+                                       URI uri, Map<String, Object> stats, Map<String, Object> attributes, QueryOptions options,
+                                       String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(type, "type");
@@ -275,7 +274,6 @@ public class StudyManager extends AbstractManager {
         } else {
             uriScheme = catalogIOManagerFactory.getDefaultCatalogScheme();
         }
-        datastores = ParamUtils.defaultObject(datastores, HashMap::new);
         stats = ParamUtils.defaultObject(stats, HashMap::new);
         attributes = ParamUtils.defaultObject(attributes, HashMap::new);
 
@@ -293,7 +291,6 @@ public class StudyManager extends AbstractManager {
                 .append("cipher", cipher)
                 .append("uriScheme", uriScheme)
                 .append("uri", uri)
-                .append("datastores", datastores)
                 .append("stats", stats)
                 .append("attributes", attributes)
                 .append("options", options)
@@ -317,12 +314,12 @@ public class StudyManager extends AbstractManager {
             Study study = new Study(id, name, alias, type, creationDate, description, notification,
                     status, 0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
                     new Group(ADMINS, Collections.emptyList())), files, null, null, new LinkedList<>(), null, null, null, null, null,
-                    null, datastores, project.getCurrentRelease(), stats, attributes);
+                    null, project.getCurrentRelease(), stats, attributes);
 
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
 
             /* CreateStudy */
-            study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
+            study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
             studyDBAdaptor.insert(project, study, options);
             OpenCGAResult<Study> result = getStudy(projectId, study.getUuid(), options);
             study = result.getResults().get(0);
@@ -618,7 +615,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<PermissionRule> createPermissionRule(String studyId, Study.Entity entry, PermissionRule permissionRule,
+    public OpenCGAResult<PermissionRule> createPermissionRule(String studyId, Enums.Entity entry, PermissionRule permissionRule,
                                                               String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
@@ -651,7 +648,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public void markDeletedPermissionRule(String studyId, Study.Entity entry, String permissionRuleId,
+    public void markDeletedPermissionRule(String studyId, Enums.Entity entry, String permissionRuleId,
                                           PermissionRule.DeleteAction deleteAction, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
@@ -681,7 +678,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<PermissionRule> getPermissionRules(String studyId, Study.Entity entry, String token) throws CatalogException {
+    public OpenCGAResult<PermissionRule> getPermissionRules(String studyId, Enums.Entity entry, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
 
@@ -814,12 +811,10 @@ public class StudyManager extends AbstractManager {
         return results;
     }
 
-    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, String groupName, List<String> users, String sessionId)
+    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, List<String> users, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(groupId, "group id");
-        String name = StringUtils.isEmpty(groupName) ? groupId : groupName;
-
-        return createGroup(studyStr, new Group(groupId, name, users, null), sessionId);
+        return createGroup(studyStr, new Group(groupId, users, null), sessionId);
     }
 
     public OpenCGAResult<Group> createGroup(String studyId, Group group, String token) throws CatalogException {
@@ -1051,7 +1046,7 @@ public class StudyManager extends AbstractManager {
             studyDBAdaptor.syncGroup(study.getUid(), catalogGroup, new Group.Sync(authenticationOriginId, externalGroup));
         } else {
             // We need to create a new group
-            Group newGroup = new Group(catalogGroup, catalogGroup, Collections.emptyList(), new Group.Sync(authenticationOriginId,
+            Group newGroup = new Group(catalogGroup, Collections.emptyList(), new Group.Sync(authenticationOriginId,
                     externalGroup));
             studyDBAdaptor.createGroup(study.getUid(), newGroup);
         }
@@ -1423,7 +1418,7 @@ public class StudyManager extends AbstractManager {
                 .append("member", member)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         OpenCGAResult<Map<String, List<String>>> studyAclList = OpenCGAResult.empty();
 
@@ -1468,7 +1463,7 @@ public class StudyManager extends AbstractManager {
                 .append("memberIds", memberIds)
                 .append("aclParams", aclParams)
                 .append("token", token);
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         try {
             if (studyIdList == null || studyIdList.isEmpty()) {
                 throw new CatalogException("Missing study parameter");
@@ -1613,7 +1608,7 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.count(query).getNumMatches() > 0;
     }
 
-    private void validatePermissionRules(long studyId, Study.Entity entry, PermissionRule permissionRule) throws CatalogException {
+    private void validatePermissionRules(long studyId, Enums.Entity entry, PermissionRule permissionRule) throws CatalogException {
         ParamUtils.checkIdentifier(permissionRule.getId(), "PermissionRules");
 
         if (permissionRule.getPermissions() == null || permissionRule.getPermissions().isEmpty()) {

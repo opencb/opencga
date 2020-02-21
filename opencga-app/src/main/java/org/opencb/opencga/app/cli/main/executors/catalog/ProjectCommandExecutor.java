@@ -90,7 +90,6 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         ProjectCreateParams createParams = new ProjectCreateParams()
                 .setId(commandOptions.id)
                 .setName(commandOptions.name)
-                .setAlias(commandOptions.alias)
                 .setDescription(commandOptions.description)
                 .setOrganization(commandOptions.organization)
                 .setOrganism(organism);

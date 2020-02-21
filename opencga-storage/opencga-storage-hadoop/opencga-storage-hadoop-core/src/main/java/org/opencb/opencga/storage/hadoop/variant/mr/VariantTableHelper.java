@@ -69,19 +69,12 @@ public class VariantTableHelper extends GenomeHelper {
 //        setStudyId(HBaseVariantTableNameGenerator.getStudyIdFromArchiveTable(archiveTable));
     }
 
-    public boolean createVariantTableIfNeeded(Connection con) throws IOException {
-        return createVariantTableIfNeeded(this, getVariantsTableAsString(), con);
-    }
-
-    public boolean createVariantTableIfNeeded() throws IOException {
-        return createVariantTableIfNeeded(this, getVariantsTableAsString());
-    }
-
     public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
         try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
             return createVariantTableIfNeeded(genomeHelper, tableName, con);
         }
     }
+
     public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con)
             throws IOException {
         VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);

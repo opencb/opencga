@@ -225,7 +225,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         sc.getAttributes().append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         VariantStorageMetadataManager metadataManager = this.metadataManager;
         metadataManager.unsecureUpdateStudyMetadata(sc);
-        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
+        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper().getConf(), archiveTableName);
         VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable());
         metadataManager.updateProjectMetadata(projectMetadata -> {
             if (projectMetadata == null) {
@@ -271,7 +271,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
     private void stageVariants(StudyMetadata study, int fileId, List<Variant> variants) throws Exception {
         String archiveTableName = engine.getArchiveTableName(study.getId());
-        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
+        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper().getConf(), archiveTableName);
 
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));

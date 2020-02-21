@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -7,11 +8,10 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
@@ -84,15 +84,15 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getProjectManager().create("p1", "project 1", "", "", "Homo sapiens", null, null, "GRCh38", new QueryOptions(),
                 sessionIdUser3).first();
 
-        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, null, token).first();
+        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, token).first();
         studyUid = study.getUid();
         studyFqn = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, null, token).first();
+        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, token).first();
         studyUid2 = study.getUid();
         studyFqn2 = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, null, sessionIdUser2).first();
+        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser2).first();
         studyFqn3 = study.getFqn();
 
         catalogManager.getFileManager().createFolder(studyFqn2, Paths.get("data/test/folder/").toString(), null, true,
@@ -108,7 +108,7 @@ public class AbstractManagerTest extends GenericTest {
 
         testFile1 = testFolder.getPath() + "test_1K.txt.gz";
         DataResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn,
-                new File().setPath(testFile1), false, StringUtils.randomString(1000), null, token);
+                new File().setPath(testFile1), false, RandomStringUtils.randomAlphanumeric(1000), null, token);
 
         File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), null, token).first();
         attributes = new ObjectMap();
@@ -122,7 +122,7 @@ public class AbstractManagerTest extends GenericTest {
         testFile2 = testFolder.getPath() + "test_0.5K.txt";
         DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn,
                 new File().setPath(testFile2).setBioformat(File.Bioformat.DATAMATRIX_EXPRESSION), false,
-                StringUtils.randomString(500), null, token);
+                RandomStringUtils.randomAlphanumeric(500), null, token);
 
         File fileTest05k = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), null, token).first();
         attributes = new ObjectMap();
@@ -135,7 +135,7 @@ public class AbstractManagerTest extends GenericTest {
 
         DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn,
                 new File().setPath(testFolder.getPath() + "test_0.1K.png").setFormat(File.Format.IMAGE), false,
-                StringUtils.randomString(100), null, token);
+                RandomStringUtils.randomAlphanumeric(100), null, token);
 
         File test01k = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), null, token).first();
         attributes = new ObjectMap();
@@ -215,7 +215,7 @@ public class AbstractManagerTest extends GenericTest {
 
     /* TYPE_FILE UTILS */
     public static java.io.File createDebugFile() throws IOException {
-        String fileTestName = "/tmp/fileTest_" + StringUtils.randomString(5);
+        String fileTestName = "/tmp/fileTest_" + RandomStringUtils.randomAlphanumeric(5);
         return createDebugFile(fileTestName);
     }
 
@@ -231,7 +231,7 @@ public class AbstractManagerTest extends GenericTest {
             os.writeBytes(i + ", ");
         }
         for (int i = 0; i < lines; i++) {
-            os.writeBytes(StringUtils.randomString(500));
+            os.writeBytes(RandomStringUtils.randomAlphanumeric(500));
             os.write('\n');
         }
         os.close();
@@ -245,7 +245,7 @@ public class AbstractManagerTest extends GenericTest {
             stringBuilder.append(i + ", ");
         }
         for (int i = 0; i < lines; i++) {
-            stringBuilder.append(StringUtils.randomString(500));
+            stringBuilder.append(RandomStringUtils.randomAlphanumeric(500));
             stringBuilder.append("\n");
         }
         return stringBuilder.toString();

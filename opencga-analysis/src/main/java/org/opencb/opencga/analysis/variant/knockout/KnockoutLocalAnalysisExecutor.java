@@ -153,8 +153,11 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 if (knockoutGenes.isEmpty()) {
                     logger.info("No results for sample {}", sample);
                 } else {
-                    KnockoutBySample bySample = buildGeneKnockoutBySample(sample, knockoutGenes);
-                    writeSampleFile(bySample);
+                    KnockoutBySample.GeneKnockoutBySampleStats stats = getGeneKnockoutBySampleStats(knockoutGenes.values());
+                    writeSampleFile(new KnockoutBySample()
+                            .setSample(new Sample().setId(sample))
+                            .setStats(stats)
+                            .setGenes(knockoutGenes.values()));
                 }
                 logger.info("Sample {} processed in {}", sample, TimeUtils.durationToString(stopWatch));
                 logger.info("-----------------------------------------------------------");
@@ -249,7 +252,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         sampleData.get(0),
                         fileEntry.getAttributes().get(StudyEntry.FILTER),
                         fileEntry.getAttributes().get(StudyEntry.QUAL),
-                        KnockoutVariant.KnockoutType.MULTI_ALLELIC, null
+                        KnockoutVariant.KnockoutType.HET_ALT, null
                 );
                 if (variants.put(variant.toString(), knockoutVariant) == null) {
                     // Variant not seen
@@ -266,10 +269,10 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
                             String gt = studyEntry.getSamplesData().get(0).get(0);
                             addGene(variant.toString(), gt, knockoutVariant.getFilter(), knockoutVariant.getQual(),
-                                    consequenceType, knockoutGenes, KnockoutVariant.KnockoutType.MULTI_ALLELIC
+                                    consequenceType, knockoutGenes, KnockoutVariant.KnockoutType.HET_ALT
                             );
                             addGene(secVar.toString(), secKnockoutVar.getGenotype(), secKnockoutVar.getFilter(), secKnockoutVar.getQual(),
-                                    consequenceType, knockoutGenes, KnockoutVariant.KnockoutType.MULTI_ALLELIC
+                                    consequenceType, knockoutGenes, KnockoutVariant.KnockoutType.HET_ALT
                             );
                         }
                     }
@@ -549,7 +552,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         variant.getStudies().get(0).getSamplesData().get(0).get(0),
                         fileEntry.getAttributes().get(StudyEntry.FILTER),
                         fileEntry.getAttributes().get(StudyEntry.QUAL),
-                        KnockoutVariant.KnockoutType.MULTI_ALLELIC, null
+                        KnockoutVariant.KnockoutType.HET_ALT, null
                 );
                 if (variants.put(variant.toString(), knockoutVariant) == null) {
                     // Variant not seen
@@ -570,16 +573,16 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                             String gt = sampleData.get(0);
                             knockoutTranscript.addVariant(new KnockoutVariant(
                                     variant.toString(), gt, null, null,
-                                    KnockoutVariant.KnockoutType.MULTI_ALLELIC,
+                                    KnockoutVariant.KnockoutType.HET_ALT,
                                     ct.getSequenceOntologyTerms()));
 
                             KnockoutVariant secKnockoutVar = variants.get(secVar.toString());
                             knockoutTranscript.addVariant(new KnockoutVariant(
-                                    secKnockoutVar.getVariant(),
+                                    secKnockoutVar.getId(),
                                     secKnockoutVar.getGenotype(),
                                     secKnockoutVar.getFilter(),
                                     secKnockoutVar.getQual(),
-                                    KnockoutVariant.KnockoutType.MULTI_ALLELIC,
+                                    KnockoutVariant.KnockoutType.HET_ALT,
                                     ct.getSequenceOntologyTerms()));
                         }
                     }
@@ -663,9 +666,12 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     }
                 }
             }
-
+//            buildGeneKnockoutBySample(sample, knockoutGenes);
             for (Map.Entry<String, KnockoutBySample> entry : bySampleMap.entrySet()) {
-                writeSampleFile(entry.getValue());
+                KnockoutBySample knockoutBySample = entry.getValue();
+                KnockoutBySample.GeneKnockoutBySampleStats stats = getGeneKnockoutBySampleStats(knockoutBySample.getGenes());
+                knockoutBySample.setStats(stats);
+                writeSampleFile(knockoutBySample);
             }
         }
     }

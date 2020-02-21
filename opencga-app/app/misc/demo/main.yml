@@ -1,0 +1,41 @@
+---
+## OpenCGA version
+version: 2.0.0
+
+## URL to fetch data from. STUDY_ID will be replaced with the study.id
+baseUrl: http://resources.opencb.org/datasets/STUDY_ID/data/
+
+## True to index VCF files
+index: true
+
+## User and permissions for each study
+acl:
+  - member: demo
+    permissions: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUAL_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILY_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
+
+## Project and Study configuration to be created
+projects:
+  - id: population
+    name: Population Studies GRCh38
+    description: Some population reference studies for GRCh38
+    organism:
+      scientificName: Homo sapiens
+      assembly: GRCh38
+    studies:
+      - id: 1000g
+      - id: uk10k
+  - id: family
+    name: Family Studies GRCh37
+    organism:
+      scientificName: Homo sapiens
+      assembly: GRCh37
+    studies:
+      - id: platinum
+      - id: corpasome
+  - id: cancer
+    name: Cancer Studies GRCh37
+    organism:
+      scientificName: Homo sapiens
+      assembly: GRCh37
+    studies:
+      - id: rams_cml

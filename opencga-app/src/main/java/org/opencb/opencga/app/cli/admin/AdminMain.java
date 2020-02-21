@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.admin;
 
 import com.beust.jcommander.ParameterException;
-import com.sun.research.ws.wadl.Param;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;

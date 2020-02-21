@@ -34,7 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
@@ -146,7 +146,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         panel.setUid(panelUid);
         panel.setStudyUid(studyUid);
         if (StringUtils.isEmpty(panel.getUuid())) {
-            panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+            panel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
         }
         if (StringUtils.isEmpty(panel.getCreationDate())) {
             panel.setCreationDate(TimeUtils.getTime());
@@ -379,7 +379,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Document panelParameters = new Document();
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.AUTHOR.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.SOURCE_AUTHOR.key(),
+                QueryParams.SOURCE_ID.key(), QueryParams.SOURCE_NAME.key(), QueryParams.SOURCE_VERSION.key(),
+                QueryParams.SOURCE_PROJECT.key()};
         filterStringParams(parameters, panelParameters, acceptedParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
@@ -389,7 +391,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         filterStringListParams(parameters, panelParameters, acceptedParamsList);
 
         final String[] acceptedObjectParams = {QueryParams.VARIANTS.key(), QueryParams.PHENOTYPES.key(), QueryParams.REGIONS.key(),
-                QueryParams.GENES.key(), QueryParams.SOURCE.key(), QueryParams.CATEGORIES.key()};
+                QueryParams.GENES.key(), QueryParams.CATEGORIES.key()};
         filterObjectParams(parameters, panelParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.ID.key())) {
@@ -791,7 +793,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     case RELEASE:
                     case VERSION:
                     case DESCRIPTION:
-                    case AUTHOR:
+                    case SOURCE_AUTHOR:
                     case TAGS:
                     case CATEGORIES_NAME:
                     case VARIANTS_ID:

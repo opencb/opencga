@@ -77,9 +77,9 @@ public class VariantCatalogQueryUtilsTest {
 
         sessionId = catalog.getUserManager().login("user", "1234");
         catalog.getProjectManager().create("p1", "p1", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
-        catalog.getStudyManager().create("p1", "s1", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s2", null, "s2", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s3", null, "s3", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p1", "s1", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p1", "s2", null, "s2", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p1", "s3", null, "s3", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
         file1 = createFile("data/file1.vcf");
         file2 = createFile("data/file2.vcf");
 
@@ -113,7 +113,7 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getCohortManager().create("s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
 
         catalog.getProjectManager().create("p2", "p2", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
-        catalog.getStudyManager().create("p2", "p2s2", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p2", "p2s2", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
 
         Panel panel = new Panel("MyPanel", "MyPanel", 1);
         panel.setGenes(

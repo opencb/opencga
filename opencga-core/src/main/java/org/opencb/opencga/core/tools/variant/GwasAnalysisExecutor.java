@@ -55,8 +55,8 @@ public abstract class GwasAnalysisExecutor extends OpenCgaToolExecutor {
         sb.append(", cohort1='").append(cohort1).append('\'');
         sb.append(", cohort2='").append(cohort2).append('\'');
         sb.append(", configuration=").append(configuration);
-        sb.append(", executorParams=").append(executorParams);
-        sb.append(", outDir=").append(outDir);
+        sb.append(", executorParams=").append(getExecutorParams());
+        sb.append(", outDir=").append(getOutDir());
         sb.append('}');
         return sb.toString();
     }

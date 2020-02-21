@@ -112,7 +112,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(PanelDBAdaptor.QueryParams.REGIONS.key(), c.regions);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.GENES.key(), c.genes);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.DESCRIPTION.key(), c.description);
-        params.putIfNotNull(PanelDBAdaptor.QueryParams.AUTHOR.key(), c.author);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.SOURCE_AUTHOR.key(), c.author);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.TAGS.key(), c.tags);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.CATEGORIES.key(), c.categories);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.CREATION_DATE.key(), c.creationDate);

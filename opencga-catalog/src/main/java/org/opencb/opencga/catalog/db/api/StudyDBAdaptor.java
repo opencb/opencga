@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.*;
@@ -300,7 +301,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return OpenCGAResult object.
      * @throws CatalogDBException if the permission rule id already existed.
      */
-    OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Study.Entity entry, PermissionRule permissionRules)
+    OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Enums.Entity entry, PermissionRule permissionRules)
             throws CatalogDBException;
 
     /**
@@ -311,7 +312,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return the list of permission rules defined.
      * @throws CatalogDBException if there is any error.
      */
-    OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Study.Entity entry) throws CatalogDBException;
+    OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Enums.Entity entry) throws CatalogDBException;
 
     /**
      * Mark a concrete permission rule to be deleted by the daemon.
@@ -328,8 +329,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return OpenCGAResult object.
      * @throws CatalogDBException if the permission rule does not exist.
      */
-    OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Study.Entity entry, String permissionRuleId,
-                                                         PermissionRule.DeleteAction deleteAction) throws CatalogDBException;
+    OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Enums.Entity entry, String permissionRuleId,
+                                                            PermissionRule.DeleteAction deleteAction) throws CatalogDBException;
 
     /*
      * VariableSet Methods

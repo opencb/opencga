@@ -34,7 +34,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
@@ -233,10 +232,10 @@ public class AuthorizationMongoDBAdaptorTest {
         // We create a new permission rule
         PermissionRule pr = new PermissionRule("myPermissionRule", new Query(), Arrays.asList(user3.getId()),
                 Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name()));
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().createPermissionRule(studyId, Study.Entity.SAMPLES, pr);
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().createPermissionRule(studyId, Enums.Entity.SAMPLES, pr);
 
         // Apply the permission rule
-        aclDBAdaptor.applyPermissionRules(studyId, pr, Study.Entity.SAMPLES);
+        aclDBAdaptor.applyPermissionRules(studyId, pr, Enums.Entity.SAMPLES);
 
         // All the samples should have view permissions for user user2
         DataResult<Map<String, List<String>>> dataResult = aclDBAdaptor.get(Arrays.asList(s1.getUid(), s2.getUid()),

@@ -42,7 +42,6 @@ public class Cohort extends Annotable {
     private String description;
 
     private List<Sample> samples;
-    private Family family;
 
     @Deprecated
     private Map<String, Object> stats;
@@ -55,26 +54,24 @@ public class Cohort extends Annotable {
 
     public Cohort(String id, Study.Type type, String creationDate, String description, List<Sample> samples, int release,
                   Map<String, Object> attributes) {
-        this(id, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
-                Collections.emptyMap(), release, attributes);
+        this(id, type, creationDate, new CohortStatus(), description, samples, Collections.emptyList(), Collections.emptyMap(), release,
+                attributes);
     }
 
     public Cohort(String id, Study.Type type, String creationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(id, type, creationDate, new CohortStatus(), description, samples, null, annotationSetList,
-                Collections.emptyMap(), release, attributes);
+        this(id, type, creationDate, new CohortStatus(), description, samples, annotationSetList, Collections.emptyMap(), release,
+                attributes);
     }
 
     public Cohort(String id, Study.Type type, String creationDate, CohortStatus status, String description, List<Sample> samples,
-                  Family family, List<AnnotationSet> annotationSets, Map<String, Object> stats, int release, Map<String,
-            Object> attributes) {
+                  List<AnnotationSet> annotationSets, Map<String, Object> stats, int release, Map<String, Object> attributes) {
         this.id = id;
         this.type = type;
         this.creationDate = creationDate;
         this.status = status;
         this.description = description;
         this.samples = samples;
-        this.family = family;
         this.annotationSets = annotationSets;
         this.release = release;
         this.stats = stats;
@@ -184,7 +181,6 @@ public class Cohort extends Annotable {
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
-        sb.append(", family=").append(family);
         sb.append(", stats=").append(stats);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
@@ -288,15 +284,6 @@ public class Cohort extends Annotable {
         return this;
     }
 
-    public Family getFamily() {
-        return family;
-    }
-
-    public Cohort setFamily(Family family) {
-        this.family = family;
-        return this;
-    }
-
     public int getRelease() {
         return release;
     }
@@ -341,14 +328,13 @@ public class Cohort extends Annotable {
                 && Objects.equals(status, cohort.status)
                 && Objects.equals(description, cohort.description)
                 && Objects.equals(samples, cohort.samples)
-                && Objects.equals(family, cohort.family)
                 && Objects.equals(stats, cohort.stats)
                 && Objects.equals(attributes, cohort.attributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, id, type, creationDate, status, description, samples, family, stats, release, attributes);
+        return Objects.hash(uuid, id, type, creationDate, status, description, samples, stats, release, attributes);
     }
 
 }

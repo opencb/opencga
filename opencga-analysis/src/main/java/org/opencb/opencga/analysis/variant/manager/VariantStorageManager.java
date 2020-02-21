@@ -155,7 +155,7 @@ public class VariantStorageManager extends StorageManager {
      * @throws StorageEngineException  If there is any error exporting variants
      */
     public void exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
-                                Query query, QueryOptions queryOptions, String token)
+                           Query query, QueryOptions queryOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
         catalogUtils.parseQuery(query, token);
         checkSamplesPermissions(query, queryOptions, token);
@@ -1094,14 +1094,8 @@ public class VariantStorageManager extends StorageManager {
 
     private static DataStore getDataStore(CatalogManager catalogManager, Study study, File.Bioformat bioformat, String token)
             throws CatalogException {
-        DataStore dataStore;
-        if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
-            dataStore = study.getDataStores().get(bioformat);
-        } else {
-            String projectId = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
-            dataStore = getDataStoreByProjectId(catalogManager, projectId, bioformat, token);
-        }
-        return dataStore;
+        String projectId = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
+        return getDataStoreByProjectId(catalogManager, projectId, bioformat, token);
     }
 
     public static DataStore getDataStoreByProjectId(CatalogManager catalogManager, String projectStr, File.Bioformat bioformat,

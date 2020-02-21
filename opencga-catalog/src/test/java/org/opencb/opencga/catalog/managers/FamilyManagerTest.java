@@ -81,7 +81,7 @@ public class FamilyManagerTest extends GenericTest {
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
         catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null,
-                null, null, null, null, sessionIdUser);
+                null, null, null, sessionIdUser);
     }
 
     @After
@@ -203,11 +203,11 @@ public class FamilyManagerTest extends GenericTest {
     /*
     *
     *  private DataResult<Family> createDummyFamily(String familyName) throws CatalogException {
-        String fatherStr = org.opencb.commons.utils.StringUtils.randomString(5);
-        String motherStr = org.opencb.commons.utils.StringUtils.randomString(5);
-        String child1 = org.opencb.commons.utils.StringUtils.randomString(5);
-        String child2 = org.opencb.commons.utils.StringUtils.randomString(5);
-        String child3 = org.opencb.commons.utils.StringUtils.randomString(5);
+        String fatherStr = RandomStringUtils.randomAlphanumeric(5);
+        String motherStr = RandomStringUtils.randomAlphanumeric(5);
+        String child1 = RandomStringUtils.randomAlphanumeric(5);
+        String child2 = RandomStringUtils.randomAlphanumeric(5);
+        String child3 = RandomStringUtils.randomAlphanumeric(5);
 
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
         Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");

@@ -57,7 +57,7 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
         Set<Long> fileUids = new HashSet<>();
         Set<Long> jobUids = new HashSet<>();
         while (mongoCursor.hasNext() && buffer.size() < bufferSize) {
-            Document job = (Document) mongoCursor.next();
+            Document job = mongoCursor.next();
             buffer.add(job);
 
             if (!options.getBoolean(NATIVE_QUERY)) {

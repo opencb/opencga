@@ -21,7 +21,7 @@ import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -69,7 +69,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
-        if (UUIDUtils.isOpenCGAUUID(entry)) {
+        if (UuidUtils.isOpenCgaUuid(entry)) {
             queryCopy.put(InterpretationDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
             queryCopy.put(InterpretationDBAdaptor.QueryParams.ID.key(), entry);
@@ -123,7 +123,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         InterpretationDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             InterpretationDBAdaptor.QueryParams param = InterpretationDBAdaptor.QueryParams.ID;
-            if (UUIDUtils.isOpenCGAUUID(entry)) {
+            if (UuidUtils.isOpenCgaUuid(entry)) {
                 param = InterpretationDBAdaptor.QueryParams.UUID;
                 interpretationStringFunction = Interpretation::getUuid;
             }
@@ -211,7 +211,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             interpretation.setStatus(org.opencb.biodata.models.clinical.interpretation.Interpretation.Status.NOT_REVIEWED);
             interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
 
-            interpretation.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INTERPRETATION));
+            interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
 
             OpenCGAResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, options);
             OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
@@ -250,7 +250,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -312,7 +312,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -384,7 +384,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {

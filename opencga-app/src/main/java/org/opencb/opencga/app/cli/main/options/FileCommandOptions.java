@@ -189,14 +189,14 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"grep"}, commandDescription = "Get file information")
     public class GrepCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
-        public String pattern = ".*";
+        @Parameter(names = {"--pattern"}, description = "String pattern", arity = 1)
+        public String pattern = "";
 
-        @Parameter(names = {"-i", "--ignore-case"}, description = "Do a case insensitive search", required = false, arity = 0)
+        @Parameter(names = {"-i", "--ignore-case"}, description = "Do a case insensitive search", arity = 0)
         public boolean ignoreCase;
 
-        @Parameter(names = {"-m", "--multi"}, description = "Return multiple matches. Default = true", required = false, arity = 0)
-        public boolean multi = true;
+        @Parameter(names = {"-m", "--max-count"}, description = "Stop reading a file after 'n' matching lines. 0 means no limit.", arity = 0)
+        public int maxCount;
 
     }
 
@@ -426,11 +426,16 @@ public class FileCommandOptions {
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = true, arity = 1)
-        public String folderId;
+        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = false, arity = 1)
+        public String folderId = ".";
 
-        @Parameter(names = {"--max-Depth"}, description = "Maximum depth to get files from. Default: 5", required = false, arity = 1)
+        @Parameter(names = {"-n", "--max-depth"}, description = "Descend only 'level' directories deep. Default: 5", arity = 1)
         public Integer maxDepth = 5;
+
+        @Parameter(names = {"--max-Depth"}, hidden = true)
+        public void setMaxDepth(int maxDepth) {
+            this.maxDepth = maxDepth;
+        }
 
         @Parameter(names = {"--limit"}, description = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", arity = 1)
         public String limit;

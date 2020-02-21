@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -135,7 +136,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         ParamUtils.checkParameter(userId, "userId");
         userDBAdaptor.updateUserLastModified(userId);
 
-        String newPassword = StringUtils.randomString(6);
+        String newPassword = RandomStringUtils.randomAlphanumeric(6);
 
         String newCryptPass = cypherPassword(newPassword);
 

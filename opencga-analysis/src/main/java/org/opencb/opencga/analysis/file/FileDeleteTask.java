@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.file;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -12,15 +13,15 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.*;
 
@@ -71,7 +72,7 @@ public class FileDeleteTask extends OpenCgaTool {
     protected void run() throws Exception {
         FileManager fileManager = catalogManager.getFileManager();
 
-        randomMark = "delete_" + org.opencb.commons.utils.StringUtils.randomString(8);
+        randomMark = "delete_" + RandomStringUtils.randomAlphanumeric(8);
         addAttribute("delete-mark", randomMark);
 
         step("check-can-delete", () -> {

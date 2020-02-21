@@ -142,7 +142,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         //PARAMS,
         VISITED("visited", BOOLEAN, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
-        INTERNAL_STATUS_MSG("internal.status.msg", TEXT, ""),
+        INTERNAL_STATUS_MSG("internal.status.message", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         SIZE("size", DECIMAL, ""),
         OUT_DIR_UID("outDir.uid", INTEGER, ""),

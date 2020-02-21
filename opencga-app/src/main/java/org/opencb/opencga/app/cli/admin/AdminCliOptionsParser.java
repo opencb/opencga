@@ -111,7 +111,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         migrationSubCommands.addCommand("v1.3.0", this.migrationCommandOptions.getMigrateV130CommandOptions());
         migrationSubCommands.addCommand("v1.4.0", this.migrationCommandOptions.getMigrateV140CommandOptions());
         migrationSubCommands.addCommand("v2.0.0", this.migrationCommandOptions.getMigrateV200CommandOptions());
-
     }
 
     @Override
@@ -737,7 +736,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String algorithm;
     }
 
-
     @Override
     public void printUsage() {
         String parsedCommand = getCommand();
@@ -805,4 +803,5 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public MigrationCommandOptions getMigrationCommandOptions() {
         return migrationCommandOptions;
     }
+
 }

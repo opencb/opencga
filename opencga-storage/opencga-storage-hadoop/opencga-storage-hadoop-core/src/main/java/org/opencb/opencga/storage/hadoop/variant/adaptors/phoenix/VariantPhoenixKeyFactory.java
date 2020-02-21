@@ -184,11 +184,22 @@ public class VariantPhoenixKeyFactory {
     }
 
     public static Pair<String, Integer> extractChrPosFromVariantRowKey(byte[] variantRowKey, int offset, int length) {
+        return extractChrPosFromVariantRowKey(variantRowKey, offset, length, false);
+    }
+
+    public static Pair<String, Integer> extractChrPosFromVariantRowKey(byte[] variantRowKey, int offset, int length,
+                                                                       boolean addLeadingZeroes) {
         int chrPosSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0, offset);
         String chromosome = (String) PVarchar.INSTANCE.toObject(variantRowKey, offset, chrPosSeparator, PVarchar.INSTANCE);
 
-        Integer intSize = PUnsignedInt.INSTANCE.getByteSize();
-        int position = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey, chrPosSeparator + 1, intSize, PUnsignedInt.INSTANCE);
+        int position;
+        if (addLeadingZeroes && length - chrPosSeparator - 1 < Integer.BYTES) {
+            byte[] positionBytes = new byte[Integer.BYTES];
+            System.arraycopy(variantRowKey, offset + chrPosSeparator + 1, positionBytes, 0, length - chrPosSeparator - 1);
+            position = (Integer) PUnsignedInt.INSTANCE.toObject(positionBytes);
+        } else {
+            position = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey, chrPosSeparator + 1, Integer.BYTES, PUnsignedInt.INSTANCE);
+        }
         return Pair.newPair(chromosome, position);
     }
 

@@ -336,8 +336,8 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void searchSamples() throws CatalogException {
-        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup", "myGroup", Arrays.asList("user2", "user3"), token);
-        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup2", "myGroup2", Arrays.asList("user2", "user3"), token);
+        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup", Arrays.asList("user2", "user3"), token);
+        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup2", Arrays.asList("user2", "user3"), token);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@myGroup",
                 new Study.StudyAclParams("", AclParams.Action.SET, null), token);
 

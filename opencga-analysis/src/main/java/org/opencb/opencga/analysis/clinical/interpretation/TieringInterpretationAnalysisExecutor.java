@@ -219,7 +219,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         primaryFindings = creator.mergeReportedVariants(primaryFindings);
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(outDir + "/primary-findings.json"));
+        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(getOutDir() + "/primary-findings.json"));
 
         // Secondary findings, if clinical consent is TRUE
         List<ReportedVariant> secondaryFindings = null;
@@ -231,7 +231,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(secondaryFindings, Paths.get(outDir + "/secondary-findings.json"));
+        ClinicalUtils.writeReportedVariants(secondaryFindings, Paths.get(getOutDir() + "/secondary-findings.json"));
     }
 
     private <T> Callable<T> getNamedThread(String name, Callable<T> c) {
