@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.client.rest;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -26,6 +29,7 @@ import org.opencb.opencga.core.response.RestResponse;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -35,32 +39,43 @@ public class OpenCGAClient {
 
     private String userId;
     private String token;
-    private ClientConfiguration clientConfiguration;
+    private final ClientConfiguration clientConfiguration;
 
-    private Map<String, AbstractParentClient> clients;
-
-    public OpenCGAClient() {
-        // create a default configuration to localhost
-    }
+    private final Map<String, AbstractParentClient> clients;
 
     public OpenCGAClient(ClientConfiguration clientConfiguration) {
         this(null, clientConfiguration);
     }
 
     public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws ClientException {
-        init(null, clientConfiguration);
+        this(null, clientConfiguration);
         login(user, password);
     }
 
     public OpenCGAClient(String token, ClientConfiguration clientConfiguration) {
-        init(token, clientConfiguration);
-    }
-
-    private void init(String token, ClientConfiguration clientConfiguration) {
-        this.token = token;
+        this.clients = new HashMap<>(20);
         this.clientConfiguration = clientConfiguration;
 
-        clients = new HashMap<>(20);
+        init(token);
+    }
+
+    private void init(String token) {
+        if (StringUtils.isNotEmpty(token)) {
+            this.userId = getUserFromToken(token);
+            setToken(token);
+        }
+    }
+
+    protected static String getUserFromToken(String token) {
+        // https://github.com/jwtk/jjwt/issues/280
+        // https://github.com/jwtk/jjwt/issues/86
+        // https://stackoverflow.com/questions/34998859/android-jwt-parsing-payload-claims-when-signed
+        String withoutSignature = token.substring(0, token.lastIndexOf('.') + 1);
+        Claims claims = (Claims)  Jwts.parser()
+                .setAllowedClockSkewSeconds(TimeUnit.DAYS.toSeconds(3650))
+                .parse(withoutSignature)
+                .getBody();
+        return claims.getSubject();
     }
 
 

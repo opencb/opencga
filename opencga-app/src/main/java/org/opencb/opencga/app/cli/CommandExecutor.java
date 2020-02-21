@@ -50,7 +50,6 @@ public abstract class CommandExecutor {
     protected String logLevel;
     @Deprecated
     protected String logFile;
-    protected boolean verbose;
 
     protected String appHome;
     protected String conf;
@@ -79,17 +78,11 @@ public abstract class CommandExecutor {
 
     public CommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean loadClientConfiguration) {
         this.options = options;
-        init(options.logLevel, options.verbose, options.conf, loadClientConfiguration);
+        init(options.logLevel, options.conf, loadClientConfiguration);
     }
 
-    @Deprecated
-    public CommandExecutor(String logLevel, boolean verbose, String conf) {
-        init(logLevel, verbose, conf, true);
-    }
-
-    protected void init(String logLevel, boolean verbose, String conf, boolean loadClientConfiguration) {
+    protected void init(String logLevel, String conf, boolean loadClientConfiguration) {
         this.logLevel = logLevel;
-        this.verbose = verbose;
         this.conf = conf;
 
         /**
@@ -100,11 +93,6 @@ public abstract class CommandExecutor {
 
         if (StringUtils.isEmpty(conf)) {
             this.conf = appHome + "/conf";
-        }
-
-        // At the moment verbose CLI param acts as a debug log level
-        if (verbose) {
-            this.logLevel = "debug";
         }
 
         // Loggers can be initialized, the configuration happens just below these lines
@@ -375,15 +363,6 @@ public abstract class CommandExecutor {
     public void setLogFile(String logFile) {
         this.logFile = logFile;
     }
-
-    public boolean isVerbose() {
-        return verbose;
-    }
-
-    public void setVerbose(boolean verbose) {
-        this.verbose = verbose;
-    }
-
 
     public String getConf() {
         return conf;

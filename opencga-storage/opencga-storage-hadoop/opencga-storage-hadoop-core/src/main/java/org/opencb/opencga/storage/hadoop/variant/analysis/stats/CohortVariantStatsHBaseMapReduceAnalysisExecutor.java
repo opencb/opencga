@@ -1,13 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.analysis.stats;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.core.tools.variant.CohortVariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.variant.CohortVariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -31,7 +31,7 @@ public class CohortVariantStatsHBaseMapReduceAnalysisExecutor
         int studyId;
         Integer cohortId;
 
-        String temporaryCohortName = "TEMP_" + StringUtils.randomString(5) + "_" + TimeUtils.getTimeMillis();
+        String temporaryCohortName = "TEMP_" + RandomStringUtils.randomAlphanumeric(5) + "_" + TimeUtils.getTimeMillis();
         try {
             dbAdaptor = engine.getDBAdaptor();
 

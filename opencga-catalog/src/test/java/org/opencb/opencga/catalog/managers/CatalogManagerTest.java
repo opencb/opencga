@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.mongodb.BasicDBObject;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.commons.Disorder;
@@ -26,7 +27,6 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -119,8 +119,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testModifyUser() throws CatalogException, InterruptedException, IOException {
         ObjectMap params = new ObjectMap();
-        String newName = "Changed Name " + StringUtils.randomString(10);
-        String newPassword = StringUtils.randomString(10);
+        String newName = "Changed Name " + RandomStringUtils.randomAlphanumeric(10);
+        String newPassword = RandomStringUtils.randomAlphanumeric(10);
         String newEmail = "new@email.ac.uk";
 
         params.put("name", newName);
@@ -315,7 +315,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testModifyProject() throws CatalogException {
-        String newProjectName = "ProjectName " + StringUtils.randomString(10);
+        String newProjectName = "ProjectName " + RandomStringUtils.randomAlphanumeric(10);
         String projectId = catalogManager.getUserManager().get("user", null, new QueryOptions(), token).first().getProjects().get(0)
                 .getId();
 
@@ -355,8 +355,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
         String studyId =  catalogManager.getStudyManager().get(query, null, token).first().getId();
 
-        String newName = "Phase 1 " + StringUtils.randomString(20);
-        String newDescription = StringUtils.randomString(500);
+        String newName = "Phase 1 " + RandomStringUtils.randomAlphanumeric(20);
+        String newDescription = RandomStringUtils.randomAlphanumeric(500);
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("key", "value");

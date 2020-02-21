@@ -29,10 +29,6 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.old.AnalysisExecutionException;
-import org.opencb.opencga.analysis.old.execution.plugins.PluginExecutor;
-import org.opencb.opencga.analysis.old.execution.plugins.hist.VariantHistogramAnalysis;
-import org.opencb.opencga.analysis.old.execution.plugins.ibs.IbsAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
@@ -42,7 +38,6 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
-import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -54,13 +49,11 @@ import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
-import org.opencb.opencga.core.models.variant.VariantExportParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
-import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -128,9 +121,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory);
 
         switch (subCommandString) {
-            case "ibs":
-                ibs();
-                break;
             case VARIANT_DELETE_COMMAND:
                 fileDelete();
                 break;
@@ -194,9 +184,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             case SAMPLE_RUN_COMMAND:
                 sampleRun();
                 break;
-            case "histogram":
-                histogram();
-                break;
             case GWAS_RUN_COMMAND:
                 gwas();
             case KNOCKOUT_RUN_COMMAND:
@@ -227,19 +214,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
         }
     }
-
-    private void ibs() throws CatalogException, AnalysisExecutionException {
-        VariantCommandOptions.VariantIbsCommandOptions cliOptions = variantCommandOptions.ibsVariantCommandOptions;
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IbsAnalysis.SAMPLES, cliOptions.samples);
-        params.putIfNotEmpty(IbsAnalysis.OUTDIR, cliOptions.outdir);
-
-        String userId1 = catalogManager.getUserManager().getUserId(token);
-        new PluginExecutor(catalogManager, token).execute(IbsAnalysis.class, "default", catalogManager.getStudyManager().resolveId
-                (cliOptions.study, userId1).getUid(), params);
-    }
-
 
     private void exportFrequencies() throws Exception {
 
@@ -608,20 +582,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(SampleVariantFilterAnalysis.class,
                 cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params),
                 Paths.get(cliOptions.outdir), token);
-    }
-
-    private void histogram() throws Exception {
-        VariantCommandOptions.VariantHistogramCommandOptions cliOptions = variantCommandOptions.histogramCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-        params.put(VariantHistogramAnalysis.INTERVAL, cliOptions.interval.toString());
-        params.put(VariantHistogramAnalysis.OUTDIR, cliOptions.outdir);
-        Query query = VariantQueryCommandUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
-        params.putAll(query);
-
-        String userId1 = catalogManager.getUserManager().getUserId(token);
-        new PluginExecutor(catalogManager, token)
-                .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyManager().resolveId(cliOptions.study, userId1).getUid(), params);
     }
 
     private void gwas() throws Exception {

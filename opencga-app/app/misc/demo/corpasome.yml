@@ -1,0 +1,132 @@
+---
+## Corpasome study
+## Paper: https://www.biorxiv.org/content/10.1101/000216v1
+## Data: https://figshare.com/articles/Corpasome/693052
+## Pedigree:
+##   Father: ISDBM322016
+##   Mother: ISDBM322018
+##   Son: ISDBM322015
+##   Daughter: ISDBM322017
+
+id: corpasome
+name: Corpas Family
+description: This study simulates two disorders and some phenotypes in the Corpas family for training purposes
+
+individuals:
+  - id: ISDBM322015
+    name: ISDBM322015
+    father:
+      id: ISDBM322016
+    mother:
+      id: ISDBM322018
+    sex: MALE
+    karyotypicSex: XY
+    lifeStatus: ALIVE
+    phenotypes:
+      - id: HP:0000519
+        name: Developmental cataract
+        source: HPO
+        status: OBSERVED
+      - id: HP:00005456
+        name: Myopia
+        source: HPO
+        status: OBSERVED
+    disorders:
+      - id: OMIM:611597
+        name: Cataract, Autosomal Dominant, Multiple Types 1
+        source: OMIM
+  - id: ISDBM322017
+    name: ISDBM322017
+    father:
+      id: ISDBM322016
+    mother:
+      id: ISDBM322018
+    sex: FEMALE
+    karyotypicSex: XX
+    lifeStatus: ALIVE
+    phenotypes:
+      - id: HP:00005456
+        name: Myopia
+        source: HPO
+        status: OBSERVED
+      - id: HP:0002077
+        name: Migraine with aura
+        source: HPO
+        status: OBSERVED
+    disorders:
+      - id: OMIM:300125
+        name: Migraine, Familial Typical, Susceptibility To, 2
+        source: OMIM
+  - id: ISDBM322016
+    name: ISDBM322016
+    sex: MALE
+    karyotypicSex: XY
+    lifeStatus: ALIVE
+    phenotypes:
+      - id: HP:00005456
+        name: Myopia
+        source: HPO
+        status: OBSERVED
+      - id: HP:0000519
+        name: Developmental cataract
+        source: HPO
+        status: OBSERVED
+    disorders:
+      - id: OMIM:611597
+        name: Cataract, Autosomal Dominant, Multiple Types 1
+        source: OMIM
+  - id: ISDBM322018
+    name: ISDBM322018
+    sex: FEMALE
+    karyotypicSex: XX
+    lifeStatus: ALIVE
+    phenotypes:
+      - id: HP:0002077
+        name: Migraine with aura
+        source: HPO
+        status: OBSERVED
+      - id: HP:0000958
+        name: Dry skin
+        source: HPO
+        status: OBSERVED
+    disorders:
+      - id: OMIM:300125
+        name: Migraine, Familial Typical, Susceptibility To, 2
+        source: OMIM
+
+samples:
+  - id: ISDBM322015
+    individualId: ISDBM322015
+  - id: ISDBM322016
+    individualId: ISDBM322016
+  - id: ISDBM322017
+    individualId: ISDBM322017
+  - id: ISDBM322018
+    individualId: ISDBM322018
+
+families:
+  - id: corpas
+    name: Corpas
+    members:
+      - id: ISDBM322015
+      - id: ISDBM322016
+      - id: ISDBM322017
+      - id: ISDBM322018
+
+#clinicalAnalysis:
+#  - id: cataract
+#    type: FAMILY
+#    proband:
+#      - id: ISDBM322015
+#    roleToProband:
+#      ISDBM322016: FATHER
+#      ISDBM322017: FULL_SIBLING_F
+#      ISDBM322018: MOTHER
+#    family:
+#      - id: corpasome
+#    disorder:
+#      - id: OMIM:611597
+
+files:
+  - id: quartet.variants.annotated.vcf.gz
+    path: data

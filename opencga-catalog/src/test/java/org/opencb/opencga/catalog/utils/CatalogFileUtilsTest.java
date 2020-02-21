@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,17 +24,16 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -95,7 +95,7 @@ public class CatalogFileUtilsTest {
 
         file = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
                 "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", null, 0, null, (long) -1, null, null, true,
-                StringUtils.randomString(100), null, userSessionId).first();
+                RandomStringUtils.randomAlphanumeric(100), null, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertSame("Should not modify the status, so should return the same file.", file, returnedFile);
@@ -127,7 +127,7 @@ public class CatalogFileUtilsTest {
 
         /** Check MISSING file with found file **/
         FileOutputStream os = new FileOutputStream(file.getUri().getPath());
-        os.write(StringUtils.randomString(1000).getBytes());
+        os.write(RandomStringUtils.randomAlphanumeric(1000).getBytes());
         os.write('\n');
         os.close();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);

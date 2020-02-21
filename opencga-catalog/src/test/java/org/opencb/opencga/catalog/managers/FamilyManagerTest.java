@@ -203,11 +203,11 @@ public class FamilyManagerTest extends GenericTest {
     /*
     *
     *  private DataResult<Family> createDummyFamily(String familyName) throws CatalogException {
-        String fatherStr = org.opencb.commons.utils.StringUtils.randomString(5);
-        String motherStr = org.opencb.commons.utils.StringUtils.randomString(5);
-        String child1 = org.opencb.commons.utils.StringUtils.randomString(5);
-        String child2 = org.opencb.commons.utils.StringUtils.randomString(5);
-        String child3 = org.opencb.commons.utils.StringUtils.randomString(5);
+        String fatherStr = RandomStringUtils.randomAlphanumeric(5);
+        String motherStr = RandomStringUtils.randomAlphanumeric(5);
+        String child1 = RandomStringUtils.randomAlphanumeric(5);
+        String child2 = RandomStringUtils.randomAlphanumeric(5);
+        String child3 = RandomStringUtils.randomAlphanumeric(5);
 
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
         Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
