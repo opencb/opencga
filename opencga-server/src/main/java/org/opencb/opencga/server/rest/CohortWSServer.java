@@ -19,11 +19,9 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -38,6 +36,8 @@ import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.TsvAnnotationParams;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
@@ -45,6 +45,7 @@ import org.opencb.opencga.core.models.study.VariableSet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -280,12 +281,37 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/annotationSets/load")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Load annotation sets from a TSV file", response = Job.class)
+    public Response loadTsvAnnotations(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION, required = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true)
+                @QueryParam("path") String path,
+            @ApiParam(value = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).")
+            @DefaultValue("false") @QueryParam("parents") boolean parents,
+            @ApiParam(value = "Annotation set id. If not provided, variableSetId will be used.") @QueryParam("annotationSetId") String annotationSetId,
+            @ApiParam(value = ParamConstants.TSV_ANNOTATION_DESCRIPTION) TsvAnnotationParams params) {
+        try {
+            ObjectMap additionalParams = new ObjectMap()
+                    .append("parents", parents)
+                    .append("annotationSetId", annotationSetId);
+
+            return createOkResponse(catalogManager.getCohortManager().loadTsvAnnotations(studyStr, variableSetId, path, params,
+                    additionalParams, CohortTsvAnnotationLoader.ID, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
     @Path("/{cohort}/annotationSets/{annotationSet}/annotations/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update annotations from an annotationSet", response = Cohort.class)
     public Response updateAnnotations(
             @ApiParam(value = ParamConstants.COHORT_ID_DESCRIPTION, required = true) @PathParam("cohort") String cohortStr,
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE", defaultValue = "ADD")
                 @QueryParam("action") ParamUtils.CompleteUpdateAction action,

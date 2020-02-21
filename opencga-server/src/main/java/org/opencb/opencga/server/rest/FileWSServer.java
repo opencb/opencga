@@ -24,6 +24,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
 import org.opencb.opencga.analysis.file.FileDeleteTask;
+import org.opencb.opencga.analysis.file.FileTsvAnnotationLoader;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -36,6 +37,7 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
@@ -656,6 +658,30 @@ public class FileWSServer extends OpenCGAWSServer {
 //    @JsonIgnoreProperties({"status"})
 //    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
 //    }
+    @POST
+    @Path("/annotationSets/load")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Load annotation sets from a TSV file", response = Job.class)
+    public Response loadTsvAnnotations(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION, required = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true)
+            @QueryParam("path") String path,
+            @ApiParam(value = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).")
+            @DefaultValue("false") @QueryParam("parents") boolean parents,
+            @ApiParam(value = "Annotation set id. If not provided, variableSetId will be used.") @QueryParam("annotationSetId") String annotationSetId,
+            @ApiParam(value = ParamConstants.TSV_ANNOTATION_DESCRIPTION) TsvAnnotationParams params) {
+        try {
+            ObjectMap additionalParams = new ObjectMap()
+                    .append("parents", parents)
+                    .append("annotationSetId", annotationSetId);
+
+            return createOkResponse(catalogManager.getFileManager().loadTsvAnnotations(studyStr, variableSetId, path, params,
+                    additionalParams, FileTsvAnnotationLoader.ID, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @POST
     @Path("/{file}/annotationSets/{annotationSet}/annotations/update")
@@ -664,9 +690,10 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response updateAnnotations(
             @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /", required = true)
             @PathParam("file") String fileStr,
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
-            @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {

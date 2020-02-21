@@ -30,13 +30,18 @@ import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationA
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.cohort.CohortIndexTask;
+import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;
+import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
 import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
 import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.file.FileIndexTask;
+import org.opencb.opencga.analysis.file.FileTsvAnnotationLoader;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
+import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
+import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -136,6 +141,22 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put("files-unlink", "files unlink");
             put(FileDeleteTask.ID, "files delete");
             put(FetchAndRegisterTask.ID, "files fetch");
+            put(FileIndexTask.ID, "files secondary-index");
+            put(FileTsvAnnotationLoader.ID, "files tsv-load");
+
+            put(SampleIndexTask.ID, "samples secondary-index");
+            put(SampleTsvAnnotationLoader.ID, "samples tsv-load");
+
+            put(IndividualIndexTask.ID, "individuals secondary-index");
+            put(IndividualTsvAnnotationLoader.ID, "individuals tsv-load");
+
+            put(CohortIndexTask.ID, "cohorts secondary-index");
+            put(CohortTsvAnnotationLoader.ID, "cohorts tsv-load");
+
+            put(FamilyIndexTask.ID, "families secondary-index");
+            put(FamilyTsvAnnotationLoader.ID, "families tsv-load");
+
+            put(JobIndexTask.ID, "jobs secondary-index");
 
             put("alignment-index", "alignment index");
             put("alignment-coverage-run", "alignment coverage-run");
@@ -176,13 +197,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
             put(CustomInterpretationAnalysis.ID, "interpretation " + CustomInterpretationAnalysis.ID);
             put(CancerTieringInterpretationAnalysis.ID, "interpretation " + CancerTieringInterpretationAnalysis.ID);
-
-            put(FileIndexTask.ID, "files secondary-index");
-            put(SampleIndexTask.ID, "samples secondary-index");
-            put(IndividualIndexTask.ID, "individuals secondary-index");
-            put(CohortIndexTask.ID, "cohorts secondary-index");
-            put(FamilyIndexTask.ID, "families secondary-index");
-            put(JobIndexTask.ID, "jobs secondary-index");
         }};
     }
 

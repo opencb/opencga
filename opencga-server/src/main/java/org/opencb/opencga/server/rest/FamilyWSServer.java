@@ -21,7 +21,9 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -29,10 +31,12 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyAclUpdateParams;
 import org.opencb.opencga.core.models.family.FamilyCreateParams;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.job.Job;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -244,12 +248,37 @@ public class FamilyWSServer extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/annotationSets/load")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Load annotation sets from a TSV file", response = Job.class)
+    public Response loadTsvAnnotations(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION, required = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true)
+            @QueryParam("path") String path,
+            @ApiParam(value = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).")
+            @DefaultValue("false")  @QueryParam("parents") boolean parents,
+            @ApiParam(value = "Annotation set id. If not provided, variableSetId will be used.") @QueryParam("annotationSetId") String annotationSetId,
+            @ApiParam(value = ParamConstants.TSV_ANNOTATION_DESCRIPTION) TsvAnnotationParams params) {
+        try {
+            ObjectMap additionalParams = new ObjectMap()
+                    .append("parents", parents)
+                    .append("annotationSetId", annotationSetId);
+
+            return createOkResponse(catalogManager.getFamilyManager().loadTsvAnnotations(studyStr, variableSetId, path, params,
+                    additionalParams, FamilyTsvAnnotationLoader.ID, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
     @Path("/{family}/annotationSets/{annotationSet}/annotations/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update annotations from an annotationSet", response = Family.class)
     public Response updateAnnotations(
             @ApiParam(value = "Family id", required = true) @PathParam("family") String familyStr,
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE", defaultValue = "ADD")
                 @QueryParam("action") ParamUtils.CompleteUpdateAction action,

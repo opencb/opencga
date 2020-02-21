@@ -25,6 +25,9 @@ public class ParamConstants {
             + "can query by this field. ";
     public static final String ACL_DESCRIPTION = "Filter entries for which a user has the provided permissions. " + ACL_FORMAT;
 
+    public static final String TSV_ANNOTATION_DESCRIPTION = "JSON containing the 'content' of the TSV file if this has not yet been "
+            + "registered into OpenCGA";
+
     // ---------------------------------------------
 
     public static final String USER_DESCRIPTION = "User id";
