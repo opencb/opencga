@@ -75,20 +75,24 @@ public class TemplateManager {
 
         // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
         for (Project project : templateConfiguration.getProjects()) {
-            for (Study study : project.getStudies()) {
-                RestResponse<Study> infoResponse = openCGAClient.getStudyClient()
-                        .info(openCGAClient.getUserId() + "@" + project.getId() + ":" + study.getId(), new ObjectMap());
-                if (infoResponse.getResponses().size() > 0) {
-                    logger.error("Study already exists");
-                    return;
+            if (openCGAClient.getProjectClient()
+                    .info(openCGAClient.getUserId() + "@" + project.getId(), new ObjectMap()).first().getNumResults() > 0) {
+                // If project exists, check that studies does not exist
+                for (Study study : project.getStudies()) {
+                    RestResponse<Study> infoResponse = openCGAClient.getStudyClient()
+                            .info(openCGAClient.getUserId() + "@" + project.getId() + ":" + study.getId(), new ObjectMap());
+                    if (infoResponse.first().getNumResults() > 0) {
+                        logger.error("Study already exists");
+                        return;
+                    }
                 }
             }
         }
 
         // Create and load data
         for (Project project : templateConfiguration.getProjects()) {
-            if (openCGAClient.getProjectClient().info(openCGAClient.getUserId() + "@" + project.getId(),
-                    new ObjectMap()).first().getNumResults() == 0) {
+            if (openCGAClient.getProjectClient()
+                    .info(openCGAClient.getUserId() + "@" + project.getId(), new ObjectMap()).first().getNumResults() == 0) {
                 logger.info("Creating project '{}'", project.getId());
                 openCGAClient.getProjectClient().create(ProjectCreateParams.of(project));
             } else {
@@ -100,6 +104,10 @@ public class TemplateManager {
                 ObjectMap params = new ObjectMap(ParamConstants.PROJECT_PARAM, project.getId());
                 openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
                 // NOTE: Do not change the order of the following resource creation.
+// TODO
+//                if (CollectionUtils.isNotEmpty(study.getVariableSets())) {
+//                    createVariableSets(study);
+//                }
                 if (CollectionUtils.isNotEmpty(study.getIndividuals())) {
                     createIndividuals(study);
                 }
@@ -112,6 +120,14 @@ public class TemplateManager {
                 if (CollectionUtils.isNotEmpty(study.getFamilies())) {
                     createFamilies(study);
                 }
+// TODO
+//                if (CollectionUtils.isNotEmpty(study.getPanels())) {
+//                    createPanels(study);
+//                }
+// TODO
+//                if (CollectionUtils.isNotEmpty(study.getClinicalAnalysis())) {
+//                    createClinicalAnalysis(study);
+//                }
                 if (CollectionUtils.isNotEmpty(study.getFiles())) {
                     indexVcfJobIds = fetchFiles(study);
                 }

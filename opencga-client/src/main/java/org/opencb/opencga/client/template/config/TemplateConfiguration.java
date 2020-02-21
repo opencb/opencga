@@ -18,14 +18,12 @@ package org.opencb.opencga.client.template.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,8 +41,13 @@ public class TemplateConfiguration {
 
     public static TemplateConfiguration load(Path mainConfigurationPath) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        InputStream inputStream = FileUtils.newInputStream(mainConfigurationPath);
-        TemplateConfiguration templateConfiguration = objectMapper.readValue(inputStream, TemplateConfiguration.class);
+        TemplateConfiguration templateConfiguration;
+        try {
+            templateConfiguration = objectMapper.readValue(mainConfigurationPath.toFile(), TemplateConfiguration.class);
+        } catch (IOException e) {
+            // Enrich IOException with fileName
+            throw new IOException("Error parsing main template configuration file '" + mainConfigurationPath + "'", e);
+        }
         Map<String, List<Study>> studies = new HashMap<>();
         for (Project project : templateConfiguration.getProjects()) {
             studies.put(project.getId(), new ArrayList<>());
@@ -53,7 +56,13 @@ public class TemplateConfiguration {
                 // If file exists we load it and overwrite Study object.
                 // If a file with the study does not exist then Study must be defined in the main.yml file.
                 if (file.exists()) {
-                    studies.get(project.getId()).add(objectMapper.readValue(file, Study.class));
+                    try {
+                        studies.get(project.getId()).add(objectMapper.readValue(file, Study.class));
+                    } catch (IOException e) {
+                        // Enrich IOException with fileName
+                        throw new IOException("Error parsing study '" + study.getId() + "' template configuration file "
+                                + "'" + mainConfigurationPath + "'", e);
+                    }
                 }
             }
         }
