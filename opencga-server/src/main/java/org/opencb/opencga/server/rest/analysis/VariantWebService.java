@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
@@ -35,6 +36,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -812,6 +814,32 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = MutationalSignatureAnalysisParams.DESCRIPTION) MutationalSignatureAnalysisParams params) {
         return submitJob(MutationalSignatureAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/relatedness/run")
+    @ApiOperation(value = RelatednessAnalysis.DESCRIPTION, response = Job.class)
+    public Response relatednessRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = RelatednessAnalysisParams.DESCRIPTION) RelatednessAnalysisParams params) {
+        return submitJob(RelatednessAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/geneticChecks/run")
+    @ApiOperation(value = GeneticChecksAnalysis.DESCRIPTION, response = Job.class)
+    public Response geneticChecksRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = GeneticChecksAnalysisParams.DESCRIPTION) GeneticChecksAnalysisParams params) {
+        return submitJob(GeneticChecksAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST

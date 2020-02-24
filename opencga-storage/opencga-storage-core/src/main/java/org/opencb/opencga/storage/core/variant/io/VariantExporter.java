@@ -188,12 +188,12 @@ public class VariantExporter {
         OutputStream os = ioConnectorProvider.newOutputStream(metadataFile);
         Writer writer = new OutputStreamWriter(new BufferedOutputStream(os));
         for (Individual individual : metadata.getStudies().get(0).getIndividuals()) {
-            writer.write(individual.getFamily()
+            writer.write((individual.getFamily() == null ? "0" : individual.getFamily())
                     + "\t" + individual.getId()
-                    + "\t" + individual.getFather()
-                    + "\t" + individual.getMother()
-                    + "\t" + individual.getSex()
-                    + "\t" + individual.getPhenotype()
+                    + "\t" + (individual.getFather() == null ? "0" : individual.getFather())
+                    + "\t" + (individual.getMother() == null ? "0" : individual.getMother())
+                    + "\t" + (individual.getSex() == null ? "0" : individual.getSex())
+                    + "\t" + (individual.getPhenotype() == null ? "0" : individual.getPhenotype())
                     + "\n");
 
         }
