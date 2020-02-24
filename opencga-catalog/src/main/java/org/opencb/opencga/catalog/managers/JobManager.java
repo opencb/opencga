@@ -730,7 +730,7 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    public OpenCGAResult<FileContent> log(String studyId, String jobId, long offset, int bytes, int lines, boolean tail, String token)
+    public OpenCGAResult<FileContent> log(String studyId, String jobId, long offset, int lines, String type, boolean tail, String token)
             throws CatalogException {
         long startTime = System.currentTimeMillis();
 
@@ -741,11 +741,18 @@ public class JobManager extends ResourceManager<Job> {
                 .append("studyId", studyId)
                 .append("jobId", jobId)
                 .append("offset", offset)
-                .append("bytes", bytes)
                 .append("lines", lines)
+                .append("type", type)
                 .append("tail", tail)
                 .append("token", token);
         try {
+            if (StringUtils.isEmpty(type)) {
+                type = "stderr";
+            }
+            if (!"stderr".equalsIgnoreCase(type) && !"stdout".equalsIgnoreCase(type)) {
+                throw new CatalogException("Incorrect log type. It must be 'stdout' or 'stderr'");
+            }
+
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UUID.key(),
                             JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), JobDBAdaptor.QueryParams.STDOUT.key(),
@@ -753,23 +760,39 @@ public class JobManager extends ResourceManager<Job> {
             Job job = internalGet(study.getUid(), jobId, options, userId).first();
 
             Path logFile;
-            if (job.getStdout() != null && job.getStdout().getUri() != null) {
-                logFile = Paths.get(job.getStdout().getUri());
-            } else {
-                // The log file hasn't yet been registered
-                if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
-                        .contains(job.getInternal().getStatus().getName())) {
-                    logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log");
+            if ("stderr".equalsIgnoreCase(type)) {
+                if (job.getStderr() != null && job.getStderr().getUri() != null) {
+                    logFile = Paths.get(job.getStderr().getUri());
                 } else {
-                    throw new CatalogException("Cannot see log file of job with status '" + job.getInternal().getStatus().getName() + "'.");
+                    // The log file hasn't yet been registered
+                    if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
+                            .contains(job.getInternal().getStatus().getName())) {
+                        logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".err");
+                    } else {
+                        throw new CatalogException("Cannot see stderr log file of job with status '"
+                                + job.getInternal().getStatus().getName() + "'.");
+                    }
+                }
+            } else {
+                if (job.getStdout() != null && job.getStdout().getUri() != null) {
+                    logFile = Paths.get(job.getStdout().getUri());
+                } else {
+                    // The log file hasn't yet been registered
+                    if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
+                            .contains(job.getInternal().getStatus().getName())) {
+                        logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log");
+                    } else {
+                        throw new CatalogException("Cannot see stdout log file of job with status '"
+                                + job.getInternal().getStatus().getName() + "'.");
+                    }
                 }
             }
 
             FileContent fileContent;
             if (tail) {
-                fileContent = catalogIOManagerFactory.get(logFile.toUri()).tail(logFile, bytes, lines);
+                fileContent = catalogIOManagerFactory.get(logFile.toUri()).tail(logFile, lines);
             } else {
-                fileContent = catalogIOManagerFactory.get(logFile.toUri()).content(logFile, offset, bytes, lines);
+                fileContent = catalogIOManagerFactory.get(logFile.toUri()).content(logFile, offset, lines);
             }
 
             auditManager.audit(userId, Enums.Action.VIEW_LOG, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),

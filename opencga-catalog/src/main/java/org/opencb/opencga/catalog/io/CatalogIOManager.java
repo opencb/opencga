@@ -347,11 +347,11 @@ public abstract class CatalogIOManager {
     public abstract DataInputStream getFileObject(URI fileUri, int start, int limit)
             throws CatalogIOException;
 
-    public abstract FileContent tail(Path file, int bytes, int lines) throws CatalogIOException;
+    public abstract FileContent tail(Path file, int lines) throws CatalogIOException;
 
-    public abstract FileContent head(Path file, int bytes, int lines) throws CatalogIOException;
+    public abstract FileContent head(Path file, int lines) throws CatalogIOException;
 
-    public abstract FileContent content(Path file, long offset, int bytes, int numLines) throws CatalogIOException;
+    public abstract FileContent content(Path file, long offset, int numLines) throws CatalogIOException;
 
     /**
      * Grep the content of a file.

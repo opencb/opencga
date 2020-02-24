@@ -21,11 +21,13 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -38,6 +40,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.BasicVariantQueryParams;
+import org.opencb.opencga.core.models.variant.GeneticChecksAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -111,6 +114,8 @@ public class VariantCommandOptions {
     public final KnockoutCommandOptions knockoutCommandOptions;
     public final SampleEligibilityCommandOptions sampleEligibilityCommandOptions;
     public final MutationalSignatureCommandOptions mutationalSignatureCommandOptions;
+    public final RelatednessCommandOptions relatednessCommandOptions;
+    public final GeneticChecksCommandOptions geneticChecksCommandOptions;
 
     // Wrappers
     public final PlinkCommandOptions plinkCommandOptions;
@@ -165,6 +170,8 @@ public class VariantCommandOptions {
         this.knockoutCommandOptions = new KnockoutCommandOptions();
         this.sampleEligibilityCommandOptions = new SampleEligibilityCommandOptions();
         this.mutationalSignatureCommandOptions = new MutationalSignatureCommandOptions();
+        this.relatednessCommandOptions = new RelatednessCommandOptions();
+        this.geneticChecksCommandOptions = new GeneticChecksCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
         this.gatkCommandOptions = new GatkCommandOptions();
@@ -1078,7 +1085,7 @@ public class VariantCommandOptions {
 
     @Parameters(commandNames = MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND, commandDescription = MutationalSignatureAnalysis.DESCRIPTION)
     public class MutationalSignatureCommandOptions {
-        public static final String MUTATIONAL_SIGNATURE_RUN_COMMAND = "mutational-signature-run";
+        public static final String MUTATIONAL_SIGNATURE_RUN_COMMAND = MutationalSignatureAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1088,6 +1095,40 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--sample"}, description = "Sample name.")
         public String sample;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND, commandDescription = RelatednessAnalysis.DESCRIPTION)
+    public class RelatednessCommandOptions {
+        public static final String RELATEDNESS_RUN_COMMAND = RelatednessAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--samples"}, description = "List of samples.")
+        public List<String> samples;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND, commandDescription = GeneticChecksAnalysis.DESCRIPTION)
+    public class GeneticChecksCommandOptions {
+        public static final String GENETIC_CHECKS_RUN_COMMAND = GeneticChecksAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--samples"}, description = "List of samples.")
+        public List<String> samples;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
