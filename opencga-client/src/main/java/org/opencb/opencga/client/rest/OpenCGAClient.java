@@ -42,6 +42,7 @@ public class OpenCGAClient {
     private final ClientConfiguration clientConfiguration;
 
     private final Map<String, AbstractParentClient> clients;
+    private boolean throwExceptionOnError;
 
     public OpenCGAClient(ClientConfiguration clientConfiguration) {
         this(null, clientConfiguration);
@@ -137,7 +138,11 @@ public class OpenCGAClient {
 
     @SuppressWarnings("unchecked")
     private <T extends AbstractParentClient> T getClient(Class<T> clazz, Supplier<T> constructor) {
-        return (T) clients.computeIfAbsent(clazz.getName(), (k) -> constructor.get());
+        return (T) clients.computeIfAbsent(clazz.getName(), (k) -> {
+            T t = constructor.get();
+            t.setThrowExceptionOnError(throwExceptionOnError);
+            return t;
+        });
     }
 
     /**
@@ -203,6 +208,16 @@ public class OpenCGAClient {
                 .forEach(abstractParentClient -> {
                     abstractParentClient.setToken(this.token);
                 });
+    }
+
+    public OpenCGAClient setThrowExceptionOnError(boolean throwExceptionOnError) {
+        this.throwExceptionOnError = throwExceptionOnError;
+        clients.values().stream()
+                .filter(Objects::nonNull)
+                .forEach(abstractParentClient -> {
+                    abstractParentClient.setThrowExceptionOnError(this.throwExceptionOnError);
+                });
+        return this;
     }
 
     public String getUserId() {

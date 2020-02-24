@@ -45,14 +45,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 04/05/16.
@@ -63,6 +62,7 @@ public abstract class AbstractParentClient {
 
     private String token;
     private ClientConfiguration configuration;
+    private boolean throwExceptionOnError = false;
 
     protected ObjectMapper jsonObjectMapper;
 
@@ -100,6 +100,11 @@ public abstract class AbstractParentClient {
                 defaultLimit = configuration.getRest().getDefaultLimit();
             }
         }
+    }
+
+    protected AbstractParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {
+        this.throwExceptionOnError = throwExceptionOnError;
+        return this;
     }
 
     protected <T> VariantQueryResult<T> executeVariantQuery(String category, String action, Map<String, Object> params, String method,
@@ -216,60 +221,53 @@ public abstract class AbstractParentClient {
      * @return A queryResponse object containing the results of the query.
      * @throws ClientException if the path is wrong and cannot be converted to a proper url.
      */
-    private <T> RestResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws ClientException {
+    private <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method) throws ClientException {
 
-        String jsonString;
+        Response response;
         switch (method) {
             case DELETE:
             case GET:
                 // TODO we still have to check the limit of the query, and keep querying while there are more results
                 if (params != null) {
-                    for (String s : params.keySet()) {
-                        Object o = params.get(s);
-                        if (o instanceof Collection) {
-                            String value = ((Collection<?>) o).stream().map(Object::toString).collect(Collectors.joining(","));
-                            path = path.queryParam(s, value);
-                        } else {
-                            path = path.queryParam(s, o);
-                        }
+                    for (String key : params.keySet()) {
+                        path = path.queryParam(key, params.getString(key));
                     }
                 }
 
                 Invocation.Builder header = path.request()
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
                 if (method.equals(GET)) {
-                    jsonString = header.get().readEntity(String.class);
+                    response = header.get();
                 } else {
-                    jsonString = header.delete().readEntity(String.class);
+                    response = header.delete();
                 }
                 break;
             case POST:
                 // TODO we still have to check the limit of the query, and keep querying while there are more results
                 if (params != null) {
-                    for (String s : params.keySet()) {
-                        if (!s.equals("body")) {
-                            path = path.queryParam(s, params.get(s));
+                    for (String key : params.keySet()) {
+                        if (!key.equals("body")) {
+                            path = path.queryParam(key, params.getString(key));
                         }
                     }
                 }
 
-                Object paramBody = (params.get("body") == null ? "" : params.get("body"));
+                Object paramBody = (params == null || params.get("body") == null ? "" : params.get("body"));
                 logger.debug("Body {}", paramBody);
-                Response body = path.request()
+                response = path.request()
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
                         .post(Entity.json(paramBody));
-                jsonString = body.readEntity(String.class);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported REST method " + method);
         }
 
-        try {
-            logger.debug(method + " URL: {}", path.getUri().toURL());
-        } catch (MalformedURLException e) {
-            throw new ClientException(e.getMessage(), e);
-        }
-        return parseResult(jsonString, clazz);
+        int status = response.getStatus();
+        String jsonString = response.readEntity(String.class);
+        RestResponse<T> restResponse = parseResult(jsonString, clazz);
+
+        checkErrors(restResponse, status, method, path);
+        return restResponse;
     }
 
     /**
@@ -320,9 +318,6 @@ public abstract class AbstractParentClient {
      * @throws ClientException if the path is wrong and cannot be converted to a proper url.
      */
     private <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
-
-        String jsonString;
-
         String filePath = ((String) params.get("file"));
         params.remove("file");
         params.remove("body");
@@ -337,9 +332,11 @@ public abstract class AbstractParentClient {
         }
         final FormDataMultiPart multipart = (FormDataMultiPart) formDataMultiPart.bodyPart(filePart);
 
-        jsonString = path.request()
+        Response response = path.request()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
-                .post(Entity.entity(multipart, multipart.getMediaType()), String.class);
+                .post(Entity.entity(multipart, multipart.getMediaType()));
+        int status = response.getStatus();
+        String jsonString = response.readEntity(String.class);
 
         try {
             formDataMultiPart.close();
@@ -348,7 +345,9 @@ public abstract class AbstractParentClient {
             throw new ClientException(e.getMessage(), e);
         }
 
-        return parseResult(jsonString, clazz);
+        RestResponse<T> restResponse = parseResult(jsonString, clazz);
+        checkErrors(restResponse, status, POST, path);
+        return restResponse;
     }
 
     private <T> RestResponse<T> parseResult(String json, Class<T> clazz) throws ClientException {
@@ -370,6 +369,30 @@ public abstract class AbstractParentClient {
             }
         } else {
             return new RestResponse<>();
+        }
+    }
+
+    private <T> void checkErrors(RestResponse<T> restResponse, int status, String method, WebTarget path) throws ClientException {
+        if (status / 100 == 2) {
+            // REST call succeed
+            return;
+        }
+        URL url;
+        try {
+            url = path.getUri().toURL();
+        } catch (MalformedURLException e) {
+            throw new ClientException(e.getMessage(), e);
+        }
+        logger.debug(method + " URL: {}", url);
+        if (restResponse != null && restResponse.getEvents() != null) {
+            for (Event event : restResponse.getEvents()) {
+                if (Event.Type.ERROR.equals(event.getType())) {
+                    logger.debug("Error '{}' on {} {}", event.getMessage(), method, url);
+                    if (throwExceptionOnError) {
+                        throw new ClientException(event.getMessage());
+                    }
+                }
+            }
         }
     }
 
