@@ -264,10 +264,10 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         catalogManager.getCatalogIOManagerFactory().getDefault().createFile(
                 Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri(), inputStream);
 
-        OpenCGAResult<FileContent> fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, true, token);
+        OpenCGAResult<FileContent> fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, token);
         assertEquals("last line", fileContentResult.first().getContent());
 
-        fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, false, token);
+        fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", false, token);
         assertEquals("my log content\n", fileContentResult.first().getContent());
     }
 
