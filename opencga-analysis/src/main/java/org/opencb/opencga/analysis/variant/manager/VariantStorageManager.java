@@ -245,7 +245,7 @@ public class VariantStorageManager extends StorageManager {
         secureOperationByProject(VariantAnnotationIndexOperationTool.ID, projectId, params, token, engine -> {
             List<String> studiesFqn = getStudiesFqn(studies, token);
             new VariantAnnotationOperationManager(this, engine)
-                    .annotate(projectStr, studiesFqn, region, outputFileName, Paths.get(outDir), params, token, overwriteAnnotations);
+                    .annotate(projectId, studiesFqn, region, outputFileName, Paths.get(outDir), params, token, overwriteAnnotations);
             return null;
         });
     }
