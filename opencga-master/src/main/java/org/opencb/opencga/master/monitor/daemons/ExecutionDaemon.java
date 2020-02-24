@@ -17,6 +17,7 @@
 package org.opencb.opencga.master.monitor.daemons;
 
 import com.google.common.base.CaseFormat;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.glassfish.jersey.client.ClientProperties;
@@ -422,7 +423,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
 
-        if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
+        if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
             // The job(s) it depended on finished successfully. Check if the input files are correct.
             // Look for input files
             String fileParamSuffix = "file";
@@ -674,11 +675,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private boolean canBeQueued(Job job) {
-        if ("variant-index".equals(job.getTool().getId())) {
-            int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
-            return canBeQueued("variant-index", maxIndexJobs);
-        }
-
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
             for (Job tmpJob : job.getDependsOn()) {
                 if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getInternal().getStatus().getName())) {
@@ -691,7 +687,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
         }
 
-        return true;
+        switch (job.getTool().getId()) {
+            case "variant-index":
+                int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
+                return canBeQueued("variant-index", maxIndexJobs);
+            default:
+                return true;
+        }
     }
 
     private boolean canBeQueued(String toolId, int maxJobs) {
