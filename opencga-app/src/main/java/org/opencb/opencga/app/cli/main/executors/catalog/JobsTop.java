@@ -111,7 +111,8 @@ public class JobsTop {
         List<Job> finishedJobs = openCGAClient.getJobClient().search(
                 new ObjectMap(baseQuery)
                         .appendAll(queryOptions)
-                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.DONE + "," + Enums.ExecutionStatus.ERROR)
+                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(),
+                                Enums.ExecutionStatus.DONE + "," + Enums.ExecutionStatus.ERROR + "," + Enums.ExecutionStatus.ABORTED)
                         .append(QueryOptions.LIMIT, Math.max(1, jobsLimit))
                         .append(QueryOptions.SORT, "execution.end")
                         .append(QueryOptions.ORDER, QueryOptions.DESCENDING) // Get last n elements

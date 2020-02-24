@@ -70,11 +70,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of sample ids to be associated to the created individual") @QueryParam("samples")
                     String samples,
             @ApiParam(value = "JSON containing individual information", required = true) IndividualCreateParams params) {
-        try {
-            return createOkResponse(individualManager.create(studyStr, params.toIndividual(), getIdList(samples), queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> individualManager.create(studyStr, params.toIndividual(), getIdListOrEmpty(samples), queryOptions, token));
     }
 
     @GET

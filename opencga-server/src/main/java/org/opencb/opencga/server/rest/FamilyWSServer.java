@@ -160,7 +160,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         try {
             family = ObjectUtils.defaultIfNull(family, new FamilyCreateParams());
             DataResult<Family> queryResult = familyManager.create(studyStr,
-                    family.toFamily(), getIdList(members), queryOptions, token);
+                    family.toFamily(), getIdListOrEmpty(members), queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
