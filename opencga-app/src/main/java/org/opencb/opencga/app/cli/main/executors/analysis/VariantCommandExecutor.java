@@ -58,9 +58,11 @@ import java.util.concurrent.TimeUnit;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
@@ -153,6 +155,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 queryResponse = mutationalSignature();
+                break;
+
+            case RELATEDNESS_RUN_COMMAND:
+                queryResponse = relatedness();
+                break;
+
+            case GENETIC_CHECKS_RUN_COMMAND:
+                queryResponse = geneticChecks();
                 break;
 
             case PLINK_RUN_COMMAND:
@@ -287,6 +297,26 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.mutationalSignatureCommandOptions.outdir
                 ),
                 getParams(variantCommandOptions.mutationalSignatureCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> relatedness() throws ClientException {
+        return openCGAClient.getVariantClient().runRelatedness(
+                new RelatednessAnalysisParams(
+                        variantCommandOptions.relatednessCommandOptions.samples,
+                        variantCommandOptions.relatednessCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.relatednessCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> geneticChecks() throws ClientException {
+        return openCGAClient.getVariantClient().runGeneticChecks(
+                new GeneticChecksAnalysisParams(
+                        variantCommandOptions.geneticChecksCommandOptions.samples,
+                        variantCommandOptions.geneticChecksCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.geneticChecksCommandOptions.study)
         );
     }
 
