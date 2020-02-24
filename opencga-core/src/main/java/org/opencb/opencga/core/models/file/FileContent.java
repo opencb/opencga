@@ -20,7 +20,7 @@ public class FileContent {
     /**
      * Number of bytes returned.
      */
-    private int bytes;
+    private int size;
 
     /**
      * Number of lines read.
@@ -35,19 +35,19 @@ public class FileContent {
     public FileContent() {
     }
 
-    public FileContent(String fileId, boolean eof, long offset, int bytes, String content) {
+    public FileContent(String fileId, boolean eof, long offset, int size, String content) {
         this.fileId = fileId;
         this.eof = eof;
         this.offset = offset;
-        this.bytes = bytes;
+        this.size = size;
         this.content = content;
     }
 
-    public FileContent(String fileId, boolean eof, long offset, int bytes, int lines, String content) {
+    public FileContent(String fileId, boolean eof, long offset, int size, int lines, String content) {
         this.fileId = fileId;
         this.eof = eof;
         this.offset = offset;
-        this.bytes = bytes;
+        this.size = size;
         this.lines = lines;
         this.content = content;
     }
@@ -58,7 +58,7 @@ public class FileContent {
         sb.append("fileId='").append(fileId).append('\'');
         sb.append(", eof=").append(eof);
         sb.append(", offset=").append(offset);
-        sb.append(", bytes=").append(bytes);
+        sb.append(", size=").append(size);
         sb.append(", lines=").append(lines);
         sb.append(", content='").append(content).append('\'');
         sb.append('}');
@@ -92,12 +92,12 @@ public class FileContent {
         return this;
     }
 
-    public int getBytes() {
-        return bytes;
+    public int getSize() {
+        return size;
     }
 
-    public FileContent setBytes(int bytes) {
-        this.bytes = bytes;
+    public FileContent setSize(int size) {
+        this.size = size;
         return this;
     }
 

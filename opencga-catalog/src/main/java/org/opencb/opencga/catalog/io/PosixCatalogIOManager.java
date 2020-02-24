@@ -18,7 +18,9 @@ package org.opencb.opencga.catalog.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -44,6 +46,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     protected static ObjectWriter jsonObjectWriter;
 
     private static final int MAXIMUM_BYTES = 1024 * 1024;
+    private static final int MAXIMUM_LINES = 1000;
 
     public PosixCatalogIOManager(Configuration configuration) throws CatalogIOException {
         super(configuration);
@@ -244,50 +247,125 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public FileContent tail(Path file, int bytes, int lines) throws CatalogIOException {
-        if (Files.isRegularFile(file)) {
-            FileContent fileContent = new FileContent(file.toAbsolutePath().toString(), true, -1, -1, -1, "");
+    public FileContent tail(Path file, int lines) throws CatalogIOException {
+        if (file.toFile().getName().endsWith(".gz")) {
+            throw new CatalogIOException("Tail does not work with compressed files.");
+        }
+        lines = Math.min(lines, MAXIMUM_LINES);
 
-            String cli = "tail";
-            if (lines > 0) {
-                cli += " -n " + lines + " " + file.toAbsolutePath().toString();
-                fileContent.setLines(lines);
-            } else {
-                if (bytes == 0 || bytes > MAXIMUM_BYTES) {
-                    bytes = MAXIMUM_BYTES;
-                }
-                cli += " -c " + bytes + " " + file.toAbsolutePath().toString();
-                fileContent.setBytes(bytes);
+        int averageBytesPerLine = 250;
+
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(file.toFile(), "r")) {
+            long length = randomAccessFile.length();
+
+            long offset = length - (averageBytesPerLine * (lines + 10));
+            if (offset < 0) {
+                offset = 0;
             }
-            logger.debug("command line = {}", cli);
+            if (length - offset > MAXIMUM_BYTES) {
+                offset = length - MAXIMUM_BYTES;
+            }
 
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            Command command = new Command(cli)
-                    .setOutputOutputStream(outputStream)
-                    .setPrintOutput(false);
-            command.run();
-            fileContent.setContent(outputStream.toString());
+            List<String> contentList = new LinkedList<>();
+            randomAccessFile.seek(offset);
+            // Discard first line as it will be truncated
+            randomAccessFile.readLine();
 
-            return fileContent;
+            String line;
+            while ((line = randomAccessFile.readLine()) != null) {
+                contentList.add(line);
+            }
+            // Remove first line as it will probably be truncated
+
+            while (contentList.size() < lines && length - MAXIMUM_BYTES < offset) {
+                // We need to get more lines
+
+                // Recalculate the average number of bytes per line from the file
+                averageBytesPerLine = Math.round((length - offset) / contentList.size());
+
+                // We will always try to move the offset to 10 lines before
+                int remainingLines = 10 + lines - contentList.size();
+
+                long to = offset;
+                offset = to - (averageBytesPerLine * remainingLines);
+                if (offset < 0) {
+                    offset = 0;
+                }
+                if (length - offset > MAXIMUM_BYTES) {
+                    offset = length - MAXIMUM_BYTES;
+                }
+
+                randomAccessFile.seek(offset);
+                List<String> additionalList = new LinkedList<>();
+
+                // Discard first line as it will be truncated
+                randomAccessFile.readLine();
+                while (randomAccessFile.getFilePointer() < to) {
+                    additionalList.add(randomAccessFile.readLine());
+                }
+
+                // Remove first line as it will probably be incomplete and it will be completely added from the additionalList
+                contentList.addAll(0, additionalList);
+            }
+
+            if (contentList.size() > lines) {
+                contentList = contentList.subList(contentList.size() - lines, contentList.size());
+            }
+            String fullContent = StringUtils.join(contentList, System.lineSeparator());
+
+            return new FileContent(file.toAbsolutePath().toString(), true, length, fullContent.getBytes().length, contentList.size(),
+                    fullContent);
+        } catch (IOException e) {
+            throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString() + ": " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public FileContent head(Path file, int lines) throws CatalogIOException {
+        if (Files.isRegularFile(file)) {
+            lines = Math.min(lines, MAXIMUM_LINES);
+
+            int numLinesReturned = 0;
+            try (BufferedReader bufferedReader = FileUtils.newBufferedReader(file)) {
+                StringBuilder sb = new StringBuilder();
+
+                boolean eof = false;
+
+                int bytes = 0;
+                while (numLinesReturned < lines && bytes < MAXIMUM_BYTES && !eof) {
+                    String line = bufferedReader.readLine();
+
+                    if (line != null) {
+                        line = line + "\n";
+                        bytes += line.getBytes().length;
+                        sb.append(line);
+
+                        numLinesReturned++;
+                    } else {
+                        eof = true;
+                    }
+                }
+
+                return new FileContent(file.toAbsolutePath().toString(), eof, bytes, bytes, numLinesReturned, sb.toString());
+            } catch (IOException e) {
+                throw new CatalogIOException(e.getMessage(), e);
+            }
         } else {
             throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString());
         }
     }
 
     @Override
-    public FileContent head(Path file, int bytes, int lines) throws CatalogIOException {
-        return content(file, 0, bytes, lines);
-    }
-
-    @Override
-    public FileContent content(Path file, long offset, int bytes, int numLines) throws CatalogIOException {
+    public FileContent content(Path file, long offset, int lines) throws CatalogIOException {
+        if (offset == 0) {
+            return head(file, lines);
+        }
         if (Files.isRegularFile(file)) {
+            if (file.toFile().getName().endsWith(".gz")) {
+                throw new CatalogIOException("Content does not work with compressed files.");
+            }
             try {
-                if (numLines > 0) {
-                    return getContentPerLines(file, offset, numLines);
-                } else {
-                    return getContentPerBytes(file, offset, bytes);
-                }
+                return getContentPerLines(file, offset, lines);
             } catch (IOException e) {
                 throw new CatalogIOException("Error while reading the content of the file '" + file.toAbsolutePath().toString() + "'", e);
             }
@@ -343,6 +421,10 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     @Override
     public FileContent grep(Path file, String pattern, int lines, boolean ignoreCase) throws CatalogIOException {
         if (Files.isRegularFile(file)) {
+            if (file.toFile().getName().endsWith(".gz")) {
+                throw new CatalogIOException("Grep does not work with compressed files.");
+            }
+
             String cli = "grep ";
             if (ignoreCase) {
                 cli += "--ignore-case ";

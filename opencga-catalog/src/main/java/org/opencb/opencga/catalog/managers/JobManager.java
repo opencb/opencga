@@ -730,7 +730,7 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    public OpenCGAResult<FileContent> log(String studyId, String jobId, long offset, int bytes, int lines, boolean tail, String token)
+    public OpenCGAResult<FileContent> log(String studyId, String jobId, long offset, int lines, boolean tail, String token)
             throws CatalogException {
         long startTime = System.currentTimeMillis();
 
@@ -741,7 +741,6 @@ public class JobManager extends ResourceManager<Job> {
                 .append("studyId", studyId)
                 .append("jobId", jobId)
                 .append("offset", offset)
-                .append("bytes", bytes)
                 .append("lines", lines)
                 .append("tail", tail)
                 .append("token", token);
@@ -767,9 +766,9 @@ public class JobManager extends ResourceManager<Job> {
 
             FileContent fileContent;
             if (tail) {
-                fileContent = catalogIOManagerFactory.get(logFile.toUri()).tail(logFile, bytes, lines);
+                fileContent = catalogIOManagerFactory.get(logFile.toUri()).tail(logFile, lines);
             } else {
-                fileContent = catalogIOManagerFactory.get(logFile.toUri()).content(logFile, offset, bytes, lines);
+                fileContent = catalogIOManagerFactory.get(logFile.toUri()).content(logFile, offset, lines);
             }
 
             auditManager.audit(userId, Enums.Action.VIEW_LOG, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
