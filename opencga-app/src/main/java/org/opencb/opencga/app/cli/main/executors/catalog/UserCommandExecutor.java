@@ -234,8 +234,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void loadTemplate() throws IOException, ClientException {
-        System.out.println("Load template!!");
-
         UserCommandOptions.TemplateCommandOptions options = usersCommandOptions.templateCommandOptions;
 
         TemplateConfiguration templateConfiguration = TemplateConfiguration.load(Paths.get(options.file));

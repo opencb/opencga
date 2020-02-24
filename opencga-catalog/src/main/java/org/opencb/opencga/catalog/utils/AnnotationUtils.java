@@ -149,6 +149,36 @@ public class AnnotationUtils {
     }
 
     /**
+     * Checks whether a variable id is defined in the given VariableSet.
+     * Example: variableId = a.b.c will check if there is an object variable a containing an object variable b containing a variable c.
+     * @param variableId Variable id to be checked.
+     * @param variableSet Variable set where the variable id will be checked.
+     * @return a boolean indicating whether the variable id is found in the given variable set or not.
+     */
+    public static boolean checkVariableIdInVariableSet(String variableId, Set<Variable> variableSet) {
+        if (variableSet == null) {
+            return false;
+        }
+
+        String[] split = StringUtils.split(variableId, ".");
+        if (split.length == 1) {
+            for (Variable variable : variableSet) {
+                if (variable.getId().equals(split[0])) {
+                    return true;
+                }
+            }
+        } else {
+            for (Variable variable : variableSet) {
+                if (variable.getId().equals(split[0])) {
+                    String subVariableId = StringUtils.split(variableId, ".", 2)[1];
+                    return checkVariableIdInVariableSet(subVariableId, variable.getVariableSet());
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Check if an annotationSet is valid.
      *
      * @param variableSet    VariableSet that describes the annotationSet.

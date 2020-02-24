@@ -46,7 +46,34 @@ public class VariantTpedWriter implements DataWriter<Variant> {
         sb.append(variant.getChromosome()).append("\t").append(variant.getId()).append("\t0\t").append(variant.getStart());
         for (List<String> sampleData : variant.getStudies().get(0).getSamplesData()) {
             Genotype genotype = new Genotype(sampleData.get(0));
-            sb.append("\t").append(genotype.getAllele(0)).append("\t").append(genotype.getAllele(1));
+            sb.append("\t");
+            switch (genotype.getAllele(0)) {
+                case 0:
+                    sb.append(variant.getReference());
+//                    sb.append(1);
+                    break;
+                case 1:
+                    sb.append(variant.getAlternate());
+//                    sb.append(2);
+                    break;
+                default:
+                    sb.append(0);
+                    break;
+            }
+            sb.append("\t");
+            switch (genotype.getAllele(1)) {
+                case 0:
+                    sb.append(variant.getReference());
+//                    sb.append(1);
+                    break;
+                case 1:
+                    sb.append(variant.getAlternate());
+//                    sb.append(2);
+                    break;
+                default:
+                    sb.append(0);
+                    break;
+            }
         }
         sb.append("\n");
 
