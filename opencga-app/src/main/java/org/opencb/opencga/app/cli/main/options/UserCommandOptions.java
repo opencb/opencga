@@ -194,6 +194,9 @@ public class UserCommandOptions {
 
         @Parameter(names = {"-f", "--file"}, arity = 1, required = true, description = "Template file")
         public String file;
+
+        @Parameter(names = {"--validate"}, arity = 0, description = "Only validate template file")
+        public boolean validate;
     }
 
 
