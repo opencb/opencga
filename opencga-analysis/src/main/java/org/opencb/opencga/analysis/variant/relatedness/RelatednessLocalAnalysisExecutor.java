@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.variant.relatedness;
 
+import org.opencb.opencga.analysis.variant.geneticChecks.IBDComputation;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -17,7 +18,6 @@ public class RelatednessLocalAnalysisExecutor extends RelatednessAnalysisExecuto
         VariantStorageManager storageManager = getVariantStorageManager();
 
         // Run IBD/IBS computation using PLINK in docker
-        File relatednessFile = IBDComputation.compute(getStudy(), getSamples(), getOutDir(), storageManager, getToken());
-        System.out.println("Relatedness file: " + relatednessFile.getAbsolutePath());
+        IBDComputation.compute(getStudy(), getSamples(), getOutDir(), storageManager, getToken());
     }
 }

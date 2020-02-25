@@ -17,14 +17,11 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class KaryotypicSexComputation {
 
-    public java.io.File compute(String study, List<String> samples, FileManager fileManager,
+    public static java.io.File compute(String study, List<String> samples, FileManager fileManager,
                                                                         AlignmentStorageManager alignmentStorageManager, String token)
             throws ToolException {
         Map<String, AbstractMap.SimpleEntry<Double, Double>> sampleRatioMap = new HashMap<>();
@@ -56,8 +53,8 @@ public class KaryotypicSexComputation {
         }
 
         // Compute coverage for each chromosome for each BAM file
-        // FIX: get chromosomes from cellbase
-        List<Chromosome> chromosomes = null;
+        // TODO get chromosomes from cellbase
+        List<Chromosome> chromosomes = Collections.emptyList();
         for (String sample : sampleBamMap.keySet()) {
             int[] means = new int[]{0, 0, 0};
             for (Chromosome chrom : chromosomes) {
@@ -91,7 +88,7 @@ public class KaryotypicSexComputation {
                     throw new ToolException(e);
                 }
             }
-            means[0] /= 22;
+            means[0] /= 22.0;
             sampleRatioMap.put(sample, new AbstractMap.SimpleEntry<>(1.0d * means[1] / means[0], 1.0d * means[2] / means[0]));
         }
 
