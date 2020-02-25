@@ -344,6 +344,7 @@ public class TemplateManager {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId())
                 .append(ParamConstants.JOB_DEPENDS_ON, indexVcfJobIds);
         VariantStatsAnalysisParams data = new VariantStatsAnalysisParams();
+        data.setIndex(true);
         data.setAggregated(Aggregation.NONE);
         for (File file : study.getFiles()) {
             if (file.getName().endsWith(".properties")
