@@ -8,6 +8,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.variant.GeneticChecksAnalysisExecutor;
 import org.opencb.opencga.core.tools.variant.RelatednessAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -88,18 +89,21 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
     @Override
     protected void run() throws ToolException {
 
+        GeneticChecksAnalysisExecutor executor = getToolExecutor(GeneticChecksAnalysisExecutor.class);
+
+        executor.setStudy(study)
+                .setSamples(samples);
+
         step("sex", () -> {
+//            executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.SEX).execute();
         });
 
         step("relatedness", () -> {
-            RelatednessAnalysisExecutor relatednessExecutor = getToolExecutor(RelatednessAnalysisExecutor.class);
-
-            relatednessExecutor.setStudy(study)
-                    .setSamples(samples)
-                    .execute();
+//            executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.RELATEDNESS).execute();
         });
 
         step("mendelian-errors", () -> {
+            executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.MENDELIAN_ERRORS).execute();
         });
     }
 }
