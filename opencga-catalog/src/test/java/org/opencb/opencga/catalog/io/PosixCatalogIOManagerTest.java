@@ -97,13 +97,13 @@ public class PosixCatalogIOManagerTest {
     public void testHead() throws URISyntaxException, CatalogIOException {
         Path path =  Paths.get(this.getClass().getClassLoader().getResource("20130606_g1k.ped").toURI());
 
-        FileContent fileContent = posixCatalogIOManager.head(path, 0, 10);
-        FileContent fileContent2 = posixCatalogIOManager.content(path, 0, (int) fileContent.getOffset(), 0);
+        FileContent fileContent = posixCatalogIOManager.head(path, 10);
+        FileContent fileContent2 = posixCatalogIOManager.content(path, 0, 0);
 
         assertEquals(fileContent2.getContent(), fileContent.getContent());
         System.out.println(fileContent);
         System.out.println();
-        System.out.println(posixCatalogIOManager.tail(path, 0, 10).getContent());
+        System.out.println(posixCatalogIOManager.tail(path, 10).getContent());
     }
 
     @Test

@@ -14,7 +14,7 @@ public class LoginParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LoginParams{");
-        sb.append("password='").append(password).append('\'');
+        sb.append("password='").append("********").append('\'');
         sb.append('}');
         return sb.toString();
     }

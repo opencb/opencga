@@ -22,17 +22,21 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclUpdateParams;
 import org.opencb.opencga.core.models.individual.IndividualCreateParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.job.Job;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -66,11 +70,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of sample ids to be associated to the created individual") @QueryParam("samples")
                     String samples,
             @ApiParam(value = "JSON containing individual information", required = true) IndividualCreateParams params) {
-        try {
-            return createOkResponse(individualManager.create(studyStr, params.toIndividual(), getIdList(samples), queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> individualManager.create(studyStr, params.toIndividual(), getIdListOrEmpty(samples), queryOptions, token));
     }
 
     @GET
@@ -278,12 +278,37 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/annotationSets/load")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Load annotation sets from a TSV file", response = Job.class)
+    public Response loadTsvAnnotations(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION, required = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true)
+            @QueryParam("path") String path,
+            @ApiParam(value = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).")
+                @DefaultValue("false") @QueryParam("parents") boolean parents,
+            @ApiParam(value = "Annotation set id. If not provided, variableSetId will be used.") @QueryParam("annotationSetId") String annotationSetId,
+            @ApiParam(value = ParamConstants.TSV_ANNOTATION_DESCRIPTION) TsvAnnotationParams params) {
+        try {
+            ObjectMap additionalParams = new ObjectMap()
+                    .append("parents", parents)
+                    .append("annotationSetId", annotationSetId);
+
+            return createOkResponse(catalogManager.getIndividualManager().loadTsvAnnotations(studyStr, variableSetId, path, params,
+                    additionalParams, IndividualTsvAnnotationLoader.ID, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
     @Path("/{individual}/annotationSets/{annotationSet}/annotations/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update annotations from an annotationSet", response = Individual.class)
     public Response updateAnnotations(
             @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION, required = true) @PathParam("individual") String individualStr,
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE", defaultValue = "ADD")
                 @QueryParam("action") ParamUtils.CompleteUpdateAction action,

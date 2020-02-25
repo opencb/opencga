@@ -17,6 +17,7 @@
 package org.opencb.opencga.master.monitor.daemons;
 
 import com.google.common.base.CaseFormat;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.glassfish.jersey.client.ClientProperties;
@@ -30,18 +31,25 @@ import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationA
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.cohort.CohortIndexTask;
+import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;
+import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
 import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
 import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.file.FileIndexTask;
+import org.opencb.opencga.analysis.file.FileTsvAnnotationLoader;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
+import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
+import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -136,6 +144,22 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put("files-unlink", "files unlink");
             put(FileDeleteTask.ID, "files delete");
             put(FetchAndRegisterTask.ID, "files fetch");
+            put(FileIndexTask.ID, "files secondary-index");
+            put(FileTsvAnnotationLoader.ID, "files tsv-load");
+
+            put(SampleIndexTask.ID, "samples secondary-index");
+            put(SampleTsvAnnotationLoader.ID, "samples tsv-load");
+
+            put(IndividualIndexTask.ID, "individuals secondary-index");
+            put(IndividualTsvAnnotationLoader.ID, "individuals tsv-load");
+
+            put(CohortIndexTask.ID, "cohorts secondary-index");
+            put(CohortTsvAnnotationLoader.ID, "cohorts tsv-load");
+
+            put(FamilyIndexTask.ID, "families secondary-index");
+            put(FamilyTsvAnnotationLoader.ID, "families tsv-load");
+
+            put(JobIndexTask.ID, "jobs secondary-index");
 
             put("alignment-index", "alignment index");
             put("alignment-coverage-run", "alignment coverage-run");
@@ -170,19 +194,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(SampleVariantFilterAnalysis.ID, "variant sample-run");
             put(KnockoutAnalysis.ID, "variant knockout-run");
             put(SampleEligibilityAnalysis.ID, "variant " + SampleEligibilityAnalysis.ID + "-run");
-            put(MutationalSignatureAnalysis.ID, "variant mutational-signature-run");
+            put(MutationalSignatureAnalysis.ID, "variant " + MutationalSignatureAnalysis.ID + "-run");
+            put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");
+            put(GeneticChecksAnalysis.ID, "variant " + GeneticChecksAnalysis.ID + "-run");
 
             put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
             put(CustomInterpretationAnalysis.ID, "interpretation " + CustomInterpretationAnalysis.ID);
             put(CancerTieringInterpretationAnalysis.ID, "interpretation " + CancerTieringInterpretationAnalysis.ID);
-
-            put(FileIndexTask.ID, "files secondary-index");
-            put(SampleIndexTask.ID, "samples secondary-index");
-            put(IndividualIndexTask.ID, "individuals secondary-index");
-            put(CohortIndexTask.ID, "cohorts secondary-index");
-            put(FamilyIndexTask.ID, "families secondary-index");
-            put(JobIndexTask.ID, "jobs secondary-index");
         }};
     }
 
@@ -408,7 +427,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
 
-        if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
+        if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
             // The job(s) it depended on finished successfully. Check if the input files are correct.
             // Look for input files
             String fileParamSuffix = "file";
@@ -660,11 +679,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private boolean canBeQueued(Job job) {
-        if ("variant-index".equals(job.getTool().getId())) {
-            int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
-            return canBeQueued("variant-index", maxIndexJobs);
-        }
-
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
             for (Job tmpJob : job.getDependsOn()) {
                 if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getInternal().getStatus().getName())) {
@@ -677,7 +691,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
         }
 
-        return true;
+        switch (job.getTool().getId()) {
+            case "variant-index":
+                int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
+                return canBeQueued("variant-index", maxIndexJobs);
+            default:
+                return true;
+        }
     }
 
     private boolean canBeQueued(String toolId, int maxJobs) {

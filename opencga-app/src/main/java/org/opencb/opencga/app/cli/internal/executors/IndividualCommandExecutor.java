@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
+import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.app.cli.internal.options.IndividualCommandOptions;
 import org.opencb.opencga.core.exceptions.ToolException;
 
@@ -27,6 +28,9 @@ public class IndividualCommandExecutor extends InternalCommandExecutor {
             case "secondary-index":
                 secondaryIndex();
                 break;
+            case "tsv-load":
+                tsvLoad();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -44,6 +48,22 @@ public class IndividualCommandExecutor extends InternalCommandExecutor {
         IndividualIndexTask indexTask = new IndividualIndexTask();
         indexTask.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
         indexTask.start();
+    }
+
+    private void tsvLoad() throws ToolException {
+        IndividualCommandOptions.TsvLoad options = individualCommandOptions.tsvLoad;
+
+        Path outDir = Paths.get(options.outDir);
+        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
+
+        IndividualTsvAnnotationLoader annotationLoader = new IndividualTsvAnnotationLoader();
+        annotationLoader.setAnnotationSetId(options.annotationSetId);
+        annotationLoader.setVariableSetId(options.variableSetId);
+        annotationLoader.setPath(options.filePath);
+        annotationLoader.setStudy(options.studyId);
+
+        annotationLoader.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
+        annotationLoader.start();
     }
 
 }

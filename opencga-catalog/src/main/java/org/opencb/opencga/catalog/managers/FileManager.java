@@ -2263,7 +2263,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<FileContent> head(String studyStr, String fileId, int bytes, int numLines, String token) throws CatalogException {
+    public OpenCGAResult<FileContent> head(String studyStr, String fileId, int lines, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -2272,15 +2272,14 @@ public class FileManager extends AnnotationSetManager<File> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("fileId", fileId)
-                .append("bytes", bytes)
-                .append("numLines", numLines)
+                .append("lines", lines)
                 .append("token", token);
         File file;
         try {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
             authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
             URI fileUri = getUri(file);
-            FileContent fileContent = catalogIOManagerFactory.get(fileUri).head(Paths.get(fileUri), bytes, numLines);
+            FileContent fileContent = catalogIOManagerFactory.get(fileUri).head(Paths.get(fileUri), lines);
             auditManager.audit(userId, Enums.Action.HEAD_CONTENT, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -2293,7 +2292,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<FileContent> tail(String studyStr, String fileId, int bytes, int numLines, String token) throws CatalogException {
+    public OpenCGAResult<FileContent> tail(String studyStr, String fileId, int lines, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -2302,15 +2301,14 @@ public class FileManager extends AnnotationSetManager<File> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("fileId", fileId)
-                .append("bytes", bytes)
-                .append("numLines", numLines)
+                .append("lines", lines)
                 .append("token", token);
         File file;
         try {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
             authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
             URI fileUri = getUri(file);
-            FileContent fileContent = catalogIOManagerFactory.get(fileUri).tail(Paths.get(fileUri), bytes, numLines);
+            FileContent fileContent = catalogIOManagerFactory.get(fileUri).tail(Paths.get(fileUri), lines);
             auditManager.audit(userId, Enums.Action.TAIL_CONTENT, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -2323,7 +2321,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<FileContent> content(String studyStr, String fileId, long offset, int bytes, int numLines, String token)
+    public OpenCGAResult<FileContent> content(String studyStr, String fileId, long offset, int lines, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
@@ -2334,15 +2332,14 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("study", studyStr)
                 .append("fileId", fileId)
                 .append("offset", offset)
-                .append("bytes", bytes)
-                .append("numLines", numLines)
+                .append("lines", lines)
                 .append("token", token);
         File file;
         try {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
             authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
             URI fileUri = getUri(file);
-            FileContent fileContent = catalogIOManagerFactory.get(fileUri).content(Paths.get(fileUri), offset, bytes, numLines);
+            FileContent fileContent = catalogIOManagerFactory.get(fileUri).content(Paths.get(fileUri), offset, lines);
             auditManager.audit(userId, Enums.Action.VIEW_CONTENT, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
