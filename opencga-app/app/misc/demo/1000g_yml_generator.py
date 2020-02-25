@@ -24,6 +24,7 @@ def to_camel_case(text):
     components = text.lower().replace('_', ' ').split(' ')
     return components[0].lower() + ''.join(x.title() for x in components[1:])
 
+
 def create_variable_sets(header):
     text = []
     text.append('variableSets:')
@@ -39,6 +40,7 @@ def create_variable_sets(header):
         text.append('{}name: {}'.format(' '*8, to_camel_case(field)))
         text.append('{}type: STRING'.format(' '*8))
     return '\n'.join(text)
+
 
 def create_individuals(ind_info):
     text = []
@@ -70,6 +72,7 @@ def create_individuals(ind_info):
         text.append('{}- id: {}'.format(' '*6, ind['Individual ID']))
     return '\n'.join(text)
 
+
 def create_samples(ind_info):
     text = []
     text.append('samples:')
@@ -78,11 +81,18 @@ def create_samples(ind_info):
         text.append('{}individualId: {}'.format(' '*4, ind['Individual ID']))
     return '\n'.join(text)
 
+
 def create_families(ind_info):
     families = {}
     for ind in ind_info:
         if ind['Family ID'] != ind['Individual ID']:
             families.setdefault(ind['Family ID'], []).append(ind['Individual ID'])
+            for member in [ind['Individual ID'], ind['Paternal ID'], ind['Maternal ID']]:
+                if member != '0':
+                    families[ind['Family ID']].append(member)
+
+    for family in families:
+        families[family] = list(set(families[family]))
 
     text = []
     text.append('families:')
@@ -94,13 +104,15 @@ def create_families(ind_info):
             text.append('{}- id: {}'.format(' '*6, member))
     return '\n'.join(text)
 
+
 def create_files():
     text = []
     text.append('files:')
     for chrom in list(range(1, 23)) + ['X', 'Y', 'MT']:
-        text.append('{}- id: {}'.format(' '*2, FNAME_TEMPLATE.format(chrom)))
+        text.append('{}- name: {}'.format(' '*2, FNAME_TEMPLATE.format(chrom)))
         text.append('{}path: {}'.format(' '*4, 'data'))
     return '\n'.join(text)
+
 
 def _setup_argparse():
     desc = 'This script creates automatically all Python RestClients files'
@@ -113,6 +125,7 @@ def _setup_argparse():
     parser.add_argument('outfile', help='Output file path')
     args = parser.parse_args()
     return args
+
 
 def main():
 
