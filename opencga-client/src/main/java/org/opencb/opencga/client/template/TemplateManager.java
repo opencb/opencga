@@ -49,6 +49,8 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
+import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.VariableSetCreateParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.response.RestResponse;
@@ -91,9 +93,7 @@ public class TemplateManager {
                 // NOTE: Do not change the order of the following resource creation.
                 createStudy(project, study);
                 if (CollectionUtils.isNotEmpty(study.getVariableSets())) {
-                    // TODO
-                    //  createVariableSets(study);
-                    logger.warn("Variable sets not created!");
+                    createVariableSets(study);
                 }
                 if (CollectionUtils.isNotEmpty(study.getIndividuals())) {
                     createIndividuals(study);
@@ -127,6 +127,7 @@ public class TemplateManager {
             }
         }
     }
+
 
     public void validate(TemplateConfiguration template) throws ClientException {
         // Check version
@@ -192,6 +193,15 @@ public class TemplateManager {
             study.setType(Study.Type.COLLECTION);
         }
         openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
+    }
+
+    private void createVariableSets(Study study) throws ClientException {
+        logger.info("Creating {} variable sets from study {}", study.getVariableSets().size(), study.getId());
+        for (VariableSet variableSet : study.getVariableSets()) {
+            VariableSetCreateParams data = VariableSetCreateParams.of(variableSet);
+            ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
+            openCGAClient.getStudyClient().updateVariableSets(study.getId(), data, params);
+        }
     }
 
     private void createIndividuals(Study study) throws ClientException {
