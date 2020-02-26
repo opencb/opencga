@@ -45,6 +45,10 @@ public class VariantFileIndexConverter {
     public static final int TYPE_OTHER_CODE = 7;
 
 
+    public VariantFileIndex toVariantFileIndex(int sampleIdx, Variant variant) {
+        return new VariantFileIndex(variant, createFileIndexValue(sampleIdx, variant));
+    }
+
     public byte createFileIndexValue(int sampleIdx, Variant variant) {
         // Expecting only one study and only one file
         StudyEntry study = variant.getStudies().get(0);

@@ -40,6 +40,7 @@ public class TemplateConfiguration {
 
 
     public static TemplateConfiguration load(Path mainConfigurationPath) throws IOException {
+        mainConfigurationPath = mainConfigurationPath.toAbsolutePath();
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         TemplateConfiguration templateConfiguration;
         try {

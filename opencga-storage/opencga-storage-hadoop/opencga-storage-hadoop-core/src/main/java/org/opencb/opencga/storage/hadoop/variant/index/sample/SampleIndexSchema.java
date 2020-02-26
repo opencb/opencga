@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
@@ -134,6 +135,11 @@ public final class SampleIndexSchema {
 
     public static int batchStartFromRowKey(byte[] row) {
         return ((Integer) PInteger.INSTANCE.toObject(row, row.length - 4, 4)) * BATCH_SIZE;
+    }
+
+    public static boolean isGenotypeColumn(Cell cell) {
+        byte b = cell.getQualifierArray()[cell.getQualifierOffset()];
+        return b != META_PREFIX && !CellUtil.matchingQualifier(cell, MENDELIAN_ERROR_COLUMN_BYTES);
     }
 
     public static byte[] toGenotypeColumn(String genotype) {

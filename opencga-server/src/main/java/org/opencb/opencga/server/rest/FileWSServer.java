@@ -298,7 +298,7 @@ public class FileWSServer extends OpenCGAWSServer {
                         new FileUtils(catalogManager).upload(completedFilePath.toUri(), queryResult1.first(), null, token, false, false, true, true, Long.MAX_VALUE);
                         DataResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getUid(), null, token);
                         File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
-                                new QueryOptions(queryOptions), token, false);
+                                null, new QueryOptions(queryOptions), token, false);
                         queryResult.setResults(Collections.singletonList(file));
                         return createOkResponse(queryResult);
                     } catch (Exception e) {
@@ -746,29 +746,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
             @ApiParam(name = "params", value = "File parameters", required = true) FileLinkParams params) {
         try {
-            if (StringUtils.isEmpty(params.getUri())) {
-                throw new CatalogException("Missing mandatory field 'uri'");
-            }
-
-            logger.debug("study: {}", studyStr);
-            logger.debug("uri: {}", params.getUri());
-            logger.debug("params: {}", params);
-
-            // TODO: We should stop doing this at some point. As the parameters are now passed through the body, users can already pass "/" characters
-            if (params.getPath() == null) {
-                params.setPath("");
-            }
-            params.setPath(params.getPath().replace(":", "/"));
-
-            ObjectMap objectMap = new ObjectMap("parents", parents);
-            objectMap.putIfNotEmpty("description", params.getDescription());
-            objectMap.putIfNotNull("relatedFiles", params.getRelatedFiles());
-
-            List<OpenCGAResult<File>> queryResultList = new ArrayList<>();
-            URI myUri = UriUtils.createUri(params.getUri());
-            queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, params.getPath(), objectMap, token));
-
-            return createOkResponse(queryResultList);
+            return createOkResponse(catalogManager.getFileManager().link(studyStr, params, parents, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -918,7 +896,7 @@ public class FileWSServer extends OpenCGAWSServer {
             FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
             if (file.getType() == File.Type.FILE) {
                 File file1 = catalogFileUtils.checkFile(studyStr, file, false, token);
-                file1 = fileMetadataReader.setMetadataInformation(file1, null, new QueryOptions(queryOptions), token, false);
+                file1 = fileMetadataReader.setMetadataInformation(file1, null, null, new QueryOptions(queryOptions), token, false);
                 if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
                     files = Collections.emptyList();
                 } else {
@@ -928,7 +906,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 List<File> result = catalogManager.getFileManager().getFilesFromFolder(fileIdStr, studyStr, null, token).getResults();
                 files = new ArrayList<>(result.size());
                 for (File f : result) {
-                    File file1 = fileMetadataReader.setMetadataInformation(f, null, new QueryOptions(queryOptions), token, false);
+                    File file1 = fileMetadataReader.setMetadataInformation(f, null, null, new QueryOptions(queryOptions), token, false);
                     if (f != file1) {    //Add only modified files.
                         files.add(file1);
                     }

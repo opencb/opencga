@@ -4,8 +4,10 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Model representing an entry (row) of the SampleIndex.
@@ -106,6 +108,15 @@ public class SampleIndexEntry {
         return new MendelianErrorSampleIndexEntryIterator(this);
     }
 
+    public int getSampleId() {
+        return sampleId;
+    }
+
+    public SampleIndexEntry setSampleId(int sampleId) {
+        this.sampleId = sampleId;
+        return this;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this)
@@ -115,13 +126,29 @@ public class SampleIndexEntry {
                 .toString();
     }
 
-    public int getSampleId() {
-        return sampleId;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SampleIndexEntry that = (SampleIndexEntry) o;
+        return sampleId == that.sampleId
+                && batchStart == that.batchStart
+                && Objects.equals(chromosome, that.chromosome)
+                && Objects.equals(gts, that.gts)
+                && Bytes.equals(mendelianVariantsValue, mendelianVariantsOffset, mendelianVariantsLength,
+                that.mendelianVariantsValue, that.mendelianVariantsOffset, that.mendelianVariantsLength)
+                && Objects.equals(configuration, that.configuration);
     }
 
-    public SampleIndexEntry setSampleId(int sampleId) {
-        this.sampleId = sampleId;
-        return this;
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(sampleId, chromosome, batchStart, gts, mendelianVariantsLength, mendelianVariantsOffset, configuration);
+        result = 31 * result + Arrays.hashCode(mendelianVariantsValue);
+        return result;
     }
 
     public class SampleIndexGtEntry {
@@ -404,14 +431,53 @@ public class SampleIndexEntry {
 
         @Override
         public String toString() {
-            return new ToStringBuilder(this)
-                    .append("gt", gt)
-                    .append("variants", variants)
-                    .append("fileIndex", fileIndex)
-                    .append("annotationIndex", annotationIndex)
-                    .append("annotationCounts", annotationCounts)
-                    .append("parentsIndex", parentsIndex)
-                    .toString();
+            final StringBuilder sb = new StringBuilder("SampleIndexGtEntry{");
+            sb.append("gt='").append(gt).append('\'');
+            sb.append(", count=").append(count);
+            sb.append(", variants=").append(variants == null ? "null" : Bytes.toStringBinary(variants, variantsOffset, variantsLength));
+            sb.append(", fileIndex=").append(fileIndex == null ? "null" : Bytes.toStringBinary(fileIndex, fileIndexOffset, fileIndexLength));
+            sb.append(", annotationIndex=").append(annotationIndex == null ? "null" : Bytes.toStringBinary(annotationIndex, annotationIndexOffset, annotationIndexLength));
+            sb.append(", annotationCounts=").append(Arrays.toString(annotationCounts));
+            sb.append(", consequenceTypeIndex=").append(consequenceTypeIndex == null ? "null" : Bytes.toStringBinary(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength));
+            sb.append(", biotypeIndex=").append(biotypeIndex == null ? "null" : Bytes.toStringBinary(biotypeIndex, biotypeIndexOffset, biotypeIndexLength));
+            sb.append(", ctBtIndex=").append(ctBtIndex == null ? "null" : Bytes.toStringBinary(ctBtIndex, ctBtIndexOffset, ctBtIndexLength));
+            sb.append(", populationFrequencyIndex=").append(populationFrequencyIndex == null ? "null" : Bytes.toStringBinary(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength));
+            sb.append(", clinicalIndex=").append(clinicalIndex == null ? "null" : Bytes.toStringBinary(clinicalIndex, clinicalIndexOffset, clinicalIndexLength));
+            sb.append(", parentsIndex=").append(parentsIndex == null ? "null" : Bytes.toStringBinary(parentsIndex, parentsIndexOffset, parentsIndexLength));
+            sb.append('}');
+            return sb.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            SampleIndexGtEntry that = (SampleIndexGtEntry) o;
+            return count == that.count
+                    && Objects.equals(gt, that.gt)
+                    && Arrays.equals(annotationCounts, that.annotationCounts)
+                    && Bytes.equals(fileIndex, fileIndexOffset, that.fileIndexLength,
+                        that.fileIndex, that.fileIndexOffset, that.fileIndexLength)
+                    && Bytes.equals(variants, variantsOffset, that.variantsLength,
+                        that.variants, that.variantsOffset, that.variantsLength)
+                    && Bytes.equals(annotationIndex, annotationIndexOffset, that.annotationIndexLength,
+                        that.annotationIndex, that.annotationIndexOffset, that.annotationIndexLength)
+                    && Bytes.equals(consequenceTypeIndex, consequenceTypeIndexOffset, that.consequenceTypeIndexLength,
+                        that.consequenceTypeIndex, that.consequenceTypeIndexOffset, that.consequenceTypeIndexLength)
+                    && Bytes.equals(biotypeIndex, biotypeIndexOffset, that.biotypeIndexLength,
+                        that.biotypeIndex, that.biotypeIndexOffset, that.biotypeIndexLength)
+                    && Bytes.equals(ctBtIndex, ctBtIndexOffset, that.ctBtIndexLength,
+                        that.ctBtIndex, that.ctBtIndexOffset, that.ctBtIndexLength)
+                    && Bytes.equals(populationFrequencyIndex, populationFrequencyIndexOffset, that.populationFrequencyIndexLength,
+                        that.populationFrequencyIndex, that.populationFrequencyIndexOffset, that.populationFrequencyIndexLength)
+                    && Bytes.equals(clinicalIndex, clinicalIndexOffset, that.clinicalIndexLength,
+                        that.clinicalIndex, that.clinicalIndexOffset, that.clinicalIndexLength)
+                    && Bytes.equals(parentsIndex, parentsIndexOffset, that.parentsIndexLength,
+                        that.parentsIndex, that.parentsIndexOffset, that.parentsIndexLength);
         }
     }
 }

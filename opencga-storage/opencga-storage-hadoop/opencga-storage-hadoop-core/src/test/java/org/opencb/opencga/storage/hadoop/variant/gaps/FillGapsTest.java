@@ -417,7 +417,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
     }
 
     protected void checkSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor) throws IOException {
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getGenomeHelper(), dbAdaptor.getHBaseManager(),
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
 
         for (String study : metadataManager.getStudies(null).keySet()) {

@@ -996,7 +996,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     sampleIdsList.sort(Integer::compareTo);
 
                     List<Integer> oldSamples = cohort.getSamples();
-                    List<Integer> oldFiles = cohort.getFiles();
+                    List<Integer> oldFiles = cohort.getFiles() == null ? Collections.emptyList() : cohort.getFiles();
                     oldSamples.sort(Integer::compareTo);
                     final List<Integer> newSamples;
                     final List<Integer> newFiles;
