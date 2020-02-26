@@ -805,7 +805,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             synchronized (this.sampleIndexDBAdaptor) {
                 sampleIndexDBAdaptor = this.sampleIndexDBAdaptor.get();
                 if (sampleIndexDBAdaptor == null) {
-                    sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getGenomeHelper(), dbAdaptor.getHBaseManager(),
+                    sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
                             dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
                     this.sampleIndexDBAdaptor.set(sampleIndexDBAdaptor);
                 }

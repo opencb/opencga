@@ -208,7 +208,6 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     protected void updateSampleIndexAnnotation(ObjectMap params) throws IOException, StorageEngineException {
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         SampleIndexAnnotationLoader indexAnnotationLoader = new SampleIndexAnnotationLoader(
-                dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(),
                 metadataManager, mrExecutor);
