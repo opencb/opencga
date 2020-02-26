@@ -281,7 +281,7 @@ public class TemplateManager {
                     FileCreateParams createFolder = new FileCreateParams(file.getPath(), null, null, true, true);
                     openCGAClient.getFileClient().create(createFolder, params);
                 }
-                FileLinkParams data = new FileLinkParams(file.getUri().toString(), file.getPath(), null, Collections.emptyList());
+                FileLinkParams data = new FileLinkParams(file.getUri().toString(), file.getPath(), null, Collections.emptyList(), null);
                 openCGAClient.getFileClient().link(data, params);
                 jobDependsOn = Collections.emptyList();
             }

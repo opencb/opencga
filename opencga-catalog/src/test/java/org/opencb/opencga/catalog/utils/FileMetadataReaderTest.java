@@ -140,7 +140,7 @@ public class FileMetadataReaderTest {
         outputStream.close();
 
         file = FileMetadataReader.get(catalogManager).
-                setMetadataInformation(file, null, null, sessionIdUser, false);
+                setMetadataInformation(file, null, null, null, sessionIdUser, false);
 
         assertEquals(1000 + bytes2.length, file.getSize());
         assertTrue(TimeUtils.toDate(modificationDate).getTime() < TimeUtils.toDate(file.getModificationDate()).getTime());
@@ -158,7 +158,7 @@ public class FileMetadataReaderTest {
         assertTrue(file.getSize() > 0);
 
         file = FileMetadataReader.get(catalogManager).
-                setMetadataInformation(file, null, null, sessionIdUser, false);
+                setMetadataInformation(file, null, null, null, sessionIdUser, false);
 
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
@@ -239,7 +239,7 @@ public class FileMetadataReaderTest {
         assertTrue(file.getSize() > 0);
 
         file = FileMetadataReader.get(catalogManager).
-                setMetadataInformation(file, null, null, sessionIdUser, false);
+                setMetadataInformation(file, null, null, null, sessionIdUser, false);
 
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
 //        assertEquals(File.Format.GZIP, file.getFormat());

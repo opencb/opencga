@@ -104,7 +104,7 @@ public class FileMetadataReader {
         File modifiedFile = null;
 
         try {
-            modifiedFile = setMetadataInformation(fileResult.first(), fileUri, options, sessionId, false);
+            modifiedFile = setMetadataInformation(fileResult.first(), fileUri, null, options, sessionId, false);
         } catch (CatalogException e) {
             logger.error("Fail at getting the metadata information", e);
         }
@@ -179,13 +179,15 @@ public class FileMetadataReader {
      *
      * @param file          File from which read metadata
      * @param fileUri       File location. If null, ask to Catalog.
+     * @param sampleIdMap   Map of sample ids (as read from the BAM or VCF file) to the actual sample id it should point to.
      * @param options       Other options
      * @param sessionId     User sessionId
      * @param simulate      Simulate the metadata modifications.
      * @return              If there are no modifications, return the same input file. Else, return the updated file
      * @throws CatalogException if a Catalog error occurs
      */
-    public File setMetadataInformation(final File file, URI fileUri, QueryOptions options, String sessionId, boolean simulate)
+    public File setMetadataInformation(final File file, URI fileUri, Map<String, String> sampleIdMap, QueryOptions options,
+                                       String sessionId, boolean simulate)
             throws CatalogException {
         Study study = catalogManager.getFileManager().getStudy(file, sessionId);
         if (fileUri == null) {
@@ -258,7 +260,8 @@ public class FileMetadataReader {
         }
 //        start = System.currentTimeMillis();
         /*List<Sample> fileSamples = */
-        getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
+        getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, sampleIdMap, options,
+                sessionId);
 //        logger.trace("FileSamples = " + (System.currentTimeMillis() - start) / 1000.0);
 
 //        start = System.currentTimeMillis();
@@ -333,13 +336,14 @@ public class FileMetadataReader {
      * @param fileModifyParams      ModifyParams to add sampleIds and other related information (like header).
      * @param createMissingSamples  Create samples from the file that where missing.
      * @param simulate              Simulate the creation of samples.
+     * @param sampleIdMap           Map of sample ids (as read from the BAM or VCF file) to the actual sample id it should point to.
      * @param options               Options
      * @param sessionId             User sessionId
      * @return                      List of samples in the given file
      * @throws CatalogException if a Catalog error occurs
      */
-    public List<Sample> getFileSamples(Study study, File file, URI fileUri, final ObjectMap fileModifyParams,
-                                       boolean createMissingSamples, boolean simulate, QueryOptions options, String sessionId)
+    public List<Sample> getFileSamples(Study study, File file, URI fileUri, final ObjectMap fileModifyParams, boolean createMissingSamples,
+                                       boolean simulate, Map<String, String> sampleIdMap, QueryOptions options, String sessionId)
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -446,20 +450,28 @@ public class FileMetadataReader {
                         set);
                 if (createMissingSamples) {
                     for (String sampleName : set) {
+                        String sampleId = sampleName;
+                        if (sampleIdMap != null && !sampleIdMap.isEmpty()) {
+                            if (!sampleIdMap.containsKey(sampleName)) {
+                                throw new CatalogException("Sample '" + sampleName + "' not found in sample map");
+                            }
+                            sampleId = sampleIdMap.get(sampleId);
+                        }
+
                         if (simulate) {
-                            sampleList.add(new Sample(sampleName, file.getName(), null, null, 1));
+                            sampleList.add(new Sample(sampleId, file.getName(), null, null, 1));
                         } else {
                             try {
-                                sampleList.add(catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(sampleName)
+                                sampleList.add(catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(sampleId)
                                         .setSource(file.getName()), null, sessionId).first());
                             } catch (CatalogException e) {
-                                Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleName);
+                                Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
                                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, includeSampleNameId);
                                 if (catalogManager.getSampleManager().search(study.getFqn(), query, queryOptions, sessionId).getResults()
                                         .isEmpty()) {
                                     throw e; //Throw exception if sample does not exist.
                                 } else {
-                                    logger.debug("Do not create the sample \"" + sampleName + "\". It has magically appeared");
+                                    logger.debug("Do not create the sample \"" + sampleId + "\". It has magically appeared");
                                 }
                             }
                         }
@@ -474,7 +486,11 @@ public class FileMetadataReader {
             Map<String, Sample> sampleMap = sampleList.stream().collect(Collectors.toMap(Sample::getId, Function.identity()));
             sampleList = new ArrayList<>(sampleList.size());
             for (String sampleName : sortedSampleNames) {
-                sampleList.add(sampleMap.get(sampleName));
+                if (sampleIdMap != null && sampleIdMap.containsKey(sampleName)) {
+                    sampleList.add(sampleMap.get(sampleIdMap.get(sampleName)));
+                } else {
+                    sampleList.add(sampleMap.get(sampleName));
+                }
             }
 
         } else {

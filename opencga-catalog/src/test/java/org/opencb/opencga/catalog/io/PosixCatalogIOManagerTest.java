@@ -98,7 +98,7 @@ public class PosixCatalogIOManagerTest {
         Path path =  Paths.get(this.getClass().getClassLoader().getResource("20130606_g1k.ped").toURI());
 
         FileContent fileContent = posixCatalogIOManager.head(path, 10);
-        FileContent fileContent2 = posixCatalogIOManager.content(path, 0, 0);
+        FileContent fileContent2 = posixCatalogIOManager.content(path, 0, 10);
 
         assertEquals(fileContent2.getContent(), fileContent.getContent());
         System.out.println(fileContent);
