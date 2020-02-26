@@ -14,23 +14,27 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
 
     @Override
     public void run() throws ToolException {
-        VariantStorageManager variantStorageManager = getVariantStorageManager();
-
         switch (getGeneticCheck()) {
-            case SEX:
+            case SEX: {
+                // Compute karyotypic sex
                 AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
                 FileManager fileManager = alignmentStorageManager.getCatalogManager().getFileManager();
                 KaryotypicSexComputation.compute(getStudy(), getSamples(), fileManager, alignmentStorageManager, getToken());
                 break;
-            case RELATEDNESS:
+            }
+            case RELATEDNESS: {
                 // Run IBD/IBS computation using PLINK in docker
-                IBDComputation.compute(getStudy(), getSamples(), getOutDir(), variantStorageManager, getToken());
+                IBDComputation.compute(getStudy(), getSamples(), getOutDir(), getVariantStorageManager(), getToken());
                 break;
-            case MENDELIAN_ERRORS:
-                MendelianInconsistenciesComputation.compute(getStudy(), getSamples(), getOutDir(), variantStorageManager, getToken());
+            }
+            case MENDELIAN_ERRORS: {
+                // Compute mendelian inconsitencies
+                MendelianInconsistenciesComputation.compute(getStudy(), getSamples(), getOutDir(), getVariantStorageManager(), getToken());
                 break;
-            default:
+            }
+            default: {
                 throw new ToolException("Unknown genetic check: " + getGeneticCheck());
+            }
         }
     }
 }
