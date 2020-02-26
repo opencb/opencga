@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -211,14 +212,11 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         return create(studyId, uri, "data/vcfs/");
     }
 
-    protected File create(String studyId, URI uri, String path) throws IOException, CatalogException {
-        File file;
-        file = fileMetadataReader.create(studyId, uri, path, "", true, null, sessionId).first();
-//        File.Format format = FormatDetector.detect(uri);
-//        File.Bioformat bioformat = BioformatDetector.detect(uri);
-//        file = catalogManager.createFile(studyId, format, bioformat, "data/vcfs/", "", true, -1, sessionId).first();
-        catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
-        return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
+    protected File create(String studyId, URI uri, String path) throws CatalogException {
+        FileLinkParams params = new FileLinkParams()
+                .setUri(uri.toString())
+                .setPath(path);
+        return catalogManager.getFileManager().link(studyId, params, true, sessionId).first();
     }
 
     protected Cohort getDefaultCohort(String studyId) throws CatalogException {
