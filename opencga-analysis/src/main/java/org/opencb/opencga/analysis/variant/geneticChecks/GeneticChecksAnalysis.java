@@ -95,11 +95,11 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
                 .setSamples(samples);
 
         step("sex", () -> {
-//            executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.SEX).execute();
+            executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.SEX).execute();
         });
 
         step("relatedness", () -> {
-//            executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.RELATEDNESS).execute();
+            executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.RELATEDNESS).execute();
         });
 
         step("mendelian-errors", () -> {

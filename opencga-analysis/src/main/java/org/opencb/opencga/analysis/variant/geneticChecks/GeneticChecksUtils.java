@@ -16,6 +16,7 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.TPED;
 
@@ -26,13 +27,17 @@ public class GeneticChecksUtils {
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDir.toAbsolutePath().toString(),
                 "/data/output");
 
-        // Apply filter and export variants in format .tped and .tfam to run plink
+        // Apply filter: biallelic variants
         Query query = new Query()
                 .append(VariantQueryParam.STUDY.key(), study)
-                .append(VariantQueryParam.SAMPLE.key(), samples)
                 .append(VariantQueryParam.TYPE.key(), "SNV");
+
+        String gt = samples.stream().map(s -> s + ":0/0,0/1,1/1").collect(Collectors.joining(";"));
+        query.put(VariantQueryParam.GENOTYPE.key(), gt);
+
         //.append(VariantQueryParam.FILTER.key(), "PASS")
 
+        // Export variants in format .tped and .tfam to run PLINK
         // First, autosomal chromosomes
         File tpedAutosomeFile = outDir.resolve(basename + ".tped").toFile();
         File tfamAutosomeFile = outDir.resolve(basename + ".tfam").toFile();
