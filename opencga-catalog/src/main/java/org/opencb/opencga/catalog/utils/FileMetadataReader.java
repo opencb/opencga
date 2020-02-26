@@ -171,6 +171,7 @@ public class FileMetadataReader {
      * @param bioformat             File bioformat.
      * @param attributes            File attributes.
      * @param sampleMap             Map of id found in VCF or BAM files to sample ids.
+     * @throws CatalogException     CatalogException.
      * @return                      List of samples in the given file
      */
     public List<String> getFileSamples(File.Bioformat bioformat, Map<String, Object> attributes, Map<String, String> sampleMap)
