@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.VariantFileIndex;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,8 +55,9 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     private static Logger logger = LoggerFactory.getLogger(SampleIndexDBAdaptor.class);
     private SampleIndexQueryParser parser;
     private final SampleIndexConfiguration configuration;
+    private final HBaseToSampleIndexConverter converter;
 
-    public SampleIndexDBAdaptor(GenomeHelper helper, HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
+    public SampleIndexDBAdaptor(HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
                                 VariantStorageMetadataManager metadataManager) {
         this.hBaseManager = hBaseManager;
         this.tableNameGenerator = tableNameGenerator;
@@ -64,6 +66,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         // TODO: Read configuration from metadata manager
         configuration = SampleIndexConfiguration.defaultConfiguration();
         parser = new SampleIndexQueryParser(metadataManager, configuration);
+        converter = new HBaseToSampleIndexConverter(configuration);
     }
 
     public static TaskMetadata.Status getSampleIndexStatus(SampleMetadata sampleMetadata) {
@@ -172,22 +175,24 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         }
     }
 
-    protected Map<String, List<Variant>> queryByGt(int study, int sample, String chromosome, int position) throws IOException {
-        String tableName = tableNameGenerator.getSampleIndexTableName(study);
+    protected Map<String, List<Variant>> queryByGt(int study, int sample, String chromosome, int position)
+            throws IOException {
+        Result result = queryByGeneNative(study, sample, chromosome, position);
+        return converter.convertToMap(result);
+    }
 
+    protected Map<String, SortedSet<VariantFileIndex>> queryByGtWithFile(int study, int sample, String chromosome, int position)
+            throws IOException {
+        Result result = queryByGeneNative(study, sample, chromosome, position);
+        return converter.convertToMapVariantFileIndex(result);
+    }
+
+    private Result queryByGeneNative(int study, int sample, String chromosome, int position) throws IOException {
+        String tableName = tableNameGenerator.getSampleIndexTableName(study);
         return hBaseManager.act(tableName, table -> {
             Get get = new Get(SampleIndexSchema.toRowKey(sample, chromosome, position));
-            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(configuration);
-            try {
-                Result result = table.get(get);
-                if (result != null) {
-                    return converter.convertToMap(result);
-                } else {
-                    return Collections.emptyMap();
-                }
-            } catch (IOException e) {
-                throw VariantQueryException.internalException(e);
-            }
+            get.addFamily(family);
+            return table.get(get);
         });
     }
 
@@ -213,17 +218,12 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         String tableName = tableNameGenerator.getSampleIndexTableName(study);
 
         return hBaseManager.act(tableName, table -> {
-
             Scan scan = new Scan();
             scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
             HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(configuration);
-            try {
-                ResultScanner scanner = table.getScanner(scan);
-                Iterator<Result> resultIterator = scanner.iterator();
-                return Iterators.transform(resultIterator, converter::convert);
-            } catch (IOException e) {
-                throw VariantQueryException.internalException(e);
-            }
+            ResultScanner scanner = table.getScanner(scan);
+            Iterator<Result> resultIterator = scanner.iterator();
+            return Iterators.transform(resultIterator, converter::convert);
         });
     }
 
@@ -329,7 +329,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         return studyId;
     }
 
-    protected List<String> getAllLoadedGenotypes(String study) {
+    protected List<String> getAllLoadedGenotypes(int study) {
         List<String> allGts = metadataManager.getStudyMetadata(study)
                 .getAttributes()
                 .getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());

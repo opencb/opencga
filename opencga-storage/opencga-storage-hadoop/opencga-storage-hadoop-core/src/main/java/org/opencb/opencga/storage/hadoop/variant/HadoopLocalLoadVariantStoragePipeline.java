@@ -60,6 +60,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOAD_SPLIT_DATA;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.STDIN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
@@ -213,10 +214,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         if (sampleIds.isEmpty()) {
             sampleIndexDBLoader = null;
         } else {
-            sampleIndexDBLoader = new SampleIndexDBLoader(dbAdaptor.getHBaseManager(),
-                    dbAdaptor.getTableNameGenerator().getSampleIndexTableName(helper.getStudyId()), sampleIds,
-                    GenomeHelper.COLUMN_FAMILY_BYTES,
-                    getOptions());
+            sampleIndexDBLoader = buildSampleIndexDBLoader(helper, sampleIds);
         }
 
 //        ((TaskMetadata<VcfSlice, VcfSlice>) t -> t)
@@ -272,6 +270,19 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         }
     }
 
+    private SampleIndexDBLoader buildSampleIndexDBLoader(ArchiveTableHelper helper, List<Integer> sampleIds) throws StorageEngineException {
+        SampleIndexDBLoader sampleIndexDBLoader;
+        SampleIndexDBAdaptor sampleIndexDbAdaptor = new SampleIndexDBAdaptor(
+                dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), getMetadataManager());
+        sampleIndexDBLoader = new SampleIndexDBLoader(sampleIndexDbAdaptor, dbAdaptor.getHBaseManager(),
+                dbAdaptor.getTableNameGenerator().getSampleIndexTableName(helper.getStudyId()),
+                getStudyId(), sampleIds,
+                GenomeHelper.COLUMN_FAMILY_BYTES,
+                getOptions().getBoolean(LOAD_SPLIT_DATA.key()),
+                getOptions());
+        return sampleIndexDBLoader;
+    }
+
     protected void loadFromAvro(URI input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
@@ -301,10 +312,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         if (sampleIds.isEmpty()) {
             sampleIndexDBLoader = null;
         } else {
-            sampleIndexDBLoader = new SampleIndexDBLoader(dbAdaptor.getHBaseManager(),
-                    dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId), sampleIds,
-                    GenomeHelper.COLUMN_FAMILY_BYTES,
-                    getOptions());
+            sampleIndexDBLoader = buildSampleIndexDBLoader(helper, sampleIds);
         }
 
         // TaskMetadata

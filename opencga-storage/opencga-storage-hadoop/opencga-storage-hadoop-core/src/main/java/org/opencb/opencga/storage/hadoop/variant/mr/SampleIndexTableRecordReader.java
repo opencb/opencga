@@ -16,7 +16,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
@@ -57,7 +56,6 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
     private final SampleIndexQuery sampleIndexQuery;
 
     public SampleIndexTableRecordReader(Configuration conf) {
-        GenomeHelper helper = new GenomeHelper(conf);
         hBaseManager = new HBaseManager(conf);
         String variantsTableName = VariantTableHelper.getVariantsTable(conf);
         HBaseVariantTableNameGenerator tableNameGenerator =
@@ -67,7 +65,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
                 tableNameGenerator.getMetaTableName(),
                 conf));
 
-        sampleIndexDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, metadataManager);
+        sampleIndexDBAdaptor = new SampleIndexDBAdaptor(hBaseManager, tableNameGenerator, metadataManager);
 
         Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
         sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);

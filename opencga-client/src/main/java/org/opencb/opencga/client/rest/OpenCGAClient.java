@@ -136,6 +136,10 @@ public class OpenCGAClient {
         return getClient(VariantOperationClient.class, () -> new VariantOperationClient(token, clientConfiguration));
     }
 
+    public MetaClient getMetaClient() {
+        return getClient(MetaClient.class, () -> new MetaClient(token, clientConfiguration));
+    }
+
     @SuppressWarnings("unchecked")
     private <T extends AbstractParentClient> T getClient(Class<T> clazz, Supplier<T> constructor) {
         return (T) clients.computeIfAbsent(clazz.getName(), (k) -> {
