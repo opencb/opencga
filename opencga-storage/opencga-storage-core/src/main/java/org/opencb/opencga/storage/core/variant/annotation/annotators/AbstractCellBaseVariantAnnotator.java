@@ -43,7 +43,6 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.Addi
  */
 public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator {
 
-    public static final int CELLBASE_VARIANT_THRESHOLD = 5000;
 
     protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
     protected final String species;
@@ -51,6 +50,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     protected final String cellbaseVersion;
     protected final QueryOptions queryOptions;
     protected final boolean impreciseVariants;
+    protected final int variantLengthThreshold;
 
     public AbstractCellBaseVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap params)
             throws VariantAnnotatorException {
@@ -70,6 +70,9 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         if (!params.getBoolean(VariantStorageOptions.ANNOTATOR_CELLBASE_USE_CACHE.key())) {
             queryOptions.append("useCache", false);
         }
+        variantLengthThreshold = params.getInt(
+                VariantStorageOptions.ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD.key(),
+                VariantStorageOptions.ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD.defaultValue());
         impreciseVariants = params.getBoolean(VariantStorageOptions.ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS.key(), true);
 
         checkNotNull(cellbaseVersion, "cellbase version");
@@ -96,7 +99,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     @Override
     public final List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {
         List<Variant> nonStructuralVariations = filterStructuralVariants(variants);
-        return getVariantAnnotationList(variants, annotateFiltered(nonStructuralVariations));
+        return getVariantAnnotationList(nonStructuralVariations, annotateFiltered(nonStructuralVariations));
     }
 
     protected abstract List<QueryResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException;
@@ -106,7 +109,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         for (Variant variant : variants) {
             // If Variant is SV some work is needed
             // TODO:Manage larger SV variants
-            if (variant.getAlternate().length() + variant.getReference().length() > CELLBASE_VARIANT_THRESHOLD) {
+            if (variant.getAlternate().length() + variant.getReference().length() > variantLengthThreshold) {
 //                logger.info("Skip variant! {}", genomicVariant);
                 logger.info("Skip variant! {}", variant.getChromosome() + ":" + variant.getStart() + ":"
                         + (variant.getReference().length() > 10
