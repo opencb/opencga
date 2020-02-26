@@ -58,7 +58,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
             return samples.iterator();
         }
 
-        public Chunk(IndexChunk indexChunk) {
+        Chunk(IndexChunk indexChunk) {
             samples = new ArrayList<>(sampleIds.size());
             merging = false;
             for (int i = 0; i < sampleIds.size(); i++) {

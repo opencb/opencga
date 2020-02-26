@@ -104,8 +104,12 @@ public class SampleIndexConfiguration {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         SampleIndexConfiguration that = (SampleIndexConfiguration) o;
         return Objects.equals(populationRanges, that.populationRanges);
     }

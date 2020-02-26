@@ -434,16 +434,25 @@ public class SampleIndexEntry {
             final StringBuilder sb = new StringBuilder("SampleIndexGtEntry{");
             sb.append("gt='").append(gt).append('\'');
             sb.append(", count=").append(count);
-            sb.append(", variants=").append(variants == null ? "null" : Bytes.toStringBinary(variants, variantsOffset, variantsLength));
-            sb.append(", fileIndex=").append(fileIndex == null ? "null" : Bytes.toStringBinary(fileIndex, fileIndexOffset, fileIndexLength));
-            sb.append(", annotationIndex=").append(annotationIndex == null ? "null" : Bytes.toStringBinary(annotationIndex, annotationIndexOffset, annotationIndexLength));
+            sb.append(", variants=").append(variants == null ? "null"
+                    : Bytes.toStringBinary(variants, variantsOffset, variantsLength));
+            sb.append(", fileIndex=").append(fileIndex == null ? "null"
+                    : Bytes.toStringBinary(fileIndex, fileIndexOffset, fileIndexLength));
+            sb.append(", annotationIndex=").append(annotationIndex == null ? "null"
+                    : Bytes.toStringBinary(annotationIndex, annotationIndexOffset, annotationIndexLength));
             sb.append(", annotationCounts=").append(Arrays.toString(annotationCounts));
-            sb.append(", consequenceTypeIndex=").append(consequenceTypeIndex == null ? "null" : Bytes.toStringBinary(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength));
-            sb.append(", biotypeIndex=").append(biotypeIndex == null ? "null" : Bytes.toStringBinary(biotypeIndex, biotypeIndexOffset, biotypeIndexLength));
-            sb.append(", ctBtIndex=").append(ctBtIndex == null ? "null" : Bytes.toStringBinary(ctBtIndex, ctBtIndexOffset, ctBtIndexLength));
-            sb.append(", populationFrequencyIndex=").append(populationFrequencyIndex == null ? "null" : Bytes.toStringBinary(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength));
-            sb.append(", clinicalIndex=").append(clinicalIndex == null ? "null" : Bytes.toStringBinary(clinicalIndex, clinicalIndexOffset, clinicalIndexLength));
-            sb.append(", parentsIndex=").append(parentsIndex == null ? "null" : Bytes.toStringBinary(parentsIndex, parentsIndexOffset, parentsIndexLength));
+            sb.append(", consequenceTypeIndex=").append(consequenceTypeIndex == null ? "null"
+                    : Bytes.toStringBinary(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength));
+            sb.append(", biotypeIndex=").append(biotypeIndex == null ? "null"
+                    : Bytes.toStringBinary(biotypeIndex, biotypeIndexOffset, biotypeIndexLength));
+            sb.append(", ctBtIndex=").append(ctBtIndex == null ? "null"
+                    : Bytes.toStringBinary(ctBtIndex, ctBtIndexOffset, ctBtIndexLength));
+            sb.append(", populationFrequencyIndex=").append(populationFrequencyIndex == null ? "null"
+                    : Bytes.toStringBinary(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength));
+            sb.append(", clinicalIndex=").append(clinicalIndex == null ? "null"
+                    : Bytes.toStringBinary(clinicalIndex, clinicalIndexOffset, clinicalIndexLength));
+            sb.append(", parentsIndex=").append(parentsIndex == null ? "null"
+                    : Bytes.toStringBinary(parentsIndex, parentsIndexOffset, parentsIndexLength));
             sb.append('}');
             return sb.toString();
         }
@@ -478,6 +487,22 @@ public class SampleIndexEntry {
                         that.clinicalIndex, that.clinicalIndexOffset, that.clinicalIndexLength)
                     && Bytes.equals(parentsIndex, parentsIndexOffset, that.parentsIndexLength,
                         that.parentsIndex, that.parentsIndexOffset, that.parentsIndexLength);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(gt, count);
+            result = 31 * result + Arrays.hashCode(annotationCounts);
+            result = 31 * result + Bytes.hashCode(variants, variantsOffset, variantsLength);
+            result = 31 * result + Bytes.hashCode(fileIndex, fileIndexOffset, fileIndexLength);
+            result = 31 * result + Bytes.hashCode(annotationIndex, annotationIndexOffset, annotationIndexLength);
+            result = 31 * result + Bytes.hashCode(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength);
+            result = 31 * result + Bytes.hashCode(biotypeIndex, biotypeIndexOffset, biotypeIndexLength);
+            result = 31 * result + Bytes.hashCode(ctBtIndex, ctBtIndexOffset, ctBtIndexLength);
+            result = 31 * result + Bytes.hashCode(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength);
+            result = 31 * result + Bytes.hashCode(clinicalIndex, clinicalIndexOffset, clinicalIndexLength);
+            result = 31 * result + Bytes.hashCode(parentsIndex, parentsIndexOffset, parentsIndexLength);
+            return result;
         }
     }
 }
