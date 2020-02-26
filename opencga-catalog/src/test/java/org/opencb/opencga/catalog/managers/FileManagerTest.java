@@ -109,14 +109,13 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testLinkCram() throws CatalogException, IOException {
+    public void testLinkCram() throws CatalogException {
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
         File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, token).first();
         assertEquals(File.Format.FASTA, referenceFile.getFormat());
         assertEquals(File.Bioformat.REFERENCE_GENOME, referenceFile.getBioformat());
 
-        File.RelatedFile relatedFile = new File.RelatedFile(new File().setId("hg19mini.fasta"),
-                File.RelatedFile.Relation.REFERENCE_GENOME);
+        SmallRelatedFileParams relatedFile = new SmallRelatedFileParams("hg19mini.fasta", File.RelatedFile.Relation.REFERENCE_GENOME);
         String cramFile = getClass().getResource("/biofiles/cram/cram_with_crai_index.cram").getFile();
         DataResult<File> link = fileManager.link(studyFqn, Paths.get(cramFile).toUri(), "",
                 new ObjectMap("relatedFiles", Collections.singletonList(relatedFile)), token);
@@ -314,6 +313,37 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(sampleNames.contains("NA19660"));
         assertTrue(sampleNames.contains("NA19661"));
         assertTrue(sampleNames.contains("NA19685"));
+    }
+
+    @Test
+    public void testLinkFileWithDifferentSampleNames() throws CatalogException, URISyntaxException {
+        URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
+
+        Map<String, String> sampleIdNames = new HashMap<>();
+        sampleIdNames.put("test-name.bam", "sample1");
+        sampleIdNames.put("NA19660", "sample2");
+        sampleIdNames.put("NA19661", "sample3");
+        sampleIdNames.put("NA19685", "sample4");
+
+        FileLinkParams params = new FileLinkParams()
+                .setUri(uri.toString())
+                .setSampleMap(sampleIdNames);
+        DataResult<File> link = fileManager.link(studyFqn, params, false, token);
+
+        assertEquals(4, link.first().getSamples().size());
+
+        List<Long> sampleList = link.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+        Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleList);
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), token);
+
+        assertEquals(4, sampleDataResult.getNumResults());
+        List<String> sampleNames = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
+        assertTrue(sampleNames.contains("sample1"));
+        assertTrue(sampleNames.contains("sample2"));
+        assertTrue(sampleNames.contains("sample3"));
+        assertTrue(sampleNames.contains("sample4"));
+
+        assertEquals(sampleIdNames, link.first().getInternal().getSampleMap());
     }
 
     @Test

@@ -71,6 +71,8 @@ public class File extends Annotable {
     private FileStatus status;
     private boolean external;
 
+    private FileInternal internal;
+
     private long size;
     private Software software;
     private FileExperiment experiment;
@@ -97,21 +99,22 @@ public class File extends Annotable {
     public File(String name, Type type, Format format, Bioformat bioformat, String path, URI uri, String description, FileStatus status,
                 long size, int release) {
         this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
-                false, size, null, new FileExperiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                false, size, null, new FileExperiment(), Collections.emptyList(), new Job(), Collections.emptyList(), new FileInternal(),
                 new FileIndex(), release, Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
                 List<Sample> samples, long jobId, Software software, Map<String, Object> stats, Map<String, Object> attributes) {
         this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
-                false, size, software, new FileExperiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), -1,
-                Collections.emptyList(), stats, attributes);
+                false, size, software, new FileExperiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileInternal(),
+                new FileIndex(), -1, Collections.emptyList(), stats, attributes);
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum,
                 String creationDate, String modificationDate, String description, FileStatus status, boolean external, long size,
-                Software software, FileExperiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index,
-                int release, List<AnnotationSet> annotationSets, Map<String, Object> stats, Map<String, Object> attributes) {
+                Software software, FileExperiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles,
+                FileInternal internal, FileIndex index, int release, List<AnnotationSet> annotationSets, Map<String, Object> stats,
+                Map<String, Object> attributes) {
         this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
         this.type = type;
@@ -126,6 +129,7 @@ public class File extends Annotable {
         this.status = status;
         this.release = release;
         this.external = external;
+        this.internal = internal;
         this.size = size;
         this.software = software;
         this.experiment = experiment;
@@ -349,15 +353,16 @@ public class File extends Annotable {
         sb.append(", type=").append(type);
         sb.append(", format=").append(format);
         sb.append(", bioformat=").append(bioformat);
+        sb.append(", checksum='").append(checksum).append('\'');
         sb.append(", uri=").append(uri);
         sb.append(", path='").append(path).append('\'');
         sb.append(", release=").append(release);
-        sb.append(", checksum=").append(checksum);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
         sb.append(", external=").append(external);
+        sb.append(", internal=").append(internal);
         sb.append(", size=").append(size);
         sb.append(", software=").append(software);
         sb.append(", experiment=").append(experiment);
@@ -366,7 +371,6 @@ public class File extends Annotable {
         sb.append(", job=").append(job);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", index=").append(index);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -518,6 +522,15 @@ public class File extends Annotable {
 
     public File setExternal(boolean external) {
         this.external = external;
+        return this;
+    }
+
+    public FileInternal getInternal() {
+        return internal;
+    }
+
+    public File setInternal(FileInternal internal) {
+        this.internal = internal;
         return this;
     }
 
