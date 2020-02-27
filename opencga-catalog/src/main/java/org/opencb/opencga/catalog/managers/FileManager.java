@@ -785,7 +785,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         if (file.getType() == File.Type.FILE && Files.exists(Paths.get(file.getUri()))) {
-            new FileMetadataReader(catalogManager).addMetadataInformation(study, file, sessionId);
+            new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), file);
             validateNewSamples(study, file, sessionId);
         }
 
@@ -932,7 +932,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 file.setChecksum(checksum);
 
                 // Improve metadata information and extract samples if any
-                new FileMetadataReader(catalogManager).addMetadataInformation(study, file, token);
+                new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), file);
                 validateNewSamples(study, file, token);
             } catch (CatalogException e) {
                 ioManager.deleteDirectory(tempDirectory);
@@ -3168,7 +3168,7 @@ public class FileManager extends AnnotationSetManager<File> {
         final List<File.RelatedFile> relatedFiles = params.getRelatedFiles();
         if (relatedFiles != null) {
             for (File.RelatedFile relatedFile : relatedFiles) {
-                File tmpFile = internalGet(study.getUid(), relatedFile.getFile().getId(), INCLUDE_FILE_IDS, userId).first();
+                File tmpFile = internalGet(study.getUid(), relatedFile.getFile().getId(), INCLUDE_FILE_URI_PATH, userId).first();
                 relatedFile.setFile(tmpFile);
             }
         }
@@ -3301,23 +3301,26 @@ public class FileManager extends AnnotationSetManager<File> {
                                 TimeUtils.getTime(), params.getDescription(), new File.FileStatus(File.FileStatus.READY), true, size, null,
                                 new FileExperiment(), Collections.emptyList(), new Job(), relatedFiles,
                                 new FileInternal(params.getSampleMap()), null, studyManager.getCurrentRelease(study),
-                                Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
+                                Collections.emptyList(), Collections.emptyMap(), new HashMap<>());
                         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
+
+                        // Improve metadata information and extract samples if any
+                        new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), subfile);
+                        validateNewSamples(study, subfile, token);
+
                         fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
-                        OpenCGAResult<File> queryResult = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());
+                        subfile = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty()).first();
 
                         // Propagate ACLs
                         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-                            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
+                            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(subfile.getUid()),
                                     allFileAcls.getResults().get(0), Enums.Resource.FILE);
                         }
 
-                        File file = FileManager.this.fileMetadataReader.setMetadataInformation(queryResult.first(),
-                                queryResult.first().getUri(), params.getSampleMap(), new QueryOptions(), token, false);
-                        if (isTransformedFile(file.getName())) {
-                            logger.info("Detected transformed file {}", file.getPath());
-                            transformedFiles.add(file);
+                        if (isTransformedFile(subfile.getName())) {
+                            logger.info("Detected transformed file {}", subfile.getPath());
+                            transformedFiles.add(subfile);
                         }
                     } else {
                         throw new CatalogException("Cannot link the file " + filePath.getFileName().toString()
@@ -3383,22 +3386,25 @@ public class FileManager extends AnnotationSetManager<File> {
                 studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
+
+        // Improve metadata information and extract samples if any
+        new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), subfile);
+        validateNewSamples(study, subfile, token);
+
         fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
         OpenCGAResult<File> result = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());
+        subfile = result.first();
 
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(result.first().getUid()), allFileAcls.getResults().get(0),
+            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(subfile.getUid()), allFileAcls.getResults().get(0),
                     Enums.Resource.FILE);
         }
-        File file = this.fileMetadataReader.setMetadataInformation(result.first(), result.first().getUri(), null, new QueryOptions(), token,
-                false);
-        result.setResults(Collections.singletonList(file));
 
         // If it is a transformed file, we will try to link it with the correspondent original file
         try {
-            if (isTransformedFile(file.getName())) {
-                matchUpVariantFiles(study.getFqn(), Arrays.asList(file), token);
+            if (isTransformedFile(subfile.getName())) {
+                matchUpVariantFiles(study.getFqn(), Arrays.asList(subfile), token);
             }
         } catch (CatalogException e1) {
             logger.warn("Matching avro to variant file: {}", e1.getMessage());

@@ -18,21 +18,21 @@ package org.opencb.opencga.analysis.variant;
 
 import org.junit.*;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -43,10 +43,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
@@ -125,7 +129,6 @@ public class CatalogStorageMetadataSynchronizerTest {
         metadataManager.addIndexedFiles(studyMetadata.getId(), indexedFiles.stream()
                 .map(f -> metadataManager.getFileId(studyMetadata.getId(), f))
                 .collect(Collectors.toList()));
-//        checkStudyConfiguration(study, studyConfigurationToReturn);
     }
 
     @After
@@ -140,8 +143,10 @@ public class CatalogStorageMetadataSynchronizerTest {
     public static File create(String resourceName, boolean indexed) throws IOException, CatalogException {
         File file;
         URI uri = getResourceUri(resourceName);
-        file = fileMetadataReader.create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
-        catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
+        FileLinkParams params = new FileLinkParams()
+                .setUri(uri.toString())
+                .setPath("data/vcfs/");
+        file = catalogManager.getFileManager().link(studyId, params, true, sessionId).first();
         if (indexed) {
             FileIndex fileIndex = new FileIndex("user", "today", new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), 1234,
                     Collections.emptyMap());
@@ -153,33 +158,6 @@ public class CatalogStorageMetadataSynchronizerTest {
                     new CohortUpdateParams().setSamples(samples), true, null, sessionId);
         }
         return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
-    }
-
-    private void checkStudyConfiguration(Study study, StudyConfiguration studyConfiguration) throws CatalogException {
-        assertEquals("user@p1:s1", studyConfiguration.getName());
-        assertEquals(study.getUid(), studyConfiguration.getId());
-
-        assertTrue(studyConfiguration.getInvalidStats().isEmpty());
-
-        for (Map.Entry<String, Integer> entry : studyConfiguration.getFileIds().entrySet()) {
-            File file = catalogManager.getFileManager().get(studyConfiguration.getName(),
-                    studyConfiguration.getFileIds().inverse().get(entry.getValue()), null, sessionId).first();
-
-            assertEquals(file.getName(), entry.getKey());
-            int id = (int) file.getUid();
-            assertEquals(file.getSamples().stream().map(Sample::getUid).map(Long::intValue).collect(Collectors.toSet()),
-                    studyConfiguration.getSamplesInFiles().get((id)));
-            if (file.getIndex() == null || file.getIndex().getStatus() == null || file.getIndex().getStatus().getName() == null
-                    || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
-                assertFalse(studyConfiguration.getIndexedFiles().contains(id));
-//                assertFalse("Should not contain header for file " + file.getId(), studyConfiguration.getHeaders().containsKey(id));
-            }
-//            else {
-//                assertTrue(studyConfiguration.getIndexedFiles().contains(id));
-//                assertTrue("Missing header for file " + file.getId(), studyConfiguration.getHeaders().containsKey(id));
-//                assertTrue("Missing header for file " + file.getId(), !studyConfiguration.getHeaders().get(id).isEmpty());
-//            }
-        }
     }
 
     @Test

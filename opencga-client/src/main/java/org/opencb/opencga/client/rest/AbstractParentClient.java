@@ -44,8 +44,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
@@ -234,6 +232,7 @@ public abstract class AbstractParentClient {
                     }
                 }
 
+                logger.debug(method + " URL: {}", path.getUri());
                 Invocation.Builder header = path.request()
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
                 if (method.equals(GET)) {
@@ -253,6 +252,7 @@ public abstract class AbstractParentClient {
                 }
 
                 Object paramBody = (params == null || params.get("body") == null ? "" : params.get("body"));
+                logger.debug(method + " URL: {}", path.getUri());
                 logger.debug("Body {}", paramBody);
                 response = path.request()
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
@@ -261,12 +261,8 @@ public abstract class AbstractParentClient {
             default:
                 throw new IllegalArgumentException("Unsupported REST method " + method);
         }
-
-        int status = response.getStatus();
-        String jsonString = response.readEntity(String.class);
-        RestResponse<T> restResponse = parseResult(jsonString, clazz);
-
-        checkErrors(restResponse, status, method, path);
+        RestResponse<T> restResponse = parseResult(response, clazz);
+        checkErrors(restResponse, response.getStatusInfo(), method, path);
         return restResponse;
     }
 
@@ -332,11 +328,11 @@ public abstract class AbstractParentClient {
         }
         final FormDataMultiPart multipart = (FormDataMultiPart) formDataMultiPart.bodyPart(filePart);
 
+        logger.debug(POST + " URL: {}", path.getUri());
         Response response = path.request()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
                 .post(Entity.entity(multipart, multipart.getMediaType()));
-        int status = response.getStatus();
-        String jsonString = response.readEntity(String.class);
+        RestResponse<T> restResponse = parseResult(response, clazz);
 
         try {
             formDataMultiPart.close();
@@ -345,24 +341,24 @@ public abstract class AbstractParentClient {
             throw new ClientException(e.getMessage(), e);
         }
 
-        RestResponse<T> restResponse = parseResult(jsonString, clazz);
-        checkErrors(restResponse, status, POST, path);
+        checkErrors(restResponse, response.getStatusInfo(), POST, path);
         return restResponse;
     }
 
-    private <T> RestResponse<T> parseResult(String json, Class<T> clazz) throws ClientException {
-        if (json != null && !json.isEmpty()) {
+    private <T> RestResponse<T> parseResult(Response response, Class<T> clazz) throws ClientException {
+        String json = response.readEntity(String.class);
+        if (StringUtils.isNotEmpty(json) && json.startsWith("<")) {
+            return new RestResponse<>("", 0, Collections.singletonList(
+                    new Event(Event.Type.ERROR,
+                            response.getStatusInfo().getStatusCode(),
+                            response.getStatusInfo().getFamily().toString(),
+                            response.getStatusInfo().getReasonPhrase())), null, Collections.emptyList());
+        } else if (StringUtils.isNotEmpty(json)) {
             ObjectReader reader = jsonObjectMapper
                     .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(RestResponse.class, DataResult.class, clazz));
             try {
                 return reader.readValue(json);
             } catch (JsonParseException e) {
-                if (json.startsWith("<html>")) {
-                    if (json.contains("504 Gateway Time-out")) {
-                        return new RestResponse<>("", 0, Collections.singletonList(new Event(Event.Type.ERROR, 504, "Gateway time-out",
-                                "The server didn't respond in time.")), null, Collections.emptyList());
-                    }
-                }
                 throw new ClientException(e.getMessage(), e);
             } catch (JsonProcessingException e) {
                 throw new ClientException(e.getMessage(), e);
@@ -372,22 +368,18 @@ public abstract class AbstractParentClient {
         }
     }
 
-    private <T> void checkErrors(RestResponse<T> restResponse, int status, String method, WebTarget path) throws ClientException {
-        if (status / 100 == 2) {
-            // REST call succeed
-            return;
-        }
-        URL url;
-        try {
-            url = path.getUri().toURL();
-        } catch (MalformedURLException e) {
-            throw new ClientException(e.getMessage(), e);
-        }
-        logger.debug(method + " URL: {}", url);
+    private <T> void checkErrors(RestResponse<T> restResponse, Response.StatusType status, String method, WebTarget path)
+            throws ClientException {
+        // TODO: Check response status
+//        if (Response.Status.Family.SUCCESSFUL.equals(status.getFamily())) {
+//            // REST call succeed
+//            return;
+//        }
+
         if (restResponse != null && restResponse.getEvents() != null) {
             for (Event event : restResponse.getEvents()) {
                 if (Event.Type.ERROR.equals(event.getType())) {
-                    logger.debug("Error '{}' on {} {}", event.getMessage(), method, url);
+                    logger.debug("Error '{}' on {} {}", event.getMessage(), method, path.getUri());
                     if (throwExceptionOnError) {
                         throw new ClientException(event.getMessage());
                     }

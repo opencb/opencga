@@ -197,6 +197,9 @@ public class UserCommandOptions {
 
         @Parameter(names = {"--validate"}, arity = 0, description = "Only validate template file")
         public boolean validate;
+
+        @Parameter(names = {"--resume"}, arity = 0, description = "Resume a previously failed template load")
+        public boolean resume;
     }
 
 

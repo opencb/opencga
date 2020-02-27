@@ -28,6 +28,8 @@ public class FileUpdateParams {
 
     private List<SmallRelatedFileParams> relatedFiles;
 
+    private Long size;
+
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -36,9 +38,9 @@ public class FileUpdateParams {
     }
 
     public FileUpdateParams(String name, String description, List<String> samples, String checksum, File.Format format,
-                            File.Bioformat bioformat, Software software, FileExperiment experiment, List<String> tags, File.FileStatus status,
-                            List<SmallRelatedFileParams> relatedFiles, List<AnnotationSet> annotationSets, Map<String, Object> stats,
-                            Map<String, Object> attributes) {
+                            File.Bioformat bioformat, Software software, FileExperiment experiment, List<String> tags,
+                            File.FileStatus status, Long size, List<SmallRelatedFileParams> relatedFiles,
+                            List<AnnotationSet> annotationSets, Map<String, Object> stats, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
         this.samples = samples;
@@ -49,6 +51,7 @@ public class FileUpdateParams {
         this.experiment = experiment;
         this.tags = tags;
         this.status = status;
+        this.size = size;
         this.relatedFiles = relatedFiles;
         this.annotationSets = annotationSets;
         this.stats = stats;
@@ -85,6 +88,7 @@ public class FileUpdateParams {
         sb.append(", tags=").append(tags);
         sb.append(", status=").append(status);
         sb.append(", relatedFiles=").append(relatedFiles);
+        sb.append(", size=").append(size);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
@@ -179,6 +183,15 @@ public class FileUpdateParams {
 
     public FileUpdateParams setExperiment(FileExperiment experiment) {
         this.experiment = experiment;
+        return this;
+    }
+
+    public Long getSize() {
+        return size;
+    }
+
+    public FileUpdateParams setSize(Long size) {
+        this.size = size;
         return this;
     }
 
