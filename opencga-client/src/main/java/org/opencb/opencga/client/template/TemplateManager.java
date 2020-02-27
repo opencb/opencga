@@ -222,15 +222,15 @@ public class TemplateManager {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
         Map<String, Individual> existing = Collections.emptyMap();
         if (resume) {
+            openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getIndividualClient()
-                    .search(new ObjectMap(params)
-                            .append("id", study.getIndividuals().stream().map(Individual::getId).collect(Collectors.toList()))
-                            .append(QueryOptions.INCLUDE, "name,id,father.id,mother.id,multiples")
-                            .append(QueryOptions.LIMIT, study.getIndividuals().size()))
+                    .info(study.getIndividuals().stream().map(Individual::getId).collect(Collectors.joining(",")),
+                            new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id,father.id,mother.id,multiples"))
                     .first()
                     .getResults()
                     .stream()
-                    .collect(Collectors.toMap(Individual::getId, i->i));
+                    .collect(Collectors.toMap(Individual::getId, i -> i));
+            openCGAClient.setThrowExceptionOnError(true);
         }
 
 
@@ -285,16 +285,16 @@ public class TemplateManager {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
         Set<String> existing = Collections.emptySet();
         if (resume) {
+            openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getSampleClient()
-                    .search(new ObjectMap(params)
-                            .append("id", study.getSamples().stream().map(Sample::getId).collect(Collectors.toList()))
-                            .append(QueryOptions.INCLUDE, "name,id")
-                            .append(QueryOptions.LIMIT, study.getSamples().size()))
+                    .info(study.getSamples().stream().map(Sample::getId).collect(Collectors.joining(",")),
+                            new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
                     .first()
                     .getResults()
                     .stream()
                     .map(Sample::getId)
                     .collect(Collectors.toSet());
+            openCGAClient.setThrowExceptionOnError(true);
         }
         for (Sample sample : study.getSamples()) {
             if (!existing.contains(sample.getId())) {
@@ -308,16 +308,16 @@ public class TemplateManager {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
         Set<String> existing = Collections.emptySet();
         if (resume) {
+            openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getCohortClient()
-                    .search(new ObjectMap(params)
-                            .append("id", study.getCohorts().stream().map(Cohort::getId).collect(Collectors.toList()))
-                            .append(QueryOptions.INCLUDE, "name,id")
-                            .append(QueryOptions.LIMIT, study.getCohorts().size()))
+                    .info(study.getCohorts().stream().map(Cohort::getId).collect(Collectors.joining(",")),
+                            new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
                     .first()
                     .getResults()
                     .stream()
                     .map(Cohort::getId)
                     .collect(Collectors.toSet());
+            openCGAClient.setThrowExceptionOnError(true);
         }
         for (Cohort cohort : study.getCohorts()) {
             if (!existing.contains(cohort.getId())) {
@@ -331,16 +331,16 @@ public class TemplateManager {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
         Set<String> existing = Collections.emptySet();
         if (resume) {
+            openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getFamilyClient()
-                    .search(new ObjectMap(params)
-                            .append("id", study.getFamilies().stream().map(Family::getId).collect(Collectors.toList()))
-                            .append(QueryOptions.INCLUDE, "name,id")
-                            .append(QueryOptions.LIMIT, study.getFamilies().size()))
+                    .info(study.getFamilies().stream().map(Family::getId).collect(Collectors.joining(",")),
+                            new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
                     .first()
                     .getResults()
                     .stream()
                     .map(Family::getId)
                     .collect(Collectors.toSet());
+            openCGAClient.setThrowExceptionOnError(true);
         }
         for (Family family : study.getFamilies()) {
             params.put("members", family.getMembers().stream().map(Individual::getId).collect(Collectors.toList()));
@@ -357,16 +357,16 @@ public class TemplateManager {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
         Set<String> existing = Collections.emptySet();
         if (resume) {
+            openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getFileClient()
-                    .search(new ObjectMap(params)
-                            .append("path", study.getFiles().stream().map(this::getFilePath).collect(Collectors.toList()))
-                            .append(QueryOptions.INCLUDE, "path,name,id")
-                            .append(QueryOptions.LIMIT, study.getFiles().size()))
+                    .info(study.getFiles().stream().map(this::getFilePath).collect(Collectors.joining(",")),
+                            new ObjectMap(params).append(QueryOptions.INCLUDE, "path,name,id"))
                     .first()
                     .getResults()
                     .stream()
                     .map(File::getPath)
                     .collect(Collectors.toSet());
+            openCGAClient.setThrowExceptionOnError(true);
         }
         List<String> indexVcfJobIds = new ArrayList<>();
         for (File file : study.getFiles()) {
