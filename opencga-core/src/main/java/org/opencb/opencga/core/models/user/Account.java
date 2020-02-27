@@ -28,8 +28,6 @@ public class Account {
     private Type type;
     private String creationDate;
     private String expirationDate;
-    @Deprecated
-    private String authOrigin;
     private AuthenticationOrigin authentication;
 
     public Account() {
@@ -88,17 +86,6 @@ public class Account {
 
     public Account setCreationDate(String creationDate) {
         this.creationDate = creationDate;
-        return this;
-    }
-
-    @Deprecated
-    public String getAuthOrigin() {
-        return authOrigin;
-    }
-
-    @Deprecated
-    public Account setAuthOrigin(String authOrigin) {
-        this.authOrigin = authOrigin;
         return this;
     }
 

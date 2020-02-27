@@ -114,11 +114,6 @@ public class UserCommandOptions {
 
         @ParametersDelegate
         public NotRequiredUserParam userParam = new NotRequiredUserParam();
-
-        @Deprecated
-        @Parameter(names = {"--last-modified"}, description = "[DEPRECATED] If matches with the user's last activity, return " +
-                "an empty QueryResult", arity = 1, required = false)
-        public String lastModified;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes")

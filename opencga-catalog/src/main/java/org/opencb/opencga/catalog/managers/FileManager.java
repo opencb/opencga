@@ -1784,10 +1784,6 @@ public class FileManager extends AnnotationSetManager<File> {
             }
         }
         auditManager.finishAuditBatch(operationId);
-
-        String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
-        userDBAdaptor.updateUserLastModified(ownerId);
-
         return endResult(result, ignoreException);
     }
 
@@ -1839,10 +1835,6 @@ public class FileManager extends AnnotationSetManager<File> {
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
-
-        String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
-        userDBAdaptor.updateUserLastModified(ownerId);
-
         return result;
     }
 
@@ -1917,10 +1909,6 @@ public class FileManager extends AnnotationSetManager<File> {
             }
         }
         auditManager.finishAuditBatch(operationId);
-
-        String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
-        userDBAdaptor.updateUserLastModified(ownerId);
-
         return endResult(result, ignoreException);
     }
 
@@ -2079,11 +2067,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
         checkUpdateAnnotations(study, file, parameters, options, VariableSet.AnnotableDataModels.FILE, fileDBAdaptor, userId);
 
-        String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
         fileDBAdaptor.update(file.getUid(), parameters, study.getVariableSets(), options);
-        OpenCGAResult<File> queryResult = fileDBAdaptor.get(file.getUid(), options);
-        userDBAdaptor.updateUserLastModified(ownerId);
-        return queryResult;
+        return fileDBAdaptor.get(file.getUid(), options);
     }
 
     public OpenCGAResult<File> link(String studyStr, FileLinkParams params, boolean parents, String token) throws CatalogException {
@@ -2186,9 +2171,6 @@ public class FileManager extends AnnotationSetManager<File> {
         Study study = studyManager.resolveId(studyStr, userId);
 
         File file = internalGet(study.getUid(), fileStr, EXCLUDE_FILE_ATTRIBUTES, userId).first();
-
-        String ownerId = StringUtils.split(study.getFqn(), "@")[0];
-
         authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
         if (file.getName().equals(newName)) {
@@ -2210,7 +2192,6 @@ public class FileManager extends AnnotationSetManager<File> {
             newPath = parent.resolve(newName).toString();
         }
 
-        userDBAdaptor.updateUserLastModified(ownerId);
         CatalogIOManager catalogIOManager;
         URI oldUri = file.getUri();
         URI newUri = Paths.get(oldUri).getParent().resolve(newName).toUri();

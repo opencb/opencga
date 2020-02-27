@@ -5,6 +5,7 @@ import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewProjectMetadataMigration;
@@ -190,7 +191,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
         MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
 
-        String cypheredPassword = CatalogAuthenticationManager.cypherPassword(options.commonOptions.adminPassword);
+        String cypheredPassword = CryptoUtils.sha1(options.commonOptions.adminPassword);
         Document document = new Document("admin.password", cypheredPassword);
         if (metaCollection.count(document).getNumMatches() == 0) {
             throw CatalogAuthenticationException.incorrectUserOrPassword();

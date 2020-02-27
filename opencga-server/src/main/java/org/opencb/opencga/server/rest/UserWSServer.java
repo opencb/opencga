@@ -88,7 +88,7 @@ public class UserWSServer extends OpenCGAWSServer {
                             @QueryParam("lastModified") String lastModified) {
         try {
             ParamUtils.checkIsSingleID(userId);
-            DataResult result = catalogManager.getUserManager().get(userId, lastModified, queryOptions, token);
+            DataResult result = catalogManager.getUserManager().get(userId, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -241,7 +241,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{user}/configs/filters/update")
-    @ApiOperation(value = "Add or remove a custom user filter", response = User.Filter.class,
+    @ApiOperation(value = "Add or remove a custom user filter", response = UserFilter.class,
             notes = "Users normally try to query the data using the same filters most of the times. The aim of this WS is to allow "
                     + "storing as many different filters as the user might want in order not to type the same filters.")
     public Response updateFilters(
@@ -249,7 +249,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
                 @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(name = "params", value = "Filter parameters. When removing, only the 'name' of the filter will be necessary",
-                    required = true) User.Filter params) {
+                    required = true) UserFilter params) {
         try {
             if (action == null) {
                 action = ParamUtils.BasicUpdateAction.ADD;
@@ -267,7 +267,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/{user}/configs/filters/{name}/update")
-    @ApiOperation(value = "Update a custom filter", response = User.Filter.class)
+    @ApiOperation(value = "Update a custom filter", response = UserFilter.class)
     public Response updateFilterPOST(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
@@ -282,7 +282,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/configs/filters")
-    @ApiOperation(value = "Fetch user filters", response = User.Filter.class)
+    @ApiOperation(value = "Fetch user filters", response = UserFilter.class)
     public Response getFilterConfig(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = "Filter name. If provided, it will only fetch the specified filter") @QueryParam("name") String name) {

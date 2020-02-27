@@ -20,13 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.user.ConfigUpdateParams;
-import org.opencb.opencga.core.models.user.FilterUpdateParams;
-import org.opencb.opencga.core.models.user.LoginParams;
-import org.opencb.opencga.core.models.user.PasswordChangeParams;
-import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.user.UserCreateParams;
-import org.opencb.opencga.core.models.user.UserUpdateParams;
+import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -85,9 +79,9 @@ public class UserClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<User.Filter> filtersConfigs(String user, ObjectMap params) throws ClientException {
+    public RestResponse<UserFilter> filtersConfigs(String user, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("users", user, "configs", null, "filters", params, GET, User.Filter.class);
+        return execute("users", user, "configs", null, "filters", params, GET, UserFilter.class);
     }
 
     /**
@@ -99,10 +93,10 @@ public class UserClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<User.Filter> updateFilters(String user, User.Filter data, ObjectMap params) throws ClientException {
+    public RestResponse<UserFilter> updateFilters(String user, UserFilter data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("users", user, "configs/filters", null, "update", params, POST, User.Filter.class);
+        return execute("users", user, "configs/filters", null, "update", params, POST, UserFilter.class);
     }
 
     /**
@@ -113,10 +107,10 @@ public class UserClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<User.Filter> updateFilter(String user, String name, FilterUpdateParams data) throws ClientException {
+    public RestResponse<UserFilter> updateFilter(String user, String name, FilterUpdateParams data) throws ClientException {
         ObjectMap params = new ObjectMap();
         params.put("body", data);
-        return execute("users", user, "configs/filters", name, "update", params, POST, User.Filter.class);
+        return execute("users", user, "configs/filters", name, "update", params, POST, UserFilter.class);
     }
 
     /**

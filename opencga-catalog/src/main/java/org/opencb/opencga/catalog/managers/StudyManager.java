@@ -372,7 +372,6 @@ public class StudyManager extends AbstractManager {
 
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            userDBAdaptor.updateUserLastModified(userId);
 
             result.setResults(Arrays.asList(study));
             return result;
@@ -598,8 +597,6 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
             }
 
-            String ownerId = getOwner(study);
-            userDBAdaptor.updateUserLastModified(ownerId);
             OpenCGAResult result = studyDBAdaptor.update(study.getUid(), update, options);
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
