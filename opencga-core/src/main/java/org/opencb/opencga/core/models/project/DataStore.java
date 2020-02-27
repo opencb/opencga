@@ -35,7 +35,6 @@ public class DataStore {
     public DataStore(String storageEngine, String dbName) {
         this.storageEngine = storageEngine;
         this.dbName = dbName;
-        configuration = new ObjectMap();
     }
 
     @Override

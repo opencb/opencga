@@ -404,6 +404,26 @@ public class VariantStorageManager extends StorageManager {
         });
     }
 
+    public void configureProject(String projectStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
+        secureOperationByProject("configure", projectStr, params, token, engine -> {
+            DataStore dataStore = getDataStoreByProjectId(projectStr, token);
+
+            dataStore.getConfiguration().putAll(params);
+            catalogManager.getProjectManager()
+                    .update(projectStr, new ObjectMap("internal.datastores.variant", dataStore), new QueryOptions(), token);
+            return null;
+        });
+    }
+
+//    public void configureStudy(String studyStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
+//        secureOperation("configure", studyStr, params, token, engine -> {
+//            String studyFqn = getStudyFqn(studyStr, token);
+//            engine.getConfigurationManager().configureStudy(studyFqn, params);
+//            return null;
+//        });
+//    }
+
+
     // ---------------------//
     //   Query methods      //
     // ---------------------//
@@ -598,12 +618,12 @@ public class VariantStorageManager extends StorageManager {
 
     protected VariantStorageEngine getVariantStorageEngine(String study, String token) throws StorageEngineException, CatalogException {
         DataStore dataStore = getDataStore(study, token);
-        return storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        return getVariantStorageEngine(dataStore);
     }
 
     protected VariantStorageEngine getVariantStorageEngine(String study, ObjectMap params, String token) throws StorageEngineException, CatalogException {
         DataStore dataStore = getDataStore(study, token);
-        VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
         }
@@ -611,7 +631,12 @@ public class VariantStorageManager extends StorageManager {
     }
 
     protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
-        return storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine variantStorageEngine = storageEngineFactory
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        if (dataStore.getConfiguration() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getConfiguration());
+        }
+        return variantStorageEngine;
     }
 
     public boolean isSolrAvailable() {
@@ -1120,6 +1145,10 @@ public class VariantStorageManager extends StorageManager {
             String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
             dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
         }
+        if (dataStore.getConfiguration() == null) {
+            dataStore.setConfiguration(new ObjectMap());
+        }
+
         return dataStore;
     }
 
