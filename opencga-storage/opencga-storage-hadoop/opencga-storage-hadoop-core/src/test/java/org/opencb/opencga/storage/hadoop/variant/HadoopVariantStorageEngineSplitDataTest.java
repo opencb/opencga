@@ -12,7 +12,9 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
@@ -43,7 +45,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
     @After
     public void tearDown() throws Exception {
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
     }
 
     @Test
@@ -158,7 +160,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
 
     @Test
-    public void testLoadByRegionFail() throws Exception {
+    public void testLoadByRegion() throws Exception {
         URI outDir = newOutputUri();
 
         VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
@@ -202,12 +204,69 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata));
         }
 
-        VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor();
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
+        checkVariantsTable(studyId_split, studyId_normal, new Query(), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES));
+        checkSampleIndex(studyId_split, studyId_normal);
+    }
 
-        for (Integer sampleId : mm.getIndexedSamples(studyId_normal)) {
-            Iterator<SampleIndexEntry> itExp = sampleIndexDBAdaptor.rawIterator(studyId_normal, sampleId);
-            Iterator<SampleIndexEntry> itAct = sampleIndexDBAdaptor.rawIterator(studyId_split, sampleId);
+    @Test
+    public void testLoadByRegionAndRemove() throws Exception {
+        URI outDir = newOutputUri();
+
+        VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME + "_split");
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")),
+                outDir, true, true, true);
+
+        int studyId_actual = mm.getStudyId(STUDY_NAME + "_split");
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.REGION);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")),
+                outputUri, true, true, true);
+
+        variantStorageEngine.removeFiles(STUDY_NAME + "_split", Collections.singletonList("chr22_1-2.variant-test-file.vcf.gz"));
+
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), null);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")),
+                outDir, true, true, true);
+
+        int studyId_expected = mm.getStudyId(STUDY_NAME);
+
+        checkVariantsTable(studyId_actual, studyId_expected, new Query(VariantQueryParam.FILE.key(), "chr22_1-1.variant-test-file.vcf.gz"),
+                new QueryOptions());
+        checkSampleIndex(studyId_actual, studyId_expected);
+    }
+
+    public void checkVariantsTable(int studyIdActual, int studyIdExpected, Query query, QueryOptions options) throws Exception {
+        VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor();
+
+        VariantDBIterator itAct = dbAdaptor.iterator(new Query(query).append(VariantQueryParam.STUDY.key(), studyIdActual), options);
+        VariantDBIterator itExp = dbAdaptor.iterator(new Query(query).append(VariantQueryParam.STUDY.key(), studyIdExpected), options);
+
+        while (itExp.hasNext()) {
+            assertTrue(itAct.hasNext());
+            Variant exp = itExp.next();
+            exp.getStudies().get(0).setStudyId("");
+            Variant act = itAct.next();
+            act.getStudies().get(0).setStudyId("");
+            assertEquals(exp.toJson(), act.toJson());
+        }
+        assertFalse(itAct.hasNext());
+
+    }
+
+    public void checkSampleIndex(int studyIdActual, int studyIdExpected) throws Exception {
+        VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor();
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(
+                dbAdaptor.getHBaseManager(),
+                dbAdaptor.getTableNameGenerator(),
+                dbAdaptor.getMetadataManager());
+        VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
+        for (Integer sampleId : mm.getIndexedSamples(studyIdExpected)) {
+            Iterator<SampleIndexEntry> itExp = sampleIndexDBAdaptor.rawIterator(studyIdExpected, sampleId);
+            Iterator<SampleIndexEntry> itAct = sampleIndexDBAdaptor.rawIterator(studyIdActual, sampleId);
 
             while (itExp.hasNext()) {
                 assertTrue(itAct.hasNext());
@@ -220,6 +279,5 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             }
             assertFalse(itAct.hasNext());
         }
-
     }
 }
