@@ -17,7 +17,7 @@ _KAR_SEX = {
 }
 _VARIABLE_FIELDS = ['Relationship', 'Siblings', 'Second Order', 'Third Order', 'Other Comments']
 
-FNAME_TEMPLATE = 'ALL.chr{}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz'
+FNAME_TEMPLATE = 'ALL.chr{}_GRCh38_sites.20170504.vcf.gz'
 
 
 def to_camel_case(text):
@@ -108,7 +108,7 @@ def create_families(ind_info):
 def create_files():
     text = []
     text.append('files:')
-    for chrom in list(range(1, 23)) + ['X', 'Y', 'MT']:
+    for chrom in list(range(1, 23)) + ['X', 'Y']:
         text.append('{}- name: {}'.format(' '*2, FNAME_TEMPLATE.format(chrom)))
         text.append('{}path: {}'.format(' '*4, 'data'))
     return '\n'.join(text)
