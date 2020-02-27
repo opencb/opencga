@@ -25,7 +25,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     LOAD_BATCH_SIZE("load.batchSize", 100),
     LOAD_THREADS("load.numThreads", 6),
-    LOAD_SPLIT_DATA("load.splitData", false),
+    LOAD_SPLIT_DATA("load.splitData"),
     POST_LOAD_CHECK_SKIP("postLoad.skipCheck", false),
 
     STATS_DEFAULT_GENOTYPE("stats.defaultGenotype", "0/0"), // Default genotype to be used for calculating stats.

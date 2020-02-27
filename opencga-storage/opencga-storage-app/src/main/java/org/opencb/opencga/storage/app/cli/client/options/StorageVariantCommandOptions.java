@@ -21,6 +21,7 @@ import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
@@ -134,8 +135,8 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
         public boolean resume;
 
-        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)")
-        public boolean loadSplitData;
+        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files by CHROMOSOME, REGION or TYPE")
+        public String loadSplitData;
 
         @Parameter(names = {"--skip-post-load-check"}, description = "Do not execute post load checks over the database")
         public boolean skipPostLoadCheck;

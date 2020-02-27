@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
@@ -60,7 +61,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOAD_SPLIT_DATA;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.STDIN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
@@ -109,8 +109,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         }
 
         if (!alreadyIndexedSamples.isEmpty()) {
-            if (options.getBoolean(VariantStorageOptions.LOAD_SPLIT_DATA.key(),
-                    VariantStorageOptions.LOAD_SPLIT_DATA.defaultValue())) {
+            VariantStorageEngine.LoadSplitData loadSplitData = VariantStorageEngine.LoadSplitData.from(options);
+            if (loadSplitData != null) {
                 logger.info("Loading split data");
             } else {
                 String fileName = Paths.get(fileMetadata.getPath()).getFileName().toString();
@@ -278,7 +278,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 dbAdaptor.getTableNameGenerator().getSampleIndexTableName(helper.getStudyId()),
                 getStudyId(), sampleIds,
                 GenomeHelper.COLUMN_FAMILY_BYTES,
-                getOptions().getBoolean(LOAD_SPLIT_DATA.key()),
+                VariantStorageEngine.LoadSplitData.from(getOptions()),
                 getOptions());
         return sampleIndexDBLoader;
     }
