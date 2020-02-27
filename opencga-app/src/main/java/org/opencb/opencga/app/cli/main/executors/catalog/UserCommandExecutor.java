@@ -172,7 +172,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             throw new ClientException("Missing user parameter");
         }
 
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), c.lastModified);
         params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
 

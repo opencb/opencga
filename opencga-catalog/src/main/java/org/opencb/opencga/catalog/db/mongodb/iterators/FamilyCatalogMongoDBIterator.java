@@ -92,7 +92,7 @@ public class FamilyCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
         // Get next BUFFER_SIZE documents
         int counter = 0;
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
-            Document familyDocument = (Document) mongoCursor.next();
+            Document familyDocument = mongoCursor.next();
 
             if (user != null && studyUid <= 0) {
                 studyUid = familyDocument.getLong(PRIVATE_STUDY_UID);
