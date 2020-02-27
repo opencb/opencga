@@ -26,6 +26,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserQuota;
+import org.opencb.opencga.core.models.user.UserStatus;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.ByteArrayInputStream;
@@ -321,9 +323,9 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
                     .append("AdditionalProperties", additionalProperties);
             attributes.put("OPENCGA_REGISTRATION_TOKEN", azureADMap);
 
-            User user = new User(id, name, mail, "", "", new Account().setType(Account.Type.GUEST).
+            User user = new User(id, name, mail, "", new Account().setType(Account.Type.GUEST).
                     setAuthentication(new Account.AuthenticationOrigin(originId, false)),
-                    User.UserStatus.READY, "", -1, -1, Collections.emptyList(), Collections.emptyMap(),
+                    UserStatus.READY, new UserQuota(-1, -1, -1, -1), Collections.emptyList(), Collections.emptyMap(),
                     attributes);
 
             userList.add(user);

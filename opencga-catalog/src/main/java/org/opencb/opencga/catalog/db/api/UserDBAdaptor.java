@@ -22,10 +22,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashSet;
@@ -70,10 +72,12 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
     }
 
-    OpenCGAResult insert(User user, QueryOptions options)
+    void authenticate(String userId, String password) throws CatalogDBException, CatalogAuthenticationException;
+
+    OpenCGAResult insert(User user, String password, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<User> get(String userId, QueryOptions options, String lastModified)
+    OpenCGAResult<User> get(String userId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
 //    @Deprecated
@@ -92,9 +96,8 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     OpenCGAResult delete(String userId, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
-
-    OpenCGAResult updateUserLastModified(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult changePassword(String userId, String oldPassword, String newPassword)
+            throws CatalogDBException, CatalogAuthenticationException;
 
     OpenCGAResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 
@@ -104,7 +107,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     OpenCGAResult deleteConfig(String userId, String name) throws CatalogDBException;
 
     // Filter operations
-    OpenCGAResult addFilter(String userId, User.Filter filter) throws CatalogDBException;
+    OpenCGAResult addFilter(String userId, UserFilter filter) throws CatalogDBException;
 
     OpenCGAResult updateFilter(String userId, String name, ObjectMap params) throws CatalogDBException;
 
@@ -114,12 +117,10 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         ID("id", TEXT_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         EMAIL("email", TEXT_ARRAY, ""),
-        PASSWORD("password", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
         ACCOUNT("account", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         QUOTA("quota", INTEGER_ARRAY, ""),

@@ -27,7 +27,7 @@ public class UserCreateParams {
     }
 
     public static UserCreateParams of(User user) {
-        return new UserCreateParams(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization());
+        return new UserCreateParams(user.getId(), user.getName(), user.getEmail(), "", user.getOrganization());
     }
 
     @Override
@@ -43,8 +43,7 @@ public class UserCreateParams {
     }
 
     public boolean checkValidParams() {
-        if (StringUtils.isEmpty("id") || StringUtils.isEmpty("name") || StringUtils.isEmpty("email")
-                || StringUtils.isEmpty("password")) {
+        if (StringUtils.isEmpty("id") || StringUtils.isEmpty("name") || StringUtils.isEmpty("email") || StringUtils.isEmpty("password")) {
             return false;
         }
         return true;

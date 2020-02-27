@@ -102,14 +102,10 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testGetUserInfo() throws CatalogException {
-        DataResult<User> user = catalogManager.getUserManager().get("user", null, new QueryOptions(), token);
+        DataResult<User> user = catalogManager.getUserManager().get("user", new QueryOptions(), token);
         System.out.println("user = " + user);
-        DataResult<User> userVoid = catalogManager.getUserManager().get("user", user.first().getLastModified(), new QueryOptions(),
-                token);
-        System.out.println("userVoid = " + userVoid);
-        assertTrue(userVoid.getResults().isEmpty());
         try {
-            catalogManager.getUserManager().get("user", null, new QueryOptions(), sessionIdUser2);
+            catalogManager.getUserManager().get("user", new QueryOptions(), sessionIdUser2);
             fail();
         } catch (CatalogException e) {
             System.out.println(e);
@@ -129,7 +125,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         attributes.put("object", new BasicDBObject("id", 1234));
         params.put("attributes", attributes);
 
-        User userPre = catalogManager.getUserManager().get("user", null, new QueryOptions(), token).first();
+        User userPre = catalogManager.getUserManager().get("user", new QueryOptions(), token).first();
         System.out.println("userPre = " + userPre);
         Thread.sleep(10);
 
@@ -137,18 +133,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getUserManager().update("user", new ObjectMap("email", newEmail), null, token);
         catalogManager.getUserManager().changePassword("user", PASSWORD, newPassword);
 
-        List<User> userList = catalogManager.getUserManager().get("user", userPre.getLastModified(), new QueryOptions(QueryOptions
-                .INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.PASSWORD.key(), UserDBAdaptor.QueryParams.NAME.key(), UserDBAdaptor.QueryParams
-                .EMAIL.key(), UserDBAdaptor.QueryParams.ATTRIBUTES.key())), token).getResults();
-        if (userList.isEmpty()) {
-            fail("Error. LastModified should have changed");
-        }
+        List<User> userList = catalogManager.getUserManager().get("user", new QueryOptions(QueryOptions
+                .INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.NAME.key(), UserDBAdaptor.QueryParams.EMAIL.key(),
+                UserDBAdaptor.QueryParams.ATTRIBUTES.key())), token).getResults();
         User userPost = userList.get(0);
         System.out.println("userPost = " + userPost);
-        assertTrue(!userPre.getLastModified().equals(userPost.getLastModified()));
         assertEquals(userPost.getName(), newName);
         assertEquals(userPost.getEmail(), newEmail);
-        assertEquals(null, userPost.getPassword());
 
         catalogManager.getUserManager().login("user", newPassword);
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
@@ -316,7 +307,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testModifyProject() throws CatalogException {
         String newProjectName = "ProjectName " + RandomStringUtils.randomAlphanumeric(10);
-        String projectId = catalogManager.getUserManager().get("user", null, new QueryOptions(), token).first().getProjects().get(0)
+        String projectId = catalogManager.getUserManager().get("user", new QueryOptions(), token).first().getProjects().get(0)
                 .getId();
 
         ObjectMap options = new ObjectMap();

@@ -195,7 +195,7 @@ public class ProjectManager extends AbstractManager {
         }
 
         // Check that the account type is not guest
-        OpenCGAResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), null);
+        OpenCGAResult<User> user = userDBAdaptor.get(userId, new QueryOptions());
         if (user.getNumResults() == 0) {
             throw new CatalogException("Internal error happened. Could not find user " + userId);
         }
@@ -259,7 +259,6 @@ public class ProjectManager extends AbstractManager {
             }
             throw e;
         }
-        userDBAdaptor.updateUserLastModified(userId);
         auditManager.auditCreate(userId, Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -473,7 +472,6 @@ public class ProjectManager extends AbstractManager {
                 ParamUtils.checkAlias(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
             }
 
-            userDBAdaptor.updateUserLastModified(userId);
             OpenCGAResult result = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
             auditManager.auditUpdate(userId, Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -564,7 +562,7 @@ public class ProjectManager extends AbstractManager {
         }
 
         OpenCGAResult<User> userDataResult = userDBAdaptor.get(owner, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(UserDBAdaptor.QueryParams.ACCOUNT.key(), UserDBAdaptor.QueryParams.PROJECTS.key())), null);
+                Arrays.asList(UserDBAdaptor.QueryParams.ACCOUNT.key(), UserDBAdaptor.QueryParams.PROJECTS.key())));
         if (userDataResult.getNumResults() == 0) {
             throw new CatalogException("User " + owner + " not found");
         }
