@@ -221,4 +221,29 @@ public class VariantIndexParams extends ToolParams {
         this.indexSearch = indexSearch;
         return this;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("VariantIndexParams{");
+        sb.append("file='").append(file).append('\'');
+        sb.append(", resume=").append(resume);
+        sb.append(", outdir='").append(outdir).append('\'');
+        sb.append(", transform=").append(transform);
+        sb.append(", gvcf=").append(gvcf);
+        sb.append(", load=").append(load);
+        sb.append(", loadSplitData=").append(loadSplitData);
+        sb.append(", skipPostLoadCheck=").append(skipPostLoadCheck);
+        sb.append(", excludeGenotype=").append(excludeGenotype);
+        sb.append(", includeExtraFields='").append(includeExtraFields).append('\'');
+        sb.append(", merge='").append(merge).append('\'');
+        sb.append(", calculateStats=").append(calculateStats);
+        sb.append(", aggregated=").append(aggregated);
+        sb.append(", aggregationMappingFile='").append(aggregationMappingFile).append('\'');
+        sb.append(", annotate=").append(annotate);
+        sb.append(", annotator='").append(annotator).append('\'');
+        sb.append(", overwriteAnnotations=").append(overwriteAnnotations);
+        sb.append(", indexSearch=").append(indexSearch);
+        sb.append('}');
+        return sb.toString();
+    }
 }
