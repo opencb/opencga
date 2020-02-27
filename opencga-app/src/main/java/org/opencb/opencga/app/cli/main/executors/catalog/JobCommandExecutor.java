@@ -26,12 +26,16 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
 import org.opencb.opencga.core.models.job.JobCreateParams;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.response.RestResponse;
 
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -65,6 +69,9 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "top":
                 top();
+                break;
+            case "log":
+                log();
                 break;
             case "delete":
                 queryResponse = delete();
@@ -153,6 +160,71 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         JobCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
         String study = resolveStudy(c.study);
         new JobsTop(openCGAClient, study, c.iterations, c.jobsLimit, c.delay).run();
+    }
+
+    private void log() throws Exception {
+        JobCommandOptions.LogCommandOptions c = jobsCommandOptions.logCommandOptions;
+        String study = resolveStudy(c.study);
+        openCGAClient.setThrowExceptionOnError(true);
+
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study).append("type", c.type);
+
+        int lines;
+        if (c.lines == null) {
+            lines = Integer.MAX_VALUE;
+            params.append("tail", false).append("lines", 100);
+        } else {
+            if (c.follow) {
+                // Force tail = true
+                c.tail = true;
+            }
+            lines = c.lines;
+            params.append("tail", c.tail).append("lines", lines);
+        }
+
+        int printedLines = 0;
+        FileContent content = openCGAClient.getJobClient().log(c.job, params).firstResult();
+        printedLines += printContent(content);
+
+        params.put("lines", 100);
+        params.put("tail", false); // Only use tail for the first batch
+
+        while (c.follow || printedLines < lines ) {
+            params.put("offset", content.getOffset());
+            content = openCGAClient.getJobClient().log(c.job, params).firstResult();
+            printedLines += printContent(content);
+
+            // Read fewer lines than expected
+            if (content.getLines() < params.getInt("lines")) {
+                if (c.follow) {
+                    // Check job status
+                    Job job = openCGAClient.getJobClient().info(c.job, new ObjectMap(ParamConstants.STUDY_PARAM, study)).firstResult();
+                    if (job.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.RUNNING)) {
+                        // If the job is still running, sleep and continue
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(c.delay));
+                    } else {
+                        // If the job is not running, skip sleep and break loop
+                        break;
+                    }
+                } else {
+                    // End of file
+                    if (content.isEof()) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private int printContent(FileContent content) {
+        if (!content.getContent().isEmpty()) {
+            System.out.print(content.getContent());
+            if (!content.getContent().endsWith("\n")) {
+                System.out.println();
+            }
+            System.out.flush();
+        }
+        return content.getLines();
     }
 
     private RestResponse<Job> delete() throws ClientException {

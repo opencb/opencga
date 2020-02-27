@@ -43,8 +43,7 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,7 +159,6 @@ public class UserManager extends AbstractManager {
             userDBAdaptor.checkId(userId);
             String authOrigin = getAuthenticationOriginId(userId);
             authenticationManagerMap.get(authOrigin).changePassword(userId, oldPassword, newPassword);
-            userDBAdaptor.updateUserLastModified(userId);
             auditManager.auditUser(userId, Enums.Action.CHANGE_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
@@ -170,7 +168,7 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<User> create(User user, @Nullable String token) throws CatalogException {
+    public OpenCGAResult<User> create(User user, String password, @Nullable String token) throws CatalogException {
         // Check if the users can be registered publicly or just the admin.
         ObjectMap auditParams = new ObjectMap("user", user);
 
@@ -191,10 +189,10 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(user.getName(), "name");
         checkEmail(user.getEmail());
         ParamUtils.checkObj(user.getAccount(), "account");
+        ParamUtils.defaultObject(user.getQuota(), UserQuota::new);
         user.setOrganization(ParamUtils.defaultObject(user.getOrganization(), ""));
 
-        String password = "";
-        if (StringUtils.isEmpty(user.getPassword())) {
+        if (StringUtils.isEmpty(password)) {
             // The authentication origin must be different than internal
             Set<String> authOrigins = configuration.getAuthentication().getAuthenticationOrigins()
                     .stream()
@@ -204,21 +202,14 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Unknown authentication origin id '" + user.getAccount().getAuthentication() + "'");
             }
         } else {
-            password = user.getPassword();
-            user.setPassword("");
-
             user.getAccount().setAuthentication(new Account.AuthenticationOrigin(INTERNAL_AUTHORIZATION, false));
         }
 
         checkUserExists(user.getId());
-        user.setStatus(new User.UserStatus());
+        user.setStatus(new UserStatus());
 
         if (user.getAccount().getType() == null) {
             user.getAccount().setType(Account.Type.GUEST);
-        }
-
-        if (user.getQuota() <= 0L) {
-            user.setQuota(-1L);
         }
 
         try {
@@ -227,18 +218,12 @@ public class UserManager extends AbstractManager {
             }
 
             catalogIOManagerFactory.getDefault().createUser(user.getId());
-            userDBAdaptor.insert(user, QueryOptions.empty());
+            userDBAdaptor.insert(user, password, QueryOptions.empty());
 
             auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            OpenCGAResult<User> queryResult = userDBAdaptor.get(user.getId(), QueryOptions.empty(), null);
-
-            if (StringUtils.isNotEmpty(password)) {
-                authenticationManagerMap.get(INTERNAL_AUTHORIZATION).newPassword(user.getId(), password);
-            }
-
-            return queryResult;
+            return userDBAdaptor.get(user.getId(), QueryOptions.empty());
         } catch (CatalogIOException | CatalogDBException e) {
             if (!userDBAdaptor.exists(user.getId())) {
                 logger.error("ERROR! DELETING USER! " + user.getId());
@@ -268,11 +253,10 @@ public class UserManager extends AbstractManager {
      */
     public OpenCGAResult<User> create(String id, String name, String email, String password, String organization, Long quota,
                                       Account.Type type, String token) throws CatalogException {
-        User user = new User(id, name, email, password, organization, User.UserStatus.READY)
+        User user = new User(id, name, email, organization, UserStatus.READY)
                 .setAccount(new Account(type, "", "", null))
-                .setQuota(quota != null ? quota : 0L);
-
-        return create(user, token);
+                .setQuota(new UserQuota().setMaxDisk(quota != null ? quota : -1));
+        return create(user, password, token);
     }
 
     public void syncAllUsersOfExternalGroup(String study, String authOrigin, String token) throws CatalogException {
@@ -307,7 +291,7 @@ public class UserManager extends AbstractManager {
                 while (iterator.hasNext()) {
                     User user = iterator.next();
                     try {
-                        create(user, token);
+                        create(user, null, token);
                         logger.info("User '{}' ({}) successfully created", user.getId(), user.getName());
                     } catch (CatalogParameterException e) {
                         logger.warn("Could not create user '{}' ({}). {}", user.getId(), user.getName(), e.getMessage());
@@ -382,7 +366,7 @@ public class UserManager extends AbstractManager {
                 userList = authenticationManagerMap.get(authOrigin).getUsersFromRemoteGroup(remoteGroup);
                 for (User user : userList) {
                     try {
-                        create(user, token);
+                        create(user, null, token);
                         logger.info("User '{}' successfully created", user.getId());
                     } catch (CatalogException e) {
                         logger.warn("{}", e.getMessage());
@@ -464,7 +448,7 @@ public class UserManager extends AbstractManager {
                 logger.info("Fetching user information from authentication origin '{}'", authOrigin);
                 List<User> parsedUserList = authenticationManagerMap.get(authOrigin).getRemoteUserInformation(idList);
                 for (User user : parsedUserList) {
-                    create(user, token);
+                    create(user, null, token);
                     auditManager.audit(userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, user.getId(), "", "",
                             "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                     logger.info("User '{}' successfully created", user.getId());
@@ -475,7 +459,7 @@ public class UserManager extends AbstractManager {
                             .setType(Account.Type.GUEST)
                             .setAuthentication(new Account.AuthenticationOrigin(authOrigin, true)))
                             .setEmail("mail@mail.co.uk");
-                    create(application, token);
+                    create(application, null, token);
                     auditManager.audit(userId, Enums.Action.IMPORT_EXTERNAL_USERS, Enums.Resource.USER, application.getId(), "",
                             "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                     logger.info("User (application) '{}' successfully created", application.getId());
@@ -513,29 +497,15 @@ public class UserManager extends AbstractManager {
     }
 
     /**
-     * Reads a user from Catalog given a user id.
-     *
-     * @param userId    user id of the object to read
-     * @param options   Read options
-     * @param sessionId sessionId
-     * @return The specified object
-     * @throws CatalogException CatalogException
-     */
-    public OpenCGAResult<User> get(String userId, QueryOptions options, String sessionId) throws CatalogException {
-        return get(userId, null, options, sessionId);
-    }
-
-    /**
      * Gets the user information.
      *
      * @param userId       User id
-     * @param lastModified If lastModified matches with the one in Catalog, return an empty OpenCGAResult.
      * @param options      QueryOptions
      * @param token    SessionId of the user performing this operation.
      * @return The requested user
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<User> get(String userId, String lastModified, QueryOptions options, String token)
+    public OpenCGAResult<User> get(String userId, QueryOptions options, String token)
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
@@ -543,16 +513,14 @@ public class UserManager extends AbstractManager {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("userId", userId)
-                .append("lastModified", lastModified)
                 .append("options", options)
                 .append("token", token);
         try {
             validateUserAndToken(userId, token);
-            OpenCGAResult<User> userDataResult = userDBAdaptor.get(userId, options, lastModified);
+            OpenCGAResult<User> userDataResult = userDBAdaptor.get(userId, options);
 
             // Remove some unnecessary and prohibited parameters
             for (User user : userDataResult.getResults()) {
-                user.setPassword(null);
                 if (user.getProjects() != null) {
                     for (Project project : user.getProjects()) {
                         if (project.getStudies() != null) {
@@ -597,12 +565,11 @@ public class UserManager extends AbstractManager {
             if (parameters.containsKey("email")) {
                 checkEmail(parameters.getString("email"));
             }
-            userDBAdaptor.updateUserLastModified(userId);
             OpenCGAResult result = userDBAdaptor.update(userId, parameters);
             auditManager.auditUpdate(loggedUser, Enums.Resource.USER, userId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            OpenCGAResult<User> queryResult = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()), "");
+            OpenCGAResult<User> queryResult = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
             queryResult.setTime(queryResult.getTime() + result.getTime());
 
             return queryResult;
@@ -647,7 +614,7 @@ public class UserManager extends AbstractManager {
 
                     Query query = new Query()
                             .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                            .append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
+                            .append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), UserStatus.DELETED);
                     OpenCGAResult<User> deletedUser = userDBAdaptor.get(query, QueryOptions.empty());
                     deletedUser.setTime(deletedUser.getTime() + result.getTime());
 
@@ -742,7 +709,7 @@ public class UserManager extends AbstractManager {
                 User user = authenticationManagerMap.get(authId).getRemoteUserInformation(Collections.singletonList(userId)).get(0);
                 // Generate a root token to be able to create the user even if the installation is private
                 String rootToken = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(OPENCGA);
-                create(user, rootToken);
+                create(user, null, rootToken);
             }
 
             try {
@@ -816,8 +783,8 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException if there already exists a filter with that same name for the user or if the user corresponding to the
      *                          session id is not the same as the provided user id.
      */
-    public OpenCGAResult<User.Filter> addFilter(String userId, String name, String description, File.Bioformat bioformat, Query query,
-                                                QueryOptions queryOptions, String token) throws CatalogException {
+    public OpenCGAResult<UserFilter> addFilter(String userId, String name, String description, File.Bioformat bioformat, Query query,
+                                               QueryOptions queryOptions, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -850,7 +817,7 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("There already exists a filter called " + name + " for user " + userId);
             }
 
-            User.Filter filter = new User.Filter(name, description, bioformat, query, queryOptions);
+            UserFilter filter = new UserFilter(name, description, bioformat, query, queryOptions);
             OpenCGAResult result = userDBAdaptor.addFilter(userId, filter);
             auditManager.auditUser(userIdAux, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -873,7 +840,7 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException if the filter could not be updated because the filter name is not correct or if the user corresponding to
      *                          the session id is not the same as the provided user id.
      */
-    public OpenCGAResult<User.Filter> updateFilter(String userId, String name, ObjectMap params, String token) throws CatalogException {
+    public OpenCGAResult<UserFilter> updateFilter(String userId, String name, ObjectMap params, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         ParamUtils.checkParameter(name, "name");
@@ -898,7 +865,7 @@ public class UserManager extends AbstractManager {
             }
 
             OpenCGAResult result = userDBAdaptor.updateFilter(userId, name, params);
-            User.Filter filter = getFilter(userId, name);
+            UserFilter filter = getFilter(userId, name);
             if (filter == null) {
                 throw new CatalogException("Internal error: The filter " + name + " could not be found.");
             }
@@ -922,7 +889,7 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the
      *                          session id is not the same as the provided user id.
      */
-    public OpenCGAResult<User.Filter> deleteFilter(String userId, String name, String token) throws CatalogException {
+    public OpenCGAResult<UserFilter> deleteFilter(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         ParamUtils.checkParameter(name, "name");
@@ -938,7 +905,7 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("User " + userIdAux + " is not authorised to delete filters for user " + userId);
             }
 
-            User.Filter filter = getFilter(userId, name);
+            UserFilter filter = getFilter(userId, name);
             if (filter == null) {
                 throw new CatalogException("There is no filter called " + name + " for user " + userId);
             }
@@ -963,7 +930,7 @@ public class UserManager extends AbstractManager {
      * @return the filter.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public OpenCGAResult<User.Filter> getFilter(String userId, String name, String token) throws CatalogException {
+    public OpenCGAResult<UserFilter> getFilter(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -979,7 +946,7 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
             }
 
-            User.Filter filter = getFilter(userId, name);
+            UserFilter filter = getFilter(userId, name);
             auditManager.auditUser(userIdAux, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1003,7 +970,7 @@ public class UserManager extends AbstractManager {
      * @return the filters.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public OpenCGAResult<User.Filter> getAllFilters(String userId, String token) throws CatalogException {
+    public OpenCGAResult<UserFilter> getAllFilters(String userId, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
 
@@ -1026,7 +993,7 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Internal error: User " + userId + " not found.");
             }
 
-            List<User.Filter> filters = userDataResult.first().getConfigs().getFilters();
+            List<UserFilter> filters = userDataResult.first().getConfigs().getFilters();
             auditManager.auditUser(userIdAux, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1107,12 +1074,12 @@ public class UserManager extends AbstractManager {
             }
 
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-            OpenCGAResult<User> userDataResult = userDBAdaptor.get(userId, options, "");
+            OpenCGAResult<User> userDataResult = userDBAdaptor.get(userId, options);
             if (userDataResult.getNumResults() == 0) {
                 throw new CatalogException("Internal error: Could not get user " + userId);
             }
 
-            User.UserConfiguration configs = userDataResult.first().getConfigs();
+            UserConfiguration configs = userDataResult.first().getConfigs();
             if (configs == null) {
                 throw new CatalogException("Internal error: Configuration object is null.");
             }
@@ -1158,12 +1125,12 @@ public class UserManager extends AbstractManager {
             }
 
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-            OpenCGAResult<User> userDataResult = userDBAdaptor.get(userId, options, "");
+            OpenCGAResult<User> userDataResult = userDBAdaptor.get(userId, options);
             if (userDataResult.getNumResults() == 0) {
                 throw new CatalogException("Internal error: Could not get user " + userId);
             }
 
-            User.UserConfiguration configs = userDataResult.first().getConfigs();
+            UserConfiguration configs = userDataResult.first().getConfigs();
             if (configs == null) {
                 throw new CatalogException("Internal error: Configuration object is null.");
             }
@@ -1187,7 +1154,7 @@ public class UserManager extends AbstractManager {
     }
 
 
-    private User.Filter getFilter(String userId, String name) throws CatalogException {
+    private UserFilter getFilter(String userId, String name) throws CatalogException {
         Query query = new Query()
                 .append(UserDBAdaptor.QueryParams.ID.key(), userId);
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
@@ -1197,7 +1164,7 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("Internal error: User " + userId + " not found.");
         }
 
-        for (User.Filter filter : userDataResult.first().getConfigs().getFilters()) {
+        for (UserFilter filter : userDataResult.first().getConfigs().getFilters()) {
             if (name.equals(filter.getName())) {
                 return filter;
             }
@@ -1241,7 +1208,7 @@ public class UserManager extends AbstractManager {
     }
 
     private String getAuthenticationOriginId(String userId) throws CatalogException {
-        OpenCGAResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), "");
+        OpenCGAResult<User> user = userDBAdaptor.get(userId, new QueryOptions());
         if (user == null || user.getNumResults() == 0) {
             throw new CatalogException(userId + " user not found");
         }

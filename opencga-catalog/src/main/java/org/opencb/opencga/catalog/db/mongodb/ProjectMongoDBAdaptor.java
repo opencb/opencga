@@ -849,7 +849,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case STATUS_DATE:
                     case LAST_MODIFIED:
                     case SIZE:
-                    case DATASTORES:
+                    case INTERNAL:
                     case ACL_USER_ID:
                         addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;

@@ -22,13 +22,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserConfiguration;
+import org.opencb.opencga.core.models.user.UserFilter;
+import org.opencb.opencga.core.models.user.UserStatus;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -51,18 +51,17 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createUserTest() throws CatalogException {
-
-        User user = new User("NewUser", "", "", "", "", User.UserStatus.READY);
-        catalogUserDBAdaptor.insert(user, null);
+        User user = new User("NewUser", "", "", "", UserStatus.READY);
+        catalogUserDBAdaptor.insert(user, "", null);
 
         thrown.expect(CatalogDBException.class);
-        catalogUserDBAdaptor.insert(user, null);
+        catalogUserDBAdaptor.insert(user, "", null);
     }
 
     @Test
     public void deleteUserTest() throws CatalogException {
-        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.UserStatus.READY);
-        catalogUserDBAdaptor.insert(deletable1, null);
+        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "", UserStatus.READY);
+        catalogUserDBAdaptor.insert(deletable1, "1234", null);
         Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), "deletable1");
         DataResult<User> userResult = catalogUserDBAdaptor.get(query, QueryOptions.empty());
         assertFalse(userResult.getResults().isEmpty());
@@ -73,7 +72,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         DataResult deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
         assertEquals(1, deleteUser.getNumUpdated());
 
-        query.append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
+        query.append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), UserStatus.DELETED);
         DataResult<User> queryResult = catalogUserDBAdaptor.get(query, QueryOptions.empty());
         assertEquals(Status.DELETED, queryResult.first().getStatus().getName());
 
@@ -86,29 +85,26 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getUserTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        DataResult<User> user = catalogUserDBAdaptor.get(user1.getId(), null, null);
+        DataResult<User> user = catalogUserDBAdaptor.get(user1.getId(), null);
         assertNotSame(0, user.getResults().size());
 
-        user = catalogUserDBAdaptor.get(user3.getId(), null, null);
+        user = catalogUserDBAdaptor.get(user3.getId(), null);
         assertFalse(user.getResults().isEmpty());
         assertFalse(user.first().getProjects().isEmpty());
 
-        user = catalogUserDBAdaptor.get(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")), null);
+        user = catalogUserDBAdaptor.get(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")));
         assertEquals(null, user.first().getProjects());
 
-        user = catalogUserDBAdaptor.get(user3.getId(), null, user.first().getLastModified());
-        assertTrue(user.getResults().isEmpty());
-
         thrown.expect(CatalogDBException.class);
-        catalogUserDBAdaptor.get("NonExistingUser", null, null);
+        catalogUserDBAdaptor.get("NonExistingUser", null);
     }
 
     @Test
-    public void changePasswordTest() throws CatalogDBException {
-        DataResult result = catalogUserDBAdaptor.changePassword(user2.getId(), user2.getPassword(), "1234");
+    public void changePasswordTest() throws CatalogDBException, CatalogAuthenticationException {
+        DataResult result = catalogUserDBAdaptor.changePassword(user2.getId(), "1111", "1234");
         assertEquals(1, result.getNumUpdated());
 
-        thrown.expect(CatalogDBException.class);
+        thrown.expect(CatalogAuthenticationException.class);
         catalogUserDBAdaptor.changePassword(user2.getId(), "BAD_PASSWORD", "asdf");
     }
 
@@ -118,7 +114,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         genomeMapsConfig.put("otherConf", Arrays.asList(1, 2, 3, 4, 5));
         catalogUserDBAdaptor.setConfig(user1.getId(), "genomemaps", genomeMapsConfig);
 
-        User user = catalogUserDBAdaptor.get(user1.getId(), null, null).first();
+        User user = catalogUserDBAdaptor.get(user1.getId(), null).first();
         assertNotNull(user.getConfigs().get("genomemaps"));
         Map<String, Object> genomemaps = (Map<String, Object>) user.getConfigs().get("genomemaps");
         assertNotNull(genomemaps.get("otherConf"));
@@ -129,12 +125,12 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void addFilterTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query("key1", "value1").append("key2", "value2");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
-        User.Filter filter = new User.Filter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
+        UserFilter filter = new UserFilter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
 
         catalogUserDBAdaptor.addFilter(user4.getId(), filter);
-        DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions(), null);
+        DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions());
 
-        User.Filter filterResult = userDataResult.first().getConfigs().getFilters().get(0);
+        UserFilter filterResult = userDataResult.first().getConfigs().getFilters().get(0);
 
         assertEquals(filter.getName(), filterResult.getName());
         assertEquals(filter.getDescription(), filterResult.getDescription());
@@ -147,7 +143,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void updateFilterTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query("key1", "value1").append("key2", "value2");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
-        User.Filter filter = new User.Filter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
+        UserFilter filter = new UserFilter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
         catalogUserDBAdaptor.addFilter(user4.getId(), filter);
 
         ObjectMap params = new ObjectMap()
@@ -157,9 +153,9 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .append(UserDBAdaptor.FilterParams.OPTIONS.key(), new QueryOptions("options", "optionsValue"));
         catalogUserDBAdaptor.updateFilter(user4.getId(), filter.getName(), params);
 
-        DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions(), null);
+        DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions());
 
-        User.Filter filterResult = userDataResult.first().getConfigs().getFilters().get(0);
+        UserFilter filterResult = userDataResult.first().getConfigs().getFilters().get(0);
 
         assertEquals(filter.getName(), filterResult.getName());
         assertEquals(params.get(UserDBAdaptor.FilterParams.DESCRIPTION.key()), filterResult.getDescription());
@@ -173,13 +169,13 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteFilterTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query("key1", "value1").append("key2", "value2");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
-        User.Filter filter = new User.Filter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
+        UserFilter filter = new UserFilter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
 
         catalogUserDBAdaptor.addFilter(user4.getId(), filter);
         catalogUserDBAdaptor.deleteFilter(user4.getId(), filter.getName());
-        DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions(), null);
+        DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions());
 
-        User.UserConfiguration configs = userDataResult.first().getConfigs();
+        UserConfiguration configs = userDataResult.first().getConfigs();
         assertTrue(configs.getFilters().size() == 0);
     }
 
@@ -194,7 +190,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         assertEquals(1, writeResult.getNumUpdated());
 
-        DataResult<User> queryResult = catalogUserDBAdaptor.get(user4.getId(), QueryOptions.empty(), "");
+        DataResult<User> queryResult = catalogUserDBAdaptor.get(user4.getId(), QueryOptions.empty());
         LinkedHashMap result = (LinkedHashMap) queryResult.first().getConfigs().get("config1");
         assertTrue(result.get("key1") instanceof List);
         assertTrue(result.get("key2") instanceof Map);
@@ -204,7 +200,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         writeResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
         assertEquals(1, writeResult.getNumUpdated());
 
-        queryResult = catalogUserDBAdaptor.get(user4.getId(), QueryOptions.empty(), "");
+        queryResult = catalogUserDBAdaptor.get(user4.getId(), QueryOptions.empty());
         result = (LinkedHashMap) queryResult.first().getConfigs().get("config1");
 
         assertTrue(result.get("key1") instanceof List);

@@ -12,7 +12,7 @@ public class VariantIndexParams extends ToolParams {
 
     public VariantIndexParams(String file,
                               boolean resume, String outdir, boolean transform, boolean gvcf,
-                              boolean load, boolean loadSplitData, boolean skipPostLoadCheck,
+                              boolean load, String loadSplitData, boolean skipSampleIndex, boolean skipPostLoadCheck,
                               boolean excludeGenotype, String includeExtraFields, String merge,
                               boolean calculateStats, Aggregation aggregated, String aggregationMappingFile, boolean annotate,
                               String annotator, boolean overwriteAnnotations, boolean indexSearch) {
@@ -23,6 +23,7 @@ public class VariantIndexParams extends ToolParams {
         this.gvcf = gvcf;
         this.load = load;
         this.loadSplitData = loadSplitData;
+        this.skipSampleIndex = skipSampleIndex;
         this.skipPostLoadCheck = skipPostLoadCheck;
         this.excludeGenotype = excludeGenotype;
         this.includeExtraFields = includeExtraFields;
@@ -44,7 +45,8 @@ public class VariantIndexParams extends ToolParams {
     private boolean gvcf;
 
     private boolean load;
-    private boolean loadSplitData;
+    private String loadSplitData;
+    private boolean skipSampleIndex;
     private boolean skipPostLoadCheck;
     private boolean excludeGenotype;
     private String includeExtraFields = ParamConstants.ALL;
@@ -114,12 +116,21 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
-    public boolean isLoadSplitData() {
+    public String getLoadSplitData() {
         return loadSplitData;
     }
 
-    public VariantIndexParams setLoadSplitData(boolean loadSplitData) {
+    public VariantIndexParams setLoadSplitData(String loadSplitData) {
         this.loadSplitData = loadSplitData;
+        return this;
+    }
+
+    public boolean isSkipSampleIndex() {
+        return skipSampleIndex;
+    }
+
+    public VariantIndexParams setSkipSampleIndex(boolean skipSampleIndex) {
+        this.skipSampleIndex = skipSampleIndex;
         return this;
     }
 
@@ -220,5 +231,30 @@ public class VariantIndexParams extends ToolParams {
     public VariantIndexParams setIndexSearch(boolean indexSearch) {
         this.indexSearch = indexSearch;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("VariantIndexParams{");
+        sb.append("file='").append(file).append('\'');
+        sb.append(", resume=").append(resume);
+        sb.append(", outdir='").append(outdir).append('\'');
+        sb.append(", transform=").append(transform);
+        sb.append(", gvcf=").append(gvcf);
+        sb.append(", load=").append(load);
+        sb.append(", loadSplitData=").append(loadSplitData);
+        sb.append(", skipPostLoadCheck=").append(skipPostLoadCheck);
+        sb.append(", excludeGenotype=").append(excludeGenotype);
+        sb.append(", includeExtraFields='").append(includeExtraFields).append('\'');
+        sb.append(", merge='").append(merge).append('\'');
+        sb.append(", calculateStats=").append(calculateStats);
+        sb.append(", aggregated=").append(aggregated);
+        sb.append(", aggregationMappingFile='").append(aggregationMappingFile).append('\'');
+        sb.append(", annotate=").append(annotate);
+        sb.append(", annotator='").append(annotator).append('\'');
+        sb.append(", overwriteAnnotations=").append(overwriteAnnotations);
+        sb.append(", indexSearch=").append(indexSearch);
+        sb.append('}');
+        return sb.toString();
     }
 }

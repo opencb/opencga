@@ -1110,8 +1110,17 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--samples"}, description = "List of samples.")
+        @Parameter(names = {"--samples"}, description = "List of samples (incompatible with the parameter --family).")
         public List<String> samples;
+
+        @Parameter(names = {"--families"}, description = "List of families (incompatible with the parameter --sample).")
+        public List<String> families;
+
+        @Parameter(names = {"--population"}, description = "Population to get the MAF, e.g.: 1kg_phase3:CEU, cohort:ALL.")
+        public String population;
+
+        @Parameter(names = {"--method"}, description = "Method to compute relatedness.")
+        public String method = "IBD";
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
@@ -1127,8 +1136,17 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--samples"}, description = "List of samples.")
+        @Parameter(names = {"--samples"}, description = "List of samples (incompatible with the parameter --family).")
         public List<String> samples;
+
+        @Parameter(names = {"--families"}, description = "List of families (incompatible with the parameter --sample).")
+        public List<String> families;
+
+        @Parameter(names = {"--population"}, description = "Population to get the MAF, e.g.: 1kg_phase3:CEU, cohort:ALL.")
+        public String population;
+
+        @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
+        public String relatednessMethod = "IBD";
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;

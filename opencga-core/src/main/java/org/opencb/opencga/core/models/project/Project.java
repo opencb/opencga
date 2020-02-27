@@ -19,7 +19,6 @@ package org.opencb.opencga.core.models.project;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.util.*;
@@ -49,7 +48,7 @@ public class Project extends PrivateFields {
 
     private List<Study> studies;
 
-    private Map<File.Bioformat, DataStore> dataStores;
+    private ProjectInternal internal;
     private Map<String, Object> attributes;
 
 
@@ -58,17 +57,17 @@ public class Project extends PrivateFields {
 
     public Project(String id, String name, String description, Status status, String organization, Organism organism, int currentRelease) {
         this(id, name, TimeUtils.getTime(), description, organization, organism, status, null, 0, new LinkedList<>(),
-                new HashMap<>(), new HashMap<>(), currentRelease);
+                new HashMap<>(), currentRelease);
     }
 
     public Project(String id, String name, String creationDate, String description, Status status, String lastModified, long size,
                    String organization, Organism organism, int currentRelease) {
         this(id, name, creationDate, description, organization, organism, status, lastModified, size, new LinkedList<>(),
-                new HashMap<>(), new HashMap<>(), currentRelease);
+                new HashMap<>(), currentRelease);
     }
 
     public Project(String id, String name, String creationDate, String description, String organization, Organism organism, Status status,
-                   String lastModified, long size, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
+                   String lastModified, long size, List<Study> studies,
                    Map<String, Object> attributes, int currentRelease) {
         this.id = id;
         this.name = name;
@@ -80,7 +79,6 @@ public class Project extends PrivateFields {
         this.lastModified = lastModified;
         this.size = size;
         this.studies = studies;
-        this.dataStores = dataStores;
         this.attributes = attributes;
         this.currentRelease = currentRelease;
     }
@@ -189,7 +187,6 @@ public class Project extends PrivateFields {
         sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", size=").append(size);
         sb.append(", studies=").append(studies);
-        sb.append(", dataStores=").append(dataStores);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -327,12 +324,12 @@ public class Project extends PrivateFields {
         return this;
     }
 
-    public Map<File.Bioformat, DataStore> getDataStores() {
-        return dataStores;
+    public ProjectInternal getInternal() {
+        return internal;
     }
 
-    public Project setDataStores(Map<File.Bioformat, DataStore> dataStores) {
-        this.dataStores = dataStores;
+    public Project setInternal(ProjectInternal internal) {
+        this.internal = internal;
         return this;
     }
 

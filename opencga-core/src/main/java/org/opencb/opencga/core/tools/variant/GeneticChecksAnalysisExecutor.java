@@ -13,6 +13,8 @@ public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor 
     private String study;
     private List<String> samples;
     private GeneticCheck geneticCheck;
+    private String population;
+    private String relatednessMethod;
 
     public GeneticChecksAnalysisExecutor() {
     }
@@ -41,6 +43,24 @@ public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor 
 
     public GeneticChecksAnalysisExecutor setGeneticCheck(GeneticCheck geneticCheck) {
         this.geneticCheck = geneticCheck;
+        return this;
+    }
+
+    public String getPopulation() {
+        return population;
+    }
+
+    public GeneticChecksAnalysisExecutor setPopulation(String population) {
+        this.population = population;
+        return this;
+    }
+
+    public String getRelatednessMethod() {
+        return relatednessMethod;
+    }
+
+    public GeneticChecksAnalysisExecutor setRelatednessMethod(String relatednessMethod) {
+        this.relatednessMethod = relatednessMethod;
         return this;
     }
 }

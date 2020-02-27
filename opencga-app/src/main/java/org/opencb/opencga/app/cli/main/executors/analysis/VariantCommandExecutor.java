@@ -304,6 +304,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().runRelatedness(
                 new RelatednessAnalysisParams(
                         variantCommandOptions.relatednessCommandOptions.samples,
+                        variantCommandOptions.relatednessCommandOptions.families,
+                        variantCommandOptions.relatednessCommandOptions.method,
+                        variantCommandOptions.relatednessCommandOptions.population,
                         variantCommandOptions.relatednessCommandOptions.outdir
                 ),
                 getParams(variantCommandOptions.relatednessCommandOptions.study)
@@ -314,6 +317,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().runGeneticChecks(
                 new GeneticChecksAnalysisParams(
                         variantCommandOptions.geneticChecksCommandOptions.samples,
+                        variantCommandOptions.geneticChecksCommandOptions.families,
+                        variantCommandOptions.geneticChecksCommandOptions.relatednessMethod,
+                        variantCommandOptions.geneticChecksCommandOptions.population,
                         variantCommandOptions.geneticChecksCommandOptions.outdir
                 ),
                 getParams(variantCommandOptions.geneticChecksCommandOptions.study)
@@ -379,6 +385,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantIndex.genericVariantIndexOptions.gvcf,
                         variantIndex.genericVariantIndexOptions.load,
                         variantIndex.genericVariantIndexOptions.loadSplitData,
+                        variantIndex.genericVariantIndexOptions.skipSampleIndex,
                         variantIndex.genericVariantIndexOptions.skipPostLoadCheck,
                         variantIndex.genericVariantIndexOptions.excludeGenotype,
                         variantIndex.genericVariantIndexOptions.includeExtraFields,

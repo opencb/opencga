@@ -23,20 +23,18 @@ db.getCollection("dataset").drop()
 
 // Add new opencga administrator user to user collection #1425
 var user = db.getCollection("user").findOne({"id": "opencga"});
-
 if (user === null) {
     var metadata = db.getCollection("metadata").findOne({});
     db.getCollection("user").insert({
         "id": "opencga",
         "name": "opencga",
         "email": metadata["admin"]["email"],
-        "password": metadata["admin"]["password"],
+        "_password": metadata["admin"]["password"],
         "organization": "",
         "account": {
             "type": "ADMINISTRATOR",
             "creationDate": metadata["creationDate"],
             "expirationDate": "",
-            "authOrigin": null,
             "authentication": {
                 "id": "internal",
                 "application": false
@@ -47,9 +45,12 @@ if (user === null) {
             "date": metadata["creationDate"],
             "message": ""
         },
-        "lastModified": metadata["creationDate"],
-        "size": -1,
-        "quota": -1,
+        "quota": {
+            "diskUsage": -1,
+            "cpuUsage": -1,
+            "maxDisk": -1,
+            "maxCpu": -1
+        },
         "projects": [],
         "tools": [],
         "configs": {
@@ -117,6 +118,27 @@ migrateCollection("study", {}, {groups: 1}, function(bulk, doc) {
     };
 
     bulk.find({"_id": doc._id}).updateOne({"$set": params});
+});
+
+// Ticket #1528
+migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, doc) {
+    var set = {
+        "quota": {
+            "diskUsage": doc['size'],
+            "cpuUsage": -1,
+            "maxDisk": doc['quota'],
+            "maxCpu": -1
+        },
+        "_password": doc["password"]
+    };
+    var unset = {
+        "password": "",
+        "lastModified": "",
+        "size": "",
+        "account.authOrigin": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
 });
 
 // TODO: Add indexes for new "deleted" collections

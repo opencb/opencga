@@ -16,30 +16,22 @@
 
 package org.opencb.opencga.analysis.variant.relatedness;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
+import org.opencb.opencga.analysis.variant.geneticChecks.IBDComputation;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
-import org.opencb.opencga.core.tools.variant.RelatednessAnalysisExecutor;
+import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
-import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
-import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Tool(id = RelatednessAnalysis.ID, resource = Enums.Resource.VARIANT, description = RelatednessAnalysis.DESCRIPTION)
 public class RelatednessAnalysis extends OpenCgaTool {
@@ -49,6 +41,11 @@ public class RelatednessAnalysis extends OpenCgaTool {
 
     private String study;
     private List<String> samples;
+    private List<String> families;
+    private String method;
+    private String population;
+
+    private List<String> finalSamples;
 
     public RelatednessAnalysis() {
     }
@@ -69,6 +66,33 @@ public class RelatednessAnalysis extends OpenCgaTool {
 
     public RelatednessAnalysis setSamples(List<String> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public List<String> getFamilies() {
+        return families;
+    }
+
+    public RelatednessAnalysis setFamilies(List<String> families) {
+        this.families = families;
+        return this;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public RelatednessAnalysis setMethod(String method) {
+        this.method = method;
+        return this;
+    }
+
+    public String getPopulation() {
+        return population;
+    }
+
+    public RelatednessAnalysis setPopulation(String population) {
+        this.population = population;
         return this;
     }
 
@@ -100,16 +124,23 @@ public class RelatednessAnalysis extends OpenCgaTool {
         } catch (CatalogException | StorageEngineException e) {
             throw new ToolException(e);
         }
+
+        // Get samples from families if necessary
+        finalSamples = samples;
+        if (CollectionUtils.isEmpty(finalSamples)) {
+            finalSamples = GeneticChecksUtils.getSamples(study, families, catalogManager, token);
+        }
     }
 
     @Override
     protected void run() throws ToolException {
 
         step("relatedness", () -> {
-            RelatednessAnalysisExecutor relatednessExecutor = getToolExecutor(RelatednessAnalysisExecutor.class);
+            IBDRelatednessAnalysisExecutor relatednessExecutor = getToolExecutor(IBDRelatednessAnalysisExecutor.class);
 
             relatednessExecutor.setStudy(study)
-                    .setSamples(samples)
+                    .setSamples(finalSamples)
+                    .setPopulation(population)
                     .execute();
         });
     }

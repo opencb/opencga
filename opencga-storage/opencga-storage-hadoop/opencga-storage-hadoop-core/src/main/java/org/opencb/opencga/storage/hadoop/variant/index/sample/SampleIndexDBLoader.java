@@ -7,6 +7,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine.LoadSplitData;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -38,14 +39,28 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
 
     public SampleIndexDBLoader(SampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
                                String tableName, int studyId, List<Integer> sampleIds,
-                               byte[] columnFamily, boolean splitData, ObjectMap options) {
+                               byte[] columnFamily, LoadSplitData splitData, ObjectMap options) {
         super(hBaseManager, tableName);
         this.studyId = studyId;
         this.sampleIds = sampleIds;
         converter = new SampleIndexToHBaseConverter(columnFamily);
         family = columnFamily;
         this.options = options;
-        this.rebuildIndex = splitData;
+        if (splitData != null) {
+            switch (splitData) {
+                case CHROMOSOME:
+                    this.rebuildIndex = false;
+                    break;
+                case REGION:
+                case TYPE:
+                    this.rebuildIndex = true;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown LoadSplitData " + splitData);
+            }
+        } else {
+            rebuildIndex = false;
+        }
         this.dbAdaptor = dbAdaptor;
     }
 

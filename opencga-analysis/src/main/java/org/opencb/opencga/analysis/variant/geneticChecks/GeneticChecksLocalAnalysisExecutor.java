@@ -17,19 +17,21 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
         switch (getGeneticCheck()) {
             case SEX: {
                 // Compute karyotypic sex
-                AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
-                FileManager fileManager = alignmentStorageManager.getCatalogManager().getFileManager();
-                KaryotypicSexComputation.compute(getStudy(), getSamples(), fileManager, alignmentStorageManager, getToken());
+                System.out.println("Not yet implemented");
+//                AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
+//                FileManager fileManager = alignmentStorageManager.getCatalogManager().getFileManager();
+//                KaryotypicSexComputation.compute(getStudy(), getSamples(), fileManager, alignmentStorageManager, getToken());
                 break;
             }
             case RELATEDNESS: {
+                // Check relatednessMethod
                 // Run IBD/IBS computation using PLINK in docker
-                IBDComputation.compute(getStudy(), getSamples(), getOutDir(), getVariantStorageManager(), getToken());
+                IBDComputation.compute(getStudy(), getSamples(), getPopulation(), getOutDir(), getVariantStorageManager(), getToken());
                 break;
             }
             case MENDELIAN_ERRORS: {
                 // Compute mendelian inconsitencies
-                MendelianInconsistenciesComputation.compute(getStudy(), getSamples(), getOutDir(), getVariantStorageManager(), getToken());
+                MendelianInconsistenciesComputation.compute(getStudy(), getSamples(), getPopulation(), getOutDir(), getVariantStorageManager(), getToken());
                 break;
             }
             default: {

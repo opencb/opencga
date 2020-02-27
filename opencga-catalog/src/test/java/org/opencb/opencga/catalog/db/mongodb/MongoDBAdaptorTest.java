@@ -46,6 +46,8 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserQuota;
+import org.opencb.opencga.core.models.user.UserStatus;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -164,21 +166,21 @@ public class MongoDBAdaptorTest extends GenericTest {
         /**
          * Let's init the database with some basic data to perform each of the tests
          */
-        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", null, User.UserStatus.READY, "", 100, 1000,
+        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "", null, UserStatus.READY, new UserQuota(-1, -1, -1, -1),
                 Collections.emptyList(), new HashMap<>(), new HashMap<>());
-        catalogUserDBAdaptor.insert(user1, null);
+        catalogUserDBAdaptor.insert(user1, "1234", null);
         catalogProjectDBAdaptor.insert(new Project("P1", "project", "", new Status(), "", null, 1), "jcoll", null);
         catalogProjectDBAdaptor.insert(new Project("P2", "project", "", new Status(), "", null, 1), "jcoll", null);
         catalogProjectDBAdaptor.insert(new Project("P3", "project", "", new Status(), "", null, 1), "jcoll", null);
 
-        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.UserStatus.READY);
-        catalogUserDBAdaptor.insert(user2, null);
+        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "ACME", UserStatus.READY);
+        catalogUserDBAdaptor.insert(user2, "1111", null);
 
-        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, User.UserStatus.READY, "", 1222, 122222,
+        user3 = new User("imedina", "Nacho", "nacho@gmail", "SPAIN", null, UserStatus.READY, new UserQuota(-1, -1, -1, -1),
                 Collections.emptyList(), new HashMap<>(), new HashMap<>());
-        catalogUserDBAdaptor.insert(user3, null);
+        catalogUserDBAdaptor.insert(user3, "2222", null);
         catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", null, "very long description", "Spain", null, new Status(), "",
-                0, Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 1), "imedina", null);
+                0, Collections.emptyList(), Collections.emptyMap(), 1), "imedina", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
                 new Study("name", "Study name", "ph1", Study.Type.CONTROL_SET, "", "", null,
                         new Status(), 0,
@@ -192,12 +194,12 @@ public class MongoDBAdaptorTest extends GenericTest {
                         Collections.emptyMap(),
                         Collections.emptyMap()), null);
 
-        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
+        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "Organization", null, UserStatus.READY, new UserQuota(-1, -1, -1, -1),
                 Collections.emptyList(), new HashMap<>(), new HashMap<>());
 
-        catalogUserDBAdaptor.insert(user4, null);
+        catalogUserDBAdaptor.insert(user4, "pfuriopass", null);
         catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", null, "My description", "My org", null, new Status(), "", 0,
-                Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 1), "pfurio", null);
+                Collections.emptyList(), Collections.emptyMap(), 1), "pfurio", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
                 new Study("spongeScan", "spongeScan", "sponges", Study.Type.COLLECTION, "", "", null, new Status(),
                         0, Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
@@ -236,10 +238,10 @@ public class MongoDBAdaptorTest extends GenericTest {
         options.put("includeFiles", true);
         options.put("includeJobs", true);
         options.put("includeSamples", true);
-        user1 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user1.getId(), options, null).first();
-        user2 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user2.getId(), options, null).first();
-        user3 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user3.getId(), options, null).first();
-        user4 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user4.getId(), options, null).first();
+        user1 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user1.getId(), options).first();
+        user2 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user2.getId(), options).first();
+        user3 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user3.getId(), options).first();
+        user4 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user4.getId(), options).first();
 
     }
 
