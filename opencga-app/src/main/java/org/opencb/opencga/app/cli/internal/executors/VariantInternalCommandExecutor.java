@@ -330,6 +330,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.gvcf,
                 cliOptions.genericVariantIndexOptions.load,
                 cliOptions.genericVariantIndexOptions.loadSplitData,
+                cliOptions.genericVariantIndexOptions.skipSampleIndex,
                 cliOptions.genericVariantIndexOptions.skipPostLoadCheck,
                 cliOptions.genericVariantIndexOptions.excludeGenotype,
                 cliOptions.genericVariantIndexOptions.includeExtraFields,

@@ -27,6 +27,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     LOAD_THREADS("load.numThreads", 6),
     LOAD_SPLIT_DATA("load.splitData"),
     POST_LOAD_CHECK_SKIP("postLoad.skipCheck", false),
+    SAMPLE_INDEX_SKIP("sampleIndex.skip", false),
 
     STATS_DEFAULT_GENOTYPE("stats.defaultGenotype", "0/0"), // Default genotype to be used for calculating stats.
     STATS_MULTI_ALLELIC("stats.multiAllelic", false),  // Include secondary alternates in the variant stats calculation

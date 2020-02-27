@@ -61,6 +61,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SAMPLE_INDEX_SKIP;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.STDIN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
@@ -271,6 +272,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     private SampleIndexDBLoader buildSampleIndexDBLoader(ArchiveTableHelper helper, List<Integer> sampleIds) throws StorageEngineException {
+        boolean skipSampleIndex = getOptions().getBoolean(SAMPLE_INDEX_SKIP.key());
+        if (skipSampleIndex) {
+            return null;
+        }
         SampleIndexDBLoader sampleIndexDBLoader;
         SampleIndexDBAdaptor sampleIndexDbAdaptor = new SampleIndexDBAdaptor(
                 dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), getMetadataManager());

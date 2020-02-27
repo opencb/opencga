@@ -12,7 +12,7 @@ public class VariantIndexParams extends ToolParams {
 
     public VariantIndexParams(String file,
                               boolean resume, String outdir, boolean transform, boolean gvcf,
-                              boolean load, String loadSplitData, boolean skipPostLoadCheck,
+                              boolean load, String loadSplitData, boolean skipSampleIndex, boolean skipPostLoadCheck,
                               boolean excludeGenotype, String includeExtraFields, String merge,
                               boolean calculateStats, Aggregation aggregated, String aggregationMappingFile, boolean annotate,
                               String annotator, boolean overwriteAnnotations, boolean indexSearch) {
@@ -23,6 +23,7 @@ public class VariantIndexParams extends ToolParams {
         this.gvcf = gvcf;
         this.load = load;
         this.loadSplitData = loadSplitData;
+        this.skipSampleIndex = skipSampleIndex;
         this.skipPostLoadCheck = skipPostLoadCheck;
         this.excludeGenotype = excludeGenotype;
         this.includeExtraFields = includeExtraFields;
@@ -45,6 +46,7 @@ public class VariantIndexParams extends ToolParams {
 
     private boolean load;
     private String loadSplitData;
+    private boolean skipSampleIndex;
     private boolean skipPostLoadCheck;
     private boolean excludeGenotype;
     private String includeExtraFields = ParamConstants.ALL;
@@ -120,6 +122,15 @@ public class VariantIndexParams extends ToolParams {
 
     public VariantIndexParams setLoadSplitData(String loadSplitData) {
         this.loadSplitData = loadSplitData;
+        return this;
+    }
+
+    public boolean isSkipSampleIndex() {
+        return skipSampleIndex;
+    }
+
+    public VariantIndexParams setSkipSampleIndex(boolean skipSampleIndex) {
+        this.skipSampleIndex = skipSampleIndex;
         return this;
     }
 
