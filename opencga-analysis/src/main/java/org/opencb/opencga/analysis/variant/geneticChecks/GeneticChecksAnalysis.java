@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.variant.geneticChecks;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -9,7 +10,6 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.GeneticChecksAnalysisExecutor;
-import org.opencb.opencga.core.tools.variant.RelatednessAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -24,6 +24,11 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
 
     private String study;
     private List<String> samples;
+    private List<String> families;
+    private String relatednessMethod;
+    private String population;
+
+    private List<String> finalSamples;
 
     public GeneticChecksAnalysis() {
     }
@@ -44,6 +49,33 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
 
     public GeneticChecksAnalysis setSamples(List<String> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public List<String> getFamilies() {
+        return families;
+    }
+
+    public GeneticChecksAnalysis setFamilies(List<String> families) {
+        this.families = families;
+        return this;
+    }
+
+    public String getRelatednessMethod() {
+        return relatednessMethod;
+    }
+
+    public GeneticChecksAnalysis setRelatednessMethod(String relatednessMethod) {
+        this.relatednessMethod = relatednessMethod;
+        return this;
+    }
+
+    public String getPopulation() {
+        return population;
+    }
+
+    public GeneticChecksAnalysis setPopulation(String population) {
+        this.population = population;
         return this;
     }
 
@@ -75,6 +107,12 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
         } catch (CatalogException | StorageEngineException e) {
             throw new ToolException(e);
         }
+
+        // Get samples from families if necessary
+        finalSamples = samples;
+        if (CollectionUtils.isEmpty(finalSamples)) {
+            finalSamples = GeneticChecksUtils.getSamples(study, families, catalogManager, token);
+        }
     }
 
     @Override
@@ -92,7 +130,9 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
         GeneticChecksAnalysisExecutor executor = getToolExecutor(GeneticChecksAnalysisExecutor.class);
 
         executor.setStudy(study)
-                .setSamples(samples);
+                .setSamples(finalSamples)
+                .setPopulation(population)
+                .setRelatednessMethod(relatednessMethod);
 
         step("sex", () -> {
             executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.SEX).execute();
