@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.commons.datastore.core.ObjectMap;
+
 import java.util.Objects;
 
 /**
@@ -25,6 +27,7 @@ public class DataStore {
 
     private String storageEngine;
     private String dbName;
+    private ObjectMap configuration;
 
     public DataStore() {
     }
@@ -32,6 +35,7 @@ public class DataStore {
     public DataStore(String storageEngine, String dbName) {
         this.storageEngine = storageEngine;
         this.dbName = dbName;
+        configuration = new ObjectMap();
     }
 
     @Override
@@ -61,6 +65,15 @@ public class DataStore {
         return this;
     }
 
+    public ObjectMap getConfiguration() {
+        return configuration;
+    }
+
+    public DataStore setConfiguration(ObjectMap configuration) {
+        this.configuration = configuration;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -71,11 +84,12 @@ public class DataStore {
         }
         DataStore dataStore = (DataStore) o;
         return Objects.equals(storageEngine, dataStore.storageEngine)
-                && Objects.equals(dbName, dataStore.dbName);
+                && Objects.equals(dbName, dataStore.dbName)
+                && Objects.equals(configuration, dataStore.configuration);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(storageEngine, dbName);
+        return Objects.hash(storageEngine, dbName, configuration);
     }
 }

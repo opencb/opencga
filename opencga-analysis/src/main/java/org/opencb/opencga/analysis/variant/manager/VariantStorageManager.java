@@ -1101,13 +1101,15 @@ public class VariantStorageManager extends StorageManager {
     public static DataStore getDataStoreByProjectId(CatalogManager catalogManager, String projectStr, File.Bioformat bioformat,
                                                     String token)
             throws CatalogException {
-        DataStore dataStore;
+        DataStore dataStore = null;
         QueryOptions queryOptions = new QueryOptions(INCLUDE,
-                Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
+                Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.INTERNAL.key()));
         Project project = catalogManager.getProjectManager().get(projectStr, queryOptions, token).first();
-        if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
-            dataStore = project.getDataStores().get(bioformat);
-        } else { //get default datastore
+        if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
+            dataStore = project.getInternal().getDatastores().getDataStore(bioformat);
+        }
+
+        if (dataStore == null) { //get default datastore
             //Must use the UserByStudyId instead of the file owner.
             String userId = catalogManager.getProjectManager().getOwner(project.getUid());
             // Replace possible dots at the userId. Usually a special character in almost all databases. See #532

@@ -180,7 +180,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                 Collections.emptyList(), new HashMap<>(), new HashMap<>());
         catalogUserDBAdaptor.insert(user3, "2222", null);
         catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", null, "very long description", "Spain", null, new Status(), "",
-                0, Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 1), "imedina", null);
+                0, Collections.emptyList(), Collections.emptyMap(), 1), "imedina", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
                 new Study("name", "Study name", "ph1", Study.Type.CONTROL_SET, "", "", null,
                         new Status(), 0,
@@ -199,7 +199,7 @@ public class MongoDBAdaptorTest extends GenericTest {
 
         catalogUserDBAdaptor.insert(user4, "pfuriopass", null);
         catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", null, "My description", "My org", null, new Status(), "", 0,
-                Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 1), "pfurio", null);
+                Collections.emptyList(), Collections.emptyMap(), 1), "pfurio", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
                 new Study("spongeScan", "spongeScan", "sponges", Study.Type.COLLECTION, "", "", null, new Status(),
                         0, Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(

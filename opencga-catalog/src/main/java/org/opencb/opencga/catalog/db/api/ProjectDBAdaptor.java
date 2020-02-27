@@ -60,7 +60,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
         SIZE("size", INTEGER, ""),
         USER_ID("userId", TEXT, ""),
-        DATASTORES("dataStores", TEXT_ARRAY, ""),
+        INTERNAL("internal", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
