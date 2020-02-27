@@ -33,15 +33,12 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
@@ -54,8 +51,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 
@@ -180,34 +175,17 @@ public class FileWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", value = "Resource to upload a file by chunks", response = File.class)
     public Response upload(
-            @ApiParam(hidden = true) @FormDataParam("chunk_content") byte[] chunkBytes,
-            @ApiParam(hidden = true) @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
             @FormDataParam("file") InputStream fileInputStream,
             @FormDataParam("file") FormDataContentDisposition fileMetaData,
-
-            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
-            @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
-            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
-            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_size") String chunk_size,
-            @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
-            @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
 
             @ApiParam(value = "filename") @FormDataParam("filename") String filename,
             @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
             @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
-            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @FormDataParam("studyId") String studyIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Path within catalog where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description") @DefaultValue("") @FormDataParam("description")
                     String description,
             @ApiParam(value = "Create the parent directories if they do not exist", type = "form") @DefaultValue("true") @FormDataParam("parents") boolean parents) {
-
-        if (StringUtils.isNotEmpty(studyIdStr)) {
-            studyStr = studyIdStr;
-        }
-
-        long t = System.currentTimeMillis();
-
         if (StringUtils.isNotEmpty(relativeFilePath)) {
             if (relativeFilePath.equals(".")) {
                 relativeFilePath = "";
@@ -220,101 +198,7 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(new CatalogException("The path cannot be absolute"));
         }
 
-        java.nio.file.Path filePath;
-        final Study study;
-        try {
-            String userId = catalogManager.getUserManager().getUserId(token);
-            study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
-                    StudyAclEntry.StudyPermissions.UPLOAD_FILES);
-            // TODO: Improve upload method. Check upload permission not only at study level.
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-
-        try {
-            filePath = Paths.get(catalogManager.getFileManager().getUri(study.getUid(), relativeFilePath));
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-
-        if (chunkBytes != null && filePath != null) {
-
-            java.nio.file.Path completedFilePath = filePath.getParent().resolve("_" + filename);
-            java.nio.file.Path folderPath = filePath.getParent().resolve("__" + filename);
-
-            logger.info(relativeFilePath + "");
-            logger.info(folderPath + "");
-            logger.info(filePath + "");
-            boolean resume = Boolean.parseBoolean(resume_upload);
-
-            try {
-                logger.info("---resume is: " + resume);
-                if (resume) {
-                    logger.info("Resume ms :" + (System.currentTimeMillis() - t));
-                    return createOkResponse(getResumeFileJSON(folderPath));
-                }
-
-                int chunkId = Integer.parseInt(chunk_id);
-                int chunkSize = Integer.parseInt(chunk_size);
-                boolean lastChunk = Boolean.parseBoolean(last_chunk);
-
-                logger.info("---saving chunk: " + chunkId);
-                logger.info("lastChunk: " + lastChunk);
-
-                // WRITE CHUNK TYPE_FILE
-                if (!Files.exists(folderPath)) {
-                    logger.info("createDirectory(): " + folderPath);
-                    Files.createDirectory(folderPath);
-                }
-                logger.info("check dir " + Files.exists(folderPath));
-                // String hash = StringUtils.sha1(new String(chunkBytes));
-                // logger.info("bytesHash: " + hash);
-                // logger.info("chunkHash: " + chunkHash);
-                // hash = chunkHash;
-                if (chunkBytes.length == chunkSize) {
-                    Files.write(folderPath.resolve(chunkId + "_" + chunkBytes.length + "_partial"), chunkBytes);
-                } else {
-                    String errorMessage = "Chunk content size (" + chunkBytes.length + ") " +
-                            "!= chunk_size (" + chunk_size + ").";
-                    logger.error(errorMessage);
-                    return createErrorResponse(new IOException(errorMessage));
-                }
-
-                if (lastChunk) {
-                    logger.info("lastChunk is true...");
-                    Files.deleteIfExists(completedFilePath);
-                    Files.createFile(completedFilePath);
-                    List<java.nio.file.Path> chunks = getSortedChunkList(folderPath);
-                    logger.info("----ordered chunks length: " + chunks.size());
-                    for (java.nio.file.Path partPath : chunks) {
-                        logger.info(partPath.getFileName().toString());
-                        Files.write(completedFilePath, Files.readAllBytes(partPath), StandardOpenOption.APPEND);
-                    }
-                    IOUtils.deleteDirectory(folderPath);
-                    try {
-                        DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyStr, File.Type.FILE,
-                                fileFormat, bioformat, relativeFilePath, description, new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, parents, null, null, token);
-                        new FileUtils(catalogManager).upload(completedFilePath.toUri(), queryResult1.first(), null, token, false, false, true, true, Long.MAX_VALUE);
-                        DataResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getUid(), null, token);
-                        File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
-                                new QueryOptions(queryOptions), token, false);
-                        queryResult.setResults(Collections.singletonList(file));
-                        return createOkResponse(queryResult);
-                    } catch (Exception e) {
-                        logger.error(e.toString());
-                        return createErrorResponse(e);
-                    }
-                }
-            } catch (IOException e) {
-                System.out.println("e = " + e);
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            logger.info("chunk saved ms :" + (System.currentTimeMillis() - t));
-            return createOkResponse("ok");
-
-        } else if (fileInputStream != null) {
+        if (fileInputStream != null) {
             if (filename == null) {
                 filename = fileMetaData.getFileName();
             }
@@ -746,29 +630,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
             @ApiParam(name = "params", value = "File parameters", required = true) FileLinkParams params) {
         try {
-            if (StringUtils.isEmpty(params.getUri())) {
-                throw new CatalogException("Missing mandatory field 'uri'");
-            }
-
-            logger.debug("study: {}", studyStr);
-            logger.debug("uri: {}", params.getUri());
-            logger.debug("params: {}", params);
-
-            // TODO: We should stop doing this at some point. As the parameters are now passed through the body, users can already pass "/" characters
-            if (params.getPath() == null) {
-                params.setPath("");
-            }
-            params.setPath(params.getPath().replace(":", "/"));
-
-            ObjectMap objectMap = new ObjectMap("parents", parents);
-            objectMap.putIfNotEmpty("description", params.getDescription());
-            objectMap.putIfNotNull("relatedFiles", params.getRelatedFiles());
-
-            List<OpenCGAResult<File>> queryResultList = new ArrayList<>();
-            URI myUri = UriUtils.createUri(params.getUri());
-            queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, params.getPath(), objectMap, token));
-
-            return createOkResponse(queryResultList);
+            return createOkResponse(catalogManager.getFileManager().link(studyStr, params, parents, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -918,7 +780,7 @@ public class FileWSServer extends OpenCGAWSServer {
             FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
             if (file.getType() == File.Type.FILE) {
                 File file1 = catalogFileUtils.checkFile(studyStr, file, false, token);
-                file1 = fileMetadataReader.setMetadataInformation(file1, null, new QueryOptions(queryOptions), token, false);
+                file1 = fileMetadataReader.updateMetadataInformation(studyStr, file1, token);
                 if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
                     files = Collections.emptyList();
                 } else {
@@ -928,7 +790,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 List<File> result = catalogManager.getFileManager().getFilesFromFolder(fileIdStr, studyStr, null, token).getResults();
                 files = new ArrayList<>(result.size());
                 for (File f : result) {
-                    File file1 = fileMetadataReader.setMetadataInformation(f, null, new QueryOptions(queryOptions), token, false);
+                    File file1 = fileMetadataReader.updateMetadataInformation(studyStr, f, token);
                     if (f != file1) {    //Add only modified files.
                         files.add(file1);
                     }

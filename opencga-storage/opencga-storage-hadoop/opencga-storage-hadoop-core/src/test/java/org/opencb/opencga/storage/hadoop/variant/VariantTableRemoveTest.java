@@ -255,7 +255,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     protected void checkSampleIndexTable(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, String removedFile) throws Exception {
         FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), removedFile);
         LinkedHashSet<Integer> sampleIds = fileMetadata.getSamples();
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(getVariantStorageEngine().getDBAdaptor().getGenomeHelper(), dbAdaptor.getHBaseManager(),
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
         for (Integer sampleId : sampleIds) {
             assertFalse(sampleIndexDBAdaptor.iteratorByGt(studyMetadata.getId(), sampleId).hasNext());

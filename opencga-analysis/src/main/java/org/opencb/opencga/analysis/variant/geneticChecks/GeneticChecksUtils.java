@@ -16,6 +16,7 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.TPED;
 
@@ -23,42 +24,49 @@ public class GeneticChecksUtils {
 
     public static void selectMarkers(String basename, String study, List<String> samples, Path outDir, VariantStorageManager storageManager,
                                      String token) throws ToolException {
-            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDir.toAbsolutePath().toString(),
-                    "/data/output");
+        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDir.toAbsolutePath().toString(),
+                "/data/output");
 
-            // Apply filter and export variants in format .tped and .tfam to run plink
-            Query query = new Query()
-                    .append(VariantQueryParam.STUDY.key(), study)
-                    .append(VariantQueryParam.SAMPLE.key(), samples)
-                    .append(VariantQueryParam.TYPE.key(), "SNV");
-            //.append(VariantQueryParam.FILTER.key(), "PASS")
+        // Apply filter: biallelic variants
+        Query query = new Query()
+                .append(VariantQueryParam.STUDY.key(), study)
+                .append(VariantQueryParam.TYPE.key(), "SNV");
 
-            // First, autosomal chromosomes
-            File tpedAutosomeFile = outDir.resolve(basename + ".tped").toFile();
-            File tfamAutosomeFile = outDir.resolve(basename + ".tfam").toFile();
-            query.put(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22".split(",")));
-            query.put(VariantQueryParam.STATS_MAF.key(), "ALL>0.3");
-            exportData(tpedAutosomeFile, tfamAutosomeFile, query, storageManager, token);
-            if (tpedAutosomeFile.exists() && tpedAutosomeFile.length() > 0) {
-                pruneVariants(basename, outputBinding);
-            }
+        String gt = samples.stream().map(s -> s + ":0/0,0/1,1/1").collect(Collectors.joining(";"));
+        query.put(VariantQueryParam.GENOTYPE.key(), gt);
 
-            // First, X chromosome
-            File tpedXFile = outDir.resolve("x.tped").toFile();
-            File tfamXFile = outDir.resolve("x.tfam").toFile();
-            query.put(VariantQueryParam.REGION.key(), "X");
-            query.put(VariantQueryParam.STATS_MAF.key(), "ALL>0.05");
-            exportData(tpedXFile, tfamXFile, query, storageManager, token);
-            if (tpedXFile.exists() && tpedXFile.length() > 0) {
-                pruneVariants("x", outputBinding);
-            }
+        //.append(VariantQueryParam.FILTER.key(), "PASS")
 
-            // Append files:
-            //   - the x.tped file to autosome.tped file (since tfam files contain the same sample information)
-            //   - the x.prune.out file to autosome.prune.out file
-            appendFile(tpedXFile.getAbsolutePath(), tpedAutosomeFile.getAbsolutePath());
-            appendFile(outDir.resolve("x.prune.out").toString(), outDir.resolve(basename + ".prune.out").toString());
+        // Export variants in format .tped and .tfam to run PLINK
+        // First, autosomal chromosomes
+        File tpedAutosomeFile = outDir.resolve(basename + ".tped").toFile();
+        File tfamAutosomeFile = outDir.resolve(basename + ".tfam").toFile();
+        query.put(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22".split(",")));
+        query.put(VariantQueryParam.STATS_MAF.key(), "ALL>0.3");
+        exportData(tpedAutosomeFile, tfamAutosomeFile, query, storageManager, token);
+        if (tpedAutosomeFile.exists() && tpedAutosomeFile.length() > 0) {
+            pruneVariants(basename, outputBinding);
+        }
 
+        // First, X chromosome
+        File tpedXFile = outDir.resolve("x.tped").toFile();
+        File tfamXFile = outDir.resolve("x.tfam").toFile();
+        query.put(VariantQueryParam.REGION.key(), "X");
+        query.put(VariantQueryParam.STATS_MAF.key(), "ALL>0.05");
+        exportData(tpedXFile, tfamXFile, query, storageManager, token);
+        if (tpedXFile.exists() && tpedXFile.length() > 0) {
+            pruneVariants("x", outputBinding);
+        }
+
+        // Append files:
+        //   - the x.tped file to autosome.tped file (since tfam files contain the same sample information)
+        //   - the x.prune.out file to autosome.prune.out file
+        appendFile(tpedXFile.getAbsolutePath(), tpedAutosomeFile.getAbsolutePath());
+        appendFile(outDir.resolve("x.prune.out").toString(), outDir.resolve(basename + ".prune.out").toString());
+
+        if (!tpedAutosomeFile.exists() || tpedAutosomeFile.length() == 0) {
+            throw new ToolException("No variants found when exporting data to TPED/TFAM format");
+        }
     }
 
     private static void exportData(File tpedFile, File tfamFile, Query query, VariantStorageManager storageManager,

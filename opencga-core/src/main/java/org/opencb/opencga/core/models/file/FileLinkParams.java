@@ -5,6 +5,7 @@ import org.opencb.commons.utils.ListUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FileLinkParams {
@@ -12,22 +13,26 @@ public class FileLinkParams {
     private String path;
     private String description;
     private List<SmallRelatedFileParams> relatedFiles;
+    private Map<String, String> sampleMap;
 
     public FileLinkParams() {
     }
 
-    public FileLinkParams(String uri, String path, String description, List<SmallRelatedFileParams> relatedFiles) {
+    public FileLinkParams(String uri, String path, String description, List<SmallRelatedFileParams> relatedFiles,
+                          Map<String, String> sampleMap) {
         this.uri = uri;
         this.path = path;
         this.description = description;
         this.relatedFiles = relatedFiles;
+        this.sampleMap = sampleMap;
     }
 
     public static FileLinkParams of(File file) {
         return new FileLinkParams(file.getUri().toString(), file.getPath(), file.getDescription(),
                 file.getRelatedFiles() != null
                         ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
-                        : Collections.emptyList());
+                        : Collections.emptyList(),
+                file.getInternal().getSampleMap());
     }
 
     @Override
@@ -37,6 +42,7 @@ public class FileLinkParams {
         sb.append(", path='").append(path).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", relatedFiles=").append(relatedFiles);
+        sb.append(", sampleMap=").append(sampleMap);
         sb.append('}');
         return sb.toString();
     }
@@ -84,4 +90,12 @@ public class FileLinkParams {
         return this;
     }
 
+    public Map<String, String> getSampleMap() {
+        return sampleMap;
+    }
+
+    public FileLinkParams setSampleMap(Map<String, String> sampleMap) {
+        this.sampleMap = sampleMap;
+        return this;
+    }
 }

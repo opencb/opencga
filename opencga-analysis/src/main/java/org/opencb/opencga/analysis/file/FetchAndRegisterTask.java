@@ -113,6 +113,7 @@ public class FetchAndRegisterTask extends OpenCgaTool {
                 moveFile(studyFqn, getOutDir().resolve(fileName), null, path, token);
             } catch (Exception e) {
                 deleteTemporaryFile();
+                throw new CatalogException(e.getMessage(), e);
             }
         });
     }
