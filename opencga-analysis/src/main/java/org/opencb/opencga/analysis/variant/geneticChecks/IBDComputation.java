@@ -13,13 +13,13 @@ import java.util.Scanner;
 
 public class IBDComputation {
 
-    public static File compute(String study, List<String> samples, Path outDir, VariantStorageManager storageManager, String token)
+    public static File compute(String study, List<String> samples, String population, Path outDir, VariantStorageManager storageManager, String token)
             throws ToolException {
         String basename = "variants";
 
         // Select markers
         if (!outDir.resolve(basename + ".tped").toFile().exists() || !outDir.resolve(basename + ".tfam").toFile().exists()) {
-            GeneticChecksUtils.selectMarkers(basename, study, samples, outDir, storageManager, token);
+            GeneticChecksUtils.selectMarkers(basename, study, samples, population, outDir, storageManager, token);
         }
 
         // run IBD and return the result file (now autosome-file comprises X chromosome too)
