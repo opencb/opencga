@@ -27,6 +27,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import java.util.List;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
+import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.RUNNING;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -184,8 +185,8 @@ public class JobCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--job"}, description = ParamConstants.JOB_ID_DESCRIPTION, required = true)
-        public String job;
+        @Parameter(names = {"--job"}, description = ParamConstants.JOB_ID_DESCRIPTION + " or 'running' to print all running jobs.")
+        public String job = RUNNING.toLowerCase();
 
         @Parameter(names = {"--type"}, description = "Log file to be shown (stdout or stderr)")
         public String type = "stderr";
@@ -193,11 +194,8 @@ public class JobCommandOptions {
         @Parameter(names = {"-f", "--follow"}, description = "Output appended data as the file grows", arity = 0)
         public boolean follow;
 
-        @Parameter(names = {"-n", "--lines"}, description = "Output up to NUM lines. [all]", arity = 1)
-        public Integer lines;
-
-        @Parameter(names = {"--tail"}, description = "Print the last lines of the file", arity = 0)
-        public boolean tail;
+        @Parameter(names = {"-n", "--tail"}, description = "Output the last lines NUM lines.", arity = 1)
+        public Integer tailLines;
 
         @Parameter(names = {"-d", "--delay"}, description = "Delay between iterations in seconds", required = false, arity = 1)
         public int delay = 2;
