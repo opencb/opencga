@@ -57,6 +57,8 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         USER_ID("userId", TEXT, ""),
         INTERNAL_DATASTORES("internal.datastores", TEXT_ARRAY, ""),
+        INTERNAL("internal", TEXT_ARRAY, ""),
+
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

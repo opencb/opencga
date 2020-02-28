@@ -199,8 +199,7 @@ public class TemplateManager {
                             .append("id", study.getVariableSets().stream().map(VariableSet::getId).collect(Collectors.toList()))
                             .append(QueryOptions.INCLUDE, "name,id")
                             .append(QueryOptions.LIMIT, study.getVariableSets().size()))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .map(VariableSet::getId)
                     .collect(Collectors.toSet());
@@ -226,8 +225,7 @@ public class TemplateManager {
             existing = openCGAClient.getIndividualClient()
                     .info(study.getIndividuals().stream().map(Individual::getId).collect(Collectors.joining(",")),
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id,father.id,mother.id,multiples"))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .collect(Collectors.toMap(Individual::getId, i -> i));
             openCGAClient.setThrowExceptionOnError(true);
@@ -289,8 +287,7 @@ public class TemplateManager {
             existing = openCGAClient.getSampleClient()
                     .info(study.getSamples().stream().map(Sample::getId).collect(Collectors.joining(",")),
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .map(Sample::getId)
                     .collect(Collectors.toSet());
@@ -312,8 +309,7 @@ public class TemplateManager {
             existing = openCGAClient.getCohortClient()
                     .info(study.getCohorts().stream().map(Cohort::getId).collect(Collectors.joining(",")),
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .map(Cohort::getId)
                     .collect(Collectors.toSet());
@@ -335,8 +331,7 @@ public class TemplateManager {
             existing = openCGAClient.getFamilyClient()
                     .info(study.getFamilies().stream().map(Family::getId).collect(Collectors.joining(",")),
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .map(Family::getId)
                     .collect(Collectors.toSet());
@@ -359,10 +354,9 @@ public class TemplateManager {
         if (resume) {
             openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getFileClient()
-                    .info(study.getFiles().stream().map(this::getFilePath).collect(Collectors.joining(",")),
+                    .info(study.getFiles().stream().map(file -> getFilePath(file).replace('/', ':')).collect(Collectors.joining(",")),
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "path,name,id"))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .map(File::getPath)
                     .collect(Collectors.toSet());

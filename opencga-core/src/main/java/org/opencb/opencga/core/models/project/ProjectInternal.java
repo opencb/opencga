@@ -1,19 +1,16 @@
 package org.opencb.opencga.core.models.project;
 
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.file.File;
-
-import java.util.Map;
 
 public class ProjectInternal {
 
-    private Map<File.Bioformat, DataStore> datastores;
+    private DataStores datastores;
     private Status status;
 
     public ProjectInternal() {
     }
 
-    public ProjectInternal(Map<File.Bioformat, DataStore> datastores, Status status) {
+    public ProjectInternal(DataStores datastores, Status status) {
         this.datastores = datastores;
         this.status = status;
     }
@@ -27,21 +24,19 @@ public class ProjectInternal {
         return sb.toString();
     }
 
-    public Map<File.Bioformat, DataStore> getDatastores() {
+    public DataStores getDatastores() {
         return datastores;
     }
 
-    public ProjectInternal setDatastores(Map<File.Bioformat, DataStore> datastores) {
+    public void setDatastores(DataStores datastores) {
         this.datastores = datastores;
-        return this;
     }
 
     public Status getStatus() {
         return status;
     }
 
-    public ProjectInternal setStatus(Status status) {
+    public void setStatus(Status status) {
         this.status = status;
-        return this;
     }
 }

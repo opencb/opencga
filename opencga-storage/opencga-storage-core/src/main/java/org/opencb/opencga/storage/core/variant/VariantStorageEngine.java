@@ -125,6 +125,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
+    public enum LoadSplitData {
+        CHROMOSOME,
+        REGION,
+        TYPE;
+
+        public static LoadSplitData from(ObjectMap options) {
+            Objects.requireNonNull(options);
+            String loadSplitDataStr = options.getString(LOAD_SPLIT_DATA.key());
+            if (StringUtils.isEmpty(loadSplitDataStr)) {
+                return null;
+            }
+            return LoadSplitData.valueOf(loadSplitDataStr.toUpperCase());
+        }
+    }
+
     @Deprecated
     public VariantStorageEngine() {}
 
@@ -819,7 +834,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 for (Integer cohortId : cohortsToInvalidate) {
                     metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
-                            cohort -> cohort.setStatsStatus(TaskMetadata.Status.ERROR));
+                            cohort -> {
+                                cohort.getFiles().removeAll(fileIds);
+                                return cohort.setStatsStatus(TaskMetadata.Status.ERROR);
+                            });
                 }
 
                 // Restore default cohort with indexed samples

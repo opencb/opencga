@@ -40,6 +40,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.project.DataStores;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectInternal;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
@@ -233,7 +234,7 @@ public class ProjectManager extends AbstractManager {
         Project project;
         try {
             project = new Project(id, name, description, new ProjectOrganism(scientificName, commonName,
-                    assembly), 1, new ProjectInternal(new HashMap<>(), new Status()));
+                    assembly), 1, new ProjectInternal(new DataStores(), new Status()));
             validateProjectForCreation(project, user.first());
 
             projectDBAdaptor.insert(project, userId, options);

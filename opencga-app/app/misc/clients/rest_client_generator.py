@@ -10,8 +10,6 @@ import requests
 class RestClientGenerator(ABC):
 
     def __init__(self, server_url, output_dir):
-        super().__init__()
-
         self.server_url = server_url
         self.output_dir = output_dir
         self.version = requests.get(

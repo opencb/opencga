@@ -41,6 +41,7 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.project.DataStores;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectInternal;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -171,11 +172,11 @@ public class MongoDBAdaptorTest extends GenericTest {
                 Collections.emptyList(), new HashMap<>(), new HashMap<>());
         catalogUserDBAdaptor.insert(user1, "1234", null);
         catalogProjectDBAdaptor.insert(new Project("P1", "project", "", null, 1,
-                new ProjectInternal(new HashMap<>(), new Status())), "jcoll", null);
+                new ProjectInternal(new DataStores(), new Status())), "jcoll", null);
         catalogProjectDBAdaptor.insert(new Project("P2", "project", "", null, 1,
-                new ProjectInternal(new HashMap<>(), new Status())), "jcoll", null);
+                new ProjectInternal(new DataStores(), new Status())), "jcoll", null);
         catalogProjectDBAdaptor.insert(new Project("P3", "project", "", null, 1,
-                new ProjectInternal(new HashMap<>(), new Status())), "jcoll", null);
+                new ProjectInternal(new DataStores(), new Status())), "jcoll", null);
 
         user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "ACME", UserStatus.READY);
         catalogUserDBAdaptor.insert(user2, "1111", null);
@@ -185,7 +186,7 @@ public class MongoDBAdaptorTest extends GenericTest {
         catalogUserDBAdaptor.insert(user3, "2222", null);
         catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", null, "very long description", null,
                 Collections.emptyList(), Collections.emptyMap(), 1,
-                new ProjectInternal(new HashMap<>(), new Status())), "imedina", null);
+                new ProjectInternal(new DataStores(), new Status())), "imedina", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
                 new Study("name", "Study name", "ph1", Study.Type.CONTROL_SET, "", "", null,
                         new Status(), 0,
@@ -204,7 +205,7 @@ public class MongoDBAdaptorTest extends GenericTest {
 
         catalogUserDBAdaptor.insert(user4, "pfuriopass", null);
         catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", null, "My description", null,
-                Collections.emptyList(), Collections.emptyMap(), 1, new ProjectInternal(new HashMap<>(), new Status())), "pfurio", null);
+                Collections.emptyList(), Collections.emptyMap(), 1, new ProjectInternal(new DataStores(), new Status())), "pfurio", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
                 new Study("spongeScan", "spongeScan", "sponges", Study.Type.COLLECTION, "", "", null, new Status(),
                         0, Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(

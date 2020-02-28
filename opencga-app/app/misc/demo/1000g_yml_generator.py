@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import argparse
 
 
 _SEX = {
@@ -16,12 +17,13 @@ _KAR_SEX = {
 }
 _VARIABLE_FIELDS = ['Relationship', 'Siblings', 'Second Order', 'Third Order', 'Other Comments']
 
-FNAME_TEMPLATE = 'ALL.chr{}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz'
+FNAME_TEMPLATE = 'ALL.chr{}_GRCh38_sites.20170504.vcf.gz'
 
 
 def to_camel_case(text):
     components = text.lower().replace('_', ' ').split(' ')
     return components[0].lower() + ''.join(x.title() for x in components[1:])
+
 
 def create_variable_sets(header):
     text = []
@@ -39,6 +41,7 @@ def create_variable_sets(header):
         text.append('{}type: STRING'.format(' '*8))
     return '\n'.join(text)
 
+
 def create_individuals(ind_info):
     text = []
     text.append('individuals:')
@@ -47,14 +50,14 @@ def create_individuals(ind_info):
         text.append('{}name: {}'.format(' '*4, ind['Individual ID']))
         if ind['Paternal ID'] != '0':
             text.append('{}father:'.format(' '*4))
-            text.append('{}- id: {}'.format(' '*6, ind['Paternal ID']))
+            text.append('{}id: {}'.format(' '*6, ind['Paternal ID']))
         if ind['Maternal ID'] != '0':
             text.append('{}mother:'.format(' '*4))
-            text.append('{}- id: {}'.format(' '*6, ind['Maternal ID']))
+            text.append('{}id: {}'.format(' '*6, ind['Maternal ID']))
         text.append('{}sex: {}'.format(' '*4, _SEX[ind['Gender']]))
         text.append('{}karyotypicSex: {}'.format(' '*4, _KAR_SEX[ind['Gender']]))
         text.append('{}population:'.format(' '*4))
-        text.append('{}- name: {}'.format(' '*6, ind['Population']))
+        text.append('{}name: {}'.format(' '*6, ind['Population']))
 
         text.append('{}annotationSets:'.format(' '*4))
         text.append('{}- id: relation'.format(' '*6))
@@ -69,6 +72,7 @@ def create_individuals(ind_info):
         text.append('{}- id: {}'.format(' '*6, ind['Individual ID']))
     return '\n'.join(text)
 
+
 def create_samples(ind_info):
     text = []
     text.append('samples:')
@@ -77,11 +81,18 @@ def create_samples(ind_info):
         text.append('{}individualId: {}'.format(' '*4, ind['Individual ID']))
     return '\n'.join(text)
 
+
 def create_families(ind_info):
     families = {}
     for ind in ind_info:
         if ind['Family ID'] != ind['Individual ID']:
             families.setdefault(ind['Family ID'], []).append(ind['Individual ID'])
+            for member in [ind['Individual ID'], ind['Paternal ID'], ind['Maternal ID']]:
+                if member != '0':
+                    families[ind['Family ID']].append(member)
+
+    for family in families:
+        families[family] = list(set(families[family]))
 
     text = []
     text.append('families:')
@@ -93,20 +104,35 @@ def create_families(ind_info):
             text.append('{}- id: {}'.format(' '*6, member))
     return '\n'.join(text)
 
+
 def create_files():
     text = []
     text.append('files:')
-    for chrom in range(1, 23) + ['X', 'Y', 'MT']:
-        text.append('{}- id: {}'.format(' '*2, FNAME_TEMPLATE.format(chrom)))
+    for chrom in list(range(1, 23)) + ['X', 'Y']:
+        text.append('{}- name: {}'.format(' '*2, FNAME_TEMPLATE.format(chrom)))
         text.append('{}path: {}'.format(' '*4, 'data'))
     return '\n'.join(text)
 
-def main():
-    ped_fpath = sys.argv[1]
-    yml_fpath = sys.argv[2]
 
-    ped_fhand = open(ped_fpath, 'r')
-    yml_fhand = open(yml_fpath, 'w')
+def _setup_argparse():
+    desc = 'This script creates automatically all Python RestClients files'
+    parser = argparse.ArgumentParser(
+        description=desc,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument('ped_file', help='Pedigree file path')
+    parser.add_argument('outfile', help='Output file path')
+    args = parser.parse_args()
+    return args
+
+
+def main():
+
+    args = _setup_argparse()
+
+    ped_fhand = open(args.ped_file, 'r')
+    yml_fhand = open(args.outfile, 'w')
 
     header = ped_fhand.readline().strip().split('\t')
     ind_info = [{k: v for k, v in zip(header, line.strip().split('\t'))} for line in ped_fhand]

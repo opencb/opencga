@@ -400,7 +400,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         variantStorageEngine.getOptions()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
-                .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), true);
+                .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.CHROMOSOME);
 
         List<StoragePipelineResult> results = variantStorageEngine.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
 
@@ -436,7 +436,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
 //        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageManager,
                 studyMetadata, options
-                        .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), true));
+                        .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.CHROMOSOME));
         int fileIdChr22 = metadataManager.getFileId(studyMetadata.getId(), "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
         assertTrue(metadataManager.getIndexedFiles(studyMetadata.getId()).contains(fileIdChr22));
@@ -493,7 +493,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         thrown.expect(exception.getClass());
         thrown.expectMessage(exception.getMessage());
         runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
-                studyMetadata, options.append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), false));
+                studyMetadata, options.append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.CHROMOSOME));
     }
 
     /**
