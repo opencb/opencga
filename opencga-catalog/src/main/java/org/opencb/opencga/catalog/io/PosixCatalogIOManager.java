@@ -268,20 +268,25 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
             List<String> contentList = new LinkedList<>();
             randomAccessFile.seek(offset);
-            // Discard first line as it will be truncated
-            randomAccessFile.readLine();
+            if (offset != 0) {
+                // If there is an offset, discard first line as it could be truncated
+                randomAccessFile.readLine();
+            }
 
             String line;
             while ((line = randomAccessFile.readLine()) != null) {
                 contentList.add(line);
             }
-            // Remove first line as it will probably be truncated
 
-            while (contentList.size() < lines && length - MAXIMUM_BYTES < offset) {
+            while (offset > 0 && contentList.size() < lines && length - MAXIMUM_BYTES < offset) {
                 // We need to get more lines
 
                 // Recalculate the average number of bytes per line from the file
-                averageBytesPerLine = Math.round((length - offset) / contentList.size());
+                if (contentList.size() > 0) {
+                    averageBytesPerLine = Math.round((length - offset) / ((float) contentList.size()));
+                } else {
+                    averageBytesPerLine = averageBytesPerLine * 2;
+                }
 
                 // We will always try to move the offset to 10 lines before
                 int remainingLines = 10 + lines - contentList.size();
@@ -298,8 +303,10 @@ public class PosixCatalogIOManager extends CatalogIOManager {
                 randomAccessFile.seek(offset);
                 List<String> additionalList = new LinkedList<>();
 
-                // Discard first line as it will be truncated
-                randomAccessFile.readLine();
+                if (offset != 0) {
+                    // If there is an offset, discard first line as it could be truncated
+                    randomAccessFile.readLine();
+                }
                 while (randomAccessFile.getFilePointer() < to) {
                     additionalList.add(randomAccessFile.readLine());
                 }
