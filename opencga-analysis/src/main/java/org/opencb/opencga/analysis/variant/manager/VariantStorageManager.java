@@ -410,7 +410,8 @@ public class VariantStorageManager extends StorageManager {
 
             dataStore.getConfiguration().putAll(params);
             catalogManager.getProjectManager()
-                    .update(projectStr, new ObjectMap("internal.datastores.variant", dataStore), new QueryOptions(), token);
+                    .update(projectStr, new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), dataStore),
+                            new QueryOptions(), token);
             return null;
         });
     }
