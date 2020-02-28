@@ -122,6 +122,9 @@ migrateCollection("study", {}, {groups: 1}, function(bulk, doc) {
 
 // Tickets #1528 #1529
 migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, doc) {
+    // #1531
+    doc['status']['description'] = doc['status']['message'];
+
     var set = {
         "quota": {
             "diskUsage": doc['size'],
@@ -129,13 +132,17 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
             "maxDisk": doc['quota'],
             "maxCpu": -1
         },
+        "internal": {
+            "status": doc['status']
+        }
         "_password": doc["password"]
     };
     var unset = {
         "password": "",
         "lastModified": "",
         "size": "",
-        "account.authOrigin": ""
+        "account.authOrigin": "",
+        "status": "",
     };
 
     // #1529
@@ -148,6 +155,7 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
                 'datastores': project['dataStores']
             };
 
+            // #1531
             project['internal']['status']['description'] = project['internal']['status']['message']
 
             delete project['lastModified'];

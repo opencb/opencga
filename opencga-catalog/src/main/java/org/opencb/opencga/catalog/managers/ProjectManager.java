@@ -419,7 +419,9 @@ public class ProjectManager extends AbstractManager {
                 if (!s.matches(ProjectDBAdaptor.QueryParams.ID.key() + "|name|description|organization|attributes|"
                         + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
                         + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
-                        + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
+                        + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key() + "|"
+                        + ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES.key() + "|"
+                        + ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key())) {
                     throw new CatalogDBException("Parameter '" + s + "' can't be changed");
                 }
             }
@@ -448,15 +450,6 @@ public class ProjectManager extends AbstractManager {
                 }
                 if (!canBeUpdated) {
                     throw new CatalogException("Cannot update organism information that is already filled in");
-                }
-            }
-
-            for (String s : parameters.keySet()) {
-                if (!s.matches(ProjectDBAdaptor.QueryParams.ID.key() + "|name|description|organization|attributes|"
-                        + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
-                        + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
-                        + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
-                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
                 }
             }
 

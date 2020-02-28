@@ -190,6 +190,7 @@ public class UserManager extends AbstractManager {
         checkEmail(user.getEmail());
         ParamUtils.checkObj(user.getAccount(), "account");
         ParamUtils.defaultObject(user.getQuota(), UserQuota::new);
+        user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
         user.setOrganization(ParamUtils.defaultObject(user.getOrganization(), ""));
 
         if (StringUtils.isEmpty(password)) {
@@ -206,7 +207,7 @@ public class UserManager extends AbstractManager {
         }
 
         checkUserExists(user.getId());
-        user.setStatus(new UserStatus());
+        user.getInternal().setStatus(new UserStatus());
 
         if (user.getAccount().getType() == null) {
             user.getAccount().setType(Account.Type.GUEST);
@@ -253,7 +254,7 @@ public class UserManager extends AbstractManager {
      */
     public OpenCGAResult<User> create(String id, String name, String email, String password, String organization, Long quota,
                                       Account.Type type, String token) throws CatalogException {
-        User user = new User(id, name, email, organization, UserStatus.READY)
+        User user = new User(id, name, email, organization, new UserInternal(new UserStatus()))
                 .setAccount(new Account(type, "", "", null))
                 .setQuota(new UserQuota().setMaxDisk(quota != null ? quota : -1));
         return create(user, password, token);
@@ -614,7 +615,7 @@ public class UserManager extends AbstractManager {
 
                     Query query = new Query()
                             .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                            .append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), UserStatus.DELETED);
+                            .append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), UserStatus.DELETED);
                     OpenCGAResult<User> deletedUser = userDBAdaptor.get(query, QueryOptions.empty());
                     deletedUser.setTime(deletedUser.getTime() + result.getTime());
 

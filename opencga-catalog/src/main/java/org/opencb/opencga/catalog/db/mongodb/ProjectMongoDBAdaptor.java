@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -330,7 +331,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return endWrite(tmpStartTime, 1, 1, null);
     }
 
-    Document getDocumentUpdateParams(ObjectMap parameters) {
+    Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document projectParameters = new Document();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
@@ -344,6 +345,22 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         if (attributes != null) {
             for (Map.Entry<String, Object> entry : attributes.entrySet()) {
                 projectParameters.put("projects.$.attributes." + entry.getKey(), entry.getValue());
+            }
+        }
+
+        Object datastores = parameters.get(QueryParams.INTERNAL_DATASTORES_VARIANT.key());
+        if (datastores != null) {
+            if (datastores instanceof DataStore) {
+                datastores = getMongoDBDocument(datastores, "Datastore");
+            }
+            projectParameters.put("projects.$." + QueryParams.INTERNAL_DATASTORES_VARIANT.key(), datastores);
+        } else {
+            datastores = parameters.get(QueryParams.INTERNAL_DATASTORES.key());
+            if (datastores instanceof DataStore) {
+                datastores = getMongoDBDocument(datastores, "Datastore");
+            }
+            if (datastores != null) {
+                projectParameters.put("projects.$." + QueryParams.INTERNAL_DATASTORES.key(), datastores);
             }
         }
 

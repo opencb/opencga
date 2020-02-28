@@ -28,15 +28,17 @@ public class ProjectInternal {
         return datastores;
     }
 
-    public void setDatastores(DataStores datastores) {
+    public ProjectInternal setDatastores(DataStores datastores) {
         this.datastores = datastores;
+        return this;
     }
 
     public Status getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public ProjectInternal setStatus(Status status) {
         this.status = status;
+        return this;
     }
 }
