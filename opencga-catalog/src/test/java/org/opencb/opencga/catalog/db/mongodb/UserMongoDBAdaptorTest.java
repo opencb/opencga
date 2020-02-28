@@ -25,10 +25,7 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.user.UserConfiguration;
-import org.opencb.opencga.core.models.user.UserFilter;
-import org.opencb.opencga.core.models.user.UserStatus;
+import org.opencb.opencga.core.models.user.*;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -51,7 +48,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createUserTest() throws CatalogException {
-        User user = new User("NewUser", "", "", "", UserStatus.READY);
+        User user = new User("NewUser", "", "", "", new UserInternal(new UserStatus()));
         catalogUserDBAdaptor.insert(user, "", null);
 
         thrown.expect(CatalogDBException.class);
@@ -60,21 +57,21 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void deleteUserTest() throws CatalogException {
-        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "", UserStatus.READY);
+        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "", new UserInternal(new UserStatus()));
         catalogUserDBAdaptor.insert(deletable1, "1234", null);
         Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), "deletable1");
         DataResult<User> userResult = catalogUserDBAdaptor.get(query, QueryOptions.empty());
         assertFalse(userResult.getResults().isEmpty());
         assertNotNull(userResult.first());
 
-        assertEquals(Status.READY, userResult.first().getStatus().getName());
+        assertEquals(Status.READY, userResult.first().getInternal().getStatus().getName());
 
         DataResult deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
         assertEquals(1, deleteUser.getNumUpdated());
 
-        query.append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), UserStatus.DELETED);
+        query.append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), UserStatus.DELETED);
         DataResult<User> queryResult = catalogUserDBAdaptor.get(query, QueryOptions.empty());
-        assertEquals(Status.DELETED, queryResult.first().getStatus().getName());
+        assertEquals(Status.DELETED, queryResult.first().getInternal().getStatus().getName());
 
 
         /*

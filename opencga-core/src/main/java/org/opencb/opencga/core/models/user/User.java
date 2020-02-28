@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.user;
 
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.project.Project;
 
 import java.util.*;
@@ -36,7 +35,7 @@ public class User {
 
     private Account account;
 
-    private UserStatus status;
+    private UserInternal internal;
     private UserQuota quota;
 
     private List<Project> projects;
@@ -48,21 +47,22 @@ public class User {
     }
 
     public User(String id, Account account) {
-        this(id, id, null, null, account, Status.READY, null, Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
+        this(id, id, null, null, account, new UserInternal(new UserStatus()), null, Collections.emptyList(), Collections.emptyMap(),
+                Collections.emptyMap());
     }
 
-    public User(String id, String name, String email, String organization, String status) {
-        this(id, name, email, organization, null, status, null, new ArrayList<>(), new HashMap<>(), new HashMap<>());
+    public User(String id, String name, String email, String organization, UserInternal internal) {
+        this(id, name, email, organization, null, internal, null, new ArrayList<>(), new HashMap<>(), new HashMap<>());
     }
 
-    public User(String id, String name, String email, String organization, Account account, String status, UserQuota quota,
+    public User(String id, String name, String email, String organization, Account account, UserInternal internal, UserQuota quota,
                 List<Project> projects, Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.organization = organization;
         this.account = account != null ? account : new Account();
-        this.status = new UserStatus(status);
+        this.internal = internal;
         this.quota = quota;
         this.projects = projects;
         if (configs == null) {
@@ -81,7 +81,7 @@ public class User {
         sb.append(", email='").append(email).append('\'');
         sb.append(", organization='").append(organization).append('\'');
         sb.append(", account=").append(account);
-        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", quota=").append(quota);
         sb.append(", projects=").append(projects);
         sb.append(", configs=").append(configs);
@@ -136,12 +136,12 @@ public class User {
         return this;
     }
 
-    public UserStatus getStatus() {
-        return status;
+    public UserInternal getInternal() {
+        return internal;
     }
 
-    public User setStatus(UserStatus status) {
-        this.status = status;
+    public User setInternal(UserInternal internal) {
+        this.internal = internal;
         return this;
     }
 

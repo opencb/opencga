@@ -129,13 +129,17 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
             "maxDisk": doc['quota'],
             "maxCpu": -1
         },
+        "internal": {
+            "status": doc['status']
+        }
         "_password": doc["password"]
     };
     var unset = {
         "password": "",
         "lastModified": "",
         "size": "",
-        "account.authOrigin": ""
+        "account.authOrigin": "",
+        "status": "",
     };
 
     // #1529
