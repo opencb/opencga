@@ -1105,9 +1105,9 @@ public class VariantStorageManager extends StorageManager {
         QueryOptions queryOptions = new QueryOptions(INCLUDE,
                 Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES.key()));
         Project project = catalogManager.getProjectManager().get(projectStr, queryOptions, token).first();
-        if (project.getInternal() != null && project.getInternal().getDataStores() != null
-                && project.getInternal().getDataStores().containsKey(bioformat)) {
-            dataStore = project.getInternal().getDataStores().get(bioformat);
+        if (project.getInternal() != null && project.getInternal().getDatastores() != null
+                && project.getInternal().getDatastores().containsKey(bioformat)) {
+            dataStore = project.getInternal().getDatastores().get(bioformat);
         } else { //get default datastore
             //Must use the UserByStudyId instead of the file owner.
             String userId = catalogManager.getProjectManager().getOwner(project.getUid());
