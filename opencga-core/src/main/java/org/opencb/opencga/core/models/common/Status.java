@@ -40,6 +40,8 @@ public class Status {
 
     private String name;
     private String date;
+    private String description;
+    @Deprecated
     private String message;
 
     public Status() {
@@ -50,18 +52,18 @@ public class Status {
         this(name, "");
     }
 
-    public Status(String name, String message) {
+    public Status(String name, String description) {
         if (isValid(name)) {
-            init(name, message);
+            init(name, description);
         } else {
             throw new IllegalArgumentException("Unknown name '" + name + "'");
         }
     }
 
-    protected void init(String status, String message) {
+    protected void init(String status, String description) {
         this.name = status;
         this.date = TimeUtils.getTime();
-        this.message = message;
+        this.description = description;
     }
 
     public String getName() {
@@ -84,12 +86,12 @@ public class Status {
         this.date = TimeUtils.getTime();
     }
 
-    public String getMessage() {
-        return message;
+    public String getDescription() {
+        return description;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public static boolean isValid(String status) {
@@ -104,7 +106,7 @@ public class Status {
         final StringBuilder sb = new StringBuilder("Status{");
         sb.append("name='").append(name).append('\'');
         sb.append(", date='").append(date).append('\'');
-        sb.append(", message='").append(message).append('\'');
+        sb.append(", description='").append(description).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -120,12 +122,12 @@ public class Status {
         Status status = (Status) o;
         return Objects.equals(name, status.name)
                 && Objects.equals(date, status.date)
-                && Objects.equals(message, status.message);
+                && Objects.equals(description, status.description);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, date, message);
+        return Objects.hash(name, date, description);
     }
 
     public static String getPositiveStatus(List<String> acceptedStatusList, String status) {

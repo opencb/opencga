@@ -1128,7 +1128,7 @@ public class VariantStorageManager extends StorageManager {
             throws CatalogException {
         DataStore dataStore = null;
         QueryOptions queryOptions = new QueryOptions(INCLUDE,
-                Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.INTERNAL.key()));
+                Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES.key()));
         Project project = catalogManager.getProjectManager().get(projectStr, queryOptions, token).first();
         if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
             dataStore = project.getInternal().getDatastores().getDataStore(bioformat);

@@ -68,8 +68,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void createStudyFailMoreThanOneProject() throws CatalogException {
         catalogManager.getProjectManager().incrementRelease(project1, token);
-        catalogManager.getProjectManager().create("1000G2", "Project about some genomes", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), token);
+        catalogManager.getProjectManager().create("1000G2", "Project about some genomes", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), token);
 
         // Create a new study without providing the project. It should raise an error because the user owns more than one project
         thrown.expect(CatalogException.class);
@@ -295,13 +295,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         String projectAlias = "projectAlias_ASDFASDF";
 
-        catalogManager.getProjectManager().create(projectAlias, "Project", "", "", "Homo sapiens", null, null, "GRCh38", new
+        catalogManager.getProjectManager().create(projectAlias, "Project", "", "Homo sapiens", null, "GRCh38", new
                 QueryOptions(), token);
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.getProjectManager().create(projectAlias, "Project", "", "", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), token);
+        catalogManager.getProjectManager().create(projectAlias, "Project", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), token);
     }
 
     @Test

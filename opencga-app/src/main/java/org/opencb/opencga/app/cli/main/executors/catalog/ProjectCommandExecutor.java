@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.project.ProjectUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.RestResponse;
@@ -79,19 +80,16 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
 
         ProjectCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
 
-        Project.Organism organism = clientConfiguration.getOrganism();
+        ProjectOrganism organism = clientConfiguration.getOrganism();
         organism.setAssembly(StringUtils.isNotEmpty(commandOptions.assembly) ? commandOptions.assembly : organism.getAssembly());
         organism.setCommonName(StringUtils.isNotEmpty(commandOptions.commonName) ? commandOptions.commonName : organism.getCommonName());
         organism.setScientificName(StringUtils.isNotEmpty(commandOptions.scientificName)
                 ? commandOptions.scientificName : organism.getScientificName());
-        organism.setTaxonomyCode(StringUtils.isNotEmpty(commandOptions.taxonomyCode)
-                ? Integer.parseInt(commandOptions.taxonomyCode) : organism.getTaxonomyCode());
 
         ProjectCreateParams createParams = new ProjectCreateParams()
                 .setId(commandOptions.id)
                 .setName(commandOptions.name)
                 .setDescription(commandOptions.description)
-                .setOrganization(commandOptions.organization)
                 .setOrganism(organism);
 
         return openCGAClient.getProjectClient().create(createParams);
@@ -118,7 +116,6 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), commandOptions.alias);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), commandOptions.organization);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
         params.putIfNotEmpty("status", commandOptions.status);
@@ -137,19 +134,15 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
 
         ProjectCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
 
-        Project.Organism organism = null;
-        if (commandOptions.taxonomyCode != null || StringUtils.isNotEmpty(commandOptions.commonName)) {
-            organism = new Project.Organism()
+        ProjectOrganism organism = null;
+        if (StringUtils.isNotEmpty(commandOptions.commonName)) {
+            organism = new ProjectOrganism()
                     .setCommonName(commandOptions.commonName);
-            if (commandOptions.taxonomyCode != null) {
-                organism.setTaxonomyCode(commandOptions.taxonomyCode);
-            }
         }
 
         ProjectUpdateParams params = new ProjectUpdateParams()
                 .setName(commandOptions.name)
                 .setDescription(commandOptions.description)
-                .setOrganization(commandOptions.organization)
                 .setOrganism(organism);
 
         return openCGAClient.getProjectClient().update(commandOptions.project, params);

@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -120,7 +121,7 @@ public class VariantAnnotationOperationManager extends OperationManager {
 
     private void synchronizeProjectMetadata(String projectStr, String token) throws CatalogException, StorageEngineException {
         Project project = catalogManager.getProjectManager().get(projectStr, null, token).first();
-        Project.Organism organism = project.getOrganism();
+        ProjectOrganism organism = project.getOrganism();
         int currentRelease = project.getCurrentRelease();
         CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease);
     }

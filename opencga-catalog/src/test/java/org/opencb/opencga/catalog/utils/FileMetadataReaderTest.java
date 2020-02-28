@@ -20,15 +20,10 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.managers.FileUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
@@ -47,7 +42,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_METADATA;
@@ -75,8 +69,8 @@ public class FileMetadataReaderTest {
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
-        project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
+        project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), sessionIdUser).first();
         study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/vcf/").toString(), null, true,
                 null, QueryOptions.empty(), sessionIdUser).first();

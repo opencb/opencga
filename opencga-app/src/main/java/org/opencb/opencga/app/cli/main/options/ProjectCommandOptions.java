@@ -83,17 +83,11 @@ public class ProjectCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "A brief description of the content of this project", arity = 1)
         public String description;
 
-        @Parameter(names = {"-o", "--organization"}, description = "Organization", arity = 1)
-        public String organization;
-
         @Parameter(names = {"--organism-scientific-name"}, description = "Organism scientific name, e.g. Homo sapiens", required = true, arity = 1)
         public String scientificName;
 
         @Parameter(names = {"--organism-common-name"}, description = "Organism common name", arity = 1)
         public String commonName;
-
-        @Parameter(names = {"--organism-taxonomy-code"}, description = "Organism taxonomy code", arity = 1)
-        public String taxonomyCode;
 
         @Parameter(names = {"--organism-assembly"}, description = "Organism assembly, e.g. GRCh38", required = true, arity = 1)
         public String assembly;
@@ -124,9 +118,6 @@ public class ProjectCommandOptions {
 
         @Parameter(names = {"-a", "--alias"}, description = "DEPRECATED: Project alias.", arity = 1)
         public String alias;
-
-        @Parameter(names = {"--organization"}, description = "Organization", arity = 1)
-        public String organization;
 
         @Parameter(names = {"--description"}, description = "Project description", arity = 1)
         public String description;
@@ -172,9 +163,6 @@ public class ProjectCommandOptions {
 
         @Parameter(names = {"--organism-common-name"}, description = "Organism common name", arity = 1)
         public String commonName;
-
-        @Parameter(names = {"--organism-taxonomy-code"}, description = "Organism taxonomy code", arity = 1)
-        public Integer taxonomyCode;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a project")

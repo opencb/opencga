@@ -96,8 +96,8 @@ public class InternalMainTest {
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.Type.FULL, null).first();
 
         sessionId = catalogManager.getUserManager().login(userId, "user");
-        projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
+        projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 
         datastores = new HashMap<>();
         datastores.put(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbNameVariants));

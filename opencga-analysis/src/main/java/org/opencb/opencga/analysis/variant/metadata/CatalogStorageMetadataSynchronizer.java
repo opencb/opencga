@@ -38,6 +38,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileIndex.IndexStatus;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -95,7 +96,7 @@ public class CatalogStorageMetadataSynchronizer {
         updateProjectMetadata(scm, p.getOrganism(), p.getCurrentRelease());
     }
 
-    public static void updateProjectMetadata(VariantStorageMetadataManager scm, Project.Organism organism, int release)
+    public static void updateProjectMetadata(VariantStorageMetadataManager scm, ProjectOrganism organism, int release)
             throws StorageEngineException {
         String scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(organism.getScientificName());
 

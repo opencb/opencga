@@ -77,11 +77,11 @@ public class AbstractManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
         sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
 
-        project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), token).first().getId();
+        project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), token).first().getId();
         project2 = catalogManager.getProjectManager().create("pmp", "Project Management Project", "life art intelligent system",
-                "myorg", "Homo sapiens", null, null, "GRCh38", new QueryOptions(), sessionIdUser2).first().getId();
-        catalogManager.getProjectManager().create("p1", "project 1", "", "", "Homo sapiens", null, null, "GRCh38", new QueryOptions(),
+                "Homo sapiens", null, "GRCh38", new QueryOptions(), sessionIdUser2).first().getId();
+        catalogManager.getProjectManager().create("p1", "project 1", "", "Homo sapiens", null, "GRCh38", new QueryOptions(),
                 sessionIdUser3).first();
 
         Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, token).first();

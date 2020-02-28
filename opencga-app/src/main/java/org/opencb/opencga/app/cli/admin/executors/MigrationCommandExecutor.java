@@ -11,7 +11,6 @@ import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMi
 import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewProjectMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewStudyMetadata;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
-import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -205,7 +204,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
 
             // Create default project and study for administrator #1491
-            catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", "", "", null, token);
+            catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
             catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", Study.Type.CASE_CONTROL, "", "Default study",
                     null, new Status(), "", "", null, Collections.emptyMap(), Collections.emptyMap(), null, token);
 

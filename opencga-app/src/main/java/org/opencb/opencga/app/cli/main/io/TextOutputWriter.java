@@ -157,7 +157,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tSIZE\tQUOTA\n");
-                sb.append("#(P)\tID\tNAME\tORGANIZATION\tDESCRIPTION\tSIZE\n");
+                sb.append("#(P)\tID\tNAME\tDESCRIPTION\n");
                 sb.append("#(S)\t\tID\tNAME\tTYPE\tDESCRIPTION\t#GROUPS\tSIZE\n");
             }
 
@@ -170,10 +170,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
                 if (user.getProjects().size() > 0) {
                     for (Project project : user.getProjects()) {
-                        sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\n", " * ",
+                        sb.append(String.format("%s%s\t%s\t%s\n", " * ",
                                 StringUtils.defaultIfEmpty(project.getId(), "-"), StringUtils.defaultIfEmpty(project.getName(), "-"),
-                                StringUtils.defaultIfEmpty(project.getOrganization(), "-"),
-                                StringUtils.defaultIfEmpty(project.getDescription(), "-"), project.getSize()));
+                                StringUtils.defaultIfEmpty(project.getDescription(), "-")));
 
                         if (project.getStudies().size() > 0) {
                             for (Study study : project.getStudies()) {
@@ -204,7 +203,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (DataResult<Project> queryResult : queryResultList) {
             // Write header
-            sb.append("#ID\tNAME\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tSIZE\t#STUDIES\tSTATUS\n");
+            sb.append("#ID\tNAME\tORGANISM\tASSEMBLY\tDESCRIPTION\t#STUDIES\tSTATUS\n");
 
             for (Project project : queryResult.getResults()) {
                 String organism = "NA";
@@ -219,11 +218,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     }
                 }
 
-                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n", StringUtils.defaultIfEmpty(project.getId(), "-"),
-                        StringUtils.defaultIfEmpty(project.getName(), ","), StringUtils.defaultIfEmpty(project.getOrganization(), "-"),
-                        organism, assembly, StringUtils.defaultIfEmpty(project.getDescription(), "-"), project.getSize(),
+                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%d\t%s\n", StringUtils.defaultIfEmpty(project.getId(), "-"),
+                        StringUtils.defaultIfEmpty(project.getName(), ","),
+                        organism, assembly, StringUtils.defaultIfEmpty(project.getDescription(), "-"),
                         project.getStudies() != null ? project.getStudies().size() : -1,
-                        project.getStatus() != null ? StringUtils.defaultIfEmpty(project.getStatus().getName(), "-") : "-"));
+                        project.getInternal().getStatus() != null
+                                ? StringUtils.defaultIfEmpty(project.getInternal().getStatus().getName(), "-")
+                                : "-")
+                );
             }
         }
         ps.println(sb.toString());

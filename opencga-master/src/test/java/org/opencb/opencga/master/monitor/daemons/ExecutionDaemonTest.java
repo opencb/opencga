@@ -161,7 +161,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         assertEquals(Enums.ExecutionStatus.ABORTED, jobOpenCGAResult.first().getInternal().getStatus().getName());
-        assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getMessage().contains("not an empty directory"));
+        assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription().contains("not an empty directory"));
     }
 
     @Test
@@ -190,7 +190,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job2, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         assertEquals(Enums.ExecutionStatus.ABORTED, jobOpenCGAResult.first().getInternal().getStatus().getName());
-        assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getMessage().contains("depended on did not finish successfully"));
+        assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription().contains("depended on did not finish successfully"));
 
         // Set status of job1 to DONE to simulate it finished successfully
         catalogManager.getJobManager().update(studyFqn, job1, new PrivateJobUpdateParams()
@@ -343,7 +343,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         assertEquals(Enums.ExecutionStatus.ERROR, getJob(jobId).getInternal().getStatus().getName());
-        assertEquals("Job could not finish successfully", getJob(jobId).getInternal().getStatus().getMessage());
+        assertEquals("Job could not finish successfully", getJob(jobId).getInternal().getStatus().getDescription());
     }
 
     @Test
@@ -366,7 +366,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         assertEquals(Enums.ExecutionStatus.ERROR, getJob(jobId).getInternal().getStatus().getName());
-        assertEquals("Job could not finish successfully. Missing execution result", getJob(jobId).getInternal().getStatus().getMessage());
+        assertEquals("Job could not finish successfully. Missing execution result", getJob(jobId).getInternal().getStatus().getDescription());
     }
 
     private Job getJob(String jobId) throws CatalogException {

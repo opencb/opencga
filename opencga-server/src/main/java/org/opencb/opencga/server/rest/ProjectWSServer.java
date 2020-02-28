@@ -60,10 +60,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
 
             OpenCGAResult<Project> queryResult = catalogManager.getProjectManager()
-                    .create(project.getId(), project.getName(), project.getDescription(), project.getOrganization(),
+                    .create(project.getId(), project.getName(), project.getDescription(),
                             project.getOrganism() != null ? project.getOrganism().getScientificName() : null,
                             project.getOrganism() != null ? project.getOrganism().getCommonName() : null,
-                            project.getOrganism() != null ? Integer.toString(project.getOrganism().getTaxonomyCode()) : null,
                             project.getOrganism() != null ? project.getOrganism().getAssembly() : null, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -219,9 +218,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 }
                 if (StringUtils.isNotEmpty(updateParams.getOrganism().getScientificName())) {
                     params.append(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), updateParams.getOrganism().getScientificName());
-                }
-                if (updateParams.getOrganism().getTaxonomyCode() > 0) {
-                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), updateParams.getOrganism().getTaxonomyCode());
                 }
                 params.remove("organism");
             }
