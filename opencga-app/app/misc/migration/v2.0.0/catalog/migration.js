@@ -120,7 +120,7 @@ migrateCollection("study", {}, {groups: 1}, function(bulk, doc) {
     bulk.find({"_id": doc._id}).updateOne({"$set": params});
 });
 
-// Ticket #1528
+// Tickets #1528 #1529
 migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, doc) {
     var set = {
         "quota": {
@@ -137,6 +137,29 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
         "size": "",
         "account.authOrigin": ""
     };
+
+    // #1529
+    if (isNotEmptyArray(doc.projects)) {
+        for (var i = 0; i < doc.projects.length; i++) {
+            var project = doc.projects[i];
+
+            project['internal'] = {
+                'status': project['status'],
+                'datastores': project['dataStores']
+            };
+
+            project['internal']['status']['description'] = project['internal']['status']['message']
+
+            delete project['lastModified'];
+            delete project['size'];
+            delete project['organization'];
+            delete project['organism']['taxonomyCode'];
+            delete project['status'];
+            delete project['dataStores'];
+        }
+
+        set['projects'] = doc.projects;
+    }
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
 });
