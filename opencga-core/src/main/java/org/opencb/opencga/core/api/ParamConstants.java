@@ -125,8 +125,8 @@ public class ParamConstants {
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
     public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
-    public static final String JOB_STATUS_PARAM = "status";
-    public static final String JOB_STATUS_DESCRIPTION = "Job status";
+    public static final String JOB_STATUS_PARAM = "internal.status.name";
+    public static final String JOB_STATUS_DESCRIPTION = "Job internal status";
     public static final String JOB_VISITED_PARAM = "visited";
     public static final String JOB_VISITED_DESCRIPTION = "Visited status of job";
     public static final String JOB_TAGS = "jobTags";

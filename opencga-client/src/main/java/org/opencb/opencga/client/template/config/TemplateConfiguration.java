@@ -52,17 +52,19 @@ public class TemplateConfiguration {
         Map<String, List<Study>> studies = new HashMap<>();
         for (Project project : templateConfiguration.getProjects()) {
             studies.put(project.getId(), new ArrayList<>());
-            for (Study study : project.getStudies()) {
-                File file = mainConfigurationPath.getParent().resolve(study.getId() + ".yml").toFile();
-                // If file exists we load it and overwrite Study object.
-                // If a file with the study does not exist then Study must be defined in the main.yml file.
-                if (file.exists()) {
-                    try {
-                        studies.get(project.getId()).add(objectMapper.readValue(file, Study.class));
-                    } catch (IOException e) {
-                        // Enrich IOException with fileName
-                        throw new IOException("Error parsing study '" + study.getId() + "' template configuration file "
-                                + "'" + mainConfigurationPath + "'", e);
+            if (project.getStudies() != null) {
+                for (Study study : project.getStudies()) {
+                    File file = mainConfigurationPath.getParent().resolve(study.getId() + ".yml").toFile();
+                    // If file exists we load it and overwrite Study object.
+                    // If a file with the study does not exist then Study must be defined in the main.yml file.
+                    if (file.exists()) {
+                        try {
+                            studies.get(project.getId()).add(objectMapper.readValue(file, Study.class));
+                        } catch (IOException e) {
+                            // Enrich IOException with fileName
+                            throw new IOException("Error parsing study '" + study.getId() + "' template configuration file "
+                                    + "'" + mainConfigurationPath + "'", e);
+                        }
                     }
                 }
             }
