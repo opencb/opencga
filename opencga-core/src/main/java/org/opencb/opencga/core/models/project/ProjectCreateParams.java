@@ -5,24 +5,21 @@ public class ProjectCreateParams {
     private String id;
 
     private String name;
-    private String description;
-    private String organization;
-    private Project.Organism organism;
+    private String description;;
+    private ProjectOrganism organism;
 
     public ProjectCreateParams() {
     }
 
-    public ProjectCreateParams(String id, String name, String description, String organization, Project.Organism organism) {
+    public ProjectCreateParams(String id, String name, String description, ProjectOrganism organism) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.organization = organization;
         this.organism = organism;
     }
 
     public static ProjectCreateParams of(Project project) {
-        return new ProjectCreateParams(project.getId(), project.getName(), project.getDescription(), project.getOrganization(),
-                project.getOrganism());
+        return new ProjectCreateParams(project.getId(), project.getName(), project.getDescription(), project.getOrganism());
     }
 
     @Override
@@ -31,7 +28,6 @@ public class ProjectCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", organization='").append(organization).append('\'');
         sb.append(", organism=").append(organism);
         sb.append('}');
         return sb.toString();
@@ -64,20 +60,11 @@ public class ProjectCreateParams {
         return this;
     }
 
-    public String getOrganization() {
-        return organization;
-    }
-
-    public ProjectCreateParams setOrganization(String organization) {
-        this.organization = organization;
-        return this;
-    }
-
-    public Project.Organism getOrganism() {
+    public ProjectOrganism getOrganism() {
         return organism;
     }
 
-    public ProjectCreateParams setOrganism(Project.Organism organism) {
+    public ProjectCreateParams setOrganism(ProjectOrganism organism) {
         this.organism = organism;
         return this;
     }

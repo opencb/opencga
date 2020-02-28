@@ -82,7 +82,7 @@ public final class CatalogDemo {
         Map<String, String> projects = new HashMap<>(5);
         for (Map.Entry<String, String> userSession : userSessions.entrySet()) {
             projects.put(userSession.getKey(), catalogManager.getProjectManager().create("default", "DefaultProject", "Description",
-                    "Organization", "Homo sapiens", null, null, "GrCh38", new QueryOptions(), userSession.getValue()).first().getFqn());
+                    "Homo sapiens", null, "GrCh38", new QueryOptions(), userSession.getValue()).first().getFqn());
         }
 
         // Create two studies per user

@@ -134,7 +134,6 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         PROJECT_NAME("projects.name", TEXT_ARRAY, ""),
         PROJECT_ORGANIZATION("projects.organization", TEXT_ARRAY, ""),
         PROJECT_STATUS("projects.status", TEXT_ARRAY, ""),
-        PROJECT_LAST_MODIFIED("projects.lastModified", TEXT_ARRAY, ""),
 
         TOOL_ID("tools.id", INTEGER_ARRAY, ""),
         TOOL_NAME("tools.name", TEXT_ARRAY, ""),

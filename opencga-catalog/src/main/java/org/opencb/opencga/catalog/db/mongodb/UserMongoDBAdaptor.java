@@ -475,7 +475,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     private void checkCanDelete(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(userId);
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
-                .append(ProjectDBAdaptor.QueryParams.STATUS_NAME.key(), Status.READY);
+                .append(ProjectDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Status.READY);
         Long count = dbAdaptorFactory.getCatalogProjectDbAdaptor().count(query).getNumMatches();
         if (count > 0) {
             throw new CatalogDBException("The user {" + userId + "} cannot be deleted. The user has " + count + " projects in use.");
@@ -666,7 +666,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case PROJECTS_ID:
                     case PROJECT_ORGANIZATION:
                     case PROJECT_STATUS:
-                    case PROJECT_LAST_MODIFIED:
                     case TOOL_ID:
                     case TOOL_NAME:
                     case TOOL_ALIAS:

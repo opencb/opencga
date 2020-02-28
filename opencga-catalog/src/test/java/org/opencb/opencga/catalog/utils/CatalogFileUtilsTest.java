@@ -78,8 +78,8 @@ public class CatalogFileUtilsTest {
         catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.Type.FULL, null);
         userSessionId = catalogManager.getUserManager().login("user", "asdf");
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
-        String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), userSessionId).getResults().get(0).getId();
+        String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), userSessionId).getResults().get(0).getId();
         Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", Study.Type.CONTROL_SET, null, "", null, null, null,
                 null, null, null, null, null, userSessionId).getResults().get(0);
         studyUid = study.getUid();
