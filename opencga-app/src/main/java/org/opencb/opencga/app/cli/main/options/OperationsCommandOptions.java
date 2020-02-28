@@ -25,6 +25,8 @@ public class OperationsCommandOptions {
 
     public static final String OPERATIONS_COMMAND = "operations";
 
+    public static final String VARIANT_CONFIGURE = "variant-configure";
+
     public static final String VARIANT_SECONDARY_INDEX = "variant-secondary-index";
     public static final String VARIANT_SECONDARY_INDEX_DELETE = "variant-secondary-index-delete";
 
@@ -40,6 +42,8 @@ public class OperationsCommandOptions {
 
     public static final String VARIANT_FAMILY_AGGREGATE = "variant-family-aggregate";
     public static final String VARIANT_AGGREGATE = "variant-aggregate";
+
+    public final VariantConfigureCommandOptions variantConfigure;
 
     public final VariantSecondaryIndexCommandOptions variantSecondaryIndex;
     public final VariantSecondaryIndexDeleteCommandOptions variantSecondaryIndexDelete;
@@ -75,6 +79,7 @@ public class OperationsCommandOptions {
         this.jCommander = jCommander;
         commonJobOptions = new GeneralCliOptions.JobOptions();
 
+        variantConfigure = new VariantConfigureCommandOptions();
         variantSecondaryIndex = new VariantSecondaryIndexCommandOptions();
         variantSecondaryIndexDelete = new VariantSecondaryIndexDeleteCommandOptions();
         variantAnnotation = new VariantAnnotationIndexCommandOptions();
@@ -86,6 +91,16 @@ public class OperationsCommandOptions {
         variantFamilyIndex = new VariantFamilyGenotypeIndexCommandOptions();
         variantAggregateFamily = new VariantFamilyAggregateCommandOptions();
         variantAggregate = new VariantAggregateCommandOptions();
+    }
+
+    @Parameters(commandNames = {VARIANT_CONFIGURE}, commandDescription = "Modify variant storage configuration")
+    public class VariantConfigureCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
+        public String project;
     }
 
     @Parameters(commandNames = {VARIANT_SECONDARY_INDEX}, commandDescription = "Creates a secondary index using a search engine")

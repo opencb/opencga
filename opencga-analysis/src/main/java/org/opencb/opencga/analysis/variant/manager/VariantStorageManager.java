@@ -404,15 +404,15 @@ public class VariantStorageManager extends StorageManager {
         });
     }
 
-    public void configureProject(String projectStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
-        secureOperationByProject("configure", projectStr, params, token, engine -> {
+    public ObjectMap configureProject(String projectStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
+        return secureOperationByProject("configure", projectStr, params, token, engine -> {
             DataStore dataStore = getDataStoreByProjectId(projectStr, token);
 
             dataStore.getConfiguration().putAll(params);
             catalogManager.getProjectManager()
                     .update(projectStr, new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), dataStore),
                             new QueryOptions(), token);
-            return null;
+            return dataStore.getConfiguration();
         });
     }
 
