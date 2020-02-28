@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import re
 import sys
@@ -207,6 +209,7 @@ class JavaClientGenerator(RestClientGenerator):
 
         return my_type
 
+
 def remove_redundant_imports(imports):
     to_remove = []
     for i in range(len(imports) - 1):
@@ -225,8 +228,10 @@ def remove_redundant_imports(imports):
 def append_text(array, string, sep):
     _append_text(array, string, sep, sep, False)
 
+
 def append_comment_text(array, string, sep, sep2=None):
     _append_text(array, string, sep, sep if sep2 is None else sep2, True)
+
 
 def _append_text(array, string, sep, sep2, comment):
     if len(string) <= 140:
@@ -265,12 +270,13 @@ def _append_text(array, string, sep, sep2, comment):
 
 def _setup_argparse():
     desc = 'This script creates automatically all RestClients files'
-    parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description=desc)
 
     parser.add_argument('server_url', help='server URL')
     parser.add_argument('output_dir', help='output directory')
     args = parser.parse_args()
     return args
+
 
 def main():
     # Getting arg parameters
@@ -278,6 +284,7 @@ def main():
 
     client_generator = JavaClientGenerator(args.server_url, args.output_dir)
     client_generator.create_rest_clients()
+
 
 if __name__ == '__main__':
     sys.exit(main())

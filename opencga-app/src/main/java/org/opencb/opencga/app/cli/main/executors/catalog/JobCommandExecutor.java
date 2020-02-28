@@ -66,6 +66,9 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
             case "top":
                 top();
                 break;
+            case "log":
+                log();
+                break;
             case "delete":
                 queryResponse = delete();
                 break;
@@ -153,6 +156,12 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         JobCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
         String study = resolveStudy(c.study);
         new JobsTop(openCGAClient, study, c.iterations, c.jobsLimit, c.delay).run();
+    }
+
+    private void log() throws Exception {
+        JobCommandOptions.LogCommandOptions c = jobsCommandOptions.logCommandOptions;
+        c.study = resolveStudy(c.study);
+        new JobsLog(openCGAClient, c, System.out).run();
     }
 
     private RestResponse<Job> delete() throws ClientException {

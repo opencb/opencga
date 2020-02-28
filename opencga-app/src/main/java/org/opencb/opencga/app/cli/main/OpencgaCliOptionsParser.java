@@ -164,6 +164,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         jobSubCommands.addCommand("info", jobCommandOptions.infoCommandOptions);
         jobSubCommands.addCommand("search", jobCommandOptions.searchCommandOptions);
         jobSubCommands.addCommand("top", jobCommandOptions.topCommandOptions);
+        jobSubCommands.addCommand("log", jobCommandOptions.logCommandOptions);
         jobSubCommands.addCommand("delete", jobCommandOptions.deleteCommandOptions);
         jobSubCommands.addCommand("acl", jobCommandOptions.aclsCommandOptions);
         jobSubCommands.addCommand("acl-update", jobCommandOptions.aclsUpdateCommandOptions);
@@ -281,6 +282,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         operationsCommandOptions = new OperationsCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand(OPERATIONS_COMMAND, operationsCommandOptions);
         JCommander operationsSubCommands = jCommander.getCommands().get(OPERATIONS_COMMAND);
+        operationsSubCommands.addCommand(VARIANT_CONFIGURE, operationsCommandOptions.variantConfigure);
         operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX, operationsCommandOptions.variantSecondaryIndex);
         operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX_DELETE, operationsCommandOptions.variantSecondaryIndexDelete);
         operationsSubCommands.addCommand(VARIANT_ANNOTATION_INDEX, operationsCommandOptions.variantAnnotation);

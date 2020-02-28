@@ -185,12 +185,11 @@ public class CatalogManager implements AutoCloseable {
 
         User user = new User(OPENCGA, new Account().setType(Account.Type.ADMINISTRATOR).setExpirationDate(""))
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
-                .setOrganization(organization)
-                .setPassword(password);
-        userManager.create(user, null);
+                .setOrganization(organization);
+        userManager.create(user, password, null);
 
         String token = userManager.login(OPENCGA, password);
-        projectManager.create("admin", "admin", "Default project", "", "", "", "", "", null, token);
+        projectManager.create("admin", "admin", "Default project", "", "", "", null, token);
         studyManager.create("admin", "admin", "admin", "admin", Study.Type.CASE_CONTROL, "", "Default study", null, new Status(), "", "",
                 null, Collections.emptyMap(), Collections.emptyMap(), null, token);
     }

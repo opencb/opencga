@@ -16,7 +16,7 @@ public class UserCreateParams extends org.opencb.opencga.core.models.user.UserCr
     }
 
     public static UserCreateParams of(User user) {
-        return new UserCreateParams(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(),
+        return new UserCreateParams(user.getId(), user.getName(), user.getEmail(), "", user.getOrganization(),
                 user.getAccount().getType());
     }
 

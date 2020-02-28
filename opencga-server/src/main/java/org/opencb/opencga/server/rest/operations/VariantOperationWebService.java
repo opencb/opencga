@@ -4,6 +4,9 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -17,8 +20,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
@@ -38,6 +43,28 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public VariantOperationWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
+    }
+
+    @POST
+    @Path("/variant/configure")
+    @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION, response = ObjectMap.class)
+    public Response secondaryIndex(
+            @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Configuration params to update") ObjectMap params) {
+        return run(() -> {
+            ObjectMap newConfiguration;
+            StopWatch stopWatch = StopWatch.createStarted();
+//            if (StringUtils.isNotEmpty(study)) {
+//                variantManager.configureStudy(study, params, token);
+//            } else {
+            newConfiguration = variantManager.configureProject(project, params, token);
+//            }
+            return new DataResult<>()
+                    .setResults(Collections.singletonList(newConfiguration))
+                    .setNumResults(1)
+                    .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
+        });
     }
 
     @POST

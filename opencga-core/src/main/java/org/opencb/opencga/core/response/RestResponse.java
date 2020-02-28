@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class RestResponse<T> {
@@ -129,18 +130,21 @@ public class RestResponse<T> {
      * @return a single list with all the results, or null if no response exists
      */
     public List<T> allResults() {
-        List<T> results = null;
-        if (responses != null && responses.size() > 0) {
+        if (responses == null || responses.isEmpty()) {
+            return Collections.emptyList();
+        } else if (responses.size() == 1) {
+            return responses.get(0).getResults();
+        } else {
             // We first calculate the total size needed
             int totalSize = allResultsSize();
 
             // We init the list and copy data
-            results = new ArrayList<>(totalSize);
+            List<T> results = new ArrayList<>(totalSize);
             for (OpenCGAResult<T> dataResult : responses) {
                 results.addAll(dataResult.getResults());
             }
+            return results;
         }
-        return results;
     }
 
     @Override

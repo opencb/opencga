@@ -16,7 +16,6 @@ defaultStudy: ""
 
 # The default organism values can be defined here, this useful when creating a new Project
 organism:
-  taxonomyCode: ${OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE}
   scientificName: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
   commonName: ${OPENCGA.CLIENT.ORGANISM.COMMON_NAME}
   assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}

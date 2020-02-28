@@ -206,10 +206,10 @@
                         <groupId>com.google.protobuf</groupId>
                         <artifactId>protobuf-java</artifactId>
                     </exclusion>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-simple</artifactId>
-                    </exclusion>
+<!--                    <exclusion>-->
+<!--                        <groupId>org.slf4j</groupId>-->
+<!--                        <artifactId>slf4j-simple</artifactId>-->
+<!--                    </exclusion>-->
                 </exclusions>
             </dependency>
             <dependency>
@@ -227,12 +227,12 @@
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-datastore-core</artifactId>
                 <version>${java-common-libs.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>slf4j-simple</artifactId>
-                        <groupId>org.slf4j</groupId>
-                    </exclusion>
-                </exclusions>
+<!--                <exclusions>-->
+<!--                    <exclusion>-->
+<!--                        <artifactId>slf4j-simple</artifactId>-->
+<!--                        <groupId>org.slf4j</groupId>-->
+<!--                    </exclusion>-->
+<!--                </exclusions>-->
             </dependency>
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
@@ -247,10 +247,10 @@
                         <groupId>org.opencb.biodata</groupId>
                         <artifactId>biodata-formats</artifactId>
                     </exclusion>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-simple</artifactId>
-                    </exclusion>
+<!--                    <exclusion>-->
+<!--                        <groupId>org.slf4j</groupId>-->
+<!--                        <artifactId>slf4j-simple</artifactId>-->
+<!--                    </exclusion>-->
                 </exclusions>
             </dependency>
             <!-- cellbase-lib dependency required to enable direct annotation against the database using the adaptors -->
@@ -258,12 +258,12 @@
                 <groupId>org.opencb.cellbase</groupId>
                 <artifactId>cellbase-lib</artifactId>
                 <version>${cellbase.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-simple</artifactId>
-                    </exclusion>
-                </exclusions>
+<!--                <exclusions>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.slf4j</groupId>-->
+<!--                        <artifactId>slf4j-simple</artifactId>-->
+<!--                    </exclusion>-->
+<!--                </exclusions>-->
             </dependency>
             <dependency>
                 <groupId>org.opencb.commons</groupId>
@@ -352,6 +352,16 @@
                 <artifactId>jackson-dataformat-yaml</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.dataformat</groupId>-->
+<!--                <artifactId>jackson-dataformat-xml</artifactId>-->
+<!--                <version>${jackson.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.dataformat</groupId>-->
+<!--                <artifactId>jackson-dataformat-smile</artifactId>-->
+<!--                <version>${jackson.version}</version>-->
+<!--            </dependency>-->
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-cbor</artifactId>
@@ -614,7 +624,6 @@
                 <OPENCGA.CLIENT.GRPC.HOST>localhost:9091</OPENCGA.CLIENT.GRPC.HOST>
                 <OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME></OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME>
                 <OPENCGA.CLIENT.ORGANISM.COMMON_NAME></OPENCGA.CLIENT.ORGANISM.COMMON_NAME>
-                <OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE></OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE>
                 <OPENCGA.CLIENT.ORGANISM.ASSEMBLY></OPENCGA.CLIENT.ORGANISM.ASSEMBLY>
 
                 <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>

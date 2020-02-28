@@ -19,7 +19,7 @@ package org.opencb.opencga.client.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ public class ClientConfiguration {
     private String version;
     private int sessionDuration;
 
-    private Project.Organism organism;
+    private ProjectOrganism organism;
     private String defaultStudy;
 
     private Map<String, String> alias;
@@ -105,9 +105,6 @@ public class ClientConfiguration {
             if (variable.startsWith("OPENCGA_")) {
                 logger.debug("Overwriting environment parameter '{}'", variable);
                 switch (variable) {
-                    case "OPENCGA_CLIENT_ORGANISM_TAXONOMY_CODE":
-                        configuration.getOrganism().setTaxonomyCode(Integer.parseInt(envVariables.get(variable)));
-                        break;
                     case "OPENCGA_CLIENT_ORGANISM_SCIENTIFIC_NAME":
                         configuration.getOrganism().setScientificName(envVariables.get(variable));
                         break;
@@ -186,11 +183,11 @@ public class ClientConfiguration {
         return this;
     }
 
-    public Project.Organism getOrganism() {
+    public ProjectOrganism getOrganism() {
         return organism;
     }
 
-    public ClientConfiguration setOrganism(Project.Organism organism) {
+    public ClientConfiguration setOrganism(ProjectOrganism organism) {
         this.organism = organism;
         return this;
     }

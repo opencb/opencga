@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -167,9 +168,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             studyMetadata.getAttributes().put(DEFAULT_GENOTYPE.key(), defaultGenotype);
         }
 
-        boolean loadSplitData = options.getBoolean(VariantStorageOptions.LOAD_SPLIT_DATA.key(),
-                VariantStorageOptions.LOAD_SPLIT_DATA.defaultValue());
-        boolean newSampleBatch = checkCanLoadSampleBatch(getMetadataManager(), studyMetadata, fileId, loadSplitData);
+        VariantStorageEngine.LoadSplitData loadSplitData = VariantStorageEngine.LoadSplitData.from(options);
+        boolean newSampleBatch = checkCanLoadSampleBatch(getMetadataManager(), studyMetadata, fileId, loadSplitData != null);
 
         if (newSampleBatch) {
             logger.info("New sample batch!!!");

@@ -90,6 +90,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public static final String REMOVE_OPERATION_NAME = TaskMetadata.Type.REMOVE.name().toLowerCase();
 
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
+    private ObjectMap options;
 
     public enum MergeMode {
         BASIC,
@@ -122,6 +123,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         public String key() {
             return c;
+        }
+    }
+
+    public enum LoadSplitData {
+        CHROMOSOME,
+        REGION,
+        TYPE;
+
+        public static LoadSplitData from(ObjectMap options) {
+            Objects.requireNonNull(options);
+            String loadSplitDataStr = options.getString(LOAD_SPLIT_DATA.key());
+            if (StringUtils.isEmpty(loadSplitDataStr)) {
+                return null;
+            }
+            return LoadSplitData.valueOf(loadSplitDataStr.toUpperCase());
         }
     }
 
@@ -819,7 +835,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 for (Integer cohortId : cohortsToInvalidate) {
                     metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
-                            cohort -> cohort.setStatsStatus(TaskMetadata.Status.ERROR));
+                            cohort -> {
+                                cohort.getFiles().removeAll(fileIds);
+                                return cohort.setStatsStatus(TaskMetadata.Status.ERROR);
+                            });
                 }
 
                 // Restore default cohort with indexed samples
@@ -869,10 +888,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return cellBaseUtils;
     }
 
-    public ObjectMap getOptions() {
-        ObjectMap options = configuration.getVariantEngine(storageEngineId).getOptions();
+    @Override
+    public void setConfiguration(StorageConfiguration configuration, String storageEngineId, String dbName) {
+        super.setConfiguration(configuration, storageEngineId, dbName);
+        options = new ObjectMap(configuration.getVariantEngine(storageEngineId).getOptions());
         // Merge general options
         configuration.getVariant().getOptions().forEach(options::putIfNotNull);
+    }
+
+    public ObjectMap getOptions() {
         return options;
     }
 

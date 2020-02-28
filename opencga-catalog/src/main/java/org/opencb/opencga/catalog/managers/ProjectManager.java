@@ -40,7 +40,10 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.project.DataStores;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectInternal;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -185,9 +188,8 @@ public class ProjectManager extends AbstractManager {
         return get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
     }
 
-    public OpenCGAResult<Project> create(String id, String name, String description, String organization, String scientificName,
-                                         String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public OpenCGAResult<Project> create(String id, String name, String description, String scientificName, String commonName,
+                                         String assembly, QueryOptions options, String sessionId) throws CatalogException {
         //Only the user can create a project
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
         if (userId.isEmpty()) {
@@ -195,7 +197,7 @@ public class ProjectManager extends AbstractManager {
         }
 
         // Check that the account type is not guest
-        OpenCGAResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), null);
+        OpenCGAResult<User> user = userDBAdaptor.get(userId, new QueryOptions());
         if (user.getNumResults() == 0) {
             throw new CatalogException("Internal error happened. Could not find user " + userId);
         }
@@ -203,10 +205,8 @@ public class ProjectManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap()
                 .append("id", id)
                 .append("name", name)
-                .append("organization", organization)
                 .append("scientificName", scientificName)
                 .append("commonName", commonName)
-                .append("taxonomyCode", taxonomyCode)
                 .append("assembly", assembly)
                 .append("options", options)
                 .append("token", sessionId);
@@ -233,8 +233,8 @@ public class ProjectManager extends AbstractManager {
         OpenCGAResult<Project> queryResult;
         Project project;
         try {
-            project = new Project(id, name, description, new Status(), organization, new Project.Organism(scientificName,
-                    commonName, StringUtils.isNumeric(taxonomyCode) ? Integer.parseInt(taxonomyCode) : 0, assembly), 1);
+            project = new Project(id, name, description, new ProjectOrganism(scientificName, commonName,
+                    assembly), 1, new ProjectInternal(new DataStores(), new Status()));
             validateProjectForCreation(project, user.first());
 
             projectDBAdaptor.insert(project, userId, options);
@@ -259,7 +259,6 @@ public class ProjectManager extends AbstractManager {
             }
             throw e;
         }
-        userDBAdaptor.updateUserLastModified(userId);
         auditManager.auditCreate(userId, Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -270,7 +269,6 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkParameter(project.getId(), ProjectDBAdaptor.QueryParams.ID.key());
         project.setName(ParamUtils.defaultString(project.getName(), project.getId()));
         project.setDescription(ParamUtils.defaultString(project.getDescription(), ""));
-        project.setOrganization(ParamUtils.defaultString(project.getOrganization(), ""));
         project.setCreationDate(TimeUtils.getTime());
         project.setModificationDate(TimeUtils.getTime());
         project.setCurrentRelease(1);
@@ -421,8 +419,9 @@ public class ProjectManager extends AbstractManager {
                 if (!s.matches(ProjectDBAdaptor.QueryParams.ID.key() + "|name|description|organization|attributes|"
                         + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
                         + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
-                        + ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key() + "|"
-                        + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
+                        + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key() + "|"
+                        + ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES.key() + "|"
+                        + ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key())) {
                     throw new CatalogDBException("Parameter '" + s + "' can't be changed");
                 }
             }
@@ -430,7 +429,6 @@ public class ProjectManager extends AbstractManager {
             // Update organism information only if any of the fields was not properly defined
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
                     || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
-                    || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
                     || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
                 OpenCGAResult<Project> projectQR = projectDBAdaptor
                         .get(projectUid, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
@@ -446,10 +444,6 @@ public class ProjectManager extends AbstractManager {
                         && StringUtils.isEmpty(projectQR.first().getOrganism().getCommonName())) {
                     canBeUpdated = true;
                 }
-                if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
-                        && projectQR.first().getOrganism().getTaxonomyCode() <= 0) {
-                    canBeUpdated = true;
-                }
                 if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())
                         && StringUtils.isEmpty(projectQR.first().getOrganism().getAssembly())) {
                     canBeUpdated = true;
@@ -459,21 +453,10 @@ public class ProjectManager extends AbstractManager {
                 }
             }
 
-            for (String s : parameters.keySet()) {
-                if (!s.matches(ProjectDBAdaptor.QueryParams.ID.key() + "|name|description|organization|attributes|"
-                        + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
-                        + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
-                        + ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key() + "|"
-                        + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
-                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-                }
-            }
-
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
                 ParamUtils.checkAlias(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
             }
 
-            userDBAdaptor.updateUserLastModified(userId);
             OpenCGAResult result = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
             auditManager.auditUpdate(userId, Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -564,7 +547,7 @@ public class ProjectManager extends AbstractManager {
         }
 
         OpenCGAResult<User> userDataResult = userDBAdaptor.get(owner, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(UserDBAdaptor.QueryParams.ACCOUNT.key(), UserDBAdaptor.QueryParams.PROJECTS.key())), null);
+                Arrays.asList(UserDBAdaptor.QueryParams.ACCOUNT.key(), UserDBAdaptor.QueryParams.PROJECTS.key())));
         if (userDataResult.getNumResults() == 0) {
             throw new CatalogException("User " + owner + " not found");
         }
@@ -591,7 +574,6 @@ public class ProjectManager extends AbstractManager {
         Map<String, Object> project = (Map<String, Object>) objectMapper.readValue(inputDir.resolve("projects.json").toFile(), Map.class)
                 .get("projects");
         project.put(ProjectDBAdaptor.QueryParams.UID.key(), ParamUtils.getAsLong(project.get(ProjectDBAdaptor.QueryParams.UID.key())));
-        project.put(ProjectDBAdaptor.QueryParams.SIZE.key(), ParamUtils.getAsLong(project.get(ProjectDBAdaptor.QueryParams.SIZE.key())));
 
         // Check the projectId
         if (projectDBAdaptor.exists((Long) project.get(ProjectDBAdaptor.QueryParams.UID.key()))) {

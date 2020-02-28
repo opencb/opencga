@@ -29,6 +29,9 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(operationsCommandOptions.jCommander);
         RestResponse queryResponse = null;
         switch (subCommandString) {
+            case VARIANT_CONFIGURE:
+                queryResponse = variantConfigure();
+                break;
             case VARIANT_SECONDARY_INDEX:
                 queryResponse = variantSecondaryIndex();
                 break;
@@ -72,6 +75,14 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
         createOutput(queryResponse);
 
+    }
+
+    private RestResponse<ObjectMap> variantConfigure() throws ClientException {
+        OperationsCommandOptions.VariantConfigureCommandOptions cliOptions = operationsCommandOptions.variantConfigure;
+
+        ObjectMap params = getParams(cliOptions.project, cliOptions.study);
+
+        return openCGAClient.getVariantOperationClient().configureVariant(new ObjectMap(cliOptions.commonOptions.params), params);
     }
 
     private RestResponse<Job> variantSecondaryIndex() throws ClientException {

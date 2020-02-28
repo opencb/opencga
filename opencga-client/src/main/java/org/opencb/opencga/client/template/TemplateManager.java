@@ -59,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -199,13 +200,12 @@ public class TemplateManager {
                             .append("id", study.getVariableSets().stream().map(VariableSet::getId).collect(Collectors.toList()))
                             .append(QueryOptions.INCLUDE, "name,id")
                             .append(QueryOptions.LIMIT, study.getVariableSets().size()))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .map(VariableSet::getId)
                     .collect(Collectors.toSet());
         }
-        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn());
         for (VariableSet variableSet : study.getVariableSets()) {
             if (!existing.contains(variableSet.getId())) {
                 VariableSetCreateParams data = VariableSetCreateParams.of(variableSet);
@@ -219,15 +219,14 @@ public class TemplateManager {
             return;
         }
         logger.info("Creating {} individuals from study {}", study.getIndividuals().size(), study.getId());
-        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn());
         Map<String, Individual> existing = Collections.emptyMap();
         if (resume) {
             openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getIndividualClient()
                     .info(study.getIndividuals().stream().map(Individual::getId).collect(Collectors.joining(",")),
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id,father.id,mother.id,multiples"))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .collect(Collectors.toMap(Individual::getId, i -> i));
             openCGAClient.setThrowExceptionOnError(true);
@@ -282,15 +281,14 @@ public class TemplateManager {
 
     private void createSamples(Study study) throws ClientException {
         logger.info("Creating {} samples from study {}", study.getSamples().size(), study.getId());
-        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn());
         Set<String> existing = Collections.emptySet();
         if (resume) {
             openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getSampleClient()
                     .info(study.getSamples().stream().map(Sample::getId).collect(Collectors.joining(",")),
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .map(Sample::getId)
                     .collect(Collectors.toSet());
@@ -305,15 +303,14 @@ public class TemplateManager {
 
     private void createCohorts(Study study) throws ClientException {
         logger.info("Creating {} cohorts from study {}", study.getCohorts().size(), study.getId());
-        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn());
         Set<String> existing = Collections.emptySet();
         if (resume) {
             openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getCohortClient()
                     .info(study.getCohorts().stream().map(Cohort::getId).collect(Collectors.joining(",")),
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .map(Cohort::getId)
                     .collect(Collectors.toSet());
@@ -328,15 +325,14 @@ public class TemplateManager {
 
     private void createFamilies(Study study) throws ClientException {
         logger.info("Creating {} families from study {}", study.getFamilies().size(), study.getId());
-        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn());
         Set<String> existing = Collections.emptySet();
         if (resume) {
             openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getFamilyClient()
                     .info(study.getFamilies().stream().map(Family::getId).collect(Collectors.joining(",")),
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .map(Family::getId)
                     .collect(Collectors.toSet());
@@ -354,15 +350,14 @@ public class TemplateManager {
     private List<String> fetchFiles(TemplateConfiguration template, Study study) throws ClientException {
         URI baseUrl = getBaseUrl(template, study);
 
-        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn());
         Set<String> existing = Collections.emptySet();
         if (resume) {
             openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getFileClient()
-                    .info(study.getFiles().stream().map(this::getFilePath).collect(Collectors.joining(",")),
+                    .info(study.getFiles().stream().map(file -> getFilePath(file).replace('/', ':')).collect(Collectors.joining(",")),
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "path,name,id"))
-                    .first()
-                    .getResults()
+                    .allResults()
                     .stream()
                     .map(File::getPath)
                     .collect(Collectors.toSet());
@@ -370,13 +365,17 @@ public class TemplateManager {
         }
         List<String> indexVcfJobIds = new ArrayList<>();
         for (File file : study.getFiles()) {
+            file.setPath(getFilePath(file));
+            file.setName(Paths.get(file.getPath()).getFileName().toString());
+            file.setId(file.getPath().replace("/", ":"));
+
             List<String> jobs = Collections.emptyList();
             if (!existing.contains(getFilePath(file))) {
                 jobs = fetchFile(baseUrl, params, file);
             }
             if (template.isIndex()) {
                 if (isVcf(file)) {
-                    indexVcfJobIds.add(indexVcf(study, file.getName(), jobs));
+                    indexVcfJobIds.add(indexVcf(study, getFilePath(file), jobs));
                 }
             }
         }
@@ -384,15 +383,25 @@ public class TemplateManager {
     }
 
     private String getFilePath(File file) {
-        if (StringUtils.isEmpty(file.getName()) || file.getPath().endsWith(file.getName())) {
-            return file.getPath();
+        String path = file.getPath() == null ? "" : file.getPath();
+        String name = file.getName() == null ? "" : file.getName();
+        if (StringUtils.isEmpty(name) || path.endsWith(name)) {
+            return path;
         }
-        return file.getPath() + (file.getPath().endsWith("/") ? "" : "/") + file.getName();
+        return path + (path.endsWith("/") ? "" : "/") + name;
     }
 
     private List<String> fetchFile(URI baseUrl, ObjectMap params, File file) throws ClientException {
         List<String> jobDependsOn;
+
+        String parentPath;
+        if (file.getPath().contains("/")) {
+            parentPath = Paths.get(file.getPath()).getParent().toString();
+        } else {
+            parentPath = "";
+        }
         logger.info("Process file " + file.getName());
+
         URI fileUri;
         if (file.getUri() == null) {
             fileUri = baseUrl.resolve(file.getName());
@@ -408,16 +417,16 @@ public class TemplateManager {
             } else {
                 fetchUrl = file.getUri().toString();
             }
-            FileFetch fileFetch = new FileFetch(fetchUrl, file.getPath());
+            FileFetch fileFetch = new FileFetch(fetchUrl, parentPath);
             String fetchJobId = checkJob(openCGAClient.getFileClient().fetch(fileFetch, params));
             jobDependsOn = Collections.singletonList(fetchJobId);
         } else {
             // Link file
-            if (StringUtils.isNotEmpty(file.getPath())) {
-                FileCreateParams createFolder = new FileCreateParams(file.getPath(), null, null, true, true);
+            if (StringUtils.isNotEmpty(parentPath)) {
+                FileCreateParams createFolder = new FileCreateParams(parentPath, null, null, true, true);
                 openCGAClient.getFileClient().create(createFolder, params);
             }
-            FileLinkParams data = new FileLinkParams(fileUri.toString(), file.getPath(), null, Collections.emptyList(), null);
+            FileLinkParams data = new FileLinkParams(fileUri.toString(), parentPath, null, Collections.emptyList(), null);
             openCGAClient.getFileClient().link(data, params);
             jobDependsOn = Collections.emptyList();
         }
@@ -434,11 +443,12 @@ public class TemplateManager {
     }
 
     private boolean isVcf(File file) {
-        return file.getName().endsWith(".vcf.gz") || file.getName().endsWith(".vcf");
+        String path = getFilePath(file);
+        return path.endsWith(".vcf.gz") || path.endsWith(".vcf");
     }
 
     private String indexVcf(Study study, String file, List<String> jobDependsOn) throws ClientException {
-        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn());
         params.put(ParamConstants.JOB_DEPENDS_ON, jobDependsOn);
         VariantIndexParams variantIndexParams = new VariantIndexParams().setFile(file);
         if (study.getAttributes() != null) {
@@ -458,7 +468,7 @@ public class TemplateManager {
     }
 
     private String variantStats(Study study, List<String> indexVcfJobIds) throws ClientException {
-        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId())
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn())
                 .append(ParamConstants.JOB_DEPENDS_ON, indexVcfJobIds);
         VariantStatsAnalysisParams data = new VariantStatsAnalysisParams();
         data.setIndex(true);
