@@ -256,7 +256,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null, null);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
-        ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice> ptr =
+        ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, Object> ptr =
                 new ParallelTaskRunner<>(reader, task, null, config);
         ptr.run();
 
