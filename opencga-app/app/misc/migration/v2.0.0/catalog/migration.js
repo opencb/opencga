@@ -134,7 +134,7 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
         },
         "internal": {
             "status": doc['status']
-        }
+        },
         "_password": doc["password"]
     };
     var unset = {
@@ -168,6 +168,24 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
 
         set['projects'] = doc.projects;
     }
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1532
+migrateCollection("study", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        }
+    };
+    var unset = {
+        "stats": "",
+        "status": "",
+        "type": ""
+    };
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
 });
