@@ -180,14 +180,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Deprecated
-    public OpenCGAResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Sample> samples,
+    public OpenCGAResult<Cohort> create(long studyId, String name, Enums.CohortType type, String description, List<Sample> samples,
                                         List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
             throws CatalogException {
         return create(String.valueOf(studyId), name, type, description, samples, annotationSetList, attributes, sessionId);
     }
 
-    public OpenCGAResult<Cohort> create(String studyId, String name, Study.Type type, String description, List<Sample> samples,
-                                     List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
+    public OpenCGAResult<Cohort> create(String studyId, String name, Enums.CohortType type, String description, List<Sample> samples,
+                                        List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
             throws CatalogException {
         Cohort cohort = new Cohort(name, type, "", description, samples, annotationSetList, -1, attributes);
         return create(studyId, cohort, QueryOptions.empty(), sessionId);
@@ -227,7 +227,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkObj(cohort, "Cohort");
         ParamUtils.checkParameter(cohort.getId(), "id");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
-        cohort.setType(ParamUtils.defaultObject(cohort.getType(), Study.Type.COLLECTION));
+        cohort.setType(ParamUtils.defaultObject(cohort.getType(), Enums.CohortType.COLLECTION));
         cohort.setCreationDate(TimeUtils.getTime());
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));

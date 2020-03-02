@@ -1311,7 +1311,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.TYPE.key()), Study.Type.class);
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.TYPE.key()), Enums.CohortType.class);
         filterEnumParams(parameters, studyParameters, acceptedEnums);
 
         if (parameters.containsKey(QueryParams.URI.key())) {

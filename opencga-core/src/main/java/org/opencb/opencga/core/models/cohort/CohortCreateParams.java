@@ -1,8 +1,8 @@
 package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 
 import java.util.Collections;
 import java.util.List;
@@ -14,7 +14,7 @@ public class CohortCreateParams {
     public String id;
     @Deprecated
     public String name;
-    public Study.Type type;
+    public Enums.CohortType type;
     public String description;
     public List<String> samples;
     public List<AnnotationSet> annotationSets;
@@ -23,7 +23,7 @@ public class CohortCreateParams {
     public CohortCreateParams() {
     }
 
-    public CohortCreateParams(String id, String name, Study.Type type, String description, List<String> samples,
+    public CohortCreateParams(String id, String name, Enums.CohortType type, String description, List<String> samples,
                               List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -75,11 +75,11 @@ public class CohortCreateParams {
         return this;
     }
 
-    public Study.Type getType() {
+    public Enums.CohortType getType() {
         return type;
     }
 
-    public CohortCreateParams setType(Study.Type type) {
+    public CohortCreateParams setType(Enums.CohortType type) {
         this.type = type;
         return this;
     }

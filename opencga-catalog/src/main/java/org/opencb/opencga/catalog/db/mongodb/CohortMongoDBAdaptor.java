@@ -49,7 +49,6 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -356,7 +355,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.CREATION_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Study.Type.class);
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Enums.CohortType.class);
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());

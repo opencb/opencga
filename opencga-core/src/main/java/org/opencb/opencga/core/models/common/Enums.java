@@ -195,6 +195,19 @@ public final class Enums {
         NONE
     }
 
+    public enum CohortType {
+        CASE_CONTROL,
+        CASE_SET,
+        CONTROL_SET,
+        PAIRED,
+        PAIRED_TUMOR,
+        AGGREGATE,
+        TIME_SERIES,
+        FAMILY,
+        TRIO,
+        COLLECTION
+    }
+
     public static class ExecutionStatus extends Status {
 
         /**

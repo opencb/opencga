@@ -74,7 +74,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Create a new study without providing the project. It should raise an error because the user owns more than one project
         thrown.expect(CatalogException.class);
         thrown.expectMessage("More than one project found");
-        catalogManager.getStudyManager().create(null, "phasexx", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null,
+        catalogManager.getStudyManager().create(null, "phasexx", null, "Phase 1", "Done", null, null, null, null,
                 null, null, null, token);
     }
 
@@ -371,14 +371,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testGetAllStudies() throws CatalogException {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
         String projectId = catalogManager.getProjectManager().get(query, null, token).first().getId();
-        catalogManager.getStudyManager().create(projectId, "study_1", null, "study_1", Study.Type.CASE_CONTROL, "creationDate",
-                "description", null, new Status(), null, null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(projectId, "study_1", null, "study_1",
+                "description", null, null, null, null, null, null, null, token);
 
-        catalogManager.getStudyManager().create(projectId, "study_2", null, "study_2", Study.Type.CASE_CONTROL, "creationDate", "description", null, new Status(), null, null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(projectId, "study_2", null, "study_2", "description", null, null, null, null, null, null, null, token);
 
-        catalogManager.getStudyManager().create(projectId, "study_3", null, "study_3", Study.Type.CASE_CONTROL, "creationDate", "description", null, new Status(), null, null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(projectId, "study_3", null, "study_3", "description", null, null, null, null, null, null, null, token);
 
-        String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", Study.Type.CASE_CONTROL, "creationDate", "description", null, new Status(), null, null, null, null, null, null, token).first().getId();
+        String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", "description", null, null, null, null, null, null, null, token).first().getId();
 
         assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user2"), null, token).getResults().stream().map(Study::getId)
@@ -408,8 +408,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testGetId() throws CatalogException {
         // Create another study with alias phase3
-        catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null,
-                null, null, null, null, null, sessionIdUser2);
+        catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, null, null, sessionIdUser2);
 
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Long> uids = catalogManager.getStudyManager().resolveIds(Arrays.asList("*"), userId)
@@ -482,8 +481,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         // Create another study with alias phase3
-        DataResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "phase3", null, "Phase 3", Study.Type
-                .CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
+        DataResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "phase3", null, "Phase 3", "d", null, null, null, null, null, null, null, sessionIdUser2);
         try {
             studyManager.resolveIds(Collections.emptyList(), "*");
             fail("This should throw an exception. No studies should be found for user anonymous");
@@ -509,7 +507,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         // Create another study with alias phase3
-        DataResult<Study> study = catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
+        DataResult<Study> study = catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, null, null, sessionIdUser2);
         catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionIdUser2);
 
@@ -1065,13 +1063,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Sample sampleId5 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_5"), new QueryOptions(),
                 token).first();
         Cohort myCohort1 = catalogManager.getCohortManager().create(studyId,
-                new Cohort().setId("MyCohort1").setType(Study.Type.FAMILY).setSamples(Arrays.asList(sampleId1,sampleId2, sampleId3)),
+                new Cohort().setId("MyCohort1").setType(Enums.CohortType.FAMILY).setSamples(Arrays.asList(sampleId1,sampleId2, sampleId3)),
                 null, token).first();
-        Cohort myCohort2 = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort2").setType(Study.Type.FAMILY)
+        Cohort myCohort2 = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort2").setType(Enums.CohortType.FAMILY)
                 .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId4)), null, token).first();
         Cohort myCohort3 = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort3")
-                .setType(Study.Type.CASE_CONTROL).setSamples(Arrays.asList(sampleId3, sampleId4)), null, token).first();
-        catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort4").setType(Study.Type.TRIO)
+                .setType(Enums.CohortType.CASE_CONTROL).setSamples(Arrays.asList(sampleId3, sampleId4)), null, token).first();
+        catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort4").setType(Enums.CohortType.TRIO)
                 .setSamples(Arrays.asList(sampleId5, sampleId3)), null, token).first();
 
         long numResults;
@@ -1090,7 +1088,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 QueryOptions(), token).getNumResults();
         assertEquals(4, numResults);
 
-        numResults = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.TYPE.key(), Study.Type.FAMILY), new QueryOptions(), token).getNumResults();
+        numResults = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.TYPE.key(), Enums.CohortType.FAMILY), new QueryOptions(), token).getNumResults();
         assertEquals(2, numResults);
 
         numResults = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.TYPE.key(), "CASE_CONTROL"), new QueryOptions(), token).getNumResults();
@@ -1105,7 +1103,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testCreateCohortFail() throws CatalogException {
         thrown.expect(CatalogException.class);
         List<Sample> sampleList = Arrays.asList(new Sample().setUid(23L), new Sample().setUid(4L), new Sample().setUid(5L));
-        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Study.Type.FAMILY).setSamples(sampleList),
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY).setSamples(sampleList),
                 null, token);
     }
 
@@ -1113,12 +1111,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testCreateCohortAlreadyExisting() throws CatalogException {
         Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
                 token).first();
-        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Study.Type.FAMILY)
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
                 .setSamples(Collections.singletonList(sampleId1)), null, token).first();
 
 
         thrown.expect(CatalogDBException.class);
-        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Study.Type.FAMILY)
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
                 .setSamples(Collections.singletonList(sampleId1)), null, token).first();
     }
 
@@ -1135,7 +1133,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Sample sampleId5 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_5"), new QueryOptions(),
                 token).first();
 
-        Cohort myCohort = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Study.Type.FAMILY)
+        Cohort myCohort = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
                 .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), null, token).first();
 
 
@@ -1179,7 +1177,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), new QueryOptions(),
                 token).first();
 
-        Cohort myCohort = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort").setType(Study.Type.FAMILY)
+        Cohort myCohort = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
                 .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), null, token).first();
 
         assertEquals("MyCohort", myCohort.getId());
@@ -1210,7 +1208,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), new QueryOptions(),
                 token).first();
 
-        Cohort myCohort = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort").setType(Study.Type.FAMILY)
+        Cohort myCohort = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
                 .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), null, token).first();
 
         DataResult<Sample> myCohort1 = catalogManager.getCohortManager().getSamples(studyId, "MyCohort", token);

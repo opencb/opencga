@@ -18,9 +18,9 @@ package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 
 import java.util.*;
 
@@ -35,7 +35,7 @@ public class Cohort extends Annotable {
     @Deprecated
     private String name;
     private String uuid;
-    private Study.Type type;
+    private Enums.CohortType type;
     private String creationDate;
     private String modificationDate;
     private CohortStatus status;
@@ -52,19 +52,19 @@ public class Cohort extends Annotable {
     public Cohort() {
     }
 
-    public Cohort(String id, Study.Type type, String creationDate, String description, List<Sample> samples, int release,
+    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples, int release,
                   Map<String, Object> attributes) {
         this(id, type, creationDate, new CohortStatus(), description, samples, Collections.emptyList(), Collections.emptyMap(), release,
                 attributes);
     }
 
-    public Cohort(String id, Study.Type type, String creationDate, String description, List<Sample> samples,
+    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
         this(id, type, creationDate, new CohortStatus(), description, samples, annotationSetList, Collections.emptyMap(), release,
                 attributes);
     }
 
-    public Cohort(String id, Study.Type type, String creationDate, CohortStatus status, String description, List<Sample> samples,
+    public Cohort(String id, Enums.CohortType type, String creationDate, CohortStatus status, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSets, Map<String, Object> stats, int release, Map<String, Object> attributes) {
         this.id = id;
         this.type = type;
@@ -230,11 +230,11 @@ public class Cohort extends Annotable {
         return this;
     }
 
-    public Study.Type getType() {
+    public Enums.CohortType getType() {
         return type;
     }
 
-    public Cohort setType(Study.Type type) {
+    public Cohort setType(Enums.CohortType type) {
         this.type = type;
         return this;
     }

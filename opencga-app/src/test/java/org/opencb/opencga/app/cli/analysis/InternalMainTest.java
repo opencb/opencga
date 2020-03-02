@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.project.DataStore;
@@ -107,10 +108,9 @@ public class InternalMainTest {
     }
 
     private void createStudy(Map<File.Bioformat, DataStore> datastores, String studyName) throws CatalogException {
-        Study study = catalogManager.getStudyManager().create(projectId, studyName, studyName, studyName, Study.Type.CASE_CONTROL, null,
-                "Study " +
-                        "1", null, null, null, null, null, null, Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(),
-                        Aggregation.NONE), null, sessionId).first();
+        Study study = catalogManager.getStudyManager().create(projectId, studyName, studyName, studyName,  "Study 1", null, null, null,
+                null, null, Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.NONE), null, sessionId)
+                .first();
         studyId = study.getId();
         outdirId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(), null,
                 true, null, QueryOptions.empty(), sessionId).first().getId();
@@ -230,9 +230,9 @@ public class InternalMainTest {
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getStatus().getName());
 
 
-        catalogManager.getCohortManager().create(studyId, "coh1", Study.Type.CONTROL_SET, "", file1.getSamples(), null, null,
+        catalogManager.getCohortManager().create(studyId, "coh1", Enums.CohortType.CONTROL_SET, "", file1.getSamples(), null, null,
                 sessionId);
-        catalogManager.getCohortManager().create(studyId, "coh2", Study.Type.CONTROL_SET, "", file2.getSamples(), null, null,
+        catalogManager.getCohortManager().create(studyId, "coh2", Enums.CohortType.CONTROL_SET, "", file2.getSamples(), null, null,
                 sessionId);
 
         execute("variant", "stats",
@@ -255,14 +255,14 @@ public class InternalMainTest {
 //        File file1 = opencga.createFile(studyId, "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, new Query(), new QueryOptions(), sessionId);
-        String c1 = catalogManager.getCohortManager().create(studyId, "C1", Study.Type.CONTROL_SET, "", allSamples.getResults().subList(0,
+        String c1 = catalogManager.getCohortManager().create(studyId, "C1", Enums.CohortType.CONTROL_SET, "", allSamples.getResults().subList(0,
                 allSamples.getResults().size() / 2), null, null, sessionId).first().getId();
-        String c2 = catalogManager.getCohortManager().create(studyId, "C2", Study.Type.CONTROL_SET, "", allSamples.getResults().subList(allSamples.getResults().size()
+        String c2 = catalogManager.getCohortManager().create(studyId, "C2", Enums.CohortType.CONTROL_SET, "", allSamples.getResults().subList(allSamples.getResults().size()
                 / 2 + 1, allSamples.getResults().size()), null, null, sessionId).first().getId();
-        String c3 = catalogManager.getCohortManager().create(studyId, "C3", Study.Type.CONTROL_SET, "", allSamples.getResults().subList(0, 1), null,
+        String c3 = catalogManager.getCohortManager().create(studyId, "C3", Enums.CohortType.CONTROL_SET, "", allSamples.getResults().subList(0, 1), null,
                 null, sessionId).first().getId();
         Sample sample = catalogManager.getSampleManager().create(studyId, new Sample().setId("Sample"), null, sessionId).first();
-        String c4 = catalogManager.getCohortManager().create(studyId, "C4", Study.Type.CONTROL_SET, "", Collections.singletonList(sample),
+        String c4 = catalogManager.getCohortManager().create(studyId, "C4", Enums.CohortType.CONTROL_SET, "", Collections.singletonList(sample),
                 null, null, sessionId).first().getId();
 
         // Index file1

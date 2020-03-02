@@ -20,7 +20,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
@@ -205,8 +204,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
             // Create default project and study for administrator #1491
             catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
-            catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", Study.Type.CASE_CONTROL, "", "Default study",
-                    null, new Status(), "", "", null, Collections.emptyMap(), Collections.emptyMap(), null, token);
+            catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", "Default study",
+                    null, "", "", null, null, Collections.emptyMap(), null, token);
 
             // Create default JOBS folder for analysis
             MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);

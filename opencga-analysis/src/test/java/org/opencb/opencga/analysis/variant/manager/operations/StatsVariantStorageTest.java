@@ -24,17 +24,16 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
@@ -76,7 +75,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         File file = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         for (int i = 0; i < coh.length; i++) {
-            Cohort cohort = catalogManager.getCohortManager().create(studyId, "coh" + i, Study.Type.CONTROL_SET, "",
+            Cohort cohort = catalogManager.getCohortManager().create(studyId, "coh" + i, Enums.CohortType.CONTROL_SET, "",
                     file.getSamples().subList(file.getSamples().size() / coh.length * i, file.getSamples().size() / coh.length * (i + 1)),
                     null, null, sessionId).first();
             coh[i] = cohort.getId();
@@ -132,7 +131,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                         .setId(cohortName)
                         .setName(cohortName)
                         .setSamples(Collections.emptyList())
-                        .setType(Study.Type.COLLECTION), null, sessionId);
+                        .setType(Enums.CohortType.COLLECTION), null, sessionId);
                 queryResults.add(cohort.first());
             } else {
                 logger.warn("cohort {} was already created", cohortName);

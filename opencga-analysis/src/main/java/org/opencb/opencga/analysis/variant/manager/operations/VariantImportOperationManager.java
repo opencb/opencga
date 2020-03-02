@@ -7,11 +7,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -90,8 +90,7 @@ public class VariantImportOperationManager extends OperationManager {
                     } else {
                         description = "Cohort data imported from " + source;
                     }
-                    Cohort cohort = catalogManager.getCohortManager().create(studyConfiguration.getName(), cohortName, Study
-                            .Type.COLLECTION, description, newSampleList, null, Collections.emptyMap(), sessionId).first();
+                    Cohort cohort = catalogManager.getCohortManager().create(studyConfiguration.getName(), cohortName, Enums.CohortType.COLLECTION, description, newSampleList, null, Collections.emptyMap(), sessionId).first();
                     newCohortIds.put(cohortName, (int) cohort.getUid());
                     newCohorts.put((int) cohort.getUid(), newSampleList.stream().map(Sample::getUid).map(Long::intValue)
                             .collect(Collectors.toSet()));

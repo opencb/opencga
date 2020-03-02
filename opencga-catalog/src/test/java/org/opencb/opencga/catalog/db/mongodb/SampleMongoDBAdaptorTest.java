@@ -34,10 +34,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 
 import java.io.IOException;
@@ -420,7 +420,7 @@ public class SampleMongoDBAdaptorTest {
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
         Sample sample = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first();
 
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort("Cohort", Study.Type.COLLECTION, "", "",
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort("Cohort", Enums.CohortType.COLLECTION, "", "",
                 Collections.singletonList(sample), 1, null), null, null);
 
         thrown.expect(CatalogDBException.class);
@@ -441,7 +441,7 @@ public class SampleMongoDBAdaptorTest {
             for (int i = 0; i < numThreads; i++) {
                 threads.add(new Thread(() -> {
                     try {
-                        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort(cohortName, Study.Type.COLLECTION,
+                        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort(cohortName, Enums.CohortType.COLLECTION,
                                 "", "", Collections.emptyList(), 1, null), null, null);
                     } catch (CatalogException ignore) {
                         numFailures.incrementAndGet();

@@ -21,8 +21,8 @@ public class StudyManagerTest extends AbstractManagerTest {
 
     @Test
     public void testDefaultVariableSets() throws Exception {
-        String fqn = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", Study.Type.COLLECTION,
-                null, null, null, null, null, null, null, null, null, new QueryOptions(), token).first().getFqn();
+        String fqn = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null, null, null, null,
+                null, null, new QueryOptions(), token).first().getFqn();
 
         Study study = catalogManager.getStudyManager().get(fqn, null, token).first();
 

@@ -20,7 +20,6 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 
 import java.io.IOException;
@@ -58,7 +57,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, null, null, sessionIdUser);
 
     }
 

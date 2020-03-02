@@ -144,7 +144,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 .setId(commandOptions.id)
                 .setAlias(commandOptions.alias)
                 .setName(commandOptions.name)
-                .setType(commandOptions.type)
                 .setDescription(commandOptions.description);
 
         ObjectMap params = new ObjectMap();
@@ -174,8 +173,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         StudyUpdateParams updateParams = new StudyUpdateParams()
                 .setName(c.name)
                 .setDescription(c.description)
-                .setType(c.type)
-                .setStats(new ObjectMap(c.stats))
                 .setAttributes(new ObjectMap(c.attributes));
 
         return openCGAClient.getStudyClient().update(getSingleValidStudy(c.study), updateParams);
