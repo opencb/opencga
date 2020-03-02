@@ -320,7 +320,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                     return variants;
                 }
             }
-        }, studyId, fileId);
+        }, studyId, fileId, 10);
     }
 
     private Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context mockContext(Map<String, Counter> counterMap) throws IOException, InterruptedException {

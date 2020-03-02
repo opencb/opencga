@@ -71,6 +71,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     ARCHIVE_CHUNK_SIZE("storage.hadoop.archive.table.chunkSize", 1000),
     ARCHIVE_FILE_BATCH_SIZE("storage.hadoop.archive.table.fileBatchSize", 1000),
 
+    ARCHIVE_SLICE_BUFFER_SIZE("storage.hadoop.archive.sliceBuffer.size", 5),
+
     ARCHIVE_FIELDS("storage.hadoop.archive.fields"),
     ARCHIVE_NON_REF_FILTER("storage.hadoop.archive.non-ref.filter"),
 
