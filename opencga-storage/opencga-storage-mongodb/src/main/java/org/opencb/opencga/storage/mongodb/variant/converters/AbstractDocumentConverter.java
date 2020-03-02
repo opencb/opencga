@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.bson.Document;
-import org.opencb.opencga.core.common.ArrayUtils;
+import org.opencb.commons.utils.ArrayUtils;
 
 import java.util.Collection;
 import java.util.List;
