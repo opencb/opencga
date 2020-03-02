@@ -890,10 +890,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     @Override
     public void setConfiguration(StorageConfiguration configuration, String storageEngineId, String dbName) {
-        super.setConfiguration(configuration, storageEngineId, dbName);
         options = new ObjectMap(configuration.getVariantEngine(storageEngineId).getOptions());
         // Merge general options
         configuration.getVariant().getOptions().forEach(options::putIfNotNull);
+        super.setConfiguration(configuration, storageEngineId, dbName);
     }
 
     public ObjectMap getOptions() {
