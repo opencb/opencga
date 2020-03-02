@@ -113,7 +113,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         /* -------------------------------*/
         // Validate input CHECK
         try (HBaseManager hBaseManager = new HBaseManager(conf)) {
-            checkTablesExist(hBaseManager, archiveTable, variantTable);
+            checkTablesExist(hBaseManager, variantTable);
         }
 
         // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions

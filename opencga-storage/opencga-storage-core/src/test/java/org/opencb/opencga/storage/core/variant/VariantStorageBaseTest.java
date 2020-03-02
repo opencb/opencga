@@ -348,8 +348,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             throws IOException, FileFormatException, StorageEngineException {
 
 
-        variantStorageManager.getConfiguration()
-                .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions().putAll(params);
+        variantStorageManager.getOptions().putAll(params);
         StoragePipelineResult storagePipelineResult =
                 variantStorageManager.index(Collections.singletonList(inputUri), outputUri, doExtract, doTransform, doLoad).get(0);
 
