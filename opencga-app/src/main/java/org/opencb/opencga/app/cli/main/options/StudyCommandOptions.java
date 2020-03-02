@@ -152,9 +152,6 @@ public class StudyCommandOptions {
         @Parameter(names = {"-a", "--alias"}, description = "Study alias.", arity = 1)
         public String alias;
 
-        @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
-        public Enums.CohortType type;
-
         @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
         public String creationDate;
 
