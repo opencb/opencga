@@ -68,6 +68,7 @@ import java.util.function.Supplier;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERGE_MODE;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_SLICE_BUFFER_SIZE;
 
 /**
  * Created by mh719 on 13/05/2016.
@@ -132,6 +133,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                                                 DataReader<String> stringReader, Supplier<Task<String, Variant>> task)
             throws StorageEngineException {
 
+        int sliceBufferSize = options.getInt(ARCHIVE_SLICE_BUFFER_SIZE.key(), ARCHIVE_SLICE_BUFFER_SIZE.defaultValue());
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter;
         try {
@@ -148,7 +150,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         logger.info("Generating output file {}", outputVariantsFile);
 
         VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader,
-                helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()));
+                helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()), sliceBufferSize);
 
         // Use a supplier to avoid concurrent modifications of non thread safe objects.
         Supplier<Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> supplier = VariantToVcfSliceConverterTask::new;

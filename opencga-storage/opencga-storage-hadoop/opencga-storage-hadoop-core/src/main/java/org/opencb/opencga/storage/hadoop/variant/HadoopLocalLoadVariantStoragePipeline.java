@@ -291,7 +291,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     protected void loadFromAvro(URI input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
-
+        int sliceBufferSize = options.getInt(ARCHIVE_SLICE_BUFFER_SIZE.key(), ARCHIVE_SLICE_BUFFER_SIZE.defaultValue());
         VariantReader variantReader = variantReaderUtils.getVariantReader(input, helper.getStudyMetadata(), stdin);
         int studyId = helper.getStudyId();
         int fileId = Integer.valueOf(helper.getFileMetadata().getId());
@@ -305,7 +305,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         // Reader
         VariantDeduplicationTask dedupTask = new VariantDeduplicationTask(new DiscardDuplicatedVariantsResolver(fileId));
         VariantSliceReader sliceReader = new VariantSliceReader(
-                helper.getChunkSize(), variantReader.then(dedupTask), studyId, fileId, progressLogger);
+                helper.getChunkSize(), variantReader.then(dedupTask), studyId, fileId, sliceBufferSize, progressLogger);
 
         // Archive Writer
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, table, dbAdaptor.getHBaseManager());

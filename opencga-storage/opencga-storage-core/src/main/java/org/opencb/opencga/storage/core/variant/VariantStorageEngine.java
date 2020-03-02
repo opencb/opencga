@@ -90,6 +90,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public static final String REMOVE_OPERATION_NAME = TaskMetadata.Type.REMOVE.name().toLowerCase();
 
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
+    private ObjectMap options;
 
     public enum MergeMode {
         BASIC,
@@ -887,10 +888,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return cellBaseUtils;
     }
 
-    public ObjectMap getOptions() {
-        ObjectMap options = configuration.getVariantEngine(storageEngineId).getOptions();
+    @Override
+    public void setConfiguration(StorageConfiguration configuration, String storageEngineId, String dbName) {
+        options = new ObjectMap(configuration.getVariantEngine(storageEngineId).getOptions());
         // Merge general options
         configuration.getVariant().getOptions().forEach(options::putIfNotNull);
+        super.setConfiguration(configuration, storageEngineId, dbName);
+    }
+
+    public ObjectMap getOptions() {
         return options;
     }
 

@@ -61,7 +61,9 @@ public class JobsLog {
                     .allResults()
                     .forEach(job -> jobs.put(job.getId(), null));
         } else {
-            jobs.put(c.job, null);
+            for (String job : c.job.split(",")) {
+                jobs.put(job, null);
+            }
         }
 
         while (!jobs.isEmpty()) {

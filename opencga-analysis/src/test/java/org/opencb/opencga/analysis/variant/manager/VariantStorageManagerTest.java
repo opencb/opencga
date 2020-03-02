@@ -20,9 +20,14 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
     @Test
     public void testConfigure() throws CatalogException, StorageEngineException {
         ObjectMap expectedConfiguration = new ObjectMap("Key", "value");
+        String existingKey = variantManager.getVariantStorageEngine(studyId, sessionId).getOptions().keySet().iterator().next();
+        expectedConfiguration.put(existingKey, "OVERWRITED_VALUE");
+
         variantManager.configureProject(projectId, expectedConfiguration, sessionId);
 
         ObjectMap configuration = variantManager.getDataStoreByProjectId(projectId, sessionId).getConfiguration();
         assertEquals(expectedConfiguration, configuration);
+
+        assertEquals("OVERWRITED_VALUE", variantManager.getVariantStorageEngine(studyId, sessionId).getOptions().get(existingKey));
     }
 }

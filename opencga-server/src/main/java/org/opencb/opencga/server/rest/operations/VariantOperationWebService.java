@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -46,19 +47,23 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/configure")
-    @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION, response = ObjectMap.class)
     public Response secondaryIndex(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
 //            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Configuration params to update") ObjectMap params) {
         return run(() -> {
+            ObjectMap newConfiguration;
             StopWatch stopWatch = StopWatch.createStarted();
 //            if (StringUtils.isNotEmpty(study)) {
 //                variantManager.configureStudy(study, params, token);
 //            } else {
-                variantManager.configureProject(project, params, token);
+            newConfiguration = variantManager.configureProject(project, params, token);
 //            }
-            return new DataResult<>().setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
+            return new DataResult<>()
+                    .setResults(Collections.singletonList(newConfiguration))
+                    .setNumResults(1)
+                    .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
         });
     }
 

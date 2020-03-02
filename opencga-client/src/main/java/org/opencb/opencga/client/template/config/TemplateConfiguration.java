@@ -59,13 +59,14 @@ public class TemplateConfiguration {
                     // If a file with the study does not exist then Study must be defined in the main.yml file.
                     if (file.exists()) {
                         try {
-                            studies.get(project.getId()).add(objectMapper.readValue(file, Study.class));
+                            study = objectMapper.readValue(file, Study.class);
                         } catch (IOException e) {
                             // Enrich IOException with fileName
                             throw new IOException("Error parsing study '" + study.getId() + "' template configuration file "
                                     + "'" + mainConfigurationPath + "'", e);
                         }
                     }
+                    studies.get(project.getId()).add(study);
                 }
             }
         }

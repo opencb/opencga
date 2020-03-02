@@ -31,7 +31,6 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.common.ArrayUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.slf4j.Logger;
@@ -43,6 +42,8 @@ import java.util.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.RELEASE;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.FIELD_SEPARATOR;
+
+//import org.opencb.opencga.core.common.ArrayUtils;
 
 /**
  * Created by imedina on 14/11/16.
@@ -423,13 +424,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // prepare protein substitution scores: sift and polyphen
         List<Score> scores;
 //        ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
-//        if (!ArrayUtils.equals(variantSearchModel.getSift(), MISSING_VALUE)
-//                || !ArrayUtils.equals(variantSearchModel.getPolyphen(), MISSING_VALUE)) {
+//        if (!equalWithEpsilon(variantSearchModel.getSift(), MISSING_VALUE)
+//                || !equalWithEpsilon(variantSearchModel.getPolyphen(), MISSING_VALUE)) {
 //            scores = new ArrayList<>();
-//            if (!ArrayUtils.equals(variantSearchModel.getSift(), MISSING_VALUE)) {
+//            if (!equalWithEpsilon(variantSearchModel.getSift(), MISSING_VALUE)) {
 //                scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
 //            }
-//            if (!ArrayUtils.equals(variantSearchModel.getPolyphen(), MISSING_VALUE)) {
+//            if (!equalWithEpsilon(variantSearchModel.getPolyphen(), MISSING_VALUE)) {
 //                scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDesc()));
 //            }
 //            proteinAnnotation.setSubstitutionScores(scores);
@@ -497,23 +498,23 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // Set conservations scores
         scores = new ArrayList<>();
-        if (!ArrayUtils.equals(variantSearchModel.getPhylop(), MISSING_VALUE)) {
+        if (!equalWithEpsilon(variantSearchModel.getPhylop(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getPhylop(), "phylop", ""));
         }
-        if (!ArrayUtils.equals(variantSearchModel.getPhastCons(), MISSING_VALUE)) {
+        if (!equalWithEpsilon(variantSearchModel.getPhastCons(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getPhastCons(), "phastCons", ""));
         }
-        if (!ArrayUtils.equals(variantSearchModel.getGerp(), MISSING_VALUE)) {
+        if (!equalWithEpsilon(variantSearchModel.getGerp(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getGerp(), "gerp", ""));
         }
         variantAnnotation.setConservation(scores);
 
         // Set CADD scores
         scores = new ArrayList<>();
-        if (!ArrayUtils.equals(variantSearchModel.getCaddRaw(), MISSING_VALUE)) {
+        if (!equalWithEpsilon(variantSearchModel.getCaddRaw(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getCaddRaw(), "cadd_raw", ""));
         }
-        if (!ArrayUtils.equals(variantSearchModel.getCaddScaled(), MISSING_VALUE)) {
+        if (!equalWithEpsilon(variantSearchModel.getCaddScaled(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
         }
         variantAnnotation.setFunctionalScore(scores);
@@ -1236,7 +1237,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // If sift not exist we set it to -100.0
-        if (ArrayUtils.equals(sift, 10)) {
+        if (equalWithEpsilon(sift, 10)) {
             sift = MISSING_VALUE;
         }
 
@@ -1258,6 +1259,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
         return null;
+    }
+
+    boolean equalWithEpsilon(double first, double second) {
+//        return Precision.equals(d1, d2, Precision.EPSILON);
+        final double epsilon = 0.000000000000001;
+        return (Math.abs(second - first) < epsilon);
     }
 
     private Double parseDouble(String value, Double defaultValue) {
