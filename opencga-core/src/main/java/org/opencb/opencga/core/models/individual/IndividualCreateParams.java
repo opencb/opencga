@@ -28,11 +28,10 @@ public class IndividualCreateParams {
     private IndividualProperty.Sex sex;
     private String ethnicity;
     private Boolean parentalConsanguinity;
-    private Individual.Population population;
+    private IndividualPopulation population;
     private String dateOfBirth;
     private IndividualProperty.KaryotypicSex karyotypicSex;
     private IndividualProperty.LifeStatus lifeStatus;
-    private IndividualProperty.AffectationStatus affectationStatus;
     private List<AnnotationSet> annotationSets;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
@@ -43,10 +42,10 @@ public class IndividualCreateParams {
 
     public IndividualCreateParams(String id, String name, String father, String mother, Multiples multiples, Location location,
                                   List<SampleCreateParams> samples, IndividualProperty.Sex sex, String ethnicity,
-                                  Boolean parentalConsanguinity, Individual.Population population, String dateOfBirth,
+                                  Boolean parentalConsanguinity, IndividualPopulation population, String dateOfBirth,
                                   IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
-                                  IndividualProperty.AffectationStatus affectationStatus, List<AnnotationSet> annotationSets,
-                                  List<Phenotype> phenotypes, List<Disorder> disorders, Map<String, Object> attributes) {
+                                  List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
+                                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -61,7 +60,6 @@ public class IndividualCreateParams {
         this.dateOfBirth = dateOfBirth;
         this.karyotypicSex = karyotypicSex;
         this.lifeStatus = lifeStatus;
-        this.affectationStatus = affectationStatus;
         this.annotationSets = annotationSets;
         this.phenotypes = phenotypes;
         this.disorders = disorders;
@@ -77,7 +75,7 @@ public class IndividualCreateParams {
                         ? individual.getSamples().stream().map(SampleCreateParams::of).collect(Collectors.toList())
                         : Collections.emptyList(),
                 individual.getSex(), individual.getEthnicity(), individual.isParentalConsanguinity(), individual.getPopulation(),
-                individual.getDateOfBirth(), individual.getKaryotypicSex(), individual.getLifeStatus(), individual.getAffectationStatus(),
+                individual.getDateOfBirth(), individual.getKaryotypicSex(), individual.getLifeStatus(),
                 individual.getAnnotationSets(), individual.getPhenotypes(), individual.getDisorders(), individual.getAttributes());
     }
 
@@ -98,7 +96,6 @@ public class IndividualCreateParams {
         sb.append(", dateOfBirth='").append(dateOfBirth).append('\'');
         sb.append(", karyotypicSex=").append(karyotypicSex);
         sb.append(", lifeStatus=").append(lifeStatus);
-        sb.append(", affectationStatus=").append(affectationStatus);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
@@ -120,7 +117,7 @@ public class IndividualCreateParams {
         String individualId = StringUtils.isEmpty(id) ? name : id;
         String individualName = StringUtils.isEmpty(name) ? individualId : name;
         return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
-                location, sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
+                location, sex, karyotypicSex, ethnicity, population, lifeStatus, dateOfBirth,
                 sampleList, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes, disorders)
                 .setAttributes(attributes);
     }
@@ -215,11 +212,11 @@ public class IndividualCreateParams {
         return this;
     }
 
-    public Individual.Population getPopulation() {
+    public IndividualPopulation getPopulation() {
         return population;
     }
 
-    public IndividualCreateParams setPopulation(Individual.Population population) {
+    public IndividualCreateParams setPopulation(IndividualPopulation population) {
         this.population = population;
         return this;
     }
@@ -248,15 +245,6 @@ public class IndividualCreateParams {
 
     public IndividualCreateParams setLifeStatus(IndividualProperty.LifeStatus lifeStatus) {
         this.lifeStatus = lifeStatus;
-        return this;
-    }
-
-    public IndividualProperty.AffectationStatus getAffectationStatus() {
-        return affectationStatus;
-    }
-
-    public IndividualCreateParams setAffectationStatus(IndividualProperty.AffectationStatus affectationStatus) {
-        this.affectationStatus = affectationStatus;
         return this;
     }
 

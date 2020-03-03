@@ -135,12 +135,12 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                 continue;
             }
             String[] members = trio.split(",");
-            Member member = new Member(members[0], Member.Sex.UNKNOWN, Member.AffectionStatus.UNKNOWN);
+            Member member = new Member(members[0], Member.Sex.UNKNOWN);
             if (!members[1].equals("0")) {
-                member.setFather(new Member(members[1], Member.Sex.MALE, Member.AffectionStatus.UNKNOWN));
+                member.setFather(new Member(members[1], Member.Sex.MALE));
             }
             if (!members[2].equals("0")) {
-                member.setMother(new Member(members[2], Member.Sex.FEMALE, Member.AffectionStatus.UNKNOWN));
+                member.setMother(new Member(members[2], Member.Sex.FEMALE));
             }
             pedigree.getMembers().add(member);
         }

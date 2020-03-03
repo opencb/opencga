@@ -1231,17 +1231,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
         VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, "vs", null, token).first();
 
         String individualId1 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_1")
-                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
-                .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), token)
-                .first().getId();
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
+                new QueryOptions(), token).first().getId();
         String individualId2 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_2")
-                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
-                .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), token)
-                .first().getId();
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
+                new QueryOptions(), token).first().getId();
         String individualId3 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_3")
-                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
-                .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), token)
-                .first().getId();
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
+                new QueryOptions(), token).first().getId();
 
         catalogManager.getIndividualManager().update(studyFqn, individualId1, new IndividualUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),

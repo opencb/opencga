@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.user.Account;
@@ -150,14 +151,14 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(0, familyDataResult.first().getMembers().size());
 
         catalogManager.getIndividualManager().updateAcl(STUDY, Collections.singletonList("child2"), "user2",
-                new Individual.IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
+                new IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
         familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(1, familyDataResult.first().getMembers().size());
         assertEquals("child2", familyDataResult.first().getMembers().get(0).getId());
 
         catalogManager.getIndividualManager().updateAcl(STUDY, Collections.singletonList("child3"), "user2",
-                new Individual.IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
+                new IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
         familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(2, familyDataResult.first().getMembers().size());

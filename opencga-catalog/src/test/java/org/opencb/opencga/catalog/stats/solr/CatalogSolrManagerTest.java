@@ -120,8 +120,8 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 IndividualDBAdaptor.QueryParams.SEX.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
                 IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
-                IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
+                IndividualDBAdaptor.QueryParams.INTERNAL_STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
+                IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                 IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
                 IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
@@ -231,8 +231,8 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 IndividualDBAdaptor.QueryParams.SEX.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
                 IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
-                IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
+                IndividualDBAdaptor.QueryParams.INTERNAL_STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
+                IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                 IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
                 IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
         queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);

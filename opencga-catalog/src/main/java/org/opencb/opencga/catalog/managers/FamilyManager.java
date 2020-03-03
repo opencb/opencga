@@ -1200,7 +1200,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             Member individual = new Member(
                     member.getId(), member.getName(), null, null, member.getMultiples(),
                     Member.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
-                    Member.AffectionStatus.getEnum(member.getAffectationStatus().toString()),
                     member.getPhenotypes(), member.getDisorders(), member.getAttributes());
             individualMap.put(individual.getId(), individual);
         }

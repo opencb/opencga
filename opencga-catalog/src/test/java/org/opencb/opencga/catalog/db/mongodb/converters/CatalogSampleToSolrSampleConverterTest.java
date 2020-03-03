@@ -7,6 +7,7 @@ import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.study.Study;
@@ -31,7 +32,7 @@ public class CatalogSampleToSolrSampleConverterTest {
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         Individual individual = new Individual();
         individual.setUuid("uuid").setEthnicity("spanish").setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).
-                setPopulation(new Individual.Population("valencian", "", ""));
+                setPopulation(new IndividualPopulation("valencian", "", ""));
 
         Sample sample = new Sample();
         sample.setUid(500).setSource("Lab").setRelease(3).setVersion(2).setStatus(new Status("READY"))

@@ -130,9 +130,6 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--life-status"}, description = "Life status", arity = 1)
         public IndividualProperty.LifeStatus lifeStatus = IndividualProperty.LifeStatus.UNKNOWN;
 
-        @Parameter(names = {"--affectation-status"}, description = "Affectation status", arity = 1)
-        public IndividualProperty.AffectationStatus affectationStatus = IndividualProperty.AffectationStatus.UNKNOWN;
-
         @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", arity = 1)
         public Boolean parentalConsanguinity;
 
@@ -205,9 +202,6 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--life-status"}, description = "Life status", arity = 1)
         public String lifeStatus;
-
-        @Parameter(names = {"--affectation-status"}, description = "Affectation status", arity = 1)
-        public String affectationStatus;
 
         @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
                 "please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", arity = 1)

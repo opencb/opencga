@@ -37,6 +37,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.User;
 
@@ -343,7 +344,7 @@ public class SampleMongoDBAdaptorTest {
         String individualName = "individualName";
         Individual individual = new Individual()
                 .setId(individualName)
-                .setStatus(new Status())
+                .setInternal(new IndividualInternal(new Status()))
                 .setSamples(Arrays.asList(new Sample().setUid(sampleId).setVersion(1).setStatus(new Status())));
         dbAdaptorFactory.getCatalogIndividualDBAdaptor().insert(studyId, individual, null, queryOptions);
 

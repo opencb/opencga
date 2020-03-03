@@ -359,7 +359,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (DataResult<Individual> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#ID\tNAME\tAFFECTATION_STATUS\tSEX\tKARYOTYPIC_SEX\tETHNICITY\tPOPULATION\tSUBPOPULATION\tLIFE_STATUS")
+                sb.append("#ID\tNAME\tSEX\tKARYOTYPIC_SEX\tETHNICITY\tPOPULATION\tSUBPOPULATION\tLIFE_STATUS")
                         .append("\tSTATUS\tFATHER_ID\tMOTHER_ID\tCREATION_DATE\n");
             }
 
@@ -374,12 +374,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
                         subpopulation = individual.getPopulation().getSubpopulation();
                     }
                 }
-                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
                         StringUtils.defaultIfEmpty(individual.getId(), "-"), StringUtils.defaultIfEmpty(individual.getName(), "-"),
-                        individual.getAffectationStatus(), individual.getSex(), individual.getKaryotypicSex(),
+                        individual.getSex(), individual.getKaryotypicSex(),
                         StringUtils.defaultIfEmpty(individual.getEthnicity(), "-"), population, subpopulation,
                         individual.getLifeStatus(),
-                        individual.getStatus() != null ? StringUtils.defaultIfEmpty(individual.getStatus().getName(), "-") : "-",
+                        individual.getInternal().getStatus() != null ? StringUtils.defaultIfEmpty(individual.getInternal().getStatus().getName(), "-") : "-",
                         individual.getFather() != null ? StringUtils.defaultIfEmpty(individual.getFather().getId(), "-") : "-",
                         individual.getMother() != null ? StringUtils.defaultIfEmpty(individual.getMother().getId(), "-") : "-",
                         StringUtils.defaultIfEmpty(individual.getCreationDate(), "-")));

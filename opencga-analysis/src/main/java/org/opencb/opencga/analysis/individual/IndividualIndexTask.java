@@ -74,8 +74,8 @@ public class IndividualIndexTask extends OpenCgaTool {
                         IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                         IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
                         IndividualDBAdaptor.QueryParams.VERSION.key(),
-                        IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                        IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
+                        IndividualDBAdaptor.QueryParams.INTERNAL_STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
+                        IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                         IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
                         IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true)

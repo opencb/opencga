@@ -32,10 +32,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualAclUpdateParams;
-import org.opencb.opencga.core.models.individual.IndividualCreateParams;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.job.Job;
 
 import javax.servlet.http.HttpServletRequest;
@@ -377,7 +374,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new IndividualAclUpdateParams());
 
-            Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(params.getPermissions(), params.getAction(),
+            IndividualAclParams aclParams = new IndividualAclParams(params.getPermissions(), params.getAction(),
                     params.getSample(), params.isPropagate());
             List<String> idList = StringUtils.isEmpty(params.getIndividual()) ? Collections.emptyList() : getIdList(params.getIndividual(), false);
             return createOkResponse(individualManager.updateAcl(studyStr, idList, memberId, aclParams, token));

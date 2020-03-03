@@ -54,10 +54,9 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
         SAMPLE_VERSION("samples.version", INTEGER, ""),
         ETHNICITY("ethnicity", TEXT, ""),
-        STATUS("status", TEXT_ARRAY, ""),
-        STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
-        STATUS_DATE("status.date", TEXT, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         POPULATION_NAME("population.name", TEXT, ""),
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
@@ -79,7 +78,6 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 
         KARYOTYPIC_SEX("karyotypicSex", TEXT, ""),
         LIFE_STATUS("lifeStatus", TEXT, ""),
-        AFFECTATION_STATUS("affectationStatus", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
