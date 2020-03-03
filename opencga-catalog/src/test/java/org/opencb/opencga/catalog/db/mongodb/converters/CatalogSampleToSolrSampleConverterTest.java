@@ -10,6 +10,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.sample.SampleInternal;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.util.Arrays;
@@ -35,8 +36,9 @@ public class CatalogSampleToSolrSampleConverterTest {
                 setPopulation(new IndividualPopulation("valencian", "", ""));
 
         Sample sample = new Sample();
-        sample.setUid(500).setSource("Lab").setRelease(3).setVersion(2).setStatus(new Status("READY"))
-                .setType("Sample").setSomatic(true).setCreationDate(TimeUtils.getTime())
+        new Status("READY");
+        sample.setUid(500).setRelease(3).setVersion(2).setInternal(new SampleInternal(new Status()))
+                .setSomatic(true).setCreationDate(TimeUtils.getTime())
                 .setAnnotationSets(AnnotationHelper.createAnnotation());
 
         Map<String, Object> attributes = new HashedMap();
@@ -46,11 +48,9 @@ public class CatalogSampleToSolrSampleConverterTest {
         SampleSolrModel sampleSolrModel = new CatalogSampleToSolrSampleConverter(study).convertToStorageType(sample);
 
         assertEquals(sampleSolrModel.getUid(), sample.getUid());
-        assertEquals(sampleSolrModel.getSource(), sample.getSource());
         assertEquals(sampleSolrModel.getRelease(), sample.getRelease());
         assertEquals(sampleSolrModel.getVersion(), sample.getVersion());
-        assertEquals(sampleSolrModel.getStatus(), sample.getStatus().getName());
-        assertEquals(sampleSolrModel.getType(), sample.getType());
+        assertEquals(sampleSolrModel.getStatus(), sample.getInternal().getStatus().getName());
         assertEquals(sampleSolrModel.isSomatic(), sample.isSomatic());
         assertEquals(sampleSolrModel.getPhenotypes().size(), 0);
 

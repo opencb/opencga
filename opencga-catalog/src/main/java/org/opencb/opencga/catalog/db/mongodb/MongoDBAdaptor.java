@@ -569,7 +569,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 if (i + 1 == keys.length) {
                     auxDocument.put(tmpKey, value);
                 } else {
-                    if (!auxDocument.containsKey(tmpKey)) {
+                    if (auxDocument.get(tmpKey) == null) {
                         auxDocument.put(tmpKey, new Document());
                     }
                     auxDocument = (Document) auxDocument.get(tmpKey);

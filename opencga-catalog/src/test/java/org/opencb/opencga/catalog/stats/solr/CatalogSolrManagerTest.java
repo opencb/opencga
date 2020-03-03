@@ -152,10 +152,10 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, true);
         queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UUID.key(),
-                SampleDBAdaptor.QueryParams.STUDY_UID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
+                SampleDBAdaptor.QueryParams.STUDY_UID.key(),
                 SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
                 SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
-                SampleDBAdaptor.QueryParams.STATUS.key(), SampleDBAdaptor.QueryParams.TYPE.key(),
+                SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
                 SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),SampleDBAdaptor.QueryParams.UID.key(),
                 SampleDBAdaptor.QueryParams.ATTRIBUTES.key()));

@@ -135,7 +135,7 @@ public class CatalogSampleAnnotationsLoader {
                 DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(study.getFqn(),
                         new Sample()
                                 .setId(individual.getId())
-                                .setSource(pedFile.getName())
+                                .setFileIds(Collections.singletonList(pedFile.getPath()))
                                 .setDescription("Sample loaded from the pedigree File = {path: " + pedFile.getPath() + ", name: \""
                                         + pedFile.getName() + "\" }")
                                 .setAnnotationSets(Collections.singletonList(annotationSet)),

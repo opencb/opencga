@@ -13,13 +13,7 @@ import java.util.Map;
 public class SampleSolrModel extends CatalogSolrModel {
 
     @Field
-    private String source;
-
-    @Field
     private int version;
-
-    @Field
-    private String type;
 
     @Field
     private boolean somatic;
@@ -66,7 +60,6 @@ public class SampleSolrModel extends CatalogSolrModel {
         sb.append("id='").append(id).append('\'');
         sb.append(", uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
-        sb.append(", source='").append(source).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationYear=").append(creationYear);
@@ -74,7 +67,6 @@ public class SampleSolrModel extends CatalogSolrModel {
         sb.append(", creationDay=").append(creationDay);
         sb.append(", creationDayOfWeek='").append(creationDayOfWeek).append('\'');
         sb.append(", status='").append(status).append('\'');
-        sb.append(", type='").append(type).append('\'');
         sb.append(", somatic=").append(somatic);
         sb.append(", product='").append(product).append('\'');
         sb.append(", preparationMethod='").append(preparationMethod).append('\'');
@@ -91,30 +83,12 @@ public class SampleSolrModel extends CatalogSolrModel {
         return sb.toString();
     }
 
-    public String getSource() {
-        return source;
-    }
-
-    public SampleSolrModel setSource(String source) {
-        this.source = source;
-        return this;
-    }
-
     public int getVersion() {
         return version;
     }
 
     public SampleSolrModel setVersion(int version) {
         this.version = version;
-        return this;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public SampleSolrModel setType(String type) {
-        this.type = type;
         return this;
     }
 

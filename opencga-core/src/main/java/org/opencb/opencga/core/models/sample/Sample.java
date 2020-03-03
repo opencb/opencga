@@ -20,12 +20,13 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Status;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -33,76 +34,67 @@ import java.util.*;
 public class Sample extends Annotable {
 
     private String id;
-    @Deprecated
-    private String name;
     private String uuid;
-    private String source;
     private SampleProcessing processing;
     private SampleCollection collection;
-    private String individualId;
 
     private int release;
     private int version;
     private String creationDate;
     private String modificationDate;
-    private Status status;
     private String description;
-    private String type;
     private boolean somatic;
     private List<Phenotype> phenotypes;
 
-    @Deprecated
-    private Map<String, Object> stats;
+    private String individualId;
+    private List<String> fileIds;
+
+    private SampleInternal internal;
+
     private Map<String, Object> attributes;
 
 
     public Sample() {
     }
 
-    public Sample(String id, String source, String individualId, String description, int release) {
-        this(id, source, individualId, null, null, release, 1, description, "", false, new ArrayList<>(), new ArrayList<>(),
-                new HashMap<>());
+    public Sample(String id, String individualId, String description, int release) {
+        this(id, individualId, null, null, release, 1, description, false, new ArrayList<>(), new ArrayList<>(), null, new HashMap<>());
     }
 
-    public Sample(String id, String source, String individualId, SampleProcessing processing, SampleCollection collection, int release,
-                  int version, String description, String type, boolean somatic, List<Phenotype> phenotypes,
-                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Sample(String id, String individualId, SampleProcessing processing, SampleCollection collection, int release, int version,
+                  String description, boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets,
+                  SampleInternal internal, Map<String, Object> attributes) {
         this.id = id;
-        this.source = source;
         this.processing = processing;
         this.collection = collection;
         this.release = release;
         this.version = version;
         this.creationDate = TimeUtils.getTime();
-        this.status = new Status();
         this.description = description;
-        this.type = type;
         this.somatic = somatic;
         this.phenotypes = phenotypes;
         this.annotationSets = annotationSets;
-        this.attributes = attributes;
-        this.stats = new HashMap<>();
         this.individualId = individualId;
+        this.internal = internal;
+        this.attributes = attributes;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Sample{");
-        sb.append("uuid='").append(uuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
-        sb.append(", source='").append(source).append('\'');
-        sb.append(", processing='").append(processing).append('\'');
-        sb.append(", collection='").append(collection).append('\'');
+        sb.append("id='").append(id).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", processing=").append(processing);
+        sb.append(", collection=").append(collection);
+        sb.append(", individualId='").append(individualId).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
-        sb.append(", type='").append(type).append('\'');
         sb.append(", somatic=").append(somatic);
         sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", stats=").append(stats);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
@@ -122,19 +114,15 @@ public class Sample extends Annotable {
                 .append(version, sample.version)
                 .append(somatic, sample.somatic)
                 .append(id, sample.id)
-                .append(name, sample.name)
                 .append(uuid, sample.uuid)
-                .append(source, sample.source)
                 .append(processing, sample.processing)
                 .append(collection, sample.collection)
                 .append(individualId, sample.individualId)
                 .append(creationDate, sample.creationDate)
                 .append(modificationDate, sample.modificationDate)
-                .append(status, sample.status)
                 .append(description, sample.description)
-                .append(type, sample.type)
                 .append(phenotypes, sample.phenotypes)
-                .append(stats, sample.stats)
+                .append(internal, sample.internal)
                 .append(attributes, sample.attributes)
                 .isEquals();
     }
@@ -143,9 +131,7 @@ public class Sample extends Annotable {
     public int hashCode() {
         return new HashCodeBuilder(17, 37)
                 .append(id)
-                .append(name)
                 .append(uuid)
-                .append(source)
                 .append(processing)
                 .append(collection)
                 .append(individualId)
@@ -153,12 +139,10 @@ public class Sample extends Annotable {
                 .append(version)
                 .append(creationDate)
                 .append(modificationDate)
-                .append(status)
                 .append(description)
-                .append(type)
                 .append(somatic)
                 .append(phenotypes)
-                .append(stats)
+                .append(internal)
                 .append(attributes)
                 .toHashCode();
     }
@@ -190,26 +174,6 @@ public class Sample extends Annotable {
 
     public Sample setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    @Deprecated
-    public String getName() {
-        return name;
-    }
-
-    @Deprecated
-    public Sample setName(String name) {
-        this.name = name;
-        return this;
-    }
-
-    public String getSource() {
-        return source;
-    }
-
-    public Sample setSource(String source) {
-        this.source = source;
         return this;
     }
 
@@ -258,15 +222,6 @@ public class Sample extends Annotable {
         return this;
     }
 
-    public Status getStatus() {
-        return status;
-    }
-
-    public Sample setStatus(Status status) {
-        this.status = status;
-        return this;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -282,15 +237,6 @@ public class Sample extends Annotable {
 
     public Sample setSomatic(boolean somatic) {
         this.somatic = somatic;
-        return this;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public Sample setType(String type) {
-        this.type = type;
         return this;
     }
 
@@ -321,12 +267,21 @@ public class Sample extends Annotable {
         return this;
     }
 
-    public Map<String, Object> getStats() {
-        return stats;
+    public List<String> getFileIds() {
+        return fileIds;
     }
 
-    public Sample setStats(Map<String, Object> stats) {
-        this.stats = stats;
+    public Sample setFileIds(List<String> fileIds) {
+        this.fileIds = fileIds;
+        return this;
+    }
+
+    public SampleInternal getInternal() {
+        return internal;
+    }
+
+    public Sample setInternal(SampleInternal internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -343,112 +298,6 @@ public class Sample extends Annotable {
     public Sample setAnnotationSets(List<AnnotationSet> annotationSets) {
         super.setAnnotationSets(annotationSets);
         return this;
-    }
-
-    // Acl params to communicate the WS and the sample manager
-    public static class SampleAclParams extends AclParams {
-
-        private String individual;
-        private String file;
-        private String cohort;
-        private boolean propagate;
-
-        public SampleAclParams() {
-        }
-
-        public SampleAclParams(String permissions, Action action, String individual, String file, String cohort) {
-            super(permissions, action);
-            this.individual = individual;
-            this.file = file;
-            this.cohort = cohort;
-            this.propagate = false;
-        }
-
-        public SampleAclParams(String permissions, Action action, String individual, String file, String cohort, boolean propagate) {
-            super(permissions, action);
-            this.individual = individual;
-            this.file = file;
-            this.cohort = cohort;
-            this.propagate = propagate;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("SampleAclParams{");
-            sb.append("permissions='").append(permissions).append('\'');
-            sb.append(", action=").append(action);
-            sb.append(", individual='").append(individual).append('\'');
-            sb.append(", file='").append(file).append('\'');
-            sb.append(", cohort='").append(cohort).append('\'');
-            sb.append(", propagate=").append(propagate);
-            sb.append('}');
-            return sb.toString();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof SampleAclParams)) {
-                return false;
-            }
-            SampleAclParams that = (SampleAclParams) o;
-            return Objects.equals(individual, that.individual)
-                    && Objects.equals(file, that.file)
-                    && Objects.equals(cohort, that.cohort);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(individual, file, cohort);
-        }
-
-        public String getIndividual() {
-            return individual;
-        }
-
-        public SampleAclParams setIndividual(String individual) {
-            this.individual = individual;
-            return this;
-        }
-
-        public String getFile() {
-            return file;
-        }
-
-        public SampleAclParams setFile(String file) {
-            this.file = file;
-            return this;
-        }
-
-        public String getCohort() {
-            return cohort;
-        }
-
-        public SampleAclParams setCohort(String cohort) {
-            this.cohort = cohort;
-            return this;
-        }
-
-        public boolean isPropagate() {
-            return propagate;
-        }
-
-        public SampleAclParams setPropagate(boolean propagate) {
-            this.propagate = propagate;
-            return this;
-        }
-
-        public SampleAclParams setPermissions(String permissions) {
-            super.setPermissions(permissions);
-            return this;
-        }
-
-        public SampleAclParams setAction(Action action) {
-            super.setAction(action);
-            return this;
-        }
     }
 
 }

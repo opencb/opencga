@@ -326,11 +326,10 @@ public class TextOutputWriter extends AbstractOutputWriter {
         // # name	id	source	description	status	individualName	individualID
         for (Sample sample : samples) {
             String individualId = StringUtils.defaultIfEmpty(sample.getIndividualId(), "-");
-            sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\n", format,
+            sb.append(String.format("%s%s\t%s\t%s\t%s\n", format,
                     getId(sample),
-                    StringUtils.defaultIfEmpty(sample.getSource(), "-"),
                     StringUtils.defaultIfEmpty(sample.getDescription(), "-"),
-                    sample.getStatus() != null ? StringUtils.defaultIfEmpty(sample.getStatus().getName(), "-") : "-", individualId));
+                    sample.getInternal().getStatus() != null ? StringUtils.defaultIfEmpty(sample.getInternal().getStatus().getName(), "-") : "-", individualId));
         }
     }
 

@@ -47,6 +47,7 @@ import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SampleAclParams;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
@@ -594,7 +595,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(sampleDataResult.getNumResults() > 0);
 
         // Assign permissions to all the samples
-        Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
+        SampleAclParams sampleAclParams = new SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
         List<String> sampleIds = sampleDataResult.getResults().stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());
@@ -642,7 +643,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(sampleDataResult.getNumResults() > 0);
 
         // Assign permissions to all the samples
-        Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
+        SampleAclParams sampleAclParams = new SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
         List<String> sampleIds = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
         DataResult<Map<String, List<String>>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,

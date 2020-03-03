@@ -46,9 +46,7 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -184,15 +182,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     void validateNewSample(Study study, Sample sample, String userId) throws CatalogException {
         ParamUtils.checkAlias(sample.getId(), "id");
-        sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
-        sample.setType(ParamUtils.defaultString(sample.getType(), ""));
         sample.setIndividualId(ParamUtils.defaultObject(sample.getIndividualId(), ""));
         sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
-        sample.setStats(ParamUtils.defaultObject(sample.getStats(), Collections.emptyMap()));
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
-        sample.setStatus(new Status());
+        sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::new));
+        sample.getInternal().setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
         sample.setVersion(1);
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
@@ -1060,7 +1056,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> sampleStringList, String memberList,
-                                                      Sample.SampleAclParams sampleAclParams, String token) throws CatalogException {
+                                                              SampleAclParams sampleAclParams, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 

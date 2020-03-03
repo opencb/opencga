@@ -66,7 +66,7 @@ public class VariantImportOperationManager extends OperationManager {
                 String description = "Sample data imported from " + source;
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getSampleIds().entrySet()) {
                     Sample sample = catalogManager.getSampleManager().create(studyStr,
-                            new Sample(entry.getKey(), source, null, description, 1), QueryOptions.empty(), sessionId).first();
+                            new Sample(entry.getKey(), null, description, 1), QueryOptions.empty(), sessionId).first();
                     samplesMap.put(sample.getId(), (int) sample.getUid());
                     samplesIdMap.put(entry.getValue(), (int) sample.getUid());
                 }

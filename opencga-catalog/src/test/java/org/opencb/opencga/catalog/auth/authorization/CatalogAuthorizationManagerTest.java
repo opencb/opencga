@@ -46,6 +46,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SampleAclParams;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
@@ -94,10 +95,10 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
             ",");
     private final String DENY_SAMPLE_PERMISSIONS = "";
 
-    private final Sample.SampleAclParams allSamplePermissions =
-            new Sample.SampleAclParams(ALL_SAMPLE_PERMISSIONS, AclParams.Action.SET, null, null,null);
-    private final Sample.SampleAclParams noSamplePermissions =
-            new Sample.SampleAclParams(DENY_SAMPLE_PERMISSIONS, AclParams.Action.SET, null, null,null);
+    private final SampleAclParams allSamplePermissions =
+            new SampleAclParams(ALL_SAMPLE_PERMISSIONS, AclParams.Action.SET, null, null,null);
+    private final SampleAclParams noSamplePermissions =
+            new SampleAclParams(DENY_SAMPLE_PERMISSIONS, AclParams.Action.SET, null, null,null);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -753,7 +754,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readSampleForbiddenForExternalUser() throws CatalogException {
-        catalogManager.getSampleManager().updateAcl(String.valueOf(studyFqn), Arrays.asList(smp2.getId()), externalUser, new Sample.SampleAclParams("",
+        catalogManager.getSampleManager().updateAcl(String.valueOf(studyFqn), Arrays.asList(smp2.getId()), externalUser, new SampleAclParams("",
                 AclParams.Action.SET, null, null, null), ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSampleManager().get(studyFqn, smp2.getId(), null, externalSessionId);
@@ -848,16 +849,16 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         sampleManager.create(studyFqn, new Sample().setId("s4"), QueryOptions.empty(), ownerSessionId);
         sampleManager.create(studyFqn, new Sample().setId("s5"), QueryOptions.empty(), ownerSessionId);
 
-        sampleManager.updateAcl(studyFqn, Collections.singletonList("s1"), memberUser, new Sample.SampleAclParams(
+        sampleManager.updateAcl(studyFqn, Collections.singletonList("s1"), memberUser, new SampleAclParams(
                 SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.DELETE.name(), AclParams.Action.SET,
                 null, null, null), ownerSessionId);
-        sampleManager.updateAcl(studyFqn, Collections.singletonList("s2"), memberUser, new Sample.SampleAclParams(
+        sampleManager.updateAcl(studyFqn, Collections.singletonList("s2"), memberUser, new SampleAclParams(
                 SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(),
                 AclParams.Action.SET, null, null, null), ownerSessionId);
-        sampleManager.updateAcl(studyFqn, Collections.singletonList("s3"), memberUser, new Sample.SampleAclParams(
+        sampleManager.updateAcl(studyFqn, Collections.singletonList("s3"), memberUser, new SampleAclParams(
                 SampleAclEntry.SamplePermissions.UPDATE.name() + "," + SampleAclEntry.SamplePermissions.DELETE.name(), AclParams.Action.SET,
                 null, null, null), ownerSessionId);
-        sampleManager.updateAcl(studyFqn, Collections.singletonList("s4"), memberUser, new Sample.SampleAclParams(
+        sampleManager.updateAcl(studyFqn, Collections.singletonList("s4"), memberUser, new SampleAclParams(
                 SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null), ownerSessionId);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
