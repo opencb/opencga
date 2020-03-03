@@ -67,7 +67,7 @@ public class FamilyIndexTask extends OpenCgaTool {
         Query query = new Query();
         QueryOptions familyQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.UUID.key(),
-                        FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.STATUS.key(),
+                        FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                         FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
                         FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key()))

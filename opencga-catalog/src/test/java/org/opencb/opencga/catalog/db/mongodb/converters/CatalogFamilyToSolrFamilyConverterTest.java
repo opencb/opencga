@@ -4,6 +4,8 @@ import org.junit.Test;
 import org.opencb.opencga.catalog.stats.solr.FamilySolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFamilyToSolrFamilyConverter;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyInternal;
+import org.opencb.opencga.core.models.family.FamilyStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -25,11 +27,11 @@ public class CatalogFamilyToSolrFamilyConverterTest {
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         Family family = new Family("id", "family", null, null,
                 Arrays.asList(new Individual().setId("I1"), new Individual().setId("I2")), "test", 1000, AnnotationHelper.createAnnotation(), null);
-        family.setUid(100).setStatus(new Family.FamilyStatus("READY")).setRelease(1).setVersion(2);
+        family.setUid(100).setInternal(new FamilyInternal(new FamilyStatus("READY"))).setRelease(1).setVersion(2);
         FamilySolrModel familySolrModel = new CatalogFamilyToSolrFamilyConverter(study).convertToStorageType(family);
 
         assertEquals(familySolrModel.getUid(), family.getUid());
-        assertEquals(familySolrModel.getStatus(), family.getStatus().getName());
+        assertEquals(familySolrModel.getStatus(), family.getInternal().getStatus().getName());
         assertEquals(familySolrModel.getNumMembers(), family.getMembers().size());
         assertEquals(familySolrModel.getRelease(), family.getRelease());
         assertEquals(familySolrModel.getVersion(), family.getVersion());

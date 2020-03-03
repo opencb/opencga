@@ -207,4 +207,20 @@ migrateCollection("individual", {"internal": {"$exists": false}}, {}, function(b
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
 });
 
+// #1536
+migrateCollection("family", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        }
+    };
+    var unset = {
+        "status": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
 // TODO: Add indexes for new "deleted" collections
