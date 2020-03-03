@@ -15,8 +15,6 @@ import java.util.stream.Collectors;
 public class ClinicalAnalysisCreateParams {
 
     private String id;
-    @Deprecated
-    private String name;
     private String description;
     private ClinicalAnalysis.Type type;
 
@@ -28,7 +26,7 @@ public class ClinicalAnalysisCreateParams {
     private FamilyParam family;
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
     private ClinicalAnalystParam analyst;
-    private ClinicalAnalysis.ClinicalStatus status;
+    private ClinicalAnalysisInternal internal;
     private List<InterpretationCreateParams> interpretations;
 
     private ClinicalConsent consent;
@@ -44,14 +42,13 @@ public class ClinicalAnalysisCreateParams {
     public ClinicalAnalysisCreateParams() {
     }
 
-    public ClinicalAnalysisCreateParams(String id, String name, String description, ClinicalAnalysis.Type type, Disorder disorder,
+    public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
                                         Map<String, List<String>> files, ProbandParam proband, FamilyParam family,
                                         Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalystParam analyst,
-                                        ClinicalAnalysis.ClinicalStatus status, List<InterpretationCreateParams> interpretations,
+                                        ClinicalAnalysisInternal internal, List<InterpretationCreateParams> interpretations,
                                         ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
                                         Enums.Priority priority, List<String> flags, Map<String, Object> attributes) {
         this.id = id;
-        this.name = name;
         this.description = description;
         this.type = type;
         this.disorder = disorder;
@@ -60,7 +57,7 @@ public class ClinicalAnalysisCreateParams {
         this.family = family;
         this.roleToProband = roleToProband;
         this.analyst = analyst;
-        this.status = status;
+        this.internal = internal;
         this.interpretations = interpretations;
         this.consent = consent;
         this.dueDate = dueDate;
@@ -93,13 +90,13 @@ public class ClinicalAnalysisCreateParams {
         } else {
             files = Collections.emptyMap();
         }
-        return new ClinicalAnalysisCreateParams(clinicalAnalysis.getId(), clinicalAnalysis.getName(), clinicalAnalysis.getDescription(),
+        return new ClinicalAnalysisCreateParams(clinicalAnalysis.getId(), clinicalAnalysis.getDescription(),
                 clinicalAnalysis.getType(), clinicalAnalysis.getDisorder(), files,
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
                 clinicalAnalysis.getRoleToProband(),
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
-                clinicalAnalysis.getStatus(),
+                clinicalAnalysis.getInternal(),
                 clinicalAnalysis.getInterpretations() != null
                         ? clinicalAnalysis.getInterpretations().stream().map(InterpretationCreateParams::of).collect(Collectors.toList())
                         : Collections.emptyList(), clinicalAnalysis.getConsent(), clinicalAnalysis.getDueDate(),
@@ -111,7 +108,6 @@ public class ClinicalAnalysisCreateParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisCreateParams{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
@@ -120,7 +116,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
         sb.append(", analyst=").append(analyst);
-        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", interpretations=").append(interpretations);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
@@ -177,11 +173,9 @@ public class ClinicalAnalysisCreateParams {
                         .map(InterpretationCreateParams::toClinicalInterpretation)
                         .collect(Collectors.toList())
                         : new ArrayList<>();
-        String clinicalId = StringUtils.isEmpty(id) ? name : id;
         String assignee = analyst != null ? analyst.assignee : "";
-        return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f, roleToProband, consent,
-                interpretationList, priority, new ClinicalAnalysis.ClinicalAnalyst(assignee, ""), flags, null,
-                dueDate, comments, alerts, status, 1, attributes).setName(name);
+        return new ClinicalAnalysis(id, description, type, disorder, fileMap, individual, f, roleToProband, consent, interpretationList,
+                priority, new ClinicalAnalysisAnalyst(assignee, ""), flags, null, dueDate, comments, alerts, internal, 1, attributes);
     }
 
     public String getId() {
@@ -190,15 +184,6 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public ClinicalAnalysisCreateParams setName(String name) {
-        this.name = name;
         return this;
     }
 
@@ -274,12 +259,12 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public ClinicalAnalysis.ClinicalStatus getStatus() {
-        return status;
+    public ClinicalAnalysisInternal getInternal() {
+        return internal;
     }
 
-    public ClinicalAnalysisCreateParams setStatus(ClinicalAnalysis.ClinicalStatus status) {
-        this.status = status;
+    public ClinicalAnalysisCreateParams setInternal(ClinicalAnalysisInternal internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -492,7 +477,7 @@ public class ClinicalAnalysisCreateParams {
             this.assignee = assignee;
         }
 
-        public static ClinicalAnalystParam of(ClinicalAnalysis.ClinicalAnalyst clinicalAnalyst) {
+        public static ClinicalAnalystParam of(ClinicalAnalysisAnalyst clinicalAnalyst) {
             return new ClinicalAnalystParam(clinicalAnalyst.getAssignee());
         }
 

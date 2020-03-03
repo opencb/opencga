@@ -18,15 +18,12 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.PrivateStudyUid;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -36,8 +33,6 @@ import java.util.Map;
 public class ClinicalAnalysis extends PrivateStudyUid {
 
     private String id;
-    @Deprecated
-    private String name;
     private String uuid;
     private String description;
     private Type type;
@@ -54,14 +49,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     private ClinicalConsent consent;
 
-    private ClinicalAnalyst analyst;
+    private ClinicalAnalysisAnalyst analyst;
     private Enums.Priority priority;
     private List<String> flags;
 
     private String creationDate;
     private String modificationDate;
     private String dueDate;
-    private ClinicalStatus status;
+    private ClinicalAnalysisInternal internal;
     private int release;
 
     private List<Comment> comments;
@@ -70,14 +65,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public enum Type {
         SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
-    }
-
-    // Todo: Think about a better place to have this enum
-    @Deprecated
-    public enum Action {
-        ADD,
-        SET,
-        REMOVE
     }
 
     public enum FamiliarRelationship {
@@ -105,115 +92,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         }
     }
 
-    public static class ClinicalAnalyst {
-        private String assignedBy;
-        private String assignee;
-        private String date;
-
-        public ClinicalAnalyst() {
-            this("", "");
-        }
-
-        public ClinicalAnalyst(String assignee, String assignedBy) {
-            this.assignee = assignee;
-            this.assignedBy = assignedBy;
-            this.date = TimeUtils.getTime();
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("ClinicalAnalyst{");
-            sb.append("assignee='").append(assignee).append('\'');
-            sb.append(", assignedBy='").append(assignedBy).append('\'');
-            sb.append(", date='").append(date).append('\'');
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getAssignee() {
-            return assignee;
-        }
-
-        public ClinicalAnalyst setAssignee(String assignee) {
-            this.assignee = assignee;
-            return this;
-        }
-
-        public String getAssignedBy() {
-            return assignedBy;
-        }
-
-        public ClinicalAnalyst setAssignedBy(String assignedBy) {
-            this.assignedBy = assignedBy;
-            return this;
-        }
-
-        public String getDate() {
-            return date;
-        }
-
-        public ClinicalAnalyst setDate(String date) {
-            this.date = date;
-            return this;
-        }
-    }
-
-    public static class ClinicalStatus extends Status {
-
-        public static final String INCOMPLETE = "INCOMPLETE";
-        public static final String READY_FOR_VALIDATION = "READY_FOR_VALIDATION";
-        public static final String READY_FOR_INTERPRETATION = "READY_FOR_INTERPRETATION";
-        public static final String INTERPRETATION_IN_PROGRESS = "INTERPRETATION_IN_PROGRESS";
-//        public static final String INTERPRETED = "INTERPRETED";
-        public static final String READY_FOR_INTEPRETATION_REVIEW = "READY_FOR_INTEPRETATION_REVIEW";
-        public static final String INTERPRETATION_REVIEW_IN_PROGRESS = "INTERPRETATION_REVIEW_IN_PROGRESS";
-        public static final String READY_FOR_REPORT = "READY_FOR_REPORT";
-        public static final String REPORT_IN_PROGRESS = "REPORT_IN_PROGRESS";
-        public static final String DONE = "DONE";
-        public static final String REVIEW_IN_PROGRESS = "REVIEW_IN_PROGRESS";
-        public static final String CLOSED = "CLOSED";
-        public static final String REJECTED = "REJECTED";
-
-        public static final List<String> STATUS_LIST = Arrays.asList(INCOMPLETE, READY, DELETED, READY_FOR_VALIDATION,
-                READY_FOR_INTERPRETATION, INTERPRETATION_IN_PROGRESS, READY_FOR_INTEPRETATION_REVIEW, INTERPRETATION_REVIEW_IN_PROGRESS,
-                READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW_IN_PROGRESS, CLOSED, REJECTED);
-
-        public ClinicalStatus(String status, String message) {
-            if (isValid(status)) {
-                init(status, message);
-            } else {
-                throw new IllegalArgumentException("Unknown status " + status);
-            }
-        }
-
-        public ClinicalStatus(String status) {
-            this(status, "");
-        }
-
-        public ClinicalStatus() {
-            this(READY_FOR_INTERPRETATION, "");
-        }
-
-        public static boolean isValid(String status) {
-            if (Status.isValid(status)) {
-                return true;
-            }
-
-            if (STATUS_LIST.contains(status)) {
-                return true;
-            }
-            return false;
-        }
-    }
-
     public ClinicalAnalysis() {
     }
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
                             Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
-                            List<Interpretation> interpretations, Enums.Priority priority, ClinicalAnalyst analyst, List<String> flags,
-                            String creationDate, String dueDate, List<Comment> comments, List<Alert> alerts, ClinicalStatus status,
-                            int release, Map<String, Object> attributes) {
+                            List<Interpretation> interpretations, Enums.Priority priority, ClinicalAnalysisAnalyst analyst,
+                            List<String> flags, String creationDate, String dueDate, List<Comment> comments, List<Alert> alerts,
+                            ClinicalAnalysisInternal internal, int release, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -230,7 +116,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.creationDate = creationDate;
         this.dueDate = dueDate;
         this.comments = comments;
-        this.status = status;
+        this.internal = internal;
         this.release = release;
         this.alerts = alerts;
         this.attributes = attributes;
@@ -256,7 +142,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
-        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", release=").append(release);
         sb.append(", comments=").append(comments);
         sb.append(", alerts=").append(alerts);
@@ -292,15 +178,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     @Override
     public ClinicalAnalysis setStudyUid(long studyUid) {
         super.setStudyUid(studyUid);
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public ClinicalAnalysis setName(String name) {
-        this.name = name;
         return this;
     }
 
@@ -376,11 +253,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public ClinicalAnalyst getAnalyst() {
+    public ClinicalAnalysisAnalyst getAnalyst() {
         return analyst;
     }
 
-    public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
+    public ClinicalAnalysis setAnalyst(ClinicalAnalysisAnalyst analyst) {
         this.analyst = analyst;
         return this;
     }
@@ -457,12 +334,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public ClinicalStatus getStatus() {
-        return status;
+    public ClinicalAnalysisInternal getInternal() {
+        return internal;
     }
 
-    public ClinicalAnalysis setStatus(ClinicalStatus status) {
-        this.status = status;
+    public ClinicalAnalysis setInternal(ClinicalAnalysisInternal internal) {
+        this.internal = internal;
         return this;
     }
 

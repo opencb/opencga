@@ -49,10 +49,9 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        STATUS("status", TEXT_ARRAY, ""),
-        STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
-        STATUS_DATE("status.date", TEXT, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         CONSENT("consent", TEXT_ARRAY, ""),
         PRIORITY("priority", TEXT, ""),
         ANALYST("analyst", TEXT_ARRAY, ""),

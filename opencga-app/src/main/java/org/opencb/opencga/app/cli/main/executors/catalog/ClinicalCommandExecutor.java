@@ -68,7 +68,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
         params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
-        params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
+        params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS.key(), commandOptions.status);
         params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), commandOptions.family);
         params.putIfNotNull(ClinicalAnalysisDBAdaptor.QueryParams.PRIORITY.key(), commandOptions.priority);
         params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
