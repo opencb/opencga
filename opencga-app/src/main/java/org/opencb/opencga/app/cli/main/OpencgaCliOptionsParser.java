@@ -152,6 +152,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
 //        fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
         fileSubCommands.addCommand("stats", fileCommandOptions.statsCommandOptions);
+        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
 //        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
         fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
         fileSubCommands.addCommand("acl-update", fileCommandOptions.aclsUpdateCommandOptions);

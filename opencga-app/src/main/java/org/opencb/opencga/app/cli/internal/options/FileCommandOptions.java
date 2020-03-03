@@ -71,7 +71,7 @@ public class FileCommandOptions {
         public String outDir;
     }
 
-    @Parameters(commandNames = {"unlink"}, commandDescription = "Unlink file task")
+    @Parameters(commandNames = {"fetch"}, commandDescription = "Fetch file")
     public class FetchCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
