@@ -97,9 +97,9 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             case "stats":
                 queryResponse = stats();
                 break;
-//            case "fetch":
-//                queryResponse = fetch();
-//                break;
+            case "fetch":
+                queryResponse = fetch();
+                break;
             case "update":
                 queryResponse = update();
                 break;
@@ -423,6 +423,17 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull("field", commandOptions.field);
 
         return openCGAClient.getFileClient().aggregationStats(params);
+    }
+
+    private RestResponse<Job> fetch() throws ClientException {
+        FileCommandOptions.FetchCommandOptions commandOptions = filesCommandOptions.fetchCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty("study", commandOptions.study);
+
+        FileFetch data = new FileFetch(commandOptions.url, commandOptions.path);
+
+        return openCGAClient.getFileClient().fetch(data, params);
     }
 
     private RestResponse<File> updateAnnotations() throws ClientException, IOException {
