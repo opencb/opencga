@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.variant.geneticChecks;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
@@ -19,7 +20,6 @@ import org.opencb.opencga.core.models.variant.RelatednessReport;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.parboiled.common.StringUtils;
 
 import java.io.*;
 import java.nio.file.Path;
