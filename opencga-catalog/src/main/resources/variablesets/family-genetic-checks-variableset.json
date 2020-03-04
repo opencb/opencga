@@ -6,8 +6,8 @@
   "confidential" : false,
   "description" : "OpenCGA genetic checks",
   "variables" : [ {
-    "id" : "sampleId",
-    "name" : "sampleId",
+    "id" : "familyId",
+    "name" : "familyId",
     "category" : null,
     "type" : "STRING",
     "defaultValue" : null,
@@ -16,7 +16,7 @@
     "allowedValues" : null,
     "rank" : 0,
     "dependsOn" : null,
-    "description" : "Sample ID",
+    "description" : "Family ID",
     "variableSet" : null,
     "attributes" : null
   }, {
@@ -48,8 +48,8 @@
     "variableSet" : null,
     "attributes" : null
   }, {
-    "id" : "siblingIds",
-    "name" : "siblingIds",
+    "id" : "childrenIds",
+    "name" : "childrenIds",
     "category" : null,
     "type" : "STRING",
     "defaultValue" : null,
@@ -58,7 +58,7 @@
     "allowedValues" : null,
     "rank" : 3,
     "dependsOn" : null,
-    "description" : "Sibling IDs",
+    "description" : "Children IDs",
     "variableSet" : null,
     "attributes" : null
   }, {

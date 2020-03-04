@@ -8,7 +8,7 @@ public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor
 
     private String study;
     private List<String> samples;
-    private String population;
+    private String minorAlleleFreq;
 
     public IBDRelatednessAnalysisExecutor() {
     }
@@ -26,17 +26,17 @@ public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor
         return samples;
     }
 
-    public IBDRelatednessAnalysisExecutor setSamples(List<String> samples) {
+    public IBDRelatednessAnalysisExecutor setSamples(List<String> families) {
         this.samples = samples;
         return this;
     }
 
-    public String getPopulation() {
-        return population;
+    public String getMinorAlleleFreq() {
+        return minorAlleleFreq;
     }
 
-    public IBDRelatednessAnalysisExecutor setPopulation(String population) {
-        this.population = population;
+    public IBDRelatednessAnalysisExecutor setMinorAlleleFreq(String minorAlleleFreq) {
+        this.minorAlleleFreq = minorAlleleFreq;
         return this;
     }
 }

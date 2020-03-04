@@ -16,13 +16,10 @@
 
 package org.opencb.opencga.analysis.variant.relatedness;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
-import org.opencb.opencga.analysis.variant.geneticChecks.IBDComputation;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -37,15 +34,12 @@ import java.util.*;
 public class RelatednessAnalysis extends OpenCgaTool {
 
     public static final String ID = "relatedness";
-    public static final String DESCRIPTION = "Compute a score to quantify relatedness between individuals.";
+    public static final String DESCRIPTION = "Compute a score to quantify relatedness between samples.";
 
     private String study;
     private List<String> samples;
-    private List<String> families;
     private String method;
-    private String population;
-
-    private List<String> finalSamples;
+    private String minorAlleleFreq;
 
     public RelatednessAnalysis() {
     }
@@ -69,15 +63,6 @@ public class RelatednessAnalysis extends OpenCgaTool {
         return this;
     }
 
-    public List<String> getFamilies() {
-        return families;
-    }
-
-    public RelatednessAnalysis setFamilies(List<String> families) {
-        this.families = families;
-        return this;
-    }
-
     public String getMethod() {
         return method;
     }
@@ -87,12 +72,12 @@ public class RelatednessAnalysis extends OpenCgaTool {
         return this;
     }
 
-    public String getPopulation() {
-        return population;
+    public String getMinorAlleleFreq() {
+        return minorAlleleFreq;
     }
 
-    public RelatednessAnalysis setPopulation(String population) {
-        this.population = population;
+    public RelatednessAnalysis setMinorAlleleFreq(String maf) {
+        this.minorAlleleFreq = maf;
         return this;
     }
 
@@ -111,24 +96,16 @@ public class RelatednessAnalysis extends OpenCgaTool {
             throw new ToolException(e);
         }
 
-        // check read permission
+        // Check read permission
         try {
-            List<String> allSamples = new ArrayList<>();
-            allSamples.addAll(samples);
             variantStorageManager.checkQueryPermissions(
                     new Query()
                             .append(VariantQueryParam.STUDY.key(), study)
-                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), allSamples),
+                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), samples),
                     new QueryOptions(),
                     token);
         } catch (CatalogException | StorageEngineException e) {
             throw new ToolException(e);
-        }
-
-        // Get samples from families if necessary
-        finalSamples = samples;
-        if (CollectionUtils.isEmpty(finalSamples)) {
-            finalSamples = GeneticChecksUtils.getSamples(study, families, catalogManager, token);
         }
     }
 
@@ -139,8 +116,8 @@ public class RelatednessAnalysis extends OpenCgaTool {
             IBDRelatednessAnalysisExecutor relatednessExecutor = getToolExecutor(IBDRelatednessAnalysisExecutor.class);
 
             relatednessExecutor.setStudy(study)
-                    .setSamples(finalSamples)
-                    .setPopulation(population)
+                    .setSamples(samples)
+                    .setMinorAlleleFreq(minorAlleleFreq)
                     .execute();
         });
     }

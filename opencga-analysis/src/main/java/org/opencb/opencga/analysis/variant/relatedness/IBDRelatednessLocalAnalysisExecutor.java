@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.variant.relatedness;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
@@ -21,6 +22,6 @@ public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisE
         VariantStorageManager storageManager = getVariantStorageManager();
 
         // Run IBD/IBS computation using PLINK in docker
-        IBDComputation.compute(getStudy(), getSamples(), getPopulation(), getOutDir(), storageManager, getToken());
+        IBDComputation.compute(getStudy(), getSamples(), getMinorAlleleFreq(), getOutDir(), storageManager, getToken());
     }
 }

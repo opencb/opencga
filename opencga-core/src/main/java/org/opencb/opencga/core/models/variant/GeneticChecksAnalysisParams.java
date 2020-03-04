@@ -6,39 +6,59 @@ import java.util.List;
 
 public class GeneticChecksAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Genetic checks analysis params";
-    private List<String> samples;
-    private List<String> families;
+    private String family;
+    private String individual;
+    private String sample;
+    private String minorAlleleFreq;
     private String relatednessMethod;
-    private String population;
     private String outdir;
 
     public GeneticChecksAnalysisParams() {
     }
 
-    public GeneticChecksAnalysisParams(List<String> samples, List<String> families, String relatednessMethod, String population,
+    public GeneticChecksAnalysisParams(String family, String individual, String sample, String minorAlleleFreq, String relatednessMethod,
                                        String outdir) {
-        this.samples = samples;
-        this.families = families;
+        this.family = family;
+        this.individual = individual;
+        this.sample = sample;
+        this.minorAlleleFreq = minorAlleleFreq;
         this.relatednessMethod = relatednessMethod;
-        this.population = population;
         this.outdir = outdir;
     }
 
-    public List<String> getSamples() {
-        return samples;
+    public String getFamily() {
+        return family;
     }
 
-    public GeneticChecksAnalysisParams setSamples(List<String> samples) {
-        this.samples = samples;
+    public GeneticChecksAnalysisParams setFamily(String family) {
+        this.family = family;
         return this;
     }
 
-    public List<String> getFamilies() {
-        return families;
+    public String getIndividual() {
+        return individual;
     }
 
-    public GeneticChecksAnalysisParams setFamilies(List<String> families) {
-        this.families = families;
+    public GeneticChecksAnalysisParams setIndividual(String individual) {
+        this.individual = individual;
+        return this;
+    }
+
+    public String getSample() {
+        return sample;
+    }
+
+    public GeneticChecksAnalysisParams setSample(String sample) {
+        this.sample = sample;
+        return this;
+    }
+
+    public String getMinorAlleleFreq() {
+        return minorAlleleFreq;
+    }
+
+    public GeneticChecksAnalysisParams setMinorAlleleFreq(String minorAlleleFreq) {
+        this.minorAlleleFreq = minorAlleleFreq;
         return this;
     }
 
@@ -51,13 +71,8 @@ public class GeneticChecksAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getPopulation() {
-        return population;
-    }
-
-    public GeneticChecksAnalysisParams setPopulation(String population) {
-        this.population = population;
-        return this;
+    public String getOutdir() {
+        return outdir;
     }
 
     public GeneticChecksAnalysisParams setOutdir(String outdir) {

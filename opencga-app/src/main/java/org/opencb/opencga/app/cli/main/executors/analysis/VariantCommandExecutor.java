@@ -304,9 +304,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().runRelatedness(
                 new RelatednessAnalysisParams(
                         variantCommandOptions.relatednessCommandOptions.samples,
-                        variantCommandOptions.relatednessCommandOptions.families,
+                        variantCommandOptions.relatednessCommandOptions.minorAlleleFreq,
                         variantCommandOptions.relatednessCommandOptions.method,
-                        variantCommandOptions.relatednessCommandOptions.population,
                         variantCommandOptions.relatednessCommandOptions.outdir
                 ),
                 getParams(variantCommandOptions.relatednessCommandOptions.study)
@@ -316,10 +315,11 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> geneticChecks() throws ClientException {
         return openCGAClient.getVariantClient().runGeneticChecks(
                 new GeneticChecksAnalysisParams(
-                        variantCommandOptions.geneticChecksCommandOptions.samples,
-                        variantCommandOptions.geneticChecksCommandOptions.families,
+                        variantCommandOptions.geneticChecksCommandOptions.family,
+                        variantCommandOptions.geneticChecksCommandOptions.individual,
+                        variantCommandOptions.geneticChecksCommandOptions.sample,
+                        variantCommandOptions.geneticChecksCommandOptions.minorAlleleFreq,
                         variantCommandOptions.geneticChecksCommandOptions.relatednessMethod,
-                        variantCommandOptions.geneticChecksCommandOptions.population,
                         variantCommandOptions.geneticChecksCommandOptions.outdir
                 ),
                 getParams(variantCommandOptions.geneticChecksCommandOptions.study)

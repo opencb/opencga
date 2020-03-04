@@ -1110,14 +1110,11 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--samples"}, description = "List of samples (incompatible with the parameter --family).")
+        @Parameter(names = {"--samples"}, description = "List of samples.")
         public List<String> samples;
 
-        @Parameter(names = {"--families"}, description = "List of families (incompatible with the parameter --sample).")
-        public List<String> families;
-
-        @Parameter(names = {"--population"}, description = "Population to get the MAF, e.g.: 1kg_phase3:CEU, cohort:ALL.")
-        public String population;
+        @Parameter(names = {"--maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
+        public String minorAlleleFreq;
 
         @Parameter(names = {"--method"}, description = "Method to compute relatedness.")
         public String method = "IBD";
@@ -1136,14 +1133,17 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--samples"}, description = "List of samples (incompatible with the parameter --family).")
-        public List<String> samples;
+        @Parameter(names = {"--family"}, description = "Family ID to get the family members).")
+        public String family;
 
-        @Parameter(names = {"--families"}, description = "List of families (incompatible with the parameter --sample).")
-        public List<String> families;
+        @Parameter(names = {"--individual"}, description = "Individual ID: it will be considered a child individual to get the family members).")
+        public String individual;
 
-        @Parameter(names = {"--population"}, description = "Population to get the MAF, e.g.: 1kg_phase3:CEU, cohort:ALL.")
-        public String population;
+        @Parameter(names = {"--sample"}, description = "Sample ID: it will be considered a child sample to get the family members).")
+        public String sample;
+
+        @Parameter(names = {"--maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
+        public String minorAlleleFreq;
 
         @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
         public String relatednessMethod = "IBD";

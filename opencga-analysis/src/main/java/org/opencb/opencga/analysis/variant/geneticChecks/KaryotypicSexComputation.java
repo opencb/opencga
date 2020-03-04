@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.variant.SexReport;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
@@ -21,8 +22,8 @@ import java.util.*;
 
 public class KaryotypicSexComputation {
 
-    public static java.io.File compute(String study, List<String> samples, FileManager fileManager,
-                                                                        AlignmentStorageManager alignmentStorageManager, String token)
+    public static List<SexReport> compute(String study, List<String> samples, FileManager fileManager,
+                                          AlignmentStorageManager alignmentStorageManager, String token)
             throws ToolException {
         Map<String, AbstractMap.SimpleEntry<Double, Double>> sampleRatioMap = new HashMap<>();
         Map<String, String> sampleBamMap = new HashMap();
@@ -55,6 +56,9 @@ public class KaryotypicSexComputation {
         // Compute coverage for each chromosome for each BAM file
         // TODO get chromosomes from cellbase
         List<Chromosome> chromosomes = Collections.emptyList();
+
+        List<SexReport> sexReportList = new ArrayList<>();
+
         for (String sample : sampleBamMap.keySet()) {
             int[] means = new int[]{0, 0, 0};
             for (Chromosome chrom : chromosomes) {
@@ -89,13 +93,13 @@ public class KaryotypicSexComputation {
                 }
             }
             means[0] /= 22.0;
-            sampleRatioMap.put(sample, new AbstractMap.SimpleEntry<>(1.0d * means[1] / means[0], 1.0d * means[2] / means[0]));
+
+            // Create sex report for that sample
+            SexReport sexReport = new SexReport("", "", 1.0d * means[1] / means[0], 1.0d * means[2] / means[0], "");
+            sexReportList.add(sexReport);
         }
 
-        // Write results
-        // sampleRatioMap;
-        java.io.File outputFile = null;
-        return outputFile;
+        return sexReportList;
     }
 
     public static java.io.File plot(File inputFile, Path outDir) throws ToolException {

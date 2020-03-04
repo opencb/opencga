@@ -1,34 +1,37 @@
 package org.opencb.opencga.analysis.variant.geneticChecks;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.variant.GeneticChecksReport;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.GeneticChecksAnalysisExecutor;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 @Tool(id = GeneticChecksAnalysis.ID, resource = Enums.Resource.VARIANT, description = GeneticChecksAnalysis.DESCRIPTION)
 public class GeneticChecksAnalysis extends OpenCgaTool {
 
     public static final String ID = "genetic-checks";
     public static final String DESCRIPTION = "Run genetic checks for sex, relatedness and mendelian errors (UDP).";
+    public static final String VARIABLE_SET_ID = "opencga_family_genetic_checks";
 
     private String study;
-    private List<String> samples;
-    private List<String> families;
+    private String family;
+    private String individual;
+    private String sample;
+    private String minorAlleleFreq;
     private String relatednessMethod;
-    private String population;
 
-    private List<String> finalSamples;
+    private List<String> samples;
+    private GeneticChecksReport output;
 
     public GeneticChecksAnalysis() {
     }
@@ -43,21 +46,39 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
         return this;
     }
 
-    public List<String> getSamples() {
-        return samples;
+    public String getFamily() {
+        return family;
     }
 
-    public GeneticChecksAnalysis setSamples(List<String> samples) {
-        this.samples = samples;
+    public GeneticChecksAnalysis setFamily(String family) {
+        this.family = family;
         return this;
     }
 
-    public List<String> getFamilies() {
-        return families;
+    public String getIndividual() {
+        return individual;
     }
 
-    public GeneticChecksAnalysis setFamilies(List<String> families) {
-        this.families = families;
+    public GeneticChecksAnalysis setIndividual(String individual) {
+        this.individual = individual;
+        return this;
+    }
+
+    public String getSample() {
+        return sample;
+    }
+
+    public GeneticChecksAnalysis setSample(String sample) {
+        this.sample = sample;
+        return this;
+    }
+
+    public String getMinorAlleleFreq() {
+        return minorAlleleFreq;
+    }
+
+    public GeneticChecksAnalysis setMinorAlleleFreq(String minorAlleleFreq) {
+        this.minorAlleleFreq = minorAlleleFreq;
         return this;
     }
 
@@ -67,15 +88,6 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
 
     public GeneticChecksAnalysis setRelatednessMethod(String relatednessMethod) {
         this.relatednessMethod = relatednessMethod;
-        return this;
-    }
-
-    public String getPopulation() {
-        return population;
-    }
-
-    public GeneticChecksAnalysis setPopulation(String population) {
-        this.population = population;
         return this;
     }
 
@@ -94,25 +106,8 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
             throw new ToolException(e);
         }
 
-        // check read permission
-        try {
-            List<String> allSamples = new ArrayList<>();
-            allSamples.addAll(samples);
-            variantStorageManager.checkQueryPermissions(
-                    new Query()
-                            .append(VariantQueryParam.STUDY.key(), study)
-                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), allSamples),
-                    new QueryOptions(),
-                    token);
-        } catch (CatalogException | StorageEngineException e) {
-            throw new ToolException(e);
-        }
-
-        // Get samples from families if necessary
-        finalSamples = samples;
-        if (CollectionUtils.isEmpty(finalSamples)) {
-            finalSamples = GeneticChecksUtils.getSamples(study, families, catalogManager, token);
-        }
+        // Get sample IDs from family ID
+        samples = GeneticChecksUtils.getSamples(study, family, catalogManager, token);
     }
 
     @Override
@@ -121,6 +116,7 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
         steps.add("sex");
         steps.add("relatedness");
         steps.add("mendelian-errors");
+        steps.add("index-variable-set");
         return steps;
     }
 
@@ -130,8 +126,9 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
         GeneticChecksAnalysisExecutor executor = getToolExecutor(GeneticChecksAnalysisExecutor.class);
 
         executor.setStudy(study)
-                .setSamples(finalSamples)
-                .setPopulation(population)
+                .setFamily(family)
+                .setSamples(samples)
+                .setMinorAlleleFreq(minorAlleleFreq)
                 .setRelatednessMethod(relatednessMethod);
 
         step("sex", () -> {
@@ -145,5 +142,47 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
         step("mendelian-errors", () -> {
             executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.MENDELIAN_ERRORS).execute();
         });
+
+        // Save results
+        try {
+            JacksonUtils.getDefaultObjectMapper().writer().writeValue(getOutDir().resolve("genetic_checks.json").toFile(),
+                    executor.getOutput());
+        } catch (IOException e) {
+            throw new ToolException(e);
+        }
+
+        // Index as a variable set
+        step("index-variable-set", () -> {
+            indexResults(executor.getOutput());
+        });
+    }
+
+    private void indexResults(GeneticChecksReport result) throws ToolException {
+//        try {
+//            Map<String, Object> annotations = buildAnnotations(result);
+//
+//            AnnotationSet annotationSet = new AnnotationSet(VARIABLE_SET_ID, VARIABLE_SET_ID, annotations);
+//
+//            FamilyUpdateParams updateParams = new FamilyUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
+//
+//            catalogManager.getFamilyManager().update(study, family, updateParams, QueryOptions.empty(), token);
+//        } catch (CatalogException e) {
+//            throw new ToolException(e);
+//        }
+    }
+
+    private Map<String, Object> buildAnnotations(GeneticChecksReport result) {
+        Map<String, Object> annot = new HashMap<>();
+        annot.put("familyId", result.getFamilyId());
+
+        annot.put("fatherId", result.getFatherId());
+        annot.put("motherId", result.getMotherId());
+        annot.put("childrenIds", result.getChildrenIds());
+
+        annot.put("sexReport", result.getSexReport());
+        annot.put("relatednessReport", result.getRelatednessReport());
+        annot.put("mendelianErrorsReport", result.getMendelianErrorsReport());
+
+        return annot;
     }
 }

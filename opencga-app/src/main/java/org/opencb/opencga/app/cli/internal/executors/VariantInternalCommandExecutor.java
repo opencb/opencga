@@ -728,8 +728,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         relatednessAnalysis.setStudy(cliOptions.study)
                 .setSamples(cliOptions.samples)
-                .setFamilies(cliOptions.families)
-                .setPopulation(cliOptions.population)
+                .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
                 .setMethod(cliOptions.method)
                 .start();
     }
@@ -742,9 +741,10 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         GeneticChecksAnalysis geneticChecksAnalysis = new GeneticChecksAnalysis();
         geneticChecksAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         geneticChecksAnalysis.setStudy(cliOptions.study)
-                .setSamples(cliOptions.samples)
-                .setFamilies(cliOptions.families)
-                .setPopulation(cliOptions.population)
+                .setFamily(cliOptions.family)
+                .setIndividual(cliOptions.individual)
+                .setSample(cliOptions.sample)
+                .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
                 .setRelatednessMethod(cliOptions.relatednessMethod)
                 .start();
     }
