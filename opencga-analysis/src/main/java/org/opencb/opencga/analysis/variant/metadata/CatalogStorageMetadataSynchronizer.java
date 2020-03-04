@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -222,14 +223,14 @@ public class CatalogStorageMetadataSynchronizer {
                     .collect(Collectors.toList());
 
             if (cohortFromCatalog.size() != cohortFromStorage.size() || !cohortFromStorage.containsAll(cohortFromCatalog)) {
-                if (defaultCohort.getStatus().getName().equals(Cohort.CohortStatus.CALCULATING)) {
+                if (defaultCohort.getInternal().getStatus().getName().equals(CohortStatus.CALCULATING)) {
                     String status;
                     if (defaultCohortStorage.isInvalid()) {
-                        status = Cohort.CohortStatus.INVALID;
+                        status = CohortStatus.INVALID;
                     } else if (defaultCohortStorage.isStatsReady()) {
-                        status = Cohort.CohortStatus.READY;
+                        status = CohortStatus.READY;
                     } else {
-                        status = Cohort.CohortStatus.NONE;
+                        status = CohortStatus.NONE;
                     }
                     catalogManager.getCohortManager().setStatus(study.getName(), defaultCohortName, status, null, sessionId);
                 }
@@ -254,7 +255,7 @@ public class CatalogStorageMetadataSynchronizer {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
                     CohortMetadata storageCohort = calculatedStats.get(cohort.getId());
-                    if (cohort.getStatus() != null && cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
+                    if (cohort.getInternal().getStatus() != null && cohort.getInternal().getStatus().getName().equals(CohortStatus.INVALID)) {
                         if (cohort.getSamples().size() != storageCohort.getSamples().size()) {
                             // Skip this cohort. This cohort should remain as invalid
                             logger.debug("Skip " + cohort.getId());
@@ -276,11 +277,10 @@ public class CatalogStorageMetadataSynchronizer {
                             continue;
                         }
                     }
-                    if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
-                        logger.debug("Cohort \"{}\" change status from {} to {}",
-                                cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
-                        catalogManager.getCohortManager().setStatus(study.getName(), cohort.getId(),
-                                Cohort.CohortStatus.READY, "Update status from Storage", sessionId);
+                    if (cohort.getInternal().getStatus() == null || !cohort.getInternal().getStatus().getName().equals(CohortStatus.READY)) {
+                        logger.debug("Cohort \"{}\" change status to {}", cohort.getId(), CohortStatus.READY);
+                        catalogManager.getCohortManager().setStatus(study.getName(), cohort.getId(), CohortStatus.READY,
+                                "Update status from Storage", sessionId);
                         modified = true;
                     }
                 }
@@ -299,11 +299,10 @@ public class CatalogStorageMetadataSynchronizer {
                     new QueryOptions(), sessionId)) {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
-                    if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
-                        logger.debug("Cohort \"{}\" change status from {} to {}",
-                                cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
-                        catalogManager.getCohortManager().setStatus(study.getName(), cohort.getId(),
-                                Cohort.CohortStatus.INVALID, "Update status from Storage", sessionId);
+                    if (cohort.getInternal().getStatus() == null || !cohort.getInternal().getStatus().getName().equals(CohortStatus.INVALID)) {
+                        logger.debug("Cohort \"{}\" change status to {}", cohort.getId(), CohortStatus.INVALID);
+                        catalogManager.getCohortManager().setStatus(study.getName(), cohort.getId(), CohortStatus.INVALID,
+                                "Update status from Storage", sessionId);
                         modified = true;
                     }
                 }
@@ -508,7 +507,7 @@ public class CatalogStorageMetadataSynchronizer {
                 new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), "SET")),
                 token);
 
-        catalogManager.getCohortManager().setStatus(study, StudyEntry.DEFAULT_COHORT, Cohort.CohortStatus.NONE,
+        catalogManager.getCohortManager().setStatus(study, StudyEntry.DEFAULT_COHORT, CohortStatus.NONE,
                 "Study has been removed from storage", token);
 
 

@@ -44,6 +44,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
@@ -352,7 +353,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.CREATION_DATE.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.CREATION_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Enums.CohortType.class);
@@ -377,20 +378,21 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 break;
         }
 
-        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
-        if (parameters.containsKey(QueryParams.STATUS_MSG.key())) {
-            document.getSet().put(QueryParams.STATUS_MSG.key(), parameters.get(QueryParams.STATUS_MSG.key()));
-            document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_DESCRIPTION.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DESCRIPTION.key(),
+                    parameters.get(QueryParams.INTERNAL_STATUS_DESCRIPTION.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
-        if (parameters.containsKey(QueryParams.STATUS.key())) {
-            throw new CatalogDBException("Unable to modify cohort. Use parameter '" + QueryParams.STATUS_NAME.key()
-                    + "' instead of '" + QueryParams.STATUS.key() + "'");
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS.key())) {
+            throw new CatalogDBException("Unable to modify cohort. Use parameter '" + QueryParams.INTERNAL_STATUS_NAME.key()
+                    + "' instead of '" + QueryParams.INTERNAL_STATUS.key() + "'");
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -453,7 +455,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         checkCohortCanBeDeleted(cohortDocument);
 
         // Add status DELETED
-        cohortDocument.put(QueryParams.STATUS.key(), getMongoDBDocument(new Cohort.CohortStatus(Status.DELETED), "status"));
+        documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new CohortStatus(Status.DELETED), "status"), cohortDocument);
 
         // Upsert the document into the DELETED collection
         Bson query = new Document()
@@ -484,8 +486,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             throw new CatalogDBException("Cohort " + StudyEntry.DEFAULT_COHORT + " cannot be deleted.");
         }
 
-        if (!cohortDocument.getEmbedded(Arrays.asList(QueryParams.STATUS.key(), "name"), Cohort.CohortStatus.NONE)
-                .equals(Cohort.CohortStatus.NONE)) {
+        if (!cohortDocument.getEmbedded(Arrays.asList(QueryParams.INTERNAL_STATUS.key(), "name"), CohortStatus.NONE)
+                .equals(CohortStatus.NONE)) {
             throw new CatalogDBException("Cohort in use in storage.");
         }
     }
@@ -786,19 +788,18 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
-                    case STATUS_NAME:
+                    case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         finalQuery.put(queryParam.key(),
-                                Status.getPositiveStatus(Cohort.CohortStatus.STATUS_LIST, finalQuery.getString(queryParam.key())));
+                                Status.getPositiveStatus(CohortStatus.STATUS_LIST, finalQuery.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     case UUID:
                     case ID:
-                    case NAME:
                     case TYPE:
                     case RELEASE:
-                    case STATUS_MSG:
-                    case STATUS_DATE:
+                    case INTERNAL_STATUS_DESCRIPTION:
+                    case INTERNAL_STATUS_DATE:
                     case DESCRIPTION:
                     case ANNOTATION_SETS:
 //                    case VARIABLE_NAME:
@@ -837,7 +838,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         // We set the status of all the matching cohorts to INVALID and add the sample to be removed
         ObjectMap params = new ObjectMap()
-                .append(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.INVALID)
+                .append(QueryParams.INTERNAL_STATUS_NAME.key(), CohortStatus.INVALID)
                 .append(QueryParams.SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
         // Add the the Remove action for the sample provided
         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,

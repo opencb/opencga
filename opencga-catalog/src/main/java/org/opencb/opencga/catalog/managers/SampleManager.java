@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -621,7 +622,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 }
 
                 // Check the status of the cohort
-                if (cohort.getStatus() != null && Cohort.CohortStatus.CALCULATING.equals(cohort.getStatus().getName())) {
+                if (cohort.getInternal().getStatus() != null
+                        && CohortStatus.CALCULATING.equals(cohort.getInternal().getStatus().getName())) {
                     errorCohorts.add(cohort.getId() + "(" + cohort.getUid() + ")");
                 }
             } else {

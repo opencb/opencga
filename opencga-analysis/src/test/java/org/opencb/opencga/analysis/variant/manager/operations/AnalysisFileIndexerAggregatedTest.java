@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ public class AnalysisFileIndexerAggregatedTest extends AbstractVariantOperationM
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         variantManager.index(studyFqn, files.get(0).getId(), opencga.createTmpOutdir(studyId, "index", sessionId), queryOptions, sessionId);
         assertEquals(0, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
+        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getName());
         StatsVariantStorageTest.checkCalculatedAggregatedStats(Collections.singleton(DEFAULT_COHORT), dbName);
     }
 

@@ -127,7 +127,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.ID.key(), commandOptions.name);
         params.putIfNotNull(CohortDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
-        params.putIfNotNull(CohortDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
+        params.putIfNotNull(CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(), commandOptions.status);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
         params.putAll(commandOptions.commonOptions.params);
         params.put(QueryOptions.COUNT, commandOptions.numericOptions.count);
@@ -145,7 +145,6 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
 
         CohortCreateParams createParams = new CohortCreateParams()
                 .setId(cohortsCommandOptions.createCommandOptions.name)
-                .setName(cohortsCommandOptions.createCommandOptions.name)
                 .setType(cohortsCommandOptions.createCommandOptions.type)
                 .setDescription(cohortsCommandOptions.createCommandOptions.description)
                 .setSamples(cohortsCommandOptions.createCommandOptions.sampleIds);

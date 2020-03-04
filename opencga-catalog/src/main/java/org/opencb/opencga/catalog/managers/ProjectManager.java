@@ -771,7 +771,7 @@ public class ProjectManager extends AbstractManager {
                         // Look for the cohorts
                         query = new Query()
                                 .append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids)
-                                .append(CohortDBAdaptor.QueryParams.NAME.key(), "!=ALL");
+                                .append(CohortDBAdaptor.QueryParams.ID.key(), "!=ALL");
                         OpenCGAResult<Cohort> cohortDataResult = catalogManager.getCohortManager()
                                 .search(studyStr, query, skipCount, ownerToken);
 

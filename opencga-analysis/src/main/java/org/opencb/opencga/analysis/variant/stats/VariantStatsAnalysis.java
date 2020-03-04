@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -342,10 +343,10 @@ public class VariantStatsAnalysis extends OpenCgaTool {
     protected void onShutdown() {
         try {
             if (toolParams.isIndex()) {
-                updateCohorts(studyFqn, cohortsMap.keySet(), token, Cohort.CohortStatus.INVALID, "");
+                updateCohorts(studyFqn, cohortsMap.keySet(), token, CohortStatus.INVALID, "");
             }
         } catch (CatalogException e) {
-            logger.error("Error updating cohorts " + cohortsMap + " to status " + Cohort.CohortStatus.INVALID, e);
+            logger.error("Error updating cohorts " + cohortsMap + " to status " + CohortStatus.INVALID, e);
         }
     }
 

@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -312,7 +313,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             assertTrue(samplesInCohort.containsAll(samplesInFile));
         }
         if (calculateStats) {
-            assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
+            assertEquals(CohortStatus.READY, defaultCohort.getInternal().getStatus().getName());
             checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
         }
         return etlResults;
@@ -358,7 +359,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             assertThat(samplesInCohort, hasItems(samplesInFiles));
         }
         if (calculateStats) {
-            assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
+            assertEquals(CohortStatus.READY, defaultCohort.getInternal().getStatus().getName());
             checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
         }
 

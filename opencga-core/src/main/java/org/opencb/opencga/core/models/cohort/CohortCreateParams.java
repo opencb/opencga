@@ -12,8 +12,6 @@ import java.util.stream.Collectors;
 public class CohortCreateParams {
 
     public String id;
-    @Deprecated
-    public String name;
     public Enums.CohortType type;
     public String description;
     public List<String> samples;
@@ -23,10 +21,9 @@ public class CohortCreateParams {
     public CohortCreateParams() {
     }
 
-    public CohortCreateParams(String id, String name, Enums.CohortType type, String description, List<String> samples,
+    public CohortCreateParams(String id, Enums.CohortType type, String description, List<String> samples,
                               List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
-        this.name = name;
         this.type = type;
         this.description = description;
         this.samples = samples;
@@ -35,7 +32,7 @@ public class CohortCreateParams {
     }
 
     public static CohortCreateParams of(Cohort cohort) {
-        return new CohortCreateParams(cohort.getId(), cohort.getName(), cohort.getType(), cohort.getDescription(),
+        return new CohortCreateParams(cohort.getId(), cohort.getType(), cohort.getDescription(),
                 cohort.getSamples() != null
                         ? cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
                         : Collections.emptyList(),
@@ -46,7 +43,6 @@ public class CohortCreateParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortCreateParams{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
@@ -63,15 +59,6 @@ public class CohortCreateParams {
 
     public CohortCreateParams setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public CohortCreateParams setName(String name) {
-        this.name = name;
         return this;
     }
 

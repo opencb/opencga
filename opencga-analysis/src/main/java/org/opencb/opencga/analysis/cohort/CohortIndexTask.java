@@ -67,8 +67,8 @@ public class CohortIndexTask extends OpenCgaTool {
         Query query = new Query();
         QueryOptions cohortQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.UUID.key(),
-                        CohortDBAdaptor.QueryParams.NAME.key(),
-                        CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
+                        CohortDBAdaptor.QueryParams.ID.key(),
+                        CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                         CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true)
