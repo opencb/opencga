@@ -144,7 +144,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantOperationManage
         if (config.getBoolean(OperationTool.KEEP_INTERMEDIATE_FILES)) {
             String study = config.getString("study");
             String catalogPathOutDir = "data/" + Paths.get(tmpDir).toFile().getName() + "/";
-            catalogManager.getFileManager().createFolder(study, catalogPathOutDir, new File.FileStatus(), true, "", FileManager.INCLUDE_FILE_URI_PATH,
+            catalogManager.getFileManager().createFolder(study, catalogPathOutDir, true, "", FileManager.INCLUDE_FILE_URI_PATH,
                     sessionId).first();
             return copyResults(Paths.get(tmpDir), study, catalogPathOutDir, sessionId);
         }

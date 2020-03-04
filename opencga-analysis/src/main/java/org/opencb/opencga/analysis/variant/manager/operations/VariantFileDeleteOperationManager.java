@@ -47,12 +47,12 @@ public class VariantFileDeleteOperationManager extends OperationManager {
         if (files != null && !files.isEmpty()) {
             for (String fileStr : files) {
                 File file = catalogManager.getFileManager().get(study, fileStr, null, token).first();
-                if (file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
+                if (file.getInternal().getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                     fileNames.add(file.getName());
 //                        filePaths.add(file.getPath());
                 } else {
                     throw new CatalogException("Unable to remove variants from file " + file.getName() + ". "
-                            + "IndexStatus = " + file.getIndex().getStatus().getName());
+                            + "IndexStatus = " + file.getInternal().getIndex().getStatus().getName());
                 }
             }
 

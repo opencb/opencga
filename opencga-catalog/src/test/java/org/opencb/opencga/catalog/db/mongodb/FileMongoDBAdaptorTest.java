@@ -31,6 +31,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleInternal;
 
@@ -51,7 +53,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(studyId >= 0);
         File file;
         file = new File("jobs/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, "",
-                new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
+                FileInternal.initialize(), 1000, 1);
         LinkedList<FileAclEntry> acl = new LinkedList<>();
         acl.push(new FileAclEntry("jcoll", Arrays.asList(FileAclEntry.FilePermissions.VIEW.name(),
                 FileAclEntry.FilePermissions.VIEW_CONTENT.name(), FileAclEntry.FilePermissions.VIEW_HEADER.name(),
@@ -59,13 +61,13 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         acl.push(new FileAclEntry("jmmut", Collections.emptyList()));
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, "",
-                new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
+                FileInternal.initialize(), 1000, 1);
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
         file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, "",
-                new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
+                FileInternal.initialize(), 1000, 1);
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
         file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, "",
-                new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
+                FileInternal.initialize(), 1000, 1);
 
         try {
             System.out.println(catalogFileDBAdaptor.insert(-20, file, null, null));
@@ -165,12 +167,12 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + RandomStringUtils.randomAlphanumeric(20));
 
         ObjectMap parameters = new ObjectMap();
-        parameters.put("status.name", File.FileStatus.READY);
+        parameters.put("status.name", FileStatus.READY);
         parameters.put("stats", stats);
         System.out.println(catalogFileDBAdaptor.update(fileId, parameters, QueryOptions.empty()));
 
         file = catalogFileDBAdaptor.get(fileId, null).first();
-        assertEquals(file.getStatus().getName(), File.FileStatus.READY);
+        assertEquals(file.getInternal().getStatus().getName(), FileStatus.READY);
         assertEquals(file.getStats(), stats);
 
         parameters = new ObjectMap();

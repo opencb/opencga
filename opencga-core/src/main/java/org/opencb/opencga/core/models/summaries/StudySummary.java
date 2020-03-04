@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.summaries;
 
 import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.study.InternalStudy;
+import org.opencb.opencga.core.models.study.StudyInternal;
 import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.util.List;
@@ -34,7 +34,7 @@ public class StudySummary {
     private String creatorId;
     private String creationDate;
     private String description;
-    private InternalStudy internal;
+    private StudyInternal internal;
     private long size;
     private String cipher;
 
@@ -100,11 +100,11 @@ public class StudySummary {
         return this;
     }
 
-    public InternalStudy getInternal() {
+    public StudyInternal getInternal() {
         return internal;
     }
 
-    public StudySummary setInternal(InternalStudy internal) {
+    public StudySummary setInternal(StudyInternal internal) {
         this.internal = internal;
         return this;
     }

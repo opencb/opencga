@@ -42,6 +42,7 @@ import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -169,12 +170,12 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 .first();
         studyId = study.getId();
         studyFqn = study.getFqn();
-        outputId = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index").toString(), null,  true, null,
+        outputId = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index").toString(), true, null,
                 QueryOptions.empty(), sessionId).first().getId();
         outputPath = "data/index/";
         studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", "s2", "Study " + "2", null, null, null, null, null,
                 Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId).first().getId();
-        outputId2 = catalogManager.getFileManager().createFolder(studyId2, Paths.get("data", "index").toString(), null,
+        outputId2 = catalogManager.getFileManager().createFolder(studyId2, Paths.get("data", "index").toString(),
                 true, null, QueryOptions.empty(), sessionId).first().getId();
 
         files = Arrays.asList(new File[5]);
@@ -233,7 +234,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     protected File transformFile(File inputFile, QueryOptions queryOptions, String outputId) throws CatalogException, IOException, StorageEngineException {
 
         try {
-            catalogManager.getFileManager().createFolder(studyFqn, outputId, null, true, null, null, sessionId);
+            catalogManager.getFileManager().createFolder(studyFqn, outputId, true, null, null, sessionId);
         } catch (CatalogException ignore) {}
 
         queryOptions.append(VariantFileIndexerOperationManager.TRANSFORM, true);
@@ -253,7 +254,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             copyResults(Paths.get(tmpOutdir), studyId, outputId, sessionId);
         }
         inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
-        assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getIndex().getStatus().getName());
+        assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getInternal().getIndex().getStatus().getName());
         assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
         // Default cohort should not be modified
@@ -272,13 +273,13 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
 
         System.out.println("transformedFile = " + transformedFile);
-        List<File.RelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
-                .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
+        List<FileRelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
+                .filter(relatedFile -> relatedFile.getRelation().equals(FileRelatedFile.Relation.PRODUCED_FROM))
                 .collect(Collectors.toList());
         assertEquals(1, relatedFiles.size());
         assertEquals(inputFile.getUid(), relatedFiles.get(0).getFile().getUid());
 
-        assertEquals(transformedFile.getUid(), inputFile.getIndex().getTransformedFile().getId());
+        assertEquals(transformedFile.getUid(), inputFile.getInternal().getIndex().getTransformedFile().getId());
 
         return transformedFile;
     }
@@ -367,14 +368,14 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         // Check transformed file relations
         for (File inputFile : expectedLoadedFiles) {
             inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
-            assertNotNull(inputFile.getIndex().getTransformedFile());
+            assertNotNull(inputFile.getInternal().getIndex().getTransformedFile());
             String transformedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
-                    inputFile.getIndex().getTransformedFile().getId()), new QueryOptions(), sessionId).first().getId();
+                    inputFile.getInternal().getIndex().getTransformedFile().getId()), new QueryOptions(), sessionId).first().getId();
 
             File transformedFile = catalogManager.getFileManager().get(studyFqn, transformedFileId, new QueryOptions(), sessionId).first();
 
-            List<File.RelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
-                    .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
+            List<FileRelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
+                    .filter(relatedFile -> relatedFile.getRelation().equals(FileRelatedFile.Relation.PRODUCED_FROM))
                     .collect(Collectors.toList());
             assertEquals(1, relatedFiles.size());
             assertEquals(inputFile.getUid(), relatedFiles.get(0).getFile().getUid());
@@ -439,7 +440,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 indexedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                         indexedFileUid), new QueryOptions(), sessionId).first().getId();
             }
-            assertEquals(expectedStatus, catalogManager.getFileManager().get(studyId, indexedFileId, null, sessionId).first().getIndex().getStatus().getName());
+            assertEquals(expectedStatus, catalogManager.getFileManager().get(studyId, indexedFileId, null, sessionId).first().getInternal().getIndex().getStatus().getName());
             System.out.println("etlResult = " + etlResult);
         }
     }

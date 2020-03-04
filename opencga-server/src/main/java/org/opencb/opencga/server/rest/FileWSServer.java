@@ -88,7 +88,7 @@ public class FileWSServer extends OpenCGAWSServer {
             DataResult<File> file;
             if (params.isDirectory()) {
                 // Create directory
-                file = fileManager.createFolder(studyStr, params.getPath(), new File.FileStatus(File.FileStatus.READY), params.isParents(),
+                file = fileManager.createFolder(studyStr, params.getPath(), params.isParents(),
                         params.getDescription(), queryOptions, token);
             } else {
                 // Create a file
@@ -351,11 +351,6 @@ public class FileWSServer extends OpenCGAWSServer {
                     || query.getString(FileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
                 query.remove(FileDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
-            }
-            // TODO: jobId is deprecated. Remember to remove this if after next release
-            if (query.containsKey("jobId") && !query.containsKey(FileDBAdaptor.QueryParams.JOB_UID.key())) {
-                query.put(FileDBAdaptor.QueryParams.JOB_UID.key(), query.get("jobId"));
-                query.remove("jobId");
             }
 
             return createOkResponse(fileManager.search(studyStr, query, queryOptions, token));
@@ -891,7 +886,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new FileAclUpdateParams());
 
-            File.FileAclParams aclParams = new File.FileAclParams(
+            FileAclParams aclParams = new FileAclParams(
                     params.getPermissions(), params.getAction(), params.getSample());
             List<String> idList = StringUtils.isEmpty(params.getFile()) ? Collections.emptyList() : getIdList(params.getFile(), false);
             return createOkResponse(fileManager.updateAcl(studyStr, idList, memberId, aclParams, token));

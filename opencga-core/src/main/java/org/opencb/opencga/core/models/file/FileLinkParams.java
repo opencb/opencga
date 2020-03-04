@@ -5,7 +5,6 @@ import org.opencb.commons.utils.ListUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FileLinkParams {
@@ -13,18 +12,18 @@ public class FileLinkParams {
     private String path;
     private String description;
     private List<SmallRelatedFileParams> relatedFiles;
-    private Map<String, String> sampleMap;
+    private FileLinkInternalParams internal;
 
     public FileLinkParams() {
     }
 
     public FileLinkParams(String uri, String path, String description, List<SmallRelatedFileParams> relatedFiles,
-                          Map<String, String> sampleMap) {
+                          FileLinkInternalParams internal) {
         this.uri = uri;
         this.path = path;
         this.description = description;
         this.relatedFiles = relatedFiles;
-        this.sampleMap = sampleMap;
+        this.internal = internal;
     }
 
     public static FileLinkParams of(File file) {
@@ -32,7 +31,7 @@ public class FileLinkParams {
                 file.getRelatedFiles() != null
                         ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
                         : Collections.emptyList(),
-                file.getInternal().getSampleMap());
+                new FileLinkInternalParams(file.getInternal().getSampleMap()));
     }
 
     @Override
@@ -42,18 +41,18 @@ public class FileLinkParams {
         sb.append(", path='").append(path).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", relatedFiles=").append(relatedFiles);
-        sb.append(", sampleMap=").append(sampleMap);
+        sb.append(", internal=").append(internal);
         sb.append('}');
         return sb.toString();
     }
 
-    public List<File.RelatedFile> getRelatedFiles() {
+    public List<FileRelatedFile> getRelatedFiles() {
         if (ListUtils.isEmpty(relatedFiles)) {
             return null;
         }
-        List<File.RelatedFile> relatedFileList = new ArrayList<>(relatedFiles.size());
+        List<FileRelatedFile> relatedFileList = new ArrayList<>(relatedFiles.size());
         for (SmallRelatedFileParams relatedFile : relatedFiles) {
-            relatedFileList.add(new File.RelatedFile(new File().setId(relatedFile.getFile()), relatedFile.getRelation()));
+            relatedFileList.add(new FileRelatedFile(new File().setId(relatedFile.getFile()), relatedFile.getRelation()));
         }
         return relatedFileList;
     }
@@ -90,12 +89,13 @@ public class FileLinkParams {
         return this;
     }
 
-    public Map<String, String> getSampleMap() {
-        return sampleMap;
+    public FileLinkInternalParams getInternal() {
+        return internal;
     }
 
-    public FileLinkParams setSampleMap(Map<String, String> sampleMap) {
-        this.sampleMap = sampleMap;
+    public FileLinkParams setInternal(FileLinkInternalParams internal) {
+        this.internal = internal;
         return this;
     }
+
 }

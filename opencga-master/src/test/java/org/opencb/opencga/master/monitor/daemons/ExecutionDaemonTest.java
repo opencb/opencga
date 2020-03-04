@@ -135,7 +135,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void testUseEmptyDirectory() throws Exception {
         // Create empty directory that is registered in OpenCGA
         org.opencb.opencga.core.models.file.File directory = catalogManager.getFileManager().createFolder(studyFqn, "outputDir/",
-                new org.opencb.opencga.core.models.file.File.FileStatus(), true, "", QueryOptions.empty(), token).first();
+                true, "", QueryOptions.empty(), token).first();
         catalogManager.getCatalogIOManagerFactory().get(directory.getUri()).createDirectory(directory.getUri(), true);
 
         HashMap<String, Object> params = new HashMap<>();
