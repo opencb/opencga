@@ -1113,7 +1113,7 @@ public class VariantCommandOptions {
         @Parameter(names = {"--samples"}, description = "List of samples.")
         public List<String> samples;
 
-        @Parameter(names = {"--maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
+        @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
         public String minorAlleleFreq;
 
         @Parameter(names = {"--method"}, description = "Method to compute relatedness.")
@@ -1142,7 +1142,7 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID: it will be considered a child sample to get the family members).")
         public String sample;
 
-        @Parameter(names = {"--maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
+        @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
         public String minorAlleleFreq;
 
         @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")

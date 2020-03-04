@@ -26,7 +26,7 @@ public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor
         return samples;
     }
 
-    public IBDRelatednessAnalysisExecutor setSamples(List<String> families) {
+    public IBDRelatednessAnalysisExecutor setSamples(List<String> samples) {
         this.samples = samples;
         return this;
     }

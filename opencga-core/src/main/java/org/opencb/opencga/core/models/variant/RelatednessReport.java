@@ -112,6 +112,8 @@ public class RelatednessReport {
     }
 
     public RelatednessReport() {
+        this.method = "IBD";
+        this.scores = new ArrayList<>();
     }
 
     public RelatednessReport(String method, List<RelatednessScore> scores) {
