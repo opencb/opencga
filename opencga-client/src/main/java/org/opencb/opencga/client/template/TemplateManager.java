@@ -181,6 +181,9 @@ public class TemplateManager {
     public void createStudy(Project project, Study study) throws ClientException {
         ObjectMap params = new ObjectMap(ParamConstants.PROJECT_PARAM, project.getId());
         study.setFqn(openCGAClient.getUserId() + "@" + project.getId() + ":" + study.getId());
+        if (StringUtils.isEmpty(study.getName())) {
+            study.setName(study.getId());
+        }
         logger.info("Creating Study '{}'", study.getFqn());
         if (resume && studyExists(project.getId(), study.getId())) {
             logger.info("Study {} already exists", study.getFqn());
