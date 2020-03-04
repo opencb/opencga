@@ -19,14 +19,16 @@ public class IBDComputation {
     public static RelatednessReport compute(String study, List<String> samples, String maf, Path outDir,
                                             VariantStorageManager storageManager, String token) throws ToolException {
         // Select markers
-        if (!outDir.resolve(BASENAME + ".tped").toFile().exists() || !outDir.resolve(BASENAME + ".tfam").toFile().exists()) {
-            GeneticChecksUtils.selectMarkers(BASENAME, study, samples, maf, outDir, storageManager, token);
-        }
+        GeneticChecksUtils.selectMarkers(BASENAME, study, samples, maf, outDir, storageManager, token);
 
         // run IBD and return the result file (now autosome-file comprises X chromosome too)
-        runIBD(BASENAME, outDir);
+        File outFile = runIBD(BASENAME, outDir);
 
-        return GeneticChecksUtils.buildRelatednessReport(BASENAME, outDir);
+        if (!outFile.exists()) {
+            throw new ToolException("Something wrong happened executing relatedness analysis");
+        }
+
+        return GeneticChecksUtils.buildRelatednessReport(outFile);
     }
 
     private static File runIBD(String basename, Path outDir) throws ToolException {

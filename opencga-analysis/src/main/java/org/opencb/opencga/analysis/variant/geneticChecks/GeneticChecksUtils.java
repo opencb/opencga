@@ -30,17 +30,14 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
 
 public class GeneticChecksUtils {
 
-    public static void selectMarkers(String basename, String study, List<String> samples, String population, Path outDir,
+    public static void selectMarkers(String basename, String study, List<String> samples, String maf, Path outDir,
                                      VariantStorageManager storageManager, String token) throws ToolException {
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDir.toAbsolutePath().toString(),
                 "/data/output");
 
-        // Split population format part1:part2, where:
-        //   - part1 is the name of a study or the keyword "cohort"
-        //   - part2 is the annotated population for that study or the cohort name
-        // For annotated population studies, e.g.: 1kG_phase3:CEU
-        // For cohort, e.g.: cohort:ALL
-        String[] popSplits = population.split(":");
+        // MAF parameter:
+        //    - For annotated population studies, e.g.: 1kG_phase3:CEU>0.3
+        //    - For cohort, e.g.: cohort:ALL>0.3
 
         // Apply filter: biallelic variants
         Query query = new Query()
@@ -49,45 +46,23 @@ public class GeneticChecksUtils {
 
         String gt = samples.stream().map(s -> s + ":0/0,0/1,1/1").collect(Collectors.joining(";"));
         query.put(VariantQueryParam.GENOTYPE.key(), gt);
-
         //.append(VariantQueryParam.FILTER.key(), "PASS")
 
-        // Export variants in format .tped and .tfam to run PLINK
-        // First, autosomal chromosomes
-        File tpedAutosomeFile = outDir.resolve(basename + ".tped").toFile();
-        File tfamAutosomeFile = outDir.resolve(basename + ".tfam").toFile();
+        // Export variants in format .tped and .tfam to run PLINK (only autosomal chromosomes)
+        File tpedFile = outDir.resolve(basename + ".tped").toFile();
+        File tfamFile = outDir.resolve(basename + ".tfam").toFile();
         query.put(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22".split(",")));
-        if (popSplits[0].equals("cohort")) {
-            query.put(VariantQueryParam.STATS_MAF.key(), popSplits[1] + ">0.3");
+        if (maf.startsWith("cohort:")) {
+            query.put(VariantQueryParam.STATS_MAF.key(), maf.substring(7));
         } else {
-            query.put(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), population + ">0.3");
+            query.put(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), maf);
         }
-        exportData(tpedAutosomeFile, tfamAutosomeFile, query, storageManager, token);
-        if (tpedAutosomeFile.exists() && tpedAutosomeFile.length() > 0) {
+        exportData(tpedFile, tfamFile, query, storageManager, token);
+        if (tpedFile.exists() && tpedFile.length() > 0) {
             pruneVariants(basename, outputBinding);
         }
 
-        // First, X chromosome
-        File tpedXFile = outDir.resolve("x.tped").toFile();
-        File tfamXFile = outDir.resolve("x.tfam").toFile();
-        query.put(VariantQueryParam.REGION.key(), "X");
-        if (popSplits[0].equals("cohort")) {
-            query.put(VariantQueryParam.STATS_MAF.key(), popSplits[1] + ">0.05");
-        } else {
-            query.put(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), population + ">0.05");
-        }
-        exportData(tpedXFile, tfamXFile, query, storageManager, token);
-        if (tpedXFile.exists() && tpedXFile.length() > 0) {
-            pruneVariants("x", outputBinding);
-        }
-
-        // Append files:
-        //   - the x.tped file to autosome.tped file (since tfam files contain the same sample information)
-        //   - the x.prune.out file to autosome.prune.out file
-        appendFile(tpedXFile.getAbsolutePath(), tpedAutosomeFile.getAbsolutePath());
-        appendFile(outDir.resolve("x.prune.out").toString(), outDir.resolve(basename + ".prune.out").toString());
-
-        if (!tpedAutosomeFile.exists() || tpedAutosomeFile.length() == 0) {
+        if (!tpedFile.exists() || tpedFile.length() == 0) {
             throw new ToolException("No variants found when exporting data to TPED/TFAM format");
         }
     }
@@ -157,28 +132,8 @@ public class GeneticChecksUtils {
         }
     }
 
-    private static void appendFile(String srcFilename, String destFilename) throws ToolException {
-        if (new File(srcFilename).exists()) {
-            try (FileWriter f = new FileWriter(destFilename, true);
-                 PrintWriter p = new PrintWriter(new BufferedWriter(f))) {
-                FileInputStream fis = new FileInputStream(srcFilename);
-                Scanner sc = new Scanner(fis);
-                while (sc.hasNextLine()) {
-                    p.println(sc.nextLine());
-                }
-            } catch (IOException e) {
-                throw new ToolException(e);
-            }
-        }
-    }
-
-    public static RelatednessReport buildRelatednessReport(String family, Path outDir) throws ToolException {
+    public static RelatednessReport buildRelatednessReport(File file) throws ToolException {
         RelatednessReport relatednessReport = new RelatednessReport();
-
-        File file = outDir.resolve(family + ".genome").toFile();
-        if (!file.exists()) {
-            throw new ToolException("Missing relatedness file for family '" + family + "'");
-        }
 
         // Set method
         relatednessReport.setMethod("IBD");
