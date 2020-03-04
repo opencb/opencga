@@ -24,7 +24,7 @@ public class FileUpdateParams {
     private Software software;
     private FileExperiment experiment;
     private List<String> tags;
-    private File.FileStatus status;
+    private SmallFileInternal internal;
 
     private List<SmallRelatedFileParams> relatedFiles;
 
@@ -39,7 +39,7 @@ public class FileUpdateParams {
 
     public FileUpdateParams(String name, String description, List<String> samples, String checksum, File.Format format,
                             File.Bioformat bioformat, Software software, FileExperiment experiment, List<String> tags,
-                            File.FileStatus status, Long size, List<SmallRelatedFileParams> relatedFiles,
+                            SmallFileInternal internal, Long size, List<SmallRelatedFileParams> relatedFiles,
                             List<AnnotationSet> annotationSets, Map<String, Object> stats, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
@@ -50,7 +50,7 @@ public class FileUpdateParams {
         this.software = software;
         this.experiment = experiment;
         this.tags = tags;
-        this.status = status;
+        this.internal = internal;
         this.size = size;
         this.relatedFiles = relatedFiles;
         this.annotationSets = annotationSets;
@@ -86,7 +86,7 @@ public class FileUpdateParams {
         sb.append(", software=").append(software);
         sb.append(", experiment=").append(experiment);
         sb.append(", tags=").append(tags);
-        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", size=").append(size);
         sb.append(", annotationSets=").append(annotationSets);
@@ -150,12 +150,12 @@ public class FileUpdateParams {
         return this;
     }
 
-    public File.FileStatus getStatus() {
-        return status;
+    public SmallFileInternal getInternal() {
+        return internal;
     }
 
-    public FileUpdateParams setStatus(File.FileStatus status) {
-        this.status = status;
+    public FileUpdateParams setInternal(SmallFileInternal internal) {
+        this.internal = internal;
         return this;
     }
 

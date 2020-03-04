@@ -50,6 +50,8 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.project.Project;
@@ -301,9 +303,9 @@ public class StudyManager extends AbstractManager {
 
             LinkedList<File> files = new LinkedList<>();
             File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
-                    new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
+                    FileInternal.initialize(), 0, project.getCurrentRelease());
             File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/", null,
-                    "Default jobs folder", new File.FileStatus(), 0, project.getCurrentRelease());
+                    "Default jobs folder", FileInternal.initialize(), 0, project.getCurrentRelease());
 
             files.add(rootFile);
             files.add(jobsFile);
@@ -762,8 +764,8 @@ public class StudyManager extends AbstractManager {
         Long nFiles = fileDBAdaptor.count(
                 new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
-                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
-                                + File.FileStatus.DELETED))
+                        .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + FileStatus.TRASHED + ";!="
+                                + FileStatus.DELETED))
                 .getNumMatches();
         studySummary.setFiles(nFiles);
 

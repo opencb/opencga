@@ -39,6 +39,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.DataStores;
@@ -193,9 +195,9 @@ public class MongoDBAdaptorTest extends GenericTest {
                 new Study("name", "Study name", "ph1", "", "", null, 0,
                         Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
                                 new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
-                                        new File.FileStatus(File.FileStatus.READY), 1000, 1),
+                                        FileInternal.initialize(), 1000, 1),
                                 new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
-                                        new File.FileStatus(File.FileStatus.READY), 1000, 1)
+                                        FileInternal.initialize(), 1000, 1)
                         ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
                         new StudyInternal(new Status()), null, null, 1, Collections.emptyMap()), null);
@@ -210,16 +212,13 @@ public class MongoDBAdaptorTest extends GenericTest {
                 new Study("spongeScan", "spongeScan", "sponges", "", "", null,
                         0, Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
                         new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
-                                null, "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
+                                null, "Description", FileInternal.initialize(), 10, 1),
                         new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                File.Bioformat.NONE, "data/file1.txt", null, "Description",
-                                new File.FileStatus(File.FileStatus.READY), 100, 1),
+                                File.Bioformat.NONE, "data/file1.txt", null, "Description", FileInternal.initialize(), 100, 1),
                         new File("file2.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                File.Bioformat.NONE, "data/file2.txt", null, "Description2",
-                                new File.FileStatus(File.FileStatus.READY), 100, 1),
+                                File.Bioformat.NONE, "data/file2.txt", null, "Description2", FileInternal.initialize(), 100, 1),
                         new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                "data/alignment.bam", null, "Tophat alignment file",
-                                new File.FileStatus(File.FileStatus.READY), 5000, 1)
+                                "data/alignment.bam", null, "Tophat alignment file", FileInternal.initialize(), 5000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new StudyInternal(new Status()), null, null, 1,
                         Collections.emptyMap()), null);
@@ -227,13 +226,11 @@ public class MongoDBAdaptorTest extends GenericTest {
                 new Study("mineco", "MINECO", "mineco", "", "", null, 0,
                         Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
                                 new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
-                                        null, "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
+                                        null, "Description", FileInternal.initialize(), 10, 1),
                                 new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                        File.Bioformat.NONE, "data/file1.txt", null, "Description",
-                                        new File.FileStatus(File.FileStatus.READY), 100, 1),
+                                        File.Bioformat.NONE, "data/file1.txt", null, "Description", FileInternal.initialize(), 100, 1),
                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                        "data/alignment.bam", null, "Tophat alignment file",
-                                        new File.FileStatus(File.FileStatus.READY), 5000, 1)
+                                        "data/alignment.bam", null, "Tophat alignment file", FileInternal.initialize(), 5000, 1)
                         ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new StudyInternal(new Status()), null, null, 1,
                         Collections.emptyMap()), null);

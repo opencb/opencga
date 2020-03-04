@@ -45,9 +45,7 @@ import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileAclEntry;
-import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -345,7 +343,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         String[] acceptedParams = {
                 QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CREATION_DATE.key(), QueryParams.PATH.key(),
-                QueryParams.CHECKSUM.key(),
+                QueryParams.CHECKSUM.key(), QueryParams.JOB_ID.key(),
         };
         // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
         filterStringParams(parameters, document.getSet(), acceptedParams);
@@ -396,13 +394,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             throw new CatalogDBException("File update: It was impossible updating the files. " + e.getMessage());
         }
 
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (parameters.containsKey(QueryParams.RELATED_FILES.key())) {
-            List<File.RelatedFile> relatedFiles = parameters.getAsList(QueryParams.RELATED_FILES.key(), File.RelatedFile.class);
+            List<FileRelatedFile> relatedFiles = parameters.getAsList(QueryParams.RELATED_FILES.key(), FileRelatedFile.class);
             List<Document> relatedFileDocument = fileConverter.convertRelatedFiles(relatedFiles);
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
@@ -421,20 +419,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     break;
             }
         }
-        if (parameters.containsKey(QueryParams.INDEX_TRANSFORMED_FILE.key())) {
-            document.getSet().put(QueryParams.INDEX_TRANSFORMED_FILE.key(),
-                    getMongoDBDocument(parameters.get(QueryParams.INDEX_TRANSFORMED_FILE.key()), "TransformedFile"));
+        if (parameters.containsKey(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key())) {
+            document.getSet().put(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key(),
+                    getMongoDBDocument(parameters.get(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key()), "TransformedFile"));
         }
 
-        String[] acceptedLongParams = {QueryParams.SIZE.key(), QueryParams.JOB_UID.key()};
+        String[] acceptedLongParams = {QueryParams.SIZE.key()};
         filterLongParams(parameters, document.getSet(), acceptedLongParams);
-
-        // Check if the job exists.
-        if (parameters.containsKey(QueryParams.JOB_UID.key()) && parameters.getLong(QueryParams.JOB_UID.key()) > 0) {
-            if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().exists(clientSession, parameters.getLong(QueryParams.JOB_UID.key()))) {
-                throw CatalogDBException.uidNotFound("Job", parameters.getLong(QueryParams.JOB_UID.key()));
-            }
-        }
 
         // Check if the samples exist.
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
@@ -471,7 +462,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
         // Fixme: Attributes and stats can be also parsed to numeric or boolean
 
-        String[] acceptedObjectParams = {QueryParams.INDEX.key(), QueryParams.SOFTWARE.key(), QueryParams.EXPERIMENT.key()};
+        String[] acceptedObjectParams = {QueryParams.INTERNAL_INDEX.key(), QueryParams.SOFTWARE.key(), QueryParams.EXPERIMENT.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -500,11 +491,11 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public OpenCGAResult delete(File file, String status)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         switch (status) {
-            case File.FileStatus.TRASHED:
-            case File.FileStatus.REMOVED:
+            case FileStatus.TRASHED:
+            case FileStatus.REMOVED:
 //            case File.FileStatus.PENDING_DELETE:
 //            case File.FileStatus.DELETING:
-            case File.FileStatus.DELETED:
+            case FileStatus.DELETED:
                 break;
             default:
                 throw new CatalogDBException("Invalid status '" + status + "' for deletion of file.");
@@ -512,7 +503,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.PATH.key(), QueryParams.UID.key(), QueryParams.EXTERNAL.key(),
-                        QueryParams.STATUS.key(), QueryParams.STUDY_UID.key(), QueryParams.TYPE.key()));
+                        QueryParams.INTERNAL_STATUS.key(), QueryParams.STUDY_UID.key(), QueryParams.TYPE.key()));
         Document fileDocument = nativeGet(new Query(QueryParams.UID.key(), file.getUid()), options).first();
 
         try {
@@ -527,11 +518,11 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public OpenCGAResult delete(Query query, String status)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         switch (status) {
-            case File.FileStatus.TRASHED:
-            case File.FileStatus.REMOVED:
+            case FileStatus.TRASHED:
+            case FileStatus.REMOVED:
 //            case File.FileStatus.PENDING_DELETE:
 //            case File.FileStatus.DELETING:
-            case File.FileStatus.DELETED:
+            case FileStatus.DELETED:
                 break;
             default:
                 throw new CatalogDBException("Invalid status '" + status + "' for deletion of file.");
@@ -539,7 +530,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.PATH.key(), QueryParams.UID.key(), QueryParams.EXTERNAL.key(),
-                        QueryParams.STATUS.key(), QueryParams.STUDY_UID.key(), QueryParams.TYPE.key()));
+                        QueryParams.INTERNAL_STATUS.key(), QueryParams.STUDY_UID.key(), QueryParams.TYPE.key()));
         DBIterator<Document> iterator = nativeIterator(query, options);
 
         OpenCGAResult<File> result = OpenCGAResult.empty();
@@ -574,8 +565,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             query.append(QueryParams.PATH.key(), "~^" + path + "*");
         }
 
-        if (File.FileStatus.TRASHED.equals(status)) {
-            Bson update = Updates.set(QueryParams.STATUS.key(), getMongoDBDocument(new File.FileStatus(status), "status"));
+        if (FileStatus.TRASHED.equals(status)) {
+            Bson update = Updates.set(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new FileStatus(status), "status"));
             QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
             return endWrite(tmpStartTime, fileCollection.update(parseQuery(query), update, multi));
         } else {
@@ -596,7 +587,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
 
                 // Set status
-                tmpFile.put(QueryParams.STATUS.key(), getMongoDBDocument(new File.FileStatus(status), "status"));
+                documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new FileStatus(status), "status"), tmpFile);
 
                 // Insert the document in the DELETE collection
                 deletedFileCollection.insert(clientSession, tmpFile, null);
@@ -1039,15 +1030,15 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
-                    case STATUS:
-                    case STATUS_NAME:
+                    case INTERNAL_STATUS:
+                    case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
-                                Status.getPositiveStatus(File.FileStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), myQuery, QueryParams.STATUS_NAME.type(),
-                                andBsonList);
+                                Status.getPositiveStatus(FileStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), myQuery,
+                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
-                    case INDEX_STATUS_NAME:
+                    case INTERNAL_INDEX_STATUS_NAME:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
                                 Status.getPositiveStatus(FileIndex.IndexStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
@@ -1084,8 +1075,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case EXTERNAL:
                     case RELEASE:
                     case TAGS:
-                    case STATUS_MSG:
-                    case STATUS_DATE:
+                    case INTERNAL_STATUS_DESCRIPTION:
+                    case INTERNAL_STATUS_DATE:
                     case RELATED_FILES:
                     case RELATED_FILES_RELATION:
                     case SIZE:
@@ -1093,13 +1084,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case SOFTWARE_VERSION:
                     case SOFTWARE_COMMIT:
                     case SAMPLE_UIDS:
-                    case JOB_UID:
-                    case INDEX:
-                    case INDEX_USER_ID:
-                    case INDEX_CREATION_DATE:
-                    case INDEX_STATUS_MESSAGE:
-                    case INDEX_JOB_ID:
-                    case INDEX_TRANSFORMED_FILE:
+                    case JOB_ID:
+                    case INTERNAL_INDEX:
+                    case INTERNAL_INDEX_USER_ID:
+                    case INTERNAL_INDEX_CREATION_DATE:
+                    case INTERNAL_INDEX_STATUS_MESSAGE:
+                    case INTERNAL_INDEX_JOB_ID:
+                    case INTERNAL_INDEX_TRANSFORMED_FILE:
                     case STATS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;

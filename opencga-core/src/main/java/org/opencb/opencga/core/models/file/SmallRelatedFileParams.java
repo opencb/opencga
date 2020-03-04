@@ -5,17 +5,17 @@ import org.apache.commons.lang3.StringUtils;
 public class SmallRelatedFileParams {
 
     private String file;
-    private File.RelatedFile.Relation relation;
+    private FileRelatedFile.Relation relation;
 
     public SmallRelatedFileParams() {
     }
 
-    public SmallRelatedFileParams(String file, File.RelatedFile.Relation relation) {
+    public SmallRelatedFileParams(String file, FileRelatedFile.Relation relation) {
         this.file = file;
         this.relation = relation;
     }
 
-    public static SmallRelatedFileParams of(File.RelatedFile file) {
+    public static SmallRelatedFileParams of(FileRelatedFile file) {
         String fileStr = null;
         if (file.getFile() != null) {
             if (StringUtils.isNotEmpty(file.getFile().getPath())) {
@@ -45,11 +45,11 @@ public class SmallRelatedFileParams {
         return this;
     }
 
-    public File.RelatedFile.Relation getRelation() {
+    public FileRelatedFile.Relation getRelation() {
         return relation;
     }
 
-    public SmallRelatedFileParams setRelation(File.RelatedFile.Relation relation) {
+    public SmallRelatedFileParams setRelation(FileRelatedFile.Relation relation) {
         this.relation = relation;
         return this;
     }

@@ -204,7 +204,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(),
                 FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
                 FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
-                FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
+                FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
                 FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT.key(),
                 FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key()));

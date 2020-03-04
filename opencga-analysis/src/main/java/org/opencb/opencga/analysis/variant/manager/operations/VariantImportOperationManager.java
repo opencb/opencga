@@ -12,6 +12,8 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -127,8 +129,8 @@ public class VariantImportOperationManager extends OperationManager {
                             .collect(Collectors.toList());
 
                     File file = new File(fileName, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, fileName,
-                            null, "File imported from " + source, null, 0, 0);
-                    file.setIndex(new FileIndex("", "", new FileIndex.IndexStatus(Status.READY, ""), -1, Collections.emptyMap()));
+                            null, "File imported from " + source, new FileInternal(null, new FileIndex("", "",
+                            new FileIndex.IndexStatus(Status.READY, ""), -1, Collections.emptyMap()), Collections.emptyMap()), 0, 0);
                     file.setSamples(samples);
 
                     file = catalogManager.getFileManager().create(studyStr, file, false, null, null, sessionId).first();

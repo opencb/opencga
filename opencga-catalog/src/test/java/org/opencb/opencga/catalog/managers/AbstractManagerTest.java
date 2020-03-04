@@ -95,11 +95,11 @@ public class AbstractManagerTest extends GenericTest {
         study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, null, null, null, sessionIdUser2).first();
         studyFqn3 = study.getFqn();
 
-        catalogManager.getFileManager().createFolder(studyFqn2, Paths.get("data/test/folder/").toString(), null, true,
+        catalogManager.getFileManager().createFolder(studyFqn2, Paths.get("data/test/folder/").toString(), true,
                 null, QueryOptions.empty(), token);
 
         testFolder = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/test/folder/").toString(),
-                null, true, null, QueryOptions.empty(), token).first();
+                true, null, QueryOptions.empty(), token).first();
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);

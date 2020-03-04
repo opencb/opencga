@@ -208,7 +208,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(FileDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
         params.putIfNotNull(FileDBAdaptor.QueryParams.BIOFORMAT.key(), commandOptions.bioformat);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), commandOptions.format);
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), commandOptions.status);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.DIRECTORY.key(), commandOptions.folder);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.OWNER_ID.key(), commandOptions.ownerId);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
@@ -216,7 +216,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.SIZE.key(), commandOptions.size);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_UID.key(), commandOptions.jobId);
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), commandOptions.jobId);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), commandOptions.attributes);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), commandOptions.nattributes);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.ANNOTATION.key(), commandOptions.annotation);

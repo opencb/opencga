@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -20,8 +21,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.file.FileExperiment;
+import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.io.BufferedReader;
@@ -226,8 +227,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                             org.opencb.opencga.core.models.file.File.Bioformat.UNKNOWN,
                             Paths.get(options.jobFolder).normalize().toAbsolutePath().resolve("JOBS").toUri(),
                             "JOBS/", null, TimeUtils.getTime(), TimeUtils.getTime(), "Default jobs folder",
-                            new org.opencb.opencga.core.models.file.File.FileStatus(), false, 0, null, null, Collections.emptyList(), new Job(),
-                            Collections.emptyList(), null, new FileIndex(), study.getRelease(), Collections.emptyList(),
+                            false, 0, FileInternal.initialize(), new Software(), new FileExperiment(), Collections.emptyList(),
+                            Collections.emptyList(), "", study.getRelease(), Collections.emptyList(),
                             Collections.emptyMap(), Collections.emptyMap());
                     file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                     file.setTags(Collections.emptyList());

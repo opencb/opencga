@@ -134,7 +134,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         } catch (Exception e) {
             assertEquals(0, getDefaultCohort(studyId).getSamples().size());
             assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getName());
-            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getIndex().getStatus().getName());
+            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
             assertNotNull(catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
         }
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "none");

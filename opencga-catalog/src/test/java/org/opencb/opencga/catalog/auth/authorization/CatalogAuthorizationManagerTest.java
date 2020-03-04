@@ -41,6 +41,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.file.FileAclParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
@@ -154,14 +155,14 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
                 null, null, ownerSessionId).first();
         studyFqn = study.getFqn();
         studyUid = study.getUid();
-        data_d1 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/").toString(), null, true, null,
+        data_d1 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/").toString(), true, null,
                 QueryOptions.empty(), ownerSessionId).first().getPath();
-        data_d1_d2 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/").toString(), null, false,
+        data_d1_d2 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/").toString(), false,
                 null, QueryOptions.empty(), ownerSessionId).first().getPath();
-        data_d1_d2_d3 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/d3/").toString(), null,
-        false, null, QueryOptions.empty(), ownerSessionId).first().getPath();
+        data_d1_d2_d3 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/d3/").toString(),
+                false, null, QueryOptions.empty(), ownerSessionId).first().getPath();
         data_d1_d2_d3_d4 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/d3/d4/").toString(),
-                null, false, null, QueryOptions.empty(), ownerSessionId).first().getPath();
+                false, null, QueryOptions.empty(), ownerSessionId).first().getPath();
         catalogManager.getFileManager().create(studyFqn, new File().setPath("data/d1/d2/d3/d4/my.txt"), false, "file content", null, ownerSessionId);
 
         // Add studyAdminUser1 and studyAdminUser2 to admin group and admin role.
@@ -173,12 +174,12 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_LOCKED);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), externalUser, aclParams, studyAdmin1SessionId);
 
-        fileManager.updateAcl(studyFqn, Arrays.asList(data_d1), externalUser, new File.FileAclParams(ALL_FILE_PERMISSIONS,
+        fileManager.updateAcl(studyFqn, Arrays.asList(data_d1), externalUser, new FileAclParams(ALL_FILE_PERMISSIONS,
                 AclParams.Action.SET, null), ownerSessionId);
         fileManager.updateAcl(studyFqn, Arrays.asList(data_d1_d2_d3), externalUser,
-                new File.FileAclParams(DENY_FILE_PERMISSIONS, AclParams.Action.SET, null), ownerSessionId);
+                new FileAclParams(DENY_FILE_PERMISSIONS, AclParams.Action.SET, null), ownerSessionId);
         fileManager.updateAcl(studyFqn, Arrays.asList(data_d1_d2_d3_d4_txt), externalUser,
-                new File.FileAclParams(ALL_FILE_PERMISSIONS, AclParams.Action.SET, null), ownerSessionId);
+                new FileAclParams(ALL_FILE_PERMISSIONS, AclParams.Action.SET, null), ownerSessionId);
 
         smp1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("smp1"), QueryOptions.empty(), ownerSessionId).first();
         smp2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("smp2"), QueryOptions.empty(), ownerSessionId).first();
@@ -537,7 +538,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         DataResult<File> file = catalogManager.getFileManager().get(studyFqn, data_d1, null, memberSessionId);
         assertEquals(1, file.getNumResults());
         // Set an ACL with no permissions
-        fileManager.updateAcl(studyFqn, Arrays.asList(data_d1), memberUser, new File.FileAclParams(null, AclParams.Action.SET, null),
+        fileManager.updateAcl(studyFqn, Arrays.asList(data_d1), memberUser, new FileAclParams(null, AclParams.Action.SET, null),
                 ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFileManager().get(studyFqn, data_d1, null, memberSessionId);
@@ -595,7 +596,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_LOCKED);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), newGroup, aclParams, ownerSessionId);
         // Specify all file permissions for that concrete file
-        fileManager.updateAcl(studyFqn, Arrays.asList(data_d1_d2_d3_d4), newGroup, new File.FileAclParams(ALL_FILE_PERMISSIONS,
+        fileManager.updateAcl(studyFqn, Arrays.asList(data_d1_d2_d3_d4), newGroup, new FileAclParams(ALL_FILE_PERMISSIONS,
                 AclParams.Action.SET, null), ownerSessionId);
         catalogManager.getFileManager().get(studyFqn, data_d1_d2_d3_d4, null, sessionId);
     }
@@ -606,7 +607,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getStudyManager().createGroup(studyFqn, groupMember, Collections.singletonList(externalUser), ownerSessionId);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), groupMember, new Study.StudyAclParams("", AclParams.Action.SET,
                 "admin"), ownerSessionId);
-        fileManager.updateAcl(studyFqn, Arrays.asList(data_d1_d2), externalUser, new File.FileAclParams(DENY_FILE_PERMISSIONS,
+        fileManager.updateAcl(studyFqn, Arrays.asList(data_d1_d2), externalUser, new FileAclParams(DENY_FILE_PERMISSIONS,
                 AclParams.Action.SET, null), ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFileManager().get(studyFqn, data_d1_d2, null, externalSessionId);
@@ -624,7 +625,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         // Add the group to the locked role, so no permissions will be given
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_LOCKED);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), newGroup, aclParams, ownerSessionId);
-        fileManager.updateAcl(studyFqn, Arrays.asList(data_d1_d2), newGroup, new File.FileAclParams(ALL_FILE_PERMISSIONS,
+        fileManager.updateAcl(studyFqn, Arrays.asList(data_d1_d2), newGroup, new FileAclParams(ALL_FILE_PERMISSIONS,
                 AclParams.Action.SET, null), ownerSessionId);
         DataResult<File> file = catalogManager.getFileManager().get(studyFqn, data_d1_d2, null, sessionId);
         assertEquals(1, file.getNumResults());
@@ -637,40 +638,40 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void createFileByOwnerNoGroups() throws CatalogException {
         DataResult<File> folder = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/newFolder").toString(),
-                null, true, null, QueryOptions.empty(), ownerSessionId);
+                true, null, QueryOptions.empty(), ownerSessionId);
         assertEquals(1, folder.getNumResults());
     }
 
     @Test
     public void createExplicitlySharedFile() throws CatalogException {
-        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/folder/").toString(), null, false, null,
+        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/folder/").toString(), false, null,
                 QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createInheritedSharedFile() throws CatalogException {
-        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/folder/").toString(), null, false,
+        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/folder/").toString(), false,
                 null, QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createExplicitlyForbiddenFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/d3/folder/").toString(), null, false,
+        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/d3/folder/").toString(), false,
                 null, QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createInheritedForbiddenFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/d3/d4/folder/").toString(), null, false,
+        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/d3/d4/folder/").toString(), false,
                 null, QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createNonSharedFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("folder/").toString(), null, false, null,
+        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("folder/").toString(), false, null,
                 QueryOptions.empty(), externalSessionId);
     }
 
@@ -680,7 +681,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.Type.FULL, null);
         String sessionId = catalogManager.getUserManager().login(newUser, password);
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/my_folder/").toString(), null, false, null,
+        catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/my_folder/").toString(), false, null,
                 QueryOptions.empty(), sessionId);
     }
 
