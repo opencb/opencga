@@ -184,6 +184,9 @@ public class TemplateManager {
         if (StringUtils.isEmpty(study.getName())) {
             study.setName(study.getId());
         }
+        if (study.getFiles() == null) {
+            study.setFiles(Collections.emptyList());
+        }
         logger.info("Creating Study '{}'", study.getFqn());
         if (resume && studyExists(project.getId(), study.getId())) {
             logger.info("Study {} already exists", study.getFqn());
@@ -498,10 +501,10 @@ public class TemplateManager {
     }
 
     private String variantAnnot(Project project, List<String> indexVcfJobIds) throws ClientException {
-        List<String> studies = project.getStudies().stream()
-                .filter(study -> study.getFiles()
-                        .stream()
-                        .anyMatch(this::isVcf))
+        List<String> studies = project.getStudies()
+                .stream()
+                .filter(study -> study.getFiles() != null
+                        && study.getFiles().stream().anyMatch(this::isVcf))
                 .map(Study::getFqn)
                 .collect(Collectors.toList());
 
@@ -520,9 +523,8 @@ public class TemplateManager {
 
     private void variantSecondaryIndex(Project project, List<String> jobs) throws ClientException {
         List<String> studies = project.getStudies().stream()
-                .filter(study -> study.getFiles()
-                        .stream()
-                        .anyMatch(this::isVcf))
+                .filter(study -> study.getFiles() != null
+                        && study.getFiles().stream().anyMatch(this::isVcf))
                 .map(Study::getFqn)
                 .collect(Collectors.toList());
 
