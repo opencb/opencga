@@ -242,7 +242,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, String description,
-                                       StudyNotification notification, String cipher, String uriScheme, URI uri, InternalStudy internal,
+                                       StudyNotification notification, String cipher, String uriScheme, URI uri, StudyInternal internal,
                                        Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
@@ -256,7 +256,7 @@ public class StudyManager extends AbstractManager {
         description = ParamUtils.defaultString(description, "");
         String creationDate = TimeUtils.getTime();
 
-        internal = ParamUtils.defaultObject(internal, InternalStudy::new);
+        internal = ParamUtils.defaultObject(internal, StudyInternal::new);
         internal.setStatus(ParamUtils.defaultObject(internal.getStatus(), Status::new));
         cipher = ParamUtils.defaultString(cipher, "none");
         if (uri != null) {

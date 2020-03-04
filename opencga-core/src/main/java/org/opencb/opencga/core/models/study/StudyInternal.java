@@ -2,14 +2,14 @@ package org.opencb.opencga.core.models.study;
 
 import org.opencb.opencga.core.models.common.Status;
 
-public class InternalStudy {
+public class StudyInternal {
 
     private Status status;
 
-    public InternalStudy() {
+    public StudyInternal() {
     }
 
-    public InternalStudy(Status status) {
+    public StudyInternal(Status status) {
         this.status = status;
     }
 
@@ -25,7 +25,7 @@ public class InternalStudy {
         return status;
     }
 
-    public InternalStudy setStatus(Status status) {
+    public StudyInternal setStatus(Status status) {
         this.status = status;
         return this;
     }

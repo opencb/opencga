@@ -47,7 +47,7 @@ public class Study extends PrivateFields {
     private String creationDate;
     private String modificationDate;
     private String description;
-    private InternalStudy internal;
+    private StudyInternal internal;
     private long size;
     private String fqn;
 
@@ -78,16 +78,16 @@ public class Study extends PrivateFields {
     public Study() {
     }
 
-    public Study(String name, String alias, String description, InternalStudy internal, URI uri, int release) {
+    public Study(String name, String alias, String description, StudyInternal internal, URI uri, int release) {
         this(alias, name, alias, TimeUtils.getTime(), description, null, 0, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new InternalStudy(new Status()), new HashMap<>(), uri, release, new HashMap<>());
+                new LinkedList<>(), new StudyInternal(new Status()), new HashMap<>(), uri, release, new HashMap<>());
     }
 
     public Study(String id, String name, String alias, String creationDate, String description, StudyNotification notification, long size,
                  List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
                  List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
-                 List<VariableSet> variableSets, InternalStudy internal, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri,
+                 List<VariableSet> variableSets, StudyInternal internal, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri,
                  int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -322,11 +322,11 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public InternalStudy getInternal() {
+    public StudyInternal getInternal() {
         return internal;
     }
 
-    public Study setInternal(InternalStudy internal) {
+    public Study setInternal(StudyInternal internal) {
         this.internal = internal;
         return this;
     }
