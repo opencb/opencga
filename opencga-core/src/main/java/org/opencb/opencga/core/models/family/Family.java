@@ -22,10 +22,12 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pfurio on 02/05/17.
@@ -42,7 +44,7 @@ public class Family extends Annotable {
 
     private String creationDate;
     private String modificationDate;
-    private FamilyStatus status;
+    private FamilyInternal internal;
     private int expectedSize;
     private String description;
 
@@ -55,12 +57,12 @@ public class Family extends Annotable {
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String description, int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), new FamilyStatus(Status.READY), description, expectedSize, -1,
-                1, annotationSets, attributes);
+        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), description, null, expectedSize, -1, 1, annotationSets,
+                attributes);
     }
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
-                  String creationDate, FamilyStatus status, String description, int expectedSize, int release, int version,
+                  String creationDate, String description, FamilyInternal internal, int expectedSize, int release, int version,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -68,46 +70,13 @@ public class Family extends Annotable {
         this.disorders = ObjectUtils.defaultIfNull(disorders, new ArrayList<>());
         this.members = ObjectUtils.defaultIfNull(members, new ArrayList<>());
         this.creationDate = ObjectUtils.defaultIfNull(creationDate, TimeUtils.getTime());
-        this.status = ObjectUtils.defaultIfNull(status, new FamilyStatus());
         this.expectedSize = expectedSize;
         this.description = description;
         this.release = release;
         this.version = version;
+        this.internal = internal;
         this.annotationSets = ObjectUtils.defaultIfNull(annotationSets, new ArrayList<>());
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
-    }
-
-    public static class FamilyStatus extends Status {
-
-        public static final String INCOMPLETE = "INCOMPLETE";
-
-        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, INCOMPLETE);
-
-        public FamilyStatus(String status, String message) {
-            if (isValid(status)) {
-                init(status, message);
-            } else {
-                throw new IllegalArgumentException("Unknown status " + status);
-            }
-        }
-
-        public FamilyStatus(String status) {
-            this(status, "");
-        }
-
-        public FamilyStatus() {
-            this(READY, "");
-        }
-
-        public static boolean isValid(String status) {
-            if (Status.isValid(status)) {
-                return true;
-            }
-            if (status != null && (status.equals(INCOMPLETE))) {
-                return true;
-            }
-            return false;
-        }
     }
 
     @Override
@@ -121,7 +90,6 @@ public class Family extends Annotable {
         sb.append(", members=").append(members);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", status=").append(status);
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", description='").append(description).append('\'');
         sb.append(", release=").append(release);
@@ -216,12 +184,12 @@ public class Family extends Annotable {
         return this;
     }
 
-    public FamilyStatus getStatus() {
-        return status;
+    public FamilyInternal getInternal() {
+        return internal;
     }
 
-    public Family setStatus(FamilyStatus status) {
-        this.status = status;
+    public Family setInternal(FamilyInternal internal) {
+        this.internal = internal;
         return this;
     }
 

@@ -49,9 +49,7 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.family.FamilyAclEntry;
-import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -226,7 +224,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             family.setDisorders(ParamUtils.defaultObject(family.getDisorders(), Collections.emptyList()));
             family.setCreationDate(TimeUtils.getTime());
             family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
-            family.setStatus(new Family.FamilyStatus());
+            family.setInternal(ParamUtils.defaultObject(family.getInternal(), FamilyInternal::new));
+            family.getInternal().setStatus(new FamilyStatus());
             family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
             family.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             family.setVersion(1);
@@ -1200,7 +1199,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             Member individual = new Member(
                     member.getId(), member.getName(), null, null, member.getMultiples(),
                     Member.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
-                    Member.AffectionStatus.getEnum(member.getAffectationStatus().toString()),
                     member.getPhenotypes(), member.getDisorders(), member.getAttributes());
             individualMap.put(individual.getId(), individual);
         }

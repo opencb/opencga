@@ -90,10 +90,10 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
         individualSolrModel.setCreationMonth(localDate.getMonth().toString());
         individualSolrModel.setCreationDay(localDate.getDayOfMonth());
         individualSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        individualSolrModel.setStatus(individual.getStatus().getName());
+        individualSolrModel.setStatus(individual.getInternal().getStatus().getName());
 
-        if (individual.getStatus() != null) {
-            individualSolrModel.setStatus(individual.getStatus().getName());
+        if (individual.getInternal().getStatus() != null) {
+            individualSolrModel.setStatus(individual.getInternal().getStatus().getName());
         }
         if (individual.getLifeStatus() != null) {
             individualSolrModel.setLifeStatus(individual.getLifeStatus().name());

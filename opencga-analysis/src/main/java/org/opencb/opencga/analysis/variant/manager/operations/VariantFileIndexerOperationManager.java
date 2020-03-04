@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.file.File;
@@ -509,7 +510,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     }
 
     private Cohort createDefaultCohort(String studyFqn, String sessionId) throws CatalogException {
-        return catalogManager.getCohortManager().create(studyFqn, StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
+        return catalogManager.getCohortManager().create(studyFqn, StudyEntry.DEFAULT_COHORT, Enums.CohortType.COLLECTION,
                 DEFAULT_COHORT_DESCRIPTION, Collections.emptyList(), null, null, sessionId).first();
     }
 

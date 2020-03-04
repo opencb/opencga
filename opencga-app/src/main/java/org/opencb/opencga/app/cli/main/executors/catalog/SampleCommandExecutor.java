@@ -105,10 +105,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
         SampleCreateParams createParams = new SampleCreateParams()
                 .setId(commandOptions.id)
-                .setName(commandOptions.name)
-                .setType(commandOptions.type)
                 .setDescription(commandOptions.description)
-                .setSource(commandOptions.source)
                 .setIndividualId(commandOptions.individual)
                 .setSomatic(commandOptions.somatic);
 
@@ -149,9 +146,6 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(c.study));
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.ID.key(), c.name);
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), c.source);
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.TYPE.key(), c.type);
         params.putIfNotNull(SampleDBAdaptor.QueryParams.SOMATIC.key(), c.somatic);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), c.individual);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), c.annotation);
@@ -175,9 +169,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         SampleUpdateParams updateParams = new SampleUpdateParams()
                 .setId(commandOptions.id)
                 .setDescription(commandOptions.description)
-                .setSource(commandOptions.source)
                 .setIndividualId(commandOptions.individual)
-                .setType(commandOptions.type)
                 .setSomatic(commandOptions.somatic);
 
         ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));

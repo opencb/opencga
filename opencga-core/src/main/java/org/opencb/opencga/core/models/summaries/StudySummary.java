@@ -16,10 +16,9 @@
 
 package org.opencb.opencga.core.models.summaries;
 
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.InternalStudy;
 import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.util.List;
@@ -32,11 +31,10 @@ public class StudySummary {
 
     private String name;
     private String alias;
-    private Study.Type type;
     private String creatorId;
     private String creationDate;
     private String description;
-    private Status status;
+    private InternalStudy internal;
     private long size;
     private String cipher;
 
@@ -53,7 +51,6 @@ public class StudySummary {
     private List<VariableSet> variableSets;
 
     private Map<String, Object> attributes;
-    private Map<String, Object> stats;
 
     public StudySummary() {
     }
@@ -73,15 +70,6 @@ public class StudySummary {
 
     public StudySummary setAlias(String alias) {
         this.alias = alias;
-        return this;
-    }
-
-    public Study.Type getType() {
-        return type;
-    }
-
-    public StudySummary setType(Study.Type type) {
-        this.type = type;
         return this;
     }
 
@@ -112,20 +100,20 @@ public class StudySummary {
         return this;
     }
 
-    public Status getStatus() {
-        return status;
+    public InternalStudy getInternal() {
+        return internal;
     }
 
-    public StudySummary setStatus(Status status) {
-        this.status = status;
+    public StudySummary setInternal(InternalStudy internal) {
+        this.internal = internal;
         return this;
     }
 
-    public long getDiskUsage() {
+    public long getSize() {
         return size;
     }
 
-    public StudySummary setDiskUsage(long size) {
+    public StudySummary setSize(long size) {
         this.size = size;
         return this;
     }
@@ -217,15 +205,6 @@ public class StudySummary {
 
     public StudySummary setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
-        return this;
-    }
-
-    public Map<String, Object> getStats() {
-        return stats;
-    }
-
-    public StudySummary setStats(Map<String, Object> stats) {
-        this.stats = stats;
         return this;
     }
 }

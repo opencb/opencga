@@ -43,10 +43,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
-import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -207,18 +204,18 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
         individual.setLocation(ParamUtils.defaultObject(individual.getLocation(), Location::new));
         individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
-        individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), Individual.Population::new));
+        individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), IndividualPopulation::new));
         individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), IndividualProperty.LifeStatus.UNKNOWN));
         individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), IndividualProperty.KaryotypicSex.UNKNOWN));
         individual.setSex(ParamUtils.defaultObject(individual.getSex(), IndividualProperty.Sex.UNKNOWN));
-        individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(),
-                IndividualProperty.AffectationStatus.UNKNOWN));
         individual.setPhenotypes(ParamUtils.defaultObject(individual.getPhenotypes(), Collections.emptyList()));
         individual.setDisorders(ParamUtils.defaultObject(individual.getDisorders(), Collections.emptyList()));
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
         individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), new ArrayList<>()));
-        individual.setStatus(new Status());
+
+        individual.setInternal(ParamUtils.defaultObject(individual.getInternal(), IndividualInternal::new));
+        individual.getInternal().setStatus(new Status());
         individual.setCreationDate(TimeUtils.getTime());
         individual.setRelease(studyManager.getCurrentRelease(study));
         individual.setVersion(1);
@@ -1157,7 +1154,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> individualStrList, String memberList,
-                                                              Individual.IndividualAclParams aclParams, String token)
+                                                              IndividualAclParams aclParams, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);

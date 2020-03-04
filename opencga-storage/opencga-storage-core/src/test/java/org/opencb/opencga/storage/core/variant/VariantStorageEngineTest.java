@@ -321,7 +321,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         }
 
         variantStorageManager = getVariantStorageEngine();
-        variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions()
+        variantStorageManager.getOptions()
                 .append(VariantStorageOptions.STUDY.key(), studyMetadataBatchFile.getName())
                 .putAll(options);
 

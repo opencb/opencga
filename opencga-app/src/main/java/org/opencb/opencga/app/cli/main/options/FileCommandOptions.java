@@ -26,6 +26,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.StudyOption;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
@@ -56,6 +57,7 @@ public class FileCommandOptions {
     public RefreshCommandOptions refreshCommandOptions;
 //    public GroupByCommandOptions groupByCommandOptions;
     public StatsCommandOptions statsCommandOptions;
+    public final FetchCommandOptions fetchCommandOptions;
 //    public VariantsCommandOptions variantsCommandOptions;
 
     public FileAclCommandOptions.AclsCommandOptions aclsCommandOptions;
@@ -94,6 +96,7 @@ public class FileCommandOptions {
         this.linkCommandOptions = new LinkCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
+        this.fetchCommandOptions = new FetchCommandOptions();
 //        this.variantsCommandOptions = new VariantsCommandOptions();
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
@@ -540,6 +543,18 @@ public class FileCommandOptions {
             }
             return aclsUpdateCommandOptions;
         }
+    }
+
+    @Parameters
+    public class FetchCommandOptions extends StudyOption {
+
+        @Parameter(names = {"--" + ParamConstants.FILE_PATH_PARAM},
+                description = "Folder path where the downloaded file will be registered", required = true, arity = 1)
+        public String path;
+
+        @Parameter(names = {"--url"}, description = "External url where the file to be registered can be downloaded from", required = true,
+                arity = 1)
+        public String url;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "File stats")

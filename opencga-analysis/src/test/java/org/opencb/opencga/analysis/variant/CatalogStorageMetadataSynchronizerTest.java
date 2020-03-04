@@ -92,8 +92,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).first().getId();
-        Study study = catalogManager.getStudyManager().create(projectId, "s1", null, "s1", Study.Type.CASE_CONTROL, null, "Study " +
-                        "1", null, null, null, null, null, null,
+        Study study = catalogManager.getStudyManager().create(projectId, "s1", null, "s1", "Study " + "1", null, null, null, null, null,
                 null, null, sessionId).first();
         studyId = study.getFqn();
         studyUid = study.getUid();

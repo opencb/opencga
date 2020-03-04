@@ -17,7 +17,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.study.Study;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -55,8 +54,7 @@ public class PanelManagerTest extends GenericTest {
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null,
-                null, null, null, sessionIdUser);
+        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, null, null, sessionIdUser);
     }
 
     @Test

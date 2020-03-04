@@ -881,7 +881,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     private void checkCanDelete(long projectId) throws CatalogDBException {
         checkId(projectId);
         Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
-                .append(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), Status.READY);
+                .append(StudyDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Status.READY);
         Long count = dbAdaptorFactory.getCatalogStudyDBAdaptor().count(query).getNumMatches();
         if (count > 0) {
             throw new CatalogDBException("The project {" + projectId + "} cannot be deleted. The project has " + count

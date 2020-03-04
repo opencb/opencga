@@ -48,6 +48,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
+import org.opencb.opencga.core.models.family.FamilyStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -467,9 +468,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         familyConverter.validateDocumentToUpdate(document.getSet());
@@ -559,7 +560,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             Document tmpFamily = familyDbIterator.next();
 
             // Set status to DELETED
-            tmpFamily.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
+            tmpFamily.put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
 
             int sampleVersion = tmpFamily.getInteger(QueryParams.VERSION.key());
 
@@ -931,10 +932,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STATUS_NAME:
+                    case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
-                                Status.getPositiveStatus(Family.FamilyStatus.STATUS_LIST, query.getString(queryParam.key())));
+                                Status.getPositiveStatus(FamilyStatus.STATUS_LIST, query.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case MEMBER_UID:
@@ -948,8 +949,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
                     case PHENOTYPES_SOURCE:
-                    case STATUS_MSG:
-                    case STATUS_DATE:
+                    case INTERNAL_STATUS_MSG:
+                    case INTERNAL_STATUS_DATE:
 //                    case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;

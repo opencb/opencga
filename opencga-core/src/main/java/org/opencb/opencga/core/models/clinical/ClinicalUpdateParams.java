@@ -6,8 +6,8 @@ import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 
@@ -21,8 +21,6 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 public class ClinicalUpdateParams {
 
     private String id;
-    @Deprecated
-    private String name;
     private String description;
     private ClinicalAnalysis.Type type;
 
@@ -34,7 +32,7 @@ public class ClinicalUpdateParams {
     private FamilyParam family;
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
     private ClinicalAnalystParam analyst;
-    private ClinicalAnalysis.ClinicalStatus status;
+    private ClinicalAnalysisInternal internal;
     private List<InterpretationUpdateParams> interpretations;
 
     private ClinicalConsent consent;
@@ -50,14 +48,13 @@ public class ClinicalUpdateParams {
     public ClinicalUpdateParams() {
     }
 
-    public ClinicalUpdateParams(String id, String name, String description, ClinicalAnalysis.Type type, Disorder disorder, Map<String,
-            List<String>> files, ProbandParam proband, FamilyParam family, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
-                                ClinicalAnalystParam analyst, ClinicalAnalysis.ClinicalStatus status,
-                                List<InterpretationUpdateParams> interpretations, ClinicalConsent consent, String dueDate,
-                                List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
-                                Map<String, Object> attributes) {
+    public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
+                                Map<String, List<String>> files, ProbandParam proband, FamilyParam family,
+                                Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalystParam analyst,
+                                ClinicalAnalysisInternal internal, List<InterpretationUpdateParams> interpretations,
+                                ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
+                                Enums.Priority priority, List<String> flags, Map<String, Object> attributes) {
         this.id = id;
-        this.name = name;
         this.description = description;
         this.type = type;
         this.disorder = disorder;
@@ -66,7 +63,6 @@ public class ClinicalUpdateParams {
         this.family = family;
         this.roleToProband = roleToProband;
         this.analyst = analyst;
-        this.status = status;
         this.interpretations = interpretations;
         this.consent = consent;
         this.dueDate = dueDate;
@@ -74,6 +70,7 @@ public class ClinicalUpdateParams {
         this.alerts = alerts;
         this.priority = priority;
         this.flags = flags;
+        this.internal = internal;
         this.attributes = attributes;
     }
 
@@ -86,7 +83,6 @@ public class ClinicalUpdateParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalUpdateParams{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
@@ -95,7 +91,7 @@ public class ClinicalUpdateParams {
         sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
         sb.append(", analyst=").append(analyst);
-        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", interpretations=").append(interpretations);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
@@ -224,15 +220,6 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public ClinicalUpdateParams setName(String name) {
-        this.name = name;
-        return this;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -302,15 +289,6 @@ public class ClinicalUpdateParams {
 
     public ClinicalUpdateParams setAnalyst(ClinicalAnalystParam analyst) {
         this.analyst = analyst;
-        return this;
-    }
-
-    public ClinicalAnalysis.ClinicalStatus getStatus() {
-        return status;
-    }
-
-    public ClinicalUpdateParams setStatus(ClinicalAnalysis.ClinicalStatus status) {
-        this.status = status;
         return this;
     }
 

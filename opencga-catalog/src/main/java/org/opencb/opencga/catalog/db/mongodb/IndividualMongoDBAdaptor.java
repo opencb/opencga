@@ -537,8 +537,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
                 QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
-                QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.AFFECTATION_STATUS.key(),
-                QueryParams.DATE_OF_BIRTH.key(), };
+                QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.DATE_OF_BIRTH.key(), };
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), IndividualProperty.Sex.class);
@@ -554,9 +553,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 QueryParams.LOCATION.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         //Check individualIds exist
@@ -792,7 +791,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             Document tmpIndividual = individualDBIterator.next();
 
             // Set status to DELETED
-            tmpIndividual.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
+            documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpIndividual);
 
             int individualVersion = tmpIndividual.getInteger(QueryParams.VERSION.key());
 
@@ -1123,7 +1122,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STATUS_NAME:
+                    case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
                                 Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
@@ -1137,14 +1136,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case DATE_OF_BIRTH:
                     case SEX:
                     case ETHNICITY:
-                    case STATUS_MSG:
-                    case STATUS_DATE:
+                    case INTERNAL_STATUS_DATE:
                     case POPULATION_NAME:
                     case POPULATION_SUBPOPULATION:
                     case POPULATION_DESCRIPTION:
                     case KARYOTYPIC_SEX:
                     case LIFE_STATUS:
-                    case AFFECTATION_STATUS:
                     case RELEASE:
                     case VERSION:
                     case SAMPLE_UIDS:

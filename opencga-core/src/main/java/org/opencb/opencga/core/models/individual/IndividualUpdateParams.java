@@ -26,7 +26,7 @@ public class IndividualUpdateParams {
     private Location location;
     private IndividualProperty.Sex sex;
     private String ethnicity;
-    private Individual.Population population;
+    private IndividualPopulation population;
     private String dateOfBirth;
     private IndividualProperty.KaryotypicSex karyotypicSex;
     private IndividualProperty.LifeStatus lifeStatus;
@@ -41,7 +41,7 @@ public class IndividualUpdateParams {
     }
 
     public IndividualUpdateParams(String id, String name, String father, String mother, Boolean parentalConsanguinity, Multiples multiples,
-                                  Location location, IndividualProperty.Sex sex, String ethnicity, Individual.Population population,
+                                  Location location, IndividualProperty.Sex sex, String ethnicity, IndividualPopulation population,
                                   String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
                                   List<String> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
@@ -190,11 +190,11 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public Individual.Population getPopulation() {
+    public IndividualPopulation getPopulation() {
         return population;
     }
 
-    public IndividualUpdateParams setPopulation(Individual.Population population) {
+    public IndividualUpdateParams setPopulation(IndividualPopulation population) {
         this.population = population;
         return this;
     }

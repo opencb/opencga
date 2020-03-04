@@ -21,6 +21,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.PrivateFields;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -43,11 +44,10 @@ public class Study extends PrivateFields {
     private String name;
     private String uuid;
     private String alias;
-    private Type type;
     private String creationDate;
     private String modificationDate;
     private String description;
-    private Status status;
+    private InternalStudy internal;
     private long size;
     private String fqn;
 
@@ -62,6 +62,7 @@ public class Study extends PrivateFields {
     private List<Sample> samples;
     private List<Cohort> cohorts;
     private List<Panel> panels;
+    private List<ClinicalAnalysis> clinicalAnalyses;
 
     private List<VariableSet> variableSets;
 
@@ -71,33 +72,29 @@ public class Study extends PrivateFields {
 
     private int release;
 
-    private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
 
     public Study() {
     }
 
-    public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
-        this(alias, name, alias, type, TimeUtils.getTime(), description, null, status,
-                0, new ArrayList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(),
-                new HashMap<>(), uri, release, new HashMap<>(), new HashMap<>());
+    public Study(String name, String alias, String description, InternalStudy internal, URI uri, int release) {
+        this(alias, name, alias, TimeUtils.getTime(), description, null, 0, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                new LinkedList<>(), new InternalStudy(new Status()), new HashMap<>(), uri, release, new HashMap<>());
     }
 
-    public Study(String id, String name, String alias, Type type, String creationDate, String description, StudyNotification notification,
-                 Status status, long size, List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals,
-                 List<Family> families, List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<VariableSet> variableSets,
-                 Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release, Map<String, Object> stats,
-                 Map<String, Object> attributes) {
+    public Study(String id, String name, String alias, String creationDate, String description, StudyNotification notification, long size,
+                 List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
+                 List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
+                 List<VariableSet> variableSets, InternalStudy internal, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri,
+                 int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
-        this.type = type;
         this.creationDate = creationDate;
         this.description = description;
         this.notification = notification;
-        this.status = status;
         this.size = size;
         this.groups = ObjectUtils.defaultIfNull(groups, new ArrayList<>());
         this.files = ObjectUtils.defaultIfNull(files, new ArrayList<>());
@@ -107,25 +104,13 @@ public class Study extends PrivateFields {
         this.samples = ObjectUtils.defaultIfNull(samples, new ArrayList<>());
         this.cohorts = ObjectUtils.defaultIfNull(cohorts, new ArrayList<>());
         this.panels = ObjectUtils.defaultIfNull(panels, new ArrayList<>());
+        this.clinicalAnalyses = ObjectUtils.defaultIfNull(clinicalAnalyses, new ArrayList<>());
+        this.internal = internal;
         this.variableSets = ObjectUtils.defaultIfNull(variableSets, new ArrayList<>());
         this.permissionRules = ObjectUtils.defaultIfNull(permissionRules, new HashMap<>());
         this.uri = uri;
-        this.stats = ObjectUtils.defaultIfNull(stats, new HashMap<>());
         this.release = release;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
-    }
-
-    public enum Type {
-        CASE_CONTROL,
-        CASE_SET,
-        CONTROL_SET,
-        PAIRED,
-        PAIRED_TUMOR,
-        AGGREGATE,
-        TIME_SERIES,
-        FAMILY,
-        TRIO,
-        COLLECTION
     }
 
     @Override
@@ -135,11 +120,10 @@ public class Study extends PrivateFields {
         sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", alias='").append(alias).append('\'');
-        sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", size=").append(size);
         sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", notification=").append(notification);
@@ -151,11 +135,11 @@ public class Study extends PrivateFields {
         sb.append(", samples=").append(samples);
         sb.append(", cohorts=").append(cohorts);
         sb.append(", panels=").append(panels);
+        sb.append(", clinicalAnalyses=").append(clinicalAnalyses);
         sb.append(", variableSets=").append(variableSets);
         sb.append(", permissionRules=").append(permissionRules);
         sb.append(", uri=").append(uri);
         sb.append(", release=").append(release);
-        sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -203,15 +187,6 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public Type getType() {
-        return type;
-    }
-
-    public Study setType(Type type) {
-        this.type = type;
-        return this;
-    }
-
     public String getCreationDate() {
         return creationDate;
     }
@@ -245,15 +220,6 @@ public class Study extends PrivateFields {
 
     public Study setNotification(StudyNotification notification) {
         this.notification = notification;
-        return this;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public Study setStatus(Status status) {
-        this.status = status;
         return this;
     }
 
@@ -338,12 +304,30 @@ public class Study extends PrivateFields {
         return this;
     }
 
+    public List<ClinicalAnalysis> getClinicalAnalyses() {
+        return clinicalAnalyses;
+    }
+
+    public Study setClinicalAnalyses(List<ClinicalAnalysis> clinicalAnalyses) {
+        this.clinicalAnalyses = clinicalAnalyses;
+        return this;
+    }
+
     public List<VariableSet> getVariableSets() {
         return variableSets;
     }
 
     public Study setVariableSets(List<VariableSet> variableSets) {
         this.variableSets = variableSets;
+        return this;
+    }
+
+    public InternalStudy getInternal() {
+        return internal;
+    }
+
+    public Study setInternal(InternalStudy internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -380,15 +364,6 @@ public class Study extends PrivateFields {
 
     public Study setFqn(String fqn) {
         this.fqn = fqn;
-        return this;
-    }
-
-    public Map<String, Object> getStats() {
-        return stats;
-    }
-
-    public Study setStats(Map<String, Object> stats) {
-        this.stats = stats;
         return this;
     }
 

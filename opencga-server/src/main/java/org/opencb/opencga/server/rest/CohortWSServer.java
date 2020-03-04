@@ -36,10 +36,10 @@ import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 
@@ -66,7 +66,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         cohortManager = catalogManager.getCohortManager();
     }
 
-    private Response createCohort(String studyStr, String cohortId, String cohortName, Study.Type type, String variableSetId,
+    private Response createCohort(String studyStr, String cohortId, String cohortName, Enums.CohortType type, String variableSetId,
                                   String cohortDescription, List<String> sampleIdList, List<AnnotationSet> annotationSetList,
                                   String variableName) {
         try {
@@ -189,7 +189,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "DEPRECATED: Name of the cohort") @QueryParam("name") String name,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Study.Type type,
+            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Enums.CohortType type,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
                 @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
@@ -208,8 +208,8 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private DataResult<Cohort> createCohort(String studyStr, String cohortName, Study.Type type, String cohortDescription,
-                                             List<AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions)
+    private DataResult<Cohort> createCohort(String studyStr, String cohortName, Enums.CohortType type, String cohortDescription,
+                                            List<AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions)
             throws CatalogException {
         DataResult<Sample> queryResult = catalogManager.getSampleManager().search(studyStr, query, queryOptions, token);
         Cohort cohort = new Cohort(cohortName, type, "", cohortDescription, queryResult.getResults(), annotationSetList, -1, null)
@@ -226,7 +226,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.COHORT_ID_DESCRIPTION) @QueryParam("id") String id,
             @ApiParam(value = ParamConstants.COHORT_NAME_DESCRIPTION) @QueryParam("name") String name,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Study.Type type,
+            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Enums.CohortType type,
             @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam("status") String status,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,

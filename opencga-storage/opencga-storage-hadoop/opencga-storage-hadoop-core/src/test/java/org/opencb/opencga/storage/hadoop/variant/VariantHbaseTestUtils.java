@@ -272,6 +272,7 @@ public class VariantHbaseTestUtils {
 
         String tableName = dbAdaptor.getArchiveTableName(studyMetadata.getId());
         if (!dbAdaptor.getHBaseManager().tableExists(tableName)) {
+            os.println("Table " + tableName + " does not exist");
             return;
         }
 
@@ -491,8 +492,7 @@ public class VariantHbaseTestUtils {
             params.putAll(otherParams);
         }
 
-        variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions()
-                .putAll(params);
+        variantStorageManager.getOptions().putAll(params);
         variantStorageManager.removeFile(studyMetadata.getName(), fileId);
 //        studyMetadata.copy(
 //                variantStorageManager

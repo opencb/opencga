@@ -26,10 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,7 +63,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void createStudySameAliasDifferentProject() throws CatalogException {
-        catalogStudyDBAdaptor.insert(user1.getProjects().get(0), new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", new Status(),
+        catalogStudyDBAdaptor.insert(user1.getProjects().get(0), new Study("Phase 1", "ph1", "", new InternalStudy(new Status()),
                 null, 1), null);
         Study ph1 = getStudy(user1.getProjects().get(0).getUid(), "ph1");
         assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getUid() > 0);

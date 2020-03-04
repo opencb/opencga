@@ -241,13 +241,11 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.get(query, options);
     }
 
-    public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, Study.Type type, String creationDate,
-                                       String description, StudyNotification notification, Status status, String cipher, String uriScheme,
-                                       URI uri, Map<String, Object> stats, Map<String, Object> attributes, QueryOptions options,
-                                       String token) throws CatalogException {
+    public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, String description,
+                                       StudyNotification notification, String cipher, String uriScheme, URI uri, InternalStudy internal,
+                                       Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkObj(type, "type");
         ParamUtils.checkAlias(id, "id");
 
         String userId = catalogManager.getUserManager().getUserId(token);
@@ -256,8 +254,10 @@ public class StudyManager extends AbstractManager {
         long projectId = project.getUid();
 
         description = ParamUtils.defaultString(description, "");
-        creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
-        status = ParamUtils.defaultObject(status, Status::new);
+        String creationDate = TimeUtils.getTime();
+
+        internal = ParamUtils.defaultObject(internal, InternalStudy::new);
+        internal.setStatus(ParamUtils.defaultObject(internal.getStatus(), Status::new));
         cipher = ParamUtils.defaultString(cipher, "none");
         if (uri != null) {
             if (uri.getScheme() == null) {
@@ -274,7 +274,6 @@ public class StudyManager extends AbstractManager {
         } else {
             uriScheme = catalogIOManagerFactory.getDefaultCatalogScheme();
         }
-        stats = ParamUtils.defaultObject(stats, HashMap::new);
         attributes = ParamUtils.defaultObject(attributes, HashMap::new);
 
         CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
@@ -283,15 +282,13 @@ public class StudyManager extends AbstractManager {
                 .append("id", id)
                 .append("alias", alias)
                 .append("name", name)
-                .append("type", type)
                 .append("creationDate", creationDate)
                 .append("description", description)
                 .append("notification", notification)
-                .append("status", status)
+                .append("internal", internal)
                 .append("cipher", cipher)
                 .append("uriScheme", uriScheme)
                 .append("uri", uri)
-                .append("stats", stats)
                 .append("attributes", attributes)
                 .append("options", options)
                 .append("token", token);
@@ -311,10 +308,10 @@ public class StudyManager extends AbstractManager {
             files.add(rootFile);
             files.add(jobsFile);
 
-            Study study = new Study(id, name, alias, type, creationDate, description, notification,
-                    status, 0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
-                    new Group(ADMINS, Collections.emptyList())), files, null, null, new LinkedList<>(), null, null, null, null, null,
-                    null, project.getCurrentRelease(), stats, attributes);
+            Study study = new Study(id, name, alias, creationDate, description, notification, 0,
+                    Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)), new Group(ADMINS, Collections.emptyList())), files,
+                    null, null, new LinkedList<>(), null, null, null, null, null, internal, null, null, project.getCurrentRelease(),
+                    attributes);
 
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
 
@@ -756,12 +753,10 @@ public class StudyManager extends AbstractManager {
                 .setAttributes(study.getAttributes())
                 .setCreationDate(study.getCreationDate())
                 .setDescription(study.getDescription())
-                .setDiskUsage(study.getSize())
+                .setSize(study.getSize())
                 .setGroups(study.getGroups())
                 .setName(study.getName())
-                .setStats(study.getStats())
-                .setStatus(study.getStatus())
-                .setType(study.getType())
+                .setInternal(study.getInternal())
                 .setVariableSets(study.getVariableSets());
 
         Long nFiles = fileDBAdaptor.count(

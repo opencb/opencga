@@ -182,9 +182,6 @@ public class TemplateManager {
         ObjectMap params = new ObjectMap(ParamConstants.PROJECT_PARAM, project.getId());
         study.setFqn(openCGAClient.getUserId() + "@" + project.getId() + ":" + study.getId());
         logger.info("Creating Study '{}'", study.getFqn());
-        if (study.getType() == null) {
-            study.setType(Study.Type.COLLECTION);
-        }
         if (resume && studyExists(project.getId(), study.getId())) {
             logger.info("Study {} already exists", study.getFqn());
         } else {

@@ -108,12 +108,6 @@ public class SampleCommandOptions {
         @Parameter(names = {"--id"}, description = "Sample id", required = true, arity = 1)
         public String id;
 
-        @Parameter(names = {"-n", "--name"}, description = "Sample name.", arity = 1)
-        public String name;
-
-        @Parameter(names = {"--source"}, description = "Source from which this sample is created such as VCF file", arity = 1)
-        public String source;
-
         @Parameter(names = {"-d", "--description"}, description = "Description of the sample", arity = 1)
         public String description;
 
@@ -122,9 +116,6 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--somatic"}, description = "Flag indicating that the sample comes from somatic cells", arity = 0)
         public boolean somatic;
-
-        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
-        public String type;
     }
 
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
@@ -154,17 +145,8 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"-n", "--name"}, description = "List of id or names separated by commas", arity = 1)
-        public String name;
-
-        @Parameter(names = {"--source"}, description = "Filter by the sample source such as the VCF file name from which this sample was created", arity = 1)
-        public String source;
-
         @Parameter(names = {"--individual"}, description = "Filter by id or name of the individual", arity = 1)
         public String individual;
-
-        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
-        public String type;
 
         @Parameter(names = {"--somatic"}, description = "Flag indicating if the sample comes from somatic cells", arity = 1)
         public Boolean somatic;
@@ -188,17 +170,12 @@ public class SampleCommandOptions {
         @Parameter(names = {"--individual"}, description = "Individual id or name", arity = 1)
         public String individual;
 
-        @Parameter(names = {"--source"}, description = "Source", arity = 1)
-        public String source;
-
         @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
         public String description;
 
         @Parameter(names = {"--somatic"}, description = "Boolean indicating whether the sample comes from somatic cells or not", arity = 1)
         public Boolean somatic;
 
-        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
-        public String type;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the selected sample")

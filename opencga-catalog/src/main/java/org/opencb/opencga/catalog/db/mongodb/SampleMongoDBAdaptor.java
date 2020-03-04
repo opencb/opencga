@@ -402,11 +402,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(),
-                QueryParams.TYPE.key()};
+        final String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        final String[] acceptedMapParams = {QueryParams.STATS.key(), QueryParams.ATTRIBUTES.key()};
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key()};
@@ -443,9 +442,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (parameters.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
@@ -677,7 +676,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             Document tmpSample = sampleDBIterator.next();
 
             // Set status to DELETED
-            tmpSample.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
+            documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpSample);
 
             int sampleVersion = tmpSample.getInteger(QueryParams.VERSION.key());
 
@@ -1061,7 +1060,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STATUS_NAME:
+                    case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
                                 Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
@@ -1069,15 +1068,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         break;
                     case ID:
                     case UUID:
-                    case NAME:
                     case RELEASE:
                     case VERSION:
-                    case SOURCE:
                     case DESCRIPTION:
-                    case STATUS_MSG:
-                    case STATUS_DATE:
+                    case INTERNAL_STATUS_DATE:
                     case SOMATIC:
-                    case TYPE:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
                     case PHENOTYPES_SOURCE:

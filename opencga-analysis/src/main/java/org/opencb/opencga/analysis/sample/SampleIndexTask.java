@@ -68,11 +68,10 @@ public class SampleIndexTask extends OpenCgaTool {
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryOptions sampleQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UUID.key(),
-                        SampleDBAdaptor.QueryParams.SOURCE.key(),
                         SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
                         SampleDBAdaptor.QueryParams.PROCESSING.key(), SampleDBAdaptor.QueryParams.COLLECTION.key(),
-                        SampleDBAdaptor.QueryParams.CREATION_DATE.key(), SampleDBAdaptor.QueryParams.STATUS.key(),
-                        SampleDBAdaptor.QueryParams.TYPE.key(), SampleDBAdaptor.QueryParams.SOMATIC.key(),
+                        SampleDBAdaptor.QueryParams.CREATION_DATE.key(), SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
+                        SampleDBAdaptor.QueryParams.SOMATIC.key(),
                         SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         SampleDBAdaptor.QueryParams.UID.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true)

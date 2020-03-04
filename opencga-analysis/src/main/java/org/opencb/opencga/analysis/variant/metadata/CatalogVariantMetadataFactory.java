@@ -40,7 +40,6 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                     IndividualDBAdaptor.QueryParams.UID.key(),
                     IndividualDBAdaptor.QueryParams.ID.key(),
                     IndividualDBAdaptor.QueryParams.SEX.key(),
-                    IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
                     IndividualDBAdaptor.QueryParams.MOTHER.key(),
                     IndividualDBAdaptor.QueryParams.FATHER.key()
             ));
@@ -120,7 +119,10 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
 
             individual.setSex(catalogIndividual.getSex().name());
 //            individual.setFamily(catalogIndividual.getFamily());
-            individual.setPhenotype(catalogIndividual.getAffectationStatus().toString());
+
+            if (catalogIndividual.getPhenotypes() != null && !catalogIndividual.getPhenotypes().isEmpty()) {
+                individual.setPhenotype(catalogIndividual.getPhenotypes().get(0).getId());
+            }
 
             if (catalogIndividual.getMother() != null) {
                 individual.setMother(catalogIndividual.getMother().getId());

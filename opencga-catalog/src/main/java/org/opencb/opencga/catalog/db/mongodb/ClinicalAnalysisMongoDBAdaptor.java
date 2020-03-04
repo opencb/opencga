@@ -44,6 +44,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisStatus;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -165,7 +166,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         filterStringListParams(parameters, document.getSet(), acceptedListParams);
 
         String[] acceptedObjectParams = {QueryParams.FILES.key(), QueryParams.FAMILY.key(), QueryParams.DISORDER.key(),
-                QueryParams.PROBAND.key(), QueryParams.COMMENTS.key(), QueryParams.ALERTS.key(), QueryParams.STATUS.key(),
+                QueryParams.PROBAND.key(), QueryParams.COMMENTS.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(),
                 QueryParams.ANALYST.key(), QueryParams.CONSENT.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
@@ -516,10 +517,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STATUS_NAME:
+                    case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
-                                Status.getPositiveStatus(ClinicalAnalysis.ClinicalStatus.STATUS_LIST, query.getString(queryParam.key())));
+                                Status.getPositiveStatus(ClinicalAnalysisStatus.STATUS_LIST, query.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ANALYST:
@@ -537,9 +538,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case FAMILY_UID:
                     case DESCRIPTION:
                     case RELEASE:
-                    case STATUS:
-                    case STATUS_MSG:
-                    case STATUS_DATE:
+                    case INTERNAL_STATUS:
+                    case INTERNAL_STATUS_DATE:
                     case FLAGS:
                     case ACL:
                     case ACL_MEMBER:

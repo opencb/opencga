@@ -31,12 +31,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.study.PermissionRule;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SampleInternal;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.user.User;
 
 import java.io.IOException;
 import java.util.*;
@@ -69,8 +70,6 @@ public class AuthorizationMongoDBAdaptorTest {
         MongoDBAdaptorTest dbAdaptorTest = new MongoDBAdaptorTest();
         dbAdaptorTest.before();
 
-        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
-
         user1 = MongoDBAdaptorTest.user1;
         user2 = MongoDBAdaptorTest.user2;
         user3 = MongoDBAdaptorTest.user3;
@@ -78,8 +77,9 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbAdaptorFactory);
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", "", null, null, null, 1, 1, "", "", false,
-                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), Collections.emptyList(), QueryOptions.empty());
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", null, null, null, 1, 1, "", false,
+                Collections.emptyList(), new ArrayList<>(), new SampleInternal(new Status()), Collections.emptyMap()),
+                Collections.emptyList(), QueryOptions.empty());
         s1 = getSample(studyId, "s1");
         acls = new HashMap<>();
         acls.put(user1.getId(), Arrays.asList());
@@ -225,8 +225,9 @@ public class AuthorizationMongoDBAdaptorTest {
     @Test
     public void testPermissionRulesPlusManualPermissions() throws CatalogException {
         // We create a new sample s2
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", "", null, null, null, 1, 1, "", "", false,
-                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), Collections.emptyList(), QueryOptions.empty());
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", null, null, null, 1, 1, "", false,
+                Collections.emptyList(), new ArrayList<>(), new SampleInternal(new Status()), Collections.emptyMap()),
+                Collections.emptyList(), QueryOptions.empty());
         Sample s2 = getSample(studyId, "s2");
 
         // We create a new permission rule

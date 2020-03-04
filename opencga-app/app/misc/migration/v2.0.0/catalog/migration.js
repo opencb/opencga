@@ -134,7 +134,7 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
         },
         "internal": {
             "status": doc['status']
-        }
+        },
         "_password": doc["password"]
     };
     var unset = {
@@ -168,6 +168,94 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
 
         set['projects'] = doc.projects;
     }
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1532
+migrateCollection("study", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        }
+    };
+    var unset = {
+        "stats": "",
+        "status": "",
+        "type": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1535
+migrateCollection("individual", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        }
+    };
+    var unset = {
+        "affectationStatus": "",
+        "status": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1536
+migrateCollection("family", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        }
+    };
+    var unset = {
+        "status": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1537
+migrateCollection("clinical", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        }
+    };
+    var unset = {
+        "status": "",
+        "name": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1540
+migrateCollection("sample", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        }
+    };
+    var unset = {
+        "status": "",
+        "name": "",
+        "source": "",
+        "stats": "",
+        "type": ""
+    };
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
 });

@@ -341,7 +341,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@myGroup",
                 new Study.StudyAclParams("", AclParams.Action.SET, null), token);
 
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("s_1"), "@myGroup", new Sample.SampleAclParams("VIEW",
+        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("s_1"), "@myGroup", new SampleAclParams("VIEW",
                 AclParams.Action.SET, null, null, null), token);
 
         DataResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(),
@@ -1140,14 +1140,14 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(individualId, sample.getIndividualId());
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new Sample.SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null),
+                new SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null),
                 token);
 
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
         assertEquals(null, sample.getAttributes().get("individual"));
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new Sample.SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null, true),
+                new SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null, true),
                 token);
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
@@ -1315,7 +1315,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search("1000G:phase1", query, new QueryOptions(), token);
 //        DataResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
         assertEquals(1, sampleDataResult.getNumResults());
-        assertEquals(Status.DELETED, sampleDataResult.first().getStatus().getName());
+        assertEquals(Status.DELETED, sampleDataResult.first().getInternal().getStatus().getName());
     }
 
     @Test
@@ -1324,7 +1324,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
         DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample"), "user2", new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null, true),
+                Arrays.asList("sample"), "user2", new SampleAclParams("VIEW", AclParams.Action.SET, null, null, null, true),
                 token);
         assertEquals(1, dataResult.getNumResults());
         assertEquals(1, dataResult.first().size());
@@ -1342,7 +1342,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token);
 
         DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample", "sample2"), "user2", new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null,
+                Arrays.asList("sample", "sample2"), "user2", new SampleAclParams("VIEW", AclParams.Action.SET, null, null, null,
                         true), token);
         assertEquals(2, dataResult.getNumResults());
         assertEquals(1, dataResult.first().size());

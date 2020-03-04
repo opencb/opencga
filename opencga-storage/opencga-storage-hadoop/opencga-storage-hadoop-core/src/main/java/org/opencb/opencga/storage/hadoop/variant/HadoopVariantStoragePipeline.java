@@ -69,6 +69,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERG
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_SLICE_BUFFER_SIZE;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_TABLE_SKIP;
 
 /**
  * Created by mh719 on 13/05/2016.
@@ -172,8 +173,13 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     public URI preLoad(URI input, URI output) throws StorageEngineException {
         super.preLoad(input, output);
 
+        boolean skipArchiveTable = getOptions().getBoolean(ARCHIVE_TABLE_SKIP.key(), ARCHIVE_TABLE_SKIP.defaultValue());
         try {
-            ArchiveTableHelper.createArchiveTableIfNeeded(getOptions(), getArchiveTable(), dbAdaptor.getConnection());
+            if (skipArchiveTable) {
+                logger.info("Skip archive table");
+            } else {
+                ArchiveTableHelper.createArchiveTableIfNeeded(getOptions(), getArchiveTable(), dbAdaptor.getConnection());
+            }
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + getArchiveTable(), e);
         }

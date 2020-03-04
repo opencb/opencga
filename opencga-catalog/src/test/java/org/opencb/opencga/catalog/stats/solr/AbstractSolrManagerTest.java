@@ -13,6 +13,7 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclParams;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -68,8 +69,8 @@ public class AbstractSolrManagerTest extends GenericTest {
 
         Project project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdOwner).first();
-        studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null,
-                null, null, null, null, null, null, sessionIdOwner).first().getFqn();
+        studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", "Done", null, null, null, null,
+                null, null, null, sessionIdOwner).first().getFqn();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("admin1")), sessionIdOwner);
@@ -90,9 +91,9 @@ public class AbstractSolrManagerTest extends GenericTest {
                 sessionIdAdmin).first();
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample1"), "@study_deny,user3",
-                new Sample.SampleAclParams("VIEW,VIEW_ANNOTATIONS", AclParams.Action.ADD, null, null, null), sessionIdAdmin);
+                new SampleAclParams("VIEW,VIEW_ANNOTATIONS", AclParams.Action.ADD, null, null, null), sessionIdAdmin);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample2"), "@study_allow",
-                new Sample.SampleAclParams("", AclParams.Action.SET, null, null, null), sessionIdAdmin);
+                new SampleAclParams("", AclParams.Action.SET, null, null, null), sessionIdAdmin);
 
         // Cohorts
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("cohort1").setSamples(Arrays.asList(sample1, sample2, sample3)),

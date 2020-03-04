@@ -5,6 +5,7 @@ import org.opencb.opencga.catalog.stats.solr.CohortSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogCohortToSolrCohortConverter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -27,7 +28,7 @@ public class CatalogCohortToSolrCohortConverterTest {
     public void CohortToSolrTest() {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
-        Cohort cohort = new Cohort("id", Study.Type.CASE_SET, TimeUtils.getTime(), "test",
+        Cohort cohort = new Cohort("id", Enums.CohortType.CASE_SET, TimeUtils.getTime(), "test",
                 Arrays.asList(new Sample().setId("1"), new Sample().setId("2")), 2, null)
                 .setAttributes(new HashMap<>());
         cohort.setUid(200).setStatus(new Cohort.CohortStatus("CALCULATING")).setAnnotationSets(AnnotationHelper.createAnnotation());

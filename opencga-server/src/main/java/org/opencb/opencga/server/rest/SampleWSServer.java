@@ -35,10 +35,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclUpdateParams;
-import org.opencb.opencga.core.models.sample.SampleCreateParams;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -382,7 +379,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                     SampleAclUpdateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new SampleAclUpdateParams());
-            Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
+            SampleAclParams sampleAclParams = new SampleAclParams(
                     params.getPermissions(), params.getAction(), params.getIndividual(), params.getFile(), params.getCohort(), params.isPropagate());
             List<String> idList = StringUtils.isEmpty(params.getSample()) ? Collections.emptyList() : getIdList(params.getSample(), false);
             return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, token));
