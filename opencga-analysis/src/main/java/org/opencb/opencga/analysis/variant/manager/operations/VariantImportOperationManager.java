@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
@@ -94,7 +95,7 @@ public class VariantImportOperationManager extends OperationManager {
                     newCohortIds.put(cohortName, (int) cohort.getUid());
                     newCohorts.put((int) cohort.getUid(), newSampleList.stream().map(Sample::getUid).map(Long::intValue)
                             .collect(Collectors.toSet()));
-                    catalogManager.getCohortManager().setStatus(studyStr, cohort.getId(), Cohort.CohortStatus.READY, "", sessionId);
+                    catalogManager.getCohortManager().setStatus(studyStr, cohort.getId(), CohortStatus.READY, "", sessionId);
                 }
                 studyConfiguration.setCohortIds(newCohortIds);
                 studyConfiguration.setCohorts(newCohorts);

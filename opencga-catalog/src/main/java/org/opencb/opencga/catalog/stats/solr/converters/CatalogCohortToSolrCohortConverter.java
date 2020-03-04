@@ -63,7 +63,7 @@ public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<
         cohortSolrModel.setCreationMonth(localDate.getMonth().toString());
         cohortSolrModel.setCreationDay(localDate.getDayOfMonth());
         cohortSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        cohortSolrModel.setStatus(cohort.getStatus().getName());
+        cohortSolrModel.setStatus(cohort.getInternal().getStatus().getName());
 
         if (cohort.getSamples() != null) {
             cohortSolrModel.setNumSamples(cohort.getSamples().size());

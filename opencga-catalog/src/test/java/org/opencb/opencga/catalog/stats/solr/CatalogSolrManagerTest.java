@@ -59,9 +59,8 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
     public void testCohortIterator() throws CatalogException, SolrServerException, IOException {
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
-                CohortDBAdaptor.QueryParams.STUDY_UID.key(),
-                CohortDBAdaptor.QueryParams.TYPE.key(), CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.STUDY_UID.key(),
+                CohortDBAdaptor.QueryParams.TYPE.key(), CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
 
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
@@ -254,8 +253,8 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         study.getAttributes().put("OPENCGA_ACL", studyAcls);
 
         QueryOptions queryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.UUID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
-                        CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
+                .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.UUID.key(),
+                        CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                         CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true)

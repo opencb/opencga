@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -115,7 +116,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
                 StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         Set<Long> allSampleIds = all.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
 
-        assertThat(all.getStatus().getName(), anyOf(is(Cohort.CohortStatus.INVALID), is(Cohort.CohortStatus.NONE)));
+        assertThat(all.getInternal().getStatus().getName(), anyOf(is(CohortStatus.INVALID), is(CohortStatus.NONE)));
         Set<Long> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key
                 (), FileIndex.IndexStatus.READY), null, sessionId)
                 .getResults()

@@ -1195,7 +1195,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .append(CohortDBAdaptor.QueryParams.UID.key(), myCohort.getUid())
                 .append(CohortDBAdaptor.QueryParams.DELETED.key(), true);
         Cohort cohort = catalogManager.getCohortManager().search(studyId, query, null, token).first();
-        assertEquals(Status.DELETED, cohort.getStatus().getName());
+        assertEquals(Status.DELETED, cohort.getInternal().getStatus().getName());
     }
 
     @Test

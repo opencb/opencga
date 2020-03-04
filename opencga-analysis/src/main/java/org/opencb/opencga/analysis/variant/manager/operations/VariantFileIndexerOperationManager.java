@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.common.UriUtils;
@@ -266,10 +267,10 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private List<StoragePipelineResult> indexFiles(List<URI> fileUris, String token, ObjectMap params) throws Exception {
 
-        String prevDefaultCohortStatus = Cohort.CohortStatus.NONE;
+        String prevDefaultCohortStatus = CohortStatus.NONE;
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
             if (calculateStats) {
-                prevDefaultCohortStatus = updateDefaultCohortStatus(studyFqn, Cohort.CohortStatus.CALCULATING, token);
+                prevDefaultCohortStatus = updateDefaultCohortStatus(studyFqn, CohortStatus.CALCULATING, token);
             }
         }
 
@@ -445,7 +446,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
                     Cohort defaultCohort = queryResult.first();
-                    catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), Cohort.CohortStatus.READY, null,
+                    catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), CohortStatus.READY, null,
                             sessionId);
 //                    params = new ObjectMap(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.READY);
 //                    catalogManager.getCohortManager().update(defaultCohort.getId(), params, new QueryOptions(), sessionId);
@@ -516,16 +517,16 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private void updateDefaultCohortStatus(Study study, StorageEngineException exception, String sessionId) throws CatalogException {
         if (exception == null) {
-            updateDefaultCohortStatus(study.getFqn(), Cohort.CohortStatus.READY, sessionId);
+            updateDefaultCohortStatus(study.getFqn(), CohortStatus.READY, sessionId);
         } else {
-            updateDefaultCohortStatus(study.getFqn(), Cohort.CohortStatus.INVALID, sessionId);
+            updateDefaultCohortStatus(study.getFqn(), CohortStatus.INVALID, sessionId);
         }
     }
 
     private String updateDefaultCohortStatus(String study, String status, String sessionId) throws CatalogException {
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
         Cohort defaultCohort = catalogManager.getCohortManager().search(study, query, new QueryOptions(), sessionId).first();
-        String prevStatus = defaultCohort.getStatus().getName();
+        String prevStatus = defaultCohort.getInternal().getStatus().getName();
 
         catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), status, null,
                 sessionId);

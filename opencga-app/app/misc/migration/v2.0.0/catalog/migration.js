@@ -260,4 +260,22 @@ migrateCollection("sample", {"internal": {"$exists": false}}, {}, function(bulk,
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
 });
 
+// #1539
+migrateCollection("cohort", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        }
+    };
+    var unset = {
+        "status": "",
+        "name": "",
+        "stats": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
 // TODO: Add indexes for new "deleted" collections

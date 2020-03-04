@@ -66,7 +66,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         cohortManager = catalogManager.getCohortManager();
     }
 
-    private Response createCohort(String studyStr, String cohortId, String cohortName, Enums.CohortType type, String variableSetId,
+    private Response createCohort(String studyStr, String cohortId, Enums.CohortType type, String variableSetId,
                                   String cohortDescription, List<String> sampleIdList, List<AnnotationSet> annotationSetList,
                                   String variableName) {
         try {
@@ -78,8 +78,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (ListUtils.isNotEmpty(sampleIdList)) {
                 DataResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, sampleIdList, null, token);
                 List<Sample> sampleList = queryResult.getResults();
-                Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, sampleList, annotationSetList, -1, null)
-                        .setName(cohortName);
+                Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, sampleList, annotationSetList, -1, null);
                 DataResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().create(studyStr, cohort, null, token);
                 cohorts.add(cohortQueryResult);
             } else if (StringUtils.isNotEmpty(variableSetId)) {
@@ -102,13 +101,12 @@ public class CohortWSServer extends OpenCGAWSServer {
                     Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
                             .append("variableSetId", variableSet.getUid());
 
-                    cohorts.add(createCohort(studyStr, cohortName + "_" + s, type, cohortDescription, annotationSetList, samplesQuery,
+                    cohorts.add(createCohort(studyStr, cohortId + "_" + s, type, cohortDescription, annotationSetList, samplesQuery,
                             samplesQOptions));
                 }
             } else {
                 //Create empty cohort
-                Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, Collections.emptyList(), annotationSetList, -1, null)
-                        .setName(cohortName);
+                Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, Collections.emptyList(), annotationSetList, -1, null);
                 cohorts.add(catalogManager.getCohortManager().create(studyStr, cohort, null, token));
             }
             return createOkResponse(cohorts);
@@ -135,10 +133,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                 variableSet = variableSetId;
             }
 
-            String cohortId = StringUtils.isEmpty(params.id) ? params.name : params.id;
-            String cohortName = StringUtils.isEmpty(params.name) ? cohortId : params.name;
-            return createCohort(studyStr, cohortId, cohortName, params.type, variableSet, params.description, params.samples,
-                    params.annotationSets, variableName);
+            return createCohort(studyStr, params.id, params.type, variableSet, params.description, params.samples, params.annotationSets,
+                    variableName);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -208,12 +204,11 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private DataResult<Cohort> createCohort(String studyStr, String cohortName, Enums.CohortType type, String cohortDescription,
+    private DataResult<Cohort> createCohort(String studyStr, String cohortId, Enums.CohortType type, String cohortDescription,
                                             List<AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions)
             throws CatalogException {
         DataResult<Sample> queryResult = catalogManager.getSampleManager().search(studyStr, query, queryOptions, token);
-        Cohort cohort = new Cohort(cohortName, type, "", cohortDescription, queryResult.getResults(), annotationSetList, -1, null)
-                .setName(cohortName);
+        Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, queryResult.getResults(), annotationSetList, -1, null);
         return catalogManager.getCohortManager().create(studyStr, cohort, null, token);
     }
 
