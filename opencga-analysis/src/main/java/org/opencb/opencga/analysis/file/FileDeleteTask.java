@@ -17,9 +17,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
@@ -77,7 +75,7 @@ public class FileDeleteTask extends OpenCgaTool {
 
         step("check-can-delete", () -> {
             FileUpdateParams updateParams = new FileUpdateParams()
-                    .setStatus(new File.FileStatus(File.FileStatus.PENDING_DELETE))
+                    .setInternal(new SmallFileInternal(new FileStatus(FileStatus.PENDING_DELETE)))
                     .setTags(Collections.singletonList(randomMark));
 
             Map<String, Object> actionMap = new HashMap<>();
@@ -105,7 +103,7 @@ public class FileDeleteTask extends OpenCgaTool {
                     } else {
                         // We mark for deletion all the
                         Query query = new Query()
-                                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY)
+                                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + catalogFile.getPath() + "*");
                         fileManager.update(studyFqn, query, updateParams, options, token);
                     }
@@ -119,7 +117,7 @@ public class FileDeleteTask extends OpenCgaTool {
         step(ID, () -> {
             // Delete the files pending for deletion
             Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE)
+                    .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.PENDING_DELETE)
                     .append(FileDBAdaptor.QueryParams.TAGS.key(), randomMark);
             try (DBIterator<File> iterator = fileManager.iterator(studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES, token)) {
                 while (iterator.hasNext()) {
@@ -158,9 +156,9 @@ public class FileDeleteTask extends OpenCgaTool {
 
     private boolean isIndexed(File file) {
         // Check the index status
-        if (file.getIndex() != null && file.getIndex().getStatus() != null
-                && !FileIndex.IndexStatus.NONE.equals(file.getIndex().getStatus().getName())
-                && !FileIndex.IndexStatus.TRANSFORMED.equals(file.getIndex().getStatus().getName())) {
+        if (file.getInternal().getIndex() != null && file.getInternal().getIndex().getStatus() != null
+                && !FileIndex.IndexStatus.NONE.equals(file.getInternal().getIndex().getStatus().getName())
+                && !FileIndex.IndexStatus.TRANSFORMED.equals(file.getInternal().getIndex().getStatus().getName())) {
             return true;
         }
 
@@ -170,12 +168,12 @@ public class FileDeleteTask extends OpenCgaTool {
     private void recoverFromFatalCrash() {
         // Delete the files pending for deletion
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE)
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.PENDING_DELETE)
                 .append(FileDBAdaptor.QueryParams.TAGS.key(), randomMark);
         restoreFiles(query);
 
         if (!unlink && skipTrash) {
-            query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING);
+            query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.DELETING);
             OpenCGAResult<File> fileResult = null;
             try {
                 fileResult = catalogManager.getFileManager().search(studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES,
@@ -210,7 +208,7 @@ public class FileDeleteTask extends OpenCgaTool {
     private void restoreFiles(Query query) {
         // Restore non-deleted files to READY status
         FileUpdateParams updateParams = new FileUpdateParams()
-                .setStatus(new File.FileStatus(File.FileStatus.READY))
+                .setInternal(new SmallFileInternal(new FileStatus(FileStatus.READY)))
                 .setTags(Collections.singletonList(randomMark));
 
         Map<String, Object> actionMap = new HashMap<>();
@@ -225,7 +223,7 @@ public class FileDeleteTask extends OpenCgaTool {
 
         // Restore non-deleted files to MISSING status
         FileUpdateParams updateParams = new FileUpdateParams()
-                .setStatus(new File.FileStatus(File.FileStatus.MISSING))
+                .setInternal(new SmallFileInternal(new FileStatus(FileStatus.MISSING)))
                 .setTags(Collections.singletonList(randomMark));
 
         Map<String, Object> actionMap = new HashMap<>();
@@ -245,7 +243,7 @@ public class FileDeleteTask extends OpenCgaTool {
 
     private void addCriticalError(CatalogException e) {
         CatalogException exception = new CatalogException("Critical: Could not restore status of pending files to "
-                + File.FileStatus.READY, e);
+                + FileStatus.READY, e);
         logger.error("{}", e.getMessage(), e);
         try {
             addError(exception);

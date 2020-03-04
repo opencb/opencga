@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.file;
 import org.opencb.opencga.core.models.common.Status;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,6 +60,10 @@ public class FileIndex {
         this.transformedFile = transformedFile;
         this.localFileIndex = localFileIndex;
         this.attributes = attributes;
+    }
+
+    public static FileIndex initialize() {
+        return new FileIndex("", "", new IndexStatus(IndexStatus.NONE), -1, null, null, new HashMap<>());
     }
 
     public static class IndexStatus extends Status {

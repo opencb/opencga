@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -74,7 +75,7 @@ public class FileScannerTest {
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first();
         study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, null, null, null, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/test/folder/").toString(),
-                null, true, null, QueryOptions.empty(), sessionIdUser).first();
+                true, null, QueryOptions.empty(), sessionIdUser).first();
 
         directory = catalogManagerExternalResource.getOpencgaHome().resolve("catalog_scan_test_folder").toAbsolutePath();
         if (directory.toFile().exists()) {
@@ -120,7 +121,7 @@ public class FileScannerTest {
                 true, sessionIdUser);
 
         files.forEach((File f) -> assertFalse(f.getAttributes().containsKey("checksum")));
-        assertEquals(File.FileStatus.DELETED, getDeletedFile(file.getUid()).getStatus().getName());
+        assertEquals(FileStatus.DELETED, getDeletedFile(file.getUid()).getInternal().getStatus().getName());
     }
 
     public File getDeletedFile(long id) throws CatalogException {
@@ -152,7 +153,7 @@ public class FileScannerTest {
         fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         File replacedFile = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
-        assertEquals(File.FileStatus.READY, replacedFile.getStatus().getName());
+        assertEquals(FileStatus.READY, replacedFile.getInternal().getStatus().getName());
         assertEquals(file.getUid(), replacedFile.getUid());
         assertNotEquals(replacedFile.getChecksum(), file.getChecksum());
         assertEquals(replacedFile.getChecksum(), catalogManager.getCatalogIOManagerFactory().getDefault().calculateChecksum(replacedFile.getUri()));
@@ -205,7 +206,7 @@ public class FileScannerTest {
 
         assertEquals(1, files.size());
         files.forEach((f) -> assertTrue(f.getSize() > 0));
-        files.forEach((f) -> assertEquals(f.getStatus().getName(), File.FileStatus.READY));
+        files.forEach((f) -> assertEquals(f.getInternal().getStatus().getName(), FileStatus.READY));
         files.forEach((f) -> assertTrue(StringUtils.isNotEmpty(f.getChecksum())));
     }
 
@@ -230,7 +231,7 @@ public class FileScannerTest {
         assertEquals(1, files.size());
         File file = files.get(0);
         assertTrue(file.getSize() > 0);
-        assertEquals(File.FileStatus.READY, file.getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
         assertTrue(StringUtils.isNotEmpty(file.getChecksum()));
 
         //Delete file. CheckStudyFiles. Will detect one File.Status.MISSING file
@@ -238,7 +239,7 @@ public class FileScannerTest {
         files = fileScanner.checkStudyFiles(study, true, sessionIdUser);
 
         assertEquals(1, files.size());
-        assertEquals(File.FileStatus.MISSING, files.get(0).getStatus().getName());
+        assertEquals(FileStatus.MISSING, files.get(0).getInternal().getStatus().getName());
         String originalChecksum = files.get(0).getChecksum();
 
         //Restore file. CheckStudyFiles. Will detect one re-tracked file. Checksum must be different.
@@ -246,7 +247,7 @@ public class FileScannerTest {
         files = fileScanner.checkStudyFiles(study, true, sessionIdUser);
 
         assertEquals(1, files.size());
-        assertEquals(File.FileStatus.READY, files.get(0).getStatus().getName());
+        assertEquals(FileStatus.READY, files.get(0).getInternal().getStatus().getName());
         String newChecksum = files.get(0).getChecksum();
         assertNotEquals(originalChecksum, newChecksum);
 
@@ -255,7 +256,7 @@ public class FileScannerTest {
         files = fileScanner.reSync(study, true, sessionIdUser);
 
         assertEquals(1, files.size());
-        assertEquals(File.FileStatus.MISSING, files.get(0).getStatus().getName());
+        assertEquals(FileStatus.MISSING, files.get(0).getInternal().getStatus().getName());
         originalChecksum = files.get(0).getChecksum();
 
         //Restore file. CheckStudyFiles. Will detect one found file. Checksum must be different.
@@ -263,7 +264,7 @@ public class FileScannerTest {
         files = fileScanner.reSync(study, true, sessionIdUser);
 
         assertEquals(1, files.size());
-        assertEquals(File.FileStatus.READY, files.get(0).getStatus().getName());
+        assertEquals(FileStatus.READY, files.get(0).getInternal().getStatus().getName());
         newChecksum = files.get(0).getChecksum();
         assertNotEquals(originalChecksum, newChecksum);
 
@@ -288,7 +289,7 @@ public class FileScannerTest {
         Map<String, File> map = files.stream().collect(Collectors.toMap(File::getName, (f) -> f));
 
         assertEquals(6, files.size());
-        files.forEach((file) -> assertEquals(File.FileStatus.READY, file.getStatus().getName()));
+        files.forEach((file) -> assertEquals(FileStatus.READY, file.getInternal().getStatus().getName()));
         assertEquals(File.Bioformat.VARIANT, map.get("file1.vcf.gz").getBioformat());
         assertEquals(File.Bioformat.VARIANT, map.get("file1.vcf.variants.json").getBioformat());
         assertEquals(File.Bioformat.VARIANT, map.get("file1.vcf.variants.json.gz").getBioformat());

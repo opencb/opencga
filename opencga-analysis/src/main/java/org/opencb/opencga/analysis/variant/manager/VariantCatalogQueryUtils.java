@@ -188,7 +188,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 List<String> includeFiles = new ArrayList<>();
                 QueryOptions fileOptions = new QueryOptions(INCLUDE, FileDBAdaptor.QueryParams.UID.key());
                 Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
-                        .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+                        .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
 
                 for (String study : studies) {
                     for (File file : catalogManager.getFileManager().search(study, fileQuery, fileOptions, sessionId)
@@ -769,7 +769,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected final QueryOptions RELEASE_OPTIONS = new QueryOptions(INCLUDE, Arrays.asList(
                 FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(),
-                FileDBAdaptor.QueryParams.INDEX.key(),
+                FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(),
                 FileDBAdaptor.QueryParams.RELEASE.key()));
 
         /**
@@ -905,11 +905,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 return files.getResults().stream().map(File::getName).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getFileManager(), File::getName,
-                        file -> ((int) file.getIndex().getRelease()), file -> {
-                            if (file.getIndex() == null
-                                    || file.getIndex().getStatus() == null
-                                    || file.getIndex().getStatus().getName() == null
-                                    || !file.getIndex().getStatus().getName().equals(Status.READY)) {
+                        file -> ((int) file.getInternal().getIndex().getRelease()), file -> {
+                            if (file.getInternal().getIndex() == null
+                                    || file.getInternal().getIndex().getStatus() == null
+                                    || file.getInternal().getIndex().getStatus().getName() == null
+                                    || !file.getInternal().getIndex().getStatus().getName().equals(Status.READY)) {
                                 throw new VariantQueryException("File '" + file.getName() + "' is not indexed");
                             }
                         },

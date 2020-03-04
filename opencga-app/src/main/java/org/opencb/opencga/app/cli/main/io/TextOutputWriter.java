@@ -24,6 +24,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
@@ -282,19 +283,19 @@ public class TextOutputWriter extends AbstractOutputWriter {
         // # name	type	format	bioformat	description	path	id	status	size	index status	related files   samples
         for (File file : files) {
             String indexStatus = "NA";
-            if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null) {
-                indexStatus = file.getIndex().getStatus().getName();
+            if (file.getInternal().getIndex() != null && file.getInternal().getIndex().getStatus() != null && file.getInternal().getIndex().getStatus().getName() != null) {
+                indexStatus = file.getInternal().getIndex().getStatus().getName();
             }
             sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\n", format,
                     StringUtils.defaultIfEmpty(file.getId(), "-"), StringUtils.defaultIfEmpty(file.getName(), "-"),
                     file.getType(), file.getFormat(), file.getBioformat(), StringUtils.defaultIfEmpty(file.getDescription(), "-"),
                     StringUtils.defaultIfEmpty(file.getPath(), "-"), file.getUri(),
-                    file.getStatus() != null ? StringUtils.defaultIfEmpty(file.getStatus().getName(), "-") : "-", file.getSize(),
+                    file.getInternal().getStatus() != null ? StringUtils.defaultIfEmpty(file.getInternal().getStatus().getName(), "-") : "-", file.getSize(),
                     indexStatus,
                     file.getRelatedFiles() != null ?
                             StringUtils.join(file.getRelatedFiles()
                                     .stream()
-                                    .map(File.RelatedFile::getFile)
+                                    .map(FileRelatedFile::getFile)
                                     .map(File::getId)
                                     .collect(Collectors.toList()), ", ")
                             : "-",
@@ -503,7 +504,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                     file.getType() == File.Type.FILE ? file.getName() : file.getName() + "/",
                     file.getName(),
-                    file.getStatus() != null ? file.getStatus().getName() : "",
+                    file.getInternal().getStatus() != null ? file.getInternal().getStatus().getName() : "",
                     humanReadableByteCount(file.getSize(), false)));
 
             if (file.getType() == File.Type.DIRECTORY) {

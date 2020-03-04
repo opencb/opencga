@@ -50,6 +50,8 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.project.Project;
@@ -242,7 +244,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, String description,
-                                       StudyNotification notification, String cipher, String uriScheme, URI uri, InternalStudy internal,
+                                       StudyNotification notification, String cipher, String uriScheme, URI uri, StudyInternal internal,
                                        Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
@@ -256,7 +258,7 @@ public class StudyManager extends AbstractManager {
         description = ParamUtils.defaultString(description, "");
         String creationDate = TimeUtils.getTime();
 
-        internal = ParamUtils.defaultObject(internal, InternalStudy::new);
+        internal = ParamUtils.defaultObject(internal, StudyInternal::new);
         internal.setStatus(ParamUtils.defaultObject(internal.getStatus(), Status::new));
         cipher = ParamUtils.defaultString(cipher, "none");
         if (uri != null) {
@@ -301,9 +303,9 @@ public class StudyManager extends AbstractManager {
 
             LinkedList<File> files = new LinkedList<>();
             File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
-                    new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
+                    FileInternal.initialize(), 0, project.getCurrentRelease());
             File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/", null,
-                    "Default jobs folder", new File.FileStatus(), 0, project.getCurrentRelease());
+                    "Default jobs folder", FileInternal.initialize(), 0, project.getCurrentRelease());
 
             files.add(rootFile);
             files.add(jobsFile);
@@ -762,8 +764,8 @@ public class StudyManager extends AbstractManager {
         Long nFiles = fileDBAdaptor.count(
                 new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
-                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
-                                + File.FileStatus.DELETED))
+                        .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + FileStatus.TRASHED + ";!="
+                                + FileStatus.DELETED))
                 .getNumMatches();
         studySummary.setFiles(nFiles);
 

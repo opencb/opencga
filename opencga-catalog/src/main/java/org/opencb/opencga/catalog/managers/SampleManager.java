@@ -590,8 +590,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             File file = fileIterator.next();
             if (force) {
                 // Check index status
-                if (file.getIndex() != null && file.getIndex().getStatus() != null
-                        && !FileIndex.IndexStatus.NONE.equals(file.getIndex().getStatus().getName())) {
+                if (file.getInternal().getIndex() != null && file.getInternal().getIndex().getStatus() != null
+                        && !FileIndex.IndexStatus.NONE.equals(file.getInternal().getIndex().getStatus().getName())) {
                     errorFiles.add(file.getPath() + "(" + file.getUid() + ")");
                 }
             } else {

@@ -74,6 +74,7 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.file.FileAclParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobInternalWebhook;
@@ -566,7 +567,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             // Directory not found. Will try to create using user's token
             boolean parents = (boolean) job.getAttributes().getOrDefault(Job.OPENCGA_PARENTS, false);
             try {
-                outDir = fileManager.createFolder(study, outDirPath, new File.FileStatus(), parents, "", FileManager.INCLUDE_FILE_URI_PATH,
+                outDir = fileManager.createFolder(study, outDirPath, parents, "", FileManager.INCLUDE_FILE_URI_PATH,
                         userToken).first();
                 CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(outDir.getUri());
                 ioManager.createDirectory(outDir.getUri(), true);
@@ -589,7 +590,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private File getValidDefaultOutDir(Job job) throws CatalogException {
         File folder = fileManager.createFolder(job.getStudyUuid(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/" + job.getId(),
-                new File.FileStatus(), true, "Job " + job.getTool().getId(), QueryOptions.empty(), token).first();
+                true, "Job " + job.getTool().getId(), QueryOptions.empty(), token).first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
@@ -614,10 +615,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .map(FileAclEntry.FilePermissions::toString)
                     .collect(Collectors.joining(","));
             fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
-                    new File.FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
+                    new FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
             // Revoke permissions to any other user that is not the one launching the job
             fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
-                    FileAclEntry.USER_OTHERS_ID, new File.FileAclParams("", AclParams.Action.SET, null), token);
+                    FileAclEntry.USER_OTHERS_ID, new FileAclParams("", AclParams.Action.SET, null), token);
         }
 
         return folder;

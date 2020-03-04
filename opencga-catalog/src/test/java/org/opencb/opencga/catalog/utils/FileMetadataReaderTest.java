@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -72,7 +73,7 @@ public class FileMetadataReaderTest {
         project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first();
         study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, null, null, null, sessionIdUser).first();
-        folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/vcf/").toString(), null, true,
+        folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/vcf/").toString(), true,
                 null, QueryOptions.empty(), sessionIdUser).first();
 
         Path vcfPath = catalogManagerExternalResource.getOpencgaHome().resolve(VCF_FILE_NAME);
@@ -121,7 +122,7 @@ public class FileMetadataReaderTest {
 
         FileMetadataReader.get(catalogManager).addMetadataInformation(study.getFqn(), file);
 
-        assertEquals(File.FileStatus.READY, file.getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
@@ -172,7 +173,7 @@ public class FileMetadataReaderTest {
             file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
         }
-        assertEquals(File.FileStatus.READY, file.getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
@@ -201,7 +202,7 @@ public class FileMetadataReaderTest {
 
         FileMetadataReader.get(catalogManager).addMetadataInformation(study.getFqn(), file);
 
-        assertEquals(File.FileStatus.READY, file.getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
 //        assertEquals(File.Format.GZIP, file.getFormat());
         assertEquals(File.Bioformat.ALIGNMENT, file.getBioformat());
         assertNotNull(file.getAttributes().get("alignmentHeader"));

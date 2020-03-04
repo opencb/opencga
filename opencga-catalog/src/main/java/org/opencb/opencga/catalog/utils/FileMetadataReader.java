@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.slf4j.Logger;
@@ -294,8 +295,8 @@ public class FileMetadataReader {
                 return bamManager.getHeader(studyId);
             } else if (file.getFormat() == File.Format.CRAM || FileUtils.detectFormat(fileUri) == File.Format.CRAM) {
                 Path reference = null;
-                for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
-                    if (relatedFile.getRelation() == File.RelatedFile.Relation.REFERENCE_GENOME) {
+                for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
+                    if (relatedFile.getRelation() == FileRelatedFile.Relation.REFERENCE_GENOME) {
                         reference = Paths.get(relatedFile.getFile().getUri());
                         break;
                     }

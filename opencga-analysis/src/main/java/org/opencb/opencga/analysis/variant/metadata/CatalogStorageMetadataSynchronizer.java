@@ -63,15 +63,15 @@ public class CatalogStorageMetadataSynchronizer {
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FileDBAdaptor.QueryParams.NAME.key(),
             FileDBAdaptor.QueryParams.PATH.key(),
-            FileDBAdaptor.QueryParams.INDEX.key(),
+            FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(),
             FileDBAdaptor.QueryParams.STUDY_UID.key()));
     public static final Query INDEXED_FILES_QUERY = new Query()
-            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), IndexStatus.READY)
+            .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), IndexStatus.READY)
             .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
             .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF.toString(), File.Format.GVCF.toString()));
 
     public static final Query RUNNING_INDEX_FILES_QUERY = new Query()
-            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(IndexStatus.LOADING, IndexStatus.INDEXING))
+            .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), Arrays.asList(IndexStatus.LOADING, IndexStatus.INDEXING))
             .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
             .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF.toString(), File.Format.GVCF.toString()));
 
@@ -349,17 +349,17 @@ public class CatalogStorageMetadataSynchronizer {
                 while (iterator.hasNext()) {
                     numFiles++;
                     File file = iterator.next();
-                    String status = file.getIndex() == null || file.getIndex().getStatus() == null
+                    String status = file.getInternal().getIndex() == null || file.getInternal().getIndex().getStatus() == null
                             ? IndexStatus.NONE
-                            : file.getIndex().getStatus().getName();
+                            : file.getInternal().getIndex().getStatus().getName();
                     if (!status.equals(IndexStatus.READY)) {
                         final FileIndex index;
-                        index = file.getIndex() == null ? new FileIndex() : file.getIndex();
+                        index = file.getInternal().getIndex() == null ? new FileIndex() : file.getInternal().getIndex();
                         if (index.getStatus() == null) {
                             index.setStatus(new IndexStatus());
                         }
                         logger.debug("File \"{}\" change status from {} to {}", file.getName(),
-                                file.getIndex().getStatus().getName(), IndexStatus.READY);
+                                file.getInternal().getIndex().getStatus().getName(), IndexStatus.READY);
                         index.getStatus().setName(IndexStatus.READY);
                         catalogManager.getFileManager()
                                 .updateFileIndexStatus(file, IndexStatus.READY, "Indexed, regarding Storage Metadata", sessionId);
@@ -389,7 +389,7 @@ public class CatalogStorageMetadataSynchronizer {
                 Integer fileId = fileNameMap.inverse().get(file.getName());
                 if (fileId == null || !indexedFiles.contains(fileId)) {
                     String newStatus;
-                    if (hasTransformedFile(file.getIndex())) {
+                    if (hasTransformedFile(file.getInternal().getIndex())) {
                         newStatus = IndexStatus.TRANSFORMED;
                     } else {
                         newStatus = IndexStatus.NONE;
@@ -430,7 +430,7 @@ public class CatalogStorageMetadataSynchronizer {
                 // If last LOAD operation is ERROR or there is no LOAD operation
                 if (fileMetadata != null && fileMetadata.getIndexStatus().equals(TaskMetadata.Status.ERROR)) {
                     final FileIndex index;
-                    index = file.getIndex() == null ? new FileIndex() : file.getIndex();
+                    index = file.getInternal().getIndex() == null ? new FileIndex() : file.getInternal().getIndex();
                     String prevStatus = index.getStatus().getName();
                     String newStatus;
                     if (hasTransformedFile(index)) {
@@ -472,7 +472,7 @@ public class CatalogStorageMetadataSynchronizer {
                 while (iterator.hasNext()) {
                     File file = iterator.next();
                     String newStatus;
-                    if (hasTransformedFile(file.getIndex())) {
+                    if (hasTransformedFile(file.getInternal().getIndex())) {
                         newStatus = IndexStatus.LOADING;
                     } else {
                         newStatus = IndexStatus.INDEXING;

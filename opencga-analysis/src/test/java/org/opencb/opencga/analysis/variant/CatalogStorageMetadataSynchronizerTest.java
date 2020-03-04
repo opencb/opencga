@@ -97,7 +97,7 @@ public class CatalogStorageMetadataSynchronizerTest {
                 null, null, sessionId).first();
         studyId = study.getFqn();
         studyUid = study.getUid();
-        outputId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(), null,
+        outputId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(),
                 true, null, QueryOptions.empty(), sessionId).first().getUid();
 //        files.add(create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 //        files.add(create("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
@@ -184,7 +184,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         studyConfigurationFactory.synchronizeCatalogStudyFromStorage(sc, sessionId);
 
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
-        assertEquals(FileIndex.IndexStatus.READY, nonIndexedFile.getIndex().getStatus().getName());
+        assertEquals(FileIndex.IndexStatus.READY, nonIndexedFile.getInternal().getIndex().getStatus().getName());
 
 
         nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(file.getName())).findFirst().orElse(null);
@@ -194,7 +194,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         studyConfigurationFactory.synchronizeCatalogStudyFromStorage(sc, sessionId);
 
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
-        assertEquals(FileIndex.IndexStatus.INDEXING, nonIndexedFile.getIndex().getStatus().getName());
+        assertEquals(FileIndex.IndexStatus.INDEXING, nonIndexedFile.getInternal().getIndex().getStatus().getName());
 
     }
 }
