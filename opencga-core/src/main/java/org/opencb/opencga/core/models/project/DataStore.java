@@ -20,9 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.Objects;
 
-/**
- * Created by jacobo on 14/04/15.
- */
+
 public class DataStore {
 
     private String storageEngine;
@@ -33,8 +31,32 @@ public class DataStore {
     }
 
     public DataStore(String storageEngine, String dbName) {
+        this(storageEngine, dbName, new ObjectMap());
+    }
+
+    public DataStore(String storageEngine, String dbName, ObjectMap configuration) {
         this.storageEngine = storageEngine;
         this.dbName = dbName;
+        this.configuration = configuration;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof DataStore)) {
+            return false;
+        }
+        DataStore dataStore = (DataStore) o;
+        return Objects.equals(storageEngine, dataStore.storageEngine)
+                && Objects.equals(dbName, dataStore.dbName)
+                && Objects.equals(configuration, dataStore.configuration);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(storageEngine, dbName, configuration);
     }
 
     @Override
@@ -71,24 +93,5 @@ public class DataStore {
     public DataStore setConfiguration(ObjectMap configuration) {
         this.configuration = configuration;
         return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof DataStore)) {
-            return false;
-        }
-        DataStore dataStore = (DataStore) o;
-        return Objects.equals(storageEngine, dataStore.storageEngine)
-                && Objects.equals(dbName, dataStore.dbName)
-                && Objects.equals(configuration, dataStore.configuration);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(storageEngine, dbName, configuration);
     }
 }

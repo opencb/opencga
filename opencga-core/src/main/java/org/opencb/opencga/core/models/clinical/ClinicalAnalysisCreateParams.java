@@ -175,7 +175,7 @@ public class ClinicalAnalysisCreateParams {
                         : new ArrayList<>();
         String assignee = analyst != null ? analyst.assignee : "";
         return new ClinicalAnalysis(id, description, type, disorder, fileMap, individual, f, roleToProband, consent, interpretationList,
-                priority, new ClinicalAnalysisAnalyst(assignee, ""), flags, null, dueDate, comments, alerts, internal, 1, attributes);
+                priority, new ClinicalAnalysisAnalyst(assignee, ""), flags, null, dueDate, comments, alerts, 1, internal, attributes);
     }
 
     public String getId() {

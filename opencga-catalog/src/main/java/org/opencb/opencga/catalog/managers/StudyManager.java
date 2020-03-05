@@ -312,7 +312,7 @@ public class StudyManager extends AbstractManager {
 
             Study study = new Study(id, name, alias, creationDate, description, notification, 0,
                     Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)), new Group(ADMINS, Collections.emptyList())), files,
-                    null, null, new LinkedList<>(), null, null, null, null, null, internal, null, null, project.getCurrentRelease(),
+                    null, null, new LinkedList<>(), null, null, null, null, null, null, null, project.getCurrentRelease(), internal,
                     attributes);
 
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));

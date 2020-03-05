@@ -43,36 +43,33 @@ public class Project extends PrivateFields {
     private ProjectOrganism organism;
     private int currentRelease;
 
-    private ProjectInternal internal;
-
     private List<Study> studies;
-
+    private ProjectInternal internal;
     private Map<String, Object> attributes;
-
 
     public Project() {
     }
 
     public Project(String id, String name, String description, ProjectOrganism organism, int currentRelease, ProjectInternal internal) {
-        this(id, name, TimeUtils.getTime(), description, organism, new LinkedList<>(), new HashMap<>(), currentRelease, internal);
+        this(id, name, TimeUtils.getTime(), description, organism, new LinkedList<>(), currentRelease, internal, new HashMap<>());
     }
 
     public Project(String id, String name, String creationDate, String description, ProjectOrganism organism, int currentRelease,
                    ProjectInternal internal) {
-        this(id, name, creationDate, description, organism, new LinkedList<>(), new HashMap<>(), currentRelease, internal);
+        this(id, name, creationDate, description, organism, new LinkedList<>(), currentRelease, internal, new HashMap<>());
     }
 
     public Project(String id, String name, String creationDate, String description, ProjectOrganism organism, List<Study> studies,
-                   Map<String, Object> attributes, int currentRelease, ProjectInternal internal) {
+                   int currentRelease, ProjectInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.creationDate = creationDate;
         this.description = description;
         this.organism = organism;
-        this.internal = internal;
         this.studies = studies;
-        this.attributes = attributes;
         this.currentRelease = currentRelease;
+        this.internal = internal;
+        this.attributes = attributes;
     }
 
     @Override
@@ -207,5 +204,4 @@ public class Project extends PrivateFields {
         this.attributes = attributes;
         return this;
     }
-
 }

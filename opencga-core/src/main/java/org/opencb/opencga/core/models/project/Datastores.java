@@ -4,19 +4,17 @@ import org.opencb.opencga.core.models.file.File;
 
 import java.util.Objects;
 
-public class DataStores {
+public class Datastores {
 
     private DataStore variant;
 //    private DataStore alignment;
 //    private DataStore expression;
 
-    public DataStore getVariant() {
-        return variant;
+    public Datastores() {
     }
 
-    public DataStores setVariant(DataStore variant) {
+    public Datastores(DataStore variant) {
         this.variant = variant;
-        return this;
     }
 
     public DataStore getDataStore(File.Bioformat bioformat) {
@@ -36,7 +34,7 @@ public class DataStores {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DataStores that = (DataStores) o;
+        Datastores that = (Datastores) o;
         return Objects.equals(variant, that.variant);
     }
 
@@ -52,4 +50,14 @@ public class DataStores {
         sb.append('}');
         return sb.toString();
     }
+
+    public DataStore getVariant() {
+        return variant;
+    }
+
+    public Datastores setVariant(DataStore variant) {
+        this.variant = variant;
+        return this;
+    }
+
 }

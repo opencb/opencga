@@ -4,13 +4,13 @@ import org.opencb.opencga.core.models.common.Status;
 
 public class ProjectInternal {
 
-    private DataStores datastores;
+    private Datastores datastores;
     private Status status;
 
     public ProjectInternal() {
     }
 
-    public ProjectInternal(DataStores datastores, Status status) {
+    public ProjectInternal(Datastores datastores, Status status) {
         this.datastores = datastores;
         this.status = status;
     }
@@ -24,11 +24,11 @@ public class ProjectInternal {
         return sb.toString();
     }
 
-    public DataStores getDatastores() {
+    public Datastores getDatastores() {
         return datastores;
     }
 
-    public ProjectInternal setDatastores(DataStores datastores) {
+    public ProjectInternal setDatastores(Datastores datastores) {
         this.datastores = datastores;
         return this;
     }

@@ -210,7 +210,7 @@ public class UserManager extends AbstractManager {
         user.getInternal().setStatus(new UserStatus());
 
         if (user.getAccount().getType() == null) {
-            user.getAccount().setType(Account.Type.GUEST);
+            user.getAccount().setType(Account.AccountType.GUEST);
         }
 
         try {
@@ -253,7 +253,7 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException If user already exists, or unable to create a new user.
      */
     public OpenCGAResult<User> create(String id, String name, String email, String password, String organization, Long quota,
-                                      Account.Type type, String token) throws CatalogException {
+                                      Account.AccountType type, String token) throws CatalogException {
         User user = new User(id, name, email, organization, new UserInternal(new UserStatus()))
                 .setAccount(new Account(type, "", "", null))
                 .setQuota(new UserQuota().setMaxDisk(quota != null ? quota : -1));
@@ -457,7 +457,7 @@ public class UserManager extends AbstractManager {
             } else {
                 for (String applicationId : idList) {
                     User application = new User(applicationId, new Account()
-                            .setType(Account.Type.GUEST)
+                            .setType(Account.AccountType.GUEST)
                             .setAuthentication(new Account.AuthenticationOrigin(authOrigin, true)))
                             .setEmail("mail@mail.co.uk");
                     create(application, null, token);

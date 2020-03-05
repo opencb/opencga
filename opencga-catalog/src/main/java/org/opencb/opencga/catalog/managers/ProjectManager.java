@@ -40,7 +40,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.project.DataStores;
+import org.opencb.opencga.core.models.project.Datastores;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectInternal;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
@@ -211,8 +211,8 @@ public class ProjectManager extends AbstractManager {
                 .append("options", options)
                 .append("token", sessionId);
 
-        if (Account.Type.FULL != user.first().getAccount().getType()) {
-            if (user.first().getAccount().getType() == Account.Type.ADMINISTRATOR) {
+        if (Account.AccountType.FULL != user.first().getAccount().getType()) {
+            if (user.first().getAccount().getType() == Account.AccountType.ADMINISTRATOR) {
                 // Check it is the first project
                 if (user.first().getProjects() != null && !user.first().getProjects().isEmpty()) {
                     String errorMsg = "Cannot create more projects for ADMINISTRATOR user '" + user.first().getId() + "'.";
@@ -222,8 +222,8 @@ public class ProjectManager extends AbstractManager {
                 }
             } else {
 
-                String errorMsg = "User " + userId + " is not authorized to create new projects. Only users with " + Account.Type.FULL
-                        + " accounts are allowed to do so.";
+                String errorMsg = "User " + userId + " is not authorized to create new projects. Only users with "
+                        + Account.AccountType.FULL + " accounts are allowed to do so.";
                 auditManager.auditCreate(userId, Enums.Resource.PROJECT, id, "", "", "", auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
                 throw new CatalogException(errorMsg);
@@ -234,7 +234,7 @@ public class ProjectManager extends AbstractManager {
         Project project;
         try {
             project = new Project(id, name, description, new ProjectOrganism(scientificName, commonName,
-                    assembly), 1, new ProjectInternal(new DataStores(), new Status()));
+                    assembly), 1, new ProjectInternal(new Datastores(), new Status()));
             validateProjectForCreation(project, user.first());
 
             projectDBAdaptor.insert(project, userId, options);
@@ -273,7 +273,7 @@ public class ProjectManager extends AbstractManager {
         project.setModificationDate(TimeUtils.getTime());
         project.setCurrentRelease(1);
 
-        if (user.getAccount().getType() != Account.Type.ADMINISTRATOR
+        if (user.getAccount().getType() != Account.AccountType.ADMINISTRATOR
                 && (project.getOrganism() == null || StringUtils.isEmpty(project.getOrganism().getAssembly())
                 || StringUtils.isEmpty(project.getOrganism().getScientificName()))) {
             throw new CatalogParameterException("Missing mandatory organism information");

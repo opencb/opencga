@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.variant.geneticChecks;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
@@ -15,7 +16,6 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.models.variant.MendelianErrorsReport;
 import org.opencb.opencga.core.models.variant.MendelianErrorsReport.SampleAggregation;
 import org.opencb.opencga.core.models.variant.MendelianErrorsReport.SampleAggregation.ChromosomeAggregation;
@@ -23,9 +23,11 @@ import org.opencb.opencga.core.models.variant.RelatednessReport;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.parboiled.common.StringUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
