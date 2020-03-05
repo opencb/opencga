@@ -8,7 +8,7 @@ import java.util.List;
 public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor {
 
     public enum GeneticCheck {
-        SEX, RELATEDNESS, MENDELIAN_ERRORS
+        INFERRED_SEX, RELATEDNESS, MENDELIAN_ERRORS
     }
 
     private String study;

@@ -1,14 +1,11 @@
 package org.opencb.opencga.analysis.variant.geneticChecks;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.variant.GeneticChecksReport;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.GeneticChecksAnalysisExecutor;
@@ -132,7 +129,7 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
                 .setRelatednessMethod(relatednessMethod);
 
         step("sex", () -> {
-            executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.SEX).execute();
+            executor.setGeneticCheck(GeneticChecksAnalysisExecutor.GeneticCheck.INFERRED_SEX).execute();
         });
 
         step("relatedness", () -> {
@@ -179,7 +176,7 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
         annot.put("motherId", result.getMotherId());
         annot.put("childrenIds", result.getChildrenIds());
 
-        annot.put("sexReport", result.getSexReport());
+        annot.put("sexReport", result.getInferredSexReport());
         annot.put("relatednessReport", result.getRelatednessReport());
         annot.put("mendelianErrorsReport", result.getMendelianErrorsReport());
 

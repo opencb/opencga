@@ -33,6 +33,7 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -77,6 +78,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
@@ -197,6 +199,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 sampleEligibility();
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 mutationalSignature();
+                break;
+            case INFERRED_SEX_RUN_COMMAND:
+                inferredSex();
                 break;
             case RELATEDNESS_RUN_COMMAND:
                 relatedness();
@@ -716,6 +721,19 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         mutationalSignatureAnalysis.setStudy(cliOptions.study)
                 .setSampleName(cliOptions.sample)
+                .start();
+    }
+
+    private void inferredSex() throws Exception {
+        VariantCommandOptions.InferredSexCommandOptions cliOptions = variantCommandOptions.inferredSexCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
+        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        inferredSexAnalysis.setStudyId(cliOptions.study)
+                .setSampleId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
                 .start();
     }
 

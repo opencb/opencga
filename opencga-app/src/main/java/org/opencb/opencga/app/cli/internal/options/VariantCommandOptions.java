@@ -23,6 +23,7 @@ import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperationTool;
@@ -114,6 +115,7 @@ public class VariantCommandOptions {
     public final KnockoutCommandOptions knockoutCommandOptions;
     public final SampleEligibilityCommandOptions sampleEligibilityCommandOptions;
     public final MutationalSignatureCommandOptions mutationalSignatureCommandOptions;
+    public final InferredSexCommandOptions inferredSexCommandOptions;
     public final RelatednessCommandOptions relatednessCommandOptions;
     public final GeneticChecksCommandOptions geneticChecksCommandOptions;
 
@@ -170,6 +172,7 @@ public class VariantCommandOptions {
         this.knockoutCommandOptions = new KnockoutCommandOptions();
         this.sampleEligibilityCommandOptions = new SampleEligibilityCommandOptions();
         this.mutationalSignatureCommandOptions = new MutationalSignatureCommandOptions();
+        this.inferredSexCommandOptions = new InferredSexCommandOptions();
         this.relatednessCommandOptions = new RelatednessCommandOptions();
         this.geneticChecksCommandOptions = new GeneticChecksCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
@@ -1094,6 +1097,26 @@ public class VariantCommandOptions {
         public String study;
 
         @Parameter(names = {"--sample"}, description = "Sample name.")
+        public String sample;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND, commandDescription = InferredSexAnalysis.DESCRIPTION)
+    public class InferredSexCommandOptions {
+        public static final String INFERRED_SEX_RUN_COMMAND = InferredSexAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study ID where the individual or sample belong to.")
+        public String study;
+
+        @Parameter(names = {"--individual"}, description = "Individual ID.")
+        public String individual;
+
+        @Parameter(names = {"--sample"}, description = "Sample ID.")
         public String sample;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)

@@ -14,7 +14,7 @@ public class GeneticChecksReport implements Serializable {
     private List<String> childrenIds;
 
     // Sex report
-    private List<SexReport> sexReport;
+    private List<InferredSexReport> inferredSexReport;
 
     // Relatedness report
     private RelatednessReport relatednessReport;
@@ -25,13 +25,13 @@ public class GeneticChecksReport implements Serializable {
     public GeneticChecksReport() {
     }
 
-    public GeneticChecksReport(String familyId, String fatherId, String motherId, List<String> childrenIds, List<SexReport> sexReport,
+    public GeneticChecksReport(String familyId, String fatherId, String motherId, List<String> childrenIds, List<InferredSexReport> inferredSexReport,
                                RelatednessReport relatednessReport, MendelianErrorsReport mendelianErrorsReport) {
         this.familyId = familyId;
         this.fatherId = fatherId;
         this.motherId = motherId;
         this.childrenIds = childrenIds;
-        this.sexReport = sexReport;
+        this.inferredSexReport = inferredSexReport;
         this.relatednessReport = relatednessReport;
         this.mendelianErrorsReport = mendelianErrorsReport;
     }
@@ -72,12 +72,12 @@ public class GeneticChecksReport implements Serializable {
         return this;
     }
 
-    public List<SexReport> getSexReport() {
-        return sexReport;
+    public List<InferredSexReport> getInferredSexReport() {
+        return inferredSexReport;
     }
 
-    public GeneticChecksReport setSexReport(List<SexReport> sexReport) {
-        this.sexReport = sexReport;
+    public GeneticChecksReport setInferredSexReport(List<InferredSexReport> inferredSexReport) {
+        this.inferredSexReport = inferredSexReport;
         return this;
     }
 

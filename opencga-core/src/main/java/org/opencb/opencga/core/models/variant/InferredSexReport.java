@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.variant;
 
-public class SexReport {
+public class InferredSexReport {
 
     // Sample ID
     private String sampleId;
@@ -18,10 +18,10 @@ public class SexReport {
     // Inferred karyotypic sex
     private String inferredKaryotypicSex;
 
-    public SexReport() {
+    public InferredSexReport() {
     }
 
-    public SexReport(String reportedSex, String reportedKaryotypicSex, double ratioX, double ratioY, String inferredKaryotypicSex) {
+    public InferredSexReport(String reportedSex, String reportedKaryotypicSex, double ratioX, double ratioY, String inferredKaryotypicSex) {
         this.reportedSex = reportedSex;
         this.reportedKaryotypicSex = reportedKaryotypicSex;
         this.ratioX = ratioX;
@@ -33,7 +33,7 @@ public class SexReport {
         return reportedSex;
     }
 
-    public SexReport setReportedSex(String reportedSex) {
+    public InferredSexReport setReportedSex(String reportedSex) {
         this.reportedSex = reportedSex;
         return this;
     }
@@ -42,7 +42,7 @@ public class SexReport {
         return reportedKaryotypicSex;
     }
 
-    public SexReport setReportedKaryotypicSex(String reportedKaryotypicSex) {
+    public InferredSexReport setReportedKaryotypicSex(String reportedKaryotypicSex) {
         this.reportedKaryotypicSex = reportedKaryotypicSex;
         return this;
     }
@@ -51,7 +51,7 @@ public class SexReport {
         return ratioX;
     }
 
-    public SexReport setRatioX(double ratioX) {
+    public InferredSexReport setRatioX(double ratioX) {
         this.ratioX = ratioX;
         return this;
     }
@@ -60,7 +60,7 @@ public class SexReport {
         return ratioY;
     }
 
-    public SexReport setRatioY(double ratioY) {
+    public InferredSexReport setRatioY(double ratioY) {
         this.ratioY = ratioY;
         return this;
     }
@@ -69,7 +69,7 @@ public class SexReport {
         return inferredKaryotypicSex;
     }
 
-    public SexReport setInferredKaryotypicSex(String inferredKaryotypicSex) {
+    public InferredSexReport setInferredKaryotypicSex(String inferredKaryotypicSex) {
         this.inferredKaryotypicSex = inferredKaryotypicSex;
         return this;
     }

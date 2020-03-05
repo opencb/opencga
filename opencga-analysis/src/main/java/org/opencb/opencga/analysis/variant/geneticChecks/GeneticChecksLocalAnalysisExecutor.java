@@ -6,7 +6,6 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.variant.MendelianErrorsReport;
 import org.opencb.opencga.core.models.variant.RelatednessReport;
-import org.opencb.opencga.core.models.variant.SexReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.GeneticChecksAnalysisExecutor;
 
@@ -19,15 +18,15 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
     @Override
     public void run() throws ToolException {
         switch (getGeneticCheck()) {
-            case SEX: {
+            case INFERRED_SEX: {
                 // Compute karyotypic sex
                 AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
                 FileManager fileManager = alignmentStorageManager.getCatalogManager().getFileManager();
-                List<SexReport> sexReportList = KaryotypicSexComputation.compute(getStudy(), getSamples(), fileManager,
-                        alignmentStorageManager, getToken());
+//                List<double[]> ratios = InferredSexComputation.computeRatios(getStudy(), getSamples(), fileManager,
+//                        alignmentStorageManager, getToken());
 
                 // Set sex report
-                getOutput().setSexReport(sexReportList);
+                //getOutput().setInferredSexReport(sexReportList);
                 break;
             }
             case RELATEDNESS: {

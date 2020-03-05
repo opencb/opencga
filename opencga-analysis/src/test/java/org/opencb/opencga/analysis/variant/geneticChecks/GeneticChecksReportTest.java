@@ -99,7 +99,7 @@ public class GeneticChecksReportTest {
                 .setDescription("Inferred karyotypic sex"));
 
 
-        // Add SexReport to GenticChecksReport
+        // Add InferredSexReport to GenticChecksReport
         geneticChecksVars.add(new Variable()
                 .setName("sexReport")
                 .setId("sexReport")

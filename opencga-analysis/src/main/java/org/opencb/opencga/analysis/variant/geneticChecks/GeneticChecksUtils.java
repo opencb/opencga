@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.variant.geneticChecks;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
@@ -7,11 +8,14 @@ import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.models.variant.MendelianErrorsReport;
 import org.opencb.opencga.core.models.variant.MendelianErrorsReport.SampleAggregation;
 import org.opencb.opencga.core.models.variant.MendelianErrorsReport.SampleAggregation.ChromosomeAggregation;
@@ -104,6 +108,20 @@ public class GeneticChecksUtils {
         }
 
         return sampleSet.stream().collect(Collectors.toList());
+    }
+
+    public static String getAssembly(String study, CatalogManager catalogManager, String token) throws CatalogException {
+        String assembly = "";
+        OpenCGAResult<Project> projectQueryResult;
+        projectQueryResult = catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
+        if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())) {
+            assembly = projectQueryResult.first().getOrganism().getAssembly();
+        }
+        if (org.apache.commons.lang.StringUtils.isNotEmpty(assembly)) {
+            assembly = assembly.toLowerCase();
+        }
+        return assembly;
     }
 
     //-------------------------------------------------------------------------
@@ -283,4 +301,5 @@ public class GeneticChecksUtils {
 
         return (Integer.parseInt(output.split("\t")[0]) - 1);
     }
+
 }
