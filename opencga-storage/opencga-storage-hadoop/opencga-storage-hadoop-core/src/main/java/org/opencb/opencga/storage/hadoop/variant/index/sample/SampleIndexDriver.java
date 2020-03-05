@@ -89,7 +89,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private boolean mainOnly;
     private boolean hasGenotype;
     private TreeSet<Integer> sampleIds;
-    private Map<Integer, Set<Integer>> sampleIdToFileIdMap;
+    private Map<Integer, List<Integer>> sampleIdToFileIdMap;
     private String region;
     private double partialScanSize;
     private List<String> fixedAttributes;
@@ -294,7 +294,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         job.getConfiguration().setInt(MRJobConfig.TASK_TIMEOUT, 20 * 60 * 1000);
 
         StringBuilder sb = new StringBuilder();
-        for (Map.Entry<Integer, Set<Integer>> entry : sampleIdToFileIdMap.entrySet()) {
+        for (Map.Entry<Integer, List<Integer>> entry : sampleIdToFileIdMap.entrySet()) {
             sb.append(entry.getKey()).append(':');
             Iterator<Integer> fileIt = entry.getValue().iterator();
             sb.append(fileIt.next());
@@ -399,7 +399,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
 
             // Get fileIndex for each file
-            Map<Integer, Byte> fileIndexMap = new HashMap<>();
+            Map<Integer, Short> fileIndexMap = new HashMap<>();
             for (Cell cell : result.rawCells()) {
                 Integer fileId = VariantPhoenixHelper
                         .extractFileIdOrNull(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
@@ -408,7 +408,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                             PVarcharArray.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                     Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn, fixedAttributes);
 
-                    byte fileIndexValue = fileIndexConverter.createFileIndexValue(variant.getType(), fileAttributes, null);
+                    // FIXME!
+                    short fileIndexValue = fileIndexConverter.createFileIndexValue(variant.getType(), -1, fileAttributes, null);
 
                     fileIndexMap.put(fileId, fileIndexValue);
                 }
@@ -447,7 +448,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                         sampleGtCountMap.computeIfAbsent(sampleId, k -> new HashMap<>()).merge(gt, 1, Integer::sum);
 
                         // Add fileIndex value for this genotype
-                        Byte fileIndex = null;
+                        Short fileIndex = null;
                         for (Integer fileId : sampleIdToFileIdMap.get(sampleId)) {
                             fileIndex = fileIndexMap.get(fileId);
                             if (fileIndex != null) {

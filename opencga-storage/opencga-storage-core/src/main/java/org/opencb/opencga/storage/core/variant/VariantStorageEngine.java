@@ -129,7 +129,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public enum LoadSplitData {
         CHROMOSOME,
         REGION,
-        TYPE;
+        MULTI;
 
         public static LoadSplitData from(ObjectMap options) {
             Objects.requireNonNull(options);

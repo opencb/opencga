@@ -29,7 +29,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.VariantFileIndex;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,17 +176,17 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
     protected Map<String, List<Variant>> queryByGt(int study, int sample, String chromosome, int position)
             throws IOException {
-        Result result = queryByGeneNative(study, sample, chromosome, position);
+        Result result = queryByGtInternal(study, sample, chromosome, position);
         return converter.convertToMap(result);
     }
 
-    protected Map<String, SortedSet<VariantFileIndex>> queryByGtWithFile(int study, int sample, String chromosome, int position)
+    protected SampleIndexEntryPutBuilder queryByGtBuilder(int study, int sample, String chromosome, int position)
             throws IOException {
-        Result result = queryByGeneNative(study, sample, chromosome, position);
-        return converter.convertToMapVariantFileIndex(result);
+        Result result = queryByGtInternal(study, sample, chromosome, position);
+        return new SampleIndexEntryPutBuilder(sample, chromosome, position, converter.convertToMapSampleVariantIndex(result));
     }
 
-    private Result queryByGeneNative(int study, int sample, String chromosome, int position) throws IOException {
+    private Result queryByGtInternal(int study, int sample, String chromosome, int position) throws IOException {
         String tableName = tableNameGenerator.getSampleIndexTableName(study);
         return hBaseManager.act(tableName, table -> {
             Get get = new Get(SampleIndexSchema.toRowKey(sample, chromosome, position));

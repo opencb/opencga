@@ -29,7 +29,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -209,13 +208,11 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         private Map<Integer, Map<String, Integer>> genotypeCount = new HashMap<>();
         private List<List<Integer>> trios;
         private byte[] family;
-        private SampleIndexToHBaseConverter converter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             new GenomeHelper(context.getConfiguration());
             family = GenomeHelper.COLUMN_FAMILY_BYTES;
-            converter = new SampleIndexToHBaseConverter(family);
 
             int[] sampleIds = context.getConfiguration().getInts(TRIOS_LIST);
             trios = new ArrayList<>(sampleIds.length / 3);

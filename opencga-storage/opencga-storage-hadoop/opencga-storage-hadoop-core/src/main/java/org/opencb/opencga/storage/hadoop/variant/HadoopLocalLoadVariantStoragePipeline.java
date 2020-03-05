@@ -398,8 +398,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), getMetadataManager());
         sampleIndexDBLoader = new SampleIndexDBLoader(sampleIndexDbAdaptor, dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator().getSampleIndexTableName(helper.getStudyId()),
-                getStudyId(), sampleIds,
-                GenomeHelper.COLUMN_FAMILY_BYTES,
+                getMetadataManager(),
+                getStudyId(), getFileId(), sampleIds,
                 VariantStorageEngine.LoadSplitData.from(getOptions()),
                 getOptions());
         return sampleIndexDBLoader;

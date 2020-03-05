@@ -160,6 +160,23 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
 
     @Test
+    public void testDuplicatedVariantsAccepted() throws Exception {
+        URI outDir = newOutputUri();
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.MULTI);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr20.variant-test-file.vcf.gz")),
+                outDir, true, true, true);
+
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz")),
+                outputUri, true, true, true);
+
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr20-21.variant-test-file.vcf.gz")),
+                outDir, true, true, true);
+    }
+
+
+    @Test
     public void testLoadByRegion() throws Exception {
         URI outDir = newOutputUri();
 

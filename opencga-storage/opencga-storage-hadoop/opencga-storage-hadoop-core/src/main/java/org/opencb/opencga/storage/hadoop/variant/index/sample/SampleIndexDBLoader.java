@@ -7,11 +7,12 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.LoadSplitData;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.VariantFileIndex;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -31,64 +32,78 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     // Map from IndexChunk -> List (following sampleIds order) of Map<Genotype, SortedSet<VariantFileIndex>>
     private final Map<IndexChunk, Chunk> buffer = new LinkedHashMap<>();
     private final HashSet<String> genotypes = new HashSet<>();
-    private final SampleIndexToHBaseConverter converter;
     private final boolean rebuildIndex;
+    private final boolean multiFileIndex;
+    private final int[] fileIdxMap;
     private final byte[] family;
     private final ObjectMap options;
     private final SampleIndexDBAdaptor dbAdaptor;
+    private final VariantFileIndexConverter variantFileIndexConverter = new VariantFileIndexConverter();;
 
     public SampleIndexDBLoader(SampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
-                               String tableName, int studyId, List<Integer> sampleIds,
-                               byte[] columnFamily, LoadSplitData splitData, ObjectMap options) {
+                               String tableName, VariantStorageMetadataManager metadataManager,
+                               int studyId, int fileId, List<Integer> sampleIds,
+                               LoadSplitData splitData, ObjectMap options) {
         super(hBaseManager, tableName);
         this.studyId = studyId;
         this.sampleIds = sampleIds;
-        converter = new SampleIndexToHBaseConverter(columnFamily);
-        family = columnFamily;
+        family = GenomeHelper.COLUMN_FAMILY_BYTES;
         this.options = options;
         if (splitData != null) {
             switch (splitData) {
                 case CHROMOSOME:
-                    this.rebuildIndex = false;
+                    rebuildIndex = false;
+                    multiFileIndex = false;
                     break;
                 case REGION:
-                case TYPE:
-                    this.rebuildIndex = true;
+                    rebuildIndex = true;
+                    multiFileIndex = false;
+                    break;
+                case MULTI:
+                    rebuildIndex = true;
+                    multiFileIndex = true;
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown LoadSplitData " + splitData);
             }
         } else {
             rebuildIndex = false;
+            multiFileIndex = false;
+        }
+        fileIdxMap = new int[sampleIds.size()];
+        if (multiFileIndex) {
+            int i = 0;
+            for (Integer sampleId : sampleIds) {
+                fileIdxMap[i] = metadataManager.getSampleMetadata(studyId, sampleId).getFiles().indexOf(fileId);
+                i++;
+            }
         }
         this.dbAdaptor = dbAdaptor;
     }
 
-    private class Chunk implements Iterable<Map<String, SortedSet<VariantFileIndex>>> {
-        private List<Map<String, SortedSet<VariantFileIndex>>> samples;
+    private class Chunk implements Iterable<SampleIndexEntryPutBuilder> {
+        private List<SampleIndexEntryPutBuilder> samples;
         private boolean merging;
 
         @Override
-        public Iterator<Map<String, SortedSet<VariantFileIndex>>> iterator() {
+        public Iterator<SampleIndexEntryPutBuilder> iterator() {
             return samples.iterator();
         }
 
         Chunk(IndexChunk indexChunk) {
             samples = new ArrayList<>(sampleIds.size());
             merging = false;
-            for (int i = 0; i < sampleIds.size(); i++) {
-                Map<String, SortedSet<VariantFileIndex>> map;
+            for (Integer sampleId : sampleIds) {
+                SampleIndexEntryPutBuilder builder;
                 if (rebuildIndex) {
-                    map = fetchIndex(indexChunk, sampleIds.get(i));
-                    if (map.isEmpty()) {
-                        map = new HashMap<>();
-                    } else {
+                    builder = fetchIndex(indexChunk, sampleId);
+                    if (!builder.getGtSet().isEmpty()) {
                         merging = true;
                     }
                 } else {
-                    map = new HashMap<>();
+                    builder = new SampleIndexEntryPutBuilder(sampleId, indexChunk.chromosome, indexChunk.position);
                 }
-                samples.add(map);
+                samples.add(builder);
             }
         }
 
@@ -96,30 +111,27 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
             return merging;
         }
 
-        public Map<String, SortedSet<VariantFileIndex>> get(int sampleIdx) {
+        public SampleIndexEntryPutBuilder get(int sampleIdx) {
             return samples.get(sampleIdx);
         }
 
-        private Map<String, SortedSet<VariantFileIndex>> fetchIndex(IndexChunk indexChunk, Integer sampleId) {
+        private SampleIndexEntryPutBuilder fetchIndex(IndexChunk indexChunk, Integer sampleId) {
             try {
-                return dbAdaptor.queryByGtWithFile(studyId, sampleId, indexChunk.chromosome, indexChunk.position);
+                return dbAdaptor.queryByGtBuilder(studyId, sampleId, indexChunk.chromosome, indexChunk.position);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }
 
-        public void addVariant(int sampleIdx, String gt, VariantFileIndex variantfileIndex) {
-            Map<String, SortedSet<VariantFileIndex>> sampleMap = get(sampleIdx);
-            SortedSet<VariantFileIndex> variantsList = sampleMap.computeIfAbsent(gt, k -> new TreeSet<>());
-            if (isMerging()) {
+        public void addVariant(int sampleIdx, String gt, SampleVariantIndexEntry variantIndexEntry) {
+            SampleIndexEntryPutBuilder sampleEntry = get(sampleIdx);
+            if (isMerging() && !multiFileIndex) {
                 // Look for the variant in any genotype to avoid duplications
-                for (Map.Entry<String, SortedSet<VariantFileIndex>> entry : sampleMap.entrySet()) {
-                    if (entry.getValue().contains(variantfileIndex)) {
-                        throw new IllegalArgumentException("Already loaded variant " + variantfileIndex.getVariant());
-                    }
+                if (sampleEntry.containsVariant(variantIndexEntry)) {
+                    throw new IllegalArgumentException("Already loaded variant " + variantIndexEntry.getVariant());
                 }
             }
-            variantsList.add(variantfileIndex);
+            sampleEntry.add(gt, variantIndexEntry);
         }
     }
 
@@ -175,8 +187,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                 if (validVariant(variant) && validGenotype(gt)) {
                     genotypes.add(gt);
                     Chunk chunk = buffer.computeIfAbsent(indexChunk, Chunk::new);
-                    VariantFileIndex variantfileIndex = new VariantFileIndexConverter().toVariantFileIndex(sampleIdx, variant);
-                    chunk.addVariant(sampleIdx, gt, variantfileIndex);
+                    short fileIndexValue = variantFileIndexConverter.createFileIndexValue(sampleIdx, fileIdxMap[sampleIdx], variant);
+                    SampleVariantIndexEntry indexEntry = new SampleVariantIndexEntry(variant, fileIndexValue);
+                    chunk.addVariant(sampleIdx, gt, indexEntry);
                 }
                 sampleIdx++;
             }
@@ -212,18 +225,14 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
         while (buffer.size() > remain) {
             IndexChunk indexChunk = buffer.keySet().iterator().next();
             Chunk chunk = buffer.remove(indexChunk);
-            ListIterator<Integer> sampleIterator = sampleIds.listIterator();
-            for (Map<String, SortedSet<VariantFileIndex>> gtsMap : chunk) {
-                Integer sampleId = sampleIterator.next();
-
-                byte[] rk = toRowKey(sampleId, indexChunk.chromosome, indexChunk.position);
-                Put put = converter.convert(rk, gtsMap);
+            for (SampleIndexEntryPutBuilder builder : chunk) {
+                Put put = builder.build();
                 if (!put.isEmpty()) {
                     mutations.add(put);
 
-                    if (chunk.isMerging() && !gtsMap.isEmpty()) {
+                    if (chunk.isMerging() && !builder.isEmpty()) {
                         Delete delete = new Delete(put.getRow());
-                        for (String gt : gtsMap.keySet()) {
+                        for (String gt : builder.getGtSet()) {
                             delete.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));

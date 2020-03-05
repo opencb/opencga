@@ -80,7 +80,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private final MetadataCache<String, Integer> fileIdCache;
     private final MetadataCache<Integer, String> fileNameCache;
     private final MetadataCache<Integer, Boolean> fileIdIndexedCache;
-    private final MetadataCache<Integer, Set<Integer>> fileIdsFromSampleIdCache;
+    private final MetadataCache<Integer, List<Integer>> fileIdsFromSampleIdCache;
 
     private final MetadataCache<String, Integer> cohortIdCache;
     private final MetadataCache<Integer, String> cohortNameCache;
@@ -1249,7 +1249,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public Set<Integer> getFileIdsFromSampleIds(int studyId, Collection<Integer> sampleIds) {
         Set<Integer> fileIds = new LinkedHashSet<>();
         for (Integer sampleId : sampleIds) {
-            fileIds.addAll(fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptySet()));
+            fileIds.addAll(fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptyList()));
         }
         return fileIds;
     }

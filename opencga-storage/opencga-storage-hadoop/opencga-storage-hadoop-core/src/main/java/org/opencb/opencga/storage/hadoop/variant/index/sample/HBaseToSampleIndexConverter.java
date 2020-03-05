@@ -124,22 +124,22 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         return map;
     }
 
-    public Map<String, SortedSet<VariantFileIndexConverter.VariantFileIndex>> convertToMapVariantFileIndex(Result result) {
+    public Map<String, TreeSet<SampleVariantIndexEntry>> convertToMapSampleVariantIndex(Result result) {
         if (result == null || result.isEmpty()) {
             return Collections.emptyMap();
         }
         Map<String, List<Variant>> map = convertToMap(result);
 
-        Map<String, SortedSet<VariantFileIndexConverter.VariantFileIndex>> mapVariantFileIndex = new HashMap<>();
+        Map<String, TreeSet<SampleVariantIndexEntry>> mapVariantFileIndex = new HashMap<>();
         for (Cell cell : result.rawCells()) {
             if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
                 String gt = SampleIndexSchema.getGt(cell, FILE_PREFIX_BYTES);
-                TreeSet<VariantFileIndexConverter.VariantFileIndex> values = new TreeSet<>();
+                TreeSet<SampleVariantIndexEntry> values = new TreeSet<>();
                 mapVariantFileIndex.put(gt, values);
                 int i = cell.getValueOffset();
                 for (Variant variant : map.get(gt)) {
-                    values.add(new VariantFileIndexConverter.VariantFileIndex(variant, cell.getValueArray()[i]));
-                    i++;
+                    values.add(new SampleVariantIndexEntry(variant, Bytes.toShort(cell.getValueArray(), i)));
+                    i += VariantFileIndexConverter.BYTES;
                 }
             }
         }
