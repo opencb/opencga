@@ -74,7 +74,7 @@ public final class CatalogDemo {
             String name = "User" + i;
             String password = id + "_pass";
             String email = id + "@gmail.com";
-            catalogManager.getUserManager().create(id, name, email, password, "organization", 2000L, Account.Type.FULL, null);
+            catalogManager.getUserManager().create(id, name, email, password, "organization", 2000L, Account.AccountType.FULL, null);
             userSessions.put(id, catalogManager.getUserManager().login(id, password));
         }
 

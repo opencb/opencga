@@ -227,9 +227,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                             org.opencb.opencga.core.models.file.File.Bioformat.UNKNOWN,
                             Paths.get(options.jobFolder).normalize().toAbsolutePath().resolve("JOBS").toUri(),
                             "JOBS/", null, TimeUtils.getTime(), TimeUtils.getTime(), "Default jobs folder",
-                            false, 0, FileInternal.initialize(), new Software(), new FileExperiment(), Collections.emptyList(),
-                            Collections.emptyList(), "", study.getRelease(), Collections.emptyList(),
-                            Collections.emptyMap(), Collections.emptyMap());
+                            false, 0, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", study.getRelease(), Collections.emptyList(), Collections.emptyMap(), FileInternal.initialize(),
+                            Collections.emptyMap());
                     file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                     file.setTags(Collections.emptyList());
                     file.setId(file.getPath().replace("/", ":"));

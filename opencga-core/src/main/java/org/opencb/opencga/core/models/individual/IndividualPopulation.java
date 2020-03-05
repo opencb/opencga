@@ -8,9 +8,6 @@ public class IndividualPopulation {
 
 
     public IndividualPopulation() {
-        this.name = "";
-        this.subpopulation = "";
-        this.description = "";
     }
 
     public IndividualPopulation(String name, String subpopulation, String description) {
@@ -21,7 +18,7 @@ public class IndividualPopulation {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Population{");
+        final StringBuilder sb = new StringBuilder("IndividualPopulation{");
         sb.append("name='").append(name).append('\'');
         sb.append(", subpopulation='").append(subpopulation).append('\'');
         sb.append(", description='").append(description).append('\'');
@@ -33,23 +30,26 @@ public class IndividualPopulation {
         return name;
     }
 
-    public void setName(String name) {
+    public IndividualPopulation setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getSubpopulation() {
         return subpopulation;
     }
 
-    public void setSubpopulation(String subpopulation) {
+    public IndividualPopulation setSubpopulation(String subpopulation) {
         this.subpopulation = subpopulation;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public IndividualPopulation setDescription(String description) {
         this.description = description;
+        return this;
     }
 }

@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2015-2017 OpenCB
  *
@@ -37,19 +38,18 @@ public class Family extends Annotable {
     private String id;
     private String name;
     private String uuid;
-
+    private List<Individual> members;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
-    private List<Individual> members;
 
     private String creationDate;
     private String modificationDate;
-    private FamilyInternal internal;
     private int expectedSize;
     private String description;
 
     private int release;
     private int version;
+    private FamilyInternal internal;
     private Map<String, Object> attributes;
 
     public Family() {
@@ -57,13 +57,13 @@ public class Family extends Annotable {
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String description, int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), description, null, expectedSize, -1, 1, annotationSets,
+        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), description, expectedSize, -1, 1, annotationSets, null,
                 attributes);
     }
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
-                  String creationDate, String description, FamilyInternal internal, int expectedSize, int release, int version,
-                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                  String creationDate, String description, int expectedSize, int release, int version, List<AnnotationSet> annotationSets,
+                  FamilyInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
@@ -74,8 +74,8 @@ public class Family extends Annotable {
         this.description = description;
         this.release = release;
         this.version = version;
-        this.internal = internal;
         this.annotationSets = ObjectUtils.defaultIfNull(annotationSets, new ArrayList<>());
+        this.internal = internal;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 

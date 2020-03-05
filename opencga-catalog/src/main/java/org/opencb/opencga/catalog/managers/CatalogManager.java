@@ -181,7 +181,7 @@ public class CatalogManager implements AutoCloseable {
 
         catalogDBAdaptorFactory.installCatalogDB(configuration);
 
-        User user = new User(OPENCGA, new Account().setType(Account.Type.ADMINISTRATOR).setExpirationDate(""))
+        User user = new User(OPENCGA, new Account().setType(Account.AccountType.ADMINISTRATOR).setExpirationDate(""))
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
                 .setOrganization(organization);
         userManager.create(user, password, null);

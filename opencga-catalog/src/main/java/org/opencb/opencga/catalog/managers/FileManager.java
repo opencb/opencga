@@ -3044,9 +3044,9 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // Create the folder in catalog
         File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
-                stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", false, 0, FileInternal.initialize(), null,
-                new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study),
-                Collections.emptyList(), null, null);
+                stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", false, 0, null, new FileExperiment(),
+                Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(), null,
+                FileInternal.initialize(), null);
         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
         fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
@@ -3228,9 +3228,9 @@ public class FileManager extends AnnotationSetManager<File> {
 
                         File folder = new File(dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                 File.Bioformat.NONE, dir.toUri(), destinyPath, null, TimeUtils.getTime(),
-                                TimeUtils.getTime(), params.getDescription(), true, 0, FileInternal.initialize(), new Software(),
-                                new FileExperiment(), Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study),
-                                Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
+                                TimeUtils.getTime(), params.getDescription(), true, 0, new Software(), new FileExperiment(),
+                                Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
+                                Collections.emptyMap(), FileInternal.initialize(), Collections.emptyMap());
                         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
                         fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
@@ -3283,9 +3283,9 @@ public class FileManager extends AnnotationSetManager<File> {
 
                         File subfile = new File(filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                 File.Bioformat.NONE, filePath.toUri(), destinyPath, null, TimeUtils.getTime(),
-                                TimeUtils.getTime(), params.getDescription(), true, size, internal, new Software(),
-                                new FileExperiment(), Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study),
-                                Collections.emptyList(), Collections.emptyMap(), new HashMap<>());
+                                TimeUtils.getTime(), params.getDescription(), true, size, new Software(), new FileExperiment(),
+                                Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
+                                Collections.emptyMap(), internal, new HashMap<>());
                         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
 
@@ -3365,9 +3365,9 @@ public class FileManager extends AnnotationSetManager<File> {
 
         File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
-                "", isExternal(study, filePath, fileUri), size, FileInternal.initialize(), new Software(), new FileExperiment(),
-                Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(),
-                Collections.emptyMap(), Collections.emptyMap());
+                "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
+                Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyMap(),
+                FileInternal.initialize(), Collections.emptyMap());
         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
 

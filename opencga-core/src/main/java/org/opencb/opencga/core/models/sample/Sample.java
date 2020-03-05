@@ -50,7 +50,6 @@ public class Sample extends Annotable {
     private List<String> fileIds;
 
     private SampleInternal internal;
-
     private Map<String, Object> attributes;
 
 
@@ -103,12 +102,15 @@ public class Sample extends Annotable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         Sample sample = (Sample) o;
-
         return new EqualsBuilder()
                 .append(release, sample.release)
                 .append(version, sample.version)

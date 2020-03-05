@@ -65,7 +65,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
             OpenCGAResult<User> queryResult = catalogManager.getUserManager()
                     .create(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null,
-                            Account.Type.GUEST, null);
+                            Account.AccountType.GUEST, null);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

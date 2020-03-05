@@ -26,6 +26,12 @@ import java.util.*;
  */
 public class Status {
 
+    private String name;
+    private String date;
+    private String description;
+    @Deprecated
+    private String message;
+
     /**
      * READY name means that the object is being used.
      */
@@ -38,11 +44,6 @@ public class Status {
 
     public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED);
 
-    private String name;
-    private String date;
-    private String description;
-    @Deprecated
-    private String message;
 
     public Status() {
         this(READY, "");
@@ -66,49 +67,12 @@ public class Status {
         this.description = description;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDate() {
-        return date;
-    }
-
-    public void setDate(String date) {
-        this.date = date;
-    }
-
-    public void setCurrentDate() {
-        this.date = TimeUtils.getTime();
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
 
     public static boolean isValid(String status) {
         if (status != null && (status.equals(READY) || status.equals(DELETED))) {
             return true;
         }
         return false;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Status{");
-        sb.append("name='").append(name).append('\'');
-        sb.append(", date='").append(date).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append('}');
-        return sb.toString();
     }
 
     @Override
@@ -169,5 +133,42 @@ public class Status {
                 positiveStatusList.add(s);
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Status{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Status setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public Status setDate(String date) {
+        this.date = date;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Status setDescription(String description) {
+        this.description = description;
+        return this;
     }
 }

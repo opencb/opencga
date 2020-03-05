@@ -26,11 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
- *         <p>
- *         Set of samples grouped according to criteria
- */
+
 public class Cohort extends Annotable {
 
     private String id;
@@ -39,15 +35,11 @@ public class Cohort extends Annotable {
     private String creationDate;
     private String modificationDate;
     private String description;
-
     private List<Sample> samples;
 
     private int release;
-
     private CohortInternal internal;
-
     private Map<String, Object> attributes;
-
 
     public Cohort() {
     }
@@ -67,11 +59,11 @@ public class Cohort extends Annotable {
         this.id = id;
         this.type = type;
         this.creationDate = creationDate;
-        this.internal = internal;
         this.description = description;
         this.samples = samples;
         this.annotationSets = annotationSets;
         this.release = release;
+        this.internal = internal;
         this.attributes = attributes;
     }
 
@@ -86,9 +78,9 @@ public class Cohort extends Annotable {
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", release=").append(release);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
     }
@@ -219,5 +211,4 @@ public class Cohort extends Annotable {
         this.attributes = attributes;
         return this;
     }
-
 }

@@ -56,11 +56,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private String creationDate;
     private String modificationDate;
     private String dueDate;
-    private ClinicalAnalysisInternal internal;
     private int release;
 
     private List<Comment> comments;
     private List<Alert> alerts;
+    private ClinicalAnalysisInternal internal;
     private Map<String, Object> attributes;
 
     public enum Type {
@@ -99,7 +99,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
                             Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
                             List<Interpretation> interpretations, Enums.Priority priority, ClinicalAnalysisAnalyst analyst,
                             List<String> flags, String creationDate, String dueDate, List<Comment> comments, List<Alert> alerts,
-                            ClinicalAnalysisInternal internal, int release, Map<String, Object> attributes) {
+                            int release, ClinicalAnalysisInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -116,9 +116,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.creationDate = creationDate;
         this.dueDate = dueDate;
         this.comments = comments;
-        this.internal = internal;
         this.release = release;
         this.alerts = alerts;
+        this.internal = internal;
         this.attributes = attributes;
     }
 

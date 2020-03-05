@@ -9,7 +9,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;
-import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.file.FileIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.job.JobIndexTask;
@@ -17,7 +16,6 @@ import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
@@ -63,7 +61,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             }
 
             if (user.getType() == null) {
-                user.setType(Account.Type.GUEST);
+                user.setType(Account.AccountType.GUEST);
             }
 
             OpenCGAResult<User> queryResult = catalogManager.getUserManager()

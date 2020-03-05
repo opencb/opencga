@@ -47,14 +47,11 @@ public class Study extends PrivateFields {
     private String creationDate;
     private String modificationDate;
     private String description;
-    private StudyInternal internal;
     private long size;
     private String fqn;
 
     private StudyNotification notification;
-
     private List<Group> groups;
-
     private List<File> files;
     private List<Job> jobs;
     private List<Individual> individuals;
@@ -63,17 +60,13 @@ public class Study extends PrivateFields {
     private List<Cohort> cohorts;
     private List<Panel> panels;
     private List<ClinicalAnalysis> clinicalAnalyses;
-
     private List<VariableSet> variableSets;
-
     private Map<Enums.Entity, List<PermissionRule>> permissionRules;
-
     private URI uri;
-
     private int release;
 
+    private StudyInternal internal;
     private Map<String, Object> attributes;
-
 
     public Study() {
     }
@@ -81,14 +74,14 @@ public class Study extends PrivateFields {
     public Study(String name, String alias, String description, StudyInternal internal, URI uri, int release) {
         this(alias, name, alias, TimeUtils.getTime(), description, null, 0, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new StudyInternal(new Status()), new HashMap<>(), uri, release, new HashMap<>());
+                new LinkedList<>(), new HashMap<>(), uri, release, internal, new HashMap<>());
     }
 
     public Study(String id, String name, String alias, String creationDate, String description, StudyNotification notification, long size,
                  List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
                  List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
-                 List<VariableSet> variableSets, StudyInternal internal, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri,
-                 int release, Map<String, Object> attributes) {
+                 List<VariableSet> variableSets, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release,
+                 StudyInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -418,5 +411,4 @@ public class Study extends PrivateFields {
             return this;
         }
     }
-
 }

@@ -5,12 +5,12 @@ import org.opencb.opencga.core.models.user.User;
 
 public class UserCreateParams extends org.opencb.opencga.core.models.user.UserCreateParams {
 
-    private Account.Type type;
+    private Account.AccountType type;
 
     public UserCreateParams() {
     }
 
-    public UserCreateParams(String id, String name, String email, String password, String organization, Account.Type type) {
+    public UserCreateParams(String id, String name, String email, String password, String organization, Account.AccountType type) {
         super(id, name, email, password, organization);
         this.type = type;
     }
@@ -28,11 +28,11 @@ public class UserCreateParams extends org.opencb.opencga.core.models.user.UserCr
         return sb.toString();
     }
 
-    public Account.Type getType() {
+    public Account.AccountType getType() {
         return type;
     }
 
-    public UserCreateParams setType(Account.Type type) {
+    public UserCreateParams setType(Account.AccountType type) {
         this.type = type;
         return this;
     }

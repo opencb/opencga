@@ -55,11 +55,11 @@ public class AbstractSolrManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("owner", "Owner", "owner@mail.com", PASSWORD, "", null, Account.Type.FULL, null);
-        catalogManager.getUserManager().create("admin1", "Admin", "admin@mail.com", PASSWORD, "", null, Account.Type.GUEST, null);
-        catalogManager.getUserManager().create("user1", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.GUEST, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.GUEST, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.GUEST, null);
+        catalogManager.getUserManager().create("owner", "Owner", "owner@mail.com", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("admin1", "Admin", "admin@mail.com", PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user1", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
 
         sessionIdOwner = catalogManager.getUserManager().login("owner", PASSWORD);
         sessionIdAdmin = catalogManager.getUserManager().login("admin1", PASSWORD);

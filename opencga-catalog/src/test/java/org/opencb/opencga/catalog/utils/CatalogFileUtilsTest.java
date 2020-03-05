@@ -76,7 +76,7 @@ public class CatalogFileUtilsTest {
         catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
 
         //Create USER
-        catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.AccountType.FULL, null);
         userSessionId = catalogManager.getUserManager().login("user", "asdf");
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
         String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "Homo sapiens",

@@ -1,7 +1,5 @@
 package org.opencb.opencga.core.models.file;
 
-import org.opencb.opencga.core.models.common.Status;
-
 import java.util.HashMap;
 import java.util.Map;
 
