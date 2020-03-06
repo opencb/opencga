@@ -20,11 +20,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.InferredSexReport;
@@ -46,7 +46,6 @@ public class InferredSexAnalysis extends OpenCgaTool {
 
     // Internal members
     private Individual individual;
-    private String validSampleId;
 
     public InferredSexAnalysis() {
     }
@@ -100,60 +99,25 @@ public class InferredSexAnalysis extends OpenCgaTool {
         }
 
         if (StringUtils.isNotEmpty(individualId)) {
-            // Individual ID is provided
-            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().get(studyId, individualId,
-                    QueryOptions.empty(), token);
-            if (individualResult.getNumResults() == 0) {
-                throw new ToolException("Not found individual for ID '" + individualId + "'.");
-            }
-            if (individualResult.getNumResults() > 1) {
-                throw new ToolException("More than one individual found for ID '" + individualId + "'.");
-            }
-            individual = individualResult.first();
+            // Check and get individual
+            individual = GeneticChecksUtils.getIndividualById(studyId, individualId, catalogManager, token);
 
-            Query query = new Query();
-            query.put("individual", individualId);
-            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(studyId, query, QueryOptions.empty(), token);
-            for (Sample individualSample : sampleResult.getResults()) {
-                if (Status.READY.equals(individualSample.getInternal().getStatus())) {
-                    if (StringUtils.isNotEmpty(validSampleId)) {
-                        throw new ToolException("More than one valid sample found for individual '" + individualId + "'.");
-                    }
-                    validSampleId = individualSample.getId();
-                }
-            }
-            if (StringUtils.isEmpty(validSampleId)) {
+            // Check and get valid sample, i.e., status equals to READY/INDEXED
+            Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
+            if (sample == null) {
                 throw new ToolException("Not found samples for individual '" + individualId + "'");
             }
-            if (StringUtils.isNotEmpty(sampleId) && !sampleId.equals(validSampleId)) {
+            if (StringUtils.isNotEmpty(sampleId) && !sampleId.equals(sample.getId())) {
                 throw new ToolException("Mismatch sample IDs for individual '" + individualId + "': sample provided '" + sampleId + "'"
-                        + " and sample found is '" + validSampleId + "'.");
+                        + " and sample found is '" + sample.getId() + "'.");
             }
         } else {
-            // Sample ID is provided
-            validSampleId = sampleId;
-            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(studyId, sampleId, QueryOptions.empty(), token);
-            if (sampleResult.getNumResults() == 0) {
-                throw new ToolException("Not found sample for ID '" + sampleId + "'.");
-            }
-            if (sampleResult.getNumResults() > 1) {
-                throw new ToolException("More than one sample found for ID '" + sampleId + "'.");
-            }
-            if (Status.READY.equals(sampleResult.first().getInternal().getStatus())) {
-                throw new ToolException("Sample '" + sampleId + "' is not valid. It must be READY.");
-            }
+            // Check sample (status equals to READY/INDEXED)
+            GeneticChecksUtils.getValidSampleById(studyId, sampleId, catalogManager, token);
 
-            Query query = new Query();
-            query.put("samples", sampleId);
-            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(studyId, query, QueryOptions.empty(),
-                    token);
-            if (individualResult.getNumResults() == 0) {
-                throw new ToolException("None individual found for sample '" + sampleId + "'.");
-            }
-            if (individualResult.getNumResults() > 1) {
-                throw new ToolException("More than one individual found for sample '" + sampleId + "'.");
-            }
-            individual = individualResult.first();
+            // Check and get individual
+            individual = GeneticChecksUtils.getIndividualBySampleId(studyId, sampleId, catalogManager, token);
+
             if (StringUtils.isNotEmpty(individualId) && !individualId.equals(individual.getId())) {
                 throw new ToolException("Mismatch individual IDs for sample '" + sampleId + "': individual provided '" + individualId + "'"
                         + " and individual found is '" + individual.getId() + "'.");
@@ -167,16 +131,13 @@ public class InferredSexAnalysis extends OpenCgaTool {
         step("inferred-sex", () -> {
             InferredSexAnalysisExecutor inferredSexExecutor = getToolExecutor(InferredSexAnalysisExecutor.class);
 
-            inferredSexExecutor.setStudy(studyId)
-                    .setSample(validSampleId)
+            inferredSexExecutor.setStudyId(studyId)
+                    .setIndividual(individual)
                     .execute();
 
             try {
-                // Update and save inferred sex report
+                // Save inferred sex report
                 InferredSexReport report = inferredSexExecutor.getInferredSexReport();
-                report.setReportedSex(individual.getSex().name());
-                report.setReportedSex(individual.getKaryotypicSex().name());
-
                 JacksonUtils.getDefaultObjectMapper().writer().writeValue(getOutDir().resolve(ID + ".report.json").toFile(), report);
             } catch (IOException e) {
                 throw new ToolException(e);

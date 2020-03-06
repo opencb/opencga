@@ -6,9 +6,11 @@ import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
 import org.opencb.opencga.analysis.variant.geneticChecks.InferredSexComputation;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -24,19 +26,23 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
     @Override
     public void run() throws ToolException {
         AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
-        FileManager fileManager = alignmentStorageManager.getCatalogManager().getFileManager();
+        CatalogManager catalogManager = alignmentStorageManager.getCatalogManager();
+        FileManager fileManager = catalogManager.getFileManager();
         String assembly;
         try {
-            assembly = GeneticChecksUtils.getAssembly(getStudy(), alignmentStorageManager.getCatalogManager(), getToken());
+            assembly = GeneticChecksUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
-        // Infer karyotypic sex
-        double[] ratios = InferredSexComputation.computeRatios(getStudy(), getSample(), assembly, fileManager,
-                alignmentStorageManager, getToken());
+        // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
+        Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(getStudyId(), getIndividual().getId(), catalogManager, getToken());
+        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), sample.getId(), assembly, fileManager, alignmentStorageManager,
+                getToken());
 
         // Set inferred sex report
-        setInferredSexReport(new InferredSexReport("", "", ratios[0], ratios[1], ""));
+        // TODO infer sex from ratios
+        setInferredSexReport(new InferredSexReport(getIndividual().getId(), sample.getId(), getIndividual().getSex().name(),
+                getIndividual().getKaryotypicSex().name(), ratios[0], ratios[1], ""));
     }
 }

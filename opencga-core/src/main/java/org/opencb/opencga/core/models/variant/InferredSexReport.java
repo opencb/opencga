@@ -2,6 +2,9 @@ package org.opencb.opencga.core.models.variant;
 
 public class InferredSexReport {
 
+    // Individual ID
+    private String individualId;
+
     // Sample ID
     private String sampleId;
 
@@ -21,12 +24,33 @@ public class InferredSexReport {
     public InferredSexReport() {
     }
 
-    public InferredSexReport(String reportedSex, String reportedKaryotypicSex, double ratioX, double ratioY, String inferredKaryotypicSex) {
+    public InferredSexReport(String individualId, String sampleId, String reportedSex, String reportedKaryotypicSex, double ratioX,
+                             double ratioY, String inferredKaryotypicSex) {
+        this.individualId = individualId;
+        this.sampleId = sampleId;
         this.reportedSex = reportedSex;
         this.reportedKaryotypicSex = reportedKaryotypicSex;
         this.ratioX = ratioX;
         this.ratioY = ratioY;
         this.inferredKaryotypicSex = inferredKaryotypicSex;
+    }
+
+    public String getIndividualId() {
+        return individualId;
+    }
+
+    public InferredSexReport setIndividualId(String individualId) {
+        this.individualId = individualId;
+        return this;
+    }
+
+    public String getSampleId() {
+        return sampleId;
+    }
+
+    public InferredSexReport setSampleId(String sampleId) {
+        this.sampleId = sampleId;
+        return this;
     }
 
     public String getReportedSex() {

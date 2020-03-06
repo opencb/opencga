@@ -13,9 +13,11 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.MendelianErrorsReport;
 import org.opencb.opencga.core.models.variant.MendelianErrorsReport.SampleAggregation;
 import org.opencb.opencga.core.models.variant.MendelianErrorsReport.SampleAggregation.ChromosomeAggregation;
@@ -293,6 +295,122 @@ public class GeneticChecksUtils {
         return new MendelianErrorsReport(numME, sampleAggregationList);
     }
 
+    public static Individual getIndividualById(String studyId, String individualId, CatalogManager catalogManager, String token)
+            throws ToolException {
+        OpenCGAResult<Individual> individualResult;
+        try {
+            individualResult = catalogManager.getIndividualManager().get(studyId, individualId, QueryOptions.empty(),
+                    token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        if (individualResult.getNumResults() == 0) {
+            throw new ToolException("Not found individual for ID '" + individualId + "'.");
+        }
+        if (individualResult.getNumResults() > 1) {
+            throw new ToolException("More than one individual found for ID '" + individualId + "'.");
+        }
+        return individualResult.first();
+    }
+
+    public static Individual getIndividualBySampleId(String studyId, String sampleId, CatalogManager catalogManager, String token) throws ToolException {
+        Query query = new Query();
+        query.put("samples", sampleId);
+        OpenCGAResult<Individual> individualResult;
+        try {
+            individualResult = catalogManager.getIndividualManager().search(studyId, query, QueryOptions.empty(),
+                    token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        if (individualResult.getNumResults() == 0) {
+            throw new ToolException("None individual found for sample '" + sampleId + "'.");
+        }
+        if (individualResult.getNumResults() > 1) {
+            throw new ToolException("More than one individual found for sample '" + sampleId + "'.");
+        }
+        return individualResult.first();
+    }
+
+    public static Sample getValidSampleByIndividualId(String studyId, String individualId, CatalogManager catalogManager, String token)
+            throws ToolException {
+        Sample sample = null;
+        Query query = new Query();
+        query.put("individual", individualId);
+        OpenCGAResult<Sample> sampleResult;
+        try {
+            sampleResult = catalogManager.getSampleManager().search(studyId, query, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        for (Sample individualSample : sampleResult.getResults()) {
+            if (Status.READY.equals(individualSample.getInternal().getStatus())) {
+                if (sample != null) {
+                    throw new ToolException("More than one valid sample found for individual '" + individualId + "'.");
+                }
+                sample = individualSample;
+            }
+        }
+        return sample;
+    }
+
+    public static Sample getValidSampleById(String studyId, String sampleId, CatalogManager catalogManager, String token)
+            throws ToolException {
+        OpenCGAResult<Sample> sampleResult;
+        try {
+            sampleResult = catalogManager.getSampleManager().get(studyId, sampleId, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        if (sampleResult.getNumResults() == 0) {
+            throw new ToolException("Not found sample for ID '" + sampleId + "'.");
+        }
+        if (sampleResult.getNumResults() > 1) {
+            throw new ToolException("More than one sample found for ID '" + sampleId + "'.");
+        }
+        if (Status.READY.equals(sampleResult.first().getInternal().getStatus())) {
+            throw new ToolException("Sample '" + sampleId + "' is not valid. It must be READY.");
+        }
+        return sampleResult.first();
+    }
+
+    public static List<Individual> getIndividualsByFamilyId(String studyId, String familyId, CatalogManager catalogManager, String token)
+            throws ToolException {
+        List<Individual> individuals = new ArrayList<>();
+        return individuals;
+    }
+
+    public static List<Individual> getRelativesByIndividualId(String studyId, String individualId, CatalogManager catalogManager,
+                                                              String token) throws ToolException {
+        List<Individual> individuals = new ArrayList<>();
+        return individuals;
+    }
+
+    public static List<Individual> getRelativesBySampleId(String studyId, String individualId, CatalogManager catalogManager,
+                                                          String token) throws ToolException {
+        List<Individual> individuals = new ArrayList<>();
+        return individuals;
+    }
+
+    public static List<String> getSampleIds(String studyId, List<Individual> individuals, CatalogManager catalogManager, String token)
+            throws ToolException {
+        // Get sample IDs from individuals
+        List<String> sampleIds = new ArrayList<>();
+        for (Individual individual : individuals) {
+            Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(studyId, individual.getId(), catalogManager, token);
+            if (sample == null) {
+                // It shouldn't happen: sample is never null, it was checked previously
+                throw new ToolException("Sample null for individual '" + individual.getId() + "'");
+            }
+            sampleIds.add(sample.getId());
+        }
+        return sampleIds;
+    }
+
+    //-------------------------------------------------------------------------
+    // P R I V A T E      M E T H O D S
+    //-------------------------------------------------------------------------
+
     private static int getNumLines(File file) throws ToolException {
         Command cmd = new Command(file.getAbsolutePath() + " -wl");
         cmd.run();
@@ -303,5 +421,4 @@ public class GeneticChecksUtils {
 
         return (Integer.parseInt(output.split("\t")[0]) - 1);
     }
-
 }
