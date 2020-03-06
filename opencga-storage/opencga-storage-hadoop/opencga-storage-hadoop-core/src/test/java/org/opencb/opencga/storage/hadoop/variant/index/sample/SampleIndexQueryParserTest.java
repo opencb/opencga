@@ -245,9 +245,9 @@ public class SampleIndexQueryParserTest {
         } else {
             assertEquals(VariantFileIndexConverter.FILTER_PASS_MASK, q.getFileIndexMask());
             if (pass) {
-                assertTrue(q.getValidFileIndex()[VariantFileIndexConverter.FILTER_PASS_MASK]);
+                assertTrue(q.getValidFileIndex1()[VariantFileIndexConverter.FILTER_PASS_MASK]);
             } else {
-                assertFalse(q.getValidFileIndex()[VariantFileIndexConverter.FILTER_PASS_MASK]);
+                assertFalse(q.getValidFileIndex1()[VariantFileIndexConverter.FILTER_PASS_MASK]);
             }
         }
         assertEquals(!covered, isValidParam(query, FILTER));

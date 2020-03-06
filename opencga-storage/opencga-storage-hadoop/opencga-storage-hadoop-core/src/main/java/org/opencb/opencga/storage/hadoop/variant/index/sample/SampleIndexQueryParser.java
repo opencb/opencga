@@ -484,7 +484,7 @@ public class SampleIndexQueryParser {
 
     protected SampleFileIndexQuery parseFileQuery(Query query, String sample, Function<String, Collection<String>> filesFromSample,
                                                   boolean partialFilesIndex) {
-        byte fileIndexMask = 0;
+        short fileIndexMask = 0;
 
         Set<Integer> typeCodes = Collections.emptySet();
 
@@ -492,9 +492,7 @@ public class SampleIndexQueryParser {
             List<String> types = new ArrayList<>(query.getAsStringList(VariantQueryParam.TYPE.key()));
             if (!types.isEmpty()) {
                 typeCodes = new HashSet<>(types.size());
-                fileIndexMask |= VariantFileIndexConverter.TYPE_1_MASK;
-                fileIndexMask |= VariantFileIndexConverter.TYPE_2_MASK;
-                fileIndexMask |= VariantFileIndexConverter.TYPE_3_MASK;
+                fileIndexMask |= VariantFileIndexConverter.TYPE_MASK;
 
                 for (String type : types) {
                     typeCodes.add(VariantFileIndexConverter.getTypeCode(VariantType.valueOf(type.toUpperCase())));
@@ -545,14 +543,12 @@ public class SampleIndexQueryParser {
             List<String> qualValues = VariantQueryUtils.splitValue(qualValue).getValue();
             if (qualValues.size() == 1) {
 
-                fileIndexMask |= VariantFileIndexConverter.QUAL_1_MASK;
-                fileIndexMask |= VariantFileIndexConverter.QUAL_2_MASK;
+                fileIndexMask |= VariantFileIndexConverter.QUAL_MASK;
 
                 String[] split = VariantQueryUtils.splitOperator(qualValue);
                 String op = split[1];
                 double value = Double.valueOf(split[2]);
                 qualQuery = getRangeQuery(op, value, SampleIndexConfiguration.QUAL_THRESHOLDS, 0, IndexUtils.MAX);
-                fileIndexMask |= VariantFileIndexConverter.QUAL_MASK;
 
                 if (qualQuery.isExactQuery() && !partialFilesIndex) {
                     query.remove(QUAL.key());
@@ -620,9 +616,12 @@ public class SampleIndexQueryParser {
         }
 
         // Build validFileIndex array
-        boolean[] validFileIndex = new boolean[1 << Byte.SIZE];
+        boolean[] validFileIndex1 = new boolean[1 << Byte.SIZE];
+        boolean[] validFileIndex2 = new boolean[1 << Byte.SIZE];
 
         if (fileIndexMask != IndexUtils.EMPTY_MASK) {
+            boolean hasFileIndexMask1 = IndexUtils.getByte1(fileIndexMask) != IndexUtils.EMPTY_MASK;
+            boolean hasFileIndexMask2 = IndexUtils.getByte2(fileIndexMask) != IndexUtils.EMPTY_MASK;
             int qualMin = qualQuery == null ? 0 : qualQuery.getMinCodeInclusive();
             int qualMax = qualQuery == null ? 1 : qualQuery.getMaxCodeExclusive();
             int dpMin = dpQuery == null ? 0 : dpQuery.getMinCodeInclusive();
@@ -643,13 +642,18 @@ public class SampleIndexQueryParser {
                         validFile |= q << VariantFileIndexConverter.QUAL_SHIFT;
                         validFile |= dp << VariantFileIndexConverter.DP_SHIFT;
 
-                        validFileIndex[validFile] = true;
+                        if (hasFileIndexMask1) {
+                            validFileIndex1[IndexUtils.getByte1(validFile)] = true;
+                        }
+                        if (hasFileIndexMask2) {
+                            validFileIndex2[IndexUtils.getByte2(validFile)] = true;
+                        }
                     }
                 }
             }
         }
 
-        return new SampleFileIndexQuery(sample, fileIndexMask, qualQuery, dpQuery, validFileIndex);
+        return new SampleFileIndexQuery(sample, fileIndexMask, qualQuery, dpQuery, validFileIndex1, validFileIndex2);
     }
 
     private boolean hasSNPFilter(List<String> types) {

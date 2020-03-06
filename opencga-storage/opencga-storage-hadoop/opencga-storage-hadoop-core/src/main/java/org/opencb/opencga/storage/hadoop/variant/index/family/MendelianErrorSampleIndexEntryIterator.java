@@ -52,8 +52,23 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     }
 
     @Override
-    public byte nextFileIndex() {
-        return getGtIterator().nextFileIndex();
+    public short nextFileIndexEntry() {
+        throw new RuntimeException("TODO");
+//        return getGtIterator().nextFileIndexEntry();
+    }
+
+    @Override
+    public boolean isMultiFileIndex() {
+        throw new RuntimeException("TODO");
+    }
+
+    private int nextFileIndex() {
+        throw new RuntimeException("TODO");
+    }
+
+    @Override
+    public short nextMultiFileIndexEntry() {
+        throw new RuntimeException("TODO");
     }
 
     @Override
@@ -63,8 +78,8 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     }
 
     @Override
-    public byte nextParentsIndex() {
-        return getGtIterator().nextParentsIndex();
+    public byte nextParentsIndexEntry() {
+        return getGtIterator().nextParentsIndexEntry();
     }
 
     @Override

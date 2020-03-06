@@ -268,4 +268,11 @@ public final class IndexUtils {
         return Math.abs(a - b) < (DELTA / 10);
     }
 
+    public static int getByte1(int v) {
+        return v & 0xFF;
+    }
+
+    public static int getByte2(int v) {
+        return getByte1(v >> Byte.SIZE);
+    }
 }

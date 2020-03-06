@@ -268,8 +268,8 @@ public class SampleIndexEntry {
             return fileIndex;
         }
 
-        public byte getFileIndex(int idx) {
-            return fileIndex[fileIndexOffset + idx];
+        public short getFileIndex(int idx) {
+            return Bytes.toShort(fileIndex, fileIndexOffset + idx * Short.BYTES);
         }
 
         public SampleIndexGtEntry setFileIndex(byte[] fileIndex) {

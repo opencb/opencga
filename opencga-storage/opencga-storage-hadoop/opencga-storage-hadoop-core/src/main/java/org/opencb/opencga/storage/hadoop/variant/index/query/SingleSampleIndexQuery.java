@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -74,8 +76,16 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
         return motherFilter != EMPTY_PARENT_FILTER;
     }
 
-    public byte getFileIndexMask() {
+    public short getFileIndexMask() {
         return sampleFileIndexQuery.getFileIndexMask();
+    }
+
+    public byte getFileIndexMask1() {
+        return (byte) IndexUtils.getByte1(sampleFileIndexQuery.getFileIndexMask());
+    }
+
+    public byte getFileIndexMask2() {
+        return (byte) IndexUtils.getByte2(sampleFileIndexQuery.getFileIndexMask());
     }
 
     public SampleFileIndexQuery getSampleFileIndexQuery() {

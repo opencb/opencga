@@ -153,11 +153,6 @@ public class SampleIndexQuery {
         return sampleFileIndexQuery == null ? new SampleFileIndexQuery(sample) : sampleFileIndexQuery;
     }
 
-    public byte getFileIndexMask(String sample) {
-        SampleFileIndexQuery q = getSampleFileIndexQuery(sample);
-        return q == null ? EMPTY_MASK : q.getFileIndexMask();
-    }
-
 //    public byte getFileIndex(String sample) {
 //        SampleFileIndexQuery q = getSampleFileIndexQuery(sample);
 //        return q == null ? EMPTY_MASK : q.getFileIndex();

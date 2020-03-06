@@ -19,32 +19,32 @@ public class VariantFileIndexConverter {
     public static final int QUAL_SIZE = 2;
     public static final int DP_SIZE = 3;
 
-    public static final int FILE_IDX_SHIFT = 2;
-    public static final int FILTER_PASS_SHIFT = FILE_IDX_SHIFT + FILE_IDX_SIZE;
-    public static final int TYPE_SHIFT = FILTER_PASS_SHIFT + 1;
-    public static final int QUAL_SHIFT = TYPE_SHIFT + TYPE_SIZE;
+    public static final int FILE_IDX_SHIFT = 1;
+    public static final int TYPE_SHIFT = FILE_IDX_SHIFT + FILE_IDX_SIZE;
+    public static final int FILTER_PASS_SHIFT = TYPE_SHIFT + TYPE_SIZE;
+    public static final int QUAL_SHIFT = FILTER_PASS_SHIFT + 1;
     public static final int DP_SHIFT = QUAL_SHIFT + QUAL_SIZE;
 
     public static final short MULTI_FILE_MASK      = (short) (1 << 0);
-    public static final short DISCREPANCY_MASK     = (short) (1 << 1);
     public static final short FILE_IDX_1_MASK      = (short) (1 << FILE_IDX_SHIFT + 0);
     public static final short FILE_IDX_2_MASK      = (short) (1 << FILE_IDX_SHIFT + 1);
     public static final short FILE_IDX_3_MASK      = (short) (1 << FILE_IDX_SHIFT + 2);
     public static final short FILE_IDX_4_MASK      = (short) (1 << FILE_IDX_SHIFT + 3);
-    public static final short FILTER_PASS_MASK     = (short) (1 << FILTER_PASS_SHIFT);
     public static final short TYPE_1_MASK          = (short) (1 << TYPE_SHIFT);
     public static final short TYPE_2_MASK          = (short) (1 << TYPE_SHIFT + 1);
     public static final short TYPE_3_MASK          = (short) (1 << TYPE_SHIFT + 2);
+    public static final short FILTER_PASS_MASK     = (short) (1 << FILTER_PASS_SHIFT);
     public static final short QUAL_1_MASK          = (short) (1 << QUAL_SHIFT);
     public static final short QUAL_2_MASK          = (short) (1 << QUAL_SHIFT + 1);
     public static final short DP_1_MASK            = (short) (1 << DP_SHIFT);
     public static final short DP_2_MASK            = (short) (1 << DP_SHIFT + 1);
     public static final short DP_3_MASK            = (short) (1 << DP_SHIFT + 2);
+//    public static final short DISCREPANCY_MASK     = (short) (1 << DP_SHIFT+DP_SIZE);
 
-    public static final byte FILE_IDX_MASK        = (byte) (FILE_IDX_1_MASK | FILE_IDX_2_MASK | FILE_IDX_3_MASK | FILE_IDX_4_MASK);
-    public static final byte TYPE_MASK            = (byte) (TYPE_1_MASK | TYPE_2_MASK | TYPE_3_MASK);
-    public static final byte QUAL_MASK            = (byte) (QUAL_1_MASK | QUAL_2_MASK);
-    public static final byte DP_MASK              = (byte) (DP_1_MASK | DP_2_MASK | DP_3_MASK);
+    public static final short FILE_IDX_MASK        = (short) (FILE_IDX_1_MASK | FILE_IDX_2_MASK | FILE_IDX_3_MASK | FILE_IDX_4_MASK);
+    public static final short TYPE_MASK            = (short) (TYPE_1_MASK | TYPE_2_MASK | TYPE_3_MASK);
+    public static final short QUAL_MASK            = (short) (QUAL_1_MASK | QUAL_2_MASK);
+    public static final short DP_MASK              = (short) (DP_1_MASK | DP_2_MASK | DP_3_MASK);
 
     public static final int TYPE_SNV_CODE = 0;
     public static final int TYPE_INDEL_CODE = 1;
@@ -54,6 +54,7 @@ public class VariantFileIndexConverter {
     public static final int TYPE_CNV_CODE = 5;
     public static final int TYPE_REAR_CODE = 6;
     public static final int TYPE_OTHER_CODE = 7;
+
     public static final int BYTES = Short.BYTES;
 
 

@@ -26,6 +26,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -79,13 +80,20 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         ObjectMap params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
-                .append(VariantStorageOptions.ANNOTATE.key(), true)
-//                .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DS,GL")
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), CellBaseRestVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
 
         runETL(getVariantStorageEngine(), smallInputUri, outputUri, params, true, true, true);
+        params.append(VariantStorageOptions.STUDY.key(), STUDY_NAME_2);
+        params.append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.MULTI);
+
+        runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
+        runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
+        runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
+
+        variantStorageEngine.annotate(new Query(), new QueryOptions());
 
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
 

@@ -18,6 +18,17 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
     boolean hasNext();
 
     /**
+     * Skip next element. Avoid conversion.
+     */
+    void skip();
+
+    /**
+     * Move cursor to next variant.
+     * @return next variant
+     */
+    Variant next();
+
+    /**
      * @return the index of the element that would be returned by a
      * subsequent call to {@code next}.
      */
@@ -38,32 +49,26 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
 
     boolean hasFileIndex();
 
+    boolean isMultiFileIndex();
+
     /**
      * @return the file index value of the next element.
      */
-    byte nextFileIndex();
+    short nextFileIndexEntry();
+
+    short nextMultiFileIndexEntry();
 
     boolean hasParentsIndex();
 
     /**
      * @return the parents index value of the next element.
      */
-    byte nextParentsIndex();
+    byte nextParentsIndexEntry();
 
     /**
      * @return the AnnotationIndexEntry of the next element.
      */
     AnnotationIndexEntry nextAnnotationIndexEntry();
-
-    /**
-     * Skip next element. Avoid conversion.
-     */
-    void skip();
-
-    /**
-     * @return next variant
-     */
-    Variant next();
 
     int getApproxSize();
 }

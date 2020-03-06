@@ -9,6 +9,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationInde
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 
@@ -185,8 +186,10 @@ public class SampleIndexEntryFilter {
                 if (filterFile(variants)) {
 
                     // Test parents filter (if any)
-                    if (!variants.hasParentsIndex()
-                            || testParentsGenotypeCode(variants.nextParentsIndex(), query.getFatherFilter(), query.getMotherFilter())) {
+                    if (!variants.hasParentsIndex() || testParentsGenotypeCode(
+                            variants.nextParentsIndexEntry(),
+                            query.getFatherFilter(),
+                            query.getMotherFilter())) {
 
                         // Only at this point, get the variant.
                         Variant variant = variants.next();
@@ -206,7 +209,23 @@ public class SampleIndexEntryFilter {
         if (query.getFileIndexMask() == EMPTY_MASK || !variants.hasFileIndex()) {
             return true;
         }
-        return query.getSampleFileIndexQuery().getValidFileIndex()[variants.nextFileIndex() & query.getFileIndexMask()];
+        if (filterFile(variants.nextFileIndexEntry())) {
+            return true;
+        }
+        while (variants.isMultiFileIndex()) {
+            if (filterFile(variants.nextMultiFileIndexEntry())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean filterFile(short fileIndex) {
+        SampleFileIndexQuery fileQuery = query.getSampleFileIndexQuery();
+        int v = fileIndex & fileQuery.getFileIndexMask();
+
+        return (!fileQuery.hasFileIndexMask1() || fileQuery.getValidFileIndex1()[getByte1(v)])
+                && (!fileQuery.hasFileIndexMask2() || fileQuery.getValidFileIndex2()[getByte2(v)]);
     }
 
     public static boolean isNonIntergenic(byte summaryIndex) {
