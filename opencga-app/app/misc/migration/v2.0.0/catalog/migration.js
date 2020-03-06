@@ -125,6 +125,19 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
     // #1531
     doc['status']['description'] = doc['status']['message'];
 
+    var filters = [];
+    if (isNotUndefinedOrNull(doc.configs) && isNotEmptyArray(doc.configs.filters)) {
+        filters = doc.configs.filters;
+    }
+
+    for (var filter of filters) {
+        filter['id'] = filter['name'];
+        filter['resource'] = filter['bioformat'];
+
+        delete filter['name'];
+        delete filter['bioformat'];
+    }
+
     var set = {
         "quota": {
             "diskUsage": doc['size'],
@@ -135,7 +148,8 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
         "internal": {
             "status": doc['status']
         },
-        "_password": doc["password"]
+        "_password": doc["password"],
+        "filters": filters
     };
     var unset = {
         "password": "",
@@ -143,6 +157,7 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
         "size": "",
         "account.authOrigin": "",
         "status": "",
+        "configs.filters": ""
     };
 
     // #1529

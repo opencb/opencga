@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.user;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.project.Project;
 
 import java.util.*;
@@ -40,7 +41,8 @@ public class User {
 
     private List<Project> projects;
 
-    private UserConfiguration configs;
+    private Map<String, ObjectMap> configs;
+    private List<UserFilter> filters;
     private Map<String, Object> attributes;
 
     public User() {
@@ -48,15 +50,15 @@ public class User {
 
     public User(String id, Account account) {
         this(id, id, null, null, account, new UserInternal(new UserStatus()), null, Collections.emptyList(), Collections.emptyMap(),
-                Collections.emptyMap());
+                new LinkedList<>(), Collections.emptyMap());
     }
 
     public User(String id, String name, String email, String organization, UserInternal internal) {
-        this(id, name, email, organization, null, internal, null, new ArrayList<>(), new HashMap<>(), new HashMap<>());
+        this(id, name, email, organization, null, internal, null, new ArrayList<>(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
     }
 
     public User(String id, String name, String email, String organization, Account account, UserInternal internal, UserQuota quota,
-                List<Project> projects, Map<String, Object> configs, Map<String, Object> attributes) {
+                List<Project> projects, Map<String, ObjectMap> configs, List<UserFilter> filters, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -65,11 +67,8 @@ public class User {
         this.internal = internal;
         this.quota = quota;
         this.projects = projects;
-        if (configs == null) {
-            this.configs = new UserConfiguration();
-        } else {
-            this.configs = new UserConfiguration(configs);
-        }
+        this.configs = configs;
+        this.filters = filters;
         this.attributes = attributes;
     }
 
@@ -85,11 +84,11 @@ public class User {
         sb.append(", quota=").append(quota);
         sb.append(", projects=").append(projects);
         sb.append(", configs=").append(configs);
+        sb.append(", filters=").append(filters);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
-
 
     public String getId() {
         return id;
@@ -163,12 +162,21 @@ public class User {
         return this;
     }
 
-    public UserConfiguration getConfigs() {
+    public Map<String, ObjectMap> getConfigs() {
         return configs;
     }
 
-    public User setConfigs(UserConfiguration configs) {
+    public User setConfigs(Map<String, ObjectMap> configs) {
         this.configs = configs;
+        return this;
+    }
+
+    public List<UserFilter> getFilters() {
+        return filters;
+    }
+
+    public User setFilters(List<UserFilter> filters) {
+        this.filters = filters;
         return this;
     }
 

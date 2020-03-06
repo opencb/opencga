@@ -146,8 +146,8 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         SESSION_LOGOUT("sessions.logout", TEXT_ARRAY, ""),
 
         CONFIGS("configs", TEXT_ARRAY, ""),
-        CONFIGS_FILTERS("configs.filters", TEXT_ARRAY, ""),
-        CONFIGS_FILTERS_NAME("configs.filters.name", TEXT, "");
+        FILTERS("filters", TEXT_ARRAY, ""),
+        FILTERS_ID("filters.id", TEXT, "");
 
         private static Map<String, QueryParams> map;
         static {
@@ -192,9 +192,9 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     }
 
     enum FilterParams implements QueryParam {
-        NAME("name", TEXT, ""),
+        ID("id", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
-        BIOFORMAT("bioformat", TEXT, ""),
+        RESOURCE("resource", TEXT, ""),
         QUERY("query", TEXT, ""),
         OPTIONS("options", TEXT, "");
 

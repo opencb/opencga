@@ -38,7 +38,6 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
@@ -189,7 +188,9 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(user.getName(), "name");
         checkEmail(user.getEmail());
         ParamUtils.checkObj(user.getAccount(), "account");
-        ParamUtils.defaultObject(user.getQuota(), UserQuota::new);
+        user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
+        user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
+        user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
         user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
         user.setOrganization(ParamUtils.defaultObject(user.getOrganization(), ""));
 
@@ -774,9 +775,9 @@ public class UserManager extends AbstractManager {
      * Add a new filter to the user account.
      * <p>
      * @param userId       user id to whom the filter will be associated.
-     * @param name         Filter name.
+     * @param id           Filter id.
      * @param description  Filter description.
-     * @param bioformat    Bioformat where the filter should be applied.
+     * @param resource     Resource where the filter should be applied.
      * @param query        Query object.
      * @param queryOptions Query options object.
      * @param token    session id of the user asking to store the filter.
@@ -784,12 +785,12 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException if there already exists a filter with that same name for the user or if the user corresponding to the
      *                          session id is not the same as the provided user id.
      */
-    public OpenCGAResult<UserFilter> addFilter(String userId, String name, String description, File.Bioformat bioformat, Query query,
+    public OpenCGAResult<UserFilter> addFilter(String userId, String id, String description, Enums.Resource resource, Query query,
                                                QueryOptions queryOptions, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
-        ParamUtils.checkParameter(name, "name");
-        ParamUtils.checkObj(bioformat, "bioformat");
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkObj(resource, "resource");
         ParamUtils.checkObj(query, "Query");
         ParamUtils.checkObj(queryOptions, "QueryOptions");
         if (description == null) {
@@ -799,9 +800,9 @@ public class UserManager extends AbstractManager {
         String userIdAux = getUserId(token);
         ObjectMap auditParams = new ObjectMap()
                 .append("userId", userId)
-                .append("name", name)
+                .append("id", id)
                 .append("description", description)
-                .append("bioformat", bioformat)
+                .append("resource", resource)
                 .append("query", query)
                 .append("queryOptions", queryOptions)
                 .append("token", token);
@@ -813,12 +814,12 @@ public class UserManager extends AbstractManager {
 
             Query queryExists = new Query()
                     .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                    .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
+                    .append(UserDBAdaptor.QueryParams.FILTERS_ID.key(), id);
             if (userDBAdaptor.count(queryExists).getNumMatches() > 0) {
-                throw new CatalogException("There already exists a filter called " + name + " for user " + userId);
+                throw new CatalogException("There already exists a filter called " + id + " for user " + userId);
             }
 
-            UserFilter filter = new UserFilter(name, description, bioformat, query, queryOptions);
+            UserFilter filter = new UserFilter(id, description, resource, query, queryOptions);
             OpenCGAResult result = userDBAdaptor.addFilter(userId, filter);
             auditManager.auditUser(userIdAux, Enums.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -860,7 +861,7 @@ public class UserManager extends AbstractManager {
 
             Query queryExists = new Query()
                     .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                    .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
+                    .append(UserDBAdaptor.QueryParams.FILTERS_ID.key(), name);
             if (userDBAdaptor.count(queryExists).getNumMatches() == 0) {
                 throw new CatalogException("There is no filter called " + name + " for user " + userId);
             }
@@ -987,14 +988,14 @@ public class UserManager extends AbstractManager {
 
             Query query = new Query()
                     .append(UserDBAdaptor.QueryParams.ID.key(), userId);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.FILTERS.key());
             OpenCGAResult<User> userDataResult = userDBAdaptor.get(query, queryOptions);
 
             if (userDataResult.getNumResults() != 1) {
                 throw new CatalogException("Internal error: User " + userId + " not found.");
             }
 
-            List<UserFilter> filters = userDataResult.first().getConfigs().getFilters();
+            List<UserFilter> filters = userDataResult.first().getFilters();
             auditManager.auditUser(userIdAux, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1080,12 +1081,12 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Internal error: Could not get user " + userId);
             }
 
-            UserConfiguration configs = userDataResult.first().getConfigs();
+            Map<String, ObjectMap> configs = userDataResult.first().getConfigs();
             if (configs == null) {
                 throw new CatalogException("Internal error: Configuration object is null.");
             }
 
-            if (configs.get(name) == null) {
+            if (!configs.containsKey(name)) {
                 throw new CatalogException("Error: Cannot delete configuration with name " + name + ". Configuration name not found.");
             }
 
@@ -1131,22 +1132,20 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Internal error: Could not get user " + userId);
             }
 
-            UserConfiguration configs = userDataResult.first().getConfigs();
+            Map<String, ObjectMap> configs = userDataResult.first().getConfigs();
             if (configs == null) {
                 throw new CatalogException("Internal error: Configuration object is null.");
             }
 
-            if (StringUtils.isNotEmpty(name) && configs.get(name) == null) {
+            if (StringUtils.isNotEmpty(name) && !configs.containsKey(name)) {
                 throw new CatalogException("Error: Cannot fetch configuration with name " + name + ". Configuration name not found.");
             }
 
-            // Remove filters form configs array
-            configs.remove("filters");
-            Map configMap = StringUtils.isEmpty(name) ? configs : (Map) configs.get(name);
             auditManager.auditUser(userIdAux, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new OpenCGAResult(userDataResult.getTime(), userDataResult.getEvents(), 1, Collections.singletonList(configMap), 1);
+            return new OpenCGAResult(userDataResult.getTime(), userDataResult.getEvents(), 1, Collections.singletonList(configs.get(name)),
+                    1);
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, Enums.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1158,15 +1157,15 @@ public class UserManager extends AbstractManager {
     private UserFilter getFilter(String userId, String name) throws CatalogException {
         Query query = new Query()
                 .append(UserDBAdaptor.QueryParams.ID.key(), userId);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.FILTERS.key());
         OpenCGAResult<User> userDataResult = userDBAdaptor.get(query, queryOptions);
 
         if (userDataResult.getNumResults() != 1) {
             throw new CatalogException("Internal error: User " + userId + " not found.");
         }
 
-        for (UserFilter filter : userDataResult.first().getConfigs().getFilters()) {
-            if (name.equals(filter.getName())) {
+        for (UserFilter filter : userDataResult.first().getFilters()) {
+            if (name.equals(filter.getId())) {
                 return filter;
             }
         }
