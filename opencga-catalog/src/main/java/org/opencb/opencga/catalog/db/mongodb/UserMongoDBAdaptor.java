@@ -205,10 +205,10 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         // Insert the filter
         Bson bsonQuery = Filters.and(
                 Filters.eq(QueryParams.ID.key(), userId),
-                Filters.ne(QueryParams.CONFIGS_FILTERS_NAME.key(), filter.getName())
+                Filters.ne(QueryParams.FILTERS_ID.key(), filter.getId())
         );
         Bson filterDocument = getMongoDBDocument(filter, "Filter");
-        Bson update = Updates.push(QueryParams.CONFIGS_FILTERS.key(), filterDocument);
+        Bson update = Updates.push(QueryParams.FILTERS.key(), filterDocument);
 
         DataResult result = userCollection.update(bsonQuery, update, null);
 
@@ -230,15 +230,15 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throw new CatalogDBException("Nothing to be updated. No parameters were passed.");
         }
 
-        final String prefixUpdate = CONFIGS_FILTERS.key() + ".$.";
+        final String prefixUpdate = FILTERS.key() + ".$.";
         Document parameters = new Document();
 
         if (params.get(FilterParams.DESCRIPTION.key()) != null) {
             parameters.put(prefixUpdate + FilterParams.DESCRIPTION.key(), params.get(FilterParams.DESCRIPTION.key()));
         }
 
-        if (params.get(FilterParams.BIOFORMAT.key()) != null) {
-            parameters.put(prefixUpdate + FilterParams.BIOFORMAT.key(), params.get(FilterParams.BIOFORMAT.key()).toString());
+        if (params.get(FilterParams.RESOURCE.key()) != null) {
+            parameters.put(prefixUpdate + FilterParams.RESOURCE.key(), params.get(FilterParams.RESOURCE.key()).toString());
         }
 
         if (params.get(FilterParams.QUERY.key()) != null) {
@@ -256,7 +256,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
         Query query = new Query()
                 .append(ID.key(), userId)
-                .append(CONFIGS_FILTERS_NAME.key(), name);
+                .append(FILTERS_ID.key(), name);
         return new OpenCGAResult(userCollection.update(parseQuery(query), new Document("$set", parameters), null));
     }
 
@@ -265,9 +265,9 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         // Delete the filter
         Bson bsonQuery = Filters.and(
                 Filters.eq(QueryParams.ID.key(), userId),
-                Filters.eq(QueryParams.CONFIGS_FILTERS_NAME.key(), name)
+                Filters.eq(QueryParams.FILTERS_ID.key(), name)
         );
-        Bson update = Updates.pull(QueryParams.CONFIGS_FILTERS.key(), new Document(FilterParams.NAME.key(), name));
+        Bson update = Updates.pull(QueryParams.FILTERS.key(), new Document(FilterParams.ID.key(), name));
         DataResult result = userCollection.update(bsonQuery, update, null);
 
         if (result.getNumUpdated() == 0) {
@@ -669,8 +669,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case TOOL_NAME:
                     case TOOL_ALIAS:
                     case CONFIGS:
-                    case CONFIGS_FILTERS:
-                    case CONFIGS_FILTERS_NAME:
+                    case FILTERS:
+                    case FILTERS_ID:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:

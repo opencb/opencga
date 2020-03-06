@@ -255,10 +255,10 @@ public class UserWSServer extends OpenCGAWSServer {
                 action = ParamUtils.BasicUpdateAction.ADD;
             }
             if (action == ParamUtils.BasicUpdateAction.ADD) {
-                return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(),
-                        params.getBioformat(), params.getQuery(), params.getOptions(), token));
+                return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getId(), params.getDescription(),
+                        params.getResource(), params.getQuery(), params.getOptions(), token));
             } else {
-                return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, params.getName(), token));
+                return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, params.getId(), token));
             }
         } catch (Exception e) {
             return createErrorResponse(e);

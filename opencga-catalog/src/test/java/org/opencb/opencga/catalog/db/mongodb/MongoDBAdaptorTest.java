@@ -172,7 +172,7 @@ public class MongoDBAdaptorTest extends GenericTest {
          * Let's init the database with some basic data to perform each of the tests
          */
         user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
-                Collections.emptyList(), new HashMap<>(), new HashMap<>());
+                Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
         catalogUserDBAdaptor.insert(user1, "1234", null);
         catalogProjectDBAdaptor.insert(new Project("P1", "project", "", null, 1,
                 new ProjectInternal(new Datastores(), new Status())), "jcoll", null);
@@ -185,7 +185,7 @@ public class MongoDBAdaptorTest extends GenericTest {
         catalogUserDBAdaptor.insert(user2, "1111", null);
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "SPAIN", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
-                Collections.emptyList(), new HashMap<>(), new HashMap<>());
+                Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
         catalogUserDBAdaptor.insert(user3, "2222", null);
         catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", null, "very long description", null,
                 Collections.emptyList(), 1, new ProjectInternal(new Datastores(), new Status()), Collections.emptyMap()
@@ -202,7 +202,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                         null, null, 1, new StudyInternal(new Status()), Collections.emptyMap()), null);
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "Organization", null, new UserInternal(new UserStatus()),
-                new UserQuota(-1, -1, -1, -1), Collections.emptyList(), new HashMap<>(), new HashMap<>());
+                new UserQuota(-1, -1, -1, -1), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
 
         catalogUserDBAdaptor.insert(user4, "pfuriopass", null);
         catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", null, "My description", null,

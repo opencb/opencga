@@ -23,13 +23,16 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.user.*;
+import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserFilter;
+import org.opencb.opencga.core.models.user.UserInternal;
+import org.opencb.opencga.core.models.user.UserStatus;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -110,53 +113,60 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         ObjectMap genomeMapsConfig = new ObjectMap("lastPosition", "4:1222222:1333333");
         genomeMapsConfig.put("otherConf", Arrays.asList(1, 2, 3, 4, 5));
         catalogUserDBAdaptor.setConfig(user1.getId(), "genomemaps", genomeMapsConfig);
+        catalogUserDBAdaptor.setConfig(user1.getId(), "genomemaps2", genomeMapsConfig);
 
         User user = catalogUserDBAdaptor.get(user1.getId(), null).first();
         assertNotNull(user.getConfigs().get("genomemaps"));
-        Map<String, Object> genomemaps = (Map<String, Object>) user.getConfigs().get("genomemaps");
+        assertNotNull(user.getConfigs().get("genomemaps2"));
+        Map<String, Object> genomemaps = user.getConfigs().get("genomemaps");
         assertNotNull(genomemaps.get("otherConf"));
         assertNotNull(genomemaps.get("lastPosition"));
+
+        catalogUserDBAdaptor.deleteConfig(user1.getId(), "genomemaps");
+        user = catalogUserDBAdaptor.get(user1.getId(), null).first();
+        assertNull(user.getConfigs().get("genomemaps"));
+        assertNotNull(user.getConfigs().get("genomemaps2"));
     }
 
     @Test
     public void addFilterTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query("key1", "value1").append("key2", "value2");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
-        UserFilter filter = new UserFilter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
+        UserFilter filter = new UserFilter("filter1", "Description of filter 1", Enums.Resource.ALIGNMENT, query, options);
 
         catalogUserDBAdaptor.addFilter(user4.getId(), filter);
         DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions());
 
-        UserFilter filterResult = userDataResult.first().getConfigs().getFilters().get(0);
+        UserFilter filterResult = userDataResult.first().getFilters().get(0);
 
-        assertEquals(filter.getName(), filterResult.getName());
+        assertEquals(filter.getId(), filterResult.getId());
         assertEquals(filter.getDescription(), filterResult.getDescription());
-        assertEquals(filter.getBioformat(), filterResult.getBioformat());
+        assertEquals(filter.getResource(), filterResult.getResource());
         assertEquals(filter.getQuery().safeToString(), filterResult.getQuery().safeToString());
         assertEquals(filter.getOptions().safeToString(), filterResult.getOptions().safeToString());
     }
 
     @Test
-    public void updateFilterTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
+    public void updateFilterTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query("key1", "value1").append("key2", "value2");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
-        UserFilter filter = new UserFilter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
+        UserFilter filter = new UserFilter("filter1", "Description of filter 1", Enums.Resource.ALIGNMENT, query, options);
         catalogUserDBAdaptor.addFilter(user4.getId(), filter);
 
         ObjectMap params = new ObjectMap()
                 .append(UserDBAdaptor.FilterParams.DESCRIPTION.key(), "The description has changed")
-                .append(UserDBAdaptor.FilterParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
+                .append(UserDBAdaptor.FilterParams.RESOURCE.key(), Enums.Resource.VARIANT)
                 .append(UserDBAdaptor.FilterParams.QUERY.key(), new Query("key3", "whatever"))
                 .append(UserDBAdaptor.FilterParams.OPTIONS.key(), new QueryOptions("options", "optionsValue"));
-        catalogUserDBAdaptor.updateFilter(user4.getId(), filter.getName(), params);
+        catalogUserDBAdaptor.updateFilter(user4.getId(), filter.getId(), params);
 
         DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions());
 
-        UserFilter filterResult = userDataResult.first().getConfigs().getFilters().get(0);
+        UserFilter filterResult = userDataResult.first().getFilters().get(0);
 
-        assertEquals(filter.getName(), filterResult.getName());
+        assertEquals(filter.getId(), filterResult.getId());
         assertEquals(params.get(UserDBAdaptor.FilterParams.DESCRIPTION.key()), filterResult.getDescription());
-        assertEquals(params.get(UserDBAdaptor.FilterParams.BIOFORMAT.key()), filterResult.getBioformat());
+        assertEquals(params.get(UserDBAdaptor.FilterParams.RESOURCE.key()), filterResult.getResource());
         assertEquals(((Query) params.get(UserDBAdaptor.FilterParams.QUERY.key())).safeToString(), filterResult.getQuery().safeToString());
         assertEquals(((QueryOptions) params.get(UserDBAdaptor.FilterParams.OPTIONS.key())).safeToString(),
                 filterResult.getOptions().safeToString());
@@ -166,19 +176,19 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteFilterTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query("key1", "value1").append("key2", "value2");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
-        UserFilter filter = new UserFilter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
+        UserFilter filter = new UserFilter("filter1", "Description of filter 1", Enums.Resource.ALIGNMENT, query, options);
 
         catalogUserDBAdaptor.addFilter(user4.getId(), filter);
-        catalogUserDBAdaptor.deleteFilter(user4.getId(), filter.getName());
+        catalogUserDBAdaptor.deleteFilter(user4.getId(), filter.getId());
         DataResult<User> userDataResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions());
 
-        UserConfiguration configs = userDataResult.first().getConfigs();
-        assertTrue(configs.getFilters().size() == 0);
+        List<UserFilter> filters = userDataResult.first().getFilters();
+        assertTrue(filters.size() == 0);
     }
 
 
     @Test
-    public void setConfigTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
+    public void setConfigTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         ObjectMap objectMap = new ObjectMap()
                 .append("key1", Arrays.asList(1,2,3,4,5))
                 .append("key2", new ObjectMap("key21", 21).append("key22", 22));
@@ -188,7 +198,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(1, writeResult.getNumUpdated());
 
         DataResult<User> queryResult = catalogUserDBAdaptor.get(user4.getId(), QueryOptions.empty());
-        LinkedHashMap result = (LinkedHashMap) queryResult.first().getConfigs().get("config1");
+        ObjectMap result = queryResult.first().getConfigs().get("config1");
         assertTrue(result.get("key1") instanceof List);
         assertTrue(result.get("key2") instanceof Map);
 
@@ -198,7 +208,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(1, writeResult.getNumUpdated());
 
         queryResult = catalogUserDBAdaptor.get(user4.getId(), QueryOptions.empty());
-        result = (LinkedHashMap) queryResult.first().getConfigs().get("config1");
+        result = queryResult.first().getConfigs().get("config1");
 
         assertTrue(result.get("key1") instanceof List);
         assertTrue(result.get("key2") instanceof List);
