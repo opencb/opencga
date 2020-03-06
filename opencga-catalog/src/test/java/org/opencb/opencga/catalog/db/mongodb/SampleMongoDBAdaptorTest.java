@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -87,9 +88,9 @@ public class SampleMongoDBAdaptorTest {
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogSampleDBAdaptor.insert(studyId, new Sample("s1", null, null, null, 1, 1, "", false,
-                Collections.emptyList(), new ArrayList<>(), new SampleInternal(new Status()), Collections.emptyMap()), Collections.emptyList(), null);
+                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), new SampleInternal(new Status()), Collections.emptyMap()), Collections.emptyList(), null);
         catalogSampleDBAdaptor.insert(studyId, new Sample("s2", null, null, null, 1, 1, "", false,
-                Collections.emptyList(), new ArrayList<>(), new SampleInternal(new Status()), Collections.emptyMap()), Collections.emptyList(), null);
+                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), new SampleInternal(new Status()), Collections.emptyMap()), Collections.emptyList(), null);
     }
 
     DataResult<Sample> getSample(long studyUid, String sampleId, QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {

@@ -120,6 +120,12 @@ migrateCollection("study", {}, {groups: 1}, function(bulk, doc) {
     bulk.find({"_id": doc._id}).updateOne({"$set": params});
 });
 
+var customStatus = {
+    "name": "",
+    "description": "",
+    "date" :""
+};
+
 // Tickets #1528 #1529
 migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, doc) {
     // #1531
@@ -262,10 +268,10 @@ migrateCollection("sample", {"internal": {"$exists": false}}, {}, function(bulk,
     var set = {
         "internal": {
             "status": doc['status']
-        }
+        },
+        "status": customStatus
     };
     var unset = {
-        "status": "",
         "name": "",
         "source": "",
         "stats": "",

@@ -17,8 +17,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
@@ -149,9 +152,10 @@ public class SampleManagerTest extends AbstractManagerTest {
                 new Sample().setId("testSample").setDescription("description"), null, token);
 
         SampleCollection collection = new SampleCollection("tissue", "organ", "quantity", "method", "date", Collections.emptyMap());
-        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.COLLECTION.key(), collection);
+        CustomStatusParams statusParams = new CustomStatusParams("status1", "my description");
         catalogManager.getSampleManager().update(studyFqn, "testSample",
-                new SampleUpdateParams().setCollection(collection), new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+                new SampleUpdateParams().setCollection(collection).setStatus(statusParams),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
 
         DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
         assertEquals("tissue", testSample.first().getCollection().getTissue());
@@ -159,14 +163,25 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals("quantity", testSample.first().getCollection().getQuantity());
         assertEquals("method", testSample.first().getCollection().getMethod());
         assertEquals("date", testSample.first().getCollection().getDate());
+        assertEquals("status1", testSample.first().getStatus().getName());
+        assertEquals("my description", testSample.first().getStatus().getDescription());
+        assertNotNull(testSample.first().getStatus().getDate());
         assertTrue(testSample.first().getCollection().getAttributes().isEmpty());
     }
 
     @Test
     public void testCreateSample() throws CatalogException {
-        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("HG007"), null,
-                token);
+        String time = TimeUtils.getTime();
+
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(studyFqn,
+                new Sample()
+                        .setId("HG007")
+                        .setStatus(new CustomStatus("stat1", "my description", time)),
+                null, token);
         assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("stat1", sampleDataResult.first().getStatus().getName());
+        assertEquals(time, sampleDataResult.first().getStatus().getDate());
+        assertEquals("my description", sampleDataResult.first().getStatus().getDescription());
     }
 
 //    @Test

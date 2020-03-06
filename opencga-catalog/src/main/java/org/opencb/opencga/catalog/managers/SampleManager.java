@@ -42,6 +42,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
@@ -191,6 +192,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::new));
         sample.getInternal().setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
+        sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
         sample.setVersion(1);
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
         sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
