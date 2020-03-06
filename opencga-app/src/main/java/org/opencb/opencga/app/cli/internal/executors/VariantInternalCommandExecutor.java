@@ -760,9 +760,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         GeneticChecksAnalysis geneticChecksAnalysis = new GeneticChecksAnalysis();
         geneticChecksAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         geneticChecksAnalysis.setStudy(cliOptions.study)
-                .setFamily(cliOptions.family)
-                .setIndividual(cliOptions.individual)
-                .setSample(cliOptions.sample)
+                .setFamilyId(cliOptions.family)
+                .setIndividualId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
                 .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
                 .setRelatednessMethod(cliOptions.relatednessMethod)
                 .start();
