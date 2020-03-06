@@ -18,22 +18,17 @@ package org.opencb.opencga.analysis.variant.relatedness;
 
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Tool(id = RelatednessAnalysis.ID, resource = Enums.Resource.VARIANT, description = RelatednessAnalysis.DESCRIPTION)
 public class RelatednessAnalysis extends OpenCgaTool {
@@ -47,8 +42,8 @@ public class RelatednessAnalysis extends OpenCgaTool {
     private String method;
     private String minorAlleleFreq;
 
-    // Internal memeber
-    private List<String> validSampleIds;
+    // Internal member
+    private List<Individual> individuals;
 
     public RelatednessAnalysis() {
     }
@@ -115,57 +110,25 @@ public class RelatednessAnalysis extends OpenCgaTool {
         }
 
         // Check individuals and samples
-        validSampleIds = new ArrayList<>();
-
         if (CollectionUtils.isNotEmpty(individualIds) && CollectionUtils.isNotEmpty(sampleIds)) {
             throw new ToolException("Incorrect parameters: only a list of individuals or samples is allowed.");
         }
 
+        individuals = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(individualIds)) {
-            // A list of individual ID is provided
+            // Check and get individual for each ID
             for (String individualId : individualIds) {
-                OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().get(studyId, individualId,
-                        QueryOptions.empty(), token);
-                if (individualResult.getNumResults() == 0) {
-                    throw new ToolException("Individual not found for ID '" + individualId + "'.");
-                }
-                if (individualResult.getNumResults() > 1) {
-                    throw new ToolException("More than one individual found for ID '" + individualId + "'.");
-                }
-
-                String validSampleId = "";
-                Query query = new Query();
-                query.put("individual", individualId);
-                OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(studyId, query, QueryOptions.empty(), token);
-                for (Sample individualSample : sampleResult.getResults()) {
-                    if (Status.READY.equals(individualSample.getInternal().getStatus().getName())) {
-                        if (StringUtils.isNotEmpty(validSampleId)) {
-                            throw new ToolException("More than one valid sample found for individual '" + individualId + "'.");
-                        }
-                        validSampleId = individualSample.getId();
-                    }
-                }
-                if (StringUtils.isEmpty(validSampleId)) {
-                    throw new ToolException("Samples not found for individual '" + individualId + "'");
-                }
-                // Add valid sample ID to the list
-                validSampleIds.add(validSampleId);
+                individuals.add(GeneticChecksUtils.getIndividualById(studyId, individualId, catalogManager, token));
             }
         } else {
-            // A list of sample IDs is provided
+            // Check and get individual for each sample ID
             for (String sampleId : sampleIds) {
-                OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(studyId, sampleId, QueryOptions.empty(), token);
-                if (sampleResult.getNumResults() == 0) {
-                    throw new ToolException("Sample not found for ID '" + sampleId + "'.");
-                }
-                if (sampleResult.getNumResults() > 1) {
-                    throw new ToolException("More than one sample found for ID '" + sampleId + "'.");
-                }
-                if (Status.READY.equals(sampleResult.first().getInternal().getStatus())) {
-                    throw new ToolException("Sample '" + sampleId + "' is not valid: its status must be READY.");
-                }
+                individuals.add(GeneticChecksUtils.getIndividualBySampleId(studyId, sampleId, catalogManager, token));
             }
-            validSampleIds = sampleIds;
+        }
+
+        if (CollectionUtils.isEmpty(individuals)) {
+            throw new ToolException("Members not found to execute relatedness analysis.");
         }
     }
 
@@ -176,7 +139,7 @@ public class RelatednessAnalysis extends OpenCgaTool {
             IBDRelatednessAnalysisExecutor relatednessExecutor = getToolExecutor(IBDRelatednessAnalysisExecutor.class);
 
             relatednessExecutor.setStudyId(studyId)
-                    .setSampleIds(validSampleIds)
+                    .setIndividuals(individuals)
                     .setMinorAlleleFreq(minorAlleleFreq)
                     .execute();
         });
