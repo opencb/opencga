@@ -25,7 +25,7 @@ public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisE
         VariantStorageManager storageManager = getVariantStorageManager();
 
         // Run IBD/IBS computation using PLINK in docker
-        RelatednessReport report = IBDComputation.compute(getStudy(), getSamples(), getMinorAlleleFreq(), getOutDir(), storageManager,
+        RelatednessReport report = IBDComputation.compute(getStudyId(), getSampleIds(), getMinorAlleleFreq(), getOutDir(), storageManager,
                 getToken());
 
         // Sanity check

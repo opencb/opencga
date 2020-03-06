@@ -1130,10 +1130,13 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        @Parameter(names = {"--study"}, description = "Study ID where all the individuals or samples belong to.")
         public String study;
 
-        @Parameter(names = {"--samples"}, description = "List of samples.")
+        @Parameter(names = {"--individuals"}, description = "List of individual IDs (incompatible with --samples).")
+        public List<String> individuals;
+
+        @Parameter(names = {"--samples"}, description = "List of sample IDs (incompatible with --individuals).")
         public List<String> samples;
 
         @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")

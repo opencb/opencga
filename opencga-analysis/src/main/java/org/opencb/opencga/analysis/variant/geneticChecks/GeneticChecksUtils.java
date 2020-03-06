@@ -63,7 +63,7 @@ public class GeneticChecksUtils {
         } else {
             query.put(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), maf);
         }
-        System.out.println(">>>>>> QUERY:\n" + query.toJson());
+
         exportData(tpedFile, tfamFile, query, storageManager, token);
         if (tpedFile.exists() && tpedFile.length() > 0) {
             pruneVariants(basename, outputBinding);

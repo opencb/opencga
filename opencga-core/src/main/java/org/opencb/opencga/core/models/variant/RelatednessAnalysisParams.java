@@ -6,6 +6,7 @@ import java.util.List;
 
 public class RelatednessAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Relatedness analysis params";
+    private List<String> individuals;
     private List<String> samples;
     private String minorAlleleFreq;
     private String method;
@@ -14,11 +15,21 @@ public class RelatednessAnalysisParams extends ToolParams {
     public RelatednessAnalysisParams() {
     }
 
-    public RelatednessAnalysisParams(List<String> samples, String minorAlleleFreq, String method, String outdir) {
+    public RelatednessAnalysisParams(List<String> individuals, List<String> samples, String minorAlleleFreq, String method, String outdir) {
+        this.individuals = individuals;
         this.samples = samples;
         this.minorAlleleFreq = minorAlleleFreq;
         this.method = method;
         this.outdir = outdir;
+    }
+
+    public List<String> getIndividuals() {
+        return individuals;
+    }
+
+    public RelatednessAnalysisParams setIndividuals(List<String> individuals) {
+        this.individuals = individuals;
+        return this;
     }
 
     public List<String> getSamples() {

@@ -6,28 +6,28 @@ import java.util.List;
 
 public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor {
 
-    private String study;
-    private List<String> samples;
+    private String studyId;
+    private List<String> sampleIds;
     private String minorAlleleFreq;
 
     public IBDRelatednessAnalysisExecutor() {
     }
 
-    public String getStudy() {
-        return study;
+    public String getStudyId() {
+        return studyId;
     }
 
-    public IBDRelatednessAnalysisExecutor setStudy(String study) {
-        this.study = study;
+    public IBDRelatednessAnalysisExecutor setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
-    public List<String> getSamples() {
-        return samples;
+    public List<String> getSampleIds() {
+        return sampleIds;
     }
 
-    public IBDRelatednessAnalysisExecutor setSamples(List<String> samples) {
-        this.samples = samples;
+    public IBDRelatednessAnalysisExecutor setSampleIds(List<String> sampleIds) {
+        this.sampleIds = sampleIds;
         return this;
     }
 

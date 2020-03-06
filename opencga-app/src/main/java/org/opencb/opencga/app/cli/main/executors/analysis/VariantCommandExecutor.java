@@ -336,6 +336,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> relatedness() throws ClientException {
         return openCGAClient.getVariantClient().runRelatedness(
                 new RelatednessAnalysisParams(
+                        variantCommandOptions.relatednessCommandOptions.individuals,
                         variantCommandOptions.relatednessCommandOptions.samples,
                         variantCommandOptions.relatednessCommandOptions.minorAlleleFreq,
                         variantCommandOptions.relatednessCommandOptions.method,

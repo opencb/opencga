@@ -744,8 +744,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         RelatednessAnalysis relatednessAnalysis = new RelatednessAnalysis();
         relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
-        relatednessAnalysis.setStudy(cliOptions.study)
-                .setSamples(cliOptions.samples)
+        relatednessAnalysis.setStudyId(cliOptions.study)
+                .setIndividualIds(cliOptions.individuals)
+                .setSampleIds(cliOptions.samples)
                 .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
                 .setMethod(cliOptions.method)
                 .start();
