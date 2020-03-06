@@ -48,6 +48,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -227,6 +228,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             family.setInternal(ParamUtils.defaultObject(family.getInternal(), FamilyInternal::new));
             family.getInternal().setStatus(new FamilyStatus());
             family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
+            family.setStatus(ParamUtils.defaultObject(family.getStatus(), CustomStatus::new));
             family.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             family.setVersion(1);
             family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));

@@ -235,13 +235,11 @@ migrateCollection("family", {"internal": {"$exists": false}}, {}, function(bulk,
     var set = {
         "internal": {
             "status": doc['status']
-        }
-    };
-    var unset = {
-        "status": ""
+        },
+        "status": customStatus
     };
 
-    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+    bulk.find({"_id": doc._id}).updateOne({"$set": set});
 });
 
 // #1537
