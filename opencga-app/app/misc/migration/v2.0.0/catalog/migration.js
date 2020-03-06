@@ -286,10 +286,10 @@ migrateCollection("cohort", {"internal": {"$exists": false}}, {}, function(bulk,
     var set = {
         "internal": {
             "status": doc['status']
-        }
+        },
+        "status": customStatus
     };
     var unset = {
-        "status": "",
         "name": "",
         "stats": ""
     };
