@@ -306,10 +306,10 @@ migrateCollection("file", {"internal": {"$exists": false}}, {}, function(bulk, d
             "status": doc['status'],
             "index": doc['index']
         },
-        "jobId": ""
+        "jobId": "",
+        "status": customStatus
     };
     var unset = {
-        "status": "",
         "index": "",
         "job": ""
     };
