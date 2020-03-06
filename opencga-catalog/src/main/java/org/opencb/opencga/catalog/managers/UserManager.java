@@ -988,7 +988,7 @@ public class UserManager extends AbstractManager {
 
             Query query = new Query()
                     .append(UserDBAdaptor.QueryParams.ID.key(), userId);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.FILTERS.key());
             OpenCGAResult<User> userDataResult = userDBAdaptor.get(query, queryOptions);
 
             if (userDataResult.getNumResults() != 1) {
