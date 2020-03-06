@@ -550,8 +550,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.DISORDERS.key(), QueryParams.MULTIPLES.key(),
-                QueryParams.LOCATION.key()};
+                QueryParams.LOCATION.key(), QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+        if (document.getSet().containsKey(SampleDBAdaptor.QueryParams.STATUS.key())) {
+            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
+        }
 
         if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
             document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));

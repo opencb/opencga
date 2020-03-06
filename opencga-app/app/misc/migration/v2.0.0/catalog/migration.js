@@ -218,11 +218,11 @@ migrateCollection("individual", {"internal": {"$exists": false}}, {}, function(b
     var set = {
         "internal": {
             "status": doc['status']
-        }
+        },
+        "status": customStatus
     };
     var unset = {
-        "affectationStatus": "",
-        "status": ""
+        "affectationStatus": ""
     };
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});

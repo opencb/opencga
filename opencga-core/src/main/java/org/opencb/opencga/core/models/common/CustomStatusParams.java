@@ -16,7 +16,11 @@ public class CustomStatusParams {
     }
 
     public static CustomStatusParams of(CustomStatus status) {
-        return new CustomStatusParams(status.getName(), status.getDescription());
+        if (status != null) {
+            return new CustomStatusParams(status.getName(), status.getDescription());
+        } else {
+            return null;
+        }
     }
 
     public CustomStatus toCustomStatus() {
