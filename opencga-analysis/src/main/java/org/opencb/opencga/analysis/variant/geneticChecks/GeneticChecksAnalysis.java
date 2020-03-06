@@ -117,7 +117,7 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
         // Get relatives, i.e., members of a family
         if (StringUtils.isNotEmpty(familyId)) {
             // Check and get the individuals from that family ID
-            individuals = GeneticChecksUtils.getIndividualsByFamilyId(studyId, familyId, catalogManager, token);
+            individuals = GeneticChecksUtils.getRelativesByFamilyId(studyId, familyId, catalogManager, token);
         } else if (StringUtils.isNotEmpty(individualId)) {
             // Get father, mother and siblings from that individual
             individuals = GeneticChecksUtils.getRelativesByIndividualId(studyId, individualId, catalogManager, token);

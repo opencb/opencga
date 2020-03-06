@@ -374,22 +374,64 @@ public class GeneticChecksUtils {
         return sampleResult.first();
     }
 
-    public static List<Individual> getIndividualsByFamilyId(String studyId, String familyId, CatalogManager catalogManager, String token)
+    public static List<Individual> getRelativesByFamilyId(String studyId, String familyId, CatalogManager catalogManager, String token)
             throws ToolException {
         List<Individual> individuals = new ArrayList<>();
+
+        OpenCGAResult<Family> familyResult;
+        try {
+            familyResult = catalogManager.getFamilyManager().get(studyId, familyId, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        if (familyResult.getNumResults() == 0) {
+            throw new ToolException("None family found for ID '" + familyId + "'.");
+        }
+        if (familyResult.getNumResults() > 1) {
+            throw new ToolException("More than one family found for ID '" + familyId + "'.");
+        }
+        Family family = familyResult.first();
+        if (CollectionUtils.isEmpty(family.getMembers())) {
+            throw new ToolException("Family '" + familyId + "' is empty (i.e., members not found).");
+        }
+
+        // Check for valid samples for each individual
+        List<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+        for (String individualId : individualIds) {
+            // Check valid sample for that individual
+            getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
+
+            // Add the 'full' individual (i.e., with the samples) to the individual list
+            individuals.add(getIndividualById(studyId, individualId, catalogManager, token));
+        }
         return individuals;
     }
 
     public static List<Individual> getRelativesByIndividualId(String studyId, String individualId, CatalogManager catalogManager,
                                                               String token) throws ToolException {
-        List<Individual> individuals = new ArrayList<>();
-        return individuals;
+        // Get the family for that individual
+        Query query = new Query();
+        query.put("members", individualId);
+        OpenCGAResult<Family> familyResult;
+        try {
+            familyResult = catalogManager.getFamilyManager().search(studyId, query, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        if (familyResult.getNumResults() == 0) {
+            throw new ToolException("None family found for individual ID '" + individualId + "'.");
+        }
+        if (familyResult.getNumResults() > 1) {
+            throw new ToolException("More than one family found for individual ID '" + individualId + "'.");
+        }
+
+        return getRelativesByFamilyId(studyId, familyResult.first().getId(), catalogManager, token);
     }
 
-    public static List<Individual> getRelativesBySampleId(String studyId, String individualId, CatalogManager catalogManager,
+    public static List<Individual> getRelativesBySampleId(String studyId, String sampleId, CatalogManager catalogManager,
                                                           String token) throws ToolException {
-        List<Individual> individuals = new ArrayList<>();
-        return individuals;
+        Individual individual = getIndividualBySampleId(studyId, sampleId, catalogManager, token);
+        return getRelativesByIndividualId(studyId, individual.getId(), catalogManager, token);
     }
 
     public static List<String> getSampleIds(String studyId, List<Individual> individuals, CatalogManager catalogManager, String token)
