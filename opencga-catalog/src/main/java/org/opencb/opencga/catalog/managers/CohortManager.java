@@ -41,6 +41,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
@@ -234,6 +235,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         cohort.setInternal(ParamUtils.defaultObject(cohort.getInternal(), CohortInternal::new));
         cohort.getInternal().setStatus(ParamUtils.defaultObject(cohort.getInternal().getStatus(), CohortStatus::new));
         cohort.setSamples(ParamUtils.defaultObject(cohort.getSamples(), Collections::emptyList));
+        cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), CustomStatus::new));
         cohort.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.COHORT));
 
         validateNewAnnotationSets(study.getVariableSets(), cohort.getAnnotationSets());

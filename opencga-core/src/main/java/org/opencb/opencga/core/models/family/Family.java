@@ -23,6 +23,7 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ public class Family extends Annotable {
 
     private int release;
     private int version;
+    private CustomStatus status;
     private FamilyInternal internal;
     private Map<String, Object> attributes;
 
@@ -57,13 +59,13 @@ public class Family extends Annotable {
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String description, int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), description, expectedSize, -1, 1, annotationSets, null,
-                attributes);
+        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), description, expectedSize, -1, 1, annotationSets,
+                new CustomStatus(), null, attributes);
     }
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String creationDate, String description, int expectedSize, int release, int version, List<AnnotationSet> annotationSets,
-                  FamilyInternal internal, Map<String, Object> attributes) {
+                  CustomStatus status, FamilyInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
@@ -75,6 +77,7 @@ public class Family extends Annotable {
         this.release = release;
         this.version = version;
         this.annotationSets = ObjectUtils.defaultIfNull(annotationSets, new ArrayList<>());
+        this.status = status;
         this.internal = internal;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
@@ -85,15 +88,17 @@ public class Family extends Annotable {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", members=").append(members);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
-        sb.append(", members=").append(members);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", description='").append(description).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
+        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
@@ -226,6 +231,15 @@ public class Family extends Annotable {
 
     public Family setVersion(int version) {
         this.version = version;
+        return this;
+    }
+
+    public CustomStatus getStatus() {
+        return status;
+    }
+
+    public Family setStatus(CustomStatus status) {
+        this.status = status;
         return this;
     }
 

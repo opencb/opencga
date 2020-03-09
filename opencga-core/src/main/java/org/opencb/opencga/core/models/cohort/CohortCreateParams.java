@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 
@@ -11,24 +12,26 @@ import java.util.stream.Collectors;
 
 public class CohortCreateParams {
 
-    public String id;
-    public Enums.CohortType type;
-    public String description;
-    public List<String> samples;
-    public List<AnnotationSet> annotationSets;
-    public Map<String, Object> attributes;
+    private String id;
+    private Enums.CohortType type;
+    private String description;
+    private List<String> samples;
+    private List<AnnotationSet> annotationSets;
+    private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public CohortCreateParams() {
     }
 
     public CohortCreateParams(String id, Enums.CohortType type, String description, List<String> samples,
-                              List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.type = type;
         this.description = description;
         this.samples = samples;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
+        this.status = status;
     }
 
     public static CohortCreateParams of(Cohort cohort) {
@@ -36,7 +39,7 @@ public class CohortCreateParams {
                 cohort.getSamples() != null
                         ? cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
                         : Collections.emptyList(),
-                cohort.getAnnotationSets(), cohort.getAttributes());
+                cohort.getAnnotationSets(), cohort.getAttributes(), CustomStatusParams.of(cohort.getStatus()));
     }
 
     @Override
@@ -48,6 +51,7 @@ public class CohortCreateParams {
         sb.append(", samples=").append(samples);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -95,6 +99,15 @@ public class CohortCreateParams {
 
     public CohortCreateParams setAnnotationSets(List<AnnotationSet> annotationSets) {
         this.annotationSets = annotationSets;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public CohortCreateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 

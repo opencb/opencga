@@ -429,7 +429,7 @@ public class TemplateManager {
                 FileCreateParams createFolder = new FileCreateParams(parentPath, null, null, true, true);
                 openCGAClient.getFileClient().create(createFolder, params);
             }
-            FileLinkParams data = new FileLinkParams(fileUri.toString(), parentPath, null, Collections.emptyList(), null);
+            FileLinkParams data = new FileLinkParams(fileUri.toString(), parentPath, null, Collections.emptyList(), null, null);
             openCGAClient.getFileClient().link(data, params);
             jobDependsOn = Collections.emptyList();
         }

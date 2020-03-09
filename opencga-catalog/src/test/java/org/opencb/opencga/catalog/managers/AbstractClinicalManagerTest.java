@@ -57,7 +57,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 new QueryOptions(), token);
 
         Study study = catalogManager.getStudyManager().create("1000G", "phase1", null, "Phase 1", "Done", null, null, null, null, null,
-                null, null, token).first();
+                null, null, null, token).first();
         studyFqn = study.getFqn();
 
         family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();

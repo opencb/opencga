@@ -6,6 +6,7 @@ import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -44,6 +45,7 @@ public class ClinicalUpdateParams {
     private List<String> flags;
 
     private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public ClinicalUpdateParams() {
     }
@@ -53,7 +55,7 @@ public class ClinicalUpdateParams {
                                 Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalystParam analyst,
                                 ClinicalAnalysisInternal internal, List<InterpretationUpdateParams> interpretations,
                                 ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
-                                Enums.Priority priority, List<String> flags, Map<String, Object> attributes) {
+                                Enums.Priority priority, List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -72,6 +74,7 @@ public class ClinicalUpdateParams {
         this.flags = flags;
         this.internal = internal;
         this.attributes = attributes;
+        this.status = status;
     }
 
     @JsonIgnore
@@ -100,6 +103,7 @@ public class ClinicalUpdateParams {
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -364,4 +368,21 @@ public class ClinicalUpdateParams {
         return this;
     }
 
+    public ClinicalAnalysisInternal getInternal() {
+        return internal;
+    }
+
+    public ClinicalUpdateParams setInternal(ClinicalAnalysisInternal internal) {
+        this.internal = internal;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public ClinicalUpdateParams setStatus(CustomStatusParams status) {
+        this.status = status;
+        return this;
+    }
 }

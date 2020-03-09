@@ -361,21 +361,27 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
         String operation = (String) actionMap.getOrDefault(QueryParams.SAMPLES.key(), "ADD");
-        String[] acceptedObjectParams = new String[]{QueryParams.SAMPLES.key()};
+        String[] sampleObjectParams = new String[]{QueryParams.SAMPLES.key()};
         switch (operation) {
             case "SET":
-                filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+                filterObjectParams(parameters, document.getSet(), sampleObjectParams);
                 cohortConverter.validateSamplesToUpdate(document.getSet());
                 break;
             case "REMOVE":
-                filterObjectParams(parameters, document.getPullAll(), acceptedObjectParams);
+                filterObjectParams(parameters, document.getPullAll(), sampleObjectParams);
                 cohortConverter.validateSamplesToUpdate(document.getPullAll());
                 break;
             case "ADD":
             default:
-                filterObjectParams(parameters, document.getAddToSet(), acceptedObjectParams);
+                filterObjectParams(parameters, document.getAddToSet(), sampleObjectParams);
                 cohortConverter.validateSamplesToUpdate(document.getAddToSet());
                 break;
+        }
+
+        String[] acceptedObjectParams = { QueryParams.STATUS.key() };
+        filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+        if (document.getSet().containsKey(QueryParams.STATUS.key())) {
+            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};

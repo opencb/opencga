@@ -73,7 +73,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             String studyId = StringUtils.isEmpty(study.getId()) ? study.getAlias() : study.getId();
             return createOkResponse(catalogManager.getStudyManager().create(project, studyId, study.getAlias(), study.getName(),
-                    study.getDescription(), study.getNotification(), null, null, null, null, study.getAttributes(), queryOptions, token));
+                    study.getDescription(), study.getNotification(), null, null, null, null,
+                    study.getStatus() != null ? study.getStatus().toCustomStatus() : null, study.getAttributes(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -311,7 +312,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     // Temporal method used by deprecated methods. This will be removed at some point.
-    private Study.StudyAclParams getAclParams(
+    private StudyAclParams getAclParams(
             @ApiParam(value = "Comma separated list of permissions to add") @QueryParam("add") String addPermissions,
             @ApiParam(value = "Comma separated list of permissions to remove") @QueryParam("remove") String removePermissions,
             @ApiParam(value = "Comma separated list of permissions to set") @QueryParam("set") String setPermissions,
@@ -343,7 +344,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             permissions = removePermissions;
             action = AclParams.Action.REMOVE;
         }
-        return new Study.StudyAclParams(permissions, action, template);
+        return new StudyAclParams(permissions, action, template);
     }
 
     @POST
@@ -356,7 +357,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new StudyAclUpdateParams());
 
-            Study.StudyAclParams aclParams = new Study.StudyAclParams(params.getPermissions(), params.getAction(), params.getTemplate());
+            StudyAclParams aclParams = new StudyAclParams(params.getPermissions(), params.getAction(), params.getTemplate());
             List<String> idList = getIdList(params.getStudy(), false);
             return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, token));
         } catch (Exception e) {

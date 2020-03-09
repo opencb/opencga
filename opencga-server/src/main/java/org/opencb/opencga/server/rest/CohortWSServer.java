@@ -36,6 +36,7 @@ import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
@@ -44,8 +45,8 @@ import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -66,19 +67,20 @@ public class CohortWSServer extends OpenCGAWSServer {
         cohortManager = catalogManager.getCohortManager();
     }
 
-    private Response createCohort(String studyStr, String cohortId, Enums.CohortType type, String variableSetId,
-                                  String cohortDescription, List<String> sampleIdList, List<AnnotationSet> annotationSetList,
-                                  String variableName) {
+    private Response createCohort(String studyStr, String variableSetId, CohortCreateParams cohortParams, String variableName) {
         try {
             List<DataResult<Cohort>> cohorts = new LinkedList<>();
-            if (StringUtils.isNotEmpty(variableName) && ListUtils.isNotEmpty(sampleIdList)) {
+            if (StringUtils.isNotEmpty(variableName) && ListUtils.isNotEmpty(cohortParams.getSamples())) {
                 return createErrorResponse("", "Can only create a cohort given list of sampleIds or a categorical variable name");
             }
 
-            if (ListUtils.isNotEmpty(sampleIdList)) {
-                DataResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, sampleIdList, null, token);
+            if (ListUtils.isNotEmpty(cohortParams.getSamples())) {
+                DataResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, cohortParams.getSamples(), null, token);
                 List<Sample> sampleList = queryResult.getResults();
-                Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, sampleList, annotationSetList, -1, null);
+                Cohort cohort = new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(), sampleList,
+                        cohortParams.getAnnotationSets(), 1,
+                        cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(),
+                        null, cohortParams.getAttributes());
                 DataResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().create(studyStr, cohort, null, token);
                 cohorts.add(cohortQueryResult);
             } else if (StringUtils.isNotEmpty(variableSetId)) {
@@ -101,12 +103,13 @@ public class CohortWSServer extends OpenCGAWSServer {
                     Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
                             .append("variableSetId", variableSet.getUid());
 
-                    cohorts.add(createCohort(studyStr, cohortId + "_" + s, type, cohortDescription, annotationSetList, samplesQuery,
-                            samplesQOptions));
+                    cohorts.add(createCohort(studyStr, cohortParams.getId() + "_" + s, cohortParams.getType(), cohortParams.getDescription(),
+                            cohortParams.getAnnotationSets(), samplesQuery, samplesQOptions));
                 }
             } else {
                 //Create empty cohort
-                Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, Collections.emptyList(), annotationSetList, -1, null);
+                Cohort cohort = new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
+                        Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null);
                 cohorts.add(catalogManager.getCohortManager().create(studyStr, cohort, null, token));
             }
             return createOkResponse(cohorts);
@@ -133,8 +136,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 variableSet = variableSetId;
             }
 
-            return createCohort(studyStr, params.id, params.type, variableSet, params.description, params.samples, params.annotationSets,
-                    variableName);
+            return createCohort(studyStr, variableSet, params, variableName);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

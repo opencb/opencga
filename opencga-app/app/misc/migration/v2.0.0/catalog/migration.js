@@ -120,6 +120,12 @@ migrateCollection("study", {}, {groups: 1}, function(bulk, doc) {
     bulk.find({"_id": doc._id}).updateOne({"$set": params});
 });
 
+var customStatus = {
+    "name": "",
+    "description": "",
+    "date" :""
+};
+
 // Tickets #1528 #1529
 migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, doc) {
     // #1531
@@ -194,11 +200,11 @@ migrateCollection("study", {"internal": {"$exists": false}}, {}, function(bulk, 
     var set = {
         "internal": {
             "status": doc['status']
-        }
+        },
+        "status": customStatus
     };
     var unset = {
         "stats": "",
-        "status": "",
         "type": ""
     };
 
@@ -212,11 +218,11 @@ migrateCollection("individual", {"internal": {"$exists": false}}, {}, function(b
     var set = {
         "internal": {
             "status": doc['status']
-        }
+        },
+        "status": customStatus
     };
     var unset = {
-        "affectationStatus": "",
-        "status": ""
+        "affectationStatus": ""
     };
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
@@ -229,13 +235,11 @@ migrateCollection("family", {"internal": {"$exists": false}}, {}, function(bulk,
     var set = {
         "internal": {
             "status": doc['status']
-        }
-    };
-    var unset = {
-        "status": ""
+        },
+        "status": customStatus
     };
 
-    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+    bulk.find({"_id": doc._id}).updateOne({"$set": set});
 });
 
 // #1537
@@ -245,10 +249,10 @@ migrateCollection("clinical", {"internal": {"$exists": false}}, {}, function(bul
     var set = {
         "internal": {
             "status": doc['status']
-        }
+        },
+        "status": customStatus
     };
     var unset = {
-        "status": "",
         "name": ""
     };
 
@@ -262,10 +266,10 @@ migrateCollection("sample", {"internal": {"$exists": false}}, {}, function(bulk,
     var set = {
         "internal": {
             "status": doc['status']
-        }
+        },
+        "status": customStatus
     };
     var unset = {
-        "status": "",
         "name": "",
         "source": "",
         "stats": "",
@@ -282,10 +286,10 @@ migrateCollection("cohort", {"internal": {"$exists": false}}, {}, function(bulk,
     var set = {
         "internal": {
             "status": doc['status']
-        }
+        },
+        "status": customStatus
     };
     var unset = {
-        "status": "",
         "name": "",
         "stats": ""
     };
@@ -302,15 +306,29 @@ migrateCollection("file", {"internal": {"$exists": false}}, {}, function(bulk, d
             "status": doc['status'],
             "index": doc['index']
         },
-        "jobId": ""
+        "jobId": "",
+        "status": customStatus
     };
     var unset = {
-        "status": "",
         "index": "",
         "job": ""
     };
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+migrateCollection("interpretation", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    var set = {
+        "internal": {
+            "status": {
+                "name": doc['status'],
+                "description": "",
+                "date": ""
+            }
+        }
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set});
 });
 
 // TODO: Add indexes for new "deleted" collections

@@ -1311,6 +1311,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
+        final String[] acceptedObjectParams = {QueryParams.STATUS.key()};
+        filterObjectParams(parameters, studyParameters, acceptedObjectParams);
+        if (studyParameters.containsKey(QueryParams.STATUS.key())) {
+            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), studyParameters);
+        }
+
         if (parameters.containsKey(QueryParams.URI.key())) {
             URI uri = parameters.get(QueryParams.URI.key(), URI.class);
             studyParameters.put(QueryParams.URI.key(), uri.toString());

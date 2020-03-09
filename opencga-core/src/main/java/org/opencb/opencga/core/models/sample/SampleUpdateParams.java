@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -22,13 +23,14 @@ public class SampleUpdateParams {
     private List<Phenotype> phenotypes;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public SampleUpdateParams() {
     }
 
     public SampleUpdateParams(String id, String description, String individualId, SampleProcessing processing, SampleCollection collection,
                               Boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets,
-                              Map<String, Object> attributes) {
+                              Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.individualId = individualId;
@@ -38,6 +40,7 @@ public class SampleUpdateParams {
         this.phenotypes = phenotypes;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
+        this.status = status;
     }
 
     @JsonIgnore
@@ -68,6 +71,7 @@ public class SampleUpdateParams {
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -151,6 +155,15 @@ public class SampleUpdateParams {
 
     public SampleUpdateParams setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public SampleUpdateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 }

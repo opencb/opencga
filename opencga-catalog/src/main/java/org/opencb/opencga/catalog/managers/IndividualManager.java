@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
@@ -213,6 +214,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
         individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), new ArrayList<>()));
+        individual.setStatus(ParamUtils.defaultObject(individual.getStatus(), CustomStatus::new));
 
         individual.setInternal(ParamUtils.defaultObject(individual.getInternal(), IndividualInternal::new));
         individual.getInternal().setStatus(new Status());
