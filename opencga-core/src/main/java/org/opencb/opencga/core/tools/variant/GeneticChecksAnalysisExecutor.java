@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.variant.GeneticChecksReport;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
@@ -11,43 +12,33 @@ public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor 
         INFERRED_SEX, RELATEDNESS, MENDELIAN_ERRORS
     }
 
-    private String study;
-    private String family;
-    private List<String> samples;
+    private String studyId;
+    private List<Individual> individuals;
     private GeneticCheck geneticCheck;
     private String minorAlleleFreq;
     private String relatednessMethod;
 
-    private GeneticChecksReport output;
+    private GeneticChecksReport report;
 
     public GeneticChecksAnalysisExecutor() {
-        output = new GeneticChecksReport();
+        report = new GeneticChecksReport();
     }
 
-    public String getStudy() {
-        return study;
+    public String getStudyId() {
+        return studyId;
     }
 
-    public GeneticChecksAnalysisExecutor setStudy(String study) {
-        this.study = study;
+    public GeneticChecksAnalysisExecutor setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
-    public String getFamily() {
-        return family;
+    public List<Individual> getIndividuals() {
+        return individuals;
     }
 
-    public GeneticChecksAnalysisExecutor setFamily(String family) {
-        this.family = family;
-        return this;
-    }
-
-    public List<String> getSamples() {
-        return samples;
-    }
-
-    public GeneticChecksAnalysisExecutor setSamples(List<String> samples) {
-        this.samples = samples;
+    public GeneticChecksAnalysisExecutor setIndividuals(List<Individual> individuals) {
+        this.individuals = individuals;
         return this;
     }
 
@@ -78,12 +69,12 @@ public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor 
         return this;
     }
 
-    public GeneticChecksReport getOutput() {
-        return output;
+    public GeneticChecksReport getReport() {
+        return report;
     }
 
-    public GeneticChecksAnalysisExecutor setOutput(GeneticChecksReport output) {
-        this.output = output;
+    public GeneticChecksAnalysisExecutor setReport(GeneticChecksReport report) {
+        this.report = report;
         return this;
     }
 }

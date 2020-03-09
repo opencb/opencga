@@ -1,17 +1,22 @@
 package org.opencb.opencga.analysis.variant.geneticChecks;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.variant.GeneticChecksReport;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.GeneticChecksAnalysisExecutor;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Tool(id = GeneticChecksAnalysis.ID, resource = Enums.Resource.VARIANT, description = GeneticChecksAnalysis.DESCRIPTION)
 public class GeneticChecksAnalysis extends OpenCgaTool {
@@ -20,53 +25,54 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
     public static final String DESCRIPTION = "Run genetic checks for sex, relatedness and mendelian errors (UDP).";
     public static final String VARIABLE_SET_ID = "opencga_family_genetic_checks";
 
-    private String study;
-    private String family;
-    private String individual;
-    private String sample;
+    private String studyId;
+    private String familyId;
+    private String individualId;
+    private String sampleId;
     private String minorAlleleFreq;
     private String relatednessMethod;
 
-    private List<String> samples;
-    private GeneticChecksReport output;
+    // Internal members
+    private List<Individual> individuals;
+    private GeneticChecksReport report;
 
     public GeneticChecksAnalysis() {
     }
 
     /**
      * Study of the samples.
-     * @param study Study id
+     * @param studyId Study id
      * @return this
      */
-    public GeneticChecksAnalysis setStudy(String study) {
-        this.study = study;
+    public GeneticChecksAnalysis setStudy(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
-    public String getFamily() {
-        return family;
+    public String getFamilyId() {
+        return familyId;
     }
 
-    public GeneticChecksAnalysis setFamily(String family) {
-        this.family = family;
+    public GeneticChecksAnalysis setFamilyId(String familyId) {
+        this.familyId = familyId;
         return this;
     }
 
-    public String getIndividual() {
-        return individual;
+    public String getIndividualId() {
+        return individualId;
     }
 
-    public GeneticChecksAnalysis setIndividual(String individual) {
-        this.individual = individual;
+    public GeneticChecksAnalysis setIndividualId(String individualId) {
+        this.individualId = individualId;
         return this;
     }
 
-    public String getSample() {
-        return sample;
+    public String getSampleId() {
+        return sampleId;
     }
 
-    public GeneticChecksAnalysis setSample(String sample) {
-        this.sample = sample;
+    public GeneticChecksAnalysis setSampleId(String sampleId) {
+        this.sampleId = sampleId;
         return this;
     }
 
@@ -91,20 +97,40 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
     @Override
     protected void check() throws Exception {
         super.check();
-        setUpStorageEngineExecutor(study);
+        setUpStorageEngineExecutor(studyId);
 
-        if (StringUtils.isEmpty(study)) {
-            throw new ToolException("Missing study!");
+        if (StringUtils.isEmpty(studyId)) {
+            throw new ToolException("Missing study ID.");
         }
 
         try {
-            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
+            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
-        // Get sample IDs from family ID
-        samples = GeneticChecksUtils.getSamples(study, family, catalogManager, token);
+        // Sanity check
+        if (StringUtils.isNotEmpty(familyId) && StringUtils.isNotEmpty(individualId) && StringUtils.isNotEmpty(sampleId)) {
+            throw new ToolException("Incorrect parameters: please, provide only a family ID, a individual ID or a sample ID.");
+        }
+
+        // Get relatives, i.e., members of a family
+        if (StringUtils.isNotEmpty(familyId)) {
+            // Check and get the individuals from that family ID
+            individuals = GeneticChecksUtils.getRelativesByFamilyId(studyId, familyId, catalogManager, token);
+        } else if (StringUtils.isNotEmpty(individualId)) {
+            // Get father, mother and siblings from that individual
+            individuals = GeneticChecksUtils.getRelativesByIndividualId(studyId, individualId, catalogManager, token);
+        } else if (StringUtils.isNotEmpty(sampleId)) {
+            // Get father, mother and siblings from that sample
+            individuals = GeneticChecksUtils.getRelativesBySampleId(studyId, individualId, catalogManager, token);
+        } else {
+            throw new ToolException("Missing a family ID, a individual ID or a sample ID.");
+        }
+
+        if (CollectionUtils.isEmpty(individuals)) {
+            throw new ToolException("Members not found to execute genetic checks analysis.");
+        }
     }
 
     @Override
@@ -122,9 +148,8 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
 
         GeneticChecksAnalysisExecutor executor = getToolExecutor(GeneticChecksAnalysisExecutor.class);
 
-        executor.setStudy(study)
-                .setFamily(family)
-                .setSamples(samples)
+        executor.setStudyId(studyId)
+                .setIndividuals(individuals)
                 .setMinorAlleleFreq(minorAlleleFreq)
                 .setRelatednessMethod(relatednessMethod);
 
@@ -142,15 +167,15 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
 
         // Save results
         try {
-            JacksonUtils.getDefaultObjectMapper().writer().writeValue(getOutDir().resolve("genetic_checks.json").toFile(),
-                    executor.getOutput());
+            JacksonUtils.getDefaultObjectMapper().writer().writeValue(getOutDir().resolve(ID + ".report.json").toFile(),
+                    executor.getReport());
         } catch (IOException e) {
             throw new ToolException(e);
         }
 
         // Index as a variable set
         step("index-variable-set", () -> {
-            indexResults(executor.getOutput());
+            indexResults(executor.getReport());
         });
     }
 

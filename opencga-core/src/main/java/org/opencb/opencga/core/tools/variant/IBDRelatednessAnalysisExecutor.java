@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.List;
@@ -7,7 +8,7 @@ import java.util.List;
 public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String studyId;
-    private List<String> sampleIds;
+    private List<Individual> individuals;
     private String minorAlleleFreq;
 
     public IBDRelatednessAnalysisExecutor() {
@@ -22,12 +23,12 @@ public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor
         return this;
     }
 
-    public List<String> getSampleIds() {
-        return sampleIds;
+    public List<Individual> getIndividuals() {
+        return individuals;
     }
 
-    public IBDRelatednessAnalysisExecutor setSampleIds(List<String> sampleIds) {
-        this.sampleIds = sampleIds;
+    public IBDRelatednessAnalysisExecutor setIndividuals(List<Individual> individuals) {
+        this.individuals = individuals;
         return this;
     }
 

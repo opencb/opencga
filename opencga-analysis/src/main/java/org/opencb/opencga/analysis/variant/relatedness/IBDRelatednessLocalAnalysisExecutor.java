@@ -1,12 +1,10 @@
 package org.opencb.opencga.analysis.variant.relatedness;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
 import org.opencb.opencga.analysis.variant.geneticChecks.IBDComputation;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.variant.RelatednessReport;
@@ -22,11 +20,16 @@ public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisE
 
     @Override
     public void run() throws ToolException {
-        VariantStorageManager storageManager = getVariantStorageManager();
+        // Get managers
+        VariantStorageManager variantStorageManager = getVariantStorageManager();
+        CatalogManager catalogManager = variantStorageManager.getCatalogManager();
+
+        // Get sample IDs from individuals
+        List<String> sampleIds = GeneticChecksUtils.getSampleIds(getStudyId(), getIndividuals(), catalogManager, getToken());
 
         // Run IBD/IBS computation using PLINK in docker
-        RelatednessReport report = IBDComputation.compute(getStudyId(), getSampleIds(), getMinorAlleleFreq(), getOutDir(), storageManager,
-                getToken());
+        RelatednessReport report = IBDComputation.compute(getStudyId(), sampleIds, getMinorAlleleFreq(), getOutDir(),
+                variantStorageManager, getToken());
 
         // Sanity check
         if (report == null) {
@@ -35,7 +38,8 @@ public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisE
 
         // Save results
         try {
-            JacksonUtils.getDefaultObjectMapper().writer().writeValue(getOutDir().resolve("relatedness.report.json").toFile(), report);
+            JacksonUtils.getDefaultObjectMapper().writer().writeValue(getOutDir().resolve(RelatednessAnalysis.ID + ".report.json").toFile(),
+                    report);
         } catch (IOException e) {
             throw new ToolException(e);
         }

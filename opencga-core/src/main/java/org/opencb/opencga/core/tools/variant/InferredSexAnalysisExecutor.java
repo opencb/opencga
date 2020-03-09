@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
@@ -8,29 +10,29 @@ import java.util.Map;
 
 public abstract class InferredSexAnalysisExecutor extends OpenCgaToolExecutor {
 
-    private String study;
-    private String sample;
+    private String studyId;
+    private Individual individual;
 
     private InferredSexReport inferredSexReport;
 
     public InferredSexAnalysisExecutor() {
     }
 
-    public String getStudy() {
-        return study;
+    public String getStudyId() {
+        return studyId;
     }
 
-    public InferredSexAnalysisExecutor setStudy(String study) {
-        this.study = study;
+    public InferredSexAnalysisExecutor setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
-    public String getSample() {
-        return sample;
+    public Individual getIndividual() {
+        return individual;
     }
 
-    public InferredSexAnalysisExecutor setSample(String sample) {
-        this.sample = sample;
+    public InferredSexAnalysisExecutor setIndividual(Individual individual) {
+        this.individual = individual;
         return this;
     }
 
