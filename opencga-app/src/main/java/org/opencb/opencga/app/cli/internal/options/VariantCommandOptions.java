@@ -25,6 +25,7 @@ import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
@@ -115,6 +116,7 @@ public class VariantCommandOptions {
     public final KnockoutCommandOptions knockoutCommandOptions;
     public final SampleEligibilityCommandOptions sampleEligibilityCommandOptions;
     public final MutationalSignatureCommandOptions mutationalSignatureCommandOptions;
+    public final MendelianErrorCommandOptions mendelianErrorCommandOptions;
     public final InferredSexCommandOptions inferredSexCommandOptions;
     public final RelatednessCommandOptions relatednessCommandOptions;
     public final GeneticChecksCommandOptions geneticChecksCommandOptions;
@@ -172,6 +174,7 @@ public class VariantCommandOptions {
         this.knockoutCommandOptions = new KnockoutCommandOptions();
         this.sampleEligibilityCommandOptions = new SampleEligibilityCommandOptions();
         this.mutationalSignatureCommandOptions = new MutationalSignatureCommandOptions();
+        this.mendelianErrorCommandOptions = new MendelianErrorCommandOptions();
         this.inferredSexCommandOptions = new InferredSexCommandOptions();
         this.relatednessCommandOptions = new RelatednessCommandOptions();
         this.geneticChecksCommandOptions = new GeneticChecksCommandOptions();
@@ -1097,6 +1100,29 @@ public class VariantCommandOptions {
         public String study;
 
         @Parameter(names = {"--sample"}, description = "Sample name.")
+        public String sample;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND, commandDescription = MendelianErrorAnalysis.DESCRIPTION)
+    public class MendelianErrorCommandOptions {
+        public static final String MENDELIAN_ERROR_RUN_COMMAND = MendelianErrorAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--family"}, description = "Family ID.")
+        public String family;
+
+        @Parameter(names = {"--individual"}, description = "Individual ID to get the family.")
+        public String individual;
+
+        @Parameter(names = {"--sample"}, description = "Sample ID to get the family.")
         public String sample;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)

@@ -61,6 +61,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
@@ -170,6 +171,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 queryResponse = mutationalSignature();
+                break;
+
+            case MENDELIAN_ERROR_RUN_COMMAND:
+                queryResponse = mendelianError();
                 break;
 
             case INFERRED_SEX_RUN_COMMAND:
@@ -320,6 +325,19 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 ),
                 getParams(variantCommandOptions.mutationalSignatureCommandOptions.study)
         );
+    }
+
+    private RestResponse<Job> mendelianError() throws ClientException {
+        return null;
+//        return openCGAClient.getVariantClient().runMendelianError(
+//                new MendelianErrorAnalysisParams(
+//                        variantCommandOptions.mendelianErrorCommandOptions.family,
+//                        variantCommandOptions.mendelianErrorCommandOptions.individual,
+//                        variantCommandOptions.mendelianErrorCommandOptions.sample,
+//                        variantCommandOptions.mendelianErrorCommandOptions.outdir
+//                ),
+//                getParams(variantCommandOptions.mendelianErrorCommandOptions.study)
+//        );
     }
 
     private RestResponse<Job> inferredSex() throws ClientException {

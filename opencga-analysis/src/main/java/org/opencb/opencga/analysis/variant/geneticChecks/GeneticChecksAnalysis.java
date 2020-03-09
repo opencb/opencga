@@ -203,7 +203,7 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
 
         annot.put("sexReport", result.getInferredSexReport());
         annot.put("relatednessReport", result.getRelatednessReport());
-        annot.put("mendelianErrorsReport", result.getMendelianErrorsReport());
+        annot.put("mendelianErrorsReport", result.getMendelianErrorReport());
 
         return annot;
     }
