@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.clinical;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -38,6 +39,7 @@ public class ClinicalAnalysisCreateParams {
     private List<String> flags;
 
     private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public ClinicalAnalysisCreateParams() {
     }
@@ -47,7 +49,8 @@ public class ClinicalAnalysisCreateParams {
                                         Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalystParam analyst,
                                         ClinicalAnalysisInternal internal, List<InterpretationCreateParams> interpretations,
                                         ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
-                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes) {
+                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes,
+                                        CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -66,6 +69,7 @@ public class ClinicalAnalysisCreateParams {
         this.priority = priority;
         this.flags = flags;
         this.attributes = attributes;
+        this.status = status;
     }
 
     public static ClinicalAnalysisCreateParams of(ClinicalAnalysis clinicalAnalysis) {
@@ -101,7 +105,7 @@ public class ClinicalAnalysisCreateParams {
                         ? clinicalAnalysis.getInterpretations().stream().map(InterpretationCreateParams::of).collect(Collectors.toList())
                         : Collections.emptyList(), clinicalAnalysis.getConsent(), clinicalAnalysis.getDueDate(),
                 clinicalAnalysis.getComments(), clinicalAnalysis.getAlerts(), clinicalAnalysis.getPriority(), clinicalAnalysis.getFlags(),
-                clinicalAnalysis.getAttributes());
+                clinicalAnalysis.getAttributes(), CustomStatusParams.of(clinicalAnalysis.getStatus()));
     }
 
     @Override
@@ -125,6 +129,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -175,7 +180,8 @@ public class ClinicalAnalysisCreateParams {
                         : new ArrayList<>();
         String assignee = analyst != null ? analyst.assignee : "";
         return new ClinicalAnalysis(id, description, type, disorder, fileMap, individual, f, roleToProband, consent, interpretationList,
-                priority, new ClinicalAnalysisAnalyst(assignee, ""), flags, null, dueDate, comments, alerts, 1, internal, attributes);
+                priority, new ClinicalAnalysisAnalyst(assignee, ""), flags, null, dueDate, comments, alerts, 1, internal, attributes,
+                status != null ? status.toCustomStatus() : null);
     }
 
     public String getId() {
@@ -340,6 +346,14 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public ClinicalAnalysisCreateParams setStatus(CustomStatusParams status) {
+        this.status = status;
+        return this;
+    }
 
     private static class SampleParams {
         private String id;

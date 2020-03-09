@@ -249,10 +249,10 @@ migrateCollection("clinical", {"internal": {"$exists": false}}, {}, function(bul
     var set = {
         "internal": {
             "status": doc['status']
-        }
+        },
+        "status": customStatus
     };
     var unset = {
-        "status": "",
         "name": ""
     };
 
