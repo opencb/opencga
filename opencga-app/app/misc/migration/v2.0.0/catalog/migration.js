@@ -317,4 +317,18 @@ migrateCollection("file", {"internal": {"$exists": false}}, {}, function(bulk, d
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
 });
 
+migrateCollection("interpretation", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    var set = {
+        "internal": {
+            "status": {
+                "name": doc['status'],
+                "description": "",
+                "date": ""
+            }
+        }
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set});
+});
+
 // TODO: Add indexes for new "deleted" collections
