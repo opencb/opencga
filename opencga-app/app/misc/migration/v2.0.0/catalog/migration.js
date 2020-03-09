@@ -200,11 +200,11 @@ migrateCollection("study", {"internal": {"$exists": false}}, {}, function(bulk, 
     var set = {
         "internal": {
             "status": doc['status']
-        }
+        },
+        "status": customStatus
     };
     var unset = {
         "stats": "",
-        "status": "",
         "type": ""
     };
 

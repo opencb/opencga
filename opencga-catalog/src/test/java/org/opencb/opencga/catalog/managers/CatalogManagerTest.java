@@ -76,7 +76,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("More than one project found");
         catalogManager.getStudyManager().create(null, "phasexx", null, "Phase 1", "Done", null, null, null, null,
-                null, null, null, token);
+                null, null, null, null, token);
     }
 
     @Test
@@ -187,14 +187,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Action only for admins
         Group group = new Group("ldap", Collections.emptyList()).setSyncedFrom(new Group.Sync("ldap", "bio"));
         catalogManager.getStudyManager().createGroup(studyFqn, group, token);
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new Study.StudyAclParams("", AclParams.Action.SET,
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new StudyAclParams("", AclParams.Action.SET,
                 "view_only"), token);
         String token = catalogManager.getUserManager().login("user", "password");
 
         assertEquals(9, catalogManager.getSampleManager().count(studyFqn, new Query(), token).getNumTotalResults());
 
         // We remove the permissions for group ldap
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new Study.StudyAclParams("", AclParams.Action.RESET,
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new StudyAclParams("", AclParams.Action.RESET,
                 ""), this.token);
 
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, new Query(), token).getNumTotalResults());
@@ -256,7 +256,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 Collections.singletonList("test"), token);
         DataResult<Map<String, List<String>>> permissions = catalogManager.getStudyManager().updateAcl(
                 Collections.singletonList("user@1000G:phase1"), "@group_cancer_some_thing_else",
-                new Study.StudyAclParams("", AclParams.Action.SET, "view_only"), token);
+                new StudyAclParams("", AclParams.Action.SET, "view_only"), token);
         assertTrue(permissions.first().containsKey("@group_cancer_some_thing_else"));
 
         String token = catalogManager.getUserManager().login("test", "test");
@@ -373,13 +373,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
         String projectId = catalogManager.getProjectManager().get(query, null, token).first().getId();
         catalogManager.getStudyManager().create(projectId, "study_1", null, "study_1",
-                "description", null, null, null, null, null, null, null, token);
+                "description", null, null, null, null, null, null, null, null, token);
 
-        catalogManager.getStudyManager().create(projectId, "study_2", null, "study_2", "description", null, null, null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(projectId, "study_2", null, "study_2", "description", null, null, null, null, null, null, null, null, token);
 
-        catalogManager.getStudyManager().create(projectId, "study_3", null, "study_3", "description", null, null, null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(projectId, "study_3", null, "study_3", "description", null, null, null, null, null, null, null, null, token);
 
-        String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", "description", null, null, null, null, null, null, null, token).first().getId();
+        String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", "description", null, null, null, null, null, null, null, null, token).first().getId();
 
         assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user2"), null, token).getResults().stream().map(Study::getId)
@@ -409,7 +409,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testGetId() throws CatalogException {
         // Create another study with alias phase3
-        catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, null, null, sessionIdUser2);
+        catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, null, null, null, sessionIdUser2);
 
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Long> uids = catalogManager.getStudyManager().resolveIds(Arrays.asList("*"), userId)
@@ -482,7 +482,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         // Create another study with alias phase3
-        DataResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "phase3", null, "Phase 3", "d", null, null, null, null, null, null, null, sessionIdUser2);
+        DataResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "phase3", null, "Phase 3", "d", null, null, null, null, null, null, null, null, sessionIdUser2);
         try {
             studyManager.resolveIds(Collections.emptyList(), "*");
             fail("This should throw an exception. No studies should be found for user anonymous");
@@ -508,7 +508,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         // Create another study with alias phase3
-        DataResult<Study> study = catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, null, null, sessionIdUser2);
+        DataResult<Study> study = catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, null, null, null, sessionIdUser2);
         catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionIdUser2);
 
@@ -786,7 +786,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new Study.StudyAclParams("", AclParams.Action.SET, "view-only"), token);
+                new StudyAclParams("", AclParams.Action.SET, "view-only"), token);
 
         try {
             catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
@@ -809,7 +809,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new Study.StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTION.name(), AclParams.Action.SET, "view-only"), token);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTION.name(), AclParams.Action.SET, "view-only"), token);
 
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);

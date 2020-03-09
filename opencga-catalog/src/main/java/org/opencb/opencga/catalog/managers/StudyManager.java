@@ -45,6 +45,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
@@ -245,7 +246,8 @@ public class StudyManager extends AbstractManager {
 
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, String description,
                                        StudyNotification notification, String cipher, String uriScheme, URI uri, StudyInternal internal,
-                                       Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
+                                       CustomStatus status, Map<String, Object> attributes, QueryOptions options, String token)
+            throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(id, "id");
@@ -292,8 +294,11 @@ public class StudyManager extends AbstractManager {
                 .append("uriScheme", uriScheme)
                 .append("uri", uri)
                 .append("attributes", attributes)
+                .append("status", status)
                 .append("options", options)
                 .append("token", token);
+
+        status = ParamUtils.defaultObject(status, CustomStatus::new);
 
         try {
             /* Check project permissions */
@@ -312,8 +317,8 @@ public class StudyManager extends AbstractManager {
 
             Study study = new Study(id, name, alias, creationDate, description, notification, 0,
                     Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)), new Group(ADMINS, Collections.emptyList())), files,
-                    null, null, new LinkedList<>(), null, null, null, null, null, null, null, project.getCurrentRelease(), internal,
-                    attributes);
+                    null, null, new LinkedList<>(), null, null, null, null, null, null, null, project.getCurrentRelease(),
+                    status, internal, attributes);
 
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
 
@@ -1109,7 +1114,7 @@ public class StudyManager extends AbstractManager {
             OpenCGAResult<Group> group = studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
 
             // Remove the permissions the group might have had
-            Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
+            StudyAclParams aclParams = new StudyAclParams(null, AclParams.Action.RESET, null);
             updateAcl(Collections.singletonList(studyId), groupId, aclParams, token);
 
             studyDBAdaptor.deleteGroup(study.getUid(), groupId);
@@ -1447,7 +1452,7 @@ public class StudyManager extends AbstractManager {
         return studyAclList;
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, Study.StudyAclParams aclParams,
+    public OpenCGAResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, StudyAclParams aclParams,
                                                               String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studies = resolveIds(studyIdList, userId);

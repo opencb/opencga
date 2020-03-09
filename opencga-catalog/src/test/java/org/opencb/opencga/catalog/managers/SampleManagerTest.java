@@ -28,10 +28,7 @@ import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.*;
-import org.opencb.opencga.core.models.study.GroupUpdateParams;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.user.Account;
@@ -354,7 +351,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().createGroup(studyFqn, "myGroup", Arrays.asList("user2", "user3"), token);
         catalogManager.getStudyManager().createGroup(studyFqn, "myGroup2", Arrays.asList("user2", "user3"), token);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@myGroup",
-                new Study.StudyAclParams("", AclParams.Action.SET, null), token);
+                new StudyAclParams("", AclParams.Action.SET, null), token);
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("s_1"), "@myGroup", new SampleAclParams("VIEW",
                 AclParams.Action.SET, null, null, null), token);

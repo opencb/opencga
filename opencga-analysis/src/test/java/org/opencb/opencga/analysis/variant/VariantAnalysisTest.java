@@ -195,7 +195,7 @@ public class VariantAnalysisTest {
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh37", new QueryOptions(), token).first().getId();
-        catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, null, null, null, token);
 
         // Create 10 samples not indexed
         for (int i = 0; i < 10; i++) {

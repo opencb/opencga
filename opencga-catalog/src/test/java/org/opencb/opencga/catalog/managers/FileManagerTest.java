@@ -38,10 +38,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
-import org.opencb.opencga.core.models.study.GroupUpdateParams;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.ByteArrayInputStream;
@@ -95,7 +92,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
-        Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
+        StudyAclParams aclParams = new StudyAclParams("", AclParams.Action.ADD, "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, token);
         fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
                 "data/test/folder/file.txt", "My description", 0, null, null, null, true, "blabla", null, sessionIdUser2);
@@ -520,7 +517,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 sessionIdUser2);
 
         Path myStudy = Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("myStudy"));
-        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", "", null, null, null, myStudy.toUri(), null, null, null, sessionIdUser2).first().getFqn();
+        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", "", null, null, null, myStudy.toUri(), null, null, null, null, sessionIdUser2).first().getFqn();
 
         folder = fileManager.createFolder(newStudy, Paths.get("WOLOLO").toString(), true, null,
                 QueryOptions.empty(), sessionIdUser2).first();
@@ -759,7 +756,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Create a new study so more than one file will be found under the root /. However, it should be able to consider the study given
         // properly
-        catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, null, null, token).first().getUid();
+        catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, null, null, null, token).first().getUid();
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", new Query(), new QueryOptions(),
                 5, token);
@@ -803,7 +800,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void getFileIdByString() throws CatalogException {
-        Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
+        StudyAclParams aclParams = new StudyAclParams("", AclParams.Action.ADD, "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, token);
         File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
                 "data/test/folder/file.txt", "My description", 0, null, null, null, true, "blabla", null,
@@ -1665,7 +1662,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // We grant permissions to user2 to the study
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user2",
-                new Study.StudyAclParams("", AclParams.Action.ADD, "admin"), token);
+                new StudyAclParams("", AclParams.Action.ADD, "admin"), token);
 
         // Now, instead of moving it to the user's workspace, we will move it to an external path
         try {
