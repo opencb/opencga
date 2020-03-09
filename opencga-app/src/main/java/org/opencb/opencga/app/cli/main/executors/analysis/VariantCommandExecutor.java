@@ -328,16 +328,15 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> mendelianError() throws ClientException {
-        return null;
-//        return openCGAClient.getVariantClient().runMendelianError(
-//                new MendelianErrorAnalysisParams(
-//                        variantCommandOptions.mendelianErrorCommandOptions.family,
-//                        variantCommandOptions.mendelianErrorCommandOptions.individual,
-//                        variantCommandOptions.mendelianErrorCommandOptions.sample,
-//                        variantCommandOptions.mendelianErrorCommandOptions.outdir
-//                ),
-//                getParams(variantCommandOptions.mendelianErrorCommandOptions.study)
-//        );
+        return openCGAClient.getVariantClient().runMendelianError(
+                new MendelianErrorAnalysisParams(
+                        variantCommandOptions.mendelianErrorCommandOptions.family,
+                        variantCommandOptions.mendelianErrorCommandOptions.individual,
+                        variantCommandOptions.mendelianErrorCommandOptions.sample,
+                        variantCommandOptions.mendelianErrorCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.mendelianErrorCommandOptions.study)
+        );
     }
 
     private RestResponse<Job> inferredSex() throws ClientException {
