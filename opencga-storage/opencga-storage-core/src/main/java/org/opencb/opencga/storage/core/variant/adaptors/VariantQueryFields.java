@@ -17,6 +17,7 @@ public final class VariantQueryFields {
     private final List<Integer> studies;
     private final Map<Integer, StudyMetadata> studyMetadatas;
     private final Map<Integer, List<Integer>> samples;
+    private final Map<Integer, Map<Integer, List<Integer>>> multiFileSamples;
     private final boolean samplePagination;
     private final int numSamples;
     private final int numTotalSamples;
@@ -28,6 +29,7 @@ public final class VariantQueryFields {
         this.studies = Collections.singletonList(studyMetadata.getId());
         this.studyMetadatas = Collections.singletonMap(studyMetadata.getId(), studyMetadata);
         this.samples = Collections.singletonMap(studyMetadata.getId(), samples);
+        this.multiFileSamples = Collections.emptyMap();
         this.files = Collections.singletonMap(studyMetadata.getId(), files);
         this.cohortIds = Collections.emptyMap();
         this.numSamples = samples.size();
@@ -36,12 +38,14 @@ public final class VariantQueryFields {
     }
 
     VariantQueryFields(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyMetadata> studyMetadatas,
-                       Map<Integer, List<Integer>> samples, boolean samplePagination, int numSamples, int numTotalSamples,
+                       Map<Integer, List<Integer>> samples, Map<Integer, Map<Integer, List<Integer>>> multiFileSamples,
+                       boolean samplePagination, int numSamples, int numTotalSamples,
                        Map<Integer, List<Integer>> files, Map<Integer, List<Integer>> cohortIds) {
         this.fields = fields;
         this.studies = studies;
         this.studyMetadatas = studyMetadatas;
         this.samples = samples;
+        this.multiFileSamples = multiFileSamples;
         this.samplePagination = samplePagination;
         this.numSamples = numSamples;
         this.numTotalSamples = numTotalSamples;
@@ -63,6 +67,10 @@ public final class VariantQueryFields {
 
     public Map<Integer, List<Integer>> getSamples() {
         return samples;
+    }
+
+    public Map<Integer, Map<Integer, List<Integer>>> getMultiFileSamples() {
+        return multiFileSamples;
     }
 
     public boolean getSamplePagination() {

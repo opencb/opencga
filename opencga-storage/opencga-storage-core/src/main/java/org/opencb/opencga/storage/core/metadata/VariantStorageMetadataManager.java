@@ -32,6 +32,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -76,6 +77,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private final MetadataCache<Integer, String> sampleNameCache;
     private final MetadataCache<Integer, Boolean> sampleIdIndexedCache;
     private final MetadataCache<Integer, LinkedHashSet<Integer>> sampleIdsFromFileIdCache;
+    private final MetadataCache<Integer, VariantStorageEngine.LoadSplitData> splitDataCache;
 
     private final MetadataCache<String, Integer> fileIdCache;
     private final MetadataCache<Integer, String> fileNameCache;
@@ -113,6 +115,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 throw VariantQueryException.fileNotFound(fileId, getStudyName(studyId));
             }
             return fileMetadata.getSamples();
+        });
+        splitDataCache = new MetadataCache<>((studyId, sampleId) -> {
+            SampleMetadata sampleMetadata = sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
+            if (sampleMetadata == null) {
+                throw VariantQueryException.sampleNotFound(sampleId, getStudyName(studyId));
+            }
+            return sampleMetadata.getSplitData();
         });
 
         fileIdCache = new MetadataCache<>(fileDBAdaptor::getFileId);
@@ -1252,6 +1261,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             fileIds.addAll(fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptyList()));
         }
         return fileIds;
+    }
+
+    public List<Integer> getFileIdsFromSampleId(int studyId, int sampleId) {
+        return fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptyList());
+    }
+
+    public VariantStorageEngine.LoadSplitData getLoadSplitData(int studyId, int sampleId) {
+        return splitDataCache.get(studyId, sampleId);
     }
 
     /*

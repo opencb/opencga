@@ -380,6 +380,15 @@ public class VariantHBaseQueryParser {
                 }
             });
 
+            selectElements.getMultiFileSamples().forEach((studyId, sampleIds) -> {
+                for (Integer sampleId : sampleIds.keySet()) {
+                    for (Integer fileId : sampleIds.get(sampleId)) {
+                        scan.addColumn(family, buildSampleColumnKey(studyId, sampleId, fileId));
+                        scan.addColumn(family, buildFileColumnKey(studyId, fileId));
+                    }
+                }
+            });
+
             selectElements.getFiles().forEach((studyId, fileIds) -> {
                 scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
                 for (Integer fileId : fileIds) {

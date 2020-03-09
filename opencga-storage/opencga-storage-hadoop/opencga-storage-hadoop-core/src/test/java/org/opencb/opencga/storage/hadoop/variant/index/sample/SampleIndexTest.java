@@ -24,7 +24,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -63,8 +62,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static boolean loaded = false;
+    protected static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2);
     protected static final List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
-    private static StudyMetadata studyMetadata;
 
     @Before
     public void before() throws Exception {
@@ -96,8 +95,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         variantStorageEngine.annotate(new Query(), new QueryOptions());
 
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
-
-        studyMetadata = variantStorageEngine.getMetadataManager().getStudyMetadata(STUDY_NAME);
     }
 
     @Test
@@ -236,31 +233,40 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {
-        SampleIndexQuery sampleIndexQuery = testQueryIndex(annotationQuery);
-        assertTrue(!sampleIndexQuery.emptyAnnotationIndex() || !sampleIndexQuery.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty());
+        for (String study : studies) {
+            for (String sampleName : sampleNames) {
+                SampleIndexQuery sampleIndexQuery = testQueryIndex(annotationQuery, new Query()
+                        .append(STUDY.key(), study)
+                        .append(SAMPLE.key(), sampleName));
+                assertTrue(!sampleIndexQuery.emptyAnnotationIndex() || !sampleIndexQuery.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty());
+            }
+        }
     }
 
-    public void testQueryFileIndex(Query annotationQuery) throws Exception {
-        testQueryIndex(annotationQuery);
+    public void testQueryFileIndex(Query query) throws Exception {
+        for (String study : studies) {
+            for (String sampleName : sampleNames) {
+                testQueryIndex(query, new Query()
+                        .append(STUDY.key(), study)
+                        .append(SAMPLE.key(), sampleName));
+            }
+        }
     }
 
-    public SampleIndexQuery testQueryIndex(Query annotationQuery) throws Exception {
-        return testQueryIndex(annotationQuery, new Query()
-                .append(STUDY.key(), STUDY_NAME)
-                .append(SAMPLE.key(), "NA19600"));
-    }
-
-    public SampleIndexQuery testQueryIndex(Query annotationQuery, Query query) throws Exception {
-        System.out.println("----------------------------------------------------------");
+    public SampleIndexQuery testQueryIndex(Query testQuery, Query query) throws Exception {
+        System.out.println("----- START TEST QUERY INDEX -----------------------------------------------------");
+        System.out.println("testQuery  = " + testQuery.toJson());
+        System.out.println("query      = " + query.toJson());
+        System.out.println("--------");
 
         // Query DBAdaptor
-        System.out.println("Query DBAdaptor");
-        query.putAll(annotationQuery);
+        System.out.println("#Query DBAdaptor");
+        query.putAll(testQuery);
         VariantQueryResult<Variant> queryResult = dbAdaptorQuery(new Query(query), new QueryOptions());
         int onlyDBAdaptor = queryResult.getNumResults();
 
         // Query SampleIndex
-        System.out.println("Query SampleIndex");
+        System.out.println("#Query SampleIndex");
         SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
         SampleIndexQuery indexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(new Query(query));
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
@@ -269,13 +275,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .iterator(indexQuery).toDataResult().getNumResults();
 
         // Query SampleIndex+DBAdaptor
-        System.out.println("Query SampleIndex+DBAdaptor");
+        System.out.println("#Query SampleIndex+DBAdaptor");
         queryResult = variantStorageEngine.get(new Query(query), new QueryOptions());
         int indexAndDBAdaptor = queryResult.getNumResults();
         System.out.println("queryResult.source = " + queryResult.getSource());
 
-        System.out.println("--------");
-        System.out.println("query = " + annotationQuery.toJson());
+        System.out.println("--- RESULTS -----");
+        System.out.println("testQuery  = " + testQuery.toJson());
+        System.out.println("query      = " + query.toJson());
         System.out.println("annotationIndex    = " + IndexUtils.maskToString(indexQuery.getAnnotationIndexMask(), indexQuery.getAnnotationIndex()));
         System.out.println("biotypeMask        = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexQuery().getBiotypeMask()));
         System.out.println("ctMask             = " + IndexUtils.shortToString(indexQuery.getAnnotationIndexQuery().getConsequenceTypeMask()));
@@ -314,7 +321,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testSampleIndexSkipIntersect() throws StorageEngineException {
-        Query query = new Query(VariantQueryParam.SAMPLE.key(), sampleNames.get(0)).append(VariantQueryParam.STUDY.key(), studyMetadata.getName());
+        Query query = new Query(VariantQueryParam.SAMPLE.key(), sampleNames.get(0)).append(VariantQueryParam.STUDY.key(), STUDY_NAME);
         VariantQueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertEquals("sample_index_table", result.getSource());
 

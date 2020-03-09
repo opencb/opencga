@@ -477,16 +477,20 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         for (PopulationFrequencyQuery pf : query.getAnnotationIndexQuery().getPopulationFrequencyQueries()) {
             logger.info("PopFreq         = " + pf);
         }
-        boolean[] validFileIndex = query.getSampleFileIndexQuery().getValidFileIndex1();
-        for (int i = 0; i < validFileIndex.length; i++) {
-            if (validFileIndex[i]) {
-                logger.info("FileIndex1       = " + IndexUtils.maskToString(query.getFileIndexMask1(), (byte) i));
+        if (query.getSampleFileIndexQuery().hasFileIndexMask1()) {
+            boolean[] validFileIndex = query.getSampleFileIndexQuery().getValidFileIndex1();
+            for (int i = 0; i < validFileIndex.length; i++) {
+                if (validFileIndex[i]) {
+                    logger.info("FileIndex1       = " + IndexUtils.maskToString(query.getFileIndexMask1(), (byte) i));
+                }
             }
         }
-        boolean[] validFileIndex2 = query.getSampleFileIndexQuery().getValidFileIndex1();
-        for (int i = 0; i < validFileIndex2.length; i++) {
-            if (validFileIndex2[i]) {
-                logger.info("FileIndex2       = " + IndexUtils.maskToString(query.getFileIndexMask2(), (byte) i));
+        if (query.getSampleFileIndexQuery().hasFileIndexMask2()) {
+            boolean[] validFileIndex2 = query.getSampleFileIndexQuery().getValidFileIndex2();
+            for (int i = 0; i < validFileIndex2.length; i++) {
+                if (validFileIndex2[i]) {
+                    logger.info("FileIndex2       = " + IndexUtils.maskToString(query.getFileIndexMask2(), (byte) i));
+                }
             }
         }
         if (query.hasFatherFilter()) {

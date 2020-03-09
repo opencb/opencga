@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -459,9 +460,36 @@ public final class VariantQueryUtils {
         int numTotalSamples = sampleIds.values().stream().mapToInt(List::size).sum();
         skipAndLimitSamples(query, sampleIds);
         int numSamples = sampleIds.values().stream().mapToInt(List::size).sum();
+        Map<Integer, Map<Integer, List<Integer>>> multiFileSamples = new HashMap<>();
 
         Map<Integer, List<Integer>> fileIds = VariantQueryUtils.getIncludeFiles(query, includeStudies, includeFields,
                 metadataManager, sampleIds);
+
+        for (Map.Entry<Integer, List<Integer>> entry : sampleIds.entrySet()) {
+            Integer studyId = entry.getKey();
+            List<Integer> filesInStudy = fileIds.get(studyId);
+            Map<Integer, List<Integer>> multiMap = multiFileSamples.computeIfAbsent(studyId, s -> new HashMap<>());
+            for (Integer sampleId : entry.getValue()) {
+                Set<Integer> filesFromSample = new HashSet<>(metadataManager.getFileIdsFromSampleId(studyId, sampleId));
+                multiMap.put(sampleId, new ArrayList<>(filesFromSample.size()));
+                if (filesFromSample.size() > 1) {
+                    if (VariantStorageEngine.LoadSplitData.MULTI.equals(metadataManager.getLoadSplitData(studyId, sampleId))) {
+                        boolean hasAnyFile = false;
+                        for (Integer fileFromSample : filesFromSample) {
+                            if (filesInStudy.contains(fileFromSample)) {
+                                hasAnyFile = true;
+                                multiMap.get(sampleId).add(fileFromSample);
+                            }
+                        }
+                        if (!hasAnyFile) {
+                            for (Integer fileFromSample : filesFromSample) {
+                                multiMap.get(sampleId).add(fileFromSample);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         if (fileIds.values().stream().allMatch(List::isEmpty)) {
             includeFields.remove(VariantField.STUDIES_FILES);
@@ -490,7 +518,7 @@ public final class VariantQueryUtils {
         }
 
         return new VariantQueryFields(includeFields, includeStudies, studyMetadata,
-                sampleIds, numTotalSamples != numSamples, numSamples, numTotalSamples, fileIds, cohortIds);
+                sampleIds, multiFileSamples, numTotalSamples != numSamples, numSamples, numTotalSamples, fileIds, cohortIds);
     }
 
     protected static <T> void skipAndLimitSamples(Query query, Map<T, List<T>> sampleIds) {

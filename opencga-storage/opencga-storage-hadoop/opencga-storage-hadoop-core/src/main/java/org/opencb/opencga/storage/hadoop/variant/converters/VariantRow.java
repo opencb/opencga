@@ -48,11 +48,11 @@ public class VariantRow {
         this.result = null;
     }
 
-    public static VariantRowWalker walker(Result result) {
+    public static VariantRowWalkerBuilder walker(Result result) {
         return new VariantRow(result).walker();
     }
 
-    public static VariantRowWalker walker(ResultSet resultSet) {
+    public static VariantRowWalkerBuilder walker(ResultSet resultSet) {
         return new VariantRow(resultSet).walker();
     }
 
@@ -85,12 +85,12 @@ public class VariantRow {
         walker().onSample(consumer).walk();
     }
 
-    public VariantRowWalker walker() {
-        return new VariantRowWalker();
+    public VariantRowWalkerBuilder walker() {
+        return new VariantRowWalkerBuilder();
     }
 
-    private void walkVariant(VariantRowWalker walker) {
-        walker.setVariant(getVariant());
+    public void walk(VariantRowWalker walker) {
+        walker.variant(getVariant());
         if (resultSet != null) {
             try {
                 ResultSetMetaData metaData = resultSet.getMetaData();
@@ -105,7 +105,8 @@ public class VariantRow {
                     if (columnName.endsWith(FILE_SUFIX)) {
                         walker.file(new BytesFileColumn(bytes, extractStudyId(columnName), extractFileId(columnName)));
                     } else if (columnName.endsWith(SAMPLE_DATA_SUFIX)) {
-                        walker.sample(new BytesSampleColumn(bytes, extractStudyId(columnName), extractSampleId(columnName)));
+                        walker.sample(new BytesSampleColumn(bytes, extractStudyId(columnName), extractSampleId(columnName),
+                                extractFileIdFromSampleColumn(columnName, false)));
                     } else if (columnName.endsWith(STUDY_SUFIX)) {
                         walker.study(extractStudyId(columnName));
                     } else if (columnName.endsWith(COHORT_STATS_PROTOBUF_SUFFIX)) {
@@ -129,7 +130,8 @@ public class VariantRow {
                 if (columnName.endsWith(FILE_SUFIX)) {
                     walker.file(new BytesFileColumn(cell, extractStudyId(columnName), extractFileId(columnName)));
                 } else if (columnName.endsWith(SAMPLE_DATA_SUFIX)) {
-                    walker.sample(new BytesSampleColumn(cell, extractStudyId(columnName), extractSampleId(columnName)));
+                    walker.sample(new BytesSampleColumn(cell, extractStudyId(columnName), extractSampleId(columnName),
+                            extractFileIdFromSampleColumn(columnName, false)));
                 } else if (columnName.endsWith(STUDY_SUFIX)) {
                     walker.study(extractStudyId(columnName));
                 } else if (columnName.endsWith(COHORT_STATS_PROTOBUF_SUFFIX)) {
@@ -147,7 +149,34 @@ public class VariantRow {
         }
     }
 
-    public class VariantRowWalker {
+    public abstract static class VariantRowWalker {
+
+        protected void variant(Variant variant) {
+        }
+
+        protected void study(int studyId) {
+        }
+
+        protected void file(FileColumn fileColumn) {
+        }
+
+        protected void sample(SampleColumn sampleColumn) {
+        }
+
+        protected void stats(StatsColumn statsColumn) {
+        }
+
+        protected void score(VariantScoreColumn scoreColumn) {
+        }
+
+        protected void fillMissing(int studyId, int fillMissing) {
+        }
+
+        protected void variantAnnotation(VariantAnnotationColumn column) {
+        }
+    }
+
+    public class VariantRowWalkerBuilder extends VariantRowWalker {
 
         private IntConsumer studyConsumer = r -> { };
         private Consumer<FileColumn> fileConsumer = r -> { };
@@ -158,78 +187,86 @@ public class VariantRow {
         private Consumer<VariantAnnotationColumn> variantAnnotationConsummer = (k) -> { };
         private Variant variant;
 
-        private void setVariant(Variant variant) {
-            this.variant = variant;
-        }
-
         public Variant getVariant() {
             return variant;
         }
 
+        @Override
+        protected void variant(Variant variant) {
+            this.variant = variant;
+        }
+
+        @Override
         protected void study(int studyId) {
             studyConsumer.accept(studyId);
         }
 
+        @Override
         protected void file(FileColumn fileColumn) {
             fileConsumer.accept(fileColumn);
         }
 
+        @Override
         protected void sample(SampleColumn sampleColumn) {
             sampleConsumer.accept(sampleColumn);
         }
 
+        @Override
         protected void stats(StatsColumn statsColumn) {
             statsConsumer.accept(statsColumn);
         }
 
+        @Override
         protected void score(VariantScoreColumn scoreColumn) {
             variantScoreConsumer.accept(scoreColumn);
         }
 
+        @Override
         protected void fillMissing(int studyId, int fillMissing) {
             fillMissingConsumer.accept(studyId, fillMissing);
         }
 
+        @Override
         protected void variantAnnotation(VariantAnnotationColumn column) {
             variantAnnotationConsummer.accept(column);
         }
 
         public Variant walk() {
-            walkVariant(this);
+            VariantRow.this.walk(this);
             return getVariant();
         }
 
-        public VariantRowWalker onStudy(IntConsumer consumer) {
+        public VariantRowWalkerBuilder onStudy(IntConsumer consumer) {
             studyConsumer = consumer;
             return this;
         }
 
-        public VariantRowWalker onFile(Consumer<FileColumn> consumer) {
+        public VariantRowWalkerBuilder onFile(Consumer<FileColumn> consumer) {
             fileConsumer = consumer;
             return this;
         }
 
-        public VariantRowWalker onSample(Consumer<SampleColumn> consumer) {
+        public VariantRowWalkerBuilder onSample(Consumer<SampleColumn> consumer) {
             sampleConsumer = consumer;
             return this;
         }
 
-        public VariantRowWalker onCohortStats(Consumer<StatsColumn> consumer) {
+        public VariantRowWalkerBuilder onCohortStats(Consumer<StatsColumn> consumer) {
             statsConsumer = consumer;
             return this;
         }
 
-        public VariantRowWalker onVariantScore(Consumer<VariantScoreColumn> consumer) {
+        public VariantRowWalkerBuilder onVariantScore(Consumer<VariantScoreColumn> consumer) {
             variantScoreConsumer = consumer;
             return this;
         }
 
-        public VariantRowWalker onFillMissing(BiConsumer<Integer, Integer> consumer) {
+        public VariantRowWalkerBuilder onFillMissing(BiConsumer<Integer, Integer> consumer) {
             fillMissingConsumer = consumer;
             return this;
         }
 
-        public VariantRowWalker onVariantAnnotation(Consumer<VariantAnnotationColumn> consumer) {
+        public VariantRowWalkerBuilder onVariantAnnotation(Consumer<VariantAnnotationColumn> consumer) {
             variantAnnotationConsummer = consumer;
             return this;
         }
@@ -261,6 +298,8 @@ public class VariantRow {
         int getStudyId();
 
         int getSampleId();
+
+        Integer getFileId();
 
         List<String> getSampleData();
 
@@ -341,6 +380,7 @@ public class VariantRow {
     private static class BytesSampleColumn extends BytesColumn implements SampleColumn {
         private final int studyId;
         private final int sampleId;
+        private final Integer fileId;
 
 //        public static SampleColumn getOrNull(Cell cell) {
 //            Integer sampleId = VariantPhoenixHelper.extractSampleId(
@@ -354,16 +394,18 @@ public class VariantRow {
 //            }
 //        }
 
-        BytesSampleColumn(Cell cell, int studyId, int sampleId) {
+        BytesSampleColumn(Cell cell, int studyId, int sampleId, Integer fileId) {
             super(cell);
             this.studyId = studyId;
             this.sampleId = sampleId;
+            this.fileId = fileId;
         }
 
-        BytesSampleColumn(byte[] value, int studyId, int sampleId) {
+        BytesSampleColumn(byte[] value, int studyId, int sampleId, Integer fileId) {
             super(value);
             this.studyId = studyId;
             this.sampleId = sampleId;
+            this.fileId = fileId;
         }
 
         @Override
@@ -374,6 +416,11 @@ public class VariantRow {
         @Override
         public int getSampleId() {
             return sampleId;
+        }
+
+        @Override
+        public Integer getFileId() {
+            return fileId;
         }
 
         @Override

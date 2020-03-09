@@ -209,7 +209,6 @@ public class VariantSqlQueryParser {
             VariantQueryFields queryFields = parseVariantQueryFields(query, options, metadataManager);
             phoenixSQLQuery.select = queryFields;
             Set<VariantField> returnedFields = queryFields.getFields();
-            Map<Integer, List<Integer>> returnedSamples = queryFields.getSamples();
             Collection<Integer> studyIds = queryFields.getStudies();
 
             sb.append(VariantColumn.CHROMOSOME).append(',')
@@ -241,15 +240,21 @@ public class VariantSqlQueryParser {
                 });
             }
             if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
-                returnedSamples.forEach((studyId, sampleIds) -> {
-                    for (Integer sampleId : sampleIds) {
+                queryFields.getMultiFileSamples().forEach((studyId, sampleIds) -> {
+                    for (Integer sampleId : sampleIds.keySet()) {
                         sb.append(",\"");
                         buildSampleColumnKey(studyId, sampleId, sb);
                         sb.append('"');
+                        for (Integer fileId : sampleIds.get(sampleId)) {
+                            sb.append(",\"");
+                            buildSampleColumnKey(studyId, sampleId, fileId, sb);
+                            sb.append('"');
+                        }
                     }
+
                     // Check if any of the files from the included samples is not being returned.
                     // If don't, add it to the return list.
-                    Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
+                    Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds.keySet());
                     List<Integer> includeFiles = queryFields.getFiles().get(studyId);
                     for (Integer fileId : fileIds) {
                         if (!includeFiles.contains(fileId)) {

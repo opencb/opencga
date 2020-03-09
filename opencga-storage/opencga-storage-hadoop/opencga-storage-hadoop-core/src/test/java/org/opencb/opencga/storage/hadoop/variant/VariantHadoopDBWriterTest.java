@@ -248,9 +248,9 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
         // Writers
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, archiveTableName, dbAdaptor.getHBaseManager());
-        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, dbAdaptor.getVariantTable(),
+        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(dbAdaptor.getVariantTable(),
                 sc.getId(),
-                metadataManager, dbAdaptor.getHBaseManager(), false);
+                fileId, metadataManager, dbAdaptor.getHBaseManager(), false);
 
         // TaskMetadata
         HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null, null);
@@ -262,7 +262,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
         // Mark files as indexed and register new samples in phoenix
         metadataManager.unsecureUpdateStudyMetadata(sc);
-        metadataManager.updateFileMetadata(sc.getId(), fileId, f->f.setIndexStatus(TaskMetadata.Status.READY));
+        metadataManager.updateFileMetadata(sc.getId(), fileId, f -> f.setIndexStatus(TaskMetadata.Status.READY));
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId());
         phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId(), Collections.singleton(fileId), metadataManager.getFileMetadata(sc.getId(), fileId).getSamples());

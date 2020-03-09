@@ -21,6 +21,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryMultiFileToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.slf4j.Logger;
@@ -59,7 +60,7 @@ public class FillGapsTask {
 
         this.helper = helper;
         this.metadataManager = metadataManager;
-        studyConverter = new StudyEntryToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyMetadata.getId(), metadataManager,
+        studyConverter = new StudyEntryMultiFileToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyMetadata.getId(), metadataManager,
                 true,
                 null, // Do not update release
                 true); // Do not skip any genotype

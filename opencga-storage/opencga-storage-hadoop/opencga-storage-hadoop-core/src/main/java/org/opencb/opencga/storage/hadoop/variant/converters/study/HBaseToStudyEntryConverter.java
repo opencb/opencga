@@ -23,10 +23,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.VariantScore;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -347,7 +344,11 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
 
         String sampleName = getSampleName(studyMetadata.getId(), sampleId);
-        studyEntry.addSampleData(sampleName, sampleData);
+        Integer samplePosition = studyEntry.getSamplesPosition().get(sampleName);
+        List<String> old = studyEntry.getSamplesData().set(samplePosition, sampleData);
+        if (old != null) {
+            studyEntry.getIssues().add(new IssueEntry(IssueType.DISCREPANCY, new SampleEntry(sampleName, null, old)));
+        }
     }
 
     private int[] getFormatsMap(int studyId, List<String> fixedFormat) {

@@ -673,6 +673,20 @@ public class VariantPhoenixHelper {
         }
     }
 
+    public static int extractFileIdFromSampleColumn(String columnKey) {
+        return extractFileIdFromSampleColumn(columnKey, true);
+    }
+
+    public static Integer extractFileIdFromSampleColumn(String columnKey, boolean failOnMissing) {
+        if (columnKey.endsWith(SAMPLE_DATA_SUFIX) && StringUtils.countMatches(columnKey, COLUMN_KEY_SEPARATOR) == 3) {
+            return extractId(columnKey, failOnMissing, "sample", columnKey.indexOf(COLUMN_KEY_SEPARATOR) + 1);
+        } else if (failOnMissing) {
+            throw new IllegalArgumentException("Not a sample column: " + columnKey);
+        } else {
+            return null;
+        }
+    }
+
     public static int extractFileId(String columnKey) {
         return extractFileId(columnKey, true);
     }
@@ -740,8 +754,12 @@ public class VariantPhoenixHelper {
     }
 
     private static Integer extractId(String columnKey, boolean failOnMissing, String idType) {
-        int startIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR);
-        int endIndex = columnKey.lastIndexOf(COLUMN_KEY_SEPARATOR);
+        return extractId(columnKey, failOnMissing, idType, 0);
+    }
+
+    private static Integer extractId(String columnKey, boolean failOnMissing, String idType, int fromIndex) {
+        int startIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR, fromIndex);
+        int endIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR, startIndex + 1);
         if (startIndex != endIndex && startIndex > 0) {
             String id = columnKey.substring(startIndex + 1, endIndex);
             if (StringUtils.isNotBlank(columnKey)
@@ -785,12 +803,25 @@ public class VariantPhoenixHelper {
         return Bytes.toBytes(buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString());
     }
 
+    public static byte[] buildSampleColumnKey(int studyId, int sampleId, int fileId) {
+        return Bytes.toBytes(buildSampleColumnKey(studyId, sampleId, fileId, new StringBuilder()).toString());
+    }
+
     public static StringBuilder buildSampleColumnKey(int studyId, int sampleId, StringBuilder stringBuilder) {
         return buildStudyColumnsPrefix(studyId, stringBuilder).append(sampleId).append(SAMPLE_DATA_SUFIX);
     }
 
+    public static StringBuilder buildSampleColumnKey(int studyId, int sampleId, int fileId, StringBuilder stringBuilder) {
+        return buildStudyColumnsPrefix(studyId, stringBuilder)
+                .append(sampleId).append(COLUMN_KEY_SEPARATOR).append(fileId).append(SAMPLE_DATA_SUFIX);
+    }
+
     public static Column getSampleColumn(int studyId, int sampleId) {
         return Column.build(buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
+    }
+
+    public static Column getSampleColumn(int studyId, int sampleId, int fileId) {
+        return Column.build(buildSampleColumnKey(studyId, sampleId, fileId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
     public static boolean isSampleCell(Cell cell) {

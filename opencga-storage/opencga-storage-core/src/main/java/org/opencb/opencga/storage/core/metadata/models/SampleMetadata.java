@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.metadata.models;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -20,6 +21,8 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     // Prepared to have more than one secondary index per sample.
     // Currently only one is allowed.
     private Set<Integer> secondaryIndexCohorts;
+
+    private VariantStorageEngine.LoadSplitData splitData;
 
     private Integer father;
     private Integer mother;
@@ -77,6 +80,15 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
 
     public SampleMetadata addSecondaryIndexCohort(int cohortId) {
         this.secondaryIndexCohorts.add(cohortId);
+        return this;
+    }
+
+    public VariantStorageEngine.LoadSplitData getSplitData() {
+        return splitData;
+    }
+
+    public SampleMetadata setSplitData(VariantStorageEngine.LoadSplitData splitData) {
+        this.splitData = splitData;
         return this;
     }
 

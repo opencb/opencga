@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters.study;
 
-import com.google.common.collect.LinkedListMultimap;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.solr.common.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -28,12 +27,12 @@ import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 
 import java.util.*;
 
@@ -45,19 +44,18 @@ import static org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseTo
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter implements Converter<Variant, Put> {
+public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverter implements Converter<Variant, Put> {
 
     private static final int UNKNOWN_FIELD = -1;
     private static final int FILTER_FIELD = -2;
     private final Set<String> defaultGenotypes;
 //    private final StudyConfiguration studyConfiguration;
-    private final StudyMetadata studyMetadata;
+    protected final StudyMetadata studyMetadata;
     private final List<String> fixedFormat;
     private final Set<String> fixedFormatSet;
     private final List<String> fileAttributes;
     private final PhoenixHelper.Column studyColumn;
     private final Map<String, Integer> sampleIdsMap;
-    private final LinkedListMultimap<Integer, Integer> sampleToFileMap;
     private boolean addSecondaryAlternates;
     private final PhoenixHelper.Column releaseColumn;
 
@@ -80,10 +78,8 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         fixedFormatSet = new HashSet<>(fixedFormat);
         fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
 
-        sampleToFileMap = LinkedListMultimap.create();
         sampleIdsMap = new HashMap<>();
         metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
-            sampleToFileMap.putAll(sampleMetadata.getId(), sampleMetadata.getFiles());
             sampleIdsMap.put(sampleMetadata.getName(), sampleMetadata.getId());
         });
 //        for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
@@ -153,11 +149,11 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
         // Always write file attributes if there is no samples (i.e. aggregated files)
         boolean writeAllFileAttributes = samplesName.isEmpty();
         boolean writeFileAttributes = writeAllFileAttributes;
-        Set<Integer> filesToWrite = new HashSet<>();
+        Set<Integer> filesToWrite = new HashSet<>(1);
         for (String sampleName : samplesName) {
             Integer sampleId = sampleIdsMap.get(sampleName);
             if (sampleIds == null || sampleIds.contains(sampleId)) {
-                byte[] column = VariantPhoenixHelper.buildSampleColumnKey(studyMetadata.getId(), sampleId);
+                byte[] column = getSampleColumn(sampleId);
                 List<String> sampleData = studyEntry.getSamplesData().get(sampleIdx);
                 // Write sample data if the is no genotype information, or if the genotype is equals to the default genotype
                 if (gtIdx == null || !defaultGenotypes.contains(sampleData.get(gtIdx))) {
@@ -170,7 +166,7 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
                     addVarcharArray(put, column, sampleData);
                     // Write file attributes if at least one sample is written.
                     writeFileAttributes = true;
-                    filesToWrite.addAll(sampleToFileMap.get(sampleId));
+                    filesToWrite.addAll(getFilesFromSample(sampleId));
                 }
             }
             sampleIdx++;
@@ -189,6 +185,10 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
 
         return put;
     }
+
+    protected abstract byte[] getSampleColumn(Integer sampleId);
+
+    protected abstract Collection<? extends Integer> getFilesFromSample(Integer sampleId);
 
     private List<String> remapFileData(Variant variant, StudyEntry studyEntry, FileEntry fileEntry,
                                        VariantOverlappingStatus overlappingStatus) {
