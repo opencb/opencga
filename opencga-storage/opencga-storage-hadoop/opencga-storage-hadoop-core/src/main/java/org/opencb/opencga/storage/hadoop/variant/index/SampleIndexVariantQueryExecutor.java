@@ -96,6 +96,10 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
         Query query = new Query(inputQuery);
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);
 
+        return getOrIterator(query, options, iterator, sampleIndexQuery);
+    }
+
+    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator, SampleIndexQuery sampleIndexQuery) {
         if (isFullyCoveredQuery(query, options)) {
             logger.info("HBase SampleIndex, skip variants table");
             return getOrIteratorFullyCovered(options, iterator, query, sampleIndexQuery);
@@ -103,7 +107,6 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             logger.info("HBase SampleIndex intersect");
             return getOrIteratorIntersect(sampleIndexQuery, query, options, iterator);
         }
-
     }
 
     private Object getOrIteratorFullyCovered(QueryOptions options, boolean iterator, Query query, SampleIndexQuery sampleIndexQuery) {
