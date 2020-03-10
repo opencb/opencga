@@ -23,9 +23,9 @@ public class MendelianErrorLocalAnalysisExecutor extends MendelianErrorAnalysisE
 
     @Override
     public void run() throws ToolException {
-
-        MendelianErrorReport report = MendelianInconsistenciesComputation.compute(getStudyId(), getFamilyId(), getOutDir(),
-                getVariantStorageManager(), getToken());
+        // Compute
+        MendelianErrorReport report = MendelianInconsistenciesComputation.compute(getStudyId(), getFamilyId(), getVariantStorageManager(),
+                getToken());
 
         setMendelianErrorReport(report);
     }

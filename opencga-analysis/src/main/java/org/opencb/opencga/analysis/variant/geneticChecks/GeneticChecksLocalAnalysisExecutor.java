@@ -92,7 +92,7 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
 
                 // Compute mendelian inconsitencies
                 MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(getStudyId(), family.getId(),
-                        getOutDir(), variantStorageManager, getToken());
+                        variantStorageManager, getToken());
 
                 // Set relatedness report
                 getReport().setMendelianErrorReport(mendelianErrorReport);
