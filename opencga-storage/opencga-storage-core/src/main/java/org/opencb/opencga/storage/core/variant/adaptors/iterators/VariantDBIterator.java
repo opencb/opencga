@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 /**
  * Created by jacobo on 9/01/15.
@@ -132,6 +133,10 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         for (AutoCloseable closeable : closeables) {
             closeable.close();
         }
+    }
+
+    public VariantDBIterator map(UnaryOperator<Variant> map) {
+        return new MapperVariantDBIterator(this, map);
     }
 
     public static VariantDBIterator emptyIterator() {
