@@ -23,12 +23,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.SmallFileInternal;
 import org.opencb.opencga.core.models.study.Study;
 import org.slf4j.Logger;
@@ -133,12 +134,16 @@ public class FileScanner {
      * @return              Untracked files
      * @throws CatalogException     if a Catalog error occurs
      */
-    public Map<String, URI> untrackedFiles(Study study, String sessionId)
-            throws CatalogException {
+    public Map<String, URI> untrackedFiles(Study study, String sessionId) throws CatalogException {
         long studyId = study.getUid();
         URI studyUri = study.getUri();
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
+        IOManager ioManager = null;
+        try {
+            ioManager = catalogManager.getIoManagerFactory().get(studyUri);
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(studyUri, e);
+        }
         Map<String, URI> linkedFolders = new HashMap<>();
         linkedFolders.put("", studyUri);
         Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
@@ -222,9 +227,9 @@ public class FileScanner {
         Study study = catalogManager.getFileManager().getStudy(directory, sessionId);
 
         long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(directoryToScan);
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(directoryToScan);
         Stream<URI> uris = ioManager.exists(directoryToScan)
-                ? catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFilesStream(directoryToScan)
+                ? catalogManager.getIoManagerFactory().get(directoryToScan).listFilesStream(directoryToScan)
                 : Stream.empty();
         List<File> files = new LinkedList<>();
 

@@ -207,7 +207,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             // Create default project and study for administrator #1491
             catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
             catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", "Default study",
-                    null, "", "", null, null, null, Collections.emptyMap(), null, token);
+                    null, null, null, Collections.emptyMap(), null, token);
 
             // Create default JOBS folder for analysis
             MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
@@ -238,7 +238,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                     dbAdaptorFactory.getCatalogFileDBAdaptor().insert(study.getUid(), file, null, QueryOptions.empty());
 
                     // Create physical folder
-                    catalogManager.getCatalogIOManagerFactory().get(file.getUri()).createDirectory(file.getUri(), true);
+                    catalogManager.getIoManagerFactory().get(file.getUri()).createDirectory(file.getUri(), true);
                 } else {
                     logger.info("JOBS/ folder already present for study {}", study.getFqn());
                 }

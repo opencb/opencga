@@ -34,7 +34,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -71,7 +70,6 @@ import javax.annotation.Nullable;
 import javax.naming.NamingException;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -85,6 +83,8 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class StudyManager extends AbstractManager {
+
+    private final CatalogIOManager catalogIOManager;
 
     private static final String MEMBERS = "@members";
     private static final String ADMINS = "@admins";
@@ -105,9 +105,10 @@ public class StudyManager extends AbstractManager {
     protected Logger logger;
 
     StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
+        this.catalogIOManager = catalogIOManager;
         logger = LoggerFactory.getLogger(StudyManager.class);
     }
 
@@ -245,9 +246,8 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, String description,
-                                       StudyNotification notification, String cipher, String uriScheme, URI uri, StudyInternal internal,
-                                       CustomStatus status, Map<String, Object> attributes, QueryOptions options, String token)
-            throws CatalogException {
+                                       StudyNotification notification, StudyInternal internal, CustomStatus status,
+                                       Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(id, "id");
@@ -262,25 +262,7 @@ public class StudyManager extends AbstractManager {
 
         internal = ParamUtils.defaultObject(internal, StudyInternal::new);
         internal.setStatus(ParamUtils.defaultObject(internal.getStatus(), Status::new));
-        cipher = ParamUtils.defaultString(cipher, "none");
-        if (uri != null) {
-            if (uri.getScheme() == null) {
-                throw new CatalogException("StudyUri must specify the scheme");
-            } else {
-                if (uriScheme != null && !uriScheme.isEmpty()) {
-                    if (!uriScheme.equals(uri.getScheme())) {
-                        throw new CatalogException("StudyUri must specify the scheme");
-                    }
-                } else {
-                    uriScheme = uri.getScheme();
-                }
-            }
-        } else {
-            uriScheme = catalogIOManagerFactory.getDefaultCatalogScheme();
-        }
         attributes = ParamUtils.defaultObject(attributes, HashMap::new);
-
-        CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("id", id)
@@ -290,9 +272,6 @@ public class StudyManager extends AbstractManager {
                 .append("description", description)
                 .append("notification", notification)
                 .append("internal", internal)
-                .append("cipher", cipher)
-                .append("uriScheme", uriScheme)
-                .append("uri", uri)
                 .append("attributes", attributes)
                 .append("status", status)
                 .append("options", options)
@@ -309,8 +288,8 @@ public class StudyManager extends AbstractManager {
             LinkedList<File> files = new LinkedList<>();
             File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
                     FileInternal.initialize(), 0, project.getCurrentRelease());
-            File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/", null,
-                    "Default jobs folder", FileInternal.initialize(), 0, project.getCurrentRelease());
+            File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/",
+                    catalogIOManager.getJobsUri(), "Default jobs folder", FileInternal.initialize(), 0, project.getCurrentRelease());
 
             files.add(rootFile);
             files.add(jobsFile);
@@ -328,18 +307,16 @@ public class StudyManager extends AbstractManager {
             OpenCGAResult<Study> result = getStudy(projectId, study.getUuid(), options);
             study = result.getResults().get(0);
 
-            if (uri == null) {
+            URI uri;
+            try {
+                uri = catalogIOManager.createStudy(userId, Long.toString(project.getUid()), Long.toString(study.getUid()));
+            } catch (CatalogIOException e) {
                 try {
-                    uri = catalogIOManager.getStudyURI(userId, Long.toString(project.getUid()), Long.toString(study.getUid()));
-                    catalogIOManager.createStudy(uri);
-                } catch (CatalogIOException e) {
-                    try {
-                        studyDBAdaptor.delete(study);
-                    } catch (Exception e1) {
-                        logger.error("Can't delete study after failure creating study", e1);
-                    }
-                    throw e;
+                    studyDBAdaptor.delete(study);
+                } catch (Exception e1) {
+                    logger.error("Can't delete study after failure creating study", e1);
                 }
+                throw e;
             }
 
             // Update uri of study
@@ -348,11 +325,6 @@ public class StudyManager extends AbstractManager {
 
             long rootFileId = fileDBAdaptor.getId(study.getUid(), "");    //Set studyUri to the root folder too
             fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty());
-
-            long jobFolder = fileDBAdaptor.getId(study.getUid(), "JOBS/");
-            URI jobUri = Paths.get(configuration.getJobDir()).resolve("JOBS/").toUri();
-            catalogIOManager.createDirectory(jobUri, true);
-            fileDBAdaptor.update(jobFolder, new ObjectMap("uri", jobUri), QueryOptions.empty());
 
             // Read and process installation variable sets
             Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));

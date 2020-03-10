@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
@@ -73,7 +73,7 @@ public class FileScannerTest {
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, null, null, null, null, sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/test/folder/").toString(),
                 true, null, QueryOptions.empty(), sessionIdUser).first();
 
@@ -156,7 +156,7 @@ public class FileScannerTest {
         assertEquals(FileStatus.READY, replacedFile.getInternal().getStatus().getName());
         assertEquals(file.getUid(), replacedFile.getUid());
         assertNotEquals(replacedFile.getChecksum(), file.getChecksum());
-        assertEquals(replacedFile.getChecksum(), catalogManager.getCatalogIOManagerFactory().getDefault().calculateChecksum(replacedFile.getUri()));
+        assertEquals(replacedFile.getChecksum(), catalogManager.getIoManagerFactory().getDefault().calculateChecksum(replacedFile.getUri()));
     }
 
     @Test
@@ -223,7 +223,7 @@ public class FileScannerTest {
         //Add one extra file. ReSync study folder.
         Path studyUriPath = Paths.get(study.getUri());
         // Create the directories
-        catalogManager.getCatalogIOManagerFactory().getDefault().createDirectory(studyUriPath.resolve("data/test/folder/").toUri(), true);
+        catalogManager.getIoManagerFactory().getDefault().createDirectory(studyUriPath.resolve("data/test/folder/").toUri(), true);
         Path filePath = CatalogManagerTest
                 .createDebugFile(studyUriPath.resolve("data/test/folder/").resolve("file_scanner_test_file.txt").toString()).toPath();
         files = fileScanner.reSync(study, true, sessionIdUser);
@@ -273,9 +273,9 @@ public class FileScannerTest {
     @Test
     public void testComplexAdd() throws IOException, CatalogException, URISyntaxException {
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
+        IOManager ioManager = catalogManager.getIoManagerFactory().getDefault();
         URI fileUri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
-        ioManager.copyFile(fileUri, directory.resolve("file1.vcf.gz").toUri());
+        ioManager.copy(fileUri, directory.resolve("file1.vcf.gz").toUri());
 
         CatalogManagerTest.createDebugFile(directory.resolve("file1.vcf.variants.json").toString());
         CatalogManagerTest.createDebugFile(directory.resolve("file1.vcf.variants.json.gz").toString());

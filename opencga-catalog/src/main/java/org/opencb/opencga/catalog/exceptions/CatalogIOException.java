@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.exceptions;
 
 
+import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 
 public class CatalogIOException extends CatalogException {
@@ -33,6 +35,10 @@ public class CatalogIOException extends CatalogException {
 
     public static CatalogIOException uriSyntaxException(String name, URISyntaxException e) {
         return new CatalogIOException("Uri syntax error while parsing \"" + name + "\"", e);
+    }
+
+    public static CatalogIOException ioManagerException(URI uri, IOException e) {
+        return new CatalogIOException("Could not get corresponding IOManager for URI '" + uri + "': " + e.getMessage(), e);
     }
 
 }

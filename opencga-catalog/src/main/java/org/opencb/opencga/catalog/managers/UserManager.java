@@ -32,7 +32,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
@@ -58,6 +58,8 @@ import java.util.stream.Collectors;
  */
 public class UserManager extends AbstractManager {
 
+    private final CatalogIOManager catalogIOManager;
+
     private String INTERNAL_AUTHORIZATION = CatalogAuthenticationManager.INTERNAL;
     private Map<String, AuthenticationManager> authenticationManagerMap;
 
@@ -67,9 +69,11 @@ public class UserManager extends AbstractManager {
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                Configuration configuration) throws CatalogException {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
+            throws CatalogException {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
+
+        this.catalogIOManager = catalogIOManager;
 
         String secretKey = configuration.getAdmin().getSecretKey();
         long expiration = configuration.getAuthentication().getExpiration();
@@ -219,7 +223,7 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Creating user and projects in a single transaction is forbidden");
             }
 
-            catalogIOManagerFactory.getDefault().createUser(user.getId());
+            catalogIOManager.createUser(user.getId());
             userDBAdaptor.insert(user, password, QueryOptions.empty());
 
             auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
@@ -229,7 +233,7 @@ public class UserManager extends AbstractManager {
         } catch (CatalogIOException | CatalogDBException e) {
             if (!userDBAdaptor.exists(user.getId())) {
                 logger.error("ERROR! DELETING USER! " + user.getId());
-                catalogIOManagerFactory.getDefault().deleteUser(user.getId());
+                catalogIOManager.deleteUser(user.getId());
             }
 
             auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,

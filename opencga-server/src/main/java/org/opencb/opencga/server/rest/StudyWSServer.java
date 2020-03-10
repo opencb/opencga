@@ -73,7 +73,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             String studyId = StringUtils.isEmpty(study.getId()) ? study.getAlias() : study.getId();
             return createOkResponse(catalogManager.getStudyManager().create(project, studyId, study.getAlias(), study.getName(),
-                    study.getDescription(), study.getNotification(), null, null, null, null,
+                    study.getDescription(), study.getNotification(), null,
                     study.getStatus() != null ? study.getStatus().toCustomStatus() : null, study.getAttributes(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);

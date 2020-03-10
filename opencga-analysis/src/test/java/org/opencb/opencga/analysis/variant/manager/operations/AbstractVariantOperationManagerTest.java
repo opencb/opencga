@@ -166,14 +166,14 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).first().getId();
         Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1",
-                "Study 1", null, null, null, null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
+                "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
                 .first();
         studyId = study.getId();
         studyFqn = study.getFqn();
         outputId = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index").toString(), true, null,
                 QueryOptions.empty(), sessionId).first().getId();
         outputPath = "data/index/";
-        studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", "s2", "Study " + "2", null, null, null, null, null,
+        studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", "s2", "Study " + "2", null, null,
                 null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId).first().getId();
         outputId2 = catalogManager.getFileManager().createFolder(studyId2, Paths.get("data", "index").toString(),
                 true, null, QueryOptions.empty(), sessionId).first().getId();

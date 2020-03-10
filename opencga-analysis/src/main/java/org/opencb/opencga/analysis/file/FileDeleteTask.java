@@ -11,7 +11,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -21,6 +21,7 @@ import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
+import java.io.IOException;
 import java.util.*;
 
 @Tool(id = FileDeleteTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Delete files.")
@@ -186,7 +187,12 @@ public class FileDeleteTask extends OpenCgaTool {
                 for (File file : fileResult.getResults()) {
                     // Check file is still present in disk
                     try {
-                        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(file.getUri());
+                        IOManager ioManager;
+                        try {
+                            ioManager = catalogManager.getIoManagerFactory().get(file.getUri());
+                        } catch (IOException e) {
+                            throw CatalogIOException.ioManagerException(file.getUri(), e);
+                        }
                         if (ioManager.exists(file.getUri())) {
                             restoreFile(file);
                         } else {

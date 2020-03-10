@@ -63,7 +63,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
@@ -120,7 +120,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
-    private CatalogIOManager catalogIOManager;
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
 
@@ -208,13 +207,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }};
     }
 
-    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, String appHome)
-            throws CatalogDBException, CatalogIOException {
+    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, String appHome) throws CatalogDBException {
         super(interval, token, catalogManager);
 
         this.jobManager = catalogManager.getJobManager();
         this.fileManager = catalogManager.getFileManager();
-        this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
         this.internalCli = appHome + "/bin/opencga-internal.sh";
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
@@ -571,15 +568,20 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             try {
                 outDir = fileManager.createFolder(study, outDirPath, parents, "", FileManager.INCLUDE_FILE_URI_PATH,
                         userToken).first();
-                CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(outDir.getUri());
+                IOManager ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
                 ioManager.createDirectory(outDir.getUri(), true);
-            } catch (CatalogException e1) {
+            } catch (CatalogException | IOException e1) {
                 throw new CatalogException("Cannot create output directory. " + e1.getMessage(), e1.getCause());
             }
         }
 
         // Ensure the directory is empty
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(outDir.getUri());
+        IOManager ioManager;
+        try {
+            ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(outDir.getUri(), e);
+        }
         if (!ioManager.isDirectory(outDir.getUri())) {
             throw new CatalogException(OUTDIR_PARAM + " seems not to be a directory");
         }
@@ -596,8 +598,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
-            catalogIOManager.createDirectory(folder.getUri(), true);
-        } catch (CatalogIOException e) {
+            catalogManager.getIoManagerFactory().get(folder.getUri()).createDirectory(folder.getUri(), true);
+        } catch (CatalogIOException | IOException e) {
             // Submit job to delete job folder
             ObjectMap params = new ObjectMap()
                     .append("files", folder.getUuid())
