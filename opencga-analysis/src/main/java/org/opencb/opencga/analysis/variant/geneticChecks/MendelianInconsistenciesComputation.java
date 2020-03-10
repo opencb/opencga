@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.variant.geneticChecks;
 
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.IssueEntry;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -28,16 +29,12 @@ public class MendelianInconsistenciesComputation {
         query.put(VariantQueryParam.STUDY.key(), studyId);
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.EXCLUDE, "annotations");
+        queryOptions.put(QueryOptions.EXCLUDE, "annotation");
 
         // Get total number of variants
         long numVariants;
         try {
-            DataResult<Long> countResult = storageManager.count(query, token);
-            if (countResult.getNumResults() != 1) {
-                throw new ToolException("Something wrong happend to get total number of variants");
-            }
-            numVariants = countResult.first();
+            numVariants = storageManager.count(query, token).first();
         } catch (CatalogException | StorageEngineException | IOException e) {
             throw new ToolException(e);
         }
@@ -54,21 +51,31 @@ public class MendelianInconsistenciesComputation {
             VariantDBIterator iterator = storageManager.iterator(query, queryOptions, token);
             while (iterator.hasNext()) {
                 Variant variant = iterator.next();
-                // Get sampleId and error code from issues
-                String sampleId = "";
-                String error = "";
-                numErrors++;
-                if (!counter.containsKey(sampleId)) {
-                    counter.put(sampleId, new HashMap<>());
+
+                // Get sampleId and error code from variant issues
+                boolean foundError = false;
+                for (IssueEntry issue : variant.getStudies().get(0).getIssues()) {
+                    if ("MENDELIAN_ERROR".equals(issue.getType()) || "DE_NOVO".equals(issue.getType())) {
+                        foundError = true;
+
+                        String sampleId = issue.getSample().getSampleId();
+                        String errorCode = issue.getSample().getData().get(0);
+                        if (!counter.containsKey(sampleId)) {
+                            counter.put(sampleId, new HashMap<>());
+                        }
+                        if (!counter.get(sampleId).containsKey(variant.getChromosome())) {
+                            counter.get(sampleId).put(variant.getChromosome(), new HashMap<>());
+                        }
+                        int val = 0;
+                        if (counter.get(sampleId).get(variant.getChromosome()).containsKey(errorCode)) {
+                            val = counter.get(sampleId).get(variant.getChromosome()).get(errorCode);
+                        }
+                        counter.get(sampleId).get(variant.getChromosome()).put(errorCode, val + 1);
+                    }
                 }
-                if (!counter.get(sampleId).containsKey(variant.getChromosome())) {
-                    counter.get(sampleId).put(variant.getChromosome(), new HashMap<>());
+                if (foundError) {
+                    numErrors++;
                 }
-                int val = 0;
-                if (counter.get(sampleId).get(variant.getChromosome()).containsKey(error)) {
-                    val = counter.get(sampleId).get(variant.getChromosome()).get(error);
-                }
-                counter.get(sampleId).get(variant.getChromosome()).put(error, val + 1);
             }
         } catch (CatalogException | StorageEngineException e) {
             throw new ToolException(e);
@@ -94,7 +101,7 @@ public class MendelianInconsistenciesComputation {
             }
             sampleAgg.setSample(sampleId);
             sampleAgg.setNumErrors(numSampleErrors);
-            sampleAgg.setRatio(1.0d * numSampleErrors / numErrors);
+            sampleAgg.setRatio(1.0d * numSampleErrors / numVariants);
 
             meReport.getSampleAggregation().add(sampleAgg);
         }
