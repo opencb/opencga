@@ -31,16 +31,16 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.study.StudyUpdateParams;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
+import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -350,11 +351,19 @@ public class VariantStatsAnalysis extends OpenCgaTool {
         }
     }
 
-    private Properties readAggregationMappingFile(String aggregationMapFile) throws IOException {
-        try (InputStream is = FileUtils.newInputStream(Paths.get(aggregationMapFile))) {
+    private Properties readAggregationMappingFile(String aggregationMapFile) throws IOException, CatalogException {
+        try (InputStream is = openFile(aggregationMapFile)) {
             Properties tagmap = new Properties();
             tagmap.load(is);
             return tagmap;
+        }
+    }
+
+    private InputStream openFile(String aggregationMapFile) throws IOException, CatalogException {
+        if (Files.exists(Paths.get(aggregationMapFile))) {
+            return FileUtils.newInputStream(Paths.get(aggregationMapFile));
+        } else {
+            return getCatalogManager().getFileManager().download(studyFqn, aggregationMapFile, getToken());
         }
     }
 

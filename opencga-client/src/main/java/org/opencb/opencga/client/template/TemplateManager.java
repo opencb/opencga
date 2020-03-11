@@ -491,7 +491,7 @@ public class TemplateManager {
             if (file.getName().endsWith(".properties")
                     && file.getAttributes() != null
                     && Boolean.parseBoolean(String.valueOf(file.getAttributes().get("aggregationMappingFile")))) {
-                data.setAggregationMappingFile(file.getName());
+                data.setAggregationMappingFile(getFilePath(file));
                 data.setAggregated(Aggregation.BASIC);
             }
         }
