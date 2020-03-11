@@ -81,6 +81,7 @@ public class VariantStatsAnalysis extends OpenCgaTool {
     private Map<String, List<String>> cohortsMap;
     private Path outputFile;
     private Properties mappingFile;
+    private Path mappingFilePath;
     private boolean dynamicCohort;
 
 
@@ -211,7 +212,8 @@ public class VariantStatsAnalysis extends OpenCgaTool {
         // and create in catalog the cohorts described in the mapping file
         String aggregationMappingFile = params.getString(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key());
         if (AggregationUtils.isAggregated(aggregation) && isNotEmpty(aggregationMappingFile)) {
-            mappingFile = readAggregationMappingFile(aggregationMappingFile);
+            mappingFilePath = getFilePath(aggregationMappingFile);
+            mappingFile = readAggregationMappingFile(mappingFilePath);
         }
 
         if (samplesQuery.isEmpty() && cohorts.isEmpty()) {
@@ -251,7 +253,7 @@ public class VariantStatsAnalysis extends OpenCgaTool {
 
         executorParams.putAll(params);
         executorParams.append(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation)
-                .append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), mappingFile)
+                .append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), mappingFilePath)
                 .append(DefaultVariantStatisticsManager.OUTPUT, outputFile);
     }
 
@@ -351,19 +353,20 @@ public class VariantStatsAnalysis extends OpenCgaTool {
         }
     }
 
-    private Properties readAggregationMappingFile(String aggregationMapFile) throws IOException, CatalogException {
-        try (InputStream is = openFile(aggregationMapFile)) {
+    private Properties readAggregationMappingFile(Path aggregationMapFile) throws IOException {
+        try (InputStream is = FileUtils.newInputStream(aggregationMapFile)) {
             Properties tagmap = new Properties();
             tagmap.load(is);
             return tagmap;
         }
     }
 
-    private InputStream openFile(String aggregationMapFile) throws IOException, CatalogException {
+    private Path getFilePath(String aggregationMapFile) throws CatalogException {
         if (Files.exists(Paths.get(aggregationMapFile))) {
-            return FileUtils.newInputStream(Paths.get(aggregationMapFile));
+            return Paths.get(aggregationMapFile).toAbsolutePath();
         } else {
-            return getCatalogManager().getFileManager().download(studyFqn, aggregationMapFile, getToken());
+            return Paths.get(getCatalogManager().getFileManager()
+                    .get(studyFqn, aggregationMapFile, QueryOptions.empty(), getToken()).first().getUri());
         }
     }
 
