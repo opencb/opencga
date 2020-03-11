@@ -7,10 +7,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.InferredSexReport;
-import org.opencb.opencga.core.models.variant.MendelianErrorsReport;
+import org.opencb.opencga.core.models.variant.MendelianErrorReport;
 import org.opencb.opencga.core.models.variant.RelatednessReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.GeneticChecksAnalysisExecutor;
@@ -45,7 +46,8 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
                 List<InferredSexReport> sexReportList = new ArrayList<>();
                 for (Individual individual : getIndividuals()) {
                     // Sample is never null, it was checked previously
-                    Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(getStudyId(), individual.getId(), catalogManager, getToken());
+                    Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(getStudyId(), individual.getId(), catalogManager,
+                            getToken());
 
                     // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
                     double[] ratios = InferredSexComputation.computeRatios(getStudyId(), sample.getId(), assembly, fileManager,
@@ -84,15 +86,16 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
                 VariantStorageManager variantStorageManager = getVariantStorageManager();
                 CatalogManager catalogManager = variantStorageManager.getCatalogManager();
 
-                // Get sample IDs from individuals
-                List<String> sampleIds = GeneticChecksUtils.getSampleIds(getStudyId(), getIndividuals(), catalogManager, getToken());
+                // Get family from individual
+                Family family = GeneticChecksUtils.getFamilyByIndividualId(getStudyId(), getIndividuals().get(0).getId(), catalogManager,
+                        getToken());
 
                 // Compute mendelian inconsitencies
-                MendelianErrorsReport mendelianErrorsReport = MendelianInconsistenciesComputation.compute(getStudyId(), sampleIds,
-                        getOutDir(), variantStorageManager, getToken());
+                MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(getStudyId(), family.getId(),
+                        variantStorageManager, getToken());
 
                 // Set relatedness report
-                getReport().setMendelianErrorsReport(mendelianErrorsReport);
+                getReport().setMendelianErrorReport(mendelianErrorReport);
                 break;
             }
             default: {
