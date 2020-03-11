@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -157,7 +157,12 @@ public class FileMetadataReader {
             updateParams.setSamples(sampleList);
         }
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(file.getUri().getScheme());
+        IOManager ioManager;
+        try {
+            ioManager = catalogManager.getIoManagerFactory().get(file.getUri().getScheme());
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(file.getUri(), e);
+        }
         final long fileSize = ioManager.getFileSize(file.getUri());
         if (fileSize != file.getSize()) {
             updateParams.setSize(fileSize);

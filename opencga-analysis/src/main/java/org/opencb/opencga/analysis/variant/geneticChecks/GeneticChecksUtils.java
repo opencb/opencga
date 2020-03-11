@@ -18,9 +18,9 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.variant.MendelianErrorsReport;
-import org.opencb.opencga.core.models.variant.MendelianErrorsReport.SampleAggregation;
-import org.opencb.opencga.core.models.variant.MendelianErrorsReport.SampleAggregation.ChromosomeAggregation;
+import org.opencb.opencga.core.models.variant.MendelianErrorReport;
+import org.opencb.opencga.core.models.variant.MendelianErrorReport.SampleAggregation;
+import org.opencb.opencga.core.models.variant.MendelianErrorReport.SampleAggregation.ChromosomeAggregation;
 import org.opencb.opencga.core.models.variant.RelatednessReport;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -128,33 +128,6 @@ public class GeneticChecksUtils {
         return assembly;
     }
 
-    //-------------------------------------------------------------------------
-    // P R I V A T E     M E T H O D S
-    //-------------------------------------------------------------------------
-
-    private static void exportData(File tpedFile, File tfamFile, Query query, VariantStorageManager storageManager,
-                                   String token) throws ToolException {
-        try {
-            storageManager.exportData(tpedFile.getAbsolutePath(), TPED, null, query, QueryOptions.empty(), token);
-        } catch(CatalogException | IOException | StorageEngineException e) {
-            throw new ToolException(e);
-        }
-
-        if (!tpedFile.exists() || !tfamFile.exists()) {
-            throw new ToolException("Something wrong exporting data to TPED/TFAM format");
-        }
-    }
-
-    private static void pruneVariants(String basename, AbstractMap.SimpleEntry<String, String> outputBinding) throws ToolException {
-        // Variant pruning using PLINK in docker
-        String plinkParams = "plink --tfile /data/output/" + basename + " --indep 50 5 2 --out /data/output/" + basename;
-        try {
-            DockerUtils.run(PlinkWrapperAnalysis.PLINK_DOCKER_IMAGE, null, outputBinding, plinkParams, null);
-        } catch (IOException e) {
-            throw new ToolException(e);
-        }
-    }
-
     public static RelatednessReport buildRelatednessReport(File file) throws ToolException {
         RelatednessReport relatednessReport = new RelatednessReport();
 
@@ -192,7 +165,7 @@ public class GeneticChecksUtils {
         return relatednessReport;
     }
 
-    public static MendelianErrorsReport buildMendelianErrorsReport(String family, Path outDir) throws ToolException {
+    public static MendelianErrorReport buildMendelianErrorsReport(String family, Path outDir) throws ToolException {
 
         // Number of mendelian errors
         int numME;
@@ -292,7 +265,45 @@ public class GeneticChecksUtils {
             sampleAggregationList.add(sampleAggregation);
         }
 
-        return new MendelianErrorsReport(numME, sampleAggregationList);
+        return new MendelianErrorReport(numME, sampleAggregationList);
+    }
+
+    public static Family getFamilyById(String studyId, String familyId, CatalogManager catalogManager, String token)
+            throws ToolException {
+        OpenCGAResult<Family> familyResult;
+        try {
+            familyResult = catalogManager.getFamilyManager().get(studyId, familyId, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        if (familyResult.getNumResults() == 0) {
+            throw new ToolException("Not found family for ID '" + familyId + "'.");
+        }
+        return familyResult.first();
+    }
+
+    public static Family getFamilyByIndividualId(String studyId, String individualId, CatalogManager catalogManager, String token) throws ToolException {
+        Query query = new Query();
+        query.put("members", individualId);
+        OpenCGAResult<Family> familyResult;
+        try {
+            familyResult = catalogManager.getFamilyManager().search(studyId, query, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        if (familyResult.getNumResults() == 0) {
+            throw new ToolException("None individual found for individual '" + individualId + "'.");
+        }
+        if (familyResult.getNumResults() > 1) {
+            throw new ToolException("More than one family found for individual '" + individualId + "'.");
+        }
+        return familyResult.first();
+    }
+
+    public static Family getFamilyBySampleId(String studyId, String individualId, CatalogManager catalogManager, String token)
+            throws ToolException {
+        Individual individual = getIndividualBySampleId(studyId, individualId, catalogManager, token);
+        return getFamilyByIndividualId(studyId, individual.getId(), catalogManager, token);
     }
 
     public static Individual getIndividualById(String studyId, String individualId, CatalogManager catalogManager, String token)
@@ -410,22 +421,9 @@ public class GeneticChecksUtils {
     public static List<Individual> getRelativesByIndividualId(String studyId, String individualId, CatalogManager catalogManager,
                                                               String token) throws ToolException {
         // Get the family for that individual
-        Query query = new Query();
-        query.put("members", individualId);
-        OpenCGAResult<Family> familyResult;
-        try {
-            familyResult = catalogManager.getFamilyManager().search(studyId, query, QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
-        if (familyResult.getNumResults() == 0) {
-            throw new ToolException("None family found for individual ID '" + individualId + "'.");
-        }
-        if (familyResult.getNumResults() > 1) {
-            throw new ToolException("More than one family found for individual ID '" + individualId + "'.");
-        }
+        Family family = getFamilyByIndividualId(studyId, individualId, catalogManager, token);
 
-        return getRelativesByFamilyId(studyId, familyResult.first().getId(), catalogManager, token);
+        return getRelativesByFamilyId(studyId, family.getId(), catalogManager, token);
     }
 
     public static List<Individual> getRelativesBySampleId(String studyId, String sampleId, CatalogManager catalogManager,
@@ -450,8 +448,31 @@ public class GeneticChecksUtils {
     }
 
     //-------------------------------------------------------------------------
-    // P R I V A T E      M E T H O D S
+    // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
+
+    private static void exportData(File tpedFile, File tfamFile, Query query, VariantStorageManager storageManager,
+                                   String token) throws ToolException {
+        try {
+            storageManager.exportData(tpedFile.getAbsolutePath(), TPED, null, query, QueryOptions.empty(), token);
+        } catch(CatalogException | IOException | StorageEngineException e) {
+            throw new ToolException(e);
+        }
+
+        if (!tpedFile.exists() || !tfamFile.exists()) {
+            throw new ToolException("Something wrong exporting data to TPED/TFAM format");
+        }
+    }
+
+    private static void pruneVariants(String basename, AbstractMap.SimpleEntry<String, String> outputBinding) throws ToolException {
+        // Variant pruning using PLINK in docker
+        String plinkParams = "plink --tfile /data/output/" + basename + " --indep 50 5 2 --out /data/output/" + basename;
+        try {
+            DockerUtils.run(PlinkWrapperAnalysis.PLINK_DOCKER_IMAGE, null, outputBinding, plinkParams, null);
+        } catch (IOException e) {
+            throw new ToolException(e);
+        }
+    }
 
     private static int getNumLines(File file) throws ToolException {
         Command cmd = new Command(file.getAbsolutePath() + " -wl");

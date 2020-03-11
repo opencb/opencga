@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -269,16 +269,15 @@ public class FileManagerTest extends AbstractManagerTest {
         }
     }
 
-    private Path createExternalDummyData() throws CatalogIOException {
+    private Path createExternalDummyData() throws CatalogIOException, IOException {
         Path jUnitDir = Paths.get(catalogManager.getConfiguration().getWorkspace()).getParent();
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
+        IOManager ioManager = catalogManager.getIoManagerFactory().getDefault();
         ioManager.createDirectory(jUnitDir.resolve("A").resolve("B").toUri(), true);
         ioManager.createDirectory(jUnitDir.resolve("A").resolve("C").resolve("D").toUri(), true);
-        ioManager.createFile(jUnitDir.resolve("A").resolve("C").resolve("file1.txt").toUri(),
-                new ByteArrayInputStream("blablabla".getBytes()));
-        ioManager.createFile(jUnitDir.resolve("A").resolve("C").resolve("D").resolve("file3.txt").toUri(),
-                new ByteArrayInputStream("blablabla".getBytes()));
+        ioManager.copy(new ByteArrayInputStream("blablabla".getBytes()), jUnitDir.resolve("A").resolve("C").resolve("file1.txt").toUri());
+        ioManager.copy(new ByteArrayInputStream("blablabla".getBytes()),
+                jUnitDir.resolve("A").resolve("C").resolve("D").resolve("file3.txt").toUri());
 
         return jUnitDir.resolve("A");
     }
@@ -390,7 +389,7 @@ public class FileManagerTest extends AbstractManagerTest {
         URI uri = createExternalDummyData().toUri();
         link(uri, "myDirectory", studyFqn, new ObjectMap("parents", true), token);
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(uri);
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(uri);
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
@@ -478,7 +477,7 @@ public class FileManagerTest extends AbstractManagerTest {
         DataResult<File> fileDataResult = fileManager.create(studyFqn3, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
                 "data/test/myTest/myFile.txt", null, 0, null, null, null, true,
                 content, null, sessionIdUser2);
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileDataResult.first().getUri());
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(fileDataResult.first().getUri());
         assertTrue(ioManager.exists(fileDataResult.first().getUri()));
 
         DataInputStream fileObject = ioManager.getFileObject(fileDataResult.first().getUri(), -1, -1);
@@ -501,7 +500,7 @@ public class FileManagerTest extends AbstractManagerTest {
         File folder = fileManager.createFolder(study.getFqn(), folderPath.toString(), true, null,
                 QueryOptions.empty(), sessionIdUser2).first();
         System.out.println(folder);
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(folder.getUri());
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(folder.getUri());
         assertTrue(!ioManager.exists(folder.getUri()));
 
         paths = fileManager.search(study.getFqn(), new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type
@@ -511,13 +510,13 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(paths.contains("data/new/folder/"));
 
         URI uri = fileManager.getUri(folder);
-        assertTrue(!catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
+        assertTrue(!catalogManager.getIoManagerFactory().get(uri).exists(uri));
 
         fileManager.createFolder(study.getFqn(), Paths.get("WOLOLO").toString(), true, null, QueryOptions.empty(),
                 sessionIdUser2);
 
         Path myStudy = Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("myStudy"));
-        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", "", null, null, null, myStudy.toUri(), null, null, null, null, sessionIdUser2).first().getFqn();
+        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", "", null, null, null, null, null, sessionIdUser2).first().getFqn();
 
         folder = fileManager.createFolder(newStudy, Paths.get("WOLOLO").toString(), true, null,
                 QueryOptions.empty(), sessionIdUser2).first();
@@ -756,7 +755,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Create a new study so more than one file will be found under the root /. However, it should be able to consider the study given
         // properly
-        catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, null, null, null, token).first().getUid();
+        catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, token).first().getUid();
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", new Query(), new QueryOptions(),
                 5, token);
@@ -1350,12 +1349,12 @@ public class FileManagerTest extends AbstractManagerTest {
 
     // Cannot delete staged files
     @Test
-    public void deleteFolderTest() throws CatalogException {
+    public void deleteFolderTest() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
 
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles);
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileManager.getUri(folder));
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(fileManager.getUri(folder));
         for (File file : folderFiles) {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
@@ -1390,12 +1389,12 @@ public class FileManagerTest extends AbstractManagerTest {
 
     // Deleted folders should be all put to TRASHED
     @Test
-    public void deleteFolderTest2() throws CatalogException {
+    public void deleteFolderTest2() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
 
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles);
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileManager.getUri(folder));
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(fileManager.getUri(folder));
         for (File file : folderFiles) {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
@@ -1427,12 +1426,12 @@ public class FileManagerTest extends AbstractManagerTest {
 
     // READY -> PENDING_DELETE
     @Test
-    public void deleteFolderTest3() throws CatalogException {
+    public void deleteFolderTest3() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
 
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles);
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileManager.getUri(folder));
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(fileManager.getUri(folder));
         for (File file : folderFiles) {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
@@ -1451,12 +1450,12 @@ public class FileManagerTest extends AbstractManagerTest {
 
     // READY -> PENDING_DELETE -> DELETED
     @Test
-    public void deleteFolderTest4() throws CatalogException {
+    public void deleteFolderTest4() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
 
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles);
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileManager.getUri(folder));
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(fileManager.getUri(folder));
         for (File file : folderFiles) {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
@@ -1605,7 +1604,7 @@ public class FileManagerTest extends AbstractManagerTest {
             Files.copy(sourcePath, copy);
         }
         if (Files.exists(Paths.get("/tmp/other"))) {
-            catalogManager.getCatalogIOManagerFactory().getDefault().deleteDirectory(Paths.get("/tmp/other").toUri());
+            catalogManager.getIoManagerFactory().getDefault().deleteDirectory(Paths.get("/tmp/other").toUri());
         }
 
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, "user");

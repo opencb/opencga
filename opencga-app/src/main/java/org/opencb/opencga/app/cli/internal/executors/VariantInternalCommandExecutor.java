@@ -37,6 +37,7 @@ import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -80,6 +81,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
@@ -199,6 +201,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 sampleEligibility();
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 mutationalSignature();
+                break;
+            case MENDELIAN_ERROR_RUN_COMMAND:
+                mendelianError();
                 break;
             case INFERRED_SEX_RUN_COMMAND:
                 inferredSex();
@@ -721,6 +726,20 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         mutationalSignatureAnalysis.setStudy(cliOptions.study)
                 .setSampleName(cliOptions.sample)
+                .start();
+    }
+
+    private void mendelianError() throws Exception {
+        VariantCommandOptions.MendelianErrorCommandOptions cliOptions = variantCommandOptions.mendelianErrorCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        MendelianErrorAnalysis mendelianErrorAnalysis = new MendelianErrorAnalysis();
+        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        mendelianErrorAnalysis.setStudy(cliOptions.study)
+                .setFamilyId(cliOptions.family)
+                .setIndividualId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
                 .start();
     }
 

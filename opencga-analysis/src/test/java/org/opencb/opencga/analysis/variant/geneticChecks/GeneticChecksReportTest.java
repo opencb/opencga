@@ -259,7 +259,7 @@ public class GeneticChecksReportTest {
                 .setVariableSet(chromAggregationVars));
 
 
-        // Add MendelianErrorsReport to GenticChecksReport
+        // Add MendelianErrorReport to GenticChecksReport
         geneticChecksVars.add(new Variable()
                 .setName("mendelianErrorsReport")
                 .setId("mendelianErrorsReport")

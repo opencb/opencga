@@ -20,20 +20,20 @@ public class GeneticChecksReport implements Serializable {
     private RelatednessReport relatednessReport;
 
     // Mendelian errors report
-    private MendelianErrorsReport mendelianErrorsReport;
+    private MendelianErrorReport mendelianErrorReport;
 
     public GeneticChecksReport() {
     }
 
     public GeneticChecksReport(String familyId, String fatherId, String motherId, List<String> childrenIds, List<InferredSexReport> inferredSexReport,
-                               RelatednessReport relatednessReport, MendelianErrorsReport mendelianErrorsReport) {
+                               RelatednessReport relatednessReport, MendelianErrorReport mendelianErrorReport) {
         this.familyId = familyId;
         this.fatherId = fatherId;
         this.motherId = motherId;
         this.childrenIds = childrenIds;
         this.inferredSexReport = inferredSexReport;
         this.relatednessReport = relatednessReport;
-        this.mendelianErrorsReport = mendelianErrorsReport;
+        this.mendelianErrorReport = mendelianErrorReport;
     }
 
     public String getFamilyId() {
@@ -90,12 +90,12 @@ public class GeneticChecksReport implements Serializable {
         return this;
     }
 
-    public MendelianErrorsReport getMendelianErrorsReport() {
-        return mendelianErrorsReport;
+    public MendelianErrorReport getMendelianErrorReport() {
+        return mendelianErrorReport;
     }
 
-    public GeneticChecksReport setMendelianErrorsReport(MendelianErrorsReport mendelianErrorsReport) {
-        this.mendelianErrorsReport = mendelianErrorsReport;
+    public GeneticChecksReport setMendelianErrorReport(MendelianErrorReport mendelianErrorReport) {
+        this.mendelianErrorReport = mendelianErrorReport;
         return this;
     }
 }

@@ -31,7 +31,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Admin;
@@ -55,7 +56,8 @@ public class CatalogManager implements AutoCloseable {
     protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
 
     private DBAdaptorFactory catalogDBAdaptorFactory;
-    private CatalogIOManagerFactory catalogIOManagerFactory;
+    private IOManagerFactory ioManagerFactory;
+    private CatalogIOManager catalogIOManager;
 
     private UserManager userManager;
     private ProjectManager projectManager;
@@ -97,30 +99,20 @@ public class CatalogManager implements AutoCloseable {
         authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, configuration);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
 
-        userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, configuration);
-        projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, configuration);
-        studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, configuration);
-        fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
+        userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
+        projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 configuration);
-        jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, configuration);
-        sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, configuration);
-        individualManager = new IndividualManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, configuration);
-        cohortManager = new CohortManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, configuration);
-        familyManager = new FamilyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
-                configuration);
-        panelManager = new PanelManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
-                configuration);
+        studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
+        fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+        jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+        sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        individualManager = new IndividualManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        cohortManager = new CohortManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        familyManager = new FamilyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        panelManager = new PanelManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, configuration);
-        interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, configuration);
+                configuration);
+        interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
     }
 
     private void initializeAdmin(Configuration configuration) throws CatalogDBException {
@@ -180,6 +172,7 @@ public class CatalogManager implements AutoCloseable {
         configuration.getAdmin().setSecretKey(secretKey);
 
         catalogDBAdaptorFactory.installCatalogDB(configuration);
+        catalogIOManager.createDefaultOpenCGAFolders();
 
         User user = new User(OPENCGA, new Account().setType(Account.AccountType.ADMINISTRATOR).setExpirationDate(""))
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
@@ -188,7 +181,7 @@ public class CatalogManager implements AutoCloseable {
 
         String token = userManager.login(OPENCGA, password);
         projectManager.create("admin", "admin", "Default project", "", "", "", null, token);
-        studyManager.create("admin", "admin", "admin", "admin", "Default study", null, "", "", null, null, null, Collections.emptyMap(),
+        studyManager.create("admin", "admin", "admin", "admin", "Default study", null, null, null, Collections.emptyMap(),
                 null, token);
     }
 
@@ -245,12 +238,13 @@ public class CatalogManager implements AutoCloseable {
         folder.delete();
     }
 
-    public CatalogIOManagerFactory getCatalogIOManagerFactory() {
-        return catalogIOManagerFactory;
+    public IOManagerFactory getIoManagerFactory() {
+        return ioManagerFactory;
     }
 
-    private void configureIOManager(Configuration properties) throws CatalogIOException {
-        catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
+    private void configureIOManager(Configuration configuration) throws CatalogIOException {
+        ioManagerFactory = new IOManagerFactory();
+        catalogIOManager = new CatalogIOManager(configuration);
     }
 
     @Override

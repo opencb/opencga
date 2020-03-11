@@ -136,7 +136,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         // Create empty directory that is registered in OpenCGA
         org.opencb.opencga.core.models.file.File directory = catalogManager.getFileManager().createFolder(studyFqn, "outputDir/",
                 true, "", QueryOptions.empty(), token).first();
-        catalogManager.getCatalogIOManagerFactory().get(directory.getUri()).createDirectory(directory.getUri(), true);
+        catalogManager.getIoManagerFactory().get(directory.getUri()).createDirectory(directory.getUri(), true);
 
         HashMap<String, Object> params = new HashMap<>();
         params.put("outdir", "outputDir/");
@@ -261,8 +261,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
 
         InputStream inputStream = new ByteArrayInputStream("my log content\nlast line".getBytes(StandardCharsets.UTF_8));
-        catalogManager.getCatalogIOManagerFactory().getDefault().createFile(
-                Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri(), inputStream);
+        catalogManager.getIoManagerFactory().getDefault().copy(inputStream,
+                Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri());
 
         OpenCGAResult<FileContent> fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, token);
         assertEquals("last line", fileContentResult.first().getContent());

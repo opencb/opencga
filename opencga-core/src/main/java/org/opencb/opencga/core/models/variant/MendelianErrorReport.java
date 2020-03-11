@@ -1,6 +1,5 @@
 package org.opencb.opencga.core.models.variant;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -9,7 +8,7 @@ import java.util.Map;
 // M E N D E L I A N     E R R O R S     R E P O R T
 //-------------------------------------------------------------------------
 
-public class MendelianErrorsReport {
+public class MendelianErrorReport {
 
     // Number total of errors for that family
     private int numErrors;
@@ -135,12 +134,12 @@ public class MendelianErrorsReport {
         }
     }
 
-    public MendelianErrorsReport() {
+    public MendelianErrorReport() {
         this.numErrors = 0;
         this.sampleAggregation = new ArrayList<>();
     }
 
-    public MendelianErrorsReport(int numErrors, List<SampleAggregation> sampleAggregation) {
+    public MendelianErrorReport(int numErrors, List<SampleAggregation> sampleAggregation) {
         this.numErrors = numErrors;
         this.sampleAggregation = sampleAggregation;
     }
@@ -149,7 +148,7 @@ public class MendelianErrorsReport {
         return numErrors;
     }
 
-    public MendelianErrorsReport setNumErrors(int numErrors) {
+    public MendelianErrorReport setNumErrors(int numErrors) {
         this.numErrors = numErrors;
         return this;
     }
@@ -158,7 +157,7 @@ public class MendelianErrorsReport {
         return sampleAggregation;
     }
 
-    public MendelianErrorsReport setSampleAggregation(List<SampleAggregation> sampleAggregation) {
+    public MendelianErrorReport setSampleAggregation(List<SampleAggregation> sampleAggregation) {
         this.sampleAggregation = sampleAggregation;
         return this;
     }
