@@ -32,6 +32,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyCreateParams;
 import org.opencb.opencga.core.models.file.File;
@@ -354,16 +355,26 @@ public class TemplateManager {
         URI baseUrl = getBaseUrl(template, study);
 
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn());
-        Set<String> existing = Collections.emptySet();
+        Set<String> existing = new HashSet<>();
+        Set<String> existingAndIndexed = new HashSet<>();
         if (resume) {
             openCGAClient.setThrowExceptionOnError(false);
-            existing = openCGAClient.getFileClient()
+            openCGAClient.getFileClient()
                     .info(study.getFiles().stream().map(file -> getFilePath(file).replace('/', ':')).collect(Collectors.joining(",")),
-                            new ObjectMap(params).append(QueryOptions.INCLUDE, "path,name,id"))
+                            new ObjectMap(params).append(QueryOptions.INCLUDE, "path,name,id,internal"))
                     .allResults()
-                    .stream()
-                    .map(File::getPath)
-                    .collect(Collectors.toSet());
+                    .forEach(file -> {
+                        existing.add(file.getPath());
+                        if (file.getInternal() != null) {
+                            if (file.getInternal().getIndex() != null) {
+                                if (file.getInternal().getIndex().getStatus() != null) {
+                                    if (Status.READY.equals(file.getInternal().getIndex().getStatus().getName())) {
+                                        existingAndIndexed.add(file.getPath());
+                                    }
+                                }
+                            }
+                        }
+                    });
             openCGAClient.setThrowExceptionOnError(true);
         }
         List<String> indexVcfJobIds = new ArrayList<>();
@@ -377,7 +388,7 @@ public class TemplateManager {
                 jobs = fetchFile(baseUrl, params, file);
             }
             if (template.isIndex()) {
-                if (isVcf(file)) {
+                if (isVcf(file) && !existingAndIndexed.contains(getFilePath(file))) {
                     indexVcfJobIds.add(indexVcf(study, getFilePath(file), jobs));
                 }
             }
