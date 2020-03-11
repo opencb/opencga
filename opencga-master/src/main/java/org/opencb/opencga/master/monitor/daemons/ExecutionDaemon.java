@@ -694,6 +694,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
         }
 
+        if (!batchExecutor.canBeQueued()) {
+            return false;
+        }
+
         switch (job.getTool().getId()) {
             case "variant-index":
                 int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
