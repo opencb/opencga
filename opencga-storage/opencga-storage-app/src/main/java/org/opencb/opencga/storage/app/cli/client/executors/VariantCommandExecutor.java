@@ -242,7 +242,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 // indexVariantsCommandOptions.aggregated);
 
         /* Add CLi options to the variant options */
-        ObjectMap params = storageConfiguration.getOptions();
+        ObjectMap params = variantStorageEngine.getOptions();
         params.put(VariantStorageOptions.MERGE_MODE.key(), indexVariantsCommandOptions.merge);
         params.put(VariantStorageOptions.STUDY.key(), indexVariantsCommandOptions.study);
         params.put(VariantStorageOptions.STATS_CALCULATE.key(), indexVariantsCommandOptions.calculateStats);
