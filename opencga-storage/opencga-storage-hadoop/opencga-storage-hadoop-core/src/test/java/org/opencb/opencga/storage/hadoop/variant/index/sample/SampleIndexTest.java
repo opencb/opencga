@@ -63,7 +63,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static boolean loaded = false;
-    protected static final List<String> studies = Arrays.asList(STUDY_NAME_2, STUDY_NAME);
+    protected static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2);
     protected static final List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
 
     @Before
@@ -296,6 +296,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("Query SampleIndex+DBAdaptor   = " + indexAndDBAdaptor);
         System.out.println("--------");
 
+        System.out.println("dbAdaptorQuery(new Query(query), new QueryOptions()); = " + dbAdaptorQuery(new Query(query), new QueryOptions()).getResults().stream().map(Variant::toString).sorted().collect(Collectors.toList()));
         if (onlyDBAdaptor != indexAndDBAdaptor) {
             VariantQueryResult<Variant> queryResultAux = variantStorageEngine.get(new Query(query), new QueryOptions());
             List<String> indexAndDB = queryResultAux.getResults().stream().map(Variant::toString).sorted().collect(Collectors.toList());
@@ -316,7 +317,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         }
         assertEquals(onlyDBAdaptor, indexAndDBAdaptor);
         assertThat(queryResult, numResults(lte(onlyIndex)));
-        assertThat(queryResult, numResults(gt(0)));
+//        assertThat(queryResult, numResults(gt(0)));
         return indexQuery;
     }
 

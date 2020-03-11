@@ -25,6 +25,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.*;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -815,6 +817,19 @@ public class VariantPhoenixHelper {
     public static StringBuilder buildSampleColumnKey(int studyId, int sampleId, int fileId, StringBuilder stringBuilder) {
         return buildStudyColumnsPrefix(studyId, stringBuilder)
                 .append(sampleId).append(COLUMN_KEY_SEPARATOR).append(fileId).append(SAMPLE_DATA_SUFIX);
+    }
+
+    public static List<Column> getSampleColumns(SampleMetadata sampleMetadata) {
+        int studyId = sampleMetadata.getStudyId();
+        int sampleId = sampleMetadata.getId();
+        List<Column> columns = new ArrayList<>(1);
+        columns.add(getSampleColumn(studyId, sampleId));
+        if (VariantStorageEngine.LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
+            for (Integer file : sampleMetadata.getFiles().subList(1, sampleMetadata.getFiles().size())) {
+                columns.add(getSampleColumn(studyId, sampleId, file));
+            }
+        }
+        return columns;
     }
 
     public static Column getSampleColumn(int studyId, int sampleId) {
