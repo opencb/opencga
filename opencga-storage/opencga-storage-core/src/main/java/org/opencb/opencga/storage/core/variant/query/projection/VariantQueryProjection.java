@@ -1,6 +1,7 @@
-package org.opencb.opencga.storage.core.variant.adaptors;
+package org.opencb.opencga.storage.core.variant.query.projection;
 
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.Set;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public final class VariantQueryFields {
+public final class VariantQueryProjection {
     private final Set<VariantField> fields;
     private final List<Integer> studies;
     private final Map<Integer, StudyMetadata> studyMetadatas;
@@ -24,7 +25,7 @@ public final class VariantQueryFields {
     private final Map<Integer, List<Integer>> files;
     private final Map<Integer, List<Integer>> cohortIds;
 
-    public VariantQueryFields(StudyMetadata studyMetadata, List<Integer> samples, List<Integer> files) {
+    public VariantQueryProjection(StudyMetadata studyMetadata, List<Integer> samples, List<Integer> files) {
         this.fields = VariantField.getIncludeFields(null);
         this.studies = Collections.singletonList(studyMetadata.getId());
         this.studyMetadatas = Collections.singletonMap(studyMetadata.getId(), studyMetadata);
@@ -37,10 +38,10 @@ public final class VariantQueryFields {
         this.samplePagination = false;
     }
 
-    VariantQueryFields(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyMetadata> studyMetadatas,
-                       Map<Integer, List<Integer>> samples, Map<Integer, Map<Integer, List<Integer>>> multiFileSamples,
-                       boolean samplePagination, int numSamples, int numTotalSamples,
-                       Map<Integer, List<Integer>> files, Map<Integer, List<Integer>> cohortIds) {
+    VariantQueryProjection(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyMetadata> studyMetadatas,
+                           Map<Integer, List<Integer>> samples, Map<Integer, Map<Integer, List<Integer>>> multiFileSamples,
+                           boolean samplePagination, int numSamples, int numTotalSamples,
+                           Map<Integer, List<Integer>> files, Map<Integer, List<Integer>> cohortIds) {
         this.fields = fields;
         this.studies = studies;
         this.studyMetadatas = studyMetadatas;

@@ -21,8 +21,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
@@ -169,7 +169,7 @@ public class VariantMapReduceUtil {
         } else {
             LOGGER.info("Init MapReduce job reading from Phoenix");
             String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
-                    .parse(query, queryOptions).getSql();
+                    .parse(query, queryOptions);
 
             initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
         }
@@ -214,7 +214,7 @@ public class VariantMapReduceUtil {
         VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
         VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, scm, false);
 
-        String sql = variantSqlQueryParser.parse(query, queryOptions).getSql();
+        String sql = variantSqlQueryParser.parse(query, queryOptions);
 
         initVariantMapperJobFromPhoenix(job, variantTableName, sql, variantMapperClass);
     }
@@ -270,7 +270,7 @@ public class VariantMapReduceUtil {
         } else {
             LOGGER.info("Init MapReduce job reading from Phoenix");
             String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
-                    .parse(query, queryOptions).getSql();
+                    .parse(query, queryOptions);
 
             initVariantRowMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
         }
@@ -332,7 +332,7 @@ public class VariantMapReduceUtil {
         VariantStorageMetadataManager mm = dbAdaptor.getMetadataManager();
         VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, mm, false);
 
-        String sql = variantSqlQueryParser.parse(query, queryOptions).getSql();
+        String sql = variantSqlQueryParser.parse(query, queryOptions);
 
         initVariantRowMapperJobFromPhoenix(job, variantTableName, sql, variantMapperClass);
     }

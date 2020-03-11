@@ -46,7 +46,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Tests that all the VariantDBAdaptor filters and methods work correctly with more than one study loaded.

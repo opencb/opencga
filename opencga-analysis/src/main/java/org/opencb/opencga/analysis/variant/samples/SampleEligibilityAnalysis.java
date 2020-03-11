@@ -25,7 +25,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.VariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -188,7 +190,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                         v -= 250;
                     }
                 }
-                VariantQueryParser.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+                VariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
                 int fromXref = 0;
 //                if (!xrefs.getGenes().isEmpty()) {
 //

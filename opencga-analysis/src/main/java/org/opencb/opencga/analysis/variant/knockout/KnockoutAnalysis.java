@@ -28,7 +28,7 @@ import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.File;
 import java.util.*;

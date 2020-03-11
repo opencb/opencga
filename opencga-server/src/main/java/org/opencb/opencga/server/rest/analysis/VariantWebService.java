@@ -59,7 +59,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;

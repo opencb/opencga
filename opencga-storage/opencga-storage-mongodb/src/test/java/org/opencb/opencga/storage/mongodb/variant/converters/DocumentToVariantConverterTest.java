@@ -28,7 +28,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
@@ -50,7 +50,7 @@ public class DocumentToVariantConverterTest {
     private Integer fileId;
 
     private VariantStorageMetadataManager metadataManager;
-    private VariantQueryFields variantQueryFields;
+    private VariantQueryProjection variantQueryProjection;
 
     @Before
     public void setUp() throws StorageEngineException {
@@ -69,7 +69,7 @@ public class DocumentToVariantConverterTest {
 
 
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
-        variantQueryFields = new VariantQueryFields(studyMetadata, Arrays.asList(1, 2), Arrays.asList(fileId));
+        variantQueryProjection = new VariantQueryProjection(studyMetadata, Arrays.asList(1, 2), Arrays.asList(fileId));
 
 
         //Setup variant
@@ -149,7 +149,7 @@ public class DocumentToVariantConverterTest {
         DocumentToVariantConverter converter = new DocumentToVariantConverter(
                 new DocumentToStudyVariantEntryConverter(
                         true,
-                        new DocumentToSamplesConverter(metadataManager, variantQueryFields)),
+                        new DocumentToSamplesConverter(metadataManager, variantQueryProjection)),
                 new DocumentToVariantStatsConverter());
         Variant converted = converter.convertToDataModelType(mongoVariant);
         assertEquals("\n" + variant.toJson() + "\n" + converted.toJson(), variant, converted);
@@ -183,7 +183,7 @@ public class DocumentToVariantConverterTest {
         DocumentToVariantConverter converter = new DocumentToVariantConverter(
                 new DocumentToStudyVariantEntryConverter(
                         true,
-                        new DocumentToSamplesConverter(metadataManager, variantQueryFields)),
+                        new DocumentToSamplesConverter(metadataManager, variantQueryProjection)),
                 new DocumentToVariantStatsConverter());
         Document converted = converter.convertToStorageType(variant);
         assertFalse(converted.containsKey(DocumentToVariantConverter.IDS_FIELD)); //IDs must be added manually.

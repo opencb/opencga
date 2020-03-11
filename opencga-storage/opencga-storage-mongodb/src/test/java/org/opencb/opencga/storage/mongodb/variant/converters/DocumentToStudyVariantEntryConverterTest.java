@@ -26,7 +26,7 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 
@@ -48,7 +48,7 @@ public class DocumentToStudyVariantEntryConverterTest {
     private Integer fileId;
     private Integer studyId;
     private VariantStorageMetadataManager metadataManager;
-    private VariantQueryFields variantQueryFields;
+    private VariantQueryProjection variantQueryProjection;
 
     @Before
     public void setUp() throws StorageEngineException {
@@ -67,7 +67,7 @@ public class DocumentToStudyVariantEntryConverterTest {
 
 
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
-        variantQueryFields = new VariantQueryFields(studyMetadata, Arrays.asList(1, 2, 3), Arrays.asList(fileId));
+        variantQueryProjection = new VariantQueryProjection(studyMetadata, Arrays.asList(1, 2, 3), Arrays.asList(fileId));
 
         studyEntry = new StudyEntry(studyId.toString());
         FileEntry fileEntry = new FileEntry(fileId.toString(), null, new HashMap<>());
@@ -190,7 +190,7 @@ public class DocumentToStudyVariantEntryConverterTest {
 
         // Test with no stats converter provided
         DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, studyId, fileId,
-                new DocumentToSamplesConverter(metadataManager, variantQueryFields));
+                new DocumentToSamplesConverter(metadataManager, variantQueryProjection));
         StudyEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(studyEntry, converted);
     }
@@ -200,7 +200,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         List<String> sampleNames = null;
         // Test with a stats converter provided but no stats object
         DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, studyId, fileId, new
-                DocumentToSamplesConverter(metadataManager, variantQueryFields));
+                DocumentToSamplesConverter(metadataManager, variantQueryProjection));
         StudyEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(studyEntry, converted);
     }
@@ -209,7 +209,7 @@ public class DocumentToStudyVariantEntryConverterTest {
     public void testConvertToStorageTypeWithoutStats() {
         // Test with no stats converter provided
         DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true,
-                studyId, fileId, new DocumentToSamplesConverter(metadataManager, variantQueryFields));
+                studyId, fileId, new DocumentToSamplesConverter(metadataManager, variantQueryProjection));
         Document converted = converter.convertToStorageType(variant, studyEntry);
         assertEquals(mongoStudy, converted);
     }
@@ -222,7 +222,7 @@ public class DocumentToStudyVariantEntryConverterTest {
 
 
         // Test with no stats converter provided
-        DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(metadataManager, variantQueryFields);
+        DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(metadataManager, variantQueryProjection);
         converter = new DocumentToStudyVariantEntryConverter(
                 true,
                 studyId, fileId,
@@ -242,7 +242,7 @@ public class DocumentToStudyVariantEntryConverterTest {
 
 
         // Test with no stats converter provided
-        DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(metadataManager, variantQueryFields);
+        DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(metadataManager, variantQueryProjection);
         converter = new DocumentToStudyVariantEntryConverter(
                 true,
                 studyId, fileId,

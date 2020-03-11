@@ -35,7 +35,7 @@ import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +52,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isNegated;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.removeNegation;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isNegated;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.removeNegation;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 
 /**

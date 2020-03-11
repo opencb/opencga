@@ -12,7 +12,7 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.Arrays;
 import java.util.Collections;

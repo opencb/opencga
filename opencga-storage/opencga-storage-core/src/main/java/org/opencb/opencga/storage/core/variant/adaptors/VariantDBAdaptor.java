@@ -26,6 +26,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.VariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
@@ -33,7 +37,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addSamplesMetadataIfRequested;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.addSamplesMetadataIfRequested;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -71,6 +75,13 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
         return addSamplesMetadataIfRequested(queryResult, query, options, getMetadataManager());
     }
 
+    @Deprecated
+    default VariantDBIterator iterator(Query query, QueryOptions options) {
+        return iterator(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true), options);
+    }
+
+    VariantDBIterator iterator(VariantQuery query, QueryOptions options);
+
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
      * the 'include' and 'exclude' fields at options.
@@ -79,17 +90,20 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A DataResult with the result of the query
      */
-    VariantQueryResult<Variant> get(Query query, QueryOptions options);
+    VariantQueryResult<Variant> get(VariantQuery query, QueryOptions options);
 
     /**
-     * Fetch all variants resulting of executing all the queries in the database. Returned fields are taken from
+     * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
      * the 'include' and 'exclude' fields at options.
      *
-     * @param queries List of queries to be executed in the database to filter variants
-     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count.
-     * @return A list of DataResult with the result of the queries
+     * @param query   Query to be executed in the database to filter variants
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A DataResult with the result of the query
      */
-    List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options);
+    @Deprecated
+    default VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+        return get(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true), options);
+    }
 
     /**
      * Return all the variants in the same phase set for a given sample in a given variant.
@@ -105,13 +119,22 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 
     DataResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options);
 
+    default DataResult<Long> count() {
+        return count(new VariantQuery());
+    }
+
+    @Deprecated
+    default DataResult<Long> count(Query query) {
+        return count(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, QueryOptions.empty(), true));
+    }
+
     /**
      * Performs a distinct operation of the given field over the returned results.
      *
      * @param query Query to be executed in the database to filter variants
      * @return A DataResult with the all the distinct values
      */
-    DataResult<Long> count(Query query);
+    DataResult<Long> count(VariantQuery query);
 
     /**
      * Performs a distinct operation of the given field over the returned results.
@@ -149,9 +172,6 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 
     DataResult groupBy(Query query, List<String> fields, QueryOptions options);
 
-    default List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        return VariantQueryUtils.getIncludeStudies(query, options, getMetadataManager());
-    }
     /**
      * Returns all the possible samples to be returned by an specific query.
      *
@@ -160,7 +180,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @return  Map key: StudyId, value: list of sampleIds
      */
     default Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        return VariantQueryUtils.getIncludeSamples(query, options, getMetadataManager());
+        return VariantQueryProjectionParser.getIncludeSamples(query, options, getMetadataManager());
     }
 
     DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);

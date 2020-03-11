@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;

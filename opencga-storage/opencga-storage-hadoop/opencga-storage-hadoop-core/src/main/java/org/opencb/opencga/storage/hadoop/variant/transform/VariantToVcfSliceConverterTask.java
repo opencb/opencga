@@ -26,7 +26,7 @@ import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConver
 import org.opencb.biodata.tools.variant.filters.VariantAvroFilters;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.run.ParallelTaskRunner.Task;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;

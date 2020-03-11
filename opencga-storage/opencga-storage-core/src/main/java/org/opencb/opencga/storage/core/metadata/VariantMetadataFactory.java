@@ -7,8 +7,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
 import java.util.List;
 import java.util.Map;
@@ -35,12 +35,12 @@ public class VariantMetadataFactory {
     }
 
     public VariantMetadata makeVariantMetadata(Query query, QueryOptions queryOptions) throws StorageEngineException {
-        VariantQueryFields queryFields = VariantQueryUtils.parseVariantQueryFields(query, queryOptions, scm);
+        VariantQueryProjection queryFields = VariantQueryProjectionParser.parseVariantQueryFields(query, queryOptions, scm);
 
         return makeVariantMetadata(queryFields, queryOptions);
     }
 
-    protected VariantMetadata makeVariantMetadata(VariantQueryFields queryFields, QueryOptions queryOptions)
+    protected VariantMetadata makeVariantMetadata(VariantQueryProjection queryFields, QueryOptions queryOptions)
             throws StorageEngineException {
         VariantMetadata metadata = new VariantMetadataConverter(scm)
                 .toVariantMetadata(queryFields);

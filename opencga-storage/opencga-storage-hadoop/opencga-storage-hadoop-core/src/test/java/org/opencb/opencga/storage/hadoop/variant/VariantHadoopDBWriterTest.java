@@ -265,7 +265,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         metadataManager.updateFileMetadata(sc.getId(), fileId, f -> f.setIndexStatus(TaskMetadata.Status.READY));
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId());
-        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId(), Collections.singleton(fileId), metadataManager.getFileMetadata(sc.getId(), fileId).getSamples());
+        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId(), Collections.singleton(fileId), metadataManager.getFileMetadata(sc.getId(), fileId).getSamples(), Collections.emptyList());
         phoenixHelper.registerRelease(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), 1);
     }
 

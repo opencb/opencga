@@ -22,8 +22,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.slf4j.Logger;
@@ -61,7 +61,7 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
 
     public VariantHBaseScanIterator(Iterator<ResultScanner> resultScanners, VariantStorageMetadataManager scm,
                                     Query query, QueryOptions options, String unknownGenotype, List<String> formats,
-                                    VariantQueryFields selectElements)
+                                    VariantQueryProjection selectElements)
             throws IOException {
         this.resultScanners = resultScanners;
         resultIterator = Collections.emptyIterator();

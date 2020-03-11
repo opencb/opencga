@@ -32,8 +32,8 @@ import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
@@ -92,7 +92,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private List<String> expectedFormat;
 
     protected final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
-    private VariantQueryFields selectVariantElements;
+    private VariantQueryProjection selectVariantElements;
 
     public HBaseToStudyEntryConverter(VariantStorageMetadataManager metadataManager,
                                       HBaseToVariantStatsConverter statsConverter) {
@@ -155,14 +155,14 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
      *
      * @param formats Formats for converted variants
      * @return this
-     * @see org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils#getIncludeFormats
+     * @see VariantQueryUtils#getIncludeFormats
      */
     public HBaseToStudyEntryConverter setFormats(List<String> formats) {
         this.expectedFormat = formats;
         return this;
     }
 
-    public void setSelectVariantElements(VariantQueryFields selectVariantElements) {
+    public void setSelectVariantElements(VariantQueryProjection selectVariantElements) {
         this.selectVariantElements = selectVariantElements;
     }
 

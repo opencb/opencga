@@ -26,7 +26,7 @@ import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper.Column;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -380,10 +380,11 @@ public class VariantPhoenixHelper {
     }
 
     public void registerNewFiles(Connection con, String variantsTableName, Integer studyId, Collection<Integer> fileIds,
-                                 Collection<Integer> sampleIds) throws SQLException {
+                                 Collection<Integer> sampleIds, List<Column> otherColumns) throws SQLException {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         createTableIfNeeded(con, variantsTableName);
-        List<Column> columns = new ArrayList<>(fileIds.size() + sampleIds.size() + 1);
+        List<Column> columns = new ArrayList<>(fileIds.size() + sampleIds.size() + 1 + otherColumns.size());
+        columns.addAll(otherColumns);
         for (Integer fileId : fileIds) {
             columns.add(getFileColumn(studyId, fileId));
         }

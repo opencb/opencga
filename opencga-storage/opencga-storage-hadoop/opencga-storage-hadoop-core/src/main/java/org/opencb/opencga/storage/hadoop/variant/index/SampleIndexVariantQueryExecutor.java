@@ -12,11 +12,11 @@ import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
-import org.opencb.opencga.storage.core.variant.query.AbstractTwoPhasedVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.AbstractTwoPhasedVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addSamplesMetadataIfRequested;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.addSamplesMetadataIfRequested;
 
 /**
  * Created on 01/04/19.

@@ -3,12 +3,14 @@ package org.opencb.opencga.storage.hadoop.variant.index.query;
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 
 /**
@@ -32,6 +34,7 @@ public class SampleIndexQuery {
     private final Set<VariantType> variantTypes;
     private final String study;
     private final Map<String, List<String>> samplesMap;
+    private final Set<String> multiFileResultSet;
     /** Samples that should be subtracted from the final result. **/
     private final Set<String> negatedSamples;
     /** For each sample with father filter, indicates all the valid GTs codes. **/
@@ -42,13 +45,14 @@ public class SampleIndexQuery {
     private final SampleAnnotationIndexQuery annotationIndexQuery;
     private final Set<String> mendelianErrorSet;
     private final boolean onlyDeNovo;
-    private final VariantQueryUtils.QueryOperation queryOperation;
+    private final QueryOperation queryOperation;
 
     public SampleIndexQuery(List<Region> regions, SampleIndexQuery query) {
         this.regions = regions;
         this.variantTypes = query.variantTypes;
         this.study = query.study;
         this.samplesMap = query.samplesMap;
+        this.multiFileResultSet = query.multiFileResultSet;
         this.negatedSamples = query.negatedSamples;
         this.fatherFilter = query.fatherFilter;
         this.motherFilter = query.motherFilter;
@@ -60,11 +64,13 @@ public class SampleIndexQuery {
     }
 
     public SampleIndexQuery(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
-        this(regions, null, study, samplesMap, null, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(),
+        this(regions, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
+                Collections.emptyMap(),
                 new SampleAnnotationIndexQuery(), Collections.emptySet(), false, queryOperation);
     }
 
     public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study, Map<String, List<String>> samplesMap,
+                            Set<String> multiFileResultSet,
                             Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, SampleFileIndexQuery> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
@@ -73,6 +79,7 @@ public class SampleIndexQuery {
         this.variantTypes = variantTypes;
         this.study = study;
         this.samplesMap = samplesMap;
+        this.multiFileResultSet = multiFileResultSet;
         this.negatedSamples = negatedSamples;
         this.fatherFilter = fatherFilter;
         this.motherFilter = motherFilter;
@@ -178,12 +185,16 @@ public class SampleIndexQuery {
         return annotationIndexQuery;
     }
 
-    public VariantQueryUtils.QueryOperation getQueryOperation() {
+    public QueryOperation getQueryOperation() {
         return queryOperation;
     }
 
     public Set<String> getMendelianErrorSet() {
         return mendelianErrorSet;
+    }
+
+    public Set<String> getMultiFileResultSet() {
+        return multiFileResultSet;
     }
 
     public boolean isOnlyDeNovo() {

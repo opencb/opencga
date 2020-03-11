@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -16,6 +17,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
@@ -254,6 +256,31 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         checkVariantsTable(studyId_actual, studyId_expected, new Query(VariantQueryParam.FILE.key(), "chr22_1-1.variant-test-file.vcf.gz"),
                 new QueryOptions());
         checkSampleIndex(studyId_actual, studyId_expected);
+    }
+
+    @Test
+    public void testLoadMultiFile() throws Exception {
+        VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
+
+        ObjectMap params = new ObjectMap()
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), CellBaseRestVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+
+        params.append(VariantStorageOptions.STUDY.key(), "s1");
+        runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
+
+        params.append(VariantStorageOptions.STUDY.key(), "s2");
+        runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
+
+        params.append(VariantStorageOptions.STUDY.key(), "multi");
+        params.append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.MULTI);
+        runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
+        runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
+
+//        VariantQueryResult<Variant> s1 = variantStorageEngine.get(new Query(VariantQueryParam.STUDY.key(), "s1").append(VariantQueryParam.GENOTYPE.key(), "NA19600:1|0"));
+
+
     }
 
     public void checkVariantsTable(int studyIdActual, int studyIdExpected, Query query, QueryOptions options) throws Exception {

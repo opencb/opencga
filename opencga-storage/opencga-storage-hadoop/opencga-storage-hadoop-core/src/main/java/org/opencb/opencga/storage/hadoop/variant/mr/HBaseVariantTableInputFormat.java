@@ -6,8 +6,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
@@ -26,13 +26,13 @@ public class HBaseVariantTableInputFormat extends AbstractHBaseVariantTableInput
 
     protected Function<Result, Variant> initConverter(Configuration configuration) throws IOException {
         VariantTableHelper helper = new VariantTableHelper(configuration);
-        VariantQueryFields selectVariantElements;
+        VariantQueryProjection selectVariantElements;
 
         HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
         try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory)) {
             Query query = getQueryFromConfig(configuration);
             QueryOptions queryOptions = getQueryOptionsFromConfig(configuration);
-            selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, queryOptions, scm);
+            selectVariantElements = VariantQueryProjectionParser.parseVariantQueryFields(query, queryOptions, scm);
         }
 
         HBaseToVariantConverter<Result> converter = HBaseToVariantConverter.fromResult(helper)

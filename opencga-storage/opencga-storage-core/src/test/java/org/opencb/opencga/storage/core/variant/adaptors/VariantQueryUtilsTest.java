@@ -25,13 +25,14 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 01/02/16

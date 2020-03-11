@@ -25,19 +25,24 @@ import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.*;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -55,7 +60,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper.Column;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.*;
 
@@ -97,19 +102,6 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("<<=", "<=");
     }
 
-    public static class VariantPhoenixSQLQuery {
-        private String sql;
-        private VariantQueryFields select;
-
-        public String getSql() {
-            return sql;
-        }
-
-        public VariantQueryFields getSelect() {
-            return select;
-        }
-    }
-
     public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, VariantStorageMetadataManager metadataManager) {
         this(genomeHelper, variantTable, metadataManager, false);
     }
@@ -122,16 +114,22 @@ public class VariantSqlQueryParser {
         this.clientSideSkip = clientSideSkip;
     }
 
-    public VariantPhoenixSQLQuery parse(Query query, QueryOptions options) {
+    @Deprecated
+    public String parse(Query query, QueryOptions options) {
+        VariantQuery variantQuery = new VariantQueryParser(null, metadataManager).parseQuery(query, options, true);
+        return parse(variantQuery, options);
+    }
+
+    public String parse(VariantQuery variantQuery, QueryOptions options) {
+        Query query = variantQuery.getQuery();
 
         StringBuilder sb = new StringBuilder("SELECT ");
-        VariantPhoenixSQLQuery phoenixSQLQuery = new VariantPhoenixSQLQuery();
 
         try {
 
             Set<Column> dynamicColumns = new HashSet<>();
             List<String> regionFilters = getRegionFilters(query);
-            List<String> filters = getOtherFilters(query, options, dynamicColumns);
+            List<String> filters = getOtherFilters(variantQuery, options, dynamicColumns);
 
             List<HintNode.Hint> hints = new ArrayList<>();
             if (DEFAULT_TABLE_TYPE != PTableType.VIEW && filters.isEmpty()) {
@@ -147,7 +145,7 @@ public class VariantSqlQueryParser {
                 sb.append("/*+ ").append(hints.stream().map(Object::toString).collect(Collectors.joining(","))).append(" */ ");
             }
 
-            appendProjectedColumns(sb, query, options, phoenixSQLQuery);
+            appendProjectedColumns(sb, variantQuery.getProjection(), options);
             appendFromStatement(sb, dynamicColumns);
             appendWhereStatement(sb, regionFilters, filters);
 
@@ -182,8 +180,7 @@ public class VariantSqlQueryParser {
             }
         }
 
-        phoenixSQLQuery.sql = sb.toString();
-        return phoenixSQLQuery;
+        return sb.toString();
     }
 
     /**
@@ -196,20 +193,16 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#UNKNOWN_GENOTYPE}
      *
      * @param sb              SQLStringBuilder
-     * @param query           Query to parse
+     * @param projection      Query projection
      * @param options         other options
-     * @param phoenixSQLQuery VariantPhoenixSQLQuery
      * @return String builder
      */
-    protected StringBuilder appendProjectedColumns(StringBuilder sb, Query query, QueryOptions options,
-                                                   VariantPhoenixSQLQuery phoenixSQLQuery) {
+    protected StringBuilder appendProjectedColumns(StringBuilder sb, VariantQueryProjection projection, QueryOptions options) {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
-            VariantQueryFields queryFields = parseVariantQueryFields(query, options, metadataManager);
-            phoenixSQLQuery.select = queryFields;
-            Set<VariantField> returnedFields = queryFields.getFields();
-            Collection<Integer> studyIds = queryFields.getStudies();
+            Set<VariantField> returnedFields = projection.getFields();
+            Collection<Integer> studyIds = projection.getStudies();
 
             sb.append(VariantColumn.CHROMOSOME).append(',')
                     .append(VariantColumn.POSITION).append(',')
@@ -223,7 +216,7 @@ public class VariantSqlQueryParser {
                     sb.append(",\"").append(studyColumn.column()).append('"');
                     sb.append(",\"").append(VariantPhoenixHelper.getFillMissingColumn(studyId).column()).append('"');
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
-                        for (Integer cohortId : queryFields.getCohorts().getOrDefault(studyId, Collections.emptyList())) {
+                        for (Integer cohortId : projection.getCohorts().getOrDefault(studyId, Collections.emptyList())) {
                             Column statsColumn = getStatsColumn(studyId, cohortId);
                             sb.append(",\"").append(statsColumn.column()).append('"');
                         }
@@ -231,7 +224,7 @@ public class VariantSqlQueryParser {
                 }
             }
             if (returnedFields.contains(VariantField.STUDIES_FILES)) {
-                queryFields.getFiles().forEach((studyId, fileIds) -> {
+                projection.getFiles().forEach((studyId, fileIds) -> {
                     for (Integer fileId : fileIds) {
                         sb.append(",\"");
                         buildFileColumnKey(studyId, fileId, sb);
@@ -240,22 +233,31 @@ public class VariantSqlQueryParser {
                 });
             }
             if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
-                queryFields.getMultiFileSamples().forEach((studyId, sampleIds) -> {
-                    for (Integer sampleId : sampleIds.keySet()) {
+                projection.getMultiFileSamples().forEach((studyId, sampleIds) -> {
+                    for (Map.Entry<Integer, List<Integer>> entry : sampleIds.entrySet()) {
+                        Integer sampleId = entry.getKey();
+                        List<Integer> fileIds = entry.getValue();
                         sb.append(",\"");
                         buildSampleColumnKey(studyId, sampleId, sb);
                         sb.append('"');
-                        for (Integer fileId : sampleIds.get(sampleId)) {
-                            sb.append(",\"");
-                            buildSampleColumnKey(studyId, sampleId, fileId, sb);
-                            sb.append('"');
+                        if (!fileIds.isEmpty()) {
+                            List<Integer> allFilesFromSampleId = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
+                            for (Integer fileId : fileIds) {
+                                if (fileId.equals(allFilesFromSampleId.get(0))) {
+                                    // Skip the first one
+                                    continue;
+                                }
+                                sb.append(",\"");
+                                buildSampleColumnKey(studyId, sampleId, fileId, sb);
+                                sb.append('"');
+                            }
                         }
                     }
 
                     // Check if any of the files from the included samples is not being returned.
                     // If don't, add it to the return list.
                     Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds.keySet());
-                    List<Integer> includeFiles = queryFields.getFiles().get(studyId);
+                    List<Integer> includeFiles = projection.getFiles().get(studyId);
                     for (Integer fileId : fileIds) {
                         if (!includeFiles.contains(fileId)) {
                             sb.append(",\"");
@@ -266,7 +268,7 @@ public class VariantSqlQueryParser {
                 });
             }
             if (returnedFields.contains(VariantField.STUDIES_SCORES)) {
-                for (StudyMetadata studyMetadata : queryFields.getStudyMetadatas().values()) {
+                for (StudyMetadata studyMetadata : projection.getStudyMetadatas().values()) {
                     for (VariantScoreMetadata variantScore : studyMetadata.getVariantScores()) {
                         sb.append(",\"");
                         sb.append(VariantPhoenixHelper.getVariantScoreColumn(variantScore.getStudyId(), variantScore.getId()));
@@ -373,7 +375,7 @@ public class VariantSqlQueryParser {
             }
         }
 
-        VariantQueryParser.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+        VariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
 
         // TODO: This should filter by ID from the VCF
         for (String id : variantQueryXref.getIds()) {
@@ -584,9 +586,9 @@ public class VariantSqlQueryParser {
 
     /**
      * Transform QueryParams that are exclusive.
-     *
+     * <p>
      * A variant will pass this filters if matches with ALL of this filters.
-     *
+     * <p>
      * Variant filters:
      * {@link VariantQueryParam#REFERENCE}
      * {@link VariantQueryParam#ALTERNATE}
@@ -600,7 +602,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#COHORT}
      * {@link VariantQueryParam#GENOTYPE}
      * {@link VariantQueryParam#RELEASE}
-     *
+     * <p>
      * Annotation filters:
      * {@link VariantQueryParam#ANNOTATION_EXISTS}
      * {@link VariantQueryParam#ANNOT_CONSEQUENCE_TYPE}
@@ -611,7 +613,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY}
      * {@link VariantQueryParam#ANNOT_POPULATION_ALTERNATE_FREQUENCY}
      * {@link VariantQueryParam#ANNOT_POPULATION_REFERENCE_FREQUENCY}
-
+     * <p>
      * {@link VariantQueryParam#ANNOT_TRANSCRIPT_FLAG}
      * {@link VariantQueryParam#ANNOT_GENE_TRAIT_ID}
      * {@link VariantQueryParam#ANNOT_GENE_TRAIT_NAME}
@@ -622,7 +624,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ANNOT_DRUG}
      * {@link VariantQueryParam#ANNOT_FUNCTIONAL_SCORE}
      * {@link VariantQueryParam#ANNOT_CLINICAL_SIGNIFICANCE}
-     *
+     * <p>
      * Stats filters:
      * {@link VariantQueryParam#STATS_ALT}
      * {@link VariantQueryParam#STATS_REF}
@@ -631,34 +633,35 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#MISSING_ALLELES}
      * {@link VariantQueryParam#MISSING_GENOTYPES}
      *
-     * @param query     Query to parse
-     * @param options   Options
+     * @param variantQuery   Query to parse
+     * @param options        Options
      * @param dynamicColumns Initialized empty set to be filled with dynamic columns required by the queries
      * @return List of sql filters
      */
-    protected List<String> getOtherFilters(Query query, QueryOptions options, final Set<Column> dynamicColumns) {
+    protected List<String> getOtherFilters(VariantQuery variantQuery, QueryOptions options, final Set<Column> dynamicColumns) {
         List<String> filters = new LinkedList<>();
 
         // Variant filters:
-        StudyMetadata defaultStudyMetadata = addVariantFilters(query, options, filters);
+        addVariantFilters(variantQuery, options, filters);
 
         // Annotation filters:
-        addAnnotFilters(query, dynamicColumns, filters);
+        addAnnotFilters(variantQuery, dynamicColumns, filters);
 
         // Stats filters:
-        addStatsFilters(query, defaultStudyMetadata, filters);
+        addStatsFilters(variantQuery, filters);
 
         return filters;
     }
 
-    protected StudyMetadata addVariantFilters(Query query, QueryOptions options, List<String> filters) {
+    protected void addVariantFilters(VariantQuery variantQuery, QueryOptions options, List<String> filters) {
+        Query query = variantQuery.getQuery();
         addQueryFilter(query, REFERENCE, VariantColumn.REFERENCE, filters);
 
         addQueryFilter(query, ALTERNATE, VariantColumn.ALTERNATE, filters);
 
         addQueryFilter(query, TYPE, VariantColumn.TYPE, filters);
 
-        final StudyMetadata defaultStudyMetadata;
+        final StudyMetadata defaultStudyMetadata = variantQuery.getStudyQuery().getDefaultStudy();
         if (isValidParam(query, STUDY)) {
             String value = query.getString(STUDY.key());
             QueryOperation operation = checkOperator(value);
@@ -691,19 +694,8 @@ public class VariantSqlQueryParser {
             } else {
                 filters.add(sb.toString());
             }
-            List<Integer> studyIds = metadataManager.getStudyIds(values);
-            if (studyIds.size() == 1) {
-                defaultStudyMetadata = metadataManager.getStudyMetadata(studyIds.get(0));
-            } else {
-                defaultStudyMetadata = null;
-            }
-        } else {
-            List<Integer> studyIds = metadataManager.getStudyIds();
-            if (studyIds.size() == 1) {
-                defaultStudyMetadata = metadataManager.getStudyMetadata(studyIds.get(0));
-            } else {
-                defaultStudyMetadata = null;
-            }
+        }
+//        else {
 //            StringBuilder sb = new StringBuilder();
 //            for (Iterator<Integer> iterator = studyIds.iterator(); iterator.hasNext();) {
 //                Integer studyId = iterator.next();
@@ -713,8 +705,8 @@ public class VariantSqlQueryParser {
 //                }
 //            }
 //            filters.add(sb.toString());
-        }
-        List<String> includeFiles = getIncludeFilesList(query);
+//        }
+        List<String> includeFiles = VariantQueryProjectionParser.getIncludeFilesList(query);
         QueryOperation filtersOperation = null;
         List<String> filterValues = Collections.emptyList();
         if (isValidParam(query, FILTER)) {
@@ -912,78 +904,31 @@ public class VariantSqlQueryParser {
             }
         }
 
-        List<String> loadedGenotypes;
-        if (defaultStudyMetadata != null
-                && defaultStudyMetadata.getAttributes().containsKey(VariantStorageOptions.LOADED_GENOTYPES.key())) {
-            loadedGenotypes = defaultStudyMetadata.getAttributes()
-                    .getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
-        } else {
-            loadedGenotypes = DEFAULT_LOADED_GENOTYPES;
-        }
-        Map<Object, List<String>> genotypesMap = new HashMap<>();
-        QueryOperation genotypeQueryOperation = null;
-        if (isValidParam(query, GENOTYPE)) {
-            // NA12877_01 :  0/0  ;  NA12878_01 :  0/1  ,  1/1
-            genotypeQueryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypesMap);
+        ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypesQuery = variantQuery.getStudyQuery().getGenotypes();
+        if (genotypesQuery != null) {
             // Remove (if any) the GenotypeClass#NA_GT_VALUE from the genotypes map.
-            Iterator<Map.Entry<Object, List<String>>> iterator = genotypesMap.entrySet().iterator();
+            Iterator<KeyOpValue<SampleMetadata, List<String>>> iterator = genotypesQuery.getValues().iterator();
             while (iterator.hasNext()) {
-                Map.Entry<Object, List<String>> entry = iterator.next();
-                List<String> gts = entry.getValue();
+                KeyOpValue<SampleMetadata, List<String>> keyOpValue = iterator.next();
+                List<String> gts = keyOpValue.getValue();
                 if (gts.contains(GenotypeClass.NA_GT_VALUE)) {
                     if (gts.size() == 1) {
                         iterator.remove();
                     } else {
                         gts = new LinkedList<>(gts);
                         gts.remove(GenotypeClass.NA_GT_VALUE);
-                        entry.setValue(gts);
+                        keyOpValue.setValue(gts);
                     }
                 }
             }
-        } else if (isValidParam(query, SAMPLE)) {
-            List<String> sampleGts = loadedGenotypes
-                    .stream()
-                    .filter(gt -> Arrays
-                            .stream(new Genotype(gt).getAllelesIdx())
-                            .anyMatch(i -> i == 1))
-                    .collect(Collectors.toList());
-            String value = query.getString(SAMPLE.key());
-            QueryOperation sampleQueryOperation = checkOperator(value);
-            List<String> samples = splitValue(value, sampleQueryOperation);
-            for (String sample : samples) {
-                genotypesMap.put(sample, sampleGts);
-//                genotypesMap.put(sample, Collections.singletonList(ALT_GT));
-//                genotypesMap.put(sample, Arrays.asList(NOT + HOM_REF, NOT + NOCALL, NOT + "./."));
-            }
 
-            if (genotypeQueryOperation != null && sampleQueryOperation != null && !genotypeQueryOperation.equals(sampleQueryOperation)) {
-                throw VariantQueryException.incompatibleSampleAndGenotypeOperators();
-            }
-            if (genotypeQueryOperation == null) {
-                genotypeQueryOperation = sampleQueryOperation;
-            }
-        }
-        if (genotypeQueryOperation == null) {
-            genotypeQueryOperation = QueryOperation.AND;
-        }
+            List<String> gtFilters = new ArrayList<>(genotypesQuery.getValues().size());
+            for (KeyOpValue<SampleMetadata, List<String>> keyOpValue : genotypesQuery.getValues()) {
 
-        if (!genotypesMap.isEmpty()) {
-            List<String> gtFilters = new ArrayList<>(genotypesMap.size());
-            for (Map.Entry<Object, List<String>> entry : genotypesMap.entrySet()) {
-                if (defaultStudyMetadata == null) {
-                    List<String> studyNames = metadataManager.getStudyNames();
-                    throw VariantQueryException.missingStudyForSample(entry.getKey().toString(), studyNames);
-                }
-                int studyId = defaultStudyMetadata.getId();
-                int sampleId = metadataManager.getSampleId(studyId, entry.getKey());
-
-                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes);
-
-                // If empty, should find none. Add non-existing genotype
-                // TODO: Fast empty result
-                if (!entry.getValue().isEmpty() && genotypes.isEmpty()) {
-                    genotypes.add(GenotypeClass.NONE_GT_VALUE);
-                }
+                SampleMetadata sampleMetadata = keyOpValue.getKey();
+                int studyId = sampleMetadata.getStudyId();
+                int sampleId = sampleMetadata.getId();
+                List<String> genotypes = keyOpValue.getValue();
 
                 List<String> sampleGtFilters = new ArrayList<>(genotypes.size());
                 final boolean negated;
@@ -999,22 +944,35 @@ public class VariantSqlQueryParser {
                     if (negated) {
                         genotype = removeNegation(genotype);
                     }
-                    String key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
-                    final String filter;
-                    if (FillGapsTask.isHomRefDiploid(genotype)) {
-                        if (negated) {
-                            filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
-                        } else {
-                            filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
-                        }
-                    } else {
-                        if (negated) {
-                            filter = "( \"" + key + "\"[1] != '" + genotype + "' OR \"" + key + "\" IS NULL )";
-                        } else {
-                            filter = '"' + key + "\"[1] = '" + genotype + '\'';
-                        }
+                    List<Integer> sampleFiles = new ArrayList<>();
+                    sampleFiles.add(null); // First file does not have the fileID in the column name
+                    if (VariantStorageEngine.LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
+                        List<Integer> fileIdsFromSampleId = sampleMetadata.getFiles();
+                        sampleFiles.addAll(fileIdsFromSampleId.subList(1, fileIdsFromSampleId.size()));
                     }
-                    sampleGtFilters.add(filter);
+                    for (Integer sampleFile : sampleFiles) {
+                        String key;
+                        if (sampleFile == null) {
+                            key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
+                        } else {
+                            key = buildSampleColumnKey(studyId, sampleId, sampleFile, new StringBuilder()).toString();
+                        }
+                        final String filter;
+                        if (FillGapsTask.isHomRefDiploid(genotype)) {
+                            if (negated) {
+                                filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
+                            } else {
+                                filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
+                            }
+                        } else {
+                            if (negated) {
+                                filter = "( \"" + key + "\"[1] != '" + genotype + "' OR \"" + key + "\" IS NULL )";
+                            } else {
+                                filter = '"' + key + "\"[1] = '" + genotype + '\'';
+                            }
+                        }
+                        sampleGtFilters.add(filter);
+                    }
                 }
                 if (negated) {
                     gtFilters.add(appendFilters(sampleGtFilters, QueryOperation.AND));
@@ -1022,7 +980,7 @@ public class VariantSqlQueryParser {
                     gtFilters.add(appendFilters(sampleGtFilters, QueryOperation.OR));
                 }
             }
-            filters.add(appendFilters(gtFilters, genotypeQueryOperation));
+            filters.add(appendFilters(gtFilters, genotypesQuery.getOperation()));
         }
 
         if (isValidParam(query, SCORE)) {
@@ -1055,8 +1013,6 @@ public class VariantSqlQueryParser {
             }
             filters.add(releaseFilters.toString());
         }
-
-        return defaultStudyMetadata;
     }
 
     private void addInfoFilter(Query query, List<String> filters, StudyMetadata defaultStudyMetadata) {
@@ -1203,7 +1159,8 @@ public class VariantSqlQueryParser {
         }
     }
 
-    protected void addAnnotFilters(Query query, Set<Column> dynamicColumns, List<String> filters) {
+    protected void addAnnotFilters(VariantQuery variantQuery, Set<Column> dynamicColumns, List<String> filters) {
+        Query query = variantQuery.getQuery();
         if (isValidParam(query, ANNOTATION_EXISTS)) {
             if (query.getBoolean(ANNOTATION_EXISTS.key())) {
                 filters.add(VariantColumn.FULL_ANNOTATION + " IS NOT NULL");
@@ -1431,7 +1388,9 @@ public class VariantSqlQueryParser {
         return buildFilter(VariantColumn.CHROMOSOME, "=", "_VOID");
     }
 
-    protected void addStatsFilters(Query query, StudyMetadata defaultStudyMetadata, List<String> filters) {
+    protected void addStatsFilters(VariantQuery variantQuery, List<String> filters) {
+        StudyMetadata defaultStudyMetadata = variantQuery.getStudyQuery().getDefaultStudy();
+        Query query = variantQuery.getQuery();
         List<Integer> allStudies = metadataManager.getStudyIds();
         Set<Integer> studiesFilter;
         QueryOperation studyOp;

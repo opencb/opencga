@@ -13,7 +13,7 @@ import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
@@ -132,7 +132,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                 }
             }
 
-            super.setSelectVariantElements(new VariantQueryFields(sm, sampleIds, Collections.emptyList()));
+            super.setSelectVariantElements(new VariantQueryProjection(sm, sampleIds, Collections.emptyList()));
             super.setUnknownGenotype(unknownGenotype);
             defaultGenotype = getDefaultGenotype(sm);
         }

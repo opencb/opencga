@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import java.util.*;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 30/03/17.

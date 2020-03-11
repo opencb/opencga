@@ -32,8 +32,8 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.ALL;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NONE;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.ALL;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
 
 /**
  * Created on 20/07/18.

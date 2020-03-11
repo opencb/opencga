@@ -36,8 +36,9 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -75,7 +76,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     protected static boolean failOnWrongVariants = false; //FIXME
     protected boolean failOnEmptyVariants = false;
-    protected VariantQueryFields selectVariantElements;
+    protected VariantQueryProjection selectVariantElements;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(variantTableHelper)));
@@ -162,7 +163,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return this;
     }
 
-    public HBaseToVariantConverter<T> setSelectVariantElements(VariantQueryFields selectVariantElements) {
+    public HBaseToVariantConverter<T> setSelectVariantElements(VariantQueryProjection selectVariantElements) {
         this.selectVariantElements = selectVariantElements;
         studyEntryConverter.setSelectVariantElements(selectVariantElements);
         annotationConverter.setIncludeFields(selectVariantElements.getFields());
@@ -180,7 +181,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     /**
      * Format of the converted variants. Discard other values.
-     * @see org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils#getIncludeFormats
+     * @see VariantQueryUtils#getIncludeFormats
      * @param formats Formats for converted variants
      * @return this
      */

@@ -24,7 +24,7 @@ import java.util.List;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.STRING;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 public final class ReportedVariantQueryParam implements QueryParam {
 

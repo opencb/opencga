@@ -25,12 +25,15 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 06/07/17.
@@ -157,7 +160,7 @@ public class VariantSearchUtils {
                 engineQuery.put(STUDY.key(), query.get(STUDY.key()));
             } else if (!isValidParam(query, INCLUDE_STUDY)) {
                 // If returned studies is not defined, we need to define it with the values from STUDIES
-                List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, options, scm);
+                List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, options, scm);
                 engineQuery.put(INCLUDE_STUDY.key(), studies);
             }
         }
@@ -252,8 +255,8 @@ public class VariantSearchUtils {
             } else {
                 // Check that all elements from the query are in the same search collection
 
-                VariantQueryFields selectVariantElements =
-                        VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
+                VariantQueryProjection selectVariantElements =
+                        VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager);
 
                 if (selectVariantElements.getStudies().size() != 1) {
                     return null;

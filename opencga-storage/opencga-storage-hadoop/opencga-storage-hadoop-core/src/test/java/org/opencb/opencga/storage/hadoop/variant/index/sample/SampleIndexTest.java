@@ -29,8 +29,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -62,7 +63,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static boolean loaded = false;
-    protected static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2);
+    protected static final List<String> studies = Arrays.asList(STUDY_NAME_2, STUDY_NAME);
     protected static final List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
 
     @Before
@@ -92,7 +93,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
 
-        variantStorageEngine.annotate(new Query(), new QueryOptions());
+        variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
 
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
     }

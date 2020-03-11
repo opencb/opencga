@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.query;
+package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +18,7 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.ALL;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.ALL;
 
 /**
  * Created on 09/04/19.

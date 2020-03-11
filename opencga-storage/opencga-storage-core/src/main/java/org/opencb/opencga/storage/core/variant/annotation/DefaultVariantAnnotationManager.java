@@ -49,7 +49,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
@@ -390,7 +391,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         if (annotateAll) {
-            List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, null, metadataManager);
+            List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
             for (Integer studyId : studies) {
                 List<Integer> files = new LinkedList<>();
                 List<Integer> annotatedFiles = new LinkedList<>();

@@ -26,7 +26,7 @@ import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.slf4j.Logger;
@@ -40,8 +40,8 @@ import java.util.function.Predicate;
 
 import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.PROTEIN_CODING;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.COMPOUND_HETEROZYGOUS;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.ALL;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.IS;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.ALL;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.IS;
 
 @ToolExecutor(id = "opencga-local",
         tool = KnockoutAnalysis.ID,

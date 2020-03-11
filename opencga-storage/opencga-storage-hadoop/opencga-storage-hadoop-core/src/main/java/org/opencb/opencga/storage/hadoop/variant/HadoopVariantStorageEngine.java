@@ -52,13 +52,13 @@ import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
-import org.opencb.opencga.storage.core.variant.query.DBAdaptorVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.DBAdaptorVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
@@ -116,7 +116,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERG
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 

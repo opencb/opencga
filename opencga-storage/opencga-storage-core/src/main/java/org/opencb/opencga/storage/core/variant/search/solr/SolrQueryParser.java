@@ -35,7 +35,9 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +48,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.FIELD_SEPARATOR;
 
 /**
@@ -192,7 +194,7 @@ public class SolrQueryParser {
         // Study (study)
         @Deprecated
         boolean studiesOr = false;
-        StudyMetadata defaultStudy = getDefaultStudy(query, queryOptions, variantStorageMetadataManager);
+        StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, variantStorageMetadataManager);
         String defaultStudyName = (defaultStudy == null)
                 ? null
                 : VariantSearchToVariantConverter.studyIdToSearchModel(defaultStudy.getName());
@@ -484,7 +486,7 @@ public class SolrQueryParser {
         List<String> consequenceTypes = new ArrayList<>();
         List<String> flags = new ArrayList<>();
 
-        VariantQueryParser.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+        VariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
         genes.addAll(variantQueryXref.getGenes());
         xrefs.addAll(variantQueryXref.getIds());
         xrefs.addAll(variantQueryXref.getOtherXrefs());
@@ -853,7 +855,7 @@ public class SolrQueryParser {
             }
         }
         if (files == null) {
-            List<String> includeFiles = getIncludeFilesList(query);
+            List<String> includeFiles = VariantQueryProjectionParser.getIncludeFilesList(query);
             if (includeFiles != null) {
                 files = includeFiles.toArray(new String[0]);
             }
@@ -1635,7 +1637,7 @@ public class SolrQueryParser {
         List<String> solrFields = new ArrayList<>();
 
         Set<VariantField> incFields = VariantField.getIncludeFields(queryOptions);
-        List<String> incStudies = getIncludeStudiesList(query, incFields);
+        List<String> incStudies = VariantQueryProjectionParser.getIncludeStudiesList(query, incFields);
         if (incStudies != null && incStudies.size() == 0) {
             // Empty (not-null) study list means NONE studies!
             return solrFields;
@@ -1645,7 +1647,7 @@ public class SolrQueryParser {
         }
 
         // --include-file management
-        List<String> incFiles = getIncludeFilesList(query, incFields);
+        List<String> incFiles = VariantQueryProjectionParser.getIncludeFilesList(query, incFields);
         if (incFiles == null) {
             // If file list is null, it means ALL files
             if (incStudies == null) {
@@ -1683,7 +1685,7 @@ public class SolrQueryParser {
         }
 
         // --include-sample management
-        List<String> incSamples = getIncludeSamplesList(query, queryOptions);
+        List<String> incSamples = VariantQueryProjectionParser.getIncludeSamplesList(query, queryOptions);
         if (incSamples != null && incSamples.size() == 0) {
             // Empty list means NONE sample!
             return solrFields;

@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.VariantQuery;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,18 +71,13 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(VariantQuery query, QueryOptions options) {
 
         List<Variant> variants = new ArrayList<>();
         iterator(query, options).forEachRemaining(variants::add);
 
         return new VariantQueryResult<>(0, variants.size(), variants.size(), Collections.emptyList(), variants, null,
                 DummyVariantStorageEngine.STORAGE_ENGINE_ID);
-    }
-
-    @Override
-    public List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
-        return null;
     }
 
     @Override
@@ -95,7 +91,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult<Long> count(Query query) {
+    public DataResult<Long> count(VariantQuery query) {
         return new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList((long) TEMPLATES.size()), 1);
     }
 
@@ -105,13 +101,13 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) {
-        logger.info("Query " + query.toJson());
+    public VariantDBIterator iterator(VariantQuery variantQuery, QueryOptions options) {
+        logger.info("Query " + variantQuery.getQuery().toJson());
         logger.info("QueryOptions " + options.toJson());
         logger.info("dbName " + dbName);
 
         List<Variant> variants = new ArrayList<>(TEMPLATES.size());
-        HashSet<String> variantIds = new HashSet<>(query.getAsStringList(VariantQueryParam.ID.key()));
+        HashSet<String> variantIds = new HashSet<>(variantQuery.getQuery().getAsStringList(VariantQueryParam.ID.key()));
         for (String template : TEMPLATES) {
             if (!variantIds.isEmpty() && !variantIds.contains(template)) {
                 // Skip this variant
@@ -121,7 +117,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
             Variant variant = new Variant(template);
 
 
-            Map<Integer, List<Integer>> returnedSamples = getReturnedSamples(query, options);
+            Map<Integer, List<Integer>> returnedSamples = getReturnedSamples(variantQuery.getQuery(), options);
             returnedSamples.forEach((study, samples) -> {
                 VariantStorageMetadataManager metadataManager = getMetadataManager();
                 StudyMetadata sm = metadataManager.getStudyMetadata(study);

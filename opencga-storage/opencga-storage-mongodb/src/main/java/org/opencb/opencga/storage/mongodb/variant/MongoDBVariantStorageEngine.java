@@ -44,7 +44,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -68,7 +68,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.*;
 
 /**

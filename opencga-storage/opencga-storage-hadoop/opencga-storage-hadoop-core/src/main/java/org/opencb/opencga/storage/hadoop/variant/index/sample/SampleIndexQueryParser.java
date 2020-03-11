@@ -13,11 +13,13 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
@@ -35,7 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.TYPE_OTHER_CODE;
@@ -63,7 +65,7 @@ public class SampleIndexQueryParser {
      * @return      if the query is valid
      */
     public static boolean validSampleIndexQuery(Query query) {
-        VariantQueryParser.VariantQueryXref xref = VariantQueryParser.parseXrefs(query);
+        VariantQuery.VariantQueryXref xref = VariantQueryParser.parseXrefs(query);
         if (!xref.getIds().isEmpty() || !xref.getVariants().isEmpty() || !xref.getOtherXrefs().isEmpty()) {
             // Can not be used for specific variant IDs. Only regions and genes
             return false;
@@ -135,7 +137,7 @@ public class SampleIndexQueryParser {
         // TODO: Accept variant IDs?
 
         // Extract study
-        StudyMetadata defaultStudy = VariantQueryUtils.getDefaultStudy(query, null, metadataManager);
+        StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
 
         if (defaultStudy == null) {
             throw VariantQueryException.missingStudyForSample("", metadataManager.getStudyNames());
@@ -153,6 +155,8 @@ public class SampleIndexQueryParser {
         QueryOperation queryOperation;
         // Map from all samples to query to its list of genotypes.
         Map<String, List<String>> samplesMap = new HashMap<>();
+        // Samples that are returning data from more than one file
+        Set<String> multiFileResultSet = new HashSet<>();
         // Samples that are querying
         Set<String> negatedSamples = new HashSet<>();
         // Samples from the query that can not be used to filter. e.g. samples with invalid or negated genotypes
@@ -202,6 +206,9 @@ public class SampleIndexQueryParser {
                     }
                 } else {
                     negatedSamples.add(sampleMetadata.getName());
+                }
+                if (VariantStorageEngine.LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
+                    multiFileResultSet.add(sampleMetadata.getName());
                 }
 
                 gtMap.put(sampleMetadata.getName(), gts);
@@ -406,7 +413,8 @@ public class SampleIndexQueryParser {
             }
         }
 
-        return new SampleIndexQuery(regions, variantTypes, study, samplesMap, negatedSamples, fatherFilterMap, motherFilterMap,
+        return new SampleIndexQuery(regions, variantTypes, study, samplesMap, multiFileResultSet, negatedSamples,
+                fatherFilterMap, motherFilterMap,
                 fileIndexMap, annotationIndexQuery, mendelianErrorSet, onlyDeNovo, queryOperation);
     }
 
@@ -684,7 +692,7 @@ public class SampleIndexQueryParser {
         Boolean intergenic = null;
 
         if (!isValidParam(query, REGION)) {
-            VariantQueryParser.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+            VariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
             if (!variantQueryXref.getGenes().isEmpty()
                     && variantQueryXref.getIds().isEmpty()
                     && variantQueryXref.getOtherXrefs().isEmpty()

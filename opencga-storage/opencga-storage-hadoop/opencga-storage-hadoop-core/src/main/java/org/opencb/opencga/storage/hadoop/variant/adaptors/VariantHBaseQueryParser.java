@@ -30,8 +30,11 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
@@ -51,7 +54,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.TYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.buildFileColumnKey;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.buildSampleColumnKey;
@@ -183,12 +186,18 @@ public class VariantHBaseQueryParser {
         }
     }
 
+    @Deprecated
     public List<Scan> parseQueryMultiRegion(Query query, QueryOptions options) {
-        return parseQueryMultiRegion(VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager), query, options);
+        return parseQueryMultiRegion(VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager), query, options);
     }
 
-    public List<Scan> parseQueryMultiRegion(VariantQueryFields selectElements, Query query, QueryOptions options) {
-        VariantQueryParser.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+    public List<Scan> parseQueryMultiRegion(VariantQuery variantQuery, QueryOptions options) {
+        return parseQueryMultiRegion(variantQuery.getProjection(), variantQuery.getQuery(), options);
+    }
+
+    @Deprecated
+    public List<Scan> parseQueryMultiRegion(VariantQueryProjection selectElements, Query query, QueryOptions options) {
+        VariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
         if (!xrefs.getOtherXrefs().isEmpty()) {
             throw VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ANNOT_XREF,
                     HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "Only variant ids are supported with HBase native query");
@@ -252,12 +261,12 @@ public class VariantHBaseQueryParser {
     }
 
     public Scan parseQuery(Query query, QueryOptions options) {
-        VariantQueryFields selectElements =
-                VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
+        VariantQueryProjection selectElements =
+                VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager);
         return parseQuery(selectElements, query, options);
     }
 
-    public Scan parseQuery(VariantQueryFields selectElements, Query query, QueryOptions options) {
+    public Scan parseQuery(VariantQueryProjection selectElements, Query query, QueryOptions options) {
 
         Scan scan = new Scan();
         byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
@@ -407,7 +416,7 @@ public class VariantHBaseQueryParser {
 
         // If we already add a filter that requires a sample from a certain study, we can skip latter the filter for that study
         Set<Integer> filteredStudies = new HashSet<>();
-        final StudyMetadata defaultStudy = getDefaultStudy(query, options, metadataManager);
+        final StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
         if (isValidParam(query, FILE)) {
             String value = query.getString(FILE.key());
             VariantQueryUtils.QueryOperation operation = checkOperator(value);
@@ -463,27 +472,39 @@ public class VariantHBaseQueryParser {
                 } else {
                     filteredStudies.add(studyId);
                 }
-
-                byte[] column = buildSampleColumnKey(studyId, sampleId);
-                List<Filter> gtSubFilters = genotypes.stream()
-                        .map(genotype -> {
-                            SingleColumnValueFilter filter = new SingleColumnValueFilter(family, column, CompareFilter.CompareOp.EQUAL,
-                                    new BinaryPrefixComparator(Bytes.toBytes(genotype)));
-                            filter.setFilterIfMissing(true);
-                            filter.setLatestVersionOnly(true);
-                            if (FillGapsTask.isHomRefDiploid(genotype)) {
-                                return new FilterList(FilterList.Operator.MUST_PASS_ONE, filter, missingColumnFilter(column));
-                            } else {
-                                return filter;
-                            }
-                        })
-                        .collect(Collectors.toList());
+                List<Integer> sampleFiles = new ArrayList<>();
+                sampleFiles.add(null);
+                if (VariantStorageEngine.LoadSplitData.MULTI.equals(metadataManager.getLoadSplitData(studyId, sampleId))) {
+                    sampleFiles.addAll(metadataManager.getFileIdsFromSampleId(studyId, sampleId));
+                }
+                List<Filter> gtSubFilters = new ArrayList<>();
+                for (Integer sampleFile : sampleFiles) {
+                    byte[] column;
+                    if (sampleFile == null) {
+                        column = buildSampleColumnKey(studyId, sampleId);
+                    } else {
+                        column = buildSampleColumnKey(studyId, sampleId, sampleFile);
+                    }
+                    genotypes.stream()
+                            .map(genotype -> {
+                                SingleColumnValueFilter filter = new SingleColumnValueFilter(family, column, CompareFilter.CompareOp.EQUAL,
+                                        new BinaryPrefixComparator(Bytes.toBytes(genotype)));
+                                filter.setFilterIfMissing(true);
+                                filter.setLatestVersionOnly(true);
+                                if (FillGapsTask.isHomRefDiploid(genotype)) {
+                                    return new FilterList(FilterList.Operator.MUST_PASS_ONE, filter, missingColumnFilter(column));
+                                } else {
+                                    return filter;
+                                }
+                            })
+                            .forEach(gtSubFilters::add);
+                    scan.addColumn(family, column);
+                }
                 if (gtSubFilters.size() == 1) {
                     subFilters.addFilter(gtSubFilters.get(0));
                 } else {
                     subFilters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, gtSubFilters));
                 }
-                scan.addColumn(family, column);
             }
         }
 

@@ -15,8 +15,8 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.S
 
 import java.util.*;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation.AND;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation.OR;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation.AND;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation.OR;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
 
@@ -142,10 +142,24 @@ public class SampleIndexEntryFilter {
             variants.addAll(variantList);
         }
 
-        // Only sort if not counting
-        if (!count) {
+        // Only sort if not counting and there are more than one GT and more than one result
+        if (!count && gts.size() > 1 && variants.size() > 1) {
             // List.sort is much faster than a TreeSet
             variants.sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+
+            if (query.isMultiFileResult()) {
+                // Remove possible duplicated elements
+                Iterator<Variant> iterator = variants.iterator();
+                Variant variant = iterator.next();
+                while (iterator.hasNext()) {
+                    Variant next = iterator.next();
+                    if (variant.sameGenomicVariant(next)) {
+                        iterator.remove();
+                    } else {
+                        variant = next;
+                    }
+                }
+            }
         }
 
         return variants;

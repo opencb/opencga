@@ -21,7 +21,7 @@ import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 

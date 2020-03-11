@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -31,7 +32,7 @@ import static org.opencb.biodata.models.variant.StudyEntry.QUAL;
 import static org.opencb.biodata.models.variant.StudyEntry.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 24/10/17.
@@ -122,7 +123,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         query = new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), study1);
         this.queryResult = query(query, options);
-        assertEquals(dbAdaptor.count(null).first().intValue(), this.queryResult.getNumResults());
+        assertEquals(dbAdaptor.count().first().intValue(), this.queryResult.getNumResults());
         assertThat(this.queryResult, everyResult(allOf(withStudy(study2, nullValue()), withStudy("S_3", nullValue()), withStudy("S_4", nullValue()))));
     }
 
@@ -158,7 +159,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), NONE);
         queryResult = query(query, options);
 
-        assertEquals(dbAdaptor.count(null).first().intValue(), queryResult.getNumResults());
+        assertEquals(dbAdaptor.count().first().intValue(), queryResult.getNumResults());
         assertThat(queryResult, everyResult(firstStudy(nullValue())));
     }
 
@@ -229,7 +230,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), study1)
                 .append(VariantQueryParam.INCLUDE_FILE.key(), file12877);
         queryResult = query(query, options);
-        assertEquals(dbAdaptor.count(null).first().intValue(), queryResult.getNumResults());
+        assertEquals(dbAdaptor.count().first().intValue(), queryResult.getNumResults());
         for (Variant variant : queryResult.getResults()) {
             assertTrue(variant.getStudies().size() <= 1);
             StudyEntry s_1 = variant.getStudy(study1);

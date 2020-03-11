@@ -28,8 +28,8 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
@@ -138,12 +138,12 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         addStudyMetadata(studyMetadata);
     }
 
-    public DocumentToSamplesConverter(VariantStorageMetadataManager metadataManager, VariantQueryFields variantQueryFields) {
+    public DocumentToSamplesConverter(VariantStorageMetadataManager metadataManager, VariantQueryProjection variantQueryProjection) {
         this();
         this.metadataManager = metadataManager;
-        setIncludeSamples(variantQueryFields.getSamples());
-        includeFiles = variantQueryFields.getFiles();
-        for (StudyMetadata studyMetadata : variantQueryFields.getStudyMetadatas().values()) {
+        setIncludeSamples(variantQueryProjection.getSamples());
+        includeFiles = variantQueryProjection.getFiles();
+        for (StudyMetadata studyMetadata : variantQueryProjection.getStudyMetadatas().values()) {
             addStudyMetadata(studyMetadata);
         }
     }

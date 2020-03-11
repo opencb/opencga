@@ -44,6 +44,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.query.VariantQuery;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
@@ -66,7 +69,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOAD
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.getSetIndexNotSynchronized;
@@ -467,43 +470,33 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(VariantQuery variantQuery, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
         } else {
             options = new QueryOptions(options);
         }
         if (options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
-            DataResult<Long> count = count(query);
+            DataResult<Long> count = count(variantQuery);
             DataResult<Variant> result = new DataResult<>(count.getTime(), count.getEvents(), 0, Collections.emptyList(), count.first());
-            return addSamplesMetadataIfRequested(result, query, options, getMetadataManager());
+            return addSamplesMetadataIfRequested(result, variantQuery.getQuery(), options, getMetadataManager());
         } else if (!options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
             DataResult<Variant> result = new DataResult<>(0, Collections.emptyList(), 0, Collections.emptyList(), -1);
-            return addSamplesMetadataIfRequested(result, query, options, getMetadataManager());
+            return addSamplesMetadataIfRequested(result, variantQuery.getQuery(), options, getMetadataManager());
         }
 
-        VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
-        Document mongoQuery = queryParser.parseQuery(query);
-        Document projection = queryParser.createProjection(query, options, selectVariantElements);
+        VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
+        Document mongoQuery = queryParser.parseQuery(variantQuery.getQuery());
+        Document projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
 
         if (options.getBoolean("explain", false)) {
             Document explain = variantsCollection.nativeQuery().explain(mongoQuery, projection, options);
             logger.debug("MongoDB Explain = {}", explain.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
         }
 
-        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, selectVariantElements);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
         return addSamplesMetadataIfRequested(variantsCollection.find(mongoQuery, projection, converter, options),
-                query, options, getMetadataManager());
-    }
-
-    @Override
-    public List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
-        List<VariantQueryResult<Variant>> queryResultList = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            VariantQueryResult<Variant> queryResult = get(query, options);
-            queryResultList.add(queryResult);
-        }
-        return queryResultList;
+                variantQuery.getQuery(), options, getMetadataManager());
     }
 
     @Override
@@ -572,7 +565,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         } else {
             annotationCollection = getAnnotationCollection(name);
         }
-        VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(
+        VariantQueryProjection selectVariantElements = VariantQueryProjectionParser.parseVariantQueryFields(
                 query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), metadataManager);
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
@@ -587,8 +580,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult<Long> count(Query query) {
-        Document mongoQuery = queryParser.parseQuery(query);
+    public DataResult<Long> count(VariantQuery variantQuery) {
+        Document mongoQuery = queryParser.parseQuery(variantQuery.getQuery());
         DataResult<Long> count = variantsCollection.count(mongoQuery);
         count.setResults(Collections.singletonList(count.getNumMatches()));
         return count;
@@ -626,21 +619,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) {
-        if (query == null) {
-            query = new Query();
-        }
+    public VariantDBIterator iterator(VariantQuery variantQuery, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
         }
-        return iteratorFinal(query, options);
+        return iteratorFinal(variantQuery, options);
     }
 
-    private VariantDBIterator iteratorFinal(final Query query, final QueryOptions options) {
-        VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
-        Document mongoQuery = queryParser.parseQuery(query);
-        Document projection = queryParser.createProjection(query, options, selectVariantElements);
-        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, selectVariantElements);
+    private VariantDBIterator iteratorFinal(final VariantQuery variantQuery, final QueryOptions options) {
+        VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
+        Document mongoQuery = queryParser.parseQuery(variantQuery.getQuery());
+        Document projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
 
         // Short unsorted queries with timeout or limit don't need the persistent cursor.
@@ -1088,10 +1078,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private DocumentToVariantConverter getDocumentToVariantConverter(Query query, QueryOptions options) {
-        return getDocumentToVariantConverter(query, VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager));
+        return getDocumentToVariantConverter(query, VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager));
     }
 
-    private DocumentToVariantConverter getDocumentToVariantConverter(Query query, VariantQueryFields selectVariantElements) {
+    private DocumentToVariantConverter getDocumentToVariantConverter(Query query, VariantQueryProjection selectVariantElements) {
         List<Integer> returnedStudies = selectVariantElements.getStudies();
         DocumentToSamplesConverter samplesConverter;
         samplesConverter = new DocumentToSamplesConverter(metadataManager, selectVariantElements);

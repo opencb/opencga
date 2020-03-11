@@ -20,8 +20,8 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -188,7 +188,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             converter.setStudyNameAsStudyId(true);
             converter.setFormats(Arrays.asList(VariantQueryUtils.ALL, VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX));
             converter.setSelectVariantElements(
-                    new VariantQueryFields(metadataManager.getStudyMetadata(studyId), samples, new ArrayList<>(fileIdsFromSampleIds)));
+                    new VariantQueryProjection(metadataManager.getStudyMetadata(studyId), samples, new ArrayList<>(fileIdsFromSampleIds)));
 
             StudyEntry studyEntry = converter.convert(sampleDataMap, filesMap, variant, studyId);
 

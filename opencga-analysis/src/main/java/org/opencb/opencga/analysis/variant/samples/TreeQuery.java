@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.variant.samples;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

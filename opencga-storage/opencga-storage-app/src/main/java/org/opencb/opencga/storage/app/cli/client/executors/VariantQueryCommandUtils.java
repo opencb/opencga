@@ -27,7 +27,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

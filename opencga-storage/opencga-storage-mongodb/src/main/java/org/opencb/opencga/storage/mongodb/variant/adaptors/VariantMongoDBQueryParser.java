@@ -39,7 +39,9 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
@@ -54,7 +56,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.INDEX_FIELD;
 
@@ -93,7 +95,7 @@ public class VariantMongoDBQueryParser {
             }
 
             // Object with all VariantIds, ids, genes and xrefs from ID, XREF, GENES, ... filters
-            VariantQueryParser.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+            VariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
 
             if (!variantQueryXref.getIds().isEmpty()) {
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
@@ -502,7 +504,7 @@ public class VariantMongoDBQueryParser {
             Map<String, Integer> studies = metadataManager.getStudies(null);
 
             String studyQueryPrefix = DocumentToVariantConverter.STUDIES_FIELD + '.';
-            final StudyMetadata defaultStudy = getDefaultStudy(query, null, metadataManager);
+            final StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
 
             if (isValidParam(query, STUDY)) {
                 String value = query.getString(STUDY.key());
@@ -535,7 +537,7 @@ public class VariantMongoDBQueryParser {
                         })
                         .collect(Collectors.toList());
             } else if (isValidParam(query, INCLUDE_FILE)) {
-                List<String> files = getIncludeFilesList(query);
+                List<String> files = VariantQueryProjectionParser.getIncludeFilesList(query);
                 if (files != null) {
                     fileIds = new ArrayList<>(files.size());
                     for (String file : files) {
@@ -1083,10 +1085,10 @@ public class VariantMongoDBQueryParser {
     }
 
     protected Document createProjection(Query query, QueryOptions options) {
-        return createProjection(query, options, VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager));
+        return createProjection(query, options, VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager));
     }
 
-    protected Document createProjection(Query query, QueryOptions options, VariantQueryFields selectVariantElements) {
+    protected Document createProjection(Query query, QueryOptions options, VariantQueryProjection selectVariantElements) {
         if (options == null) {
             options = new QueryOptions();
         }

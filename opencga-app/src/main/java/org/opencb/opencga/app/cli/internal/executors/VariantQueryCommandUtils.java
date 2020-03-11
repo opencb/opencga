@@ -26,7 +26,7 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.slf4j.Logger;
