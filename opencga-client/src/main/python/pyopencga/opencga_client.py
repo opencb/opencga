@@ -105,10 +105,10 @@ class OpencgaClient(object):
 
         def login_handler(refresh=False):
             self.user_id = user
-            if refresh:
-                self.token = User(self.configuration).login(user=user, data={}).get_result(0)['token']
-            else:
-                self.token = User(self.configuration).login(user=user, data={'password': pwd}).get_result(0)['token']
+            data = {'password': pwd} if refresh else {}
+            self.token = User(self.configuration).login(
+                user=user, data=data
+            ).get_result(0)['token']
 
             for client in self.clients:
                 client.token = self.token  # renew the client's token
@@ -130,23 +130,27 @@ class OpencgaClient(object):
         for client in self.clients:
             client.token = self.token
 
-    def wait_for_job(self, response=None, study=None, job_id=None, retry_seconds=10):
+    def wait_for_job(self, response=None, study_id=None, job_id=None,
+                     retry_seconds=10):
         if response is not None:
-            study = response['studyUuid']
-            job_id = response['uuid']
+            study_id = response['result'][0]['study']['id']
+            job_id = response['result'][0]['uuid']
 
-        if study is None or job_id is None:
-            raise ValueError('Argument "response" or arguments "study" and "job_id" must be provided')
+        if response is None and (study_id is None or job_id is None):
+            raise ValueError('Argument "response" or arguments "study" and'
+                             ' "job_id" must be provided')
 
         if len(job_id.split(',')) > 1:
             raise ValueError('Only one job ID is allowed')
 
         retry_seconds = retry_seconds if retry_seconds >= 10 else 10
         while True:
-            job_info = self.jobs.info(study=study, jobs=job_id, include='status').get_result(0)
+            job_info = self.jobs.info(study=study_id, jobs=job_id,
+                                      include='status').get_result(0)
             if job_info['status']['name'] in ['ERROR', 'ABORTED']:
                 raise ValueError('{} ({}): {}'.format(
-                    job_info['status']['name'], job_info['status']['date'], job_info['status']['message']
+                    job_info['status']['name'], job_info['status']['date'],
+                    job_info['status']['message']
                 ))
             elif job_info['status']['name'] in ['DONE']:
                 break
