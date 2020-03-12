@@ -44,6 +44,10 @@ public interface BatchExecutor {
 
     boolean kill(String jobId) throws Exception;
 
+    default boolean canBeQueued() {
+        return true;
+    }
+
     boolean isExecutorAlive();
 
     default String getCommandLine(String commandLine) {

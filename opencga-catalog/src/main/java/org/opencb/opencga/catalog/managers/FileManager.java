@@ -2382,6 +2382,10 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
+    public DataInputStream download(String studyStr, String fileId, String token) throws CatalogException {
+        return download(studyStr, fileId, -1, -1, token);
+    }
+
     public DataInputStream download(String studyStr, String fileId, int start, int limit, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);

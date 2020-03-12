@@ -262,7 +262,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         if (writer instanceof TextOutputWriter
                 && StringUtils.isEmpty(filesCommandOptions.treeCommandOptions.dataModelOptions.include)
                 && StringUtils.isEmpty(filesCommandOptions.treeCommandOptions.dataModelOptions.exclude)) {
-            params.put(QueryOptions.INCLUDE, "id,name,path,type,size,status");
+            params.put(QueryOptions.INCLUDE, "id,name,path,type,size,internal,status");
         }
         params.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.treeCommandOptions.limit);
         return openCGAClient.getFileClient().tree(filesCommandOptions.treeCommandOptions.folderId, params);

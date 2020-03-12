@@ -358,8 +358,7 @@ public class CatalogStorageMetadataSynchronizer {
                         if (index.getStatus() == null) {
                             index.setStatus(new IndexStatus());
                         }
-                        logger.debug("File \"{}\" change status from {} to {}", file.getName(),
-                                file.getInternal().getIndex().getStatus().getName(), IndexStatus.READY);
+                        logger.debug("File \"{}\" change status from {} to {}", file.getName(), status, IndexStatus.READY);
                         index.getStatus().setName(IndexStatus.READY);
                         catalogManager.getFileManager()
                                 .updateFileIndexStatus(file, IndexStatus.READY, "Indexed, regarding Storage Metadata", sessionId);

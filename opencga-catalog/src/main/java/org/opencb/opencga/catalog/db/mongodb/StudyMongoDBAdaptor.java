@@ -1783,6 +1783,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                                 Status.getPositiveStatus(Status.STATUS_LIST, queryCopy.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case FQN:
                     case UUID:
                     case NAME:
                     case DESCRIPTION:

@@ -9,8 +9,10 @@ import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobStudyParam;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
@@ -57,10 +59,13 @@ public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
         updateParams.setOutDir(new File()
                 .setUid(1)
                 .setPath("/tmp/path")
-                .setId("myJobId"));
+                .setId("myJobId"))
+                .setStudy(new JobStudyParam(studyFqn, Arrays.asList(studyFqn2, studyFqn3)));
         catalogManager.getJobManager().update(studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), token);
         jobResult = catalogManager.getJobManager().get(studyFqn, jobResult.first().getId(), QueryOptions.empty(), token);
+        assertEquals(2, jobResult.first().getStudy().getOthers().size());
         System.out.println(jobResult);
+
     }
 
 }
