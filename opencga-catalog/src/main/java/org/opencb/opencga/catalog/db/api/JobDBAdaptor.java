@@ -142,7 +142,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         //PARAMS,
         VISITED("visited", BOOLEAN, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
-        INTERNAL_STATUS_MSG("internal.status.message", TEXT, ""),
+        INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         SIZE("size", DECIMAL, ""),
         OUT_DIR_UID("outDir.uid", INTEGER, ""),
@@ -157,7 +157,9 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         DELETED("deleted", BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
-        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
+        STUDY("study", TEXT_ARRAY, ""),
+        STUDY_ID("study.id", TEXT, ""),
+        STUDY_OTHERS("study.others", TEXT, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
         static {
