@@ -18,45 +18,20 @@ public class GeneticChecksReportTest {
         long geneticChecksVarsCounter = 0;
         Set<Variable> geneticChecksVars = new LinkedHashSet<>();
 
-        // Sample ID
-        geneticChecksVars.add(new Variable()
-                .setName("sampleId")
-                .setId("sampleId")
-                .setType(Variable.VariableType.STRING)
-                .setRank(geneticChecksVarsCounter++)
-                .setDescription("Sample ID"));
-
-        // Father ID
-        geneticChecksVars.add(new Variable()
-                .setName("fatherId")
-                .setId("fatherId")
-                .setType(Variable.VariableType.STRING)
-                .setRank(geneticChecksVarsCounter++)
-                .setDescription("Father ID"));
-
-        // Mother ID
-        geneticChecksVars.add(new Variable()
-                .setName("motherId")
-                .setId("motherId")
-                .setType(Variable.VariableType.STRING)
-                .setRank(geneticChecksVarsCounter++)
-                .setDescription("Mother ID"));
-
-        // Sibling IDs
-        geneticChecksVars.add(new Variable()
-                .setName("siblingIds")
-                .setId("siblingIds")
-                .setType(Variable.VariableType.STRING)
-                .setMultiValue(true)
-                .setRank(geneticChecksVarsCounter++)
-                .setDescription("Sibling IDs"));
-
         //---------------------------------------------------------------------
         // Sex report
         //---------------------------------------------------------------------
 
         long sexReportVarsCounter = 0;
         Set<Variable> sexReportVars = new LinkedHashSet<>();
+
+        // Sample ID
+        sexReportVars.add(new Variable()
+                .setName("sampleId")
+                .setId("sampleId")
+                .setType(Variable.VariableType.STRING)
+                .setRank(sexReportVarsCounter++)
+                .setDescription("Sample ID"));
 
         // Reported sex
         sexReportVars.add(new Variable()
@@ -208,6 +183,14 @@ public class GeneticChecksReportTest {
         long mendelianErrorsReportVarsCounter = 0;
         Set<Variable> mendelianErrorsReportVars = new LinkedHashSet<>();
 
+        // Sample ID
+        mendelianErrorsReportVars.add(new Variable()
+                .setName("sampleId")
+                .setId("sampleId")
+                .setType(Variable.VariableType.STRING)
+                .setRank(scoresVarsCounter++)
+                .setDescription("Sample ID"));
+
         // Number of errors for that sample
         mendelianErrorsReportVars.add(new Variable()
                 .setName("numErrors")
@@ -274,7 +257,7 @@ public class GeneticChecksReportTest {
                 .setId("opencga_genetic_checks")
                 .setName("opencga_genetic_checks")
                 .setDescription("OpenCGA genetic checks")
-                .setEntities(Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE))
+                .setEntities(Collections.singletonList(VariableSet.AnnotableDataModels.INDIVIDUAL))
                 .setVariables(geneticChecksVars);
 
         // Generate JSON

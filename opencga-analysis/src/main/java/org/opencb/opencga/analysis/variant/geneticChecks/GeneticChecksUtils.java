@@ -18,6 +18,8 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.variant.GeneticChecksReport;
+import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.models.variant.MendelianErrorReport;
 import org.opencb.opencga.core.models.variant.MendelianErrorReport.SampleAggregation;
 import org.opencb.opencga.core.models.variant.MendelianErrorReport.SampleAggregation.ChromosomeAggregation;
@@ -165,109 +167,6 @@ public class GeneticChecksUtils {
         return relatednessReport;
     }
 
-    public static MendelianErrorReport buildMendelianErrorsReport(String family, Path outDir) throws ToolException {
-
-        // Number of mendelian errors
-        int numME;
-
-        BufferedReader reader;
-
-        // Family mendel file management: .fmendel file
-        File file = outDir.resolve(family + ".fmendel").toFile();
-        if (!file.exists()) {
-            throw new ToolException("Missing family mendel file for family '" + family + "'");
-        }
-
-        try {
-            reader = new BufferedReader(new FileReader(file));
-            // First line is the header
-            // FID           PAT           MAT   CHLD    N
-            String line = reader.readLine();
-
-            line = reader.readLine();
-            if (line == null) {
-                throw new ToolException("Error reading family mendel file for family '" + family + "'");
-            }
-            numME = Integer.parseInt(line.split("\t")[4]);
-        } catch (IOException e) {
-            throw new ToolException(e);
-        }
-
-        // Mendel file management: .mendel file
-        file = outDir.resolve(family + ".mendel").toFile();
-        if (!file.exists()) {
-            throw new ToolException("Missing mendel file for family '" + family + "'");
-        }
-
-        // Map <sample, Map <chromosome, Map <code, in>>>
-        Map<String, Map<String, Map<String, Integer>>> counter = new HashMap<>();
-
-        try {
-            reader = new BufferedReader(new FileReader(file));
-            // First line is the header
-            // FID   KID    CHR    SNP      CODE      ERROR
-            String line = reader.readLine();
-
-            while ((line = reader.readLine()) != null) {
-                String[] splits = line.split("\t");
-
-                String sample = splits[1];
-                String chrom = splits[2];
-                String errorCode = splits[4];
-
-                // Check sample
-                if (!counter.containsKey(sample)) {
-                    counter.put(sample, new HashMap<>());
-                }
-                // Check chrom
-                if (!counter.get(sample).containsKey(chrom)) {
-                    counter.get(sample).put(chrom, new HashMap<>());
-                }
-                // Check error code
-                if (!counter.get(sample).get(chrom).containsKey(errorCode)) {
-                    counter.get(sample).get(chrom).put(errorCode, 0);
-                }
-
-                // Increment error counter
-                counter.get(sample).get(chrom).put(errorCode, 1 + counter.get(sample).get(chrom).get(errorCode));
-            }
-        } catch (IOException e) {
-            throw new ToolException(e);
-        }
-
-
-        // Update sample aggregation list from the previous maps
-        List<SampleAggregation> sampleAggregationList = new ArrayList<>();
-        int numVariants = getNumLines(outDir.resolve(family + ".lmendel").toFile());
-
-        for (String sample : counter.keySet()) {
-            int sampleErrors = 0;
-            SampleAggregation sampleAggregation = new SampleAggregation();
-            sampleAggregation.setSample(sample);
-
-            for (String chrom : counter.get(sample).keySet()) {
-
-                // Compute num. errors per chromosome
-                int chromErrors = counter.get(sample).get(chrom).values().stream().reduce(0, Integer::sum);
-
-                ChromosomeAggregation chromAggregation = new ChromosomeAggregation(chrom, chromErrors, counter.get(sample).get(chrom));
-
-                // Unpdate num. errors and sample aggregation
-                sampleErrors += chromErrors;
-                sampleAggregation.getChromAggregation().add(chromAggregation);
-            }
-
-            // Set num. errors and ratio for that sample
-            sampleAggregation.setNumErrors(sampleErrors);
-            sampleAggregation.setRatio(1.0d * sampleErrors / numVariants);
-
-            // Add sample aggregation to the mendelian error report
-            sampleAggregationList.add(sampleAggregation);
-        }
-
-        return new MendelianErrorReport(numME, sampleAggregationList);
-    }
-
     public static Family getFamilyById(String studyId, String familyId, CatalogManager catalogManager, String token)
             throws ToolException {
         OpenCGAResult<Family> familyResult;
@@ -385,9 +284,9 @@ public class GeneticChecksUtils {
         return sampleResult.first();
     }
 
-    public static List<Individual> getRelativesByFamilyId(String studyId, String familyId, CatalogManager catalogManager, String token)
+    public static List<Sample> getRelativeSamplesByFamilyId(String studyId, String familyId, CatalogManager catalogManager, String token)
             throws ToolException {
-        List<Individual> individuals = new ArrayList<>();
+        List<Sample> samples = new ArrayList<>();
 
         OpenCGAResult<Family> familyResult;
         try {
@@ -410,41 +309,42 @@ public class GeneticChecksUtils {
         List<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
         for (String individualId : individualIds) {
             // Check valid sample for that individual
-            getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
-
-            // Add the 'full' individual (i.e., with the samples) to the individual list
-            individuals.add(getIndividualById(studyId, individualId, catalogManager, token));
+            Sample sample = getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
+            samples.add(sample);
         }
-        return individuals;
+        return samples;
     }
 
-    public static List<Individual> getRelativesByIndividualId(String studyId, String individualId, CatalogManager catalogManager,
-                                                              String token) throws ToolException {
+    public static List<Sample> getRelativeSamplesByIndividualId(String studyId, String individualId, CatalogManager catalogManager,
+                                                                String token) throws ToolException {
         // Get the family for that individual
         Family family = getFamilyByIndividualId(studyId, individualId, catalogManager, token);
-
-        return getRelativesByFamilyId(studyId, family.getId(), catalogManager, token);
+        // And then search samples for the family members
+        return getRelativeSamplesByFamilyId(studyId, family.getId(), catalogManager, token);
     }
 
-    public static List<Individual> getRelativesBySampleId(String studyId, String sampleId, CatalogManager catalogManager,
-                                                          String token) throws ToolException {
-        Individual individual = getIndividualBySampleId(studyId, sampleId, catalogManager, token);
-        return getRelativesByIndividualId(studyId, individual.getId(), catalogManager, token);
+    public static List<Sample> getRelativeSamplesBySampleId(String studyId, String sampleId, CatalogManager catalogManager,
+                                                            String token) throws ToolException {
+        // Get the family for that sample
+        Family family = getFamilyBySampleId(studyId, sampleId, catalogManager, token);
+        // And then search samples for the family members
+        return getRelativeSamplesByFamilyId(studyId, family.getId(), catalogManager, token);
     }
 
-    public static List<String> getSampleIds(String studyId, List<Individual> individuals, CatalogManager catalogManager, String token)
+    public static void updateSexReport(List<InferredSexReport> reports, String studyId, CatalogManager catalogManager, String token)
             throws ToolException {
-        // Get sample IDs from individuals
-        List<String> sampleIds = new ArrayList<>();
-        for (Individual individual : individuals) {
-            Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(studyId, individual.getId(), catalogManager, token);
-            if (sample == null) {
-                // It shouldn't happen: sample is never null, it was checked previously
-                throw new ToolException("Sample null for individual '" + individual.getId() + "'");
+        if (CollectionUtils.isNotEmpty(reports)) {
+            for (InferredSexReport inferredSexReport : reports) {
+                try {
+                    Individual individual = GeneticChecksUtils.getIndividualBySampleId(studyId, inferredSexReport.getSampleId(), catalogManager, token);
+                    inferredSexReport.setIndividualId(individual.getId());
+                    inferredSexReport.setReportedSex(individual.getSex().name());
+                    inferredSexReport.setReportedKaryotypicSex(individual.getKaryotypicSex().name());
+                } catch (ToolException e) {
+                    throw new ToolException(e);
+                }
             }
-            sampleIds.add(sample.getId());
         }
-        return sampleIds;
     }
 
     //-------------------------------------------------------------------------

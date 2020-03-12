@@ -8,7 +8,7 @@ import java.util.List;
 public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String studyId;
-    private List<Individual> individuals;
+    private List<String> sampleIds;
     private String minorAlleleFreq;
 
     public IBDRelatednessAnalysisExecutor() {
@@ -23,12 +23,12 @@ public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor
         return this;
     }
 
-    public List<Individual> getIndividuals() {
-        return individuals;
+    public List<String> getSampleIds() {
+        return sampleIds;
     }
 
-    public IBDRelatednessAnalysisExecutor setIndividuals(List<Individual> individuals) {
-        this.individuals = individuals;
+    public IBDRelatednessAnalysisExecutor setSampleIds(List<String> sampleIds) {
+        this.sampleIds = sampleIds;
         return this;
     }
 

@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
 
@@ -41,9 +42,6 @@ public class RelatednessAnalysis extends OpenCgaTool {
     private List<String> sampleIds;
     private String method;
     private String minorAlleleFreq;
-
-    // Internal member
-    private List<Individual> individuals;
 
     public RelatednessAnalysis() {
     }
@@ -114,21 +112,17 @@ public class RelatednessAnalysis extends OpenCgaTool {
             throw new ToolException("Incorrect parameters: only a list of individuals or samples is allowed.");
         }
 
-        individuals = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(individualIds)) {
             // Check and get individual for each ID
+            sampleIds = new ArrayList<>();
             for (String individualId : individualIds) {
-                individuals.add(GeneticChecksUtils.getIndividualById(studyId, individualId, catalogManager, token));
-            }
-        } else {
-            // Check and get individual for each sample ID
-            for (String sampleId : sampleIds) {
-                individuals.add(GeneticChecksUtils.getIndividualBySampleId(studyId, sampleId, catalogManager, token));
+                Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
+                sampleIds.add(sample.getId());
             }
         }
 
-        if (CollectionUtils.isEmpty(individuals)) {
-            throw new ToolException("Members not found to execute relatedness analysis.");
+        if (CollectionUtils.isEmpty(sampleIds)) {
+            throw new ToolException("Member samples not found to execute relatedness analysis.");
         }
     }
 
@@ -139,7 +133,7 @@ public class RelatednessAnalysis extends OpenCgaTool {
             IBDRelatednessAnalysisExecutor relatednessExecutor = getToolExecutor(IBDRelatednessAnalysisExecutor.class);
 
             relatednessExecutor.setStudyId(studyId)
-                    .setIndividuals(individuals)
+                    .setSampleIds(sampleIds)
                     .setMinorAlleleFreq(minorAlleleFreq)
                     .execute();
         });
