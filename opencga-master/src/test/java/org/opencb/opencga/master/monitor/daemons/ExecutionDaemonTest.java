@@ -3,11 +3,13 @@ package org.opencb.opencga.master.monitor.daemons;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
@@ -205,6 +207,13 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId3, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         assertEquals(Enums.ExecutionStatus.QUEUED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+
+        jobOpenCGAResult = catalogManager.getJobManager().search(studyFqn2, new Query(), QueryOptions.empty(), token);
+        assertEquals(0, jobOpenCGAResult.getNumResults());
+
+        jobOpenCGAResult = catalogManager.getJobManager().search(studyFqn2, new Query(),
+                new QueryOptions(ParamConstants.OTHER_STUDIES_FLAG, true), token);
+        assertEquals(2, jobOpenCGAResult.getNumResults());
     }
 
     @Test

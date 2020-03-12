@@ -196,7 +196,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     OpenCGAResult<Long> count(ClientSession clientSession, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bsonDocument = parseQuery(query);
+        Bson bsonDocument = parseQuery(query, QueryOptions.empty());
         return new OpenCGAResult<>(jobCollection.count(clientSession, bsonDocument));
     }
 
@@ -204,7 +204,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public OpenCGAResult<Long> count(Query query, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bson = parseQuery(query, user);
+        Bson bson = parseQuery(query, QueryOptions.empty(), user);
         logger.debug("Job count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(jobCollection.count(bson));
     }
@@ -212,7 +212,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public OpenCGAResult distinct(Query query, String field)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bsonDocument = parseQuery(query);
+        Bson bsonDocument = parseQuery(query, QueryOptions.empty());
         return new OpenCGAResult(jobCollection.distinct(field, bsonDocument));
     }
 
@@ -284,7 +284,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Query tmpQuery = new Query()
                 .append(QueryParams.STUDY_UID.key(), job.getStudyUid())
                 .append(QueryParams.UID.key(), job.getUid());
-        Bson finalQuery = parseQuery(tmpQuery);
+        Bson finalQuery = parseQuery(tmpQuery, options);
 
         logger.debug("Job update: query : {}, update: {}",
                 finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
@@ -495,7 +495,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Query query = new Query(QueryParams.UID.key(), id);
         OpenCGAResult<Job> jobDataResult = get(query, null);
         if (jobDataResult.getResults().size() == 1) {
-            DataResult delete = jobCollection.remove(parseQuery(query), null);
+            DataResult delete = jobCollection.remove(parseQuery(query, QueryOptions.empty()), null);
             if (delete.getNumUpdated() == 0) {
                 throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
             }
@@ -619,7 +619,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bson = parseQuery(query, user);
         QueryOptions qOptions;
         if (options != null) {
             qOptions = new QueryOptions(options);
@@ -627,6 +626,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             qOptions = new QueryOptions();
         }
         qOptions = fixOptions(qOptions);
+
+        Bson bson = parseQuery(query, options, user);
 
         logger.debug("Job get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
@@ -667,28 +668,28 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public OpenCGAResult rank(Query query, String field, int numResults, boolean asc)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, QueryOptions.empty());
         return rank(jobCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public OpenCGAResult groupBy(Query query, String field, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, options);
         return groupBy(jobCollection, bsonQuery, field, "name", fixOptions(options));
     }
 
     @Override
     public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, options);
         return groupBy(jobCollection, bsonQuery, fields, "name", fixOptions(options));
     }
 
     @Override
     public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        Bson bsonQuery = parseQuery(query, user);
+        Bson bsonQuery = parseQuery(query, options, user);
         return groupBy(jobCollection, bsonQuery, fields, QueryParams.ID.key(), fixOptions(options));
     }
 
@@ -755,22 +756,29 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         logger.debug("File '{}' removed from {} jobs", fileUid, result.getNumUpdated());
     }
 
-    private Bson parseQuery(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return parseQuery(query, null, null);
-    }
-
-    private Bson parseQuery(Query query, String user) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return parseQuery(query, null, user);
-    }
-
-    protected Bson parseQuery(Query query, Document extraQuery)
+    private Bson parseQuery(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return parseQuery(query, extraQuery, null);
+        return parseQuery(query, null, options, null);
     }
 
-    private Bson parseQuery(Query query, Document extraQuery, String user)
+    private Bson parseQuery(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return parseQuery(query, null, options, user);
+    }
+
+    protected Bson parseQuery(Query query, Document extraQuery, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return parseQuery(query, extraQuery, options, null);
+    }
+
+    private Bson parseQuery(Query query, Document extraQuery, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<Bson> andBsonList = new ArrayList<>();
+
+        boolean mainStudy = true;
+        if (options != null) {
+            mainStudy = !options.getBoolean(ParamConstants.OTHER_STUDIES_FLAG, false);
+        }
 
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
@@ -807,7 +815,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        if (mainStudy) {
+                            addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        } else {
+                            addAutoOrQuery(PRIVATE_STUDY_UIDS, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        }
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);

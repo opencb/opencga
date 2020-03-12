@@ -363,6 +363,9 @@ public class OpenCGAWSServer {
                 case Constants.FLATTENED_ANNOTATIONS:
                     queryOptions.put(Constants.FLATTENED_ANNOTATIONS, Boolean.parseBoolean(value));
                     break;
+                case ParamConstants.OTHER_STUDIES_FLAG:
+                    queryOptions.put(ParamConstants.OTHER_STUDIES_FLAG, Boolean.parseBoolean(value));
+                    break;
                 case "includeIndividual": // SampleWS
                     lazy = !Boolean.parseBoolean(value);
                     queryOptions.put("lazy", lazy);
