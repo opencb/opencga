@@ -36,13 +36,11 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
         }
 
         // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
-        Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(getStudyId(), getIndividual().getId(), catalogManager, getToken());
-        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), sample.getId(), assembly, fileManager, alignmentStorageManager,
+        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), getSampleId(), assembly, fileManager, alignmentStorageManager,
                 getToken());
 
-        // Set inferred sex report
+        // Set inferred sex report (individual fields will be set later)
         // TODO infer sex from ratios
-        setInferredSexReport(new InferredSexReport(getIndividual().getId(), sample.getId(), getIndividual().getSex().name(),
-                getIndividual().getKaryotypicSex().name(), ratios[0], ratios[1], ""));
+        setInferredSexReport(new InferredSexReport("", getSampleId(), "", "", ratios[0], ratios[1], ""));
     }
 }

@@ -2,7 +2,7 @@ package org.opencb.opencga.core.models.variant;
 
 public class InferredSexReport {
 
-    // Individual ID
+    // Sample ID
     private String individualId;
 
     // Sample ID

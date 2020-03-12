@@ -19,8 +19,8 @@ import org.opencb.opencga.core.tools.variant.GeneticChecksAnalysisExecutor;
 import java.util.ArrayList;
 import java.util.List;
 
-@ToolExecutor(id="opencga-local", tool = GeneticChecksAnalysis.ID,
-        framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
+@ToolExecutor(id="opencga-local", tool = GeneticChecksAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
+        source = ToolExecutor.Source.STORAGE)
 public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExecutor implements StorageToolExecutor {
 
     @Override
@@ -44,19 +44,14 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
 
                 // Infer the sex for each individual
                 List<InferredSexReport> sexReportList = new ArrayList<>();
-                for (Individual individual : getIndividuals()) {
-                    // Sample is never null, it was checked previously
-                    Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(getStudyId(), individual.getId(), catalogManager,
-                            getToken());
-
+                for (String sampleId : getSampleIds()) {
                     // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
-                    double[] ratios = InferredSexComputation.computeRatios(getStudyId(), sample.getId(), assembly, fileManager,
+                    double[] ratios = InferredSexComputation.computeRatios(getStudyId(), sampleId, assembly, fileManager,
                             alignmentStorageManager, getToken());
 
-                    // Add sex report to the list
+                    // Add sex report to the list (individual fields will be set later)
                     // TODO infer sex from ratios
-                    sexReportList.add(new InferredSexReport(individual.getId(), sample.getId(), individual.getSex().name(),
-                            individual.getKaryotypicSex().name(), ratios[0], ratios[1], ""));
+                    sexReportList.add(new InferredSexReport("", sampleId, "", "", ratios[0], ratios[1], ""));
                 }
 
                 // Set sex report
@@ -69,12 +64,9 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
                 VariantStorageManager variantStorageManager = getVariantStorageManager();
                 CatalogManager catalogManager = variantStorageManager.getCatalogManager();
 
-                // Get sample IDs from individuals
-                List<String> sampleIds = GeneticChecksUtils.getSampleIds(getStudyId(), getIndividuals(), catalogManager, getToken());
-
                 // Run IBD/IBS computation using PLINK in docker
-                RelatednessReport relatednessReport = IBDComputation.compute(getStudyId(), sampleIds, getMinorAlleleFreq(), getOutDir(),
-                        variantStorageManager, getToken());
+                RelatednessReport relatednessReport = IBDComputation.compute(getStudyId(), getSampleIds(), getMinorAlleleFreq(),
+                        getOutDir(), variantStorageManager, getToken());
 
                 // Set relatedness report
                 getReport().setRelatednessReport(relatednessReport);
@@ -86,12 +78,8 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
                 VariantStorageManager variantStorageManager = getVariantStorageManager();
                 CatalogManager catalogManager = variantStorageManager.getCatalogManager();
 
-                // Get family from individual
-                Family family = GeneticChecksUtils.getFamilyByIndividualId(getStudyId(), getIndividuals().get(0).getId(), catalogManager,
-                        getToken());
-
                 // Compute mendelian inconsitencies
-                MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(getStudyId(), family.getId(),
+                MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(getStudyId(), getFamilyId(),
                         variantStorageManager, getToken());
 
                 // Set relatedness report

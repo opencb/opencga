@@ -24,11 +24,8 @@ public class IBDRelatednessLocalAnalysisExecutor extends IBDRelatednessAnalysisE
         VariantStorageManager variantStorageManager = getVariantStorageManager();
         CatalogManager catalogManager = variantStorageManager.getCatalogManager();
 
-        // Get sample IDs from individuals
-        List<String> sampleIds = GeneticChecksUtils.getSampleIds(getStudyId(), getIndividuals(), catalogManager, getToken());
-
         // Run IBD/IBS computation using PLINK in docker
-        RelatednessReport report = IBDComputation.compute(getStudyId(), sampleIds, getMinorAlleleFreq(), getOutDir(),
+        RelatednessReport report = IBDComputation.compute(getStudyId(), getSampleIds(), getMinorAlleleFreq(), getOutDir(),
                 variantStorageManager, getToken());
 
         // Sanity check

@@ -13,7 +13,8 @@ public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor 
     }
 
     private String studyId;
-    private List<Individual> individuals;
+    private String familyId;
+    private List<String> sampleIds;
     private GeneticCheck geneticCheck;
     private String minorAlleleFreq;
     private String relatednessMethod;
@@ -33,12 +34,21 @@ public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor 
         return this;
     }
 
-    public List<Individual> getIndividuals() {
-        return individuals;
+    public String getFamilyId() {
+        return familyId;
     }
 
-    public GeneticChecksAnalysisExecutor setIndividuals(List<Individual> individuals) {
-        this.individuals = individuals;
+    public GeneticChecksAnalysisExecutor setFamilyId(String familyId) {
+        this.familyId = familyId;
+        return this;
+    }
+
+    public List<String> getSampleIds() {
+        return sampleIds;
+    }
+
+    public GeneticChecksAnalysisExecutor setSampleIds(List<String> sampleIds) {
+        this.sampleIds = sampleIds;
         return this;
     }
 
