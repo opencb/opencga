@@ -17,7 +17,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
     private final boolean[] fatherFilter;
     private final boolean[] motherFilter;
     private final boolean mendelianError;
-    private final boolean multiFileResult;
+    private final boolean multiFileSample;
 
     protected SingleSampleIndexQuery(SampleIndexQuery query, String sample) {
         this(query, sample, query.getSamplesMap().get(sample));
@@ -28,7 +28,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
                 query.getVariantTypes() == null ? null : new HashSet<>(query.getVariantTypes()),
                 query.getStudy(),
                 Collections.singletonMap(sample, gts),
-                query.getMultiFileResultSet(),
+                query.getMultiFileSamplesSet(),
                 query.getNegatedSamples(),
                 query.getFatherFilterMap(),
                 query.getMotherFilterMap(),
@@ -39,7 +39,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
                 query.getQueryOperation());
         this.sample = sample;
         this.gts = gts;
-        multiFileResult = query.getMultiFileResultSet().contains(sample);
+        multiFileSample = query.getMultiFileSamplesSet().contains(sample);
         fatherFilter = getFatherFilter(sample);
         motherFilter = getMotherFilter(sample);
         sampleFileIndexQuery = getSampleFileIndexQuery(sample);
@@ -63,8 +63,8 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
         return super.isNegated(sample);
     }
 
-    public boolean isMultiFileResult() {
-        return multiFileResult;
+    public boolean isMultiFileSample() {
+        return multiFileSample;
     }
 
     public boolean[] getFatherFilter() {

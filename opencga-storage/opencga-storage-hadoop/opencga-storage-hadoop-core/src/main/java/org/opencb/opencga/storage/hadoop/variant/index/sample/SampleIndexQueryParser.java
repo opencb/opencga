@@ -23,11 +23,8 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
-import org.opencb.opencga.storage.hadoop.variant.index.query.RangeQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.*;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,6 +104,21 @@ public class SampleIndexQueryParser {
         return false;
     }
 
+    public SingleSampleIndexQuery parse(List<Region> regions, String study, String sample, List<String> genotypes) {
+        return parse(regions, study, Collections.singletonMap(sample, genotypes), null).forSample(sample);
+    }
+
+    public SampleIndexQuery parse(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
+        if (queryOperation == null) {
+            queryOperation = QueryOperation.OR;
+        }
+        String gtFilter = samplesMap.entrySet()
+                .stream()
+                .map(e -> e.getKey() + ":" + String.join(",", e.getValue()))
+                .collect(Collectors.joining(queryOperation.separator()));
+
+        return parse(new Query(REGION.key(), regions).append(STUDY.key(), study).append(GENOTYPE.key(), gtFilter));
+    }
 
     /**
      * Build SampleIndexQuery. Extract Regions (+genes), Study, Sample and Genotypes.

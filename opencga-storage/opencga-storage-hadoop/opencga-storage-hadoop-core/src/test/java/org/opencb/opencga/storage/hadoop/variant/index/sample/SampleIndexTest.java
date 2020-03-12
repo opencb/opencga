@@ -352,25 +352,33 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testCount() throws StorageEngineException {
-        List<List<Region>> regionLists = Arrays.asList(null, Arrays.asList(new Region("1", 1000, 16400000)));
+        List<List<Region>> regionLists = Arrays.asList(null, Arrays.asList(new Region("22", 36591300, 46000000), new Region("1", 1000, 16400000)));
 
-        for (List<Region> regions : regionLists) {
-            StopWatch stopWatch = StopWatch.createStarted();
-            long actualCount = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
-                    .count(regions, STUDY_NAME, "NA19600", Arrays.asList("1|0", "0|1", "1|1"));
-            Query query = new Query(VariantQueryParam.STUDY.key(), STUDY_NAME)
-                    .append(VariantQueryParam.SAMPLE.key(), "NA19600");
-            if (regions != null) {
-                query.append(VariantQueryParam.REGION.key(), regions);
+        for (String study : studies) {
+            for (String sampleName : sampleNames) {
+                for (List<Region> regions : regionLists) {
+                    System.out.println("-----------------------------------");
+                    System.out.println("study = " + study);
+                    System.out.println("sampleName = " + sampleName);
+                    System.out.println("regions = " + regions);
+                    StopWatch stopWatch = StopWatch.createStarted();
+                    long actualCount = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
+                            .count(regions, study, sampleName, Arrays.asList("1|0", "0|1", "1|1"));
+                    Query query = new Query(VariantQueryParam.STUDY.key(), study).append(GENOTYPE.key(), sampleName + ":1|0,0|1,1|1");
+                    if (regions != null) {
+                        query.append(VariantQueryParam.REGION.key(), regions);
+                    }
+                    System.out.println("---");
+                    System.out.println("Count indexTable " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+                    System.out.println("Count = " + actualCount);
+                    stopWatch = StopWatch.createStarted();
+                    long expectedCount = dbAdaptor.count(query).first();
+                    System.out.println("Count variants   " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+                    System.out.println("Count = " + expectedCount);
+                    System.out.println("-----------------------------------");
+                    assertEquals(expectedCount, actualCount);
+                }
             }
-            System.out.println("Count indexTable " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
-            System.out.println("Count = " + actualCount);
-            stopWatch = StopWatch.createStarted();
-            long expectedCount = dbAdaptor.count(query).first();
-            System.out.println("Count variants   " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
-            System.out.println("Count = " + expectedCount);
-            System.out.println("-----------------------------------");
-            assertEquals(expectedCount, actualCount);
         }
     }
 

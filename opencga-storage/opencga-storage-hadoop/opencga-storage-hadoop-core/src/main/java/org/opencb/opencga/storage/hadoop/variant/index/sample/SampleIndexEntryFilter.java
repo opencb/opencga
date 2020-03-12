@@ -115,7 +115,10 @@ public class SampleIndexEntryFilter {
         List<List<Variant>> variantsByGt = new ArrayList<>(gts.size());
         int numVariants = 0;
         // Use countIterator only if don't need to filter by region or by type
-        boolean countIterator = count && regionFilter == null && CollectionUtils.isEmpty(query.getVariantTypes());
+        boolean countIterator = count
+                && regionFilter == null
+                && CollectionUtils.isEmpty(query.getVariantTypes())
+                && !query.isMultiFileSample();
         for (SampleIndexGtEntry gtEntry : gts.values()) {
 
             MutableInt expectedResultsFromAnnotation = new MutableInt(getExpectedResultsFromAnnotation(gtEntry));
@@ -142,12 +145,12 @@ public class SampleIndexEntryFilter {
             variants.addAll(variantList);
         }
 
-        // Only sort if not counting and there are more than one GT and more than one result
-        if (!count && gts.size() > 1 && variants.size() > 1) {
+        // Only sort if there are more than one GT and more than one result and if it's either not counting or the sample is MultiFileSample
+        if (gts.size() > 1 && variants.size() > 1 && (!count || query.isMultiFileSample())) {
             // List.sort is much faster than a TreeSet
             variants.sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
 
-            if (query.isMultiFileResult()) {
+            if (query.isMultiFileSample()) {
                 // Remove possible duplicated elements
                 Iterator<Variant> iterator = variants.iterator();
                 Variant variant = iterator.next();

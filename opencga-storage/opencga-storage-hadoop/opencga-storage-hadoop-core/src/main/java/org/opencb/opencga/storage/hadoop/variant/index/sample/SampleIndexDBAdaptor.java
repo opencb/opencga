@@ -231,7 +231,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public long count(List<Region> regions, String study, String sample, List<String> gts) {
-        return count(new SampleIndexQuery(regions, study, Collections.singletonMap(sample, gts), null).forSample(sample));
+        return count(parser.parse(regions, study, sample, gts));
     }
 
     public long count(SampleIndexQuery query) {
@@ -264,7 +264,9 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                         HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(configuration);
                         boolean noRegionFilter = subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion);
                         // Don't need to parse the variant to filter
-                        boolean simpleCount = CollectionUtils.isEmpty(query.getVariantTypes()) && noRegionFilter;
+                        boolean simpleCount = !query.isMultiFileSample()
+                                && CollectionUtils.isEmpty(query.getVariantTypes())
+                                && noRegionFilter;
                         try {
                             if (query.emptyOrRegionFilter() && simpleCount) {
                                 // Directly sum counters

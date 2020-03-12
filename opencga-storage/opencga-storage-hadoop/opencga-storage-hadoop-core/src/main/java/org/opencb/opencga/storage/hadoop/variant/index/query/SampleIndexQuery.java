@@ -34,7 +34,7 @@ public class SampleIndexQuery {
     private final Set<VariantType> variantTypes;
     private final String study;
     private final Map<String, List<String>> samplesMap;
-    private final Set<String> multiFileResultSet;
+    private final Set<String> multiFileSamplesSet;
     /** Samples that should be subtracted from the final result. **/
     private final Set<String> negatedSamples;
     /** For each sample with father filter, indicates all the valid GTs codes. **/
@@ -52,7 +52,7 @@ public class SampleIndexQuery {
         this.variantTypes = query.variantTypes;
         this.study = query.study;
         this.samplesMap = query.samplesMap;
-        this.multiFileResultSet = query.multiFileResultSet;
+        this.multiFileSamplesSet = query.multiFileSamplesSet;
         this.negatedSamples = query.negatedSamples;
         this.fatherFilter = query.fatherFilter;
         this.motherFilter = query.motherFilter;
@@ -70,7 +70,7 @@ public class SampleIndexQuery {
     }
 
     public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study, Map<String, List<String>> samplesMap,
-                            Set<String> multiFileResultSet,
+                            Set<String> multiFileSamplesSet,
                             Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, SampleFileIndexQuery> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
@@ -79,7 +79,7 @@ public class SampleIndexQuery {
         this.variantTypes = variantTypes;
         this.study = study;
         this.samplesMap = samplesMap;
-        this.multiFileResultSet = multiFileResultSet;
+        this.multiFileSamplesSet = multiFileSamplesSet;
         this.negatedSamples = negatedSamples;
         this.fatherFilter = fatherFilter;
         this.motherFilter = motherFilter;
@@ -193,8 +193,8 @@ public class SampleIndexQuery {
         return mendelianErrorSet;
     }
 
-    public Set<String> getMultiFileResultSet() {
-        return multiFileResultSet;
+    public Set<String> getMultiFileSamplesSet() {
+        return multiFileSamplesSet;
     }
 
     public boolean isOnlyDeNovo() {
