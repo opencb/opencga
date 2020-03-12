@@ -91,8 +91,11 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 //            case "index":
 //                queryResponse = index();
 //                break;
-            case "content":
-                queryResponse = content();
+            case "head":
+                queryResponse = head();
+                break;
+            case "tail":
+                queryResponse = tail();
                 break;
             case "stats":
                 queryResponse = stats();
@@ -268,12 +271,23 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().tree(filesCommandOptions.treeCommandOptions.folderId, params);
     }
 
-    private RestResponse<FileContent> content() throws ClientException {
+    private RestResponse<FileContent> head() throws ClientException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.contentCommandOptions.study);
-        objectMap.put("start", filesCommandOptions.contentCommandOptions.start);
-        objectMap.put(QueryOptions.LIMIT, filesCommandOptions.contentCommandOptions.limit);
-        return openCGAClient.getFileClient().content(filesCommandOptions.contentCommandOptions.file, objectMap);
+        objectMap.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.headCommandOptions.study);
+        objectMap.put("lines", filesCommandOptions.headCommandOptions.lines);
+        objectMap.put("offset", filesCommandOptions.headCommandOptions.offset);
+        RestResponse<FileContent> head = openCGAClient.getFileClient().head(filesCommandOptions.headCommandOptions.file, objectMap);
+        System.out.println(head.first().first().getContent());
+        return new RestResponse<>();
+    }
+
+    private RestResponse<FileContent> tail() throws ClientException {
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.tailCommandOptions.study);
+        objectMap.put("lines", filesCommandOptions.tailCommandOptions.lines);
+        RestResponse<FileContent> tail = openCGAClient.getFileClient().tail(filesCommandOptions.tailCommandOptions.file, objectMap);
+        System.out.println(tail.first().first().getContent());
+        return new RestResponse<>();
     }
 
     private RestResponse<File> update() throws ClientException {

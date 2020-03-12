@@ -803,7 +803,7 @@ public class JobManager extends ResourceManager<Job> {
             if (tail) {
                 fileContent = ioManager.tail(logFile, lines);
             } else {
-                fileContent = ioManager.content(logFile, offset, lines);
+                fileContent = ioManager.head(logFile, offset, lines);
             }
 
             auditManager.audit(userId, Enums.Action.VIEW_LOG, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),

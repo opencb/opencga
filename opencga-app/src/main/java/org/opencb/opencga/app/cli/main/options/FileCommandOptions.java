@@ -46,7 +46,8 @@ public class FileCommandOptions {
     public ListCommandOptions listCommandOptions;
 //    public IndexCommandOptions indexCommandOptions;
     public TreeCommandOptions treeCommandOptions;
-    public ContentCommandOptions contentCommandOptions;
+    public HeadCommandOptions headCommandOptions;
+    public TailCommandOptions tailCommandOptions;
 //    public FetchCommandOptions fetchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public UploadCommandOptions uploadCommandOptions;
@@ -87,7 +88,8 @@ public class FileCommandOptions {
         this.listCommandOptions = new ListCommandOptions();
 //        this.indexCommandOptions = new IndexCommandOptions();
         this.treeCommandOptions = new TreeCommandOptions();
-        this.contentCommandOptions = new ContentCommandOptions();
+        this.headCommandOptions = new HeadCommandOptions();
+        this.tailCommandOptions = new TailCommandOptions();
 //        this.fetchCommandOptions = new FetchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -359,15 +361,21 @@ public class FileCommandOptions {
 //        public boolean annotate;
     }
 
-    @Parameters(commandNames = {"content"}, commandDescription = "Show the content of a file (up to a limit)")
-    public class ContentCommandOptions extends BaseFileCommand{
+    @Parameters(commandNames = {"head"}, commandDescription = "Show the first lines of a file (up to a limit)")
+    public class HeadCommandOptions extends BaseFileCommand{
 
-        @Parameter(names = {"--start"}, description = "Start", arity = 1)
-        public int start = -1;
+        @Parameter(names = {"--offset"}, description = "Starting byte from which the file will be read", arity = 1)
+        public int offset = -1;
 
-        @Parameter(names = {"--limit"}, description = "Limit", arity = 1)
-        public int limit = -1;
+        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
+        public int lines = -1;
+    }
 
+    @Parameters(commandNames = {"tail"}, commandDescription = "Show the last lines of a file (up to a limit)")
+    public class TailCommandOptions extends BaseFileCommand{
+
+        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
+        public int lines = -1;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")

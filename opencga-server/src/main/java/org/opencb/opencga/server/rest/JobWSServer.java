@@ -93,18 +93,33 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{job}/log")
-    @ApiOperation(value = "Get the log content of a job", response = FileContent.class)
+    @Path("/{job}/log/head")
+    @ApiOperation(value = "Show the first lines of a log file (up to a limit)", response = FileContent.class)
     public Response log(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION, required = true) @PathParam("job") String jobId,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Starting byte from which the file will be read") @QueryParam("offset") long offset,
             @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines,
-            @ApiParam(value = "Log file to be shown (stdout or stderr)") @DefaultValue("stderr") @QueryParam("type") String type,
-            @ApiParam(value = "Flag indicating to output the last part of the file") @DefaultValue("true") @QueryParam("tail") boolean tail) {
+            @ApiParam(value = "Log file to be shown (stdout or stderr)") @DefaultValue("stderr") @QueryParam("type") String type) {
         try {
             ParamUtils.checkIsSingleID(jobId);
-            return createOkResponse(catalogManager.getJobManager().log(studyStr, jobId, offset, lines, type, tail, token));
+            return createOkResponse(catalogManager.getJobManager().log(studyStr, jobId, offset, lines, type, false, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{job}/log/tail")
+    @ApiOperation(value = "Show the last lines of a log file (up to a limit)", response = FileContent.class)
+    public Response log(
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION, required = true) @PathParam("job") String jobId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines,
+            @ApiParam(value = "Log file to be shown (stdout or stderr)") @DefaultValue("stderr") @QueryParam("type") String type) {
+        try {
+            ParamUtils.checkIsSingleID(jobId);
+            return createOkResponse(catalogManager.getJobManager().log(studyStr, jobId, 0, lines, type, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

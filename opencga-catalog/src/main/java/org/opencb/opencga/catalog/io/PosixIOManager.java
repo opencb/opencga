@@ -334,53 +334,46 @@ public class PosixIOManager extends IOManager {
     }
 
     @Override
-    public FileContent head(Path file, int lines) throws CatalogIOException {
+    public FileContent head(Path file, long offset, int lines) throws CatalogIOException {
         if (Files.isRegularFile(file)) {
-            lines = Math.min(lines, MAXIMUM_LINES);
+            if (offset == 0) {
+                lines = Math.min(lines, MAXIMUM_LINES);
 
-            int numLinesReturned = 0;
-            try (BufferedReader bufferedReader = FileUtils.newBufferedReader(file)) {
-                StringBuilder sb = new StringBuilder();
+                int numLinesReturned = 0;
+                try (BufferedReader bufferedReader = FileUtils.newBufferedReader(file)) {
+                    StringBuilder sb = new StringBuilder();
 
-                boolean eof = false;
+                    boolean eof = false;
 
-                int bytes = 0;
-                while (numLinesReturned < lines && bytes < MAXIMUM_BYTES && !eof) {
-                    String line = bufferedReader.readLine();
+                    int bytes = 0;
+                    while (numLinesReturned < lines && bytes < MAXIMUM_BYTES && !eof) {
+                        String line = bufferedReader.readLine();
 
-                    if (line != null) {
-                        line = line + "\n";
-                        bytes += line.getBytes().length;
-                        sb.append(line);
+                        if (line != null) {
+                            line = line + "\n";
+                            bytes += line.getBytes().length;
+                            sb.append(line);
 
-                        numLinesReturned++;
-                    } else {
-                        eof = true;
+                            numLinesReturned++;
+                        } else {
+                            eof = true;
+                        }
                     }
+
+                    return new FileContent(file.toAbsolutePath().toString(), eof, bytes, bytes, numLinesReturned, sb.toString());
+                } catch (IOException e) {
+                    throw new CatalogIOException(e.getMessage(), e);
                 }
-
-                return new FileContent(file.toAbsolutePath().toString(), eof, bytes, bytes, numLinesReturned, sb.toString());
-            } catch (IOException e) {
-                throw new CatalogIOException(e.getMessage(), e);
-            }
-        } else {
-            throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString());
-        }
-    }
-
-    @Override
-    public FileContent content(Path file, long offset, int lines) throws CatalogIOException {
-        if (offset == 0) {
-            return head(file, lines);
-        }
-        if (Files.isRegularFile(file)) {
-            if (file.toFile().getName().endsWith(".gz")) {
-                throw new CatalogIOException("Content does not work with compressed files.");
-            }
-            try {
-                return getContentPerLines(file, offset, lines);
-            } catch (IOException e) {
-                throw new CatalogIOException("Error while reading the content of the file '" + file.toAbsolutePath().toString() + "'", e);
+            } else {
+                if (file.toFile().getName().endsWith(".gz")) {
+                    throw new CatalogIOException("Content does not work with compressed files.");
+                }
+                try {
+                    return getContentPerLines(file, offset, lines);
+                } catch (IOException e) {
+                    throw new CatalogIOException("Error while reading the content of the file '" + file.toAbsolutePath().toString() + "'",
+                            e);
+                }
             }
         } else {
             throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString());

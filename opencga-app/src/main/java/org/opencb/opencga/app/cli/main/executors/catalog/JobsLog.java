@@ -124,16 +124,17 @@ public class JobsLog {
                 // First file content
                 if (c.tailLines == null || c.tailLines < 0) {
                     // Undefined tail. Print all.
-                    params.append("tail", false).append("lines", BATCH_SIZE);
+                    params.append("lines", BATCH_SIZE);
+                    content = openCGAClient.getJobClient().headLog(jobId, params).firstResult();
                 } else {
-                    params.append("tail", true).append("lines", c.tailLines);
+                    params.append("lines", c.tailLines);
+                    content = openCGAClient.getJobClient().tailLog(jobId, params).firstResult();
                 }
             } else {
                 params.put("lines", Math.min(maxLines - printedLines.get(), BATCH_SIZE));
-                params.put("tail", false); // Only use tail for the first batch
                 params.put("offset", content.getOffset());
+                content = openCGAClient.getJobClient().headLog(jobId, params).firstResult();
             }
-            content = openCGAClient.getJobClient().log(jobId, params).firstResult();
             jobs.put(jobId, content);
             printedLines.addAndGet(printContent(content));
 
