@@ -10,7 +10,6 @@ import java.util.Map;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultNonNullObjectMapper;
 
 public class JobUpdateParams {
-
     private String description;
 
     private List<String> tags;

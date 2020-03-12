@@ -60,7 +60,7 @@ public class Job extends PrivateStudyUid {
     private boolean visited;
 
     private int release;
-    private String studyUuid;
+    private JobStudyParam study;
     private Map<String, Object> attributes;
 
     public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
@@ -71,7 +71,7 @@ public class Job extends PrivateStudyUid {
     public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
                String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal, File outDir,
                List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, ExecutionResult execution, boolean visited,
-               File stdout, File stderr, int release, String studyUuid, Map<String, Object> attributes) {
+               File stdout, File stderr, int release, JobStudyParam study, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.tool = tool;
@@ -93,7 +93,7 @@ public class Job extends PrivateStudyUid {
         this.stdout = stdout;
         this.stderr = stderr;
         this.release = release;
-        this.studyUuid = studyUuid;
+        this.study = study;
         this.attributes = attributes;
     }
 
@@ -109,7 +109,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", params=").append(params);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", priority='").append(priority).append('\'');
+        sb.append(", priority=").append(priority);
         sb.append(", internal=").append(internal);
         sb.append(", outDir=").append(outDir);
         sb.append(", input=").append(input);
@@ -121,7 +121,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", stderr=").append(stderr);
         sb.append(", visited=").append(visited);
         sb.append(", release=").append(release);
-        sb.append(", studyUuid='").append(studyUuid).append('\'');
+        sb.append(", study=").append(study);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -331,12 +331,12 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public String getStudyUuid() {
-        return studyUuid;
+    public JobStudyParam getStudy() {
+        return study;
     }
 
-    public Job setStudyUuid(String studyUuid) {
-        this.studyUuid = studyUuid;
+    public Job setStudy(JobStudyParam study) {
+        this.study = study;
         return this;
     }
 

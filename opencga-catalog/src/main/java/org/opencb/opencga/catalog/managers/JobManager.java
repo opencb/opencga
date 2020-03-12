@@ -252,7 +252,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setUserId(userId);
             job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             job.setOutDir(job.getOutDir() != null && StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir() : null);
-            job.setStudyUuid(study.getUuid());
+            job.setStudy(new JobStudyParam(study.getFqn()));
 
             if (!Arrays.asList(Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.UNREGISTERED,
                     Enums.ExecutionStatus.ERROR).contains(job.getInternal().getStatus().getName())) {
@@ -423,7 +423,7 @@ public class JobManager extends ResourceManager<Job> {
         try {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTION);
 
-            job.setStudyUuid(study.getUuid());
+            job.setStudy(new JobStudyParam(study.getFqn()));
             job.setUserId(userId);
             job.setParams(params);
             job.setPriority(priority);

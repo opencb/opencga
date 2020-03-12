@@ -2,6 +2,7 @@ package org.opencb.opencga.master.monitor.models;
 
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.JobInternal;
+import org.opencb.opencga.core.models.job.JobStudyParam;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -23,6 +24,7 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
     private List<File> output;   // output files of this job
 
     private ExecutionResult execution;
+    private JobStudyParam study;
 
     private File stdout;
     private File stderr;
@@ -42,12 +44,9 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", execution=").append(execution);
+        sb.append(", study=").append(study);
         sb.append(", stdout=").append(stdout);
         sb.append(", stderr=").append(stderr);
-        sb.append(", description='").append(getDescription()).append('\'');
-        sb.append(", tags=").append(getTags());
-        sb.append(", visited=").append(getVisited());
-        sb.append(", attributes=").append(getAttributes());
         sb.append('}');
         return sb.toString();
     }
@@ -148,6 +147,15 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
 
     public PrivateJobUpdateParams setStderr(File stderr) {
         this.stderr = stderr;
+        return this;
+    }
+
+    public JobStudyParam getStudy() {
+        return study;
+    }
+
+    public PrivateJobUpdateParams setStudy(JobStudyParam study) {
+        this.study = study;
         return this;
     }
 
