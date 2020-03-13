@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
@@ -293,7 +294,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
                 // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
                 List<String> studies = catalogManager.getStudyManager()
-                        .get(project, options, token)
+                        .get(project, new Query(), options, token)
                         .getResults()
                         .stream()
                         .map(Study::getFqn)
