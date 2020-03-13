@@ -168,7 +168,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     protected StudyMetadata getStudyMetadata(Integer studyId) {
         StudyMetadata studyMetadata = selectVariantElements == null ? null
-                : selectVariantElements.getStudyMetadatas().get(studyId);
+                : selectVariantElements.getStudy(studyId).getStudyMetadata();
         if (studyMetadata != null) {
             return studyMetadata;
         } else {
@@ -201,6 +201,21 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 .onFillMissing(fillMissing::put)
                 .onSample(sampleColumn -> {
                     studies.add(sampleColumn.getStudyId());
+                    List<Integer> multiFiles = selectVariantElements
+                            .getStudy(sampleColumn.getStudyId())
+                            .getMultiFileSamples()
+                            .get(sampleColumn.getSampleId());
+                    if (multiFiles != null) {
+                        if (sampleColumn.getFileId() != null) {
+                            // Is the first file?
+                        } else {
+                            if (!multiFiles.contains(sampleColumn.getFileId())) {
+                                // Skip this file
+                                return;
+                            }
+                        }
+
+                    }
                     sampleDataMap.computeIfAbsent(sampleColumn.getStudyId(), s -> new ArrayList<>())
                             .add(Pair.of(sampleColumn.getSampleId(), sampleColumn.getMutableSampleData()));
                 })
@@ -395,7 +410,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
         alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
         String call = (String) (fileColumn.getElement(FILE_CALL_IDX));
-        if (selectVariantElements != null && !selectVariantElements.getFiles().get(studyMetadata.getId()).contains(fileId)) {
+        if (selectVariantElements != null && !selectVariantElements.getStudy(studyMetadata.getId()).getFiles().contains(fileId)) {
             // TODO: Should we return the original CALL?
 //            if (call != null && !call.isEmpty()) {
 //                studyEntry.getFiles().add(new FileEntry(fileName, call, Collections.emptyMap()));
@@ -823,7 +838,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             if (selectVariantElements == null) {
                 return metadataManager.getSamplesPosition(studyMetadata, null);
             } else {
-                List<Integer> sampleIds = selectVariantElements.getSamples().get(studyMetadata.getId());
+                List<Integer> sampleIds = selectVariantElements.getStudy(studyMetadata.getId()).getSamples();
                 return metadataManager.getSamplesPosition(studyMetadata, new LinkedHashSet<>(sampleIds));
             }
         });
@@ -838,7 +853,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             if (selectVariantElements == null) {
                 return new HashSet<>(metadataManager.getIndexedSamples(id));
             } else {
-                return new HashSet<>(selectVariantElements.getSamples().get(id));
+                return new HashSet<>(selectVariantElements.getStudy(id).getSamples());
             }
         });
     }

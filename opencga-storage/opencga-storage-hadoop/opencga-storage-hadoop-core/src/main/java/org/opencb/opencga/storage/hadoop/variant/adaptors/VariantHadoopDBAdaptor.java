@@ -42,7 +42,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.query.VariantQuery;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
@@ -241,7 +241,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(VariantQuery query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(ParsedVariantQuery query, QueryOptions options) {
 
         List<Variant> variants = new LinkedList<>();
         VariantDBIterator iterator = iterator(query, options);
@@ -330,7 +330,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult<Long> count(VariantQuery query) {
+    public DataResult<Long> count(ParsedVariantQuery query) {
         long startTime = System.currentTimeMillis();
         String sql = queryParser.parse(query, new QueryOptions(QueryOptions.COUNT, true));
         logger.info(sql);
@@ -352,7 +352,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator(VariantQuery variantQuery, QueryOptions options) {
+    public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
         }

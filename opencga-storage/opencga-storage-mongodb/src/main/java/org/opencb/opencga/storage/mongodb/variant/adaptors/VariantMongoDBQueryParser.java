@@ -95,7 +95,7 @@ public class VariantMongoDBQueryParser {
             }
 
             // Object with all VariantIds, ids, genes and xrefs from ID, XREF, GENES, ... filters
-            VariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+            ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
 
             if (!variantQueryXref.getIds().isEmpty()) {
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
@@ -1122,7 +1122,7 @@ public class VariantMongoDBQueryParser {
         //
         // > db.variants.find({}, {"studies.files":1, studies:{$elemMatch:{sid:1}}})
         // {  studies : [ { sid : 1, files : [ ... ] , gt : { ... } } ]  }
-        List<Integer> studiesIds = selectVariantElements.getStudies();
+        List<Integer> studiesIds = selectVariantElements.getStudyIds();
         // Use elemMatch only if there is one study to return.
         if (studiesIds.size() == 1) {
             projection.put(

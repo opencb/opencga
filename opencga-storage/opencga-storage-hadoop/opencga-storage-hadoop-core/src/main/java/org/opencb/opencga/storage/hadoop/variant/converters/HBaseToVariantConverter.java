@@ -311,7 +311,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
                 VariantAnnotation annotation = annotationConverter.convert(result);
                 Map<Integer, StudyEntry> studies;
-                if (selectVariantElements != null && selectVariantElements.getStudies().isEmpty()) {
+                if (selectVariantElements != null && selectVariantElements.getStudyIds().isEmpty()) {
                     studies = Collections.emptyMap();
                 } else {
                     studies = studyEntryConverter.convert(result);

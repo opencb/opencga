@@ -1080,7 +1080,7 @@ public final class VariantQueryUtils {
     }
 
     public static void convertGenesToRegionsQuery(Query query, CellBaseUtils cellBaseUtils) {
-        VariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+        ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
         List<String> genes = variantQueryXref.getGenes();
         if (!genes.isEmpty()) {
 

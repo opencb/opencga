@@ -18,6 +18,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -48,7 +49,8 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.*;
 import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.THREE_PRIME_UTR_VARIANT;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.lte;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.numResults;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
@@ -207,6 +209,21 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testQueryFileIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"));
         testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(SAMPLE.key(), "NA19600,NA19661"));
         testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19600:0/1;NA19661:0/0"));
+
+        testQueryIndex(new Query(FILE.key(), "chr22_1-2-DUP.variant-test-file.vcf.gz").append(FILTER.key(), "PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE.key(), "chr22_1-2-DUP.variant-test-file.vcf.gz").append(FILTER.key(), "PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(GENOTYPE.key(), "NA19600:0/1;NA19661:0/0"));
+
+        testQueryIndex(new Query(FILE.key(), "chr22_1-2.variant-test-file.vcf.gz").append(FILTER.key(), "PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(GENOTYPE.key(), "NA19600:0/1;NA19661:0/0"));
     }
 
     @Test
@@ -272,8 +289,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         SampleIndexQuery indexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(new Query(query));
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
 //                .count(indexQuery, "NA19600");
-        int onlyIndex = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
-                .iterator(indexQuery).toDataResult().getNumResults();
+        DataResult<Variant> result = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
+                .iterator(indexQuery).toDataResult();
+        System.out.println("result.getResults() = " + result.getResults());
+        int onlyIndex = result.getNumResults();
 
         // Query SampleIndex+DBAdaptor
         System.out.println("#Query SampleIndex+DBAdaptor");

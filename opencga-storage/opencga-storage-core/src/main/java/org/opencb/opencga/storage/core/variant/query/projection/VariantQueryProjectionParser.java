@@ -36,30 +36,39 @@ public class VariantQueryProjectionParser {
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
         List<Integer> includeStudies = getIncludeStudies(query, options, metadataManager, includeFields);
 
-        Map<Integer, StudyMetadata> studyMetadata = new HashMap<>();
-
+        Map<Integer, VariantQueryProjection.StudyVariantQueryProjection> studies = new HashMap<>(includeStudies.size());
+        for (Integer studyId : includeStudies) {
+            studies.put(studyId, new VariantQueryProjection.StudyVariantQueryProjection());
+        }
         for (Integer studyId : includeStudies) {
             StudyMetadata sm = metadataManager.getStudyMetadata(studyId);
             if (sm == null) {
                 throw VariantQueryException.studyNotFound(studyId, metadataManager.getStudyNames());
             }
-            studyMetadata.put(studyId, sm);
+            studies.get(studyId).setStudyMetadata(sm);
         }
 
-        Map<Integer, List<Integer>> sampleIds = getIncludeSamples(query, options, includeStudies, metadataManager);
-        int numTotalSamples = sampleIds.values().stream().mapToInt(List::size).sum();
-        skipAndLimitSamples(query, sampleIds);
-        int numSamples = sampleIds.values().stream().mapToInt(List::size).sum();
-        Map<Integer, Map<Integer, List<Integer>>> multiFileSamples = new HashMap<>();
+        Map<Integer, List<Integer>> sampleIdsMap = getIncludeSamples(query, options, includeStudies, metadataManager);
+        for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
+            study.setSamples(sampleIdsMap.get(study.getId()));
+        }
+        int numTotalSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
+        skipAndLimitSamples(query, sampleIdsMap);
+        int numSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
 
-        Map<Integer, List<Integer>> fileIds = getIncludeFiles(query, includeStudies, includeFields,
-                metadataManager, sampleIds);
+        Map<Integer, List<Integer>> fileIdsMap = getIncludeFiles(query, includeStudies, includeFields,
+                metadataManager, sampleIdsMap);
+        for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
+            study.setFiles(fileIdsMap.get(study.getId()));
+        }
 
-        for (Map.Entry<Integer, List<Integer>> entry : sampleIds.entrySet()) {
-            Integer studyId = entry.getKey();
-            List<Integer> filesInStudy = fileIds.get(studyId);
-            Map<Integer, List<Integer>> multiMap = multiFileSamples.computeIfAbsent(studyId, s -> new HashMap<>());
-            for (Integer sampleId : entry.getValue()) {
+        for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
+            int studyId = study.getId();
+            List<Integer> filesInStudy = study.getFiles();
+            study.setMultiFileSamples(new HashMap<>());
+            Map<Integer, List<Integer>> multiMap = study.getMultiFileSamples();
+
+            for (Integer sampleId : study.getSamples()) {
                 Set<Integer> filesFromSample = new HashSet<>(metadataManager.getFileIdsFromSampleId(studyId, sampleId));
                 multiMap.put(sampleId, new ArrayList<>(filesFromSample.size()));
                 if (filesFromSample.size() > 1) {
@@ -81,19 +90,19 @@ public class VariantQueryProjectionParser {
             }
         }
 
-        if (fileIds.values().stream().allMatch(List::isEmpty)) {
+        if (studies.values().stream().allMatch(s -> s.getFiles().isEmpty())) {
             includeFields.remove(VariantField.STUDIES_FILES);
             includeFields.removeAll(VariantField.STUDIES_FILES.getChildren());
         }
 
-        if (sampleIds.values().stream().allMatch(List::isEmpty)) {
+        if (studies.values().stream().allMatch(s -> s.getSamples().isEmpty())) {
             includeFields.remove(VariantField.STUDIES_SAMPLES_DATA);
             includeFields.removeAll(VariantField.STUDIES_SAMPLES_DATA.getChildren());
         }
 
-        Map<Integer, List<Integer>> cohortIds = new HashMap<>();
         if (includeFields.contains(VariantField.STUDIES_STATS)) {
-            for (Integer studyId : includeStudies) {
+            for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
+                int studyId = study.getId();
                 List<Integer> cohorts = new LinkedList<>();
                 for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyId)) {
                     cohorts.add(cohort.getId());
@@ -103,12 +112,11 @@ public class VariantQueryProjectionParser {
 //                        cohorts.add(cohort.getId());
 //                    }
 //                });
-                cohortIds.put(studyId, cohorts);
+                study.setCohorts(cohorts);
             }
         }
 
-        return new VariantQueryProjection(includeFields, includeStudies, studyMetadata,
-                sampleIds, multiFileSamples, numTotalSamples != numSamples, numSamples, numTotalSamples, fileIds, cohortIds);
+        return new VariantQueryProjection(includeFields, studies, numTotalSamples != numSamples, numSamples, numTotalSamples);
     }
 
     public static <T> void skipAndLimitSamples(Query query, Map<T, List<T>> sampleIds) {

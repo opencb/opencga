@@ -120,12 +120,10 @@ public class SampleIndexEntryFilter {
                 && CollectionUtils.isEmpty(query.getVariantTypes())
                 && !query.isMultiFileSample();
         for (SampleIndexGtEntry gtEntry : gts.values()) {
-
             MutableInt expectedResultsFromAnnotation = new MutableInt(getExpectedResultsFromAnnotation(gtEntry));
 
             SampleIndexEntryIterator variantIterator = gtEntry.iterator(countIterator);
             ArrayList<Variant> variants = new ArrayList<>(variantIterator.getApproxSize());
-            variantsByGt.add(variants);
             while (expectedResultsFromAnnotation.intValue() > 0 && variantIterator.hasNext()) {
                 Variant variant = filter(variantIterator, expectedResultsFromAnnotation);
                 if (variant != null) {
@@ -133,9 +131,14 @@ public class SampleIndexEntryFilter {
                     numVariants++;
                 }
             }
+            if (!variants.isEmpty()) {
+                variantsByGt.add(variants);
+            }
         }
 
-        if (variantsByGt.size() == 1) {
+        if (variantsByGt.isEmpty()) {
+            return Collections.emptyList();
+        } else if (variantsByGt.size() == 1) {
             return variantsByGt.get(0);
         }
 
@@ -150,6 +153,7 @@ public class SampleIndexEntryFilter {
             // List.sort is much faster than a TreeSet
             variants.sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
 
+            // TODO: Use DISCREPANCIES counter to skip this loop
             if (query.isMultiFileSample()) {
                 // Remove possible duplicated elements
                 Iterator<Variant> iterator = variants.iterator();

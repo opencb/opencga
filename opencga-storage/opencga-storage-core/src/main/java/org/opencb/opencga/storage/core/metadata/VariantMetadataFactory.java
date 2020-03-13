@@ -12,7 +12,6 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -45,12 +44,13 @@ public class VariantMetadataFactory {
         VariantMetadata metadata = new VariantMetadataConverter(scm)
                 .toVariantMetadata(queryFields);
 
-        Map<String, StudyMetadata> studyConfigurationMap = queryFields.getStudyMetadatas().values().stream()
-                .collect(Collectors.toMap(StudyMetadata::getName, Function.identity()));
+        Map<String, StudyMetadata> studyConfigurationMap = queryFields.getStudies().values().stream()
+                .collect(Collectors.toMap(VariantQueryProjection.StudyVariantQueryProjection::getName,
+                        VariantQueryProjection.StudyVariantQueryProjection::getStudyMetadata));
 
         for (VariantStudyMetadata variantStudyMetadata : metadata.getStudies()) {
             StudyMetadata studyMetadata = studyConfigurationMap.get(variantStudyMetadata.getId());
-            List<Integer> fileIds = queryFields.getFiles().get(studyMetadata.getId());
+            List<Integer> fileIds = queryFields.getStudy(studyMetadata.getId()).getFiles();
             if (fileIds != null && !fileIds.isEmpty()) {
                 Query query = new Query()
                         .append(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getId())

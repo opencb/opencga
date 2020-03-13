@@ -143,7 +143,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         this.metadataManager = metadataManager;
         setIncludeSamples(variantQueryProjection.getSamples());
         includeFiles = variantQueryProjection.getFiles();
-        for (StudyMetadata studyMetadata : variantQueryProjection.getStudyMetadatas().values()) {
+        for (StudyMetadata studyMetadata : variantQueryProjection.getStudyMetadatas()) {
             addStudyMetadata(studyMetadata);
         }
     }

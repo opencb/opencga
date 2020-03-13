@@ -33,10 +33,10 @@ public class VariantMetadataConverter {
         List<VariantStudyMetadata> studies = new ArrayList<>();
         String specie = projectMetadata.getSpecies();
         String assembly = projectMetadata.getAssembly();
-        for (StudyMetadata studyMetadata : variantQueryProjection.getStudyMetadatas().values()) {
+        for (StudyMetadata studyMetadata : variantQueryProjection.getStudyMetadatas()) {
             VariantStudyMetadata variantStudyMetadata = toVariantStudyMetadata(studyMetadata,
-                    variantQueryProjection.getSamples().get(studyMetadata.getId()),
-                    variantQueryProjection.getFiles().get(studyMetadata.getId()));
+                    variantQueryProjection.getStudy(studyMetadata.getId()).getSamples(),
+                    variantQueryProjection.getStudy(studyMetadata.getId()).getFiles());
             studies.add(variantStudyMetadata);
         }
 

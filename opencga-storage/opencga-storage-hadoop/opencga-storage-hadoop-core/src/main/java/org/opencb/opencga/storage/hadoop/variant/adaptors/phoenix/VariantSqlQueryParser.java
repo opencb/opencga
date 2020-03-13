@@ -116,11 +116,11 @@ public class VariantSqlQueryParser {
 
     @Deprecated
     public String parse(Query query, QueryOptions options) {
-        VariantQuery variantQuery = new VariantQueryParser(null, metadataManager).parseQuery(query, options, true);
+        ParsedVariantQuery variantQuery = new VariantQueryParser(null, metadataManager).parseQuery(query, options, true);
         return parse(variantQuery, options);
     }
 
-    public String parse(VariantQuery variantQuery, QueryOptions options) {
+    public String parse(ParsedVariantQuery variantQuery, QueryOptions options) {
         Query query = variantQuery.getQuery();
 
         StringBuilder sb = new StringBuilder("SELECT ");
@@ -202,7 +202,7 @@ public class VariantSqlQueryParser {
             return sb.append(" COUNT(*) ");
         } else {
             Set<VariantField> returnedFields = projection.getFields();
-            Collection<Integer> studyIds = projection.getStudies();
+            Collection<Integer> studyIds = projection.getStudyIds();
 
             sb.append(VariantColumn.CHROMOSOME).append(',')
                     .append(VariantColumn.POSITION).append(',')
@@ -210,31 +210,31 @@ public class VariantSqlQueryParser {
                     .append(VariantColumn.ALTERNATE).append(',')
                     .append(VariantColumn.TYPE);
 
-            if (returnedFields.contains(VariantField.STUDIES)) {
-                for (Integer studyId : studyIds) {
+            for (VariantQueryProjection.StudyVariantQueryProjection study : projection.getStudies().values()) {
+                int studyId = study.getId();
+
+                if (returnedFields.contains(VariantField.STUDIES)) {
                     Column studyColumn = VariantPhoenixHelper.getStudyColumn(studyId);
                     sb.append(",\"").append(studyColumn.column()).append('"');
                     sb.append(",\"").append(VariantPhoenixHelper.getFillMissingColumn(studyId).column()).append('"');
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
-                        for (Integer cohortId : projection.getCohorts().getOrDefault(studyId, Collections.emptyList())) {
+                        for (Integer cohortId : study.getCohorts()) {
                             Column statsColumn = getStatsColumn(studyId, cohortId);
                             sb.append(",\"").append(statsColumn.column()).append('"');
                         }
                     }
+
                 }
-            }
-            if (returnedFields.contains(VariantField.STUDIES_FILES)) {
-                projection.getFiles().forEach((studyId, fileIds) -> {
-                    for (Integer fileId : fileIds) {
+
+                if (returnedFields.contains(VariantField.STUDIES_FILES)) {
+                    for (Integer fileId : study.getFiles()) {
                         sb.append(",\"");
                         buildFileColumnKey(studyId, fileId, sb);
                         sb.append('"');
                     }
-                });
-            }
-            if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
-                projection.getMultiFileSamples().forEach((studyId, sampleIds) -> {
-                    for (Map.Entry<Integer, List<Integer>> entry : sampleIds.entrySet()) {
+                }
+                if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
+                    for (Map.Entry<Integer, List<Integer>> entry : study.getMultiFileSamples().entrySet()) {
                         Integer sampleId = entry.getKey();
                         List<Integer> fileIds = entry.getValue();
                         sb.append(",\"");
@@ -256,8 +256,8 @@ public class VariantSqlQueryParser {
 
                     // Check if any of the files from the included samples is not being returned.
                     // If don't, add it to the return list.
-                    Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds.keySet());
-                    List<Integer> includeFiles = projection.getFiles().get(studyId);
+                    Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples());
+                    List<Integer> includeFiles = projection.getStudy(studyId).getFiles();
                     for (Integer fileId : fileIds) {
                         if (!includeFiles.contains(fileId)) {
                             sb.append(",\"");
@@ -265,17 +265,16 @@ public class VariantSqlQueryParser {
                             sb.append('"');
                         }
                     }
-                });
-            }
-            if (returnedFields.contains(VariantField.STUDIES_SCORES)) {
-                for (StudyMetadata studyMetadata : projection.getStudyMetadatas().values()) {
-                    for (VariantScoreMetadata variantScore : studyMetadata.getVariantScores()) {
+                }
+                if (returnedFields.contains(VariantField.STUDIES_SCORES)) {
+                    for (VariantScoreMetadata variantScore : study.getStudyMetadata().getVariantScores()) {
                         sb.append(",\"");
                         sb.append(VariantPhoenixHelper.getVariantScoreColumn(variantScore.getStudyId(), variantScore.getId()));
                         sb.append('"');
                     }
                 }
             }
+
             if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
                 sb.append(',').append(VariantColumn.ANNOTATION_ID);
@@ -300,7 +299,6 @@ public class VariantSqlQueryParser {
                     .collect(Collectors.joining(",", " ( ", " ) "))
             );
         }
-
     }
 
     protected StringBuilder appendWhereStatement(StringBuilder sb, List<String> regionFilters, List<String> filters) {
@@ -375,7 +373,7 @@ public class VariantSqlQueryParser {
             }
         }
 
-        VariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+        ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
 
         // TODO: This should filter by ID from the VCF
         for (String id : variantQueryXref.getIds()) {
@@ -638,7 +636,7 @@ public class VariantSqlQueryParser {
      * @param dynamicColumns Initialized empty set to be filled with dynamic columns required by the queries
      * @return List of sql filters
      */
-    protected List<String> getOtherFilters(VariantQuery variantQuery, QueryOptions options, final Set<Column> dynamicColumns) {
+    protected List<String> getOtherFilters(ParsedVariantQuery variantQuery, QueryOptions options, final Set<Column> dynamicColumns) {
         List<String> filters = new LinkedList<>();
 
         // Variant filters:
@@ -653,7 +651,7 @@ public class VariantSqlQueryParser {
         return filters;
     }
 
-    protected void addVariantFilters(VariantQuery variantQuery, QueryOptions options, List<String> filters) {
+    protected void addVariantFilters(ParsedVariantQuery variantQuery, QueryOptions options, List<String> filters) {
         Query query = variantQuery.getQuery();
         addQueryFilter(query, REFERENCE, VariantColumn.REFERENCE, filters);
 
@@ -742,6 +740,7 @@ public class VariantSqlQueryParser {
         }
 
         List<String> files = Collections.emptyList();
+        List<Pair<Integer, Integer>> fileIds = Collections.emptyList();
         QueryOperation fileOperation = null;
         if (isValidParam(query, FILE)) {
             String value = query.getString(FILE.key());
@@ -755,10 +754,12 @@ public class VariantSqlQueryParser {
         }
 
         if (!files.isEmpty()) {
+            fileIds = new ArrayList<>(files.size());
             StringBuilder sb = new StringBuilder();
             for (Iterator<String> iterator = files.iterator(); iterator.hasNext();) {
                 String file = iterator.next();
                 Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudyMetadata);
+                fileIds.add(fileIdPair);
 
                 sb.append(" ( ");
                 if (isNegated(file)) {
@@ -945,10 +946,26 @@ public class VariantSqlQueryParser {
                         genotype = removeNegation(genotype);
                     }
                     List<Integer> sampleFiles = new ArrayList<>();
-                    sampleFiles.add(null); // First file does not have the fileID in the column name
                     if (VariantStorageEngine.LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
-                        List<Integer> fileIdsFromSampleId = sampleMetadata.getFiles();
-                        sampleFiles.addAll(fileIdsFromSampleId.subList(1, fileIdsFromSampleId.size()));
+                        if (fileIds.isEmpty()) {
+                            sampleFiles.add(null); // First file does not have the fileID in the column name
+                            List<Integer> fileIdsFromSampleId = sampleMetadata.getFiles();
+                            sampleFiles.addAll(fileIdsFromSampleId.subList(1, fileIdsFromSampleId.size()));
+                        } else {
+                            for (Pair<Integer, Integer> fileIdPair : fileIds) {
+                                if (fileIdPair.getKey().equals(studyId)) {
+                                    Integer fileId = fileIdPair.getValue();
+                                    int idx = sampleMetadata.getFiles().indexOf(fileId);
+                                    if (idx == 0) {
+                                        sampleFiles.add(null); // First file does not have the fileID in the column name
+                                    } else if (idx > 0) {
+                                        sampleFiles.add(fileId); // First file does not have the fileID in the column name
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        sampleFiles.add(null); // First file does not have the fileID in the column name
                     }
                     for (Integer sampleFile : sampleFiles) {
                         String key;
@@ -1159,7 +1176,7 @@ public class VariantSqlQueryParser {
         }
     }
 
-    protected void addAnnotFilters(VariantQuery variantQuery, Set<Column> dynamicColumns, List<String> filters) {
+    protected void addAnnotFilters(ParsedVariantQuery variantQuery, Set<Column> dynamicColumns, List<String> filters) {
         Query query = variantQuery.getQuery();
         if (isValidParam(query, ANNOTATION_EXISTS)) {
             if (query.getBoolean(ANNOTATION_EXISTS.key())) {
@@ -1388,7 +1405,7 @@ public class VariantSqlQueryParser {
         return buildFilter(VariantColumn.CHROMOSOME, "=", "_VOID");
     }
 
-    protected void addStatsFilters(VariantQuery variantQuery, List<String> filters) {
+    protected void addStatsFilters(ParsedVariantQuery variantQuery, List<String> filters) {
         StudyMetadata defaultStudyMetadata = variantQuery.getStudyQuery().getDefaultStudy();
         Query query = variantQuery.getQuery();
         List<Integer> allStudies = metadataManager.getStudyIds();

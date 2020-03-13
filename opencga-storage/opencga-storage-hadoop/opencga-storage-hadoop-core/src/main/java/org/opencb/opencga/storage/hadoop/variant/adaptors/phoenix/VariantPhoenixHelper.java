@@ -820,13 +820,25 @@ public class VariantPhoenixHelper {
     }
 
     public static List<Column> getSampleColumns(SampleMetadata sampleMetadata) {
-        int studyId = sampleMetadata.getStudyId();
-        int sampleId = sampleMetadata.getId();
+        return getSampleColumns(sampleMetadata, null);
+    }
+
+    public static List<Column> getSampleColumns(SampleMetadata sampleMetadata, Collection<Integer> requiredFiles) {
+        return getSampleColumns(sampleMetadata.getStudyId(), sampleMetadata.getId(), sampleMetadata.getFiles(), requiredFiles,
+                sampleMetadata.getSplitData());
+    }
+
+    public static List<Column> getSampleColumns(int studyId, int sampleId, List<Integer> files, Collection<Integer> requiredFiles,
+                                                VariantStorageEngine.LoadSplitData splitData) {
         List<Column> columns = new ArrayList<>(1);
-        columns.add(getSampleColumn(studyId, sampleId));
-        if (VariantStorageEngine.LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
-            for (Integer file : sampleMetadata.getFiles().subList(1, sampleMetadata.getFiles().size())) {
-                columns.add(getSampleColumn(studyId, sampleId, file));
+        if (requiredFiles == null || requiredFiles.contains(files.get(0))) {
+            columns.add(getSampleColumn(studyId, sampleId));
+        }
+        if (VariantStorageEngine.LoadSplitData.MULTI.equals(splitData)) {
+            for (Integer file : files.subList(1, files.size())) {
+                if (requiredFiles == null || requiredFiles.contains(file)) {
+                    columns.add(getSampleColumn(studyId, sampleId, file));
+                }
             }
         }
         return columns;

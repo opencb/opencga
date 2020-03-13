@@ -11,7 +11,7 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import java.util.LinkedList;
 import java.util.List;
 
-public class VariantQuery {
+public class ParsedVariantQuery {
 
     private Query inputQuery;
     private QueryOptions inputOptions;
@@ -27,7 +27,7 @@ public class VariantQuery {
         return inputQuery;
     }
 
-    public VariantQuery setInputQuery(Query inputQuery) {
+    public ParsedVariantQuery setInputQuery(Query inputQuery) {
         this.inputQuery = inputQuery;
         return this;
     }
@@ -36,7 +36,7 @@ public class VariantQuery {
         return query;
     }
 
-    public VariantQuery setQuery(Query query) {
+    public ParsedVariantQuery setQuery(Query query) {
         this.query = query;
         return this;
     }
@@ -45,7 +45,7 @@ public class VariantQuery {
         return projection;
     }
 
-    public VariantQuery setProjection(VariantQueryProjection projection) {
+    public ParsedVariantQuery setProjection(VariantQueryProjection projection) {
         this.projection = projection;
         return this;
     }
@@ -54,7 +54,7 @@ public class VariantQuery {
         return inputOptions;
     }
 
-    public VariantQuery setInputOptions(QueryOptions options) {
+    public ParsedVariantQuery setInputOptions(QueryOptions options) {
         this.inputOptions = options;
         return this;
     }
@@ -63,7 +63,7 @@ public class VariantQuery {
         return studyQuery;
     }
 
-    public VariantQuery setStudyQuery(VariantStudyQuery studyQuery) {
+    public ParsedVariantQuery setStudyQuery(VariantStudyQuery studyQuery) {
         this.studyQuery = studyQuery;
         return this;
     }

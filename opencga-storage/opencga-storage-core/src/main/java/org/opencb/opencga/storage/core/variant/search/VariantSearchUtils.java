@@ -258,11 +258,11 @@ public class VariantSearchUtils {
                 VariantQueryProjection selectVariantElements =
                         VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager);
 
-                if (selectVariantElements.getStudies().size() != 1) {
+                if (selectVariantElements.getStudyIds().size() != 1) {
                     return null;
                 }
 
-                Integer studyId = selectVariantElements.getStudies().get(0);
+                Integer studyId = selectVariantElements.getStudyIds().get(0);
                 Set<String> samples = new HashSet<>();
                 if (isValidParam(query, VariantQueryParam.SAMPLE)) {
                     String value = query.getString(VariantQueryParam.SAMPLE.key());
@@ -288,7 +288,7 @@ public class VariantSearchUtils {
                 List<Integer> sampleIds;
                 if (samples.isEmpty()) {
                     // None of the previous fields is defined. Returning all samples from study, or from the given samples
-                    sampleIds = selectVariantElements.getSamples().get(studyId);
+                    sampleIds = selectVariantElements.getStudy(studyId).getSamples();
                 } else {
                     sampleIds = samples.stream()
                             .map(sample -> isNegated(sample) ? removeNegation(sample) : sample)
@@ -296,7 +296,7 @@ public class VariantSearchUtils {
                                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                                 if (sampleId == null) {
                                     throw VariantQueryException.sampleNotFound(sample,
-                                            selectVariantElements.getStudyMetadatas().get(studyId).getName());
+                                            selectVariantElements.getStudy(studyId).getStudyMetadata().getName());
                                 }
                                 return sampleId;
                             }).collect(Collectors.toList());

@@ -35,7 +35,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.query.VariantQuery;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +71,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(VariantQuery query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(ParsedVariantQuery query, QueryOptions options) {
 
         List<Variant> variants = new ArrayList<>();
         iterator(query, options).forEachRemaining(variants::add);
@@ -91,7 +91,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult<Long> count(VariantQuery query) {
+    public DataResult<Long> count(ParsedVariantQuery query) {
         return new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList((long) TEMPLATES.size()), 1);
     }
 
@@ -101,7 +101,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator(VariantQuery variantQuery, QueryOptions options) {
+    public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
         logger.info("Query " + variantQuery.getQuery().toJson());
         logger.info("QueryOptions " + options.toJson());
         logger.info("dbName " + dbName);

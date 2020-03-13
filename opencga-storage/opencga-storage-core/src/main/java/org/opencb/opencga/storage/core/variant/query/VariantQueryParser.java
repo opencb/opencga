@@ -55,11 +55,11 @@ public class VariantQueryParser {
         this.projectionParser = new VariantQueryProjectionParser(metadataManager);
     }
 
-    public VariantQuery parseQuery(Query query, QueryOptions options) {
+    public ParsedVariantQuery parseQuery(Query query, QueryOptions options) {
         return parseQuery(query, options, false);
     }
 
-    public VariantQuery parseQuery(Query query, QueryOptions options, boolean skipPreProcess) {
+    public ParsedVariantQuery parseQuery(Query query, QueryOptions options, boolean skipPreProcess) {
         if (query == null) {
             query = new Query();
         }
@@ -67,7 +67,7 @@ public class VariantQueryParser {
             options = new QueryOptions();
         }
 
-        VariantQuery variantQuery = new VariantQuery()
+        ParsedVariantQuery variantQuery = new ParsedVariantQuery()
                 .setInputQuery(new Query(query))
                 .setInputOptions(new QueryOptions(options));
 
@@ -77,7 +77,7 @@ public class VariantQueryParser {
         variantQuery.setQuery(query);
         variantQuery.setProjection(projectionParser.parseVariantQueryProjection(query, options));
 
-        VariantQuery.VariantStudyQuery studyQuery = new VariantQuery.VariantStudyQuery();
+        ParsedVariantQuery.VariantStudyQuery studyQuery = new ParsedVariantQuery.VariantStudyQuery();
         variantQuery.setStudyQuery(studyQuery);
 
         StudyMetadata defaultStudy = getDefaultStudy(query);
@@ -135,7 +135,7 @@ public class VariantQueryParser {
         convertGoToGeneQuery(query, cellBaseUtils);
         convertExpressionToGeneQuery(query, cellBaseUtils);
 
-        VariantQuery.VariantQueryXref xrefs = parseXrefs(query);
+        ParsedVariantQuery.VariantQueryXref xrefs = parseXrefs(query);
         List<String> allIds = new ArrayList<>(xrefs.getIds().size() + xrefs.getVariants().size());
         allIds.addAll(xrefs.getIds());
         for (Variant variant : xrefs.getVariants()) {
@@ -457,8 +457,8 @@ public class VariantQueryParser {
 
             if (!isValidParam(query, INCLUDE_STUDY)) {
                 List<String> includeStudy = new ArrayList<>();
-                for (Integer studyId : selectVariantElements.getStudies()) {
-                    includeStudy.add(selectVariantElements.getStudyMetadatas().get(studyId).getName());
+                for (Integer studyId : selectVariantElements.getStudyIds()) {
+                    includeStudy.add(selectVariantElements.getStudy(studyId).getStudyMetadata().getName());
                 }
                 if (includeStudy.isEmpty()) {
                     query.put(INCLUDE_STUDY.key(), NONE);
@@ -589,8 +589,8 @@ public class VariantQueryParser {
      * @param query Query to parse
      * @return VariantQueryXref with all VariantIds, ids, genes and xrefs
      */
-    public static VariantQuery.VariantQueryXref parseXrefs(Query query) {
-        VariantQuery.VariantQueryXref xrefs = new VariantQuery.VariantQueryXref();
+    public static ParsedVariantQuery.VariantQueryXref parseXrefs(Query query) {
+        ParsedVariantQuery.VariantQueryXref xrefs = new ParsedVariantQuery.VariantQueryXref();
         if (query == null) {
             return xrefs;
         }

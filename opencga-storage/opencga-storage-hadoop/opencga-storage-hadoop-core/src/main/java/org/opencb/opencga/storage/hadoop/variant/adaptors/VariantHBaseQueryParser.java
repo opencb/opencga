@@ -191,13 +191,13 @@ public class VariantHBaseQueryParser {
         return parseQueryMultiRegion(VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager), query, options);
     }
 
-    public List<Scan> parseQueryMultiRegion(VariantQuery variantQuery, QueryOptions options) {
+    public List<Scan> parseQueryMultiRegion(ParsedVariantQuery variantQuery, QueryOptions options) {
         return parseQueryMultiRegion(variantQuery.getProjection(), variantQuery.getQuery(), options);
     }
 
     @Deprecated
     public List<Scan> parseQueryMultiRegion(VariantQueryProjection selectElements, Query query, QueryOptions options) {
-        VariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+        ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
         if (!xrefs.getOtherXrefs().isEmpty()) {
             throw VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ANNOT_XREF,
                     HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "Only variant ids are supported with HBase native query");
@@ -365,47 +365,48 @@ public class VariantHBaseQueryParser {
         }
 
         if (selectElements.getFields().contains(VariantField.STUDIES)) {
-            for (Integer studyId : selectElements.getStudies()) {
+            for (VariantQueryProjection.StudyVariantQueryProjection study : selectElements.getStudies().values()) {
+                int studyId = study.getId();
                 scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
                 scan.addColumn(family, VariantPhoenixHelper.getFillMissingColumn(studyId).bytes());
-            }
 
-            for (Map.Entry<Integer, List<Integer>> entry : selectElements.getCohorts().entrySet()) {
-                Integer studyId = entry.getKey();
-                for (Integer cohortId : entry.getValue()) {
+                for (Integer cohortId : study.getCohorts()) {
                     scan.addColumn(family,
                             VariantPhoenixHelper.getStatsColumn(studyId, cohortId).bytes());
                 }
-            }
 
-            selectElements.getSamples().forEach((studyId, sampleIds) -> {
                 scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
-                for (Integer sampleId : sampleIds) {
-                    scan.addColumn(family, buildSampleColumnKey(studyId, sampleId));
-                }
-                Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
-                for (Integer fileId : fileIds) {
+
+                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples())) {
                     scan.addColumn(family, buildFileColumnKey(studyId, fileId));
                 }
-            });
 
-            selectElements.getMultiFileSamples().forEach((studyId, sampleIds) -> {
-                for (Integer sampleId : sampleIds.keySet()) {
-                    for (Integer fileId : sampleIds.get(sampleId)) {
-                        scan.addColumn(family, buildSampleColumnKey(studyId, sampleId, fileId));
+                for (Integer sampleId : study.getSamples()) {
+                    Collection<Integer> requiredFilesFromSample = study.getMultiFileSamples().get(sampleId);
+                    List<Integer> allFilesFromSample = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
+                    if (requiredFilesFromSample == null || requiredFilesFromSample.isEmpty()) {
+                        scan.addColumn(family, buildSampleColumnKey(studyId, sampleId));
+                        requiredFilesFromSample = allFilesFromSample;
+                    } else {
+                        for (PhoenixHelper.Column column : VariantPhoenixHelper
+                                .getSampleColumns(studyId, sampleId, allFilesFromSample, requiredFilesFromSample,
+                                        VariantStorageEngine.LoadSplitData.MULTI)) {
+                            scan.addColumn(family, column.bytes());
+                        }
+                    }
+                    for (Integer fileId : requiredFilesFromSample) {
                         scan.addColumn(family, buildFileColumnKey(studyId, fileId));
                     }
                 }
-            });
 
-            selectElements.getFiles().forEach((studyId, fileIds) -> {
                 scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
-                for (Integer fileId : fileIds) {
+                for (Integer fileId : study.getFiles()) {
                     scan.addColumn(family, VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
                 }
-            });
+            }
+
             if (selectElements.getFields().contains(VariantField.STUDIES_SCORES)) {
-                for (StudyMetadata studyMetadata : selectElements.getStudyMetadatas().values()) {
+                for (StudyMetadata studyMetadata : selectElements.getStudyMetadatas()) {
                     for (VariantScoreMetadata sore : studyMetadata.getVariantScores()) {
                         PhoenixHelper.Column column = VariantPhoenixHelper.getVariantScoreColumn(sore.getStudyId(), sore.getId());
                         scan.addColumn(family, column.bytes());

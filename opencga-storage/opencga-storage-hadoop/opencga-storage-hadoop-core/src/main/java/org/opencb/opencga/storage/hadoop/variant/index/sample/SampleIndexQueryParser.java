@@ -18,7 +18,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQuery;
+import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
@@ -62,7 +63,7 @@ public class SampleIndexQueryParser {
      * @return      if the query is valid
      */
     public static boolean validSampleIndexQuery(Query query) {
-        VariantQuery.VariantQueryXref xref = VariantQueryParser.parseXrefs(query);
+        ParsedVariantQuery.VariantQueryXref xref = VariantQueryParser.parseXrefs(query);
         if (!xref.getIds().isEmpty() || !xref.getVariants().isEmpty() || !xref.getOtherXrefs().isEmpty()) {
             // Can not be used for specific variant IDs. Only regions and genes
             return false;
@@ -168,7 +169,7 @@ public class SampleIndexQueryParser {
         // Map from all samples to query to its list of genotypes.
         Map<String, List<String>> samplesMap = new HashMap<>();
         // Samples that are returning data from more than one file
-        Set<String> multiFileResultSet = new HashSet<>();
+        Set<String> multiFileSamples = new HashSet<>();
         // Samples that are querying
         Set<String> negatedSamples = new HashSet<>();
         // Samples from the query that can not be used to filter. e.g. samples with invalid or negated genotypes
@@ -220,7 +221,7 @@ public class SampleIndexQueryParser {
                     negatedSamples.add(sampleMetadata.getName());
                 }
                 if (VariantStorageEngine.LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
-                    multiFileResultSet.add(sampleMetadata.getName());
+                    multiFileSamples.add(sampleMetadata.getName());
                 }
 
                 gtMap.put(sampleMetadata.getName(), gts);
@@ -371,18 +372,11 @@ public class SampleIndexQueryParser {
 
         }
         Map<String, SampleFileIndexQuery> fileIndexMap = new HashMap<>(samplesMap.size());
-        for (String sample1 : samplesMap.keySet()) {
-            SampleFileIndexQuery fileIndexQuery = parseFileQuery(query, sample1, s -> {
-                Integer sampleId1 = metadataManager.getSampleId(studyId, s);
-                Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId1));
-                List<String> fileNames = new ArrayList<>(fileIds.size());
-                for (Integer fileId : fileIds) {
-                    fileNames.add(metadataManager.getFileName(studyId, fileId));
-                }
-                return fileNames;
-            }, partialFilesIndex);
+        for (String sample : samplesMap.keySet()) {
+            SampleFileIndexQuery fileIndexQuery =
+                    parseFileQuery(query, studyId, sample, multiFileSamples.contains(sample), partialFilesIndex);
 
-            fileIndexMap.put(sample1, fileIndexQuery);
+            fileIndexMap.put(sample, fileIndexQuery);
         }
 
         boolean allSamplesAnnotated = true;
@@ -425,7 +419,7 @@ public class SampleIndexQueryParser {
             }
         }
 
-        return new SampleIndexQuery(regions, variantTypes, study, samplesMap, multiFileResultSet, negatedSamples,
+        return new SampleIndexQuery(regions, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
                 fileIndexMap, annotationIndexQuery, mendelianErrorSet, onlyDeNovo, queryOperation);
     }
@@ -502,9 +496,23 @@ public class SampleIndexQueryParser {
     }
 
 
-    protected SampleFileIndexQuery parseFileQuery(Query query, String sample, Function<String, Collection<String>> filesFromSample,
-                                                  boolean partialFilesIndex) {
+    protected SampleFileIndexQuery parseFileQuery(Query query, int studyId, String sample,
+                                                  boolean multiFileSample, boolean partialFilesIndex) {
+        return parseFileQuery(query, sample, multiFileSample, partialFilesIndex, s -> {
+            Integer sampleId = metadataManager.getSampleId(studyId, s);
+            List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
+            List<String> fileNames = new ArrayList<>(fileIds.size());
+            for (Integer fileId : fileIds) {
+                fileNames.add(metadataManager.getFileName(studyId, fileId));
+            }
+            return fileNames;
+        });
+
+    }
+    protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
+                                                  Function<String, List<String>> filesFromSample) {
         short fileIndexMask = 0;
+        List<String> files = null;
 
         Set<Integer> typeCodes = Collections.emptySet();
 
@@ -523,6 +531,25 @@ public class SampleIndexQueryParser {
                     && !hasMNPFilter(types)) {
                 query.remove(TYPE.key());
             }
+        }
+
+        List<Integer> sampleFilesFilter = new ArrayList<>();
+        // Can only filter by file if the sample was multiFile
+        if (multiFileSample && isValidParam(query, FILE)) {
+            // Lazy get files from sample
+            if (files == null) {
+                files = filesFromSample.apply(sample);
+            }
+            ParsedQuery<String> filesQuery = splitValue(query, FILE);
+            for (String file : filesQuery.getValues()) {
+                int indexOf = files.indexOf(file);
+                if (indexOf >= 0) {
+                    sampleFilesFilter.add(indexOf);
+                }
+            }
+            fileIndexMask |= VariantFileIndexConverter.FILE_IDX_MASK;
+        } else {
+            sampleFilesFilter.add(null);
         }
 
         boolean filterPass = false;
@@ -582,7 +609,9 @@ public class SampleIndexQueryParser {
             if (pair.getKey() != QueryOperation.OR) {
                 Map<String, String> infoMap = pair.getValue();
                 // Lazy get files from sample
-                Collection<String> files = filesFromSample.apply(sample);
+                if (files == null) {
+                    files = filesFromSample.apply(sample);
+                }
                 for (String file : files) {
                     String values = infoMap.get(file);
 
@@ -650,23 +679,28 @@ public class SampleIndexQueryParser {
                 typeCodes = Collections.singleton(0);
             }
             for (Integer typeCode : typeCodes) {
-                for (int q = qualMin; q < qualMax; q++) {
-                    for (int dp = dpMin; dp < dpMax; dp++) {
+                for (Integer fileId : sampleFilesFilter) {
+                    for (int q = qualMin; q < qualMax; q++) {
+                        for (int dp = dpMin; dp < dpMax; dp++) {
 
-                        int validFile = 0;
-                        if (filterPass) {
-                            validFile = VariantFileIndexConverter.FILTER_PASS_MASK;
-                        }
+                            int validFile = 0;
+                            if (filterPass) {
+                                validFile = VariantFileIndexConverter.FILTER_PASS_MASK;
+                            }
 
-                        validFile |= typeCode << VariantFileIndexConverter.TYPE_SHIFT;
-                        validFile |= q << VariantFileIndexConverter.QUAL_SHIFT;
-                        validFile |= dp << VariantFileIndexConverter.DP_SHIFT;
+                            if (fileId != null) {
+                                validFile |= fileId << VariantFileIndexConverter.FILE_IDX_SHIFT;
+                            }
+                            validFile |= typeCode << VariantFileIndexConverter.TYPE_SHIFT;
+                            validFile |= q << VariantFileIndexConverter.QUAL_SHIFT;
+                            validFile |= dp << VariantFileIndexConverter.DP_SHIFT;
 
-                        if (hasFileIndexMask1) {
-                            validFileIndex1[IndexUtils.getByte1(validFile)] = true;
-                        }
-                        if (hasFileIndexMask2) {
-                            validFileIndex2[IndexUtils.getByte2(validFile)] = true;
+                            if (hasFileIndexMask1) {
+                                validFileIndex1[IndexUtils.getByte1(validFile)] = true;
+                            }
+                            if (hasFileIndexMask2) {
+                                validFileIndex2[IndexUtils.getByte2(validFile)] = true;
+                            }
                         }
                     }
                 }
@@ -704,7 +738,7 @@ public class SampleIndexQueryParser {
         Boolean intergenic = null;
 
         if (!isValidParam(query, REGION)) {
-            VariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+            ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
             if (!variantQueryXref.getGenes().isEmpty()
                     && variantQueryXref.getIds().isEmpty()
                     && variantQueryXref.getOtherXrefs().isEmpty()

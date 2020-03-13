@@ -27,7 +27,7 @@ import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.query.VariantQuery;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -80,7 +80,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
         return iterator(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true), options);
     }
 
-    VariantDBIterator iterator(VariantQuery query, QueryOptions options);
+    VariantDBIterator iterator(ParsedVariantQuery query, QueryOptions options);
 
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
@@ -90,7 +90,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A DataResult with the result of the query
      */
-    VariantQueryResult<Variant> get(VariantQuery query, QueryOptions options);
+    VariantQueryResult<Variant> get(ParsedVariantQuery query, QueryOptions options);
 
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
@@ -120,7 +120,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     DataResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options);
 
     default DataResult<Long> count() {
-        return count(new VariantQuery());
+        return count(new ParsedVariantQuery());
     }
 
     @Deprecated
@@ -134,7 +134,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param query Query to be executed in the database to filter variants
      * @return A DataResult with the all the distinct values
      */
-    DataResult<Long> count(VariantQuery query);
+    DataResult<Long> count(ParsedVariantQuery query);
 
     /**
      * Performs a distinct operation of the given field over the returned results.
