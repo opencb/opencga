@@ -46,6 +46,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.WebServiceException;
@@ -699,46 +700,31 @@ public class OpenCGAWSServer {
     public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobId, String jobDescription,
                               String jobDependsOnStr, String jobTagsStr) {
         return run(() -> {
-            List<String> jobTags;
-            if (StringUtils.isNotEmpty(jobTagsStr)) {
-                jobTags = Arrays.asList(jobTagsStr.split(","));
-            } else {
-                jobTags = Collections.emptyList();
-            }
-            List<String> jobDependsOn;
-            if (StringUtils.isNotEmpty(jobDependsOnStr)) {
-                jobDependsOn = Arrays.asList(jobDependsOnStr.split(","));
-            } else {
-                jobDependsOn = Collections.emptyList();
-            }
             Map<String, Object> paramsMap = bodyParams.toParams();
             if (StringUtils.isNotEmpty(study)) {
                 paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
             }
-            return catalogManager.getJobManager()
-                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
+            return submitJobRaw(toolId, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
         });
     }
 
-    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobId, String jobDescription,
-                              String jobDependsOnStr, String jobTagsStr) {
-        return run(() -> {
-            List<String> jobTags;
-            if (StringUtils.isNotEmpty(jobTagsStr)) {
-                jobTags = Arrays.asList(jobTagsStr.split(","));
-            } else {
-                jobTags = Collections.emptyList();
-            }
-            List<String> jobDependsOn;
-            if (StringUtils.isNotEmpty(jobDependsOnStr)) {
-                jobDependsOn = Arrays.asList(jobDependsOnStr.split(","));
-            } else {
-                jobDependsOn = Collections.emptyList();
-            }
-            return catalogManager.getJobManager()
-                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
-        });
-
+    protected DataResult<Job> submitJobRaw(String toolId, String study, Map<String, Object> paramsMap,
+                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+            throws CatalogException {
+        List<String> jobTags;
+        if (StringUtils.isNotEmpty(jobTagsStr)) {
+            jobTags = Arrays.asList(jobTagsStr.split(","));
+        } else {
+            jobTags = Collections.emptyList();
+        }
+        List<String> jobDependsOn;
+        if (StringUtils.isNotEmpty(jobDependsOnStr)) {
+            jobDependsOn = Arrays.asList(jobDependsOnStr.split(","));
+        } else {
+            jobDependsOn = Collections.emptyList();
+        }
+        return catalogManager.getJobManager()
+                .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
     }
 
     public Response createPendingResponse() {

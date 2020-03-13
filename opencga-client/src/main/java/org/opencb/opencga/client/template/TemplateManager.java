@@ -123,13 +123,14 @@ public class TemplateManager {
 //                }
                 if (CollectionUtils.isNotEmpty(study.getFiles())) {
                     List<String> studyIndexVcfJobIds = fetchFiles(template, study);
-                    statsJobIds.add(variantStats(study, studyIndexVcfJobIds));
                     projectIndexVcfJobIds.addAll(studyIndexVcfJobIds);
+                    String statsJob = variantStats(study, studyIndexVcfJobIds);
+                    if (statsJob != null) {
+                        statsJobIds.add(statsJob);
+                    }
                 }
             }
-            if (CollectionUtils.isNotEmpty(projectIndexVcfJobIds)) {
-                postIndex(project, projectIndexVcfJobIds, statsJobIds);
-            }
+            postIndex(project, projectIndexVcfJobIds, statsJobIds);
         }
     }
 
@@ -473,15 +474,29 @@ public class TemplateManager {
     }
 
     private void postIndex(Project project, List<String> indexVcfJobIds, List<String> statsJobIds) throws ClientException {
-        if (CollectionUtils.isEmpty(indexVcfJobIds)) {
-            return;
+        List<String> studies = getVariantStudies(project);
+        if (!studies.isEmpty()) {
+            List<String> jobs = new ArrayList<>(statsJobIds);
+            jobs.add(variantAnnot(project, indexVcfJobIds));
+            variantSecondaryIndex(project, jobs);
         }
-        List<String> jobs = new ArrayList<>(statsJobIds);
-        jobs.add(variantAnnot(project, indexVcfJobIds));
-        variantSecondaryIndex(project, jobs);
     }
 
     private String variantStats(Study study, List<String> indexVcfJobIds) throws ClientException {
+        if (resume) {
+            Cohort cohort = openCGAClient.getCohortClient()
+                    .info(StudyEntry.DEFAULT_COHORT, new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn()))
+                    .firstResult();
+            if (cohort != null) {
+                if (cohort.getInternal() != null && cohort.getInternal().getStatus() != null) {
+                    if (Status.READY.equals(cohort.getInternal().getStatus().getName())) {
+                        logger.info("Variant stats already calculated. Skip");
+                        return null;
+                    }
+                }
+            }
+        }
+
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getFqn())
                 .append(ParamConstants.JOB_DEPENDS_ON, indexVcfJobIds);
         VariantStatsAnalysisParams data = new VariantStatsAnalysisParams();
@@ -512,42 +527,28 @@ public class TemplateManager {
     }
 
     private String variantAnnot(Project project, List<String> indexVcfJobIds) throws ClientException {
-        List<String> studies = project.getStudies()
+        ObjectMap params = new ObjectMap()
+                .append(ParamConstants.PROJECT_PARAM, project.getId())
+                .append(ParamConstants.JOB_DEPENDS_ON, indexVcfJobIds);
+        return checkJob(openCGAClient.getVariantOperationClient()
+                .indexVariantAnnotation(new VariantAnnotationIndexParams(), params));
+    }
+
+    private void variantSecondaryIndex(Project project, List<String> jobs) throws ClientException {
+        ObjectMap params = new ObjectMap()
+                .append(ParamConstants.PROJECT_PARAM, project.getId())
+                .append(ParamConstants.JOB_DEPENDS_ON, jobs);
+        checkJob(openCGAClient.getVariantOperationClient()
+                .secondaryIndexVariant(new VariantSecondaryIndexParams().setOverwrite(true), params));
+    }
+
+    private List<String> getVariantStudies(Project project) {
+        return project.getStudies()
                 .stream()
                 .filter(study -> study.getFiles() != null
                         && study.getFiles().stream().anyMatch(this::isVcf))
                 .map(Study::getFqn)
                 .collect(Collectors.toList());
-
-        if (!studies.isEmpty()) {
-            ObjectMap params = new ObjectMap()
-                    // TODO: Allow project based annotation
-//                    .append(ParamConstants.PROJECT_PARAM, project.getId())
-                    .append(ParamConstants.STUDY_PARAM, studies)
-                    .append(ParamConstants.JOB_DEPENDS_ON, indexVcfJobIds);
-            return checkJob(openCGAClient.getVariantOperationClient()
-                    .indexVariantAnnotation(new VariantAnnotationIndexParams(), params));
-        } else {
-            return null;
-        }
-    }
-
-    private void variantSecondaryIndex(Project project, List<String> jobs) throws ClientException {
-        List<String> studies = project.getStudies().stream()
-                .filter(study -> study.getFiles() != null
-                        && study.getFiles().stream().anyMatch(this::isVcf))
-                .map(Study::getFqn)
-                .collect(Collectors.toList());
-
-        if (!studies.isEmpty()) {
-            ObjectMap params = new ObjectMap()
-                    // TODO: Allow project based secondary index
-//                    .append(ParamConstants.PROJECT_PARAM, project.getId())
-                    .append(ParamConstants.STUDY_PARAM, studies)
-                    .append(ParamConstants.JOB_DEPENDS_ON, jobs);
-            checkJob(openCGAClient.getVariantOperationClient()
-                    .secondaryIndexVariant(new VariantSecondaryIndexParams().setOverwrite(true), params));
-        }
     }
 
     private String checkJob(RestResponse<Job> jobRestResponse) throws ClientException {

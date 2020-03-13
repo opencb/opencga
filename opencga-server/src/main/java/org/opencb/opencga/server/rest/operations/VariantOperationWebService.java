@@ -7,12 +7,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
@@ -22,8 +25,10 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
@@ -252,7 +257,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(project)) {
                 paramsMap.put(ParamConstants.PROJECT_PARAM, project);
             }
-            return submitOperation(toolId, paramsMap, jobName, jobDescription, jobDependsOn, jobTags);
+            return submitOperation(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOn, jobTags);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -282,16 +287,21 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         if (dynamicParamsMap.size() > 0) {
             paramsMap.put("dynamicParams", dynamicParamsMap);
         }
-        if (StringUtils.isEmpty(study) && StringUtils.isEmpty(project)) {
-            // General job
-            // FIXME
-            return createPendingResponse();
-        } else if (StringUtils.isNotEmpty(project)) {
-            // Project job
-            // FIXME
-            return createPendingResponse();
-        } else {
-            return submitJob(toolId, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
-        }
+        return run(() -> {
+            if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {
+                // Project job
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+                // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
+                List<String> studies = catalogManager.getStudyManager()
+                        .get(project, options, token)
+                        .getResults()
+                        .stream()
+                        .map(Study::getFqn)
+                        .collect(Collectors.toList());
+                return submitJobRaw(toolId, studies.get(0), paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
+            } else {
+                return submitJobRaw(toolId, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
+            }
+        });
     }
 }
