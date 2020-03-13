@@ -153,7 +153,7 @@ public class OperationsCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-p", "--project-id"}, description = "Project to annotate.")
+        @Parameter(names = {"-p", "--project"}, description = "Project to annotate.")
         public String project;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")

@@ -42,7 +42,6 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.BasicVariantQueryParams;
-import org.opencb.opencga.core.models.variant.GeneticChecksAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -468,7 +467,7 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
-        @Parameter(names = {"-p", "--project-id"}, description = "Project to annotate.", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = "Project to annotate.", arity = 1)
         public String project;
 
 //        @Parameter(names = {"-s", "--study-id"}, description = "Studies to annotate. Must be in the same database.", arity = 1)

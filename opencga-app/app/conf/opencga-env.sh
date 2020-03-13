@@ -11,7 +11,11 @@ if [ -f "${BASEDIR}/libs/opencga-storage-hadoop-core-*.jar" ] ; then
 
     # Add the folder conf/hadoop to the classpath.
     # Add first the user defined hadoop configuration, and then the system hadoop conf, to allow the user to overwrite the configuration.
-    export CLASSPATH_PREFIX=${CLASSPATH_PREFIX}:${BASEDIR}/conf/hadoop/
+    if [ -z "${CLASSPATH_PREFIX}" ]; then
+        export CLASSPATH_PREFIX=${BASEDIR}/conf/hadoop/
+    else
+        export CLASSPATH_PREFIX=${CLASSPATH_PREFIX}:${BASEDIR}/conf/hadoop/
+    fi
 
     # Add the system hadoop configuration folders to the classpath.
     # Check if the command hbase exists
