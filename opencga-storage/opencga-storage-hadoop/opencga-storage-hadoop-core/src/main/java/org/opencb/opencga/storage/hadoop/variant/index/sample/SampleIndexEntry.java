@@ -26,6 +26,7 @@ public class SampleIndexEntry {
     private byte[] mendelianVariantsValue;
     private int mendelianVariantsLength;
     private int mendelianVariantsOffset;
+    private int discrepancies;
     private SampleIndexConfiguration configuration;
 
     public SampleIndexEntry(int sampleId, String chromosome, int batchStart, SampleIndexConfiguration configuration) {
@@ -96,6 +97,15 @@ public class SampleIndexEntry {
         return this;
     }
 
+    public int getDiscrepancies() {
+        return discrepancies;
+    }
+
+    public SampleIndexEntry setDiscrepancies(int discrepancies) {
+        this.discrepancies = discrepancies;
+        return this;
+    }
+
     public SampleIndexConfiguration getConfiguration() {
         return configuration;
     }
@@ -120,6 +130,7 @@ public class SampleIndexEntry {
     @Override
     public String toString() {
         return new ToStringBuilder(this)
+                .append("sampleId", sampleId)
                 .append("chromosome", chromosome)
                 .append("batchStart", batchStart)
                 .append("gts", gts)
@@ -137,6 +148,7 @@ public class SampleIndexEntry {
         SampleIndexEntry that = (SampleIndexEntry) o;
         return sampleId == that.sampleId
                 && batchStart == that.batchStart
+                && discrepancies == that.discrepancies
                 && Objects.equals(chromosome, that.chromosome)
                 && Objects.equals(gts, that.gts)
                 && Bytes.equals(mendelianVariantsValue, mendelianVariantsOffset, mendelianVariantsLength,

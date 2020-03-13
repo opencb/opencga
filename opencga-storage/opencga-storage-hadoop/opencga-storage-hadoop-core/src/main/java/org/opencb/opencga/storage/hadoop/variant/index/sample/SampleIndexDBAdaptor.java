@@ -414,6 +414,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         }
         // If genotypes are not defined, return ALL columns
         for (String gt : query.getGenotypes()) {
+            scan.addColumn(family, SampleIndexSchema.toGenotypeDiscrepanciesCountColumn());
             scan.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt));
             if (!onlyCount) {
                 if (query.getMendelianError()) {

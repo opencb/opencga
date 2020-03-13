@@ -454,7 +454,7 @@ public class VariantHbaseTestUtils {
                     for (Cell cell : result.rawCells()) {
                         String s = Bytes.toString(CellUtil.cloneQualifier(cell));
                         byte[] value = CellUtil.cloneValue(cell);
-                        if (s.startsWith("_C_")) {
+                        if (s.startsWith("_C_") || s.startsWith("_DC")) {
                             map.put(s, String.valueOf(Bytes.toInt(value)));
                         } else if (s.startsWith("_AC_")) {
                             map.put(s, IntStream.of(IndexUtils.countPerBitToObject(value)).mapToObj(String::valueOf).collect(Collectors.toList()).toString());

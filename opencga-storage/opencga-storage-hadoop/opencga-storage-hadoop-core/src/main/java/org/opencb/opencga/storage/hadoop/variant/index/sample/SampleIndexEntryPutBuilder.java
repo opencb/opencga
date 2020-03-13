@@ -46,12 +46,7 @@ public class SampleIndexEntryPutBuilder {
     public boolean containsVariant(SampleVariantIndexEntry variantIndexEntry) {
         for (Map.Entry<String, SampleIndexGtEntryBuilder> entry : gts.entrySet()) {
 
-            SampleVariantIndexEntry lower = entry.getValue().entries.lower(variantIndexEntry);
-            if (lower != null && lower.getVariant().sameGenomicVariant(variantIndexEntry.getVariant())) {
-                return true;
-            }
-            SampleVariantIndexEntry ceiling = entry.getValue().entries.ceiling(variantIndexEntry);
-            if (ceiling != null && ceiling.getVariant().sameGenomicVariant(variantIndexEntry.getVariant())) {
+            if (entry.getValue().containsVariant(variantIndexEntry)) {
                 return true;
             }
         }
@@ -69,6 +64,9 @@ public class SampleIndexEntryPutBuilder {
     public Put build() {
         byte[] rk = toRowKey(sampleId, chromosome, position);
         Put put = new Put(rk);
+        if (gts.isEmpty()) {
+            return put;
+        }
 
         for (SampleIndexGtEntryBuilder gtBuilder : gts.values()) {
             SortedSet<SampleVariantIndexEntry> gtEntries = gtBuilder.getEntries();
@@ -98,6 +96,21 @@ public class SampleIndexEntryPutBuilder {
             put.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
             put.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt), fileMask);
         }
+        int discrepancies = 0;
+
+        Iterator<SampleIndexGtEntryBuilder> iterator = gts.values().iterator();
+        while (iterator.hasNext()) {
+            SampleIndexGtEntryBuilder gt = iterator.next();
+            iterator.remove();
+            for (SampleIndexGtEntryBuilder otherGt : gts.values()) {
+                for (SampleVariantIndexEntry entry : gt.entries) {
+                    if (otherGt.containsVariant(entry)) {
+                        discrepancies++;
+                    }
+                }
+            }
+        }
+        put.addColumn(family, SampleIndexSchema.toGenotypeDiscrepanciesCountColumn(), Bytes.toBytes(discrepancies));
 
         return put;
     }
@@ -126,6 +139,18 @@ public class SampleIndexEntryPutBuilder {
 
         public boolean add(SampleVariantIndexEntry variantIndexEntry) {
             return entries.add(variantIndexEntry);
+        }
+
+        public boolean containsVariant(SampleVariantIndexEntry variantIndexEntry) {
+            SampleVariantIndexEntry lower = entries.lower(variantIndexEntry);
+            if (lower != null && lower.getVariant().sameGenomicVariant(variantIndexEntry.getVariant())) {
+                return true;
+            }
+            SampleVariantIndexEntry ceiling = entries.ceiling(variantIndexEntry);
+            if (ceiling != null && ceiling.getVariant().sameGenomicVariant(variantIndexEntry.getVariant())) {
+                return true;
+            }
+            return false;
         }
     }
 

@@ -47,6 +47,8 @@ public final class SampleIndexSchema {
     static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
     static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
     static final byte[] GENOTYPE_COUNT_PREFIX_BYTES = Bytes.toBytes(GENOTYPE_COUNT_PREFIX);
+    static final String GENOTYPE_DISCREPANCY_COUNT = META_PREFIX + "DC";
+    static final byte[] GENOTYPE_DISCREPANCY_COUNT_BYTES = Bytes.toBytes(GENOTYPE_DISCREPANCY_COUNT);
 
     static final String ANNOTATION_SUMMARY_PREFIX = META_PREFIX + "A_";
     static final byte[] ANNOTATION_SUMMARY_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_SUMMARY_PREFIX);
@@ -144,6 +146,10 @@ public final class SampleIndexSchema {
 
     public static byte[] toGenotypeColumn(String genotype) {
         return Bytes.toBytes(genotype);
+    }
+
+    public static byte[] toGenotypeDiscrepanciesCountColumn() {
+        return GENOTYPE_DISCREPANCY_COUNT_BYTES;
     }
 
     public static byte[] toGenotypeCountColumn(String genotype) {

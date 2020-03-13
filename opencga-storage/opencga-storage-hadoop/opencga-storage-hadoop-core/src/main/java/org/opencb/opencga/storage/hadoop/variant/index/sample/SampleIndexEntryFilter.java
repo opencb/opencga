@@ -136,6 +136,7 @@ public class SampleIndexEntryFilter {
             }
         }
 
+        // Shortcut. Do not sort or remove duplicates if empty of there are only variants from one genotype
         if (variantsByGt.isEmpty()) {
             return Collections.emptyList();
         } else if (variantsByGt.size() == 1) {
@@ -148,13 +149,14 @@ public class SampleIndexEntryFilter {
             variants.addAll(variantList);
         }
 
-        // Only sort if there are more than one GT and more than one result and if it's either not counting or the sample is MultiFileSample
-        if (gts.size() > 1 && variants.size() > 1 && (!count || query.isMultiFileSample())) {
+        boolean mayHaveDiscrepancies = query.isMultiFileSample() && entry.getDiscrepancies() > 0;
+
+        // Only sort not counting or the sample may have discrepancies
+        if (!count || mayHaveDiscrepancies) {
             // List.sort is much faster than a TreeSet
             variants.sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
 
-            // TODO: Use DISCREPANCIES counter to skip this loop
-            if (query.isMultiFileSample()) {
+            if (mayHaveDiscrepancies) {
                 // Remove possible duplicated elements
                 Iterator<Variant> iterator = variants.iterator();
                 Variant variant = iterator.next();

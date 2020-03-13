@@ -90,6 +90,8 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 } else if (columnStartsWith(cell, ANNOTATION_CLINICAL_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_CLINICAL_PREFIX_BYTES))
                             .setClinicalIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                } else if (columnStartsWith(cell, GENOTYPE_DISCREPANCY_COUNT_BYTES)) {
+                    entry.setDiscrepancies(Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
                 }
             } else {
                 if (columnStartsWith(cell, MENDELIAN_ERROR_COLUMN_BYTES)) {
