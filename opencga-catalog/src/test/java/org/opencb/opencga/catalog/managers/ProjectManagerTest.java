@@ -69,9 +69,9 @@ public class ProjectManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.FULL, null);
 
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
@@ -84,10 +84,10 @@ public class ProjectManagerTest extends GenericTest {
         project3 = catalogManager.getProjectManager().create("p1", "project 1", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getId();
 
-        studyId = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, null, null, null, sessionIdUser).first().getFqn();
-        studyId2 = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, null, null, null, sessionIdUser).first().getFqn();
+        studyId = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser).first().getFqn();
+        studyId2 = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, null, sessionIdUser).first().getFqn();
 
-        studyId3 = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, null, null, null, sessionIdUser2).first().getFqn();
+        studyId3 = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, null, sessionIdUser2).first().getFqn();
     }
 
     @Test
@@ -106,7 +106,7 @@ public class ProjectManagerTest extends GenericTest {
         }
 
         // Create a new study in project2 with some dummy permissions for user
-        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, null, null, null, sessionIdUser2).first().getId();
+        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, null, sessionIdUser2).first().getId();
         catalogManager.getStudyManager().updateGroup(s2, "@members", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user")), sessionIdUser2);
 
@@ -124,7 +124,7 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals("user2@pmp", queryResult.first().getFqn());
 
         // Add permissions to user in a study of user3
-        String s3 = catalogManager.getStudyManager().create(project3, "s3", null, "StudyProject3", "", null, null, null, null, null, null, null, sessionIdUser3).first().getId();
+        String s3 = catalogManager.getStudyManager().create(project3, "s3", null, "StudyProject3", "", null, null, null, null, null, sessionIdUser3).first().getId();
         catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user")), sessionIdUser3);
 

@@ -21,6 +21,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.study.Study;
@@ -206,7 +207,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             // Create default project and study for administrator #1491
             catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
             catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", "Default study",
-                    null, "", "", null, null, Collections.emptyMap(), null, token);
+                    null, null, null, Collections.emptyMap(), null, token);
 
             // Create default JOBS folder for analysis
             MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
@@ -227,9 +228,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                             org.opencb.opencga.core.models.file.File.Bioformat.UNKNOWN,
                             Paths.get(options.jobFolder).normalize().toAbsolutePath().resolve("JOBS").toUri(),
                             "JOBS/", null, TimeUtils.getTime(), TimeUtils.getTime(), "Default jobs folder",
-                            false, 0, FileInternal.initialize(), new Software(), new FileExperiment(), Collections.emptyList(),
-                            Collections.emptyList(), "", study.getRelease(), Collections.emptyList(),
-                            Collections.emptyMap(), Collections.emptyMap());
+                            false, 0, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "",
+                            study.getRelease(), Collections.emptyList(), Collections.emptyMap(), new CustomStatus(),
+                            FileInternal.initialize(), Collections.emptyMap());
                     file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                     file.setTags(Collections.emptyList());
                     file.setId(file.getPath().replace("/", ":"));
@@ -237,7 +238,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                     dbAdaptorFactory.getCatalogFileDBAdaptor().insert(study.getUid(), file, null, QueryOptions.empty());
 
                     // Create physical folder
-                    catalogManager.getCatalogIOManagerFactory().get(file.getUri()).createDirectory(file.getUri(), true);
+                    catalogManager.getIoManagerFactory().get(file.getUri()).createDirectory(file.getUri(), true);
                 } else {
                     logger.info("JOBS/ folder already present for study {}", study.getFqn());
                 }

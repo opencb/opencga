@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.models.file;
 
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,17 +13,19 @@ public class FileLinkParams {
     private String path;
     private String description;
     private List<SmallRelatedFileParams> relatedFiles;
+    private CustomStatusParams status;
     private FileLinkInternalParams internal;
 
     public FileLinkParams() {
     }
 
     public FileLinkParams(String uri, String path, String description, List<SmallRelatedFileParams> relatedFiles,
-                          FileLinkInternalParams internal) {
+                          CustomStatusParams status, FileLinkInternalParams internal) {
         this.uri = uri;
         this.path = path;
         this.description = description;
         this.relatedFiles = relatedFiles;
+        this.status = status;
         this.internal = internal;
     }
 
@@ -30,7 +33,7 @@ public class FileLinkParams {
         return new FileLinkParams(file.getUri().toString(), file.getPath(), file.getDescription(),
                 file.getRelatedFiles() != null
                         ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
-                        : Collections.emptyList(),
+                        : Collections.emptyList(), CustomStatusParams.of(file.getStatus()),
                 new FileLinkInternalParams(file.getInternal().getSampleMap()));
     }
 
@@ -41,6 +44,7 @@ public class FileLinkParams {
         sb.append(", path='").append(path).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", relatedFiles=").append(relatedFiles);
+        sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
         sb.append('}');
         return sb.toString();
@@ -86,6 +90,15 @@ public class FileLinkParams {
 
     public FileLinkParams setRelatedFiles(List<SmallRelatedFileParams> relatedFiles) {
         this.relatedFiles = relatedFiles;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public FileLinkParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 

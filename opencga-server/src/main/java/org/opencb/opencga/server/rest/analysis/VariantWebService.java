@@ -30,9 +30,11 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
@@ -814,6 +816,32 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = MutationalSignatureAnalysisParams.DESCRIPTION) MutationalSignatureAnalysisParams params) {
         return submitJob(MutationalSignatureAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/mendelianError/run")
+    @ApiOperation(value = MendelianErrorAnalysis.DESCRIPTION, response = Job.class)
+    public Response mendelianErrorRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = MendelianErrorAnalysisParams.DESCRIPTION) MendelianErrorAnalysisParams params) {
+        return submitJob(MendelianErrorAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/inferredSex/run")
+    @ApiOperation(value = InferredSexAnalysis.DESCRIPTION, response = Job.class)
+    public Response inferredSexRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = InferredSexAnalysisParams.DESCRIPTION) InferredSexAnalysisParams params) {
+        return submitJob(InferredSexAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST

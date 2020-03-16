@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 
@@ -26,11 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
- *         <p>
- *         Set of samples grouped according to criteria
- */
+
 public class Cohort extends Annotable {
 
     private String id;
@@ -39,39 +36,38 @@ public class Cohort extends Annotable {
     private String creationDate;
     private String modificationDate;
     private String description;
-
     private List<Sample> samples;
 
     private int release;
-
+    private CustomStatus status;
     private CohortInternal internal;
-
     private Map<String, Object> attributes;
-
 
     public Cohort() {
     }
 
     public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples, int release,
                   Map<String, Object> attributes) {
-        this(id, type, creationDate, description, samples, Collections.emptyList(), release, null, attributes);
+        this(id, type, creationDate, description, samples, Collections.emptyList(), release, new CustomStatus(), null, attributes);
     }
 
     public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(id, type, creationDate, description, samples, annotationSetList, release, null, attributes);
+        this(id, type, creationDate, description, samples, annotationSetList, release, new CustomStatus(), null, attributes);
     }
 
     public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
-                  List<AnnotationSet> annotationSets, int release, CohortInternal internal, Map<String, Object> attributes) {
+                  List<AnnotationSet> annotationSets, int release, CustomStatus status, CohortInternal internal,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.type = type;
         this.creationDate = creationDate;
-        this.internal = internal;
         this.description = description;
         this.samples = samples;
         this.annotationSets = annotationSets;
         this.release = release;
+        this.status = status;
+        this.internal = internal;
         this.attributes = attributes;
     }
 
@@ -86,6 +82,7 @@ public class Cohort extends Annotable {
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", release=").append(release);
+        sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append(", annotationSets=").append(annotationSets);
@@ -110,12 +107,13 @@ public class Cohort extends Annotable {
                 && Objects.equals(internal, cohort.internal)
                 && Objects.equals(description, cohort.description)
                 && Objects.equals(samples, cohort.samples)
+                && Objects.equals(status, cohort.status)
                 && Objects.equals(attributes, cohort.attributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, id, type, creationDate, internal, description, samples, release, attributes);
+        return Objects.hash(uuid, id, type, creationDate, internal, description, samples, status, release, attributes);
     }
 
     @Override
@@ -211,6 +209,15 @@ public class Cohort extends Annotable {
         return this;
     }
 
+    public CustomStatus getStatus() {
+        return status;
+    }
+
+    public Cohort setStatus(CustomStatus status) {
+        this.status = status;
+        return this;
+    }
+
     public Map<String, Object> getAttributes() {
         return attributes;
     }
@@ -219,5 +226,4 @@ public class Cohort extends Annotable {
         this.attributes = attributes;
         return this;
     }
-
 }

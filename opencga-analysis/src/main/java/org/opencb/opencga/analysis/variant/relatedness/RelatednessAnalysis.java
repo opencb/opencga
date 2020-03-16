@@ -16,65 +16,61 @@
 
 package org.opencb.opencga.analysis.variant.relatedness;
 
-import org.apache.commons.collections.CollectionUtils;
+import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
-import org.opencb.opencga.analysis.variant.geneticChecks.IBDComputation;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Tool(id = RelatednessAnalysis.ID, resource = Enums.Resource.VARIANT, description = RelatednessAnalysis.DESCRIPTION)
 public class RelatednessAnalysis extends OpenCgaTool {
 
     public static final String ID = "relatedness";
-    public static final String DESCRIPTION = "Compute a score to quantify relatedness between individuals.";
+    public static final String DESCRIPTION = "Compute a score to quantify relatedness between samples.";
 
-    private String study;
-    private List<String> samples;
-    private List<String> families;
+    private String studyId;
+    private List<String> individualIds;
+    private List<String> sampleIds;
     private String method;
-    private String population;
-
-    private List<String> finalSamples;
+    private String minorAlleleFreq;
 
     public RelatednessAnalysis() {
     }
 
     /**
      * Study of the samples.
-     * @param study Study id
+     * @param studyId Study id
      * @return this
      */
-    public RelatednessAnalysis setStudy(String study) {
-        this.study = study;
+    public RelatednessAnalysis setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
-    public List<String> getSamples() {
-        return samples;
+    public List<String> getIndividualIds() {
+        return individualIds;
     }
 
-    public RelatednessAnalysis setSamples(List<String> samples) {
-        this.samples = samples;
+    public RelatednessAnalysis setIndividualIds(List<String> individualIds) {
+        this.individualIds = individualIds;
         return this;
     }
 
-    public List<String> getFamilies() {
-        return families;
+    public List<String> getSampleIds() {
+        return sampleIds;
     }
 
-    public RelatednessAnalysis setFamilies(List<String> families) {
-        this.families = families;
+    public RelatednessAnalysis setSampleIds(List<String> sampleIds) {
+        this.sampleIds = sampleIds;
         return this;
     }
 
@@ -87,48 +83,46 @@ public class RelatednessAnalysis extends OpenCgaTool {
         return this;
     }
 
-    public String getPopulation() {
-        return population;
+    public String getMinorAlleleFreq() {
+        return minorAlleleFreq;
     }
 
-    public RelatednessAnalysis setPopulation(String population) {
-        this.population = population;
+    public RelatednessAnalysis setMinorAlleleFreq(String maf) {
+        this.minorAlleleFreq = maf;
         return this;
     }
 
     @Override
     protected void check() throws Exception {
         super.check();
-        setUpStorageEngineExecutor(study);
+        setUpStorageEngineExecutor(studyId);
 
-        if (StringUtils.isEmpty(study)) {
-            throw new ToolException("Missing study!");
+        if (StringUtils.isEmpty(studyId)) {
+            throw new ToolException("Missing study.");
         }
 
         try {
-            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
+            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
-        // check read permission
-        try {
-            List<String> allSamples = new ArrayList<>();
-            allSamples.addAll(samples);
-            variantStorageManager.checkQueryPermissions(
-                    new Query()
-                            .append(VariantQueryParam.STUDY.key(), study)
-                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), allSamples),
-                    new QueryOptions(),
-                    token);
-        } catch (CatalogException | StorageEngineException e) {
-            throw new ToolException(e);
+        // Check individuals and samples
+        if (CollectionUtils.isNotEmpty(individualIds) && CollectionUtils.isNotEmpty(sampleIds)) {
+            throw new ToolException("Incorrect parameters: only a list of individuals or samples is allowed.");
         }
 
-        // Get samples from families if necessary
-        finalSamples = samples;
-        if (CollectionUtils.isEmpty(finalSamples)) {
-            finalSamples = GeneticChecksUtils.getSamples(study, families, catalogManager, token);
+        if (CollectionUtils.isNotEmpty(individualIds)) {
+            // Check and get individual for each ID
+            sampleIds = new ArrayList<>();
+            for (String individualId : individualIds) {
+                Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
+                sampleIds.add(sample.getId());
+            }
+        }
+
+        if (CollectionUtils.isEmpty(sampleIds)) {
+            throw new ToolException("Member samples not found to execute relatedness analysis.");
         }
     }
 
@@ -138,9 +132,9 @@ public class RelatednessAnalysis extends OpenCgaTool {
         step("relatedness", () -> {
             IBDRelatednessAnalysisExecutor relatednessExecutor = getToolExecutor(IBDRelatednessAnalysisExecutor.class);
 
-            relatednessExecutor.setStudy(study)
-                    .setSamples(finalSamples)
-                    .setPopulation(population)
+            relatednessExecutor.setStudyId(studyId)
+                    .setSampleIds(sampleIds)
+                    .setMinorAlleleFreq(minorAlleleFreq)
                     .execute();
         });
     }

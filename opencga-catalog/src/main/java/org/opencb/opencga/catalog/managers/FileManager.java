@@ -37,8 +37,8 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.*;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.io.IOManager;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.*;
@@ -47,6 +47,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -95,6 +96,7 @@ public class FileManager extends AnnotationSetManager<File> {
     private FileMetadataReader fileMetadataReader;
     private UserManager userManager;
     private StudyManager studyManager;
+    private IOManagerFactory ioManagerFactory;
 
     private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status;"
             + "size[0..214748364800]:10737418240;numSamples[0..10]:1";
@@ -124,11 +126,13 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     FileManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
-        fileMetadataReader = new FileMetadataReader(this.catalogManager);
+                DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
+
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
+        this.ioManagerFactory = ioManagerFactory;
+        this.fileMetadataReader = new FileMetadataReader(this.catalogManager);
     }
 
     @Override
@@ -309,32 +313,6 @@ public class FileManager extends AnnotationSetManager<File> {
             }
             return fileDataResult.first().getUri();
         }
-    }
-
-    @Deprecated
-    public URI getUri(long studyId, String filePath) throws CatalogException {
-        if (StringUtils.isEmpty(filePath)) {
-            URI studyUri = getStudyUri(studyId);
-            return filePath.isEmpty()
-                    ? studyUri
-                    : catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, filePath);
-        }
-
-        List<File> parents = getParents(studyId, filePath, false, INCLUDE_FILE_URI_PATH).getResults();
-
-        for (File parent : parents) {
-            if (parent.getUri() != null) {
-                if (parent.isExternal()) {
-                    throw new CatalogException("Cannot upload files to an external folder");
-                }
-                String relativePath = filePath.replaceFirst(parent.getPath(), "");
-                return Paths.get(parent.getUri()).resolve(relativePath).toUri();
-            }
-        }
-        URI studyUri = getStudyUri(studyId);
-        return filePath.isEmpty()
-                ? studyUri
-                : catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, filePath);
     }
 
     public Study getStudy(File file, String sessionId) throws CatalogException {
@@ -661,6 +639,7 @@ public class FileManager extends AnnotationSetManager<File> {
         file.getInternal().setIndex(ParamUtils.defaultObject(file.getInternal().getIndex(), FileIndex.initialize()));
         file.getInternal().setStatus(ParamUtils.defaultObject(file.getInternal().getStatus(), new FileStatus(FileStatus.READY)));
         file.getInternal().setSampleMap(ParamUtils.defaultObject(file.getInternal().getSampleMap(), HashMap::new));
+        file.setStatus(ParamUtils.defaultObject(file.getStatus(), CustomStatus::new));
         file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap::new));
         file.setAttributes(ParamUtils.defaultObject(file.getAttributes(), HashMap::new));
 
@@ -775,16 +754,21 @@ public class FileManager extends AnnotationSetManager<File> {
             throws CatalogException {
         validateNewFile(study, file, sessionId, false);
 
+        IOManager ioManager;
+        try {
+            ioManager = ioManagerFactory.get(file.getUri());
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(file.getUri(), e);
+        }
         if (file.getType() == File.Type.FILE && StringUtils.isNotEmpty(content)) {
-            CatalogIOManager ioManager = catalogIOManagerFactory.get(file.getUri());
             // We set parents to true because the file has been successfully registered, which means the directories are already registered
             // in catalog
             ioManager.createDirectory(Paths.get(file.getUri()).getParent().toUri(), true);
             InputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
-            ioManager.createFile(file.getUri(), inputStream);
+            ioManager.copy(inputStream, file.getUri());
         }
 
-        if (file.getType() == File.Type.FILE && Files.exists(Paths.get(file.getUri()))) {
+        if (file.getType() == File.Type.FILE && ioManager.exists(file.getUri())) {
             new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), file);
             validateNewSamples(study, file, sessionId);
         }
@@ -794,7 +778,6 @@ public class FileManager extends AnnotationSetManager<File> {
             result = register(study, file, parents, options, sessionId);
         } catch (CatalogException e) {
             if (file.getType() == File.Type.FILE && StringUtils.isNotEmpty(content)) {
-                CatalogIOManager ioManager = catalogIOManagerFactory.getDefault();
                 ioManager.deleteFile(file.getUri());
             }
             throw new CatalogException("Error registering file: " + e.getMessage(), e);
@@ -882,7 +865,12 @@ public class FileManager extends AnnotationSetManager<File> {
             // We obtain the basic studyPath where we will upload the file temporarily
             java.nio.file.Path studyPath = Paths.get(study.getUri());
 
-            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
+            IOManager ioManager;
+            try {
+                ioManager = ioManagerFactory.get(file.getUri());
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(file.getUri(), e);
+            }
             // We attempt to create it first because it may be that the parent directories were not created because they don't contain any
             // files yet
 
@@ -900,14 +888,14 @@ public class FileManager extends AnnotationSetManager<File> {
 
             // Create the temporal directory and upload the file
             try {
-                if (!Files.exists(tempFilePath.getParent())) {
+                if (!ioManager.exists(tempFilePath.getParent().toUri())) {
                     logger.debug("Creating temporal folder: {}", tempFilePath.getParent());
                     ioManager.createDirectory(tempDirectory, true);
                 }
 
                 // Start uploading the file to the temporal directory
                 // Upload the file to a temporary folder
-                Files.copy(fileInputStream, tempFilePath);
+                ioManager.copy(fileInputStream, tempFilePath.toUri());
             } catch (Exception e) {
                 logger.error("Error uploading file {}", file.getName(), e);
 
@@ -923,9 +911,19 @@ public class FileManager extends AnnotationSetManager<File> {
                 // Create the directories where the file will be placed (if they weren't created before)
                 ioManager.createDirectory(Paths.get(file.getUri()).getParent().toUri(), true);
 
-                // Move the file to the final directory
-                String checksum = new org.opencb.opencga.catalog.managers.FileUtils(catalogManager).move(sourceUri, file.getUri(),
-                        overwrite, calculateChecksum);
+                String checksum = null;
+                if (calculateChecksum) {
+                    checksum = ioManager.calculateChecksum(sourceUri);
+                }
+                if (overwrite) {
+                    ioManager.move(sourceUri, file.getUri(), StandardCopyOption.REPLACE_EXISTING);
+                } else {
+                    ioManager.move(sourceUri, file.getUri());
+                }
+                if (calculateChecksum && !checksum.equals(ioManager.calculateChecksum(file.getUri()))) {
+                    throw new CatalogIOException("Error moving file from " + sourceUri + " to " + file.getUri());
+                }
+
                 // Remove the temporal directory
                 ioManager.deleteDirectory(tempDirectory);
 
@@ -1082,14 +1080,21 @@ public class FileManager extends AnnotationSetManager<File> {
                 throw new CatalogException("Path '" + filePath + "' already in use in OpenCGA");
             }
 
+            URI folderDestinyUri = folderDestiny.toUri();
+            IOManager ioManager = null;
+            try {
+                ioManager = ioManagerFactory.get(folderDestinyUri);
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(folderDestinyUri, e);
+            }
             // Check uri-path
             try {
-                if (Files.notExists(folderDestiny)) {
-                    Files.createDirectories(folderDestiny);
+                if (!ioManager.exists(folderDestinyUri)) {
+                    ioManager.createDirectory(folderDestinyUri, true);
                 }
 
-                Files.move(fileSource, folderDestiny.resolve(fileName));
-            } catch (IOException e) {
+                ioManager.move(fileSource.toUri(), folderDestiny.resolve(fileName).toUri(), StandardCopyOption.REPLACE_EXISTING);
+            } catch (CatalogIOException e) {
                 throw new CatalogException("Unexpected error. Could not move file from '" + fileSource + "' to '" + folderDestiny + "'", e);
             }
 
@@ -1525,7 +1530,12 @@ public class FileManager extends AnnotationSetManager<File> {
 
         authorizationManager.checkFilePermission(study.getUid(), folder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
-        CatalogIOManager ioManager = catalogIOManagerFactory.get(folder.getUri());
+        IOManager ioManager;
+        try {
+            ioManager = ioManagerFactory.get(folder.getUri());
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(folder.getUri(), e);
+        }
         Iterator<URI> iterator = ioManager.listFilesStream(folder.getUri()).iterator();
 
         if (filter == null) {
@@ -1617,7 +1627,12 @@ public class FileManager extends AnnotationSetManager<File> {
      */
     private OpenCGAResult physicalDelete(Study study, File file) throws CatalogException {
         URI fileUri = getUri(file);
-        CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
+        IOManager ioManager = null;
+        try {
+            ioManager = ioManagerFactory.get(fileUri);
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(fileUri, e);
+        }
 
         OpenCGAResult result = OpenCGAResult.empty();
         if (file.getType() == File.Type.FILE) {
@@ -2088,14 +2103,14 @@ public class FileManager extends AnnotationSetManager<File> {
                     result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
-        } catch (CatalogException | IOException e) {
+        } catch (CatalogException e) {
             try {
                 OpenCGAResult<File> result = privateLink(study, params, parents, token);
                 auditManager.auditCreate(userId, Enums.Action.LINK, Enums.Resource.FILE, result.first().getId(),
                         result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 return result;
-            } catch (CatalogException | IOException e2) {
+            } catch (CatalogException e2) {
                 auditManager.auditCreate(userId, Enums.Action.LINK, Enums.Resource.FILE, params.getUri(), "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                 new Error(0, "", e2.getMessage())));
@@ -2191,26 +2206,30 @@ public class FileManager extends AnnotationSetManager<File> {
             newPath = parent.resolve(newName).toString();
         }
 
-        CatalogIOManager catalogIOManager;
+        IOManager ioManager = null;
+        try {
+            ioManager = ioManagerFactory.get(file.getUri());
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(file.getUri(), e);
+        }
         URI oldUri = file.getUri();
         URI newUri = Paths.get(oldUri).getParent().resolve(newName).toUri();
 //        URI studyUri = file.getUri();
         boolean isExternal = file.isExternal(); //If the file URI is not null, the file is external located.
-        OpenCGAResult<File> result;
+
         switch (file.getType()) {
             case DIRECTORY:
                 if (!isExternal) {  //Only rename non external files
-                    catalogIOManager = catalogIOManagerFactory.get(oldUri); // TODO? check if something in the subtree is not READY?
-                    if (catalogIOManager.exists(oldUri)) {
-                        catalogIOManager.rename(oldUri, newUri);   // io.move() 1
+                    // TODO? check if something in the subtree is not READY?
+                    if (ioManager.exists(oldUri)) {
+                        ioManager.rename(oldUri, newUri);   // io.move() 1
                     }
                 }
                 fileDBAdaptor.rename(file.getUid(), newPath, newUri.toString(), null);
                 break;
             case FILE:
                 if (!isExternal) {  //Only rename non external files
-                    catalogIOManager = catalogIOManagerFactory.get(oldUri);
-                    catalogIOManager.rename(oldUri, newUri);
+                    ioManager.rename(oldUri, newUri);
                 }
                 fileDBAdaptor.rename(file.getUid(), newPath, newUri.toString(), null);
                 break;
@@ -2240,7 +2259,12 @@ public class FileManager extends AnnotationSetManager<File> {
             authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
 
             URI fileUri = getUri(file);
-            FileContent fileContent = catalogIOManagerFactory.get(fileUri).grep(Paths.get(fileUri), pattern, numLines, ignoreCase);
+            FileContent fileContent;
+            try {
+                fileContent = ioManagerFactory.get(fileUri).grep(Paths.get(fileUri), pattern, numLines, ignoreCase);
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(fileUri, e);
+            }
 
             auditManager.audit(userId, Enums.Action.GREP, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -2254,7 +2278,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<FileContent> head(String studyStr, String fileId, int lines, String token) throws CatalogException {
+    public OpenCGAResult<FileContent> head(String studyStr, String fileId, long offset, int lines, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -2263,6 +2287,7 @@ public class FileManager extends AnnotationSetManager<File> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("fileId", fileId)
+                .append("offset", offset)
                 .append("lines", lines)
                 .append("token", token);
         File file;
@@ -2270,7 +2295,12 @@ public class FileManager extends AnnotationSetManager<File> {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
             authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
             URI fileUri = getUri(file);
-            FileContent fileContent = catalogIOManagerFactory.get(fileUri).head(Paths.get(fileUri), lines);
+            FileContent fileContent;
+            try {
+                fileContent = ioManagerFactory.get(fileUri).head(Paths.get(fileUri), offset, lines);
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(fileUri, e);
+            }
             auditManager.audit(userId, Enums.Action.HEAD_CONTENT, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -2299,7 +2329,12 @@ public class FileManager extends AnnotationSetManager<File> {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
             authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
             URI fileUri = getUri(file);
-            FileContent fileContent = catalogIOManagerFactory.get(fileUri).tail(Paths.get(fileUri), lines);
+            FileContent fileContent;
+            try {
+                fileContent = ioManagerFactory.get(fileUri).tail(Paths.get(fileUri), lines);
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(fileUri, e);
+            }
             auditManager.audit(userId, Enums.Action.TAIL_CONTENT, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -2312,35 +2347,8 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public OpenCGAResult<FileContent> content(String studyStr, String fileId, long offset, int lines, String token)
-            throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
-
-        long startTime = System.currentTimeMillis();
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("fileId", fileId)
-                .append("offset", offset)
-                .append("lines", lines)
-                .append("token", token);
-        File file;
-        try {
-            file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
-            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
-            URI fileUri = getUri(file);
-            FileContent fileContent = catalogIOManagerFactory.get(fileUri).content(Paths.get(fileUri), offset, lines);
-            auditManager.audit(userId, Enums.Action.VIEW_CONTENT, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), 1,
-                    Collections.singletonList(fileContent), 1);
-        } catch (CatalogException e) {
-            auditManager.audit(userId, Enums.Action.VIEW_CONTENT, Enums.Resource.FILE, fileId, "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+    public DataInputStream download(String studyStr, String fileId, String token) throws CatalogException {
+        return download(studyStr, fileId, -1, -1, token);
     }
 
     public DataInputStream download(String studyStr, String fileId, int start, int limit, String token) throws CatalogException {
@@ -2358,7 +2366,12 @@ public class FileManager extends AnnotationSetManager<File> {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
             authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.DOWNLOAD);
             URI fileUri = getUri(file);
-            DataInputStream dataInputStream = catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, start, limit);
+            DataInputStream dataInputStream;
+            try {
+                dataInputStream = ioManagerFactory.get(fileUri).getFileObject(fileUri, start, limit);
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(fileUri, e);
+            }
 
             auditManager.audit(userId, Enums.Action.DOWNLOAD, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -2822,7 +2835,12 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("Cannot delete external files. Use unlink operation instead");
         }
 
-        CatalogIOManager ioManager = catalogIOManagerFactory.get(file.getUri());
+        IOManager ioManager;
+        try {
+            ioManager = ioManagerFactory.get(file.getUri());
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(file.getUri(), e);
+        }
         if (file.getType() == File.Type.FILE) {
             if (checkPermissions) {
                 authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
@@ -3044,9 +3062,9 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // Create the folder in catalog
         File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
-                stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", false, 0, FileInternal.initialize(), null,
-                new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study),
-                Collections.emptyList(), null, null);
+                stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", false, 0, null, new FileExperiment(),
+                Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(), null,
+                new CustomStatus(), FileInternal.initialize(), null);
         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
         fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
@@ -3059,7 +3077,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     private OpenCGAResult<File> privateLink(Study study, FileLinkParams params, boolean parents, String token)
-            throws CatalogException, IOException {
+            throws CatalogException {
         ParamUtils.checkObj(params, "FileLinkParams");
         ParamUtils.checkParameter(params.getUri(), "uri");
         URI uriOrigin;
@@ -3069,7 +3087,12 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException(e.getMessage(), e);
         }
 
-        CatalogIOManager ioManager = catalogIOManagerFactory.get(uriOrigin);
+        IOManager ioManager;
+        try {
+            ioManager = ioManagerFactory.get(uriOrigin);
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(uriOrigin, e);
+        }
         if (!ioManager.exists(uriOrigin)) {
             throw new CatalogIOException("File " + uriOrigin + " does not exist");
         }
@@ -3183,7 +3206,6 @@ public class FileManager extends AnnotationSetManager<File> {
             }
         }
 
-        Path pathOrigin = Paths.get(normalizedUri);
         // This list will contain the list of transformed files detected during the link
         List<File> transformedFiles = new ArrayList<>();
 
@@ -3194,12 +3216,12 @@ public class FileManager extends AnnotationSetManager<File> {
         String finalExternalPathDestinyStr = externalPathDestinyStr;
 
         // Link all the files and folders present in the uri
-        Files.walkFileTree(pathOrigin, new SimpleFileVisitor<Path>() {
+        ioManager.walkFileTree(normalizedUri, new SimpleFileVisitor<URI>() {
             @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-
+            public FileVisitResult preVisitDirectory(URI dir, BasicFileAttributes attrs) throws IOException {
                 try {
-                    String destinyPath = dir.toString().replace(Paths.get(normalizedUri).toString(), finalExternalPathDestinyStr);
+                    String destinyPath = Paths.get(dir).toString().replace(Paths.get(normalizedUri).toString(),
+                            finalExternalPathDestinyStr);
 
                     if (!destinyPath.isEmpty() && !destinyPath.endsWith("/")) {
                         destinyPath += "/";
@@ -3226,11 +3248,13 @@ public class FileManager extends AnnotationSetManager<File> {
                             throw new RuntimeException(e);
                         }
 
-                        File folder = new File(dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                                File.Bioformat.NONE, dir.toUri(), destinyPath, null, TimeUtils.getTime(),
-                                TimeUtils.getTime(), params.getDescription(), true, 0, FileInternal.initialize(), new Software(),
-                                new FileExperiment(), Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study),
-                                Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
+                        File folder = new File(Paths.get(dir).getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
+                                File.Bioformat.NONE, dir, destinyPath, null, TimeUtils.getTime(),
+                                TimeUtils.getTime(), params.getDescription(), true, 0, new Software(), new FileExperiment(),
+                                Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
+                                Collections.emptyMap(),
+                                params.getStatus() != null ? params.getStatus().toCustomStatus() : new CustomStatus(),
+                                FileInternal.initialize(), Collections.emptyMap());
                         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
                         fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
@@ -3251,9 +3275,10 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             @Override
-            public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult visitFile(URI fileUri, BasicFileAttributes attrs) throws IOException {
                 try {
-                    String destinyPath = filePath.toString().replace(Paths.get(normalizedUri).toString(), finalExternalPathDestinyStr);
+                    String destinyPath = Paths.get(fileUri).toString().replace(Paths.get(normalizedUri).toString(),
+                            finalExternalPathDestinyStr);
 
                     if (destinyPath.startsWith("/")) {
                         destinyPath = destinyPath.substring(1);
@@ -3264,7 +3289,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             .append(FileDBAdaptor.QueryParams.PATH.key(), destinyPath);
 
                     if (fileDBAdaptor.count(query).getNumMatches() == 0) {
-                        long size = Files.size(filePath);
+                        long size = ioManager.getFileSize(fileUri);
                         // If the file does not exist, we create it
                         String parentPath = getParentPath(destinyPath);
                         long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
@@ -3281,11 +3306,13 @@ public class FileManager extends AnnotationSetManager<File> {
                             internal.setSampleMap(params.getInternal().getSampleMap());
                         }
 
-                        File subfile = new File(filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                                File.Bioformat.NONE, filePath.toUri(), destinyPath, null, TimeUtils.getTime(),
-                                TimeUtils.getTime(), params.getDescription(), true, size, internal, new Software(),
-                                new FileExperiment(), Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study),
-                                Collections.emptyList(), Collections.emptyMap(), new HashMap<>());
+                        File subfile = new File(Paths.get(fileUri).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
+                                File.Bioformat.NONE, fileUri, destinyPath, null, TimeUtils.getTime(),
+                                TimeUtils.getTime(), params.getDescription(), true, size, new Software(), new FileExperiment(),
+                                Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
+                                Collections.emptyMap(),
+                                params.getStatus() != null ? params.getStatus().toCustomStatus() : new CustomStatus(), internal,
+                                new HashMap<>());
                         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
 
@@ -3307,7 +3334,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             transformedFiles.add(subfile);
                         }
                     } else {
-                        throw new CatalogException("Cannot link the file " + filePath.getFileName().toString()
+                        throw new CatalogException("Cannot link the file " + Paths.get(fileUri).getFileName().toString()
                                 + ". There is already a file in the path " + destinyPath + " with the same name.");
                     }
 
@@ -3319,12 +3346,12 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+            public FileVisitResult visitFileFailed(URI file, IOException exc) throws IOException {
                 return FileVisitResult.SKIP_SUBTREE;
             }
 
             @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            public FileVisitResult postVisitDirectory(URI dir, IOException exc) throws IOException {
                 return FileVisitResult.CONTINUE;
             }
         });
@@ -3352,7 +3379,12 @@ public class FileManager extends AnnotationSetManager<File> {
 
     OpenCGAResult<File> registerFile(Study study, String filePath, URI fileUri, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
+        IOManager ioManager;
+        try {
+            ioManager = ioManagerFactory.get(fileUri);
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(fileUri, e);
+        }
 
         // The file is not registered in Catalog, so we will register it
         long size = ioManager.getFileSize(fileUri);
@@ -3365,9 +3397,9 @@ public class FileManager extends AnnotationSetManager<File> {
 
         File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
-                "", isExternal(study, filePath, fileUri), size, FileInternal.initialize(), new Software(), new FileExperiment(),
-                Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(),
-                Collections.emptyMap(), Collections.emptyMap());
+                "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
+                Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyMap(),
+                new CustomStatus(), FileInternal.initialize(), Collections.emptyMap());
         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
 

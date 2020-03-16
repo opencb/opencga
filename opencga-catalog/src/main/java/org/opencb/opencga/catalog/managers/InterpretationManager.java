@@ -16,18 +16,14 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
+import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -49,9 +45,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.VERSION.key()));
 
     public InterpretationManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                                 Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                                 DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
@@ -208,7 +203,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
             interpretation.setCreationDate(TimeUtils.getTime());
             interpretation.setDescription(ParamUtils.defaultString(interpretation.getDescription(), ""));
-            interpretation.setStatus(org.opencb.biodata.models.clinical.interpretation.Interpretation.Status.NOT_REVIEWED);
+            interpretation.setInternal(ParamUtils.defaultObject(interpretation.getInternal(), InterpretationInternal::new));
+            interpretation.getInternal().setStatus(ParamUtils.defaultObject(interpretation.getInternal().getStatus(),
+                    InterpretationStatus::new));
             interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
 
             interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));

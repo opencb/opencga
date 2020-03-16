@@ -136,7 +136,12 @@ public class FetchAndRegisterTask extends OpenCgaTool {
 
     private void deleteTemporaryFile() throws CatalogIOException {
         if (Files.exists(getOutDir().resolve(fileName))) {
-            catalogManager.getCatalogIOManagerFactory().get(getOutDir().toUri()).deleteFile(getOutDir().resolve(fileName).toUri());
+            URI outDirUri = getOutDir().toUri();
+            try {
+                catalogManager.getIoManagerFactory().get(outDirUri).deleteFile(getOutDir().resolve(fileName).toUri());
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(outDirUri, e);
+            }
         }
     }
 }

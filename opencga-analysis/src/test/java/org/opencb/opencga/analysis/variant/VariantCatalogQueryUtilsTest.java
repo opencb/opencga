@@ -73,13 +73,13 @@ public class VariantCatalogQueryUtilsTest {
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.Type.FULL, null).first();
+        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.AccountType.FULL, null).first();
 
         sessionId = catalog.getUserManager().login("user", "1234");
         catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", "GRCh38", null, sessionId);
-        catalog.getStudyManager().create("p1", "s1", "s1", null, null, null, null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s2", "s2", null, null, null, null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s3", "s3", null, null, null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p1", "s1", "s1", null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p1", "s2", "s2", null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p1", "s3", "s3", null, null, null, null, null, null, null, sessionId);
         file1 = createFile("data/file1.vcf");
         file2 = createFile("data/file2.vcf");
 
@@ -113,7 +113,7 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getCohortManager().create("s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
 
         catalog.getProjectManager().create("p2", "p2", "", "hsapiens", "Homo Sapiens", "GRCh38", null, sessionId);
-        catalog.getStudyManager().create("p2", "p2s2", "s1", null, null, null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p2", "p2s2", "s1", null, null, null, null, null, null, null, sessionId);
 
         Panel panel = new Panel("MyPanel", "MyPanel", 1);
         panel.setGenes(

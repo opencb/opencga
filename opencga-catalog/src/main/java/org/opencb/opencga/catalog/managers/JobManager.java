@@ -32,7 +32,9 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.IOManager;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -50,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -66,17 +69,19 @@ public class JobManager extends ResourceManager<Job> {
     protected static Logger logger = LoggerFactory.getLogger(JobManager.class);
     private UserManager userManager;
     private StudyManager studyManager;
+    private IOManagerFactory ioManagerFactory;
 
     public static final QueryOptions INCLUDE_JOB_IDS = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key(),
                     JobDBAdaptor.QueryParams.STUDY_UID.key()));
 
     JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-               DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+               DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
+        this.ioManagerFactory = ioManagerFactory;
     }
 
     @Override
@@ -247,7 +252,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setUserId(userId);
             job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             job.setOutDir(job.getOutDir() != null && StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir() : null);
-            job.setStudyUuid(study.getUuid());
+            job.setStudy(new JobStudyParam(study.getFqn()));
 
             if (!Arrays.asList(Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.UNREGISTERED,
                     Enums.ExecutionStatus.ERROR).contains(job.getInternal().getStatus().getName())) {
@@ -418,7 +423,7 @@ public class JobManager extends ResourceManager<Job> {
         try {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTION);
 
-            job.setStudyUuid(study.getUuid());
+            job.setStudy(new JobStudyParam(study.getFqn()));
             job.setUserId(userId);
             job.setParams(params);
             job.setPriority(priority);
@@ -788,11 +793,17 @@ public class JobManager extends ResourceManager<Job> {
                 }
             }
 
+            IOManager ioManager;
+            try {
+                ioManager = ioManagerFactory.get(logFile.toUri());
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(logFile.toUri(), e);
+            }
             FileContent fileContent;
             if (tail) {
-                fileContent = catalogIOManagerFactory.get(logFile.toUri()).tail(logFile, lines);
+                fileContent = ioManager.tail(logFile, lines);
             } else {
-                fileContent = catalogIOManagerFactory.get(logFile.toUri()).content(logFile, offset, lines);
+                fileContent = ioManager.head(logFile, offset, lines);
             }
 
             auditManager.audit(userId, Enums.Action.VIEW_LOG, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),

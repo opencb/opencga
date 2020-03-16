@@ -879,7 +879,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case INDIVIDUAL:
                 return dbAdaptorFactory.getCatalogIndividualDBAdaptor().parseQuery(query, rawQuery);
             case JOB:
-                return dbAdaptorFactory.getCatalogJobDBAdaptor().parseQuery(query, rawQuery);
+                return dbAdaptorFactory.getCatalogJobDBAdaptor().parseQuery(query, rawQuery, QueryOptions.empty());
             case FILE:
                 return dbAdaptorFactory.getCatalogFileDBAdaptor().parseQuery(query, rawQuery);
             case SAMPLE:

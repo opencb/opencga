@@ -756,7 +756,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             qOptions.put(QueryOptions.INCLUDE, includeList);
         }
 
-        return new MongoDBIterator<>(userCollection.nativeQuery().aggregate(aggregates, qOptions).iterator(), -1);
+        return userCollection.iterator(aggregates, qOptions);
     }
 
     @Override

@@ -33,9 +33,11 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -77,7 +79,9 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
@@ -197,6 +201,12 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 sampleEligibility();
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 mutationalSignature();
+                break;
+            case MENDELIAN_ERROR_RUN_COMMAND:
+                mendelianError();
+                break;
+            case INFERRED_SEX_RUN_COMMAND:
+                inferredSex();
                 break;
             case RELATEDNESS_RUN_COMMAND:
                 relatedness();
@@ -719,6 +729,33 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .start();
     }
 
+    private void mendelianError() throws Exception {
+        VariantCommandOptions.MendelianErrorCommandOptions cliOptions = variantCommandOptions.mendelianErrorCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        MendelianErrorAnalysis mendelianErrorAnalysis = new MendelianErrorAnalysis();
+        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        mendelianErrorAnalysis.setStudy(cliOptions.study)
+                .setFamilyId(cliOptions.family)
+                .setIndividualId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
+                .start();
+    }
+
+    private void inferredSex() throws Exception {
+        VariantCommandOptions.InferredSexCommandOptions cliOptions = variantCommandOptions.inferredSexCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
+        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        inferredSexAnalysis.setStudyId(cliOptions.study)
+                .setSampleId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
+                .start();
+    }
+
     private void relatedness() throws Exception {
         VariantCommandOptions.RelatednessCommandOptions cliOptions = variantCommandOptions.relatednessCommandOptions;
         ObjectMap params = new ObjectMap();
@@ -726,10 +763,10 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         RelatednessAnalysis relatednessAnalysis = new RelatednessAnalysis();
         relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
-        relatednessAnalysis.setStudy(cliOptions.study)
-                .setSamples(cliOptions.samples)
-                .setFamilies(cliOptions.families)
-                .setPopulation(cliOptions.population)
+        relatednessAnalysis.setStudyId(cliOptions.study)
+                .setIndividualIds(cliOptions.individuals)
+                .setSampleIds(cliOptions.samples)
+                .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
                 .setMethod(cliOptions.method)
                 .start();
     }
@@ -742,9 +779,10 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         GeneticChecksAnalysis geneticChecksAnalysis = new GeneticChecksAnalysis();
         geneticChecksAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         geneticChecksAnalysis.setStudy(cliOptions.study)
-                .setSamples(cliOptions.samples)
-                .setFamilies(cliOptions.families)
-                .setPopulation(cliOptions.population)
+                .setFamilyId(cliOptions.family)
+                .setIndividualId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
+                .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
                 .setRelatednessMethod(cliOptions.relatednessMethod)
                 .start();
     }

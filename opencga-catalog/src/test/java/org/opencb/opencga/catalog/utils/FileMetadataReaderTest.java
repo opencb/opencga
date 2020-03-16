@@ -68,11 +68,11 @@ public class FileMetadataReaderTest {
     public void setUp() throws IOException, CatalogException, URISyntaxException {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, null, null, null, sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/vcf/").toString(), true,
                 null, QueryOptions.empty(), sessionIdUser).first();
 

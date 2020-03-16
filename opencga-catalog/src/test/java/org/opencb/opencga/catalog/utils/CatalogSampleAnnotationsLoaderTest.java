@@ -62,10 +62,10 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
                 .getClass().getResource("/configuration-test.yml").openStream());
         configuration.getAdmin().setAlgorithm("HS256");
         catalogManager = new CatalogManager(configuration);
-        try {
+        if (catalogManager.existsCatalogDB()) {
             String token = catalogManager.getUserManager().loginAsAdmin("admin");
             catalogManager.deleteCatalogDB(token);
-        } catch (Exception ignore) {}
+        }
         catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
 
@@ -74,11 +74,11 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         pedigree = loader.readPedigree(pedFileURL.getPath());
 
         userId = "user1";
-        catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", userId, "", -1L, Account.Type.FULL, null);
+        catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", userId, "", -1L, Account.AccountType.FULL, null);
         sessionId = catalogManager.getUserManager().login(userId, userId);
         Project project = catalogManager.getProjectManager().create("def", "default", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).getResults().get(0);
-        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", "", null, null, null, null, null, null, null, sessionId).getResults().get(0);
+        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", "", null, null, null, null, null, sessionId).getResults().get(0);
         studyId = study.getFqn();
         pedFile = catalogManager.getFileManager().upload(studyId, new FileInputStream(new java.io.File(pedFileURL.toURI())),
                 new File().setPath("data/" + pedFileName), false, true, false, sessionId).first();

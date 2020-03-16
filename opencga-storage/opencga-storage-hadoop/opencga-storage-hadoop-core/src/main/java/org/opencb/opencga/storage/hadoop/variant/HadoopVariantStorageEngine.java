@@ -82,6 +82,7 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHeterozygousQueryExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianErrorQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
@@ -967,6 +968,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 getMetadataManager(), getStorageEngineId(), getOptions(), this, getSampleIndexDBAdaptor(), getDBAdaptor()));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions()));
+        executors.add(new SampleIndexMendelianErrorQueryExecutor(
+                getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SearchIndexVariantQueryExecutor(

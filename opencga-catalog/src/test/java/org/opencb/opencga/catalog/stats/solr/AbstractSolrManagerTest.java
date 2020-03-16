@@ -16,6 +16,7 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclParams;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclParams;
 import org.opencb.opencga.core.models.user.Account;
 
 import java.io.IOException;
@@ -55,11 +56,11 @@ public class AbstractSolrManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("owner", "Owner", "owner@mail.com", PASSWORD, "", null, Account.Type.FULL, null);
-        catalogManager.getUserManager().create("admin1", "Admin", "admin@mail.com", PASSWORD, "", null, Account.Type.GUEST, null);
-        catalogManager.getUserManager().create("user1", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.GUEST, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.GUEST, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.GUEST, null);
+        catalogManager.getUserManager().create("owner", "Owner", "owner@mail.com", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("admin1", "Admin", "admin@mail.com", PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user1", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
 
         sessionIdOwner = catalogManager.getUserManager().login("owner", PASSWORD);
         sessionIdAdmin = catalogManager.getUserManager().login("admin1", PASSWORD);
@@ -69,8 +70,8 @@ public class AbstractSolrManagerTest extends GenericTest {
 
         Project project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdOwner).first();
-        studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", "Done", null, null, null, null,
-                null, null, null, sessionIdOwner).first().getFqn();
+        studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", "Done", null,
+                null, null, null, null, sessionIdOwner).first().getFqn();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("admin1")), sessionIdOwner);
@@ -78,7 +79,7 @@ public class AbstractSolrManagerTest extends GenericTest {
         catalogManager.getStudyManager().createGroup(studyFqn, "@study_deny", Collections.singletonList("user2"), sessionIdAdmin);
 
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "@study_allow",
-                new Study.StudyAclParams(null, AclParams.Action.ADD, "view_only"), sessionIdAdmin);
+                new StudyAclParams(null, AclParams.Action.ADD, "view_only"), sessionIdAdmin);
 
         study = catalogManager.getStudyManager().get("phase1", new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
 

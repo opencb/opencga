@@ -1311,6 +1311,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
+        final String[] acceptedObjectParams = {QueryParams.STATUS.key()};
+        filterObjectParams(parameters, studyParameters, acceptedObjectParams);
+        if (studyParameters.containsKey(QueryParams.STATUS.key())) {
+            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), studyParameters);
+        }
+
         if (parameters.containsKey(QueryParams.URI.key())) {
             URI uri = parameters.get(QueryParams.URI.key(), URI.class);
             studyParameters.put(QueryParams.URI.key(), uri.toString());
@@ -1777,6 +1783,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                                 Status.getPositiveStatus(Status.STATUS_LIST, queryCopy.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case FQN:
                     case UUID:
                     case NAME:
                     case DESCRIPTION:

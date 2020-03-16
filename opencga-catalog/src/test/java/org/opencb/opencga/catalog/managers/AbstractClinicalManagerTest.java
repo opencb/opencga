@@ -49,15 +49,15 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException, URISyntaxException {
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
 
         token = catalogManager.getUserManager().login("user", PASSWORD);
 
         catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
                 new QueryOptions(), token);
 
-        Study study = catalogManager.getStudyManager().create("1000G", "phase1", null, "Phase 1", "Done", null, null, null, null, null,
-                null, null, token).first();
+        Study study = catalogManager.getStudyManager().create("1000G", "phase1", null, "Phase 1", "Done", null, null,
+                null, null, null, token).first();
         studyFqn = study.getFqn();
 
         family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();

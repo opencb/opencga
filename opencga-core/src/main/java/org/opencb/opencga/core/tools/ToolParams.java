@@ -116,4 +116,9 @@ public abstract class ToolParams {
         }
         return internalPropertiesMap;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getName() + toObjectMap().toJson();
+    }
 }

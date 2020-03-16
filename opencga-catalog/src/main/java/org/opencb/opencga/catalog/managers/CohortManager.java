@@ -29,7 +29,6 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
@@ -41,6 +40,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
@@ -79,9 +79,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
 
     CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                  DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                  Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                  DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
@@ -234,6 +233,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         cohort.setInternal(ParamUtils.defaultObject(cohort.getInternal(), CohortInternal::new));
         cohort.getInternal().setStatus(ParamUtils.defaultObject(cohort.getInternal().getStatus(), CohortStatus::new));
         cohort.setSamples(ParamUtils.defaultObject(cohort.getSamples(), Collections::emptyList));
+        cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), CustomStatus::new));
         cohort.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.COHORT));
 
         validateNewAnnotationSets(study.getVariableSets(), cohort.getAnnotationSets());

@@ -42,6 +42,8 @@ public class ParamConstants {
 
     public static final String STUDY_PARAM = "study";
     public static final String STUDY_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the ID or UUID";
+    public static final String OTHER_STUDIES_FLAG = "otherStudies";
+    public static final String OTHER_STUDIES_FLAG_DESCRIPTION = "Flag indicating the entries being queried can belong to any related study, not just the primary one.";
     public static final String STUDIES_PARAM = "studies";
     public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID" + UP_TO_100;
 

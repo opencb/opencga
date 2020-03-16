@@ -22,16 +22,6 @@ public class ProjectOrganism {
     }
 
     @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Organism{");
-        sb.append("scientificName='").append(scientificName).append('\'');
-        sb.append(", commonName='").append(commonName).append('\'');
-        sb.append(", assembly='").append(assembly).append('\'');
-        sb.append('}');
-        return sb.toString();
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -41,12 +31,23 @@ public class ProjectOrganism {
         }
         ProjectOrganism organism = (ProjectOrganism) o;
         return Objects.equals(scientificName, organism.scientificName)
-                && Objects.equals(commonName, organism.commonName) && Objects.equals(assembly, organism.assembly);
+                && Objects.equals(commonName, organism.commonName)
+                && Objects.equals(assembly, organism.assembly);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(scientificName, commonName, assembly);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Organism{");
+        sb.append("scientificName='").append(scientificName).append('\'');
+        sb.append(", commonName='").append(commonName).append('\'');
+        sb.append(", assembly='").append(assembly).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getScientificName() {

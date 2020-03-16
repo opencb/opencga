@@ -103,7 +103,10 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
         VariantQueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
         for (Variant variant : result.getResults()) {
             System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getIssues());
             assertThat(mendelianErrorVariants, hasItem(variant.toString()));
+            assertEquals(1, variant.getStudies().get(0).getIssues().size());
+            assertEquals(child, variant.getStudies().get(0).getIssues().get(0).getSample().getSampleId());
         }
         assertEquals(mendelianErrorVariants.size(), result.getNumResults());
 

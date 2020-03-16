@@ -2,6 +2,7 @@ package org.opencb.opencga.core.models.sample;
 
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,9 @@ public class SampleCreateParams {
     private SampleCollection collection;
     private Boolean somatic;
     private List<Phenotype> phenotypes;
+
+    private CustomStatusParams status;
+
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
 
@@ -22,7 +26,7 @@ public class SampleCreateParams {
     }
 
     public SampleCreateParams(String id, String description, String individualId, SampleProcessing processing, SampleCollection collection,
-                              Boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets,
+                              Boolean somatic, List<Phenotype> phenotypes, CustomStatusParams status, List<AnnotationSet> annotationSets,
                               Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
@@ -31,13 +35,15 @@ public class SampleCreateParams {
         this.collection = collection;
         this.somatic = somatic;
         this.phenotypes = phenotypes;
+        this.status = status;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
 
     public static SampleCreateParams of(Sample sample) {
         return new SampleCreateParams(sample.getId(), sample.getDescription(), sample.getIndividualId(), sample.getProcessing(),
-                sample.getCollection(), sample.isSomatic(), sample.getPhenotypes(), sample.getAnnotationSets(), sample.getAttributes());
+                sample.getCollection(), sample.isSomatic(), sample.getPhenotypes(), CustomStatusParams.of(sample.getStatus()),
+                sample.getAnnotationSets(), sample.getAttributes());
     }
 
     @Override
@@ -57,8 +63,8 @@ public class SampleCreateParams {
     }
 
     public Sample toSample() {
-        return new Sample(getId(), getIndividualId(), getProcessing(), getCollection(), 1, 1, getDescription(),
-                getSomatic(), getPhenotypes(), getAnnotationSets(), null, getAttributes());
+        return new Sample(getId(), getIndividualId(), getProcessing(), getCollection(), 1, 1, getDescription(), getSomatic(),
+                getPhenotypes(), getAnnotationSets(), getStatus() != null ? getStatus().toCustomStatus() : null, null, getAttributes());
     }
 
     public String getId() {
@@ -121,6 +127,15 @@ public class SampleCreateParams {
 
     public SampleCreateParams setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public SampleCreateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 

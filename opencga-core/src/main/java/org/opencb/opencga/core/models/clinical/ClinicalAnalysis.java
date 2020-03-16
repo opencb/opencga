@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.clinical;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -56,12 +57,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private String creationDate;
     private String modificationDate;
     private String dueDate;
-    private ClinicalAnalysisInternal internal;
     private int release;
 
     private List<Comment> comments;
     private List<Alert> alerts;
+    private ClinicalAnalysisInternal internal;
     private Map<String, Object> attributes;
+
+    private CustomStatus status;
 
     public enum Type {
         SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
@@ -99,7 +102,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
                             Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
                             List<Interpretation> interpretations, Enums.Priority priority, ClinicalAnalysisAnalyst analyst,
                             List<String> flags, String creationDate, String dueDate, List<Comment> comments, List<Alert> alerts,
-                            ClinicalAnalysisInternal internal, int release, Map<String, Object> attributes) {
+                            int release, ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -116,10 +119,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.creationDate = creationDate;
         this.dueDate = dueDate;
         this.comments = comments;
-        this.internal = internal;
         this.release = release;
         this.alerts = alerts;
+        this.internal = internal;
         this.attributes = attributes;
+        this.status = status;
     }
 
     @Override
@@ -142,11 +146,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
-        sb.append(", internal=").append(internal);
         sb.append(", release=").append(release);
         sb.append(", comments=").append(comments);
         sb.append(", alerts=").append(alerts);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -361,4 +366,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    public CustomStatus getStatus() {
+        return status;
+    }
+
+    public ClinicalAnalysis setStatus(CustomStatus status) {
+        this.status = status;
+        return this;
+    }
 }

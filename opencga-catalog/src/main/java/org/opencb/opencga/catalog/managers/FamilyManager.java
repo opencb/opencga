@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
@@ -48,6 +47,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -84,8 +84,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key()));
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                  DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                  DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
@@ -227,6 +227,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             family.setInternal(ParamUtils.defaultObject(family.getInternal(), FamilyInternal::new));
             family.getInternal().setStatus(new FamilyStatus());
             family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
+            family.setStatus(ParamUtils.defaultObject(family.getStatus(), CustomStatus::new));
             family.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             family.setVersion(1);
             family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));

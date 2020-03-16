@@ -711,7 +711,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         String vcfId = null;
         // Matchup variant files, if missing
         if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
-            catalogManager.getFileManager().matchUpVariantFiles(null, Collections.singletonList(file), sessionId);
+            catalogManager.getFileManager().matchUpVariantFiles(study, Collections.singletonList(file), sessionId);
         }
         for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
             if (FileRelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {

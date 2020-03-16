@@ -6,21 +6,30 @@ import java.util.List;
 
 public class RelatednessAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Relatedness analysis params";
+    private List<String> individuals;
     private List<String> samples;
-    private List<String> families;
+    private String minorAlleleFreq;
     private String method;
-    private String population;
     private String outdir;
 
     public RelatednessAnalysisParams() {
     }
 
-    public RelatednessAnalysisParams(List<String> samples, List<String> families, String method, String population, String outdir) {
+    public RelatednessAnalysisParams(List<String> individuals, List<String> samples, String minorAlleleFreq, String method, String outdir) {
+        this.individuals = individuals;
         this.samples = samples;
-        this.families = families;
+        this.minorAlleleFreq = minorAlleleFreq;
         this.method = method;
-        this.population = population;
         this.outdir = outdir;
+    }
+
+    public List<String> getIndividuals() {
+        return individuals;
+    }
+
+    public RelatednessAnalysisParams setIndividuals(List<String> individuals) {
+        this.individuals = individuals;
+        return this;
     }
 
     public List<String> getSamples() {
@@ -32,12 +41,12 @@ public class RelatednessAnalysisParams extends ToolParams {
         return this;
     }
 
-    public List<String> getFamilies() {
-        return families;
+    public String getMinorAlleleFreq() {
+        return minorAlleleFreq;
     }
 
-    public RelatednessAnalysisParams setFamilies(List<String> families) {
-        this.families = families;
+    public RelatednessAnalysisParams setMinorAlleleFreq(String minorAlleleFreq) {
+        this.minorAlleleFreq = minorAlleleFreq;
         return this;
     }
 
@@ -50,13 +59,8 @@ public class RelatednessAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getPopulation() {
-        return population;
-    }
-
-    public RelatednessAnalysisParams setPopulation(String population) {
-        this.population = population;
-        return this;
+    public String getOutdir() {
+        return outdir;
     }
 
     public RelatednessAnalysisParams setOutdir(String outdir) {

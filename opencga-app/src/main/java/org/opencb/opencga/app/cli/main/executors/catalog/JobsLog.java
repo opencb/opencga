@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
+import com.google.common.base.Stopwatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
@@ -33,6 +34,7 @@ public class JobsLog {
     private final int maxLines;
     private final PrintStream out;
     private final boolean logAllRunningJobs;
+    private final boolean logMultipleJobs;
     private String lastFile = null;
 
     public JobsLog(OpenCGAClient openCGAClient, JobCommandOptions.LogCommandOptions c, PrintStream out) {
@@ -50,10 +52,11 @@ public class JobsLog {
         }
 
         logAllRunningJobs = c.job.equalsIgnoreCase(RUNNING);
+        logMultipleJobs = logAllRunningJobs || c.job.contains(",");
     }
 
     public void run() throws ClientException, InterruptedException {
-        if (logAllRunningJobs) {
+        if (logMultipleJobs) {
             openCGAClient.getJobClient()
                     .search(new ObjectMap(ParamConstants.STUDY_PARAM, c.study)
                             .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), RUNNING)
@@ -66,7 +69,13 @@ public class JobsLog {
             }
         }
 
+        Stopwatch timer = Stopwatch.createStarted();
         while (!jobs.isEmpty()) {
+            if (timer.elapsed(TimeUnit.MINUTES) > 5) {
+                openCGAClient.refresh();
+                timer.reset().start();
+            }
+
             Iterator<String> iterator = jobs.keySet().iterator();
             while (iterator.hasNext()) {
                 String job = iterator.next();
@@ -76,17 +85,30 @@ public class JobsLog {
                     printedLines.remove(job);
                 }
             }
-            if (!jobs.isEmpty()) {
-                logger.debug("Sleep");
-                Thread.sleep(TimeUnit.SECONDS.toMillis(c.delay));
-                if (logAllRunningJobs) {
+            if (logAllRunningJobs) {
+                final int waitForNewJobsSecs = 60; // Seconds to wait to find new jobs, if list is empty
+                int i = 0;
+
+                // Update list of running jobs
+                do {
                     openCGAClient.getJobClient()
                             .search(new ObjectMap(ParamConstants.STUDY_PARAM, c.study)
                                     .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), RUNNING)
                                     .append(QueryOptions.INCLUDE, "id"))
                             .allResults()
                             .forEach(job -> jobs.putIfAbsent(job.getId(), null));
-                }
+                    i++;
+                    if (jobs.isEmpty()) {
+                        // Sleep if there are jobs left.
+                        logger.debug("Sleep");
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                    }
+                } while (jobs.isEmpty() && i < waitForNewJobsSecs);
+            }
+            if (!jobs.isEmpty()) {
+                // Sleep if there are jobs left.
+                logger.debug("Sleep");
+                Thread.sleep(TimeUnit.SECONDS.toMillis(c.delay));
             }
         }
     }
@@ -102,16 +124,17 @@ public class JobsLog {
                 // First file content
                 if (c.tailLines == null || c.tailLines < 0) {
                     // Undefined tail. Print all.
-                    params.append("tail", false).append("lines", BATCH_SIZE);
+                    params.append("lines", BATCH_SIZE);
+                    content = openCGAClient.getJobClient().headLog(jobId, params).firstResult();
                 } else {
-                    params.append("tail", true).append("lines", c.tailLines);
+                    params.append("lines", c.tailLines);
+                    content = openCGAClient.getJobClient().tailLog(jobId, params).firstResult();
                 }
             } else {
                 params.put("lines", Math.min(maxLines - printedLines.get(), BATCH_SIZE));
-                params.put("tail", false); // Only use tail for the first batch
                 params.put("offset", content.getOffset());
+                content = openCGAClient.getJobClient().headLog(jobId, params).firstResult();
             }
-            content = openCGAClient.getJobClient().log(jobId, params).firstResult();
             jobs.put(jobId, content);
             printedLines.addAndGet(printContent(content));
 
@@ -143,7 +166,7 @@ public class JobsLog {
 
     private int printContent(FileContent content) {
         if (!content.getContent().isEmpty()) {
-            if (logAllRunningJobs) {
+            if (logMultipleJobs) {
                 String fileId = content.getFileId().substring(content.getFileId().lastIndexOf("/") + 1);
                 if (!fileId.equals(lastFile)) {
                     out.println();

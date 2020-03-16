@@ -23,8 +23,8 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -47,14 +47,11 @@ public class Study extends PrivateFields {
     private String creationDate;
     private String modificationDate;
     private String description;
-    private StudyInternal internal;
     private long size;
     private String fqn;
 
     private StudyNotification notification;
-
     private List<Group> groups;
-
     private List<File> files;
     private List<Job> jobs;
     private List<Individual> individuals;
@@ -63,17 +60,15 @@ public class Study extends PrivateFields {
     private List<Cohort> cohorts;
     private List<Panel> panels;
     private List<ClinicalAnalysis> clinicalAnalyses;
-
     private List<VariableSet> variableSets;
-
     private Map<Enums.Entity, List<PermissionRule>> permissionRules;
-
     private URI uri;
-
     private int release;
 
-    private Map<String, Object> attributes;
+    private CustomStatus status;
 
+    private StudyInternal internal;
+    private Map<String, Object> attributes;
 
     public Study() {
     }
@@ -81,14 +76,14 @@ public class Study extends PrivateFields {
     public Study(String name, String alias, String description, StudyInternal internal, URI uri, int release) {
         this(alias, name, alias, TimeUtils.getTime(), description, null, 0, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new StudyInternal(new Status()), new HashMap<>(), uri, release, new HashMap<>());
+                new LinkedList<>(), new HashMap<>(), uri, release, new CustomStatus(), internal, new HashMap<>());
     }
 
     public Study(String id, String name, String alias, String creationDate, String description, StudyNotification notification, long size,
                  List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
                  List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
-                 List<VariableSet> variableSets, StudyInternal internal, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri,
-                 int release, Map<String, Object> attributes) {
+                 List<VariableSet> variableSets, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release,
+                 CustomStatus status, StudyInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -109,6 +104,7 @@ public class Study extends PrivateFields {
         this.variableSets = ObjectUtils.defaultIfNull(variableSets, new ArrayList<>());
         this.permissionRules = ObjectUtils.defaultIfNull(permissionRules, new HashMap<>());
         this.uri = uri;
+        this.status = status;
         this.release = release;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
@@ -123,7 +119,6 @@ public class Study extends PrivateFields {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", internal=").append(internal);
         sb.append(", size=").append(size);
         sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", notification=").append(notification);
@@ -140,6 +135,8 @@ public class Study extends PrivateFields {
         sb.append(", permissionRules=").append(permissionRules);
         sb.append(", uri=").append(uri);
         sb.append(", release=").append(release);
+        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -367,6 +364,15 @@ public class Study extends PrivateFields {
         return this;
     }
 
+    public CustomStatus getStatus() {
+        return status;
+    }
+
+    public Study setStatus(CustomStatus status) {
+        this.status = status;
+        return this;
+    }
+
     public Map<String, Object> getAttributes() {
         return attributes;
     }
@@ -374,49 +380,6 @@ public class Study extends PrivateFields {
     public Study setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
-    }
-
-    // Acl params to communicate the WS and the sample manager
-    public static class StudyAclParams extends AclParams {
-
-        private String template;
-
-        public StudyAclParams() {
-        }
-
-        public StudyAclParams(String permissions, Action action, String template) {
-            super(permissions, action);
-            this.template = template;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("StudyAclParams{");
-            sb.append("permissions='").append(permissions).append('\'');
-            sb.append(", action=").append(action);
-            sb.append(", template='").append(template).append('\'');
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getTemplate() {
-            return template;
-        }
-
-        public StudyAclParams setTemplate(String template) {
-            this.template = template;
-            return this;
-        }
-
-        public StudyAclParams setPermissions(String permissions) {
-            super.setPermissions(permissions);
-            return this;
-        }
-
-        public StudyAclParams setAction(Action action) {
-            super.setAction(action);
-            return this;
-        }
     }
 
 }

@@ -22,6 +22,7 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,8 +50,9 @@ public class Sample extends Annotable {
     private String individualId;
     private List<String> fileIds;
 
-    private SampleInternal internal;
+    private CustomStatus status;
 
+    private SampleInternal internal;
     private Map<String, Object> attributes;
 
 
@@ -58,11 +60,12 @@ public class Sample extends Annotable {
     }
 
     public Sample(String id, String individualId, String description, int release) {
-        this(id, individualId, null, null, release, 1, description, false, new ArrayList<>(), new ArrayList<>(), null, new HashMap<>());
+        this(id, individualId, null, null, release, 1, description, false, new ArrayList<>(), new ArrayList<>(), new CustomStatus(), null,
+                new HashMap<>());
     }
 
     public Sample(String id, String individualId, SampleProcessing processing, SampleCollection collection, int release, int version,
-                  String description, boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets,
+                  String description, boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets, CustomStatus status,
                   SampleInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.processing = processing;
@@ -75,6 +78,7 @@ public class Sample extends Annotable {
         this.phenotypes = phenotypes;
         this.annotationSets = annotationSets;
         this.individualId = individualId;
+        this.status = status;
         this.internal = internal;
         this.attributes = attributes;
     }
@@ -86,7 +90,6 @@ public class Sample extends Annotable {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", processing=").append(processing);
         sb.append(", collection=").append(collection);
-        sb.append(", individualId='").append(individualId).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -94,6 +97,9 @@ public class Sample extends Annotable {
         sb.append(", description='").append(description).append('\'');
         sb.append(", somatic=").append(somatic);
         sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", individualId='").append(individualId).append('\'');
+        sb.append(", fileIds=").append(fileIds);
+        sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append(", annotationSets=").append(annotationSets);
@@ -103,12 +109,15 @@ public class Sample extends Annotable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         Sample sample = (Sample) o;
-
         return new EqualsBuilder()
                 .append(release, sample.release)
                 .append(version, sample.version)
@@ -122,6 +131,7 @@ public class Sample extends Annotable {
                 .append(modificationDate, sample.modificationDate)
                 .append(description, sample.description)
                 .append(phenotypes, sample.phenotypes)
+                .append(status, sample.status)
                 .append(internal, sample.internal)
                 .append(attributes, sample.attributes)
                 .isEquals();
@@ -142,6 +152,7 @@ public class Sample extends Annotable {
                 .append(description)
                 .append(somatic)
                 .append(phenotypes)
+                .append(status)
                 .append(internal)
                 .append(attributes)
                 .toHashCode();
@@ -273,6 +284,15 @@ public class Sample extends Annotable {
 
     public Sample setFileIds(List<String> fileIds) {
         this.fileIds = fileIds;
+        return this;
+    }
+
+    public CustomStatus getStatus() {
+        return status;
+    }
+
+    public Sample setStatus(CustomStatus status) {
+        this.status = status;
         return this;
     }
 

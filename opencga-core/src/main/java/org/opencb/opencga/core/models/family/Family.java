@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2015-2017 OpenCB
  *
@@ -22,6 +23,7 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 
 import java.util.ArrayList;
@@ -37,19 +39,19 @@ public class Family extends Annotable {
     private String id;
     private String name;
     private String uuid;
-
+    private List<Individual> members;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
-    private List<Individual> members;
 
     private String creationDate;
     private String modificationDate;
-    private FamilyInternal internal;
     private int expectedSize;
     private String description;
 
     private int release;
     private int version;
+    private CustomStatus status;
+    private FamilyInternal internal;
     private Map<String, Object> attributes;
 
     public Family() {
@@ -57,13 +59,13 @@ public class Family extends Annotable {
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String description, int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), description, null, expectedSize, -1, 1, annotationSets,
-                attributes);
+        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), description, expectedSize, -1, 1, annotationSets,
+                new CustomStatus(), null, attributes);
     }
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
-                  String creationDate, String description, FamilyInternal internal, int expectedSize, int release, int version,
-                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                  String creationDate, String description, int expectedSize, int release, int version, List<AnnotationSet> annotationSets,
+                  CustomStatus status, FamilyInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
@@ -74,8 +76,9 @@ public class Family extends Annotable {
         this.description = description;
         this.release = release;
         this.version = version;
-        this.internal = internal;
         this.annotationSets = ObjectUtils.defaultIfNull(annotationSets, new ArrayList<>());
+        this.status = status;
+        this.internal = internal;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
@@ -85,15 +88,17 @@ public class Family extends Annotable {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", members=").append(members);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
-        sb.append(", members=").append(members);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", description='").append(description).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
+        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
@@ -226,6 +231,15 @@ public class Family extends Annotable {
 
     public Family setVersion(int version) {
         this.version = version;
+        return this;
+    }
+
+    public CustomStatus getStatus() {
+        return status;
+    }
+
+    public Family setStatus(CustomStatus status) {
+        this.status = status;
         return this;
     }
 

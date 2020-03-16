@@ -21,6 +21,7 @@ import org.opencb.biodata.models.commons.Software;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.net.URI;
@@ -60,26 +61,21 @@ public class File extends Annotable {
     private int release;
     private String creationDate;
     private String modificationDate;
-
     private String description;
     private boolean external;
-
-    private FileInternal internal;
 
     private long size;
     private Software software;
     private FileExperiment experiment;
     private List<Sample> samples;
-
     private String jobId;
-
     private List<String> tags;
-
     private List<FileRelatedFile> relatedFiles;
 
     private Map<String, Object> stats;
+    private CustomStatus status;
+    private FileInternal internal;
     private Map<String, Object> attributes;
-
 
     public File() {
     }
@@ -87,21 +83,21 @@ public class File extends Annotable {
     public File(String name, Type type, Format format, Bioformat bioformat, String path, URI uri, String description, FileInternal internal,
                 long size, int release) {
         this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                false, size, internal, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", release,
-                Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
+                false, size, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", release,
+                Collections.emptyList(), Collections.emptyMap(), new CustomStatus(), internal, Collections.emptyMap());
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileInternal internal, long size,
                 List<Sample> samples, Software software, Map<String, Object> stats, Map<String, Object> attributes) {
         this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                false, size, internal, software, new FileExperiment(), samples, Collections.emptyList(), "", -1, Collections.emptyList(),
-                stats, attributes);
+                false, size, software, new FileExperiment(), samples, Collections.emptyList(), "", -1, Collections.emptyList(), stats,
+                new CustomStatus(), internal, attributes);
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum, String creationDate,
-                String modificationDate, String description, boolean external, long size, FileInternal internal, Software software,
-                FileExperiment experiment, List<Sample> samples, List<FileRelatedFile> relatedFiles, String jobId, int release,
-                List<AnnotationSet> annotationSets, Map<String, Object> stats, Map<String, Object> attributes) {
+                String modificationDate, String description, boolean external, long size, Software software, FileExperiment experiment,
+                List<Sample> samples, List<FileRelatedFile> relatedFiles, String jobId, int release, List<AnnotationSet> annotationSets,
+                Map<String, Object> stats, CustomStatus status, FileInternal internal, Map<String, Object> attributes) {
         this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
         this.type = type;
@@ -125,6 +121,7 @@ public class File extends Annotable {
         this.annotationSets = annotationSets;
         this.jobId = jobId;
         this.stats = stats;
+        this.status = status;
         this.attributes = attributes;
     }
 
@@ -229,7 +226,6 @@ public class File extends Annotable {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", external=").append(external);
-        sb.append(", internal=").append(internal);
         sb.append(", size=").append(size);
         sb.append(", software=").append(software);
         sb.append(", experiment=").append(experiment);
@@ -238,7 +234,10 @@ public class File extends Annotable {
         sb.append(", tags=").append(tags);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", stats=").append(stats);
+        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
     }
@@ -468,6 +467,15 @@ public class File extends Annotable {
         return this;
     }
 
+    public CustomStatus getStatus() {
+        return status;
+    }
+
+    public File setStatus(CustomStatus status) {
+        this.status = status;
+        return this;
+    }
+
     public Map<String, Object> getAttributes() {
         return attributes;
     }
@@ -476,5 +484,4 @@ public class File extends Annotable {
         this.attributes = attributes;
         return this;
     }
-
 }

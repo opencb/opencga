@@ -65,7 +65,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
             OpenCGAResult<User> queryResult = catalogManager.getUserManager()
                     .create(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null,
-                            Account.Type.GUEST, null);
+                            Account.AccountType.GUEST, null);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -240,7 +240,7 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{user}/configs/filters/update")
+    @Path("/{user}/filters/update")
     @ApiOperation(value = "Add or remove a custom user filter", response = UserFilter.class,
             notes = "Users normally try to query the data using the same filters most of the times. The aim of this WS is to allow "
                     + "storing as many different filters as the user might want in order not to type the same filters.")
@@ -255,10 +255,10 @@ public class UserWSServer extends OpenCGAWSServer {
                 action = ParamUtils.BasicUpdateAction.ADD;
             }
             if (action == ParamUtils.BasicUpdateAction.ADD) {
-                return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(),
-                        params.getBioformat(), params.getQuery(), params.getOptions(), token));
+                return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getId(), params.getDescription(),
+                        params.getResource(), params.getQuery(), params.getOptions(), token));
             } else {
-                return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, params.getName(), token));
+                return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, params.getId(), token));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -266,14 +266,14 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{user}/configs/filters/{name}/update")
+    @Path("/{user}/filters/{id}/update")
     @ApiOperation(value = "Update a custom filter", response = UserFilter.class)
     public Response updateFilterPOST(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-            @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
+            @ApiParam(value = "Filter id", required = true) @PathParam("id") String id,
             @ApiParam(name = "params", value = "Filter parameters", required = true) FilterUpdateParams params) {
         try {
-            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name,
+            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, id,
                     new ObjectMap(getUpdateObjectMapper().writeValueAsString(params)), token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -281,15 +281,15 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{user}/configs/filters")
+    @Path("/{user}/filters")
     @ApiOperation(value = "Fetch user filters", response = UserFilter.class)
     public Response getFilterConfig(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-            @ApiParam(value = "Filter name. If provided, it will only fetch the specified filter") @QueryParam("name") String name) {
+            @ApiParam(value = "Filter id. If provided, it will only fetch the specified filter") @QueryParam("id") String id) {
         try {
             ParamUtils.checkIsSingleID(userId);
-            if (StringUtils.isNotEmpty(name)) {
-                return createOkResponse(catalogManager.getUserManager().getFilter(userId, name, token));
+            if (StringUtils.isNotEmpty(id)) {
+                return createOkResponse(catalogManager.getUserManager().getFilter(userId, id, token));
             } else {
                 return createOkResponse(catalogManager.getUserManager().getAllFilters(userId, token));
             }

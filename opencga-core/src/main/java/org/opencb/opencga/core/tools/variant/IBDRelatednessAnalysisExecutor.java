@@ -1,42 +1,43 @@
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.List;
 
 public abstract class IBDRelatednessAnalysisExecutor extends OpenCgaToolExecutor {
 
-    private String study;
-    private List<String> samples;
-    private String population;
+    private String studyId;
+    private List<String> sampleIds;
+    private String minorAlleleFreq;
 
     public IBDRelatednessAnalysisExecutor() {
     }
 
-    public String getStudy() {
-        return study;
+    public String getStudyId() {
+        return studyId;
     }
 
-    public IBDRelatednessAnalysisExecutor setStudy(String study) {
-        this.study = study;
+    public IBDRelatednessAnalysisExecutor setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 
-    public List<String> getSamples() {
-        return samples;
+    public List<String> getSampleIds() {
+        return sampleIds;
     }
 
-    public IBDRelatednessAnalysisExecutor setSamples(List<String> samples) {
-        this.samples = samples;
+    public IBDRelatednessAnalysisExecutor setSampleIds(List<String> sampleIds) {
+        this.sampleIds = sampleIds;
         return this;
     }
 
-    public String getPopulation() {
-        return population;
+    public String getMinorAlleleFreq() {
+        return minorAlleleFreq;
     }
 
-    public IBDRelatednessAnalysisExecutor setPopulation(String population) {
-        this.population = population;
+    public IBDRelatednessAnalysisExecutor setMinorAlleleFreq(String minorAlleleFreq) {
+        this.minorAlleleFreq = minorAlleleFreq;
         return this;
     }
 }

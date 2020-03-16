@@ -24,9 +24,9 @@ import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
 import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
 import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.sample.Sample;
 
@@ -55,13 +55,15 @@ public class Individual extends Annotable {
     private int version;
     private String creationDate;
     private String modificationDate;
-    private IndividualInternal internal;
     private LifeStatus lifeStatus;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
     private List<Sample> samples;
     private boolean parentalConsanguinity;
 
+    private CustomStatus status;
+
+    private IndividualInternal internal;
     private Map<String, Object> attributes;
 
     public Individual() {
@@ -71,7 +73,7 @@ public class Individual extends Annotable {
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, new Individual(), new Individual(), new Multiples(), new Location(), sex, null, ethnicity, population, "", release,
                 1, TimeUtils.getTime(), LifeStatus.UNKNOWN, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
-                false, new IndividualInternal(new Status()), annotationSets, attributes);
+                false, annotationSets, new CustomStatus(), new IndividualInternal(new Status()), attributes);
     }
 
     public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
@@ -80,14 +82,14 @@ public class Individual extends Annotable {
                       List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders) {
         this(id, name, father, mother, multiples, location, sex, karyotypicSex, ethnicity, population, dateOfBirth, release, 1,
                 TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples, parentalConsanguinity,
-                new IndividualInternal(new Status()), annotationSets, Collections.emptyMap());
+                annotationSets, new CustomStatus(), new IndividualInternal(new Status()), Collections.emptyMap());
     }
 
     public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, IndividualPopulation population, String dateOfBirth, int release,
                       int version, String creationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
-                      List<Sample> samples, boolean parentalConsanguinity, IndividualInternal internal, List<AnnotationSet> annotationSets,
-                      Map<String, Object> attributes) {
+                      List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
+                      IndividualInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = ObjectUtils.defaultIfNull(father, new Individual());
@@ -107,8 +109,9 @@ public class Individual extends Annotable {
         this.disorders = ObjectUtils.defaultIfNull(disorders, new ArrayList<>());
         this.samples = ObjectUtils.defaultIfNull(samples, new ArrayList<>());
         this.parentalConsanguinity = parentalConsanguinity;
-        this.internal = internal;
         this.annotationSets = annotationSets;
+        this.status = status;
+        this.internal = internal;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
@@ -131,12 +134,13 @@ public class Individual extends Annotable {
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", internal=").append(internal);
         sb.append(", lifeStatus=").append(lifeStatus);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
         sb.append(", samples=").append(samples);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
+        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -147,9 +151,11 @@ public class Individual extends Annotable {
         if (this == o) {
             return true;
         }
+
         if (!(o instanceof Individual)){
             return false;
         }
+
         Individual that = (Individual) o;
         return release == that.release
                 && version == that.version
@@ -166,17 +172,18 @@ public class Individual extends Annotable {
                 && Objects.equals(population, that.population)
                 && Objects.equals(dateOfBirth, that.dateOfBirth)
                 && Objects.equals(creationDate, that.creationDate)
-                && Objects.equals(internal, that.internal)
                 && lifeStatus == that.lifeStatus
                 && Objects.equals(phenotypes, that.phenotypes)
                 && Objects.equals(samples, that.samples)
+                && Objects.equals(status, that.status)
+                && Objects.equals(internal, that.internal)
                 && Objects.equals(attributes, that.attributes);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(uuid, id, name, father, mother, multiples, sex, karyotypicSex, ethnicity, population, dateOfBirth, release,
-                version, creationDate, lifeStatus, internal, phenotypes, samples, parentalConsanguinity, attributes);
+                version, creationDate, lifeStatus, internal, phenotypes, samples, parentalConsanguinity, status, attributes);
     }
 
     @Override
@@ -386,6 +393,15 @@ public class Individual extends Annotable {
 
     public Individual setParentalConsanguinity(boolean parentalConsanguinity) {
         this.parentalConsanguinity = parentalConsanguinity;
+        return this;
+    }
+
+    public CustomStatus getStatus() {
+        return status;
+    }
+
+    public Individual setStatus(CustomStatus status) {
+        this.status = status;
         return this;
     }
 

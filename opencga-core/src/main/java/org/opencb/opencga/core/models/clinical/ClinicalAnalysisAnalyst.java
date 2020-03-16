@@ -3,12 +3,12 @@ package org.opencb.opencga.core.models.clinical;
 import org.opencb.opencga.core.common.TimeUtils;
 
 public class ClinicalAnalysisAnalyst {
-    private String assignedBy;
+
     private String assignee;
+    private String assignedBy;
     private String date;
 
     public ClinicalAnalysisAnalyst() {
-        this("", "");
     }
 
     public ClinicalAnalysisAnalyst(String assignee, String assignedBy) {
@@ -19,7 +19,7 @@ public class ClinicalAnalysisAnalyst {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ClinicalAnalyst{");
+        final StringBuilder sb = new StringBuilder("ClinicalAnalysisAnalyst{");
         sb.append("assignee='").append(assignee).append('\'');
         sb.append(", assignedBy='").append(assignedBy).append('\'');
         sb.append(", date='").append(date).append('\'');

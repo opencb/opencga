@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 
 import java.util.Objects;
@@ -14,7 +15,19 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
     private final short fileIndex;
 
     public SampleVariantIndexEntry(Variant variant, short fileIndex) {
-        this.variant = variant;
+        // Copy variant to allow GC discard the input variant if needed.
+        this.variant = new Variant(new VariantAvro(
+                null, null,
+                variant.getChromosome(),
+                variant.getStart(),
+                variant.getEnd(),
+                variant.getReference(),
+                variant.getAlternate(),
+                null,
+                variant.getSv(),
+                variant.getLength(),
+                variant.getType(),
+                null, null, null));
         this.fileIndex = fileIndex;
     }
 

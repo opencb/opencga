@@ -3,9 +3,13 @@ package org.opencb.opencga.master.monitor.daemons;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
@@ -13,6 +17,7 @@ import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobInternalWebhook;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.StudyNotification;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -136,7 +141,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         // Create empty directory that is registered in OpenCGA
         org.opencb.opencga.core.models.file.File directory = catalogManager.getFileManager().createFolder(studyFqn, "outputDir/",
                 true, "", QueryOptions.empty(), token).first();
-        catalogManager.getCatalogIOManagerFactory().get(directory.getUri()).createDirectory(directory.getUri(), true);
+        catalogManager.getIoManagerFactory().get(directory.getUri()).createDirectory(directory.getUri(), true);
 
         HashMap<String, Object> params = new HashMap<>();
         params.put("outdir", "outputDir/");
@@ -162,6 +167,53 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(1, jobOpenCGAResult.getNumResults());
         assertEquals(Enums.ExecutionStatus.ABORTED, jobOpenCGAResult.first().getInternal().getStatus().getName());
         assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription().contains("not an empty directory"));
+    }
+
+    @Test
+    public void testProjectScopeTask() throws Exception {
+        // User 2 to admins group in study1 but not in study2
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user2")), token);
+
+        // User 3 to admins group in both study1 and study2
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user3")), token);
+        catalogManager.getStudyManager().updateGroup(studyFqn2, "@admins", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user3")), token);
+
+        HashMap<String, Object> params = new HashMap<>();
+        String jobId = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
+                params, token).first().getId();
+        String jobId2 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
+                params, sessionIdUser2).first().getId();
+        String jobId3 = catalogManager.getJobManager().submit(studyFqn, VariantAnnotationIndexOperationTool.ID, Enums.Priority.MEDIUM,
+                params, sessionIdUser3).first().getId();
+
+        daemon.checkPendingJobs();
+
+        // Job sent by the owner
+        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), token);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.QUEUED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+
+        // Job sent by user2 (admin from study1 but not from study2)
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId2, QueryOptions.empty(), token);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.ABORTED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+        assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription()
+                .contains("can only be executed by the project owners or admins"));
+
+        // Job sent by user3 (admin from study1 and study2)
+        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId3, QueryOptions.empty(), token);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.QUEUED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+
+        jobOpenCGAResult = catalogManager.getJobManager().search(studyFqn2, new Query(), QueryOptions.empty(), token);
+        assertEquals(0, jobOpenCGAResult.getNumResults());
+
+        jobOpenCGAResult = catalogManager.getJobManager().search(studyFqn2, new Query(),
+                new QueryOptions(ParamConstants.OTHER_STUDIES_FLAG, true), token);
+        assertEquals(2, jobOpenCGAResult.getNumResults());
     }
 
     @Test
@@ -261,8 +313,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
 
         InputStream inputStream = new ByteArrayInputStream("my log content\nlast line".getBytes(StandardCharsets.UTF_8));
-        catalogManager.getCatalogIOManagerFactory().getDefault().createFile(
-                Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri(), inputStream);
+        catalogManager.getIoManagerFactory().getDefault().copy(inputStream,
+                Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri());
 
         OpenCGAResult<FileContent> fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 1, "stdout", true, token);
         assertEquals("last line", fileContentResult.first().getContent());

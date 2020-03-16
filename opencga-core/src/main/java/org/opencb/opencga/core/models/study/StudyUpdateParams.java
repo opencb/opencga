@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.opencga.core.models.common.CustomStatusParams;
+
 import java.util.Map;
 
 public class StudyUpdateParams {
@@ -10,17 +12,19 @@ public class StudyUpdateParams {
     private StudyNotification notification;
 
     private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public StudyUpdateParams() {
     }
 
     public StudyUpdateParams(String name, String alias, String description, StudyNotification notification,
-                             Map<String, Object> attributes) {
+                             Map<String, Object> attributes, CustomStatusParams status) {
         this.name = name;
         this.alias = alias;
         this.description = description;
         this.notification = notification;
         this.attributes = attributes;
+        this.status = status;
     }
 
     @Override
@@ -29,8 +33,9 @@ public class StudyUpdateParams {
         sb.append("name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", notifications=").append(notification);
+        sb.append(", notification=").append(notification);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -68,6 +73,15 @@ public class StudyUpdateParams {
 
     public StudyUpdateParams setNotification(StudyNotification notification) {
         this.notification = notification;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public StudyUpdateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 

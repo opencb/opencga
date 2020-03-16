@@ -504,7 +504,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                     file.getType() == File.Type.FILE ? file.getName() : file.getName() + "/",
                     file.getName(),
-                    file.getInternal().getStatus() != null ? file.getInternal().getStatus().getName() : "",
+                    file.getInternal() != null && file.getInternal().getStatus() != null ? file.getInternal().getStatus().getName() : "",
                     humanReadableByteCount(file.getSize(), false)));
 
             if (file.getType() == File.Type.DIRECTORY) {

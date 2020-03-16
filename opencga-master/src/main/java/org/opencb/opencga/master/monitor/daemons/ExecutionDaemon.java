@@ -43,10 +43,13 @@ import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
+import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -59,10 +62,11 @@ import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
@@ -70,6 +74,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -78,7 +83,11 @@ import org.opencb.opencga.core.models.file.FileAclParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobInternalWebhook;
+import org.opencb.opencga.core.models.job.JobStudyParam;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
@@ -119,7 +128,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
-    private CatalogIOManager catalogIOManager;
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
 
@@ -196,6 +204,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(KnockoutAnalysis.ID, "variant knockout-run");
             put(SampleEligibilityAnalysis.ID, "variant " + SampleEligibilityAnalysis.ID + "-run");
             put(MutationalSignatureAnalysis.ID, "variant " + MutationalSignatureAnalysis.ID + "-run");
+            put(MendelianErrorAnalysis.ID, "variant " + MendelianErrorAnalysis.ID + "-run");
+            put(InferredSexAnalysis.ID, "variant " + InferredSexAnalysis.ID + "-run");
             put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");
             put(GeneticChecksAnalysis.ID, "variant " + GeneticChecksAnalysis.ID + "-run");
 
@@ -206,13 +216,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }};
     }
 
-    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, String appHome)
-            throws CatalogDBException, CatalogIOException {
+    public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, String appHome) throws CatalogDBException {
         super(interval, token, catalogManager);
 
         this.jobManager = catalogManager.getJobManager();
         this.fileManager = catalogManager.getFileManager();
-        this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
         this.internalCli = appHome + "/bin/opencga-internal.sh";
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
@@ -311,7 +319,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     // Update the result of the job
                     PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(result);
                     try {
-                        jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
+                        jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
                     } catch (CatalogException e) {
                         logger.error("[{}] - Could not update result information: {}", job.getId(), e.getMessage(), e);
                         return 0;
@@ -407,7 +415,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
      * @return 1 if the job has changed the status, 0 otherwise.
      */
     protected int checkPendingJob(Job job) {
-        if (StringUtils.isEmpty(job.getStudyUuid())) {
+        if (StringUtils.isEmpty(job.getStudy().getId())) {
             return abortJob(job, "Missing mandatory 'studyUuid' field");
         }
 
@@ -419,14 +427,58 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return 0;
         }
 
+        Tool tool;
+        try {
+            tool = new ToolFactory().getTool(job.getTool().getId());
+        } catch (ToolException e) {
+            logger.error(e.getMessage(), e);
+            return abortJob(job, "Tool " + job.getTool().getId() + " not found");
+        }
+
+        PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
+        if (tool.scope() == Tool.Scope.PROJECT) {
+            String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(":"));
+            OpenCGAResult<Study> studyResult;
+            try {
+                studyResult = catalogManager.getStudyManager().get(projectFqn, new Query(),
+                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
+                                StudyDBAdaptor.QueryParams.FQN.key())), token);
+            } catch (CatalogException e) {
+                logger.error(e.getMessage(), e);
+                return abortJob(job, e.getMessage());
+            }
+            // Validate user is owner or admin
+            if (!job.getStudy().getId().startsWith(job.getUserId() + "@")) {
+                // It is not the owner, so we check if it is the admin
+                for (Study study : studyResult.getResults()) {
+                    for (Group group : study.getGroups()) {
+                        if (group.getId().equals("@admins")) {
+                            // If the user does not belong to the admins group
+                            if (!group.getUserIds().contains(job.getUserId())) {
+                                return abortJob(job, "User '" + job.getUserId() + "' is not owner or admin of study '" + study.getFqn()
+                                        + "'. The tool '" + job.getTool().getId()
+                                        + "' can only be executed by the project owners or admins");
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Obtain other study fqns
+            Set<String> studyFqnSet = studyResult.getResults().stream()
+                    .map(Study::getFqn)
+                    .filter(fqn -> !fqn.equals(job.getStudy().getId()))
+                    .collect(Collectors.toSet());
+            updateParams.setStudy(new JobStudyParam(job.getStudy().getId(), new ArrayList<>(studyFqnSet)));
+        }
+
         String userToken;
         try {
             userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), token);
         } catch (CatalogException e) {
             return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'");
         }
-
-        PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
 
         if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
             // The job(s) it depended on finished successfully. Check if the input files are correct.
@@ -441,12 +493,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                         for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
                             try {
                                 // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(job.getStudyUuid(), fileStr,
+                                File file = catalogManager.getFileManager().get(job.getStudy().getId(), fileStr,
                                         FileManager.INCLUDE_FILE_URI_PATH, token).first();
                                 inputFiles.add(file);
                             } catch (CatalogException e) {
                                 String msg = "Cannot find file '" + entry.getValue() + "' "
-                                        + "from job param '" + entry.getKey() + "'; (study = " + job.getStudyUuid() + ", token = "
+                                        + "from job param '" + entry.getKey() + "'; (study = " + job.getStudy().getId() + ", token = "
                                         + token + ") :" + e.getMessage();
                                 logger.error(msg, e);
                                 return abortJob(job, msg);
@@ -477,7 +529,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                             // catalog
                             try {
                                 // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(job.getStudyUuid(), (String) entry.getValue(),
+                                File file = catalogManager.getFileManager().get(job.getStudy().getId(), (String) entry.getValue(),
                                         FileManager.INCLUDE_FILE_URI_PATH, token).first();
                                 inputFiles.add(file);
                             } catch (CatalogException e) {
@@ -498,7 +550,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (!StringUtils.isEmpty(outDirPathParam)) {
             try {
                 // Any path the user has requested
-                updateParams.setOutDir(getValidInternalOutDir(job.getStudyUuid(), job, outDirPathParam, userToken));
+                updateParams.setOutDir(getValidInternalOutDir(job.getStudy().getId(), job, outDirPathParam, userToken));
             } catch (CatalogException e) {
                 logger.error("Cannot create output directory. {}", e.getMessage(), e);
                 return abortJob(job, "Cannot create output directory. " + e.getMessage());
@@ -520,11 +572,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         Path stderr = outDirPath.resolve(getErrorLogFileName(job));
         Path stdout = outDirPath.resolve(getLogFileName(job));
 
-        // TODO: Update tool information
-//        ToolInfo tool;
-//        ToolFactory toolFactory = new ToolFactory();
-//        OpenCgaTool analysisTool = toolFactory.getTool(job.getTool().getId());
-
         // Create cli
         String commandLine = buildCli(internalCli, job.getTool().getId(), params);
         String authenticatedCommandLine = commandLine + " --token " + userToken;
@@ -535,7 +582,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED);
         updateParams.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED)));
         try {
-            jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
+            jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage(), e);
             return 0;
@@ -569,15 +616,20 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             try {
                 outDir = fileManager.createFolder(study, outDirPath, parents, "", FileManager.INCLUDE_FILE_URI_PATH,
                         userToken).first();
-                CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(outDir.getUri());
+                IOManager ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
                 ioManager.createDirectory(outDir.getUri(), true);
-            } catch (CatalogException e1) {
+            } catch (CatalogException | IOException e1) {
                 throw new CatalogException("Cannot create output directory. " + e1.getMessage(), e1.getCause());
             }
         }
 
         // Ensure the directory is empty
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(outDir.getUri());
+        IOManager ioManager;
+        try {
+            ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(outDir.getUri(), e);
+        }
         if (!ioManager.isDirectory(outDir.getUri())) {
             throw new CatalogException(OUTDIR_PARAM + " seems not to be a directory");
         }
@@ -589,24 +641,24 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private File getValidDefaultOutDir(Job job) throws CatalogException {
-        File folder = fileManager.createFolder(job.getStudyUuid(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/" + job.getId(),
-                true, "Job " + job.getTool().getId(), QueryOptions.empty(), token).first();
+        File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
+                        + job.getId(), true, "Job " + job.getTool().getId(), QueryOptions.empty(), token).first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
-            catalogIOManager.createDirectory(folder.getUri(), true);
-        } catch (CatalogIOException e) {
+            catalogManager.getIoManagerFactory().get(folder.getUri()).createDirectory(folder.getUri(), true);
+        } catch (CatalogIOException | IOException e) {
             // Submit job to delete job folder
             ObjectMap params = new ObjectMap()
                     .append("files", folder.getUuid())
-                    .append("study", job.getStudyUuid())
+                    .append("study", job.getStudy().getId())
                     .append(Constants.SKIP_TRASH, true);
-            jobManager.submit(job.getStudyUuid(), FileDeleteTask.ID, Enums.Priority.LOW, params, token);
+            jobManager.submit(job.getStudy().getId(), FileDeleteTask.ID, Enums.Priority.LOW, params, token);
             throw new CatalogException("Cannot create job directory '" + folder.getUri() + "' for path '" + folder.getPath() + "'");
         }
 
         // Check if the user already has permissions set in his folder
-        OpenCGAResult<Map<String, List<String>>> result = fileManager.getAcls(job.getStudyUuid(),
+        OpenCGAResult<Map<String, List<String>>> result = fileManager.getAcls(job.getStudy().getId(),
                 Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
         if (result.getNumResults() == 0 || result.first().isEmpty() || ListUtils.isEmpty(result.first().get(job.getUserId()))) {
             // Add permissions to do anything under that path to the user launching the job
@@ -614,10 +666,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .stream()
                     .map(FileAclEntry.FilePermissions::toString)
                     .collect(Collectors.joining(","));
-            fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
+            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
                     new FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
             // Revoke permissions to any other user that is not the one launching the job
-            fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
+            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
                     FileAclEntry.USER_OTHERS_ID, new FileAclParams("", AclParams.Action.SET, null), token);
         }
 
@@ -692,6 +744,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
         }
 
+        if (!batchExecutor.canBeQueued()) {
+            return false;
+        }
+
         switch (job.getTool().getId()) {
             case "variant-index":
                 int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
@@ -740,7 +796,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setInternal(new JobInternal(status));
 
         try {
-            jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
+            jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("Unexpected error. Cannot update job '{}' to status '{}'. {}", job.getId(),
                     updateParams.getInternal().getStatus().getName(), e.getMessage(), e);
@@ -872,7 +928,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             if (execution != null) {
                 PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
                 try {
-                    jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
+                    jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
                 } catch (CatalogException e) {
                     logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
                             updateParams.toString(), e.getMessage(), e);
@@ -888,7 +944,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(ExecutionResultManager.FILE_EXTENSION)
                     && !uri.getPath().endsWith(ExecutionResultManager.SWAP_FILE_EXTENSION)
                     && !uri.getPath().contains("/scratch_");
-            registeredFiles = fileManager.syncUntrackedFiles(job.getStudyUuid(), job.getOutDir().getPath(), uriPredicate, token)
+            registeredFiles = fileManager.syncUntrackedFiles(job.getStudy().getId(), job.getOutDir().getPath(), uriPredicate, token)
                     .getResults();
         } catch (CatalogException e) {
             logger.error("Could not registered files in Catalog: {}", e.getMessage(), e);
@@ -917,7 +973,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             for (URI externalFile : execution.getExternalFiles()) {
                 Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), externalFile);
                 try {
-                    OpenCGAResult<File> search = fileManager.search(job.getStudyUuid(), query, FileManager.INCLUDE_FILE_URI_PATH, token);
+                    OpenCGAResult<File> search = fileManager.search(job.getStudy().getId(), query, FileManager.INCLUDE_FILE_URI_PATH,
+                            token);
                     if (search.getNumResults() == 0) {
                         throw new CatalogException("File not found");
                     }
@@ -959,7 +1016,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("[{}] - Updating job information", job.getId());
         // We update the job information
         try {
-            jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
+            jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
                     updateParams.toString(), e.getMessage(), e);
@@ -1007,7 +1064,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. "
                     + e.getMessage())));
 
-            jobManager.update(job.getStudyUuid(), job.getId(), updateParams, options, token);
+            jobManager.update(job.getStudy().getId(), job.getId(), updateParams, options, token);
 
             return;
         }
@@ -1019,7 +1076,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     + "code: " + post.getStatus())));
         }
 
-        jobManager.update(job.getStudyUuid(), job.getId(), updateParams, options, token);
+        jobManager.update(job.getStudy().getId(), job.getId(), updateParams, options, token);
     }
 
     private String getErrorLogFileName(Job job) {
