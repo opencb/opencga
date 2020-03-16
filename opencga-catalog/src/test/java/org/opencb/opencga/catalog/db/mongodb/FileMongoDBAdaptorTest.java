@@ -228,7 +228,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         List<String> distinctFormats = catalogFileDBAdaptor.distinct(
                 new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), pfurioStudies),
                 FileDBAdaptor.QueryParams.FORMAT.key()).getResults();
-        assertEquals(Arrays.asList("UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM"), distinctFormats);
+        assertTrue(Arrays.asList("UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM").containsAll(distinctFormats));
 
         distinctFormats = catalogFileDBAdaptor.distinct(new Query(),
                 FileDBAdaptor.QueryParams.FORMAT.key()).getResults();
@@ -246,15 +246,20 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 FileDBAdaptor.QueryParams.SIZE.key(), 100, false).getResults();
 
         assertEquals(3, rankedFilesPerDiskUsage.size());
+        assertTrue(Arrays.asList(10, 100, 5000)
+                .containsAll(rankedFilesPerDiskUsage.stream().map(d -> d.get("_id")).collect(Collectors.toSet())));
 
-        assertEquals(100, rankedFilesPerDiskUsage.get(0).get("_id"));
-        assertEquals(3, rankedFilesPerDiskUsage.get(0).get("count"));
-
-        assertEquals(5000, rankedFilesPerDiskUsage.get(1).get("_id"));
-        assertEquals(2, rankedFilesPerDiskUsage.get(1).get("count"));
-
-        assertEquals(10, rankedFilesPerDiskUsage.get(2).get("_id"));
-        assertEquals(2, rankedFilesPerDiskUsage.get(2).get("count"));
+        for (Document document : rankedFilesPerDiskUsage) {
+            switch (document.getInteger("_id")) {
+                case 10:
+                case 5000:
+                    assertEquals(2, document.get("count"));
+                    break;
+                case 100:
+                    assertEquals(3, document.get("count"));
+                    break;
+            }
+        }
     }
 
     @Test
@@ -264,22 +269,38 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), pfurioStudies),
                 FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResults();
 
-        assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("items"));
-
-        assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/")
-                .containsAll((Collection<?>) groupByBioformat.get(1).get("items")));
+        assertTrue(Arrays.asList("ALIGNMENT", "NONE")
+                .containsAll(groupByBioformat.stream().map(d -> d.get("_id"))
+                        .map(d -> ((Document) d).get(FileDBAdaptor.QueryParams.BIOFORMAT.key())).collect(Collectors.toSet())));
+        for (Document document : groupByBioformat) {
+            switch (((Document) document.get("_id")).getString(FileDBAdaptor.QueryParams.BIOFORMAT.key())) {
+                case "ALIGNMENT":
+                    assertTrue(Arrays.asList("m_alignment.bam", "alignment.bam").containsAll(document.getList("items", String.class)));
+                    break;
+                case "NONE":
+                    assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/")
+                            .containsAll(document.getList("items", String.class)));
+                    break;
+            }
+        }
 
         groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), 14), // MINECO study
                 FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResults();
 
-        assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertEquals(Arrays.asList("m_alignment.bam"), groupByBioformat.get(0).get("items"));
-
-        assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertEquals(Arrays.asList("m_file1.txt", "data/"), groupByBioformat.get(1).get("items"));
-
+        assertTrue(Arrays.asList("ALIGNMENT", "NONE")
+                .containsAll(groupByBioformat.stream().map(d -> d.get("_id"))
+                        .map(d -> ((Document) d).get(FileDBAdaptor.QueryParams.BIOFORMAT.key())).collect(Collectors.toSet())));
+        for (Document document : groupByBioformat) {
+            switch (((Document) document.get("_id")).getString(FileDBAdaptor.QueryParams.BIOFORMAT.key())) {
+                case "ALIGNMENT":
+                    assertTrue(Arrays.asList("m_alignment.bam").containsAll(document.getList("items", String.class)));
+                    break;
+                case "NONE":
+                    assertTrue(Arrays.asList("m_file1.txt", "data/")
+                            .containsAll(document.getList("items", String.class)));
+                    break;
+            }
+        }
     }
 
     @Test
@@ -292,16 +313,21 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 new QueryOptions()).getResults();
 
         assertEquals(3, groupByBioformat.size());
+        for (Document document : groupByBioformat) {
+            Document d = (Document) document.get("_id");
 
-        assertEquals(2, ((Document) groupByBioformat.get(0).get("_id")).size()); // Alignment - File
-        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("items"));
-
-        assertEquals(2, ((Document) groupByBioformat.get(1).get("_id")).size()); // None - File
-        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(1).get("items"));
-
-        assertEquals(2, ((Document) groupByBioformat.get(2).get("_id")).size()); // None - Folder
-        assertEquals(Arrays.asList("data/"), groupByBioformat.get(2).get("items"));
-
+            switch (d.getString(FileDBAdaptor.QueryParams.BIOFORMAT.key()) + "_" + d.getString(FileDBAdaptor.QueryParams.TYPE.key())) {
+                case "ALIGNMENT_FILE":
+                    assertTrue(Arrays.asList("m_alignment.bam", "alignment.bam").containsAll(document.getList("items", String.class)));
+                    break;
+                case "NONE_FILE":
+                    assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt").containsAll(document.getList("items", String.class)));
+                    break;
+                case "NONE_FOLDER":
+                    assertTrue(Arrays.asList("data/").containsAll(document.getList("items", String.class)));
+                    break;
+            }
+        }
     }
 
     @Test
@@ -398,7 +424,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                     switch (type) {
                         case "FILE":
                             assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size()); // None - File
-                            assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(i).get("items"));
+                            assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt").containsAll(groupByBioformat.get(i).getList("items", String.class)));
                             break;
                         default:
                             assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size()); // None - Folder
@@ -408,7 +434,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                     break;
                 case "ALIGNMENT":
                     assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size());
-                    assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(i).get("items"));
+                    assertTrue(Arrays.asList("m_alignment.bam", "alignment.bam").containsAll(groupByBioformat.get(i).getList("items", String.class)));
                     break;
                 default:
                     fail("This case should not happen.");
