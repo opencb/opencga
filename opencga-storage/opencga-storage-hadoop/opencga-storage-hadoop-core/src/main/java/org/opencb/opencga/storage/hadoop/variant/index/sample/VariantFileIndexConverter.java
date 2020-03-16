@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 
@@ -150,7 +151,19 @@ public class VariantFileIndexConverter {
         private final byte fileIndex;
 
         public VariantFileIndex(Variant variant, byte fileIndex) {
-            this.variant = variant;
+            // Copy variant to allow GC discard the variant if needed.
+            this.variant = new Variant(new VariantAvro(
+                    null, null,
+                    variant.getChromosome(),
+                    variant.getStart(),
+                    variant.getEnd(),
+                    variant.getReference(),
+                    variant.getAlternate(),
+                    null,
+                    variant.getSv(),
+                    variant.getLength(),
+                    variant.getType(),
+                    null, null, null));
             this.fileIndex = fileIndex;
         }
 
