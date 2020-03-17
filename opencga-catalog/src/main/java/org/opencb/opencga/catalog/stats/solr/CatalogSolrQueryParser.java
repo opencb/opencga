@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT;
 
 /**
  * Created by wasim on 09/07/18.
@@ -247,6 +248,10 @@ public class CatalogSolrQueryParser {
 
     private String getInternalAnnotationKey(String annotation, ObjectMap variableMap) {
         ObjectMap annotationMap = (ObjectMap) variableMap.get(annotation);
+        if (annotationMap == null || annotationMap.isEmpty() && annotation.contains(".")) {
+            String dynamicAnnotation = annotation.substring(0, annotation.lastIndexOf(".")) + ".*";
+            annotationMap = (ObjectMap) variableMap.get(dynamicAnnotation);
+        }
         if (annotationMap == null || annotationMap.isEmpty()) {
             logger.error("Cannot parse " + annotation + " string to internal annotation format");
             return "";
@@ -335,6 +340,22 @@ public class CatalogSolrQueryParser {
                                 queue.add(nestedAuxiliarVariable);
                             }
                         }
+                        break;
+                    case MAP_BOOLEAN:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? BOOLEAN_ARRAY : BOOLEAN);
+                        variableMap.put(fullVariablePath + ".*", auxVariableMap);
+                        break;
+                    case MAP_INTEGER:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? INTEGER_ARRAY : INTEGER);
+                        variableMap.put(fullVariablePath + ".*", auxVariableMap);
+                        break;
+                    case MAP_DOUBLE:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? DECIMAL_ARRAY : DECIMAL);
+                        variableMap.put(fullVariablePath + ".*", auxVariableMap);
+                        break;
+                    case MAP_STRING:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? TEXT_ARRAY : TEXT);
+                        variableMap.put(fullVariablePath + ".*", auxVariableMap);
                         break;
                     default:
                         break;

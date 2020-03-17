@@ -1,12 +1,10 @@
 package org.opencb.opencga.catalog.stats.solr;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.junit.Test;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.CohortMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
@@ -15,15 +13,17 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.stats.solr.converters.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.InputStream;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -142,6 +142,44 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
     @Test
     public void testInsertSamples() throws CatalogException, IOException {
+        // Create annotationSet
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("a", "a", "", Variable.VariableType.MAP_STRING, null, true, false, null, 0, "", "",
+                Collections.emptySet(), Collections.emptyMap()));
+        variables.add(new Variable("a1", "a1", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.MAP_STRING, null, true, false, null, 0, "", "",
+                                Collections.emptySet(), Collections.emptyMap()))),
+                Collections.emptyMap()));
+        variables.add(new Variable("a2", "a2", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, false, null, 0, "", "",
+                                new HashSet<>(Arrays.asList(
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, true, null, 0, "", "",
+                                                Collections.emptySet(), Collections.emptyMap()))),
+                                Collections.emptyMap()))),
+                Collections.emptyMap()));
+        variables.add(new Variable("a3", "a3", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+                                new HashSet<>(Arrays.asList(
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, false, null, 0, "", "",
+                                                Collections.emptySet(), Collections.emptyMap()))),
+                                Collections.emptyMap()))),
+                Collections.emptyMap()));
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdOwner).first();
+
+        InputStream inputStream = this.getClass().getClassLoader().getResource("annotation_sets/complete_annotation.json").openStream();
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMap annotations = objectMapper.readValue(inputStream, ObjectMap.class);
+
+        catalogManager.getSampleManager().update(studyFqn, "sample1", new SampleUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotations))),
+                QueryOptions.empty(), sessionIdOwner);
+
+        study = catalogManager.getStudyManager().get(studyFqn, new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
+
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
 
         Map<String, Set<String>> studyAcls =
@@ -169,6 +207,15 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 //        facet = catalogSolrManager.facetedQuery(CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
 //                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()));
 //        assertEquals(3, facet.getResults().get(0).getBuckets().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, "annotation.a.x"), "user1");
+        assertEquals(1, facet.getResults().get(0).getBuckets().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, "annotation.a.x;id"), "user1");
+        assertEquals(1, facet.getResults().get(0).getBuckets().get(0).getCount());
+        assertEquals(2, facet.getResults().get(1).getBuckets().size());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "user1");
