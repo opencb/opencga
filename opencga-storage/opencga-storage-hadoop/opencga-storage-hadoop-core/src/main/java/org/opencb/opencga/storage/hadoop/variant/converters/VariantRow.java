@@ -90,6 +90,10 @@ public class VariantRow {
     }
 
     public void walk(VariantRowWalker walker) {
+        walk(walker, true, true, true, true, true);
+    }
+
+    protected void walk(VariantRowWalker walker, boolean file, boolean sample, boolean cohort, boolean score, boolean annotation) {
         walker.variant(getVariant());
         if (resultSet != null) {
             try {
@@ -102,21 +106,21 @@ public class VariantRow {
                     if (bytes == null) {
                         continue;
                     }
-                    if (columnName.endsWith(FILE_SUFIX)) {
+                    if (file && columnName.endsWith(FILE_SUFIX)) {
                         walker.file(new BytesFileColumn(bytes, extractStudyId(columnName), extractFileId(columnName)));
-                    } else if (columnName.endsWith(SAMPLE_DATA_SUFIX)) {
+                    } else if (sample && columnName.endsWith(SAMPLE_DATA_SUFIX)) {
                         walker.sample(new BytesSampleColumn(bytes, extractStudyId(columnName), extractSampleId(columnName),
                                 extractFileIdFromSampleColumn(columnName, false)));
                     } else if (columnName.endsWith(STUDY_SUFIX)) {
                         walker.study(extractStudyId(columnName));
-                    } else if (columnName.endsWith(COHORT_STATS_PROTOBUF_SUFFIX)) {
+                    } else if (cohort && columnName.endsWith(COHORT_STATS_PROTOBUF_SUFFIX)) {
                         walker.stats(new BytesStatsColumn(bytes, extractStudyId(columnName), extractCohortStatsId(columnName)));
-                    } else if (columnName.endsWith(VARIANT_SCORE_SUFIX)) {
+                    } else if (score && columnName.endsWith(VARIANT_SCORE_SUFIX)) {
                         walker.score(new BytesVariantScoreColumn(bytes, extractStudyId(columnName), extractScoreId(columnName)));
                     } else if (columnName.endsWith(FILL_MISSING_SUFIX)) {
                         int studyId = Integer.valueOf(columnName.split("_")[1]);
                         walker.fillMissing(studyId, resultSet.getInt(i));
-                    } else if (columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {
+                    } else if (annotation && columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {
                         walker.variantAnnotation(new BytesVariantAnnotationColumn(bytes));
                     }
                 }
@@ -127,22 +131,22 @@ public class VariantRow {
             for (Cell cell : result.rawCells()) {
                 String columnName = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
 
-                if (columnName.endsWith(FILE_SUFIX)) {
+                if (file && columnName.endsWith(FILE_SUFIX)) {
                     walker.file(new BytesFileColumn(cell, extractStudyId(columnName), extractFileId(columnName)));
-                } else if (columnName.endsWith(SAMPLE_DATA_SUFIX)) {
+                } else if (sample && columnName.endsWith(SAMPLE_DATA_SUFIX)) {
                     walker.sample(new BytesSampleColumn(cell, extractStudyId(columnName), extractSampleId(columnName),
                             extractFileIdFromSampleColumn(columnName, false)));
                 } else if (columnName.endsWith(STUDY_SUFIX)) {
                     walker.study(extractStudyId(columnName));
-                } else if (columnName.endsWith(COHORT_STATS_PROTOBUF_SUFFIX)) {
+                } else if (cohort && columnName.endsWith(COHORT_STATS_PROTOBUF_SUFFIX)) {
                         walker.stats(new BytesStatsColumn(cell, extractStudyId(columnName), extractCohortStatsId(columnName)));
-                } else if (columnName.endsWith(VARIANT_SCORE_SUFIX)) {
+                } else if (score && columnName.endsWith(VARIANT_SCORE_SUFIX)) {
                         walker.score(new BytesVariantScoreColumn(cell, extractStudyId(columnName), extractScoreId(columnName)));
                 } else if (columnName.endsWith(FILL_MISSING_SUFIX)) {
                     int studyId = Integer.valueOf(columnName.split("_")[1]);
                     walker.fillMissing(studyId,
                             ((Integer) PInteger.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
-                } else if (columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {
+                } else if (annotation && columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {
                     walker.variantAnnotation(new BytesVariantAnnotationColumn(cell));
                 }
             }
@@ -180,11 +184,16 @@ public class VariantRow {
 
         private IntConsumer studyConsumer = r -> { };
         private Consumer<FileColumn> fileConsumer = r -> { };
+        private boolean hasFileConsumer = false;
         private Consumer<SampleColumn> sampleConsumer = r -> { };
+        private boolean hasSampleConsumer = false;
         private Consumer<StatsColumn> statsConsumer = r -> { };
+        private boolean hasStatsConsumer = false;
         private Consumer<VariantScoreColumn> variantScoreConsumer = r -> { };
+        private boolean hasVariantScoreConsumer = false;
         private BiConsumer<Integer, Integer> fillMissingConsumer = (k, v) -> { };
         private Consumer<VariantAnnotationColumn> variantAnnotationConsummer = (k) -> { };
+        private boolean hasVariantAnnotationConsummer = false;
         private Variant variant;
 
         public Variant getVariant() {
@@ -232,7 +241,12 @@ public class VariantRow {
         }
 
         public Variant walk() {
-            VariantRow.this.walk(this);
+            VariantRow.this.walk(this,
+                    hasFileConsumer,
+                    hasSampleConsumer,
+                    hasStatsConsumer,
+                    hasVariantScoreConsumer,
+                    hasVariantAnnotationConsummer);
             return getVariant();
         }
 
@@ -243,21 +257,25 @@ public class VariantRow {
 
         public VariantRowWalkerBuilder onFile(Consumer<FileColumn> consumer) {
             fileConsumer = consumer;
+            hasFileConsumer = true;
             return this;
         }
 
         public VariantRowWalkerBuilder onSample(Consumer<SampleColumn> consumer) {
             sampleConsumer = consumer;
+            hasSampleConsumer = true;
             return this;
         }
 
         public VariantRowWalkerBuilder onCohortStats(Consumer<StatsColumn> consumer) {
             statsConsumer = consumer;
+            hasStatsConsumer = true;
             return this;
         }
 
         public VariantRowWalkerBuilder onVariantScore(Consumer<VariantScoreColumn> consumer) {
             variantScoreConsumer = consumer;
+            hasVariantScoreConsumer = true;
             return this;
         }
 
@@ -268,6 +286,7 @@ public class VariantRow {
 
         public VariantRowWalkerBuilder onVariantAnnotation(Consumer<VariantAnnotationColumn> consumer) {
             variantAnnotationConsummer = consumer;
+            hasVariantAnnotationConsummer = true;
             return this;
         }
     }

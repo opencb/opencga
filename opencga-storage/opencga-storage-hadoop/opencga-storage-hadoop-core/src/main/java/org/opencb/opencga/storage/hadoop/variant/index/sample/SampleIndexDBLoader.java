@@ -178,7 +178,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     @Override
     protected List<Mutation> convert(List<Variant> variants) {
         for (Variant variant : variants) {
-            IndexChunk indexChunk = new IndexChunk(variant.getChromosome(), (variant.getStart() / BATCH_SIZE) * BATCH_SIZE);
+            IndexChunk indexChunk = new IndexChunk(variant.getChromosome(), getChunkStart(variant.getStart()));
             int sampleIdx = 0;
             StudyEntry studyEntry = variant.getStudies().get(0);
             boolean hasGT = studyEntry.getFormat().get(0).equals("GT");

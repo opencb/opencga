@@ -689,7 +689,7 @@ public class SampleIndexQueryParser {
                             }
 
                             if (fileId != null) {
-                                validFile |= fileId << VariantFileIndexConverter.FILE_IDX_SHIFT;
+                                validFile |= fileId << VariantFileIndexConverter.FILE_POSITION_SHIFT;
                             }
                             validFile |= typeCode << VariantFileIndexConverter.TYPE_SHIFT;
                             validFile |= q << VariantFileIndexConverter.QUAL_SHIFT;

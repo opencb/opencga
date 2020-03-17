@@ -402,7 +402,7 @@ public class SampleIndexQueryParserTest {
 
         query = new Query(FILE.key(), "F2");
         fileQuery = parseFileQuery(query, "S2", n -> Arrays.asList("F1", "F2"), true);
-        assertTrue(fileQuery.getValidFileIndex1()[1 << VariantFileIndexConverter.FILE_IDX_SHIFT]);
+        assertTrue(fileQuery.getValidFileIndex1()[1 << VariantFileIndexConverter.FILE_POSITION_SHIFT]);
         assertEquals(1, countValidFileIndex(fileQuery));
         print(fileQuery);
     }

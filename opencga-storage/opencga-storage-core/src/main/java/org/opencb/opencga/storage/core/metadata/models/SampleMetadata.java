@@ -83,6 +83,10 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         return this;
     }
 
+    public boolean isMultiFileSample() {
+        return VariantStorageEngine.LoadSplitData.MULTI.equals(splitData);
+    }
+
     public VariantStorageEngine.LoadSplitData getSplitData() {
         return splitData;
     }

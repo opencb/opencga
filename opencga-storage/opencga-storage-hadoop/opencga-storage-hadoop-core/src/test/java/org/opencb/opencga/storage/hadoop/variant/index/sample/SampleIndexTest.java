@@ -42,6 +42,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -142,47 +143,53 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     @Test
     public void regenerateSampleIndex() throws Exception {
 
-        String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(1);
-        String copy = orig + "_copy";
+        for (String study : studies) {
+            int studyId = dbAdaptor.getMetadataManager().getStudyId(study);
+            String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
+            String copy = orig + "_copy";
 
-        dbAdaptor.getHBaseManager().createTableIfNeeded(copy, Bytes.toBytes(GenomeHelper.COLUMN_FAMILY),
-                Compression.Algorithm.NONE);
+            dbAdaptor.getHBaseManager().createTableIfNeeded(copy, Bytes.toBytes(GenomeHelper.COLUMN_FAMILY),
+                    Compression.Algorithm.NONE);
 
-        ObjectMap options = new ObjectMap()
-                .append(SampleIndexDriver.OUTPUT, copy)
-                .append(SampleIndexDriver.SAMPLES, "all");
-        new TestMRExecutor().run(SampleIndexDriver.class, SampleIndexDriver.buildArgs(
-                dbAdaptor.getArchiveTableName(1),
-                dbAdaptor.getVariantTable(),
-                1,
-                Collections.emptySet(), options), options);
+            ObjectMap options = new ObjectMap()
+                    .append(SampleIndexDriver.OUTPUT, copy)
+                    .append(SampleIndexDriver.SAMPLES, "all");
+            new TestMRExecutor().run(SampleIndexDriver.class, SampleIndexDriver.buildArgs(
+                    dbAdaptor.getArchiveTableName(studyId),
+                    dbAdaptor.getVariantTable(),
+                    studyId,
+                    Collections.emptySet(), options), options);
 
-        new TestMRExecutor().run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
-                dbAdaptor.getArchiveTableName(1),
-                dbAdaptor.getVariantTable(),
-                1,
-                Collections.emptySet(), options), options);
+            new TestMRExecutor().run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
+                    dbAdaptor.getArchiveTableName(studyId),
+                    dbAdaptor.getVariantTable(),
+                    studyId,
+                    Collections.emptySet(), options), options);
 
 
-        Connection c = dbAdaptor.getHBaseManager().getConnection();
+            Connection c = dbAdaptor.getHBaseManager().getConnection();
 
-        ResultScanner origScanner = c.getTable(TableName.valueOf(orig)).getScanner(new Scan());
-        ResultScanner copyScanner = c.getTable(TableName.valueOf(copy)).getScanner(new Scan());
-        while (true) {
-            Result origValue = origScanner.next();
-            Result copyValue = copyScanner.next();
-            if (origValue == null) {
-                assertNull(copyValue);
-                break;
-            }
-            NavigableMap<byte[], byte[]> origFamily = origValue.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
-            NavigableMap<byte[], byte[]> copyFamily = copyValue.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
+            VariantHbaseTestUtils.printSampleIndexTable(dbAdaptor, Paths.get(newOutputUri()), copy);
 
-            assertEquals(origFamily.keySet().stream().map(Bytes::toString).collect(toList()), copyFamily.keySet().stream().map(Bytes::toString).collect(toList()));
-            assertEquals(origFamily.size(), copyFamily.size());
+            ResultScanner origScanner = c.getTable(TableName.valueOf(orig)).getScanner(new Scan());
+            ResultScanner copyScanner = c.getTable(TableName.valueOf(copy)).getScanner(new Scan());
+            while (true) {
+                Result origValue = origScanner.next();
+                Result copyValue = copyScanner.next();
+                if (origValue == null) {
+                    assertNull(copyValue);
+                    break;
+                }
+                NavigableMap<byte[], byte[]> origFamily = origValue.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
+                NavigableMap<byte[], byte[]> copyFamily = copyValue.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
 
-            for (byte[] key : origFamily.keySet()) {
-                assertArrayEquals(Bytes.toString(key), origFamily.get(key), copyFamily.get(key));
+                String row = SampleIndexSchema.rowKeyToString(origValue.getRow());
+                assertEquals(row, origFamily.keySet().stream().map(Bytes::toString).collect(toList()), copyFamily.keySet().stream().map(Bytes::toString).collect(toList()));
+                assertEquals(row, origFamily.size(), copyFamily.size());
+
+                for (byte[] key : origFamily.keySet()) {
+                    assertArrayEquals(row + " " + Bytes.toString(key), origFamily.get(key), copyFamily.get(key));
+                }
             }
         }
 

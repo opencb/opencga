@@ -19,6 +19,10 @@ public class SampleIndexEntryPutBuilder {
     private final SampleIndexVariantBiConverter variantConverter;
     private final byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
 
+    public SampleIndexEntryPutBuilder(int sampleId, Variant variant) {
+        this(sampleId, variant.getChromosome(), SampleIndexSchema.getChunkStart(variant.getStart()));
+    }
+
     public SampleIndexEntryPutBuilder(int sampleId, String chromosome, int position) {
         this.sampleId = sampleId;
         this.chromosome = chromosome;

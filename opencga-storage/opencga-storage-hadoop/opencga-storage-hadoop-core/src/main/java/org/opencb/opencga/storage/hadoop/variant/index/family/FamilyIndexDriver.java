@@ -3,15 +3,12 @@ package org.opencb.opencga.storage.hadoop.variant.index.family;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
@@ -24,9 +21,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
@@ -235,23 +231,12 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
 
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-            Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(value.getRow());
-            String chromosome = variant.getChromosome();
 
             Map<Integer, String> gtMap = new HashMap<>();
-            for (Cell cell : value.rawCells()) {
-                Integer sampleId = VariantPhoenixHelper
-                        .extractSampleIdOrNull(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                if (sampleId != null) {
-                    ImmutableBytesWritable ptr = new ImmutableBytesWritable(
-                            cell.getValueArray(),
-                            cell.getValueOffset(),
-                            cell.getValueLength());
-                    PhoenixHelper.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
-                    String gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
-                    gtMap.put(sampleId, gt);
-                }
-            }
+            Variant variant = new VariantRow(value).walker().onSample(sampleColumn -> {
+                gtMap.put(sampleColumn.getSampleId(), sampleColumn.getGT());
+            }).walk();
+            String chromosome = variant.getChromosome();
 
             for (List<Integer> trio : trios) {
                 Integer father = trio.get(0);

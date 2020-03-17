@@ -72,6 +72,10 @@ public final class SampleIndexSchema {
     private SampleIndexSchema() {
     }
 
+    public static int getChunkStart(Integer start) {
+        return (start / BATCH_SIZE) * BATCH_SIZE;
+    }
+
     public static int getExpectedSize(String chromosome) {
         int expectedSize;
         if (chromosome == null) {
