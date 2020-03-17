@@ -412,9 +412,11 @@ public abstract class AbstractParentClient {
         if (restResponse != null && restResponse.getEvents() != null) {
             for (Event event : restResponse.getEvents()) {
                 if (Event.Type.ERROR.equals(event.getType())) {
-                    logger.debug("Server error '{}' on {} {}", event.getMessage(), method, path.getUri());
                     if (throwExceptionOnError) {
-                        throw new ClientException(event.getMessage());
+                        logger.error("Server error '{}' on {} {}", event.getMessage(), method, path.getUri());
+                        throw new ClientException("Got server error '" + event.getMessage() + "'");
+                    } else {
+                        logger.debug("Server error '{}' on {} {}", event.getMessage(), method, path.getUri());
                     }
                 }
             }
