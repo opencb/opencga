@@ -72,6 +72,10 @@ public class SampleIndexEntry {
         return mendelianVariantsValue;
     }
 
+    public SampleIndexEntry setMendelianVariants(byte[] mendelianVariantsValue) {
+        return setMendelianVariants(mendelianVariantsValue, 0, mendelianVariantsValue.length);
+    }
+
     public SampleIndexEntry setMendelianVariants(byte[] mendelianVariantsValue, int offset, int length) {
         this.mendelianVariantsValue = mendelianVariantsValue;
         this.mendelianVariantsLength = length;

@@ -31,7 +31,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -40,6 +39,7 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 
 import java.nio.file.Paths;
@@ -66,8 +66,18 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static boolean loaded = false;
-    protected static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2);
-    protected static final List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
+    private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2);
+    private static final List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
+//    private static List<List<String>> trios = Arrays.asList(
+//            Arrays.asList("NA19600", "NA19660", "NA19661"),
+//            Arrays.asList("NA19660", "NA19661", "NA19685"),
+//            Arrays.asList("NA19661", "NA19685", "NA19600"),
+//            Arrays.asList("NA19685", "NA19600", "NA19660")
+//    );
+    private static List<List<String>> trios = Arrays.asList(
+            Arrays.asList("NA19660", "NA19661", "NA19685"),
+            Arrays.asList("NA19660", "NA19661", "NA19600")
+    );
 
     @Before
     public void before() throws Exception {
@@ -81,22 +91,29 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void load() throws Exception {
         clearDB(DB_NAME);
 
+        HadoopVariantStorageEngine engine = getVariantStorageEngine();
+
+        // Study 1 - single file
         ObjectMap params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), CellBaseRestVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+        runETL(engine, smallInputUri, outputUri, params, true, true, true);
+        engine.familyIndex(STUDY_NAME, trios, new ObjectMap());
 
+        // Study 2 - multi files
+        params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_2)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.MULTI);
 
-        runETL(getVariantStorageEngine(), smallInputUri, outputUri, params, true, true, true);
-        params.append(VariantStorageOptions.STUDY.key(), STUDY_NAME_2);
-        params.append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.MULTI);
+        runETL(engine, getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
+        runETL(engine, getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
+        runETL(engine, getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
+        engine.familyIndex(STUDY_NAME_2, trios, new ObjectMap());
 
-        runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
-        runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
-        runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
-
-        variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
+        this.variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
 
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
     }
@@ -166,6 +183,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     studyId,
                     Collections.emptySet(), options), options);
 
+            options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+            options.put(FamilyIndexDriver.OVERWRITE, true);
+            new TestMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
+                    dbAdaptor.getArchiveTableName(studyId),
+                    dbAdaptor.getVariantTable(),
+                    studyId,
+                    Collections.emptySet(), options), options);
 
             Connection c = dbAdaptor.getHBaseManager().getConnection();
 
@@ -214,8 +238,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testQueryFileIndex(new Query(TYPE.key(), "INDEL").append(FILTER.key(), "PASS"));
         testQueryFileIndex(new Query(QUAL.key(), ">=30").append(FILTER.key(), "PASS"));
         testQueryFileIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"));
+        testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(SAMPLE.key(), "NA19660,NA19661"));
         testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(SAMPLE.key(), "NA19600,NA19661"));
-        testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19600:0/1;NA19661:0/0"));
+        testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19660:0/1;NA19661:0/0,0|0"));
+        testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19600:0/1;NA19661:0/0,0|0"));
 
         testQueryIndex(new Query(FILE.key(), "chr22_1-2-DUP.variant-test-file.vcf.gz").append(FILTER.key(), "PASS"),
                 new Query()

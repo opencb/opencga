@@ -53,22 +53,17 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
 
     @Override
     public short nextFileIndexEntry() {
-        throw new RuntimeException("TODO");
-//        return getGtIterator().nextFileIndexEntry();
+        return getGtIterator().nextFileIndexEntry();
     }
 
     @Override
     public boolean isMultiFileIndex() {
-        throw new RuntimeException("TODO");
-    }
-
-    private int nextFileIndex() {
-        throw new RuntimeException("TODO");
+        return getGtIterator().isMultiFileIndex();
     }
 
     @Override
     public short nextMultiFileIndexEntry() {
-        throw new RuntimeException("TODO");
+        return getGtIterator().nextMultiFileIndexEntry();
     }
 
     @Override

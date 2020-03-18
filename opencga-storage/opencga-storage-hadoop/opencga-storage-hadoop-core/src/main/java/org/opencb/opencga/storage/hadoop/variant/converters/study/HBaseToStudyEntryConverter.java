@@ -205,7 +205,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                             .getStudy(sampleColumn.getStudyId())
                             .getMultiFileSamples()
                             .get(sampleColumn.getSampleId());
-                    if (multiFiles != null) {
+                    if (!multiFiles.isEmpty()) {
                         if (sampleColumn.getFileId() != null) {
                             // Is the first file?
                         } else {
@@ -214,7 +214,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                                 return;
                             }
                         }
-
                     }
                     sampleDataMap.computeIfAbsent(sampleColumn.getStudyId(), s -> new ArrayList<>())
                             .add(Pair.of(sampleColumn.getSampleId(), sampleColumn.getMutableSampleData()));

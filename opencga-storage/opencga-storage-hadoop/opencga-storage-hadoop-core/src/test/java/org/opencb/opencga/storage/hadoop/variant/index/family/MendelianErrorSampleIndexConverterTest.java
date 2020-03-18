@@ -6,7 +6,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationInde
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,19 +28,19 @@ public class MendelianErrorSampleIndexConverterTest {
         }
 
         // Check mendelian errors iterator
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        FamilyIndexPutBuilder builder = new FamilyIndexPutBuilder(0);
         for (int i = 0; i < variants01.size(); i++) {
             if (i % 5 == 0) {
-                MendelianErrorSampleIndexConverter.toBytes(stream, variants01.get(i), "0/1", i, 0);
+                builder.addMendelianError(variants01.get(i), "0/1", i, 1);
             }
             if (i % 5 == 2) {
-                MendelianErrorSampleIndexConverter.toBytes(stream, variants11.get(i), "1/1", i, 0);
+                builder.addMendelianError(variants11.get(i), "1/1", i, 1);
             }
         }
 
         checkIterator(variants01, variants11, () -> {
             SampleIndexEntry entry = new SampleIndexEntry(0, "1", batchStart, SampleIndexConfiguration.defaultConfiguration());
-            entry.setMendelianVariants(stream.toByteArray(), 0, stream.size());
+            entry.setMendelianVariants(builder.getMendelianErrors());
             return entry;
         });
     }

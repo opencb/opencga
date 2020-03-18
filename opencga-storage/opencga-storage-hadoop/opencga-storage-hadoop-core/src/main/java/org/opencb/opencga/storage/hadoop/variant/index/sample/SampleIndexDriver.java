@@ -401,15 +401,15 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             // Get fileIndex for each file
             Map<Integer, Short> fileIndexMap = new HashMap<>();
 
-            variantRow.walker().onFile(fileColumn -> {
+            variantRow.forEachFile(fileColumn -> {
                 Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn.raw(), fixedAttributes);
 
                 short fileIndexValue = fileIndexConverter.createFileIndexValue(variant.getType(), 0, fileAttributes, null);
 
                 fileIndexMap.put(fileColumn.getFileId(), fileIndexValue);
-            }).walk();
+            });
 
-            variantRow.walker().onSample(sampleColumn -> {
+            variantRow.forEachSample(sampleColumn -> {
                 int sampleId = sampleColumn.getSampleId();
                 String gt;
                 boolean validGt;
@@ -464,7 +464,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                         throw new IllegalStateException("File " + files + " not found for sample " + sampleId + " in variant " + variant);
                     }
                 }
-            }).walk();
+            });
 
         }
 

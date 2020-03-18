@@ -88,6 +88,7 @@ public class SampleIndexEntryFilter {
     }
 
     private Set<Variant> filterMendelian(MendelianErrorSampleIndexEntryIterator iterator) {
+        // Use SET to ensure order and remove duplicates
         Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
 
         if (iterator != null) {

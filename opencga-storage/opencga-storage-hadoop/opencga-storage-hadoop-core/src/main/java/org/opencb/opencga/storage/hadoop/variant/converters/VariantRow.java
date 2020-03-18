@@ -85,6 +85,10 @@ public class VariantRow {
         walker().onSample(consumer).walk();
     }
 
+    public void forEachFile(Consumer<FileColumn> consumer) {
+        walker().onFile(consumer).walk();
+    }
+
     public VariantRowWalkerBuilder walker() {
         return new VariantRowWalkerBuilder();
     }
