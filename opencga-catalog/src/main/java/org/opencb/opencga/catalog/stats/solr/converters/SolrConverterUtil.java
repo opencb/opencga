@@ -19,10 +19,19 @@ public class SolrConverterUtil {
         Map<String, Object> result = new HashedMap();
         if (annotationSets != null) {
             for (AnnotationSet annotationSet : annotationSets) {
+                Map<String, QueryParam.Type> typeMap = variableTypeMap.get(annotationSet.getVariableSetId());
+
                 for (String annotationKey : annotationSet.getAnnotations().keySet()) {
                     Object value = annotationSet.getAnnotations().get(annotationKey);
-                    result.put("annotations" + type(variableTypeMap.get(annotationSet.getVariableSetId()).get(annotationKey))
-                            + annotationSet.getVariableSetId() + "." + annotationKey, value);
+                    if (typeMap.containsKey(annotationKey)) {
+                        result.put("annotations" + type(typeMap.get(annotationKey)) + annotationSet.getVariableSetId() + "."
+                                + annotationKey, value);
+                    } else {
+                        // Dynamic annotation
+                        String dynamicKey = annotationKey.substring(0, annotationKey.lastIndexOf(".") + 1) + "*";
+                        result.put("annotations" + type(typeMap.get(dynamicKey)) + annotationSet.getVariableSetId() + "." + annotationKey,
+                                value);
+                    }
                 }
             }
         }
