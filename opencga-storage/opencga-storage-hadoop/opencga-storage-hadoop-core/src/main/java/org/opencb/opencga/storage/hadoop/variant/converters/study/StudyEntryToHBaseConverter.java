@@ -154,7 +154,7 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
             Integer sampleId = sampleIdsMap.get(sampleName);
             if (sampleIds == null || sampleIds.contains(sampleId)) {
                 byte[] column = getSampleColumn(sampleId);
-                List<String> sampleData = studyEntry.getSamplesData().get(sampleIdx);
+                List<String> sampleData = studyEntry.getSamples().get(sampleIdx).getData();
                 // Write sample data if the is no genotype information, or if the genotype is equals to the default genotype
                 if (gtIdx == null || !defaultGenotypes.contains(sampleData.get(gtIdx))) {
                     if (formatReMap != null) {

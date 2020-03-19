@@ -4,6 +4,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -404,13 +405,13 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                         .getSampleData(next.toString(), studyFqn, queryOptions, getToken()).first();
 
                 StudyEntry studyEntry = variant.getStudies().get(0);
-                numSamples = studyEntry.getSamplesData().size();
+                numSamples = studyEntry.getSamples().size();
                 skip += numSamples;
 
                 int sampleIdPos = studyEntry.getFormatPositions().get(VariantQueryParser.SAMPLE_ID);
-                for (List<String> samplesDatum : studyEntry.getSamplesData()) {
-                    if (GenotypeClass.MAIN_ALT.test(samplesDatum.get(0))) {
-                        String sampleId = samplesDatum.get(sampleIdPos);
+                for (SampleEntry sampleEntry : studyEntry.getSamples()) {
+                    if (GenotypeClass.MAIN_ALT.test(sampleEntry.getData().get(0))) {
+                        String sampleId = sampleEntry.getData().get(sampleIdPos);
                         samples.add(sampleId);
                         thisVariantSamples.add(sampleId);
                     }
@@ -451,10 +452,10 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         VariantDBIterator iterator = getVariantStorageManager().iterator(query, new QueryOptions(), getToken());
         while (iterator.hasNext()) {
             Variant next = iterator.next();
-            for (List<String> samplesDatum : next.getStudies().get(0).getSamplesData()) {
-                String genotype = samplesDatum.get(0);
+            for (SampleEntry sampleEntry : next.getStudies().get(0).getSamples()) {
+                String genotype = sampleEntry.getData().get(0);
                 if (GenotypeClass.MAIN_ALT.test(genotype) && genotypeFilter.test(genotype)) {
-                    samples.add(samplesDatum.get(1));
+                    samples.add(sampleEntry.getData().get(1));
                 }
             }
         }

@@ -4,6 +4,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
@@ -87,7 +88,7 @@ public class VariantSampleDataManager {
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT, 10));
         int dbTime = 0;
         int gtCount = 0;
-        List<List<String>> sampleDataList = new ArrayList<>(limit);
+        List<SampleEntry> sampleEntries = new ArrayList<>(limit);
         Map<String, Integer> filesIdx = new HashMap<>();
         List<FileEntry> files = new ArrayList<>(limit);
         Map<String, VariantStats> stats = Collections.emptyMap();
@@ -139,7 +140,7 @@ public class VariantSampleDataManager {
             readSamples += samples.size();
             for (int i = 0; i < samples.size(); i++) {
                 String sample = samples.get(i);
-                List<String> sampleData = partialStudy.getSamplesData().get(i);
+                List<String> sampleData = partialStudy.getSamples().get(i).getData();
 
                 String gt = hasGt ? sampleData.get(0) : GenotypeClass.NA_GT_VALUE;
                 if (gt.equals(".")) {
@@ -150,7 +151,7 @@ public class VariantSampleDataManager {
                     // Skip other genotypes
                     gtCount++;
                     if (gtCount > skip) {
-                        if (sampleDataList.size() < limit) {
+                        if (sampleEntries.size() < limit) {
                             Integer sampleId = metadataManager.getSampleId(studyId, sample);
                             FileEntry fileEntry = null;
                             for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId))) {
@@ -175,7 +176,7 @@ public class VariantSampleDataManager {
                                 files.add(fileEntry);
                             }
                             sampleData.set(fileIdxFormatIdx, String.valueOf(fileIdx));
-                            sampleDataList.add(sampleData);
+                            sampleEntries.add(new SampleEntry(sample, fileIdx, sampleData));
                         }
                     }
                 }
@@ -196,7 +197,7 @@ public class VariantSampleDataManager {
         variant.setAnnotation(annotation);
         StudyEntry studyEntry = new StudyEntry(study);
         variant.addStudyEntry(studyEntry);
-        studyEntry.setSamplesData(sampleDataList);
+        studyEntry.setSamples(sampleEntries);
         studyEntry.setFiles(files);
         studyEntry.setStats(stats);
         studyEntry.setFormat(format);

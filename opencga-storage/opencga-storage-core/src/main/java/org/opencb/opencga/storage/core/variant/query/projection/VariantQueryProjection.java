@@ -84,10 +84,10 @@ public final class VariantQueryProjection {
 
     public static class StudyVariantQueryProjection {
         private StudyMetadata studyMetadata;
-        private List<Integer> samples;
-        private Map<Integer, List<Integer>> multiFileSamples;
-        private List<Integer> files;
-        private List<Integer> cohorts;
+        private List<Integer> samples = Collections.emptyList();
+        private Map<Integer, List<Integer>> multiFileSamples = Collections.emptyMap();
+        private List<Integer> files = Collections.emptyList();
+        private List<Integer> cohorts = Collections.emptyList();
 
         public StudyVariantQueryProjection() {
         }

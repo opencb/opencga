@@ -144,7 +144,7 @@ public class VariantSampleFilter {
 
                 int sampleIdx = 0;
                 for (String sample : studyEntry.getOrderedSamplesName()) {
-                    String gt = studyEntry.getSamplesData().get(sampleIdx).get(gtIdx);
+                    String gt = studyEntry.getSamples().get(sampleIdx).getData().get(gtIdx);
                     if (!walker.accept(variant, sample, gt)) {
                         break;
                     }

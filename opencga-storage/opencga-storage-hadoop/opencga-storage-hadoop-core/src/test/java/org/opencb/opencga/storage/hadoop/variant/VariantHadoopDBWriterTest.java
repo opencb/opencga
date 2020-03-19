@@ -38,6 +38,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
@@ -186,16 +187,16 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
             if (!expectedAlternates.equals(actualAlternates)) {
                 if (new HashSet<>(expectedAlternates).equals(new HashSet<>(actualAlternates))) {
                     assertEquals(2, expectedAlternates.size());
-                    List<List<String>> expectedSamplesData = expected.getStudies().get(0).getSamplesData();
-                    List<List<String>> actualSamplesData = actual.getStudies().get(0).getSamplesData();
+                    List<SampleEntry> expectedSamplesData = expected.getStudies().get(0).getSamples();
+                    List<SampleEntry> actualSamplesData = actual.getStudies().get(0).getSamples();
                     for (int i = 0; i < expectedSamplesData.size(); i++) {
                         // Up to 3 alternates. The first alternate must match. Swap second and third alternate (1/2 -> 1/3)
-                        String newGT = expectedSamplesData.get(i).get(0).replace('2', 'X').replace('3', '2').replace('X', '3');
-                        expectedSamplesData.get(i).set(0, newGT);
-                        if (expectedSamplesData.get(i).get(4).equals("1,2,3,0")) {
-                            expectedSamplesData.get(i).set(4, "1,2,0,3");
-                        } else if (expectedSamplesData.get(i).get(4).equals("1,2,0,3")) {
-                            expectedSamplesData.get(i).set(4, "1,2,3,0");
+                        String newGT = expectedSamplesData.get(i).getData().get(0).replace('2', 'X').replace('3', '2').replace('X', '3');
+                        expectedSamplesData.get(i).getData().set(0, newGT);
+                        if (expectedSamplesData.get(i).getData().get(4).equals("1,2,3,0")) {
+                            expectedSamplesData.get(i).getData().set(4, "1,2,0,3");
+                        } else if (expectedSamplesData.get(i).getData().get(4).equals("1,2,0,3")) {
+                            expectedSamplesData.get(i).getData().set(4, "1,2,3,0");
                         } else {
                             fail("Unexpected expected sample data " + expectedSamplesData.get(i).get(4));
                         }
@@ -213,7 +214,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                     System.out.println("Actual   = " + actual.toJson());
                 }
 
-                assertEquals(expected.getStudies().get(0).getSamplesData(), expected.getStudies().get(0).getSamplesData());
+                assertEquals(expected.getStudies().get(0).getSamples(), expected.getStudies().get(0).getSamples());
             }
         }
         assertEquals(6, loadedVariants.size());

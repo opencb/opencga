@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.response.VariantQueryResult;
@@ -173,16 +174,19 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
             for (StudyEntry study : variant.getStudies()) {
                 assertEquals(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF",
                         VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX, VariantQueryParser.FILE_ID), study.getFormat());
-                List<String> sampleIds = study.getSamplesData()
+                List<String> sampleIds = study.getSamples()
                         .stream()
+                        .map(SampleEntry::getData)
                         .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.SAMPLE_ID)))
                         .collect(Collectors.toList());
-                List<String> fileIdxs = study.getSamplesData()
+                List<String> fileIdxs = study.getSamples()
                         .stream()
+                        .map(SampleEntry::getData)
                         .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.FILE_IDX)))
                         .collect(Collectors.toList());
-                List<String> fileIds = study.getSamplesData()
+                List<String> fileIds = study.getSamples()
                         .stream()
+                        .map(SampleEntry::getData)
                         .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.FILE_ID)))
                         .collect(Collectors.toList());
 
@@ -210,15 +214,17 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
             for (StudyEntry study : variant.getStudies()) {
                 assertEquals(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF",
                         VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX, VariantQueryParser.FILE_ID), study.getFormat());
-                List<String> sampleIds = study.getSamplesData()
+                List<String> sampleIds = study.getSamples()
                         .stream()
+                        .map(SampleEntry::getData)
                         .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.SAMPLE_ID)))
                         .collect(Collectors.toList());
 
                 assertEquals(variant.toString(), study.getOrderedSamplesName(), sampleIds);
-                for (List<String> samplesDatum : study.getSamplesData()) {
-                    assertEquals(".", samplesDatum.get(study.getFormatPositions().get(VariantQueryParser.FILE_ID)));
-                    assertEquals(".", samplesDatum.get(study.getFormatPositions().get(VariantQueryParser.FILE_IDX)));
+                for (SampleEntry sampleEntry : study.getSamples()) {
+                    List<String> data = sampleEntry.getData();
+                    assertEquals(".", data.get(study.getFormatPositions().get(VariantQueryParser.FILE_ID)));
+                    assertEquals(".", data.get(study.getFormatPositions().get(VariantQueryParser.FILE_IDX)));
                 }
             }
         }
@@ -1155,16 +1161,16 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         System.out.println("variant = " + variant.toJson());
         Map<String, Integer> formats = variant.getStudies().get(0).getFormatPositions();
         assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(4, variant.getStudies().get(0).getSamplesData().size());
+        assertEquals(4, variant.getStudies().get(0).getSamples().size());
         assertEquals(4, variant.getStudies().get(0).getFiles().size());
 //
         variant = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant = " + variant.toJson());
         assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(1, variant.getStudies().get(0).getSamplesData().size());
-        assertEquals(sampleNA12877, variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("0/1", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get("GT")));
-        assertEquals("0", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertEquals(1, variant.getStudies().get(0).getSamples().size());
+        assertEquals(sampleNA12877, variant.getStudies().get(0).getSampleData(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
+        assertEquals("0/1", variant.getStudies().get(0).getSampleData(0).get(formats.get("GT")));
+        assertEquals("0", variant.getStudies().get(0).getSampleData(0).get(formats.get(VariantQueryParser.FILE_IDX)));
 //        assertEquals(file12877, variant.getStudies().get(0).getSamplesData().get("0/1").get(0).getFileId());
 //        assertEquals(sampleNA12878, variant.getStudies().get(0).getSamplesData().get("1/1").get(0).getId());
 //        assertEquals(file12878, variant.getStudies().get(0).getSamplesData().get("1/1").get(0).getFileId());
@@ -1173,40 +1179,40 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         variant = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions(QueryOptions.LIMIT, 1).append(QueryOptions.SKIP, 1)).first();
         System.out.println("sampleData = " + variant);
         assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(sampleNA12878, variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("1/1", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get("GT")));
-        assertEquals("0", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertEquals(sampleNA12878, variant.getStudies().get(0).getSampleData(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
+        assertEquals("1/1", variant.getStudies().get(0).getSampleData(0).get(formats.get("GT")));
+        assertEquals("0", variant.getStudies().get(0).getSampleData(0).get(formats.get(VariantQueryParser.FILE_IDX)));
         assertEquals(1, variant.getStudies().get(0).getFiles().size());
 
         variant = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleNA12878 + "," + sampleNA12879)).first();
         assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(2, variant.getStudies().get(0).getSamplesData().size());
+        assertEquals(2, variant.getStudies().get(0).getSamples().size());
         assertEquals(2, variant.getStudies().get(0).getFiles().size());
-        assertEquals(sampleNA12878, variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("0", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.FILE_IDX)));
-        assertEquals(sampleNA12879, variant.getStudies().get(0).getSamplesData().get(1).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("1", variant.getStudies().get(0).getSamplesData().get(1).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertEquals(sampleNA12878, variant.getStudies().get(0).getSampleData(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
+        assertEquals("0", variant.getStudies().get(0).getSampleData(0).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertEquals(sampleNA12879, variant.getStudies().get(0).getSampleData(1).get(formats.get(VariantQueryParser.SAMPLE_ID)));
+        assertEquals("1", variant.getStudies().get(0).getSampleData(1).get(formats.get(VariantQueryParser.FILE_IDX)));
 
         // 0/1 : 77
         variant = variantStorageEngine.getSampleData("MT:16184:C:A", study1, new QueryOptions()).first();
         assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(1, variant.getStudies().get(0).getSamplesData().size());
-        assertEquals(sampleNA12877, variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("0/1", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get("GT")));
-        assertEquals("0", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertEquals(1, variant.getStudies().get(0).getSamples().size());
+        assertEquals(sampleNA12877, variant.getStudies().get(0).getSampleData(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
+        assertEquals("0/1", variant.getStudies().get(0).getSampleData(0).get(formats.get("GT")));
+        assertEquals("0", variant.getStudies().get(0).getSampleData(0).get(formats.get(VariantQueryParser.FILE_IDX)));
         assertEquals(1, variant.getStudies().get(0).getFiles().size());
 
         variant = variantStorageEngine.getSampleData("MT:16184:C:A", study1, new QueryOptions(QueryOptions.LIMIT, 1)).first();
         assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(1, variant.getStudies().get(0).getSamplesData().size());
-        assertEquals(sampleNA12877, variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("0/1", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get("GT")));
-        assertEquals("0", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertEquals(1, variant.getStudies().get(0).getSamples().size());
+        assertEquals(sampleNA12877, variant.getStudies().get(0).getSampleData(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
+        assertEquals("0/1", variant.getStudies().get(0).getSampleData(0).get(formats.get("GT")));
+        assertEquals("0", variant.getStudies().get(0).getSampleData(0).get(formats.get(VariantQueryParser.FILE_IDX)));
         assertEquals(1, variant.getStudies().get(0).getFiles().size());
 
         variant = variantStorageEngine.getSampleData("MT:16184:C:A", study1, new QueryOptions(QueryOptions.LIMIT, 1).append(QueryOptions.SKIP, 1)).first();
         assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(0, variant.getStudies().get(0).getSamplesData().size());
+        assertEquals(0, variant.getStudies().get(0).getSamples().size());
         assertEquals(0, variant.getStudies().get(0).getFiles().size());
     }
 

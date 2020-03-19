@@ -201,10 +201,15 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 .onFillMissing(fillMissing::put)
                 .onSample(sampleColumn -> {
                     studies.add(sampleColumn.getStudyId());
-                    List<Integer> multiFiles = selectVariantElements
-                            .getStudy(sampleColumn.getStudyId())
-                            .getMultiFileSamples()
-                            .get(sampleColumn.getSampleId());
+                    List<Integer> multiFiles;
+                    if (selectVariantElements == null) {
+                        multiFiles = Collections.emptyList();
+                    } else {
+                        multiFiles = selectVariantElements
+                                .getStudy(sampleColumn.getStudyId())
+                                .getMultiFileSamples()
+                                .get(sampleColumn.getSampleId());
+                    }
                     if (!multiFiles.isEmpty()) {
                         if (sampleColumn.getFileId() != null) {
                             // Is the first file?
@@ -319,7 +324,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         } else {
             returnedSamplesPosition = getReturnedSamplesPosition(studyMetadata);
         }
-        studyEntry.setSamplesData(new ArrayList<>(returnedSamplesPosition.size()));
+        studyEntry.setSamples(new ArrayList<>(returnedSamplesPosition.size()));
         studyEntry.setSortedSamplesPosition(returnedSamplesPosition);
         return studyEntry;
     }
@@ -359,9 +364,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
         String sampleName = getSampleName(studyMetadata.getId(), sampleId);
         Integer samplePosition = studyEntry.getSamplesPosition().get(sampleName);
-        List<String> old = studyEntry.getSamplesData().set(samplePosition, sampleData);
+        SampleEntry old = studyEntry.getSamples().set(samplePosition, new SampleEntry(null, null, sampleData));
         if (old != null) {
-            studyEntry.getIssues().add(new IssueEntry(IssueType.DISCREPANCY, new SampleEntry(sampleName, null, old)));
+            old.setSampleId(sampleName);
+            studyEntry.getIssues().add(new IssueEntry(IssueType.DISCREPANCY, old));
         }
     }
 
@@ -490,11 +496,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             sampleIdTofileIdxMap = Collections.emptyMap();
         }
         int sampleIdx = 0;
-        List<List<String>> samplesData = studyEntry.getSamplesData();
+        List<SampleEntry> samplesData = studyEntry.getSamples();
         for (Iterator<String> iterator = studyEntry.getSamplesPosition().keySet().iterator(); iterator.hasNext(); sampleIdx++) {
             String sampleName = iterator.next();
-            List<String> data = samplesData.get(sampleIdx);
-            if (data == null) {
+            SampleEntry sampleEntry = samplesData.get(sampleIdx);
+            if (sampleEntry == null) {
+                List<String> data;
                 if (missingUpdatedList.get(sampleIdx) || sampleWithVariant.get(sampleIdx)) {
                     data = unmodifiableEmptyDataReferenceGenotype;
                 } else {
@@ -505,8 +512,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     data = new ArrayList<>(data);
                     data.set(sampleIdIdx, sampleName);
                 }
-                samplesData.set(sampleIdx, data);
+                samplesData.set(sampleIdx, new SampleEntry(null, null, data));
             } else {
+                List<String> data = sampleEntry.getData();
                 data.replaceAll(s -> s == null ? UNKNOWN_SAMPLE_DATA : s);
                 if (data.size() < unmodifiableEmptyData.size()) {
                     for (int i = data.size(); i < unmodifiableEmptyData.size(); i++) {
@@ -707,7 +715,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 StudyEntry se = new StudyEntry("0");
                 se.setSecondaryAlternates(getAlternateCoordinates(secondaryAlternates));
                 se.setFormat(studyEntry.getFormat());
-                se.setSamplesData(new ArrayList<>(fileIds.size()));
+                se.setSamples(new ArrayList<>(fileIds.size()));
 
                 for (String fileId : fileIds) {
                     FileEntry fileEntry = studyEntry.getFile(fileId);

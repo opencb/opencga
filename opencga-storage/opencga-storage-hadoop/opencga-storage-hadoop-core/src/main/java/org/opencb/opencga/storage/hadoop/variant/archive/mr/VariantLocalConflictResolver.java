@@ -27,6 +27,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -535,15 +536,15 @@ public class VariantLocalConflictResolver {
             return null;
         }
         StudyEntry studyEntry = studies.get(0);
-        List<List<String>> samplesData = studyEntry.getSamplesData();
-        if (samplesData == null || samplesData.isEmpty()) {
+        List<SampleEntry> samples = studyEntry.getSamples();
+        if (samples == null || samples.isEmpty()) {
             return null;
         }
         Integer keyPos = studyEntry.getFormatPositions().get(GENOTYPE_FILTER_KEY);
         if (null == keyPos) {
             return null;
         }
-        List<String> sample = samplesData.get(0);
+        List<String> sample = samples.get(0).getData();
         if (sample.isEmpty()) {
             return null;
         }
@@ -733,13 +734,12 @@ public class VariantLocalConflictResolver {
             }
             se.setFiles(files);
 
-            int samplesSize = vse.getSamplesData().size();
-            List<List<String>> newSampleData = new ArrayList<>(samplesSize);
-            for (int i = 0; i < samplesSize; i++) {
-                List<String> sd = vse.getSamplesData().get(i);
-                newSampleData.add(new ArrayList<>(sd));
+            int samplesSize = vse.getSamples().size();
+            List<SampleEntry> newSampleData = new ArrayList<>(samplesSize);
+            for (SampleEntry sample : vse.getSamples()) {
+                newSampleData.add(new SampleEntry(sample.getSampleId(), sample.getFileIndex(), sample.getData()));
             }
-            se.setSamplesData(newSampleData);
+            se.setSamples(newSampleData);
 
             v.addStudyEntry(se);
         }
@@ -758,17 +758,17 @@ public class VariantLocalConflictResolver {
         int gtpos = formatPositions.get(GENOTYPE_KEY);
         int filterPos = formatPositions.containsKey(GENOTYPE_FILTER_KEY)
                 ? formatPositions.get(GENOTYPE_FILTER_KEY) : -1;
-        List<List<String>> sdLst = se.getSamplesData();
-        List<List<String>> oLst = new ArrayList<>(sdLst.size());
-        for (List<String> sd : sdLst) {
-            List<String> o = new ArrayList<>(sd);
+        List<SampleEntry> sdLst = se.getSamples();
+        List<SampleEntry> oLst = new ArrayList<>(sdLst.size());
+        for (SampleEntry sd : sdLst) {
+            List<String> o = new ArrayList<>(sd.getData());
             o.set(gtpos, genotype);
             if (filterPos != -1) {
                 o.set(filterPos, "SiteConflict");
             }
-            oLst.add(o);
+            oLst.add(new SampleEntry(sd.getSampleId(), sd.getFileIndex(), o));
         }
-        se.setSamplesData(oLst);
+        se.setSamples(oLst);
         se.setSecondaryAlternates(new ArrayList<>());
         for (FileEntry fe : se.getFiles()) {
             Map<String, String> feAttr = fe.getAttributes();

@@ -143,8 +143,8 @@ public class MongoVariantImporter extends VariantImporter {
                             file.setFileId(fileIdRemap.get(file.getFileId()));
                         }
                     }
-                    if (studyEntry.getSamplesData() == null) {
-                        studyEntry.setSamplesData(Collections.emptyList());
+                    if (studyEntry.getSamples() == null) {
+                        studyEntry.setSamples(Collections.emptyList());
                     }
                 }
                 return variant;

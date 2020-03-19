@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
@@ -116,8 +117,8 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
         if (gtIdx == null || gtIdx < 0) {
             return false;
         }
-        for (List<String> data : studyEntry.getSamplesData()) {
-            if (!isHomRef(data.get(gtIdx))) {
+        for (SampleEntry sample : studyEntry.getSamples()) {
+            if (!isHomRef(sample.getData().get(gtIdx))) {
                 return false;
             }
         }

@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -389,9 +390,9 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
             StudyEntry studyEntry = variant.getStudies().get(0);
             boolean newVariant = !missingGenotypesUpdated && studyEntry.getFiles().stream().map(FileEntry::getFileId)
                     .map(name -> metadataManager.getFileId(studyMetadata.getId(), name)).allMatch(newFilesSet::contains);
-            List<List<String>> samplesData = studyEntry.getSamplesData();
-            for (int i = 0; i < samplesData.size(); i++) {
-                List<String> data = samplesData.get(i);
+            List<SampleEntry> sampleEntries = studyEntry.getSamples();
+            for (int i = 0; i < sampleEntries.size(); i++) {
+                List<String> data = sampleEntries.get(i).getData();
                 String sampleName = studyEntry.getOrderedSamplesName().get(i);
                 if (newVariant || !samplesSet.contains(sampleName)) {
                     assertNotEquals((newVariant ? "new variant " : "") + variant + " _ " + sampleName + " should not have GT=0/0", "0/0", data.get(0));

@@ -5,6 +5,7 @@ import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -131,6 +132,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                     throw new IllegalArgumentException("Already loaded variant " + variantIndexEntry.getVariant());
                 }
             }
+            if (VariantFileIndexConverter.isMultiFile(variantIndexEntry.getFileIndex())) {
+                throw new IllegalArgumentException("Unexpected multi-file at variant " + variantIndexEntry.getVariant());
+            }
             sampleEntry.add(gt, variantIndexEntry);
         }
     }
@@ -182,8 +186,8 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
             int sampleIdx = 0;
             StudyEntry studyEntry = variant.getStudies().get(0);
             boolean hasGT = studyEntry.getFormat().get(0).equals("GT");
-            for (List<String> samplesData : studyEntry.getSamplesData()) {
-                String gt = hasGT ? samplesData.get(0) : GenotypeClass.NA_GT_VALUE;
+            for (SampleEntry sample : studyEntry.getSamples()) {
+                String gt = hasGT ? sample.getData().get(0) : GenotypeClass.NA_GT_VALUE;
                 if (validVariant(variant) && validGenotype(gt)) {
                     genotypes.add(gt);
                     Chunk chunk = buffer.computeIfAbsent(indexChunk, Chunk::new);

@@ -158,7 +158,7 @@ public class VariantJsonWriter implements VariantWriter {
                     }
                 }
                 if (!includeSamples) {
-                    studyEntry.getSamplesData().clear();
+                    studyEntry.getSamples().clear();
                 }
                 if (!includeStats) {
                     studyEntry.setStats(Collections.emptyMap());

@@ -19,9 +19,21 @@ public class ParsedVariantQuery {
 
     private VariantQueryProjection projection;
 
-    private VariantStudyQuery studyQuery;
+    private final VariantStudyQuery studyQuery = new VariantStudyQuery();
 //    private VariantAnnotationQuery annotationQuery;
 
+
+    public ParsedVariantQuery() {
+        this.inputQuery = new Query();
+        this.inputOptions = new QueryOptions();
+        this.query = new Query();
+    }
+
+    public ParsedVariantQuery(Query inputQuery, QueryOptions inputOptions) {
+        this.inputQuery = inputQuery;
+        this.inputOptions = inputOptions;
+        this.query = inputQuery;
+    }
 
     public Query getInputQuery() {
         return inputQuery;
@@ -61,11 +73,6 @@ public class ParsedVariantQuery {
 
     public VariantStudyQuery getStudyQuery() {
         return studyQuery;
-    }
-
-    public ParsedVariantQuery setStudyQuery(VariantStudyQuery studyQuery) {
-        this.studyQuery = studyQuery;
-        return this;
     }
 
     public static class VariantStudyQuery {

@@ -217,7 +217,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
 
             int numVariants = iterate(query, v -> {
                 StudyEntry studyEntry = v.getStudies().get(0);
-                List<String> sampleData = studyEntry.getSamplesData().get(0);
+                List<String> sampleData = studyEntry.getSampleData(0);
                 FileEntry fileEntry = studyEntry.getFiles().get(Integer.parseInt(sampleData.get(1)));
                 for (ConsequenceType consequenceType : v.getAnnotation().getConsequenceTypes()) {
                     if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
@@ -245,7 +245,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             iterate(query, variant -> {
                 Variant secVar = getSecondaryVariant(variant);
                 StudyEntry studyEntry = variant.getStudies().get(0);
-                List<String> sampleData = studyEntry.getSamplesData().get(0);
+                List<String> sampleData = studyEntry.getSampleData(0);
                 FileEntry fileEntry = studyEntry.getFiles().get(Integer.parseInt(sampleData.get(1)));
                 KnockoutVariant knockoutVariant = new KnockoutVariant(
                         variant.toString(),
@@ -267,7 +267,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     // The variant was already seen. i.e. there was a variant with this variant as secondary alternate
                     for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
                         if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
-                            String gt = studyEntry.getSamplesData().get(0).get(0);
+                            String gt = studyEntry.getSampleData(0).get(0);
                             addGene(variant.toString(), gt, knockoutVariant.getFilter(), knockoutVariant.getQual(),
                                     consequenceType, knockoutGenes, KnockoutVariant.KnockoutType.HET_ALT
                             );
@@ -297,7 +297,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
 
             int numVariants = iterate(query, v -> {
                 StudyEntry studyEntry = v.getStudies().get(0);
-                List<String> sampleData = studyEntry.getSamplesData().get(0);
+                List<String> sampleData = studyEntry.getSampleData(0);
                 FileEntry fileEntry = studyEntry.getFiles().get(Integer.parseInt(sampleData.get(1)));
                 for (ConsequenceType consequenceType : v.getAnnotation().getConsequenceTypes()) {
                     if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
@@ -334,7 +334,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         .append(VariantQueryParam.SAMPLE.key(), sample)
                         .append(VariantQueryParam.REGION.key(), new Region(svVariant.getChromosome(), svVariant.getStart(), svVariant.getEnd()));
 
-                List<String> svSampleData = svVariant.getStudies().get(0).getSamplesData().get(0);
+                List<String> svSampleData = svVariant.getStudies().get(0).getSampleData(0);
                 FileEntry svFileEntry = svVariant.getStudies().get(0).getFiles().get(Integer.parseInt(svSampleData.get(1)));
 
                 iterate(thisSvQuery, variant -> {
@@ -342,7 +342,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         return;
                     }
                     StudyEntry studyEntry = variant.getStudies().get(0);
-                    List<String> sampleData = studyEntry.getSamplesData().get(0);
+                    List<String> sampleData = studyEntry.getSampleData(0);
                     FileEntry fileEntry = studyEntry.getFiles().get(Integer.parseInt(sampleData.get(1)));
                     for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
                         if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
@@ -416,7 +416,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                                     .append(VariantQueryParam.INCLUDE_FILE.key(), null)
                                     .append(VariantQueryParam.GENOTYPE.key(), GenotypeClass.MAIN_ALT), getToken());
                     Variant variant = result.first();
-                    numSamples = variant.getStudies().get(0).getSamplesData().size();
+                    numSamples = variant.getStudies().get(0).getSamples().size();
                     skip += numSamples;
                     logger.info("[{}] - Found {} samples at variant {}", gene,
                             numSamples, v.toString());
@@ -436,10 +436,11 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     StudyEntry studyEntry = variant.getStudies().get(0);
                     Integer sampleIdIdx = studyEntry.getFormatPositions().get(VariantQueryParser.SAMPLE_ID);
                     Integer fileIdxIdx = studyEntry.getFormatPositions().get(VariantQueryParser.FILE_IDX);
-                    for (List<String> samplesDatum : studyEntry.getSamplesData()) {
-                        String genotype = samplesDatum.get(0);
-                        String sample = samplesDatum.get(sampleIdIdx);
-                        int fileIdx = Integer.parseInt(samplesDatum.get(fileIdxIdx));
+                    for (SampleEntry sampleEntry : studyEntry.getSamples()) {
+                        List<String> data = sampleEntry.getData();
+                        String genotype = data.get(0);
+                        String sample = data.get(sampleIdIdx);
+                        int fileIdx = Integer.parseInt(data.get(fileIdxIdx));
 
                         if (GenotypeClass.MAIN_ALT.test(genotype)) {
                             if (GenotypeClass.HOM_ALT.test(genotype)) {
@@ -511,7 +512,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
                     StudyEntry studyEntry = variant.getStudies().get(0);
-                    List<String> sampleData = studyEntry.getSamplesData().get(0);
+                    List<String> sampleData = studyEntry.getSampleData(0);
                     FileEntry fileEntry = studyEntry.getFiles().get(Integer.parseInt(sampleData.get(1)));
 
                     KnockoutByGene.KnockoutSample sample = knockoutByGene.getSample(sampleId);
@@ -543,13 +544,13 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             Map<String, KnockoutVariant> variants = new HashMap<>();
             iterate(query, variant -> {
                 StudyEntry studyEntry = variant.getStudies().get(0);
-                List<String> sampleData = studyEntry.getSamplesData().get(0);
+                List<String> sampleData = studyEntry.getSampleData(0);
                 FileEntry fileEntry = studyEntry.getFiles().get(Integer.parseInt(sampleData.get(1)));
 
                 Variant secVar = getSecondaryVariant(variant);
                 KnockoutVariant knockoutVariant = new KnockoutVariant(
                         variant.toString(),
-                        variant.getStudies().get(0).getSamplesData().get(0).get(0),
+                        variant.getStudies().get(0).getSampleData(0).get(0),
                         fileEntry.getAttributes().get(StudyEntry.FILTER),
                         fileEntry.getAttributes().get(StudyEntry.QUAL),
                         KnockoutVariant.KnockoutType.HET_ALT, null
@@ -608,7 +609,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     }
                 }
 
-                List<String> svSampleData = svVariant.getStudies().get(0).getSamplesData().get(0);
+                List<String> svSampleData = svVariant.getStudies().get(0).getSampleData(0);
                 FileEntry svFileEntry = svVariant.getStudies().get(0).getFiles().get(Integer.parseInt(svSampleData.get(1)));
 
                 Query thisSvQuery = new Query(baseQuery)
@@ -628,7 +629,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                                 knockoutTranscript.setBiotype(ct.getBiotype());
 
                                 StudyEntry studyEntry = variant.getStudies().get(0);
-                                List<String> sampleData = studyEntry.getSamplesData().get(0);
+                                List<String> sampleData = studyEntry.getSampleData(0);
                                 FileEntry fileEntry = studyEntry.getFiles().get(Integer.parseInt(sampleData.get(1)));
 
                                 knockoutTranscript.addVariant(new KnockoutVariant(
@@ -740,7 +741,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
     }
 
     private Variant getSecondaryVariant(Variant variant) {
-        Genotype gt = new Genotype(variant.getStudies().get(0).getSamplesData().get(0).get(0));
+        Genotype gt = new Genotype(variant.getStudies().get(0).getSampleData(0).get(0));
         Variant secVar = null;
         for (int allelesIdx : gt.getAllelesIdx()) {
             if (allelesIdx > 1) {

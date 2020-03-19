@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -63,7 +64,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
 
         iterator = engine.iterator(new Query(VariantQueryParam.SAMPLE.key(), "SAMPLE_1"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
-            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamples().size());
             assertEquals(Collections.singleton("SAMPLE_1"), variant.getStudy(STUDY_NAME).getSamplesName());
             if (!variant.getStudy(STUDY_NAME).getFiles().isEmpty()) {
                 assertEquals("variant-test-somatic.vcf", variant.getStudy(STUDY_NAME).getFiles().get(0).getFileId());
@@ -104,7 +105,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
 
         iterator = engine.iterator(new Query(VariantQueryParam.SAMPLE.key(), "SAMPLE_1"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
-            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamples().size());
             assertEquals(Collections.singleton("SAMPLE_1"), variant.getStudy(STUDY_NAME).getSamplesName());
             if (!variant.getStudy(STUDY_NAME).getFiles().isEmpty()) {
                 assertEquals("variant-test-somatic.vcf", variant.getStudy(STUDY_NAME).getFiles().get(0).getFileId());
@@ -162,7 +163,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         VariantDBIterator iterator = engine.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), "SAMPLE_1")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL), new QueryOptions());
         iterator.forEachRemaining(variant -> {
-            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamples().size());
             assertEquals(Collections.singleton("SAMPLE_1"), variant.getStudy(STUDY_NAME).getSamplesName());
             assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() > 0);
             assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() <= 2);
@@ -173,7 +174,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         iterator = engine.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), "SAMPLE_2")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL), new QueryOptions());
         iterator.forEachRemaining(variant -> {
-            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamples().size());
             assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
             assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() > 0);
             assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() <= 2);
@@ -184,7 +185,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         iterator = engine.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), "SAMPLE_2")
                 .append(VariantQueryParam.FILE.key(), "variant-test-somatic_2.vcf"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
-            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamples().size());
             assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
             if (!variant.getStudy(STUDY_NAME).getFiles().isEmpty()) {
                 assertEquals("variant-test-somatic_2.vcf", variant.getStudy(STUDY_NAME).getFiles().get(0).getFileId());
@@ -194,7 +195,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
 
         iterator = engine.iterator(new Query(VariantQueryParam.SAMPLE.key(), "SAMPLE_1"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
-            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamples().size());
             assertEquals(Collections.singleton("SAMPLE_1"), variant.getStudy(STUDY_NAME).getSamplesName());
             if (!variant.getStudy(STUDY_NAME).getFiles().isEmpty()) {
                 assertEquals("variant-test-somatic.vcf", variant.getStudy(STUDY_NAME).getFiles().get(0).getFileId());
@@ -221,7 +222,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
             case VARIANT_A:
                 assertEquals(STUDY_NAME, studyEntry.getStudyId());
                 assertEquals(Collections.singletonList("SAMPLE_1"),
-                        studyEntry.getSamplesData().stream().map(l -> l.get(l.size() - 2)).collect(Collectors.toList()));
+                        studyEntry.getSamples().stream().map(SampleEntry::getData).map(l -> l.get(l.size() - 2)).collect(Collectors.toList()));
                 assertEquals(Collections.singleton("variant-test-somatic.vcf"),
                         studyEntry.getFiles().stream().map(FileEntry::getFileId).collect(Collectors.toSet()));
                 break;
@@ -230,7 +231,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
             case RS_VARIANT:
                 assertEquals(STUDY_NAME, studyEntry.getStudyId());
                 assertEquals(Arrays.asList("SAMPLE_1", "SAMPLE_2"),
-                        studyEntry.getSamplesData().stream().map(l -> l.get(l.size() - 2)).collect(Collectors.toList()));
+                        studyEntry.getSamples().stream().map(SampleEntry::getData).map(l -> l.get(l.size() - 2)).collect(Collectors.toList()));
                 assertEquals(new HashSet<>(Arrays.asList("variant-test-somatic.vcf", "variant-test-somatic_2.vcf")),
                         studyEntry.getFiles().stream().map(FileEntry::getFileId).collect(Collectors.toSet()));
                 break;

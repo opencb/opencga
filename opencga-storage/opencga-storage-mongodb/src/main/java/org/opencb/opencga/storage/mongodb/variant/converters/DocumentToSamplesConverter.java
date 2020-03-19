@@ -23,14 +23,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,6 @@ import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
@@ -154,7 +154,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         list.forEach(this::addStudyMetadata);
     }
 
-    public List<List<String>> convertToDataModelType(Document object, int studyId) {
+    public List<SampleEntry> convertToDataModelType(Document object, int studyId) {
         return convertToDataModelType(object, null, studyId);
     }
 
@@ -164,7 +164,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
      * @param studyId StudyId
      * @return Samples Data
      */
-    public List<List<String>> convertToDataModelType(Document object, StudyEntry study, int studyId) {
+    public List<SampleEntry> convertToDataModelType(Document object, StudyEntry study, int studyId) {
         StudyMetadata studyMetadata = getStudyMetadata(studyId);
         if (studyMetadata == null) {
             return Collections.emptyList();
@@ -223,7 +223,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
         extraFields = getExtraFormatFields(studyId, filesWithSamplesData, files);
         format = getFormat(excludeGenotypes, extraFields);
-        List<List<String>> samplesData = new ArrayList<>(sampleIds.size());
+        List<SampleEntry> sampleEntries = new ArrayList<>(sampleIds.size());
 
 
         // An array of genotypes is initialized with the most common one
@@ -254,7 +254,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             if (sampleIdIdx >= 0) {
                 values[sampleIdIdx] = sampleName;
             }
-            samplesData.add(Arrays.asList(values));
+            sampleEntries.add(new SampleEntry(null, null, Arrays.asList(values)));
         }
 
 
@@ -275,7 +275,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 }
                 for (Integer sampleId : (List<Integer>) dbo.getValue()) {
                     if (idSamples.containsKey(sampleId)) {
-                        samplesData.get(samplesPositionToReturn.get(idSamples.get(sampleId))).set(0, genotype);
+                        sampleEntries.get(samplesPositionToReturn.get(idSamples.get(sampleId))).getData().set(0, genotype);
                     }
                 }
             }
@@ -360,7 +360,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                                 // The sample on this position is not returned. Skip this value.
                                 supplier.get();
                             } else {
-                                samplesData.get(samplePosition).set(extraFieldPosition, supplier.get());
+                                sampleEntries.get(samplePosition).getData().set(extraFieldPosition, supplier.get());
                             }
                         }
 
@@ -377,8 +377,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                             String sampleName = getSampleName(studyId, sampleId);
                             Integer samplePosition = samplesPositionToReturn.get(sampleName);
                             if (samplePosition != null) {
-                                if (samplesData.get(samplePosition).get(extraFieldPosition) == null) {
-                                    samplesData.get(samplePosition).set(extraFieldPosition, UNKNOWN_FIELD);
+                                if (sampleEntries.get(samplePosition).getData().get(extraFieldPosition) == null) {
+                                    sampleEntries.get(samplePosition).getData().set(extraFieldPosition, UNKNOWN_FIELD);
                                 }
                             }
                         }
@@ -403,8 +403,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 //            extraFieldPosition++;
 //        }
 
-        fillStudyEntryFields(study, samplesPositionToReturn, extraFields, samplesData, excludeGenotypes);
-        return samplesData;
+        fillStudyEntryFields(study, samplesPositionToReturn, extraFields, sampleEntries, excludeGenotypes);
+        return sampleEntries;
     }
 
     public List<String> getExtraFormatFields(int studyId, Set<Integer> filesWithSamplesData, Map<Integer, Document> files) {
@@ -449,7 +449,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     }
 
     private void fillStudyEntryFields(StudyEntry study, LinkedHashMap<String, Integer> samplesPositionToReturn, List<String> extraFields,
-                List<List<String>> samplesData, boolean excludeGenotypes) {
+                                      List<SampleEntry> samples, boolean excludeGenotypes) {
         if (study != null) {
             //Set FORMAT
             study.setFormat(getFormat(excludeGenotypes, extraFields));
@@ -457,7 +457,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             //Set Samples Position
             study.setSamplesPosition(samplesPositionToReturn);
             //Set Samples Data
-            study.setSamplesData(samplesData);
+            study.setSamples(samples);
         }
     }
 
@@ -471,13 +471,13 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 .getBoolean(MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
                         MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
 
-        Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
+        Set<String> defaultGenotype = new HashSet<>(studyDefaultGenotypeSet.get(studyId));
 
         // Classify samples by genotype
         int sampleIdx = 0;
         Integer gtIdx = studyEntry.getFormatPositions().get("GT");
         List<String> studyEntryOrderedSamplesName = studyEntry.getOrderedSamplesName();
-        for (List<String> data : studyEntry.getSamplesData()) {
+        for (SampleEntry sampleEntry : studyEntry.getSamples()) {
             String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
             sampleIdx++;
             if (!samplesInFile.contains(sampleName)) {
@@ -487,17 +487,13 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             if (gtIdx == null) {
                 genotype = ".";
             } else {
-                genotype = data.get(gtIdx);
+                genotype = sampleEntry.getData().get(gtIdx);
             }
             if (genotype == null) {
                 genotype = ".";
             }
 //                Genotype g = new Genotype(genotype);
-            List<Integer> samplesWithGenotype = genotypeCodes.get(genotype);
-            if (samplesWithGenotype == null) {
-                samplesWithGenotype = new ArrayList<>();
-                genotypeCodes.put(genotype, samplesWithGenotype);
-            }
+            List<Integer> samplesWithGenotype = genotypeCodes.computeIfAbsent(genotype, k -> new ArrayList<>());
             samplesWithGenotype.add(getSampleId(studyId, sampleName));
         }
 
@@ -546,14 +542,14 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             sampleIdx = 0;
             if (studyEntry.getFormatPositions().containsKey(extraField)) {
                 Integer formatIdx = studyEntry.getFormatPositions().get(extraField);
-                for (List<String> sampleData : studyEntry.getSamplesData()) {
+                for (SampleEntry sample : studyEntry.getSamples()) {
                     String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
                     sampleIdx++;
                     if (!samplesInFile.contains(sampleName)) {
                         continue;
                     }
 //                    Integer index = samplesPosition.get(sampleName);
-                    String stringValue = sampleData.get(formatIdx);
+                    String stringValue = sample.getData().get(formatIdx);
 //                    Object value;
 //                    if (NumberUtils.isNumber(stringValue)) {
 //                        try {

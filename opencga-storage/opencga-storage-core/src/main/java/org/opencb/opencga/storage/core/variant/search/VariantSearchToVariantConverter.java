@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -29,7 +30,6 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
@@ -120,14 +120,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "sampleName");
                 if (StringUtils.isNotEmpty(stringToList)) {
                     String[] sampleNames = StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP);
-                    List<List<String>> sampleData = new ArrayList<>();
+                    List<SampleEntry> sampleEntries = new ArrayList<>();
                     Map<String, Integer> samplePosition = new HashMap<>();
                     int pos = 0;
                     for (String sampleName: sampleNames) {
                         suffix = FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + sampleName;
                         stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix);
                         if (StringUtils.isNotEmpty(stringToList)) {
-                            sampleData.add(Arrays.asList(StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP)));
+                            List<String> data = Arrays.asList(StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP));
+                            sampleEntries.add(new SampleEntry(null, null, data));
                             samplePosition.put(sampleName, pos++);
                         }
 //                        else {
@@ -136,8 +137,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 //                        }
                     }
 
-                    if (ListUtils.isNotEmpty(sampleData)) {
-                        studyEntry.setSamplesData(sampleData);
+                    if (CollectionUtils.isNotEmpty(sampleEntries)) {
+                        studyEntry.setSamples(sampleEntries);
                         studyEntry.setSamplesPosition(samplePosition);
                     }
                 }
@@ -1075,7 +1076,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             if (MapUtils.isNotEmpty(studyEntry.getSamplesPosition()) && ListUtils.isNotEmpty(studyEntry.getOrderedSamplesName())) {
                 List<String> sampleNames = studyEntry.getOrderedSamplesName();
                 // sanity check, the number od sample names and sample data must be the same
-                if (ListUtils.isNotEmpty(studyEntry.getSamplesData()) && sampleNames.size() == studyEntry.getSamplesData().size()) {
+                if (CollectionUtils.isNotEmpty(studyEntry.getSamples()) && sampleNames.size() == studyEntry.getSamples().size()) {
                     String suffix = FIELD_SEPARATOR + studyId + FIELD_SEPARATOR;
                     // Save sample formats in a map (after, to JSON string), including sample names and GT
                     variantSearchModel.getSampleFormat().put("sampleFormat" + suffix + "sampleName",
@@ -1083,7 +1084,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                     // find the index position of DP in the FORMAT
                     int dpIndexPos = -1;
-                    if (ListUtils.isNotEmpty(studyEntry.getFormat())) {
+                    if (CollectionUtils.isNotEmpty(studyEntry.getFormat())) {
                         variantSearchModel.getSampleFormat().put("sampleFormat" + suffix + "format",
                                 StringUtils.join(studyEntry.getFormat(), LIST_SEP));
 
@@ -1117,9 +1118,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         }
 
                         // Save formats for each sample (after, to JSON string)
-                        if (ListUtils.isNotEmpty(studyEntry.getSamplesData().get(i))) {
+                        if (studyEntry.getSamples().get(i) != null) {
                             variantSearchModel.getSampleFormat().put("sampleFormat" + suffix,
-                                    StringUtils.join(studyEntry.getSamplesData().get(i), LIST_SEP));
+                                    StringUtils.join(studyEntry.getSamples().get(i).getData(), LIST_SEP));
                         }
                     }
                 } else {

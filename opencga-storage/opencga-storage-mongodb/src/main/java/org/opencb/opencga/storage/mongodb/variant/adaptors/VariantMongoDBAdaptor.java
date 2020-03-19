@@ -518,7 +518,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             StudyEntry studyEntry = variant.getStudies().get(0);
             Integer psIdx = studyEntry.getFormatPositions().get(VCFConstants.PHASE_SET_KEY);
             if (psIdx != null) {
-                String ps = studyEntry.getSamplesData().get(0).get(psIdx);
+                String ps = studyEntry.getSamples().get(0).getData().get(psIdx);
                 if (!ps.equals(DocumentToSamplesConverter.UNKNOWN_FIELD)) {
                     sampleName = studyEntry.getOrderedSamplesName().get(0);
 

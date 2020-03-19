@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.DataResult;
@@ -798,7 +799,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.STUDY.key(), studyMetadata1.getName()), null);
         for (int i = 0; i < 20; i++) {
             Variant variant = iterator.next();
-            int expectedNumSamples = (int) variant.getStudies().get(0).getSamplesData().stream().filter(data -> validGts.contains(data.get(0))).count();
+            int expectedNumSamples = (int) variant.getStudies().get(0).getSamples().stream().map(SampleEntry::getData).filter(data -> validGts.contains(data.get(0))).count();
             int actualNumSamples = 0;
             Set<String> sampleNames = new HashSet<>(); // look for repeated samples
             int queries = 0;
@@ -809,12 +810,12 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 queries++;
 
                 StudyEntry studyEntry = queryResult.first().getStudies().get(0);
-                int numSamples = studyEntry.getSamplesData().size();
+                int numSamples = studyEntry.getSamples().size();
                 if (numSamples == 0) {
                     break;
                 }
-                for (List<String> sample : studyEntry.getSamplesData()) {
-                    sampleNames.add(sample.get(sample.size() - 2));
+                for (SampleEntry sample : studyEntry.getSamples()) {
+                    sampleNames.add(sample.getData().get(sample.getData().size() - 2));
                 }
                 actualNumSamples += numSamples;
 //                System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult));

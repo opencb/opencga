@@ -118,6 +118,10 @@ public class VariantFileIndexConverter {
         return fileIndex;
     }
 
+    public static boolean isMultiFile(short fileIndex) {
+        return IndexUtils.testIndexAny(fileIndex, MULTI_FILE_MASK);
+    }
+
     public static short setMultiFile(short fileIndex) {
         return (short) (fileIndex | MULTI_FILE_MASK);
     }

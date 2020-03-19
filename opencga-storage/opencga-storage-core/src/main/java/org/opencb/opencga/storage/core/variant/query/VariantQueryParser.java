@@ -67,9 +67,7 @@ public class VariantQueryParser {
             options = new QueryOptions();
         }
 
-        ParsedVariantQuery variantQuery = new ParsedVariantQuery()
-                .setInputQuery(new Query(query))
-                .setInputOptions(new QueryOptions(options));
+        ParsedVariantQuery variantQuery = new ParsedVariantQuery(new Query(query), new QueryOptions(options));
 
         if (!skipPreProcess) {
             query = preProcessQuery(query, options);
@@ -77,8 +75,7 @@ public class VariantQueryParser {
         variantQuery.setQuery(query);
         variantQuery.setProjection(projectionParser.parseVariantQueryProjection(query, options));
 
-        ParsedVariantQuery.VariantStudyQuery studyQuery = new ParsedVariantQuery.VariantStudyQuery();
-        variantQuery.setStudyQuery(studyQuery);
+        ParsedVariantQuery.VariantStudyQuery studyQuery = variantQuery.getStudyQuery();
 
         StudyMetadata defaultStudy = getDefaultStudy(query);
         studyQuery.setDefaultStudy(defaultStudy);

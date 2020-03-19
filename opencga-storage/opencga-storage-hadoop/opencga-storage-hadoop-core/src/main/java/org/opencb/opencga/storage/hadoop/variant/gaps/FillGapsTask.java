@@ -12,6 +12,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
@@ -205,7 +206,7 @@ public class FillGapsTask {
             StudyEntry studyEntry = new StudyEntry();
             studyEntry.setFormat(archiveVariant.getStudies().get(0).getFormat());
             studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
-            studyEntry.setSamplesData(new ArrayList<>());
+            studyEntry.setSamples(new ArrayList<>());
             mergedVariant.addStudyEntry(studyEntry);
             mergedVariant.setType(variant.getType());
 
@@ -240,8 +241,8 @@ public class FillGapsTask {
                 studyEntry.setFormat(Collections.singletonList("GT"));
 
                 studyEntry.setSortedSamplesPosition(archiveStudyEntry.getSamplesPosition());
-                ArrayList<List<String>> samplesData = new ArrayList<>(archiveStudyEntry.getSamplesPosition().size());
-                studyEntry.setSamplesData(samplesData);
+                List<SampleEntry> samplesData = new ArrayList<>(archiveStudyEntry.getSamplesPosition().size());
+                studyEntry.setSamples(samplesData);
                 studyEntry.getSecondaryAlternates().add(new AlternateCoordinate(
                         variant.getChromosome(),
                         variant.getStart(),
@@ -291,14 +292,14 @@ public class FillGapsTask {
                             gt = genotype.toString();
                             break;
                     }
-                    samplesData.add(Collections.singletonList(gt));
+                    samplesData.add(new SampleEntry(null, null, Collections.singletonList(gt)));
                 }
             } else {
                 studyEntry.setFormat(Collections.emptyList());
             }
         } else {
             studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
-            studyEntry.setSamplesData(new ArrayList<>());
+            studyEntry.setSamples(new ArrayList<>());
             studyEntry.setFormat(archiveStudyEntry.getFormat());
             mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
         }
@@ -309,7 +310,7 @@ public class FillGapsTask {
             for (String sampleName : studyEntry.getOrderedSamplesName()) {
                 Integer sampleId = getSampleId(sampleName);
                 if (missingSamples.contains(sampleId)) {
-                    String gt = studyEntry.getSamplesData().get(samplePosition).get(gtIdx);
+                    String gt = studyEntry.getSamples().get(samplePosition).getData().get(gtIdx);
                     // Only genotypes without the main alternate (0/2, 2/3, ...) should be written as pending.
                     if (SampleIndexSchema.validGenotype(gt) && !hasMainAlternate(gt)) {
                         Put sampleIndexPut = buildSampleIndexPut(variant, put, sampleId, gt);
@@ -333,9 +334,9 @@ public class FillGapsTask {
     private VariantOverlappingStatus processVariantFile(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
                                                         VariantOverlappingStatus overlappingStatus, String gt) {
         LinkedHashMap<String, Integer> samplePosition = getSamplePosition(fileId);
-        List<List<String>> samplesData = new ArrayList<>(samplePosition.size());
+        List<SampleEntry> samplesData = new ArrayList<>(samplePosition.size());
         for (int i = 0; i < samplePosition.size(); i++) {
-            samplesData.add(Collections.singletonList(gt));
+            samplesData.add(new SampleEntry(null, null, Collections.singletonList(gt)));
         }
 
         VariantBuilder builder = Variant.newBuilder(
@@ -348,7 +349,7 @@ public class FillGapsTask {
                 .setFormat("GT")
                 .setFileId(fileId.toString())
                 .setSamplesPosition(samplePosition)
-                .setSamplesData(samplesData);
+                .setSamples(samplesData);
 
         studyConverter.convert(builder.build(), put, missingSamples, overlappingStatus);
         return overlappingStatus;
@@ -360,9 +361,9 @@ public class FillGapsTask {
 
         String gt = "2/2";
         LinkedHashMap<String, Integer> samplePosition = getSamplePosition(fileId);
-        List<List<String>> samplesData = new ArrayList<>(samplePosition.size());
+        List<SampleEntry> samplesData = new ArrayList<>(samplePosition.size());
         for (int i = 0; i < samplePosition.size(); i++) {
-            samplesData.add(Collections.singletonList(gt));
+            samplesData.add(new SampleEntry(null, null, Collections.singletonList(gt)));
         }
 
         for (Integer sampleId : missingSamples) {
@@ -382,7 +383,7 @@ public class FillGapsTask {
                 // add overlapping variants at attributes
                 .setFormat("GT")
                 .setSamplesPosition(samplePosition)
-                .setSamplesData(samplesData);
+                .setSamples(samplesData);
 
 
 //        processVariantOverlap(variant, missingSamples, put, sampleIndexPuts, builder.build());

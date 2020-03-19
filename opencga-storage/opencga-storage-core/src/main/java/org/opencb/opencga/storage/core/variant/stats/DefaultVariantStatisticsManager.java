@@ -322,7 +322,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             if (!defaultCohortAbsent) {
                 synchronized (variantSourceStats) {
                     variantSourceStats.updateFileStats(variants);
-                    variantSourceStats.updateSampleStats(variants, null);  // TODO test
+//                    variantSourceStats.updateSampleStats(variants, null);  // TODO test
                 }
             }
             logger.debug("another batch of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
