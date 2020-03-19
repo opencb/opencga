@@ -140,8 +140,12 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 mapVariantFileIndex.put(gt, values);
                 int i = cell.getValueOffset();
                 for (Variant variant : map.get(gt)) {
-                    values.add(new SampleVariantIndexEntry(variant, Bytes.toShort(cell.getValueArray(), i)));
-                    i += VariantFileIndexConverter.BYTES;
+                    short fileIndex;
+                    do {
+                        fileIndex = Bytes.toShort(cell.getValueArray(), i);
+                        values.add(new SampleVariantIndexEntry(variant, fileIndex));
+                        i += VariantFileIndexConverter.BYTES;
+                    } while (VariantFileIndexConverter.isMultiFile(fileIndex));
                 }
             }
         }
