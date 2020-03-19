@@ -84,7 +84,7 @@ public class VariableSetWSServerTest {
     @Test
     public void addFieldToVariableSet() throws Exception {
         objectMapper = new ObjectMapper();
-        Variable variable = new Variable("MY_VARIABLE", "", Variable.VariableType.STRING, "whatever", true, false, null, 6L, "", "", null,
+        Variable variable = new Variable("MY_VARIABLE", "", Variable.VariableType.STRING, "whatever", true, false, null, null, 6L, "", "", null,
                 null);
         String json = webTarget.path("variableSet").path(String.valueOf(variableSetId)).path("field").path("add")
                 .queryParam("sid", sessionId).request().post(Entity.json(variable), String.class);

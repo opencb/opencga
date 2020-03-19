@@ -136,6 +136,28 @@ public class AnnotationUtils {
                     throw new CatalogException("Variable " + variable.getId() + " of type " + variable.getType().name() + " cannot "
                             + "have an internal array of VariableSets");
                 }
+                if (variable.getAllowedKeys() != null && !variable.getAllowedKeys().isEmpty()) {
+                    // We edit the current variable because the allowedKeys field is populated
+                    Set<Variable> variables = new HashSet<>(variable.getAllowedKeys().size());
+                    for (String allowedKey : variable.getAllowedKeys()) {
+                        Variable.VariableType type;
+                        if (variable.getType() == Variable.VariableType.MAP_BOOLEAN) {
+                            type = Variable.VariableType.BOOLEAN;
+                        } else if (variable.getType() == Variable.VariableType.MAP_INTEGER) {
+                            type = Variable.VariableType.INTEGER;
+                        } else if (variable.getType() == Variable.VariableType.MAP_DOUBLE) {
+                            type = Variable.VariableType.DOUBLE;
+                        } else {
+                            type = Variable.VariableType.STRING;
+                        }
+                        variables.add(new Variable(allowedKey, allowedKey, "", type, variable.getDefaultValue(), false, false,
+                                variable.getAllowedValues(), null, variable.getRank(), variable.getDependsOn(),
+                                "Dynamically created variable '" + allowedKey + "'.", null, null));
+                    }
+                    // Edit current variable
+                    variable.setVariableSet(variables)
+                            .setType(Variable.VariableType.OBJECT);
+                }
                 break;
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
