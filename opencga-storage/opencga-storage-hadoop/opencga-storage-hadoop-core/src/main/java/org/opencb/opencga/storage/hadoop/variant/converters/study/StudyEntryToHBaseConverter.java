@@ -142,7 +142,7 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
 
     public Put convert(Variant variant, Put put, Set<Integer> sampleIds, VariantOverlappingStatus overlappingStatus) {
         StudyEntry studyEntry = variant.getStudies().get(0);
-        Integer gtIdx = studyEntry.getFormatPositions().get(VariantMerger.GT_KEY);
+        Integer gtIdx = studyEntry.getSampleDataKeyPosition(VariantMerger.GT_KEY);
         int[] formatReMap = buildFormatRemap(studyEntry);
         int sampleIdx = 0;
         List<String> samplesName = studyEntry.getOrderedSamplesName();
@@ -195,17 +195,17 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
         int capacity = fileAttributes.size() + HBaseToStudyEntryConverter.FILE_INFO_START_IDX;
         List<String> fileColumn = Arrays.asList(new String[capacity]);
 
-        Map<String, String> attributes = fileEntry.getAttributes();
+        Map<String, String> data = fileEntry.getData();
         fileColumn.set(HBaseToStudyEntryConverter.FILE_CALL_IDX, fileEntry.getCall());
         if (addSecondaryAlternates && studyEntry.getSecondaryAlternates() != null && !studyEntry.getSecondaryAlternates().isEmpty()) {
             fileColumn.set(HBaseToStudyEntryConverter.FILE_SEC_ALTS_IDX, getSecondaryAlternates(variant, studyEntry));
         }
         fileColumn.set(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX, overlappingStatus.toString());
-        fileColumn.set(HBaseToStudyEntryConverter.FILE_QUAL_IDX, attributes.get(StudyEntry.QUAL));
-        fileColumn.set(HBaseToStudyEntryConverter.FILE_FILTER_IDX, attributes.get(StudyEntry.FILTER));
+        fileColumn.set(HBaseToStudyEntryConverter.FILE_QUAL_IDX, data.get(StudyEntry.QUAL));
+        fileColumn.set(HBaseToStudyEntryConverter.FILE_FILTER_IDX, data.get(StudyEntry.FILTER));
         int attributeIdx = HBaseToStudyEntryConverter.FILE_INFO_START_IDX;
         for (String fileAttribute : fileAttributes) {
-            fileColumn.set(attributeIdx, attributes.get(fileAttribute));
+            fileColumn.set(attributeIdx, data.get(fileAttribute));
             attributeIdx++;
         }
 
@@ -251,13 +251,13 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
 
     private int[] buildFormatRemap(StudyEntry studyEntry) {
         int[] formatReMap;
-        if (fixedFormat.equals(studyEntry.getFormat())) {
+        if (fixedFormat.equals(studyEntry.getSampleDataKeys())) {
             formatReMap = null;
         } else {
             formatReMap = new int[fixedFormat.size()];
             for (int i = 0; i < fixedFormat.size(); i++) {
                 String format = fixedFormat.get(i);
-                Integer idx = studyEntry.getFormatPositions().get(format);
+                Integer idx = studyEntry.getSampleDataKeyPosition(format);
                 if (idx == null) {
                     if (format.equals(VariantMerger.GENOTYPE_FILTER_KEY)) {
                         idx = FILTER_FIELD;
@@ -280,7 +280,7 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
                     remappedSampleData.add(null);
                     break;
                 case FILTER_FIELD:
-                    remappedSampleData.add(studyEntry.getFiles().get(0).getAttributes().get(StudyEntry.FILTER));
+                    remappedSampleData.add(studyEntry.getFiles().get(0).getData().get(StudyEntry.FILTER));
                     break;
                 default:
                     if (sampleData.size() > i) {

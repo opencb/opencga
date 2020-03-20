@@ -2132,8 +2132,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         queryResult = query(new Query(MISSING_ALLELES.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + ">4"), null);
         assertEquals(9, queryResult.getNumResults());
-        queryResult.getResults().stream().map(variant -> variant.getStudiesMap().get(STUDY_NAME).getStats())
-                .forEach(map -> assertTrue(map.get(StudyEntry.DEFAULT_COHORT).getMissingAlleleCount() > 4));
+        queryResult.getResults().stream().map(variant -> variant.getStudiesMap().get(STUDY_NAME).getStats(StudyEntry.DEFAULT_COHORT))
+                .forEach(vs -> assertTrue(vs.getMissingAlleleCount() > 4));
 
     }
 
@@ -2195,7 +2195,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
             for (Variant variant : queryResult.getResults()) {
                 assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
-                assertThat(new HashSet<>(variant.getStudies().get(0).getFormat()), is(FORMAT));
+                assertThat(new HashSet<>(variant.getStudies().get(0).getSampleDataKeys()), is(FORMAT));
             }
         }
     }
@@ -2206,7 +2206,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
         for (Variant variant : queryResult.getResults()) {
             assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
-            assertThat(new HashSet<>(variant.getStudies().get(0).getFormat()), is(FORMAT));
+            assertThat(new HashSet<>(variant.getStudies().get(0).getSampleDataKeys()), is(FORMAT));
         }
     }
 
@@ -2301,28 +2301,28 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testIncludeFormat() {
         Variant variant = query(new Query(INCLUDE_FORMAT.key(), "GT"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
-        assertEquals("GT", variant.getStudies().get(0).getFormatAsString());
+        assertEquals("GT", variant.getStudies().get(0).getSampleDataKeysAsString());
 
         variant = query(new Query(INCLUDE_FORMAT.key(), "GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
-        assertEquals("GL", variant.getStudies().get(0).getFormatAsString());
+        assertEquals("GL", variant.getStudies().get(0).getSampleDataKeysAsString());
 
         variant = query(new Query(INCLUDE_FORMAT.key(), "GT,GL,DS"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
-        assertEquals("GT:GL:DS", variant.getStudies().get(0).getFormatAsString());
+        assertEquals("GT:GL:DS", variant.getStudies().get(0).getSampleDataKeysAsString());
 
         variant = query(new Query(INCLUDE_FORMAT.key(), "GT,XX,GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
-        assertEquals("GT:XX:GL", variant.getStudies().get(0).getFormatAsString());
+        assertEquals("GT:XX:GL", variant.getStudies().get(0).getSampleDataKeysAsString());
 
         variant = query(new Query(INCLUDE_FORMAT.key(), "GT,SAMPLE_ID"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
-        assertEquals("GT:SAMPLE_ID", variant.getStudies().get(0).getFormatAsString());
+        assertEquals("GT:SAMPLE_ID", variant.getStudies().get(0).getSampleDataKeysAsString());
 
         variant = query(new Query(INCLUDE_FORMAT.key(), "all"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
-        assertEquals("GT:DS:GL", variant.getStudies().get(0).getFormatAsString());
+        assertEquals("GT:DS:GL", variant.getStudies().get(0).getSampleDataKeysAsString());
 
         variant = query(new Query(INCLUDE_FORMAT.key(), "none"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
-        assertEquals("", variant.getStudies().get(0).getFormatAsString());
+        assertEquals("", variant.getStudies().get(0).getSampleDataKeysAsString());
     }
 
 /*

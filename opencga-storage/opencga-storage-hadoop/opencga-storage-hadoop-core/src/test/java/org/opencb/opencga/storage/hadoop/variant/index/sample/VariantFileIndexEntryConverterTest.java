@@ -46,18 +46,18 @@ public class VariantFileIndexEntryConverterTest {
             assertEquals((byte) (snv | IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT),
                     fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).build()));
             assertEquals((byte) (snv | IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT),
-                    fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).addAttribute("DP", 10000).build()));
+                    fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).addFileData("DP", 10000).build()));
             assertEquals((byte) (snv | IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT),
-                    fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).addAttribute("DP", 0).build()));
+                    fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).addFileData("DP", 0).build()));
             assertEquals((byte) (snv | IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT),
-                    fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").setFormat("GT").addSample("s1", "0/1").addAttribute("DP", dp).build()));
+                    fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").setSampleDataKeys("GT").addSample("s1", "0/1").addFileData("DP", dp).build()));
         }
 
 
     }
 
     private VariantBuilder v(String s) {
-        return Variant.newBuilder(s).setStudyId("s").setFormat("GT", "DP").setFileId("f1");
+        return Variant.newBuilder(s).setStudyId("s").setSampleDataKeys("GT", "DP").setFileId("f1");
     }
 
 }

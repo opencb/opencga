@@ -31,7 +31,7 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
                     variant.getSv(),
                     variant.getLength(),
                     variant.getType(),
-                    null, null, null));
+                    null, null));
         }
         this.fileIndex = fileIndex;
     }

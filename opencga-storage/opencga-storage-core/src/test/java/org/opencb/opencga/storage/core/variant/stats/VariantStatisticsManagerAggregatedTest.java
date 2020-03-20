@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -121,7 +122,9 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
                         CohortMetadata.class));
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
-                Map<String, VariantStats> cohortStats = sourceEntry.getStats();
+                Map<String, VariantStats> cohortStats = sourceEntry.getStats()
+                        .stream()
+                        .collect(Collectors.toMap(VariantStats::getCohortId, i -> i));
                 String calculatedCohorts = cohortStats.keySet().toString();
                 cohorts.forEach(cohort -> {
                     String cohortName = cohort.getName();

@@ -144,7 +144,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
                 System.out.println("variant = " + variant);
                 if (variant.getType().equals(VariantType.NO_VARIATION)) {
                     StudyEntry study = variant.getStudies().get(0);
-                    Integer dpIdx = study.getFormatPositions().get("DP");
+                    Integer dpIdx = study.getSampleDataKeyPosition("DP");
                     if (dpIdx != null) {
                         String dpStr = study.getSampleData(0).get(dpIdx);
                         try {

@@ -610,7 +610,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
             loadedVariant.setAnnotation(null);                                          //Remove annotation
             StudyEntry loadedStudy = loadedVariant.getStudy(STUDY_NAME);
-            loadedStudy.setStats(Collections.emptyMap());        //Remove calculated stats
+            loadedStudy.setStats(Collections.emptyList());        //Remove calculated stats
             loadedStudy.getSamples().forEach(sampleEntry -> {
                 sampleEntry.getData().set(0, sampleEntry.getData().get(0).replace("0/0", "0|0"));
                 while (sampleEntry.getData().get(2).length() < 5) sampleEntry.getData().set(2, sampleEntry.get(2) + "0");   //Set lost zeros
@@ -640,7 +640,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            assertEquals("GT", variant.getStudy(STUDY_NAME).getFormatAsString());
+            assertEquals("GT", variant.getStudy(STUDY_NAME).getSampleDataKeysAsString());
         }
     }
 
@@ -731,14 +731,14 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 }
                 for (FileEntry fileEntry : entry.getValue().getFiles()) {
                     if (includeSrc) {
-                        assertNotNull(fileEntry.getAttributes().get(VariantVcfFactory.SRC));
+                        assertNotNull(fileEntry.getData().get(VariantVcfFactory.SRC));
                     } else {
-                        assertNull(fileEntry.getAttributes().getOrDefault(VariantVcfFactory.SRC, null));
+                        assertNull(fileEntry.getData().getOrDefault(VariantVcfFactory.SRC, null));
                     }
                 }
                 for (CohortMetadata cohort : cohorts.values()) {
                     try {
-                        VariantStats variantStats = entry.getValue().getStats().get(cohort.getName());
+                        VariantStats variantStats = entry.getValue().getStats(cohort.getName());
                         assertNotNull(variantStats);
                         assertEquals(variant + " has incorrect stats for cohort \"" + cohort.getName() + "\":"+cohort.getId(),
                                 cohort.getSamples().size(),

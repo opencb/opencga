@@ -71,11 +71,11 @@ public class DocumentToStudyVariantEntryConverterTest {
 
         studyEntry = new StudyEntry(studyId.toString());
         FileEntry fileEntry = new FileEntry(fileId.toString(), null, new HashMap<>());
-        fileEntry.getAttributes().put("QUAL", "0.01");
-        fileEntry.getAttributes().put("AN", "2.0");
-        fileEntry.getAttributes().put("do.we.accept.attribute.with.dots?", "yes");
+        fileEntry.getData().put("QUAL", "0.01");
+        fileEntry.getData().put("AN", "2.0");
+        fileEntry.getData().put("do.we.accept.attribute.with.dots?", "yes");
         studyEntry.setFiles(Collections.singletonList(fileEntry));
-        studyEntry.setFormatAsString("GT");
+        studyEntry.setSampleDataKeys(Collections.singletonList("GT"));
 
 
         studyEntry.setSamplesPosition(metadataManager.getSamplesPosition(studyMetadata, null));

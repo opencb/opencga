@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.*;
-import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -481,21 +480,21 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
             return null;
         }
 
-        String sourceFilter = studyEntry.getAttribute("FILTER");
-        if (sourceFilter != null && !filter.equals(sourceFilter)) {
-            filter = ".";   // write PASS iff all sources agree that the filter is "PASS" or assumed if not present, otherwise write "."
-        }
 
         if (studyEntry.getFiles() != null && studyEntry.getFiles().size() == 1) {
-            Map<String, String> fileAttributes = studyEntry.getFiles().get(0).getAttributes();
-            if (fileAttributes.containsKey("PR")) {
-                attributes.putIfNotNull(prk, DECIMAL_FORMAT_7.format(Double.valueOf(fileAttributes.get("PR"))));
+            Map<String, String> fileData = studyEntry.getFiles().get(0).getData();
+            String sourceFilter = fileData.get("FILTER");
+            if (sourceFilter != null && !filter.equals(sourceFilter)) {
+                filter = ".";   // write PASS iff all sources agree that the filter is "PASS" or assumed if not present, otherwise write "."
             }
-            if (fileAttributes.containsKey("CR")) {
-                attributes.putIfNotNull(crk, DECIMAL_FORMAT_7.format(Double.valueOf(fileAttributes.get("CR"))));
+            if (fileData.containsKey("PR")) {
+                attributes.putIfNotNull(prk, DECIMAL_FORMAT_7.format(Double.valueOf(fileData.get("PR"))));
             }
-            if (fileAttributes.containsKey("OPR")) {
-                attributes.putIfNotNull(oprk, DECIMAL_FORMAT_7.format(Double.valueOf(fileAttributes.get("OPR"))));
+            if (fileData.containsKey("CR")) {
+                attributes.putIfNotNull(crk, DECIMAL_FORMAT_7.format(Double.valueOf(fileData.get("CR"))));
+            }
+            if (fileData.containsKey("OPR")) {
+                attributes.putIfNotNull(oprk, DECIMAL_FORMAT_7.format(Double.valueOf(fileData.get("OPR"))));
             }
         }
 
@@ -546,14 +545,14 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
             }
             GenotypeBuilder builder = new GenotypeBuilder()
                     .name(this.sampleNameMapping.get(sampleName));
-            if (studyEntry.getFormatPositions().containsKey("GT")) {
+            if (studyEntry.getSampleDataKeySet().contains("GT")) {
                 builder.alleles(alleles)
                         .phased(genotype.isPhased());
             }
             if (genotypeFilter != null) {
                 builder.attribute("PF", genotypeFilter);
             }
-            for (String id : studyEntry.getFormat()) {
+            for (String id : studyEntry.getSampleDataKeys()) {
                 if (id.equals("GT") || id.equals("FT")) {
                     continue;
                 }
@@ -780,23 +779,22 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         if (studyEntry.getStats() == null) {
             return;
         }
-        for (Map.Entry<String, VariantStats> entry : studyEntry.getStats().entrySet()) {
-            String cohortName = entry.getKey();
-            VariantStats stats = entry.getValue();
+        for (VariantStats stats : studyEntry.getStats()) {
+            String cohortId = stats.getCohortId();
 
-            if (cohortName.equals(StudyEntry.DEFAULT_COHORT)) {
-                cohortName = "";
+            if (cohortId.equals(StudyEntry.DEFAULT_COHORT)) {
+                cohortId = "";
                 int an = stats.getAltAlleleCount() + stats.getRefAlleleCount();
                 if (an >= 0) {
-                    attributes.put(cohortName + VCFConstants.ALLELE_NUMBER_KEY, String.valueOf(an));
+                    attributes.put(cohortId + VCFConstants.ALLELE_NUMBER_KEY, String.valueOf(an));
                 }
                 if (stats.getAltAlleleCount() >= 0) {
-                    attributes.put(cohortName + VCFConstants.ALLELE_COUNT_KEY, String.valueOf(stats.getAltAlleleCount()));
+                    attributes.put(cohortId + VCFConstants.ALLELE_COUNT_KEY, String.valueOf(stats.getAltAlleleCount()));
                 }
             } else {
-                cohortName = cohortName + "_";
+                cohortId = cohortId + "_";
             }
-            attributes.put(cohortName + VCFConstants.ALLELE_FREQUENCY_KEY, DECIMAL_FORMAT_7.format(stats.getAltAlleleFreq()));
+            attributes.put(cohortId + VCFConstants.ALLELE_FREQUENCY_KEY, DECIMAL_FORMAT_7.format(stats.getAltAlleleFreq()));
         }
     }
 

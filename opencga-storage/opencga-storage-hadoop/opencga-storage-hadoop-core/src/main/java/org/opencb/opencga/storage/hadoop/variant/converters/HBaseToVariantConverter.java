@@ -220,7 +220,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             List<FileEntry> files = studyEntry.getFiles();
             if (files != null) {
                 for (FileEntry fileEntry : files) {
-                    String id = fileEntry.getAttributes().get(StudyEntry.VCF_ID);
+                    String id = fileEntry.getData().get(StudyEntry.VCF_ID);
                     if (id != null) {
                         names.add(id);
                     }

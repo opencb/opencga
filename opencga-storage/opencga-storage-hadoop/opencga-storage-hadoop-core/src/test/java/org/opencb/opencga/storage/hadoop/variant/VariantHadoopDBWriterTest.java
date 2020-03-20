@@ -376,8 +376,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                 .setFileId(fileId.toString())
                 .setFilter("PASS_" + fileId)
                 .setQuality(fileId * 100.0)
-                .addAttribute("AD", "1,2")
-                .setFormat("GT", "DP", "GQX", "AD")
+                .addFileData("AD", "1,2")
+                .setSampleDataKeys("GT", "DP", "GQX", "AD")
                 .addSample("S" + (1 + pad), "./.", String.valueOf(11 + pad), "0.7", "1,2")
                 .addSample("S" + (2 + pad), "1/1", String.valueOf(12 + pad), "0.7", "1,2")
                 .addSample("S" + (3 + pad), "0/0", String.valueOf(13 + pad), "0.7", "1,2")
@@ -403,8 +403,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                 .setFileId(fileId.toString())
                 .setFilter("PASS_" + fileId)
                 .setQuality(fileId * 100.0)
-                .addAttribute("AD", ad)
-                .setFormat("GT", "DP", "GQX", "AD");
+                .addFileData("AD", ad)
+                .setSampleDataKeys("GT", "DP", "GQX", "AD");
 
         int pad = (fileId - 1) * NUM_SAMPLES;
         int count = 0;

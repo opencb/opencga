@@ -79,10 +79,10 @@ public class DocumentToVariantConverterTest {
         //Setup variantSourceEntry
         studyEntry = new StudyEntry(fileId.toString(), studyId.toString());
         FileEntry fileEntry = studyEntry.getFile(fileId.toString());
-        fileEntry.getAttributes().put("QUAL", "0.01");
-        fileEntry.getAttributes().put("AN", "2");
+        fileEntry.getData().put("QUAL", "0.01");
+        fileEntry.getData().put("AN", "2");
         fileEntry.setCall(null);
-        studyEntry.setFormatAsString("GT:DP");
+        studyEntry.setSampleDataKeys(Arrays.asList("GT", "DP"));
 
         Map<String, String> na001 = new HashMap<>();
         na001.put("GT", "0/0");

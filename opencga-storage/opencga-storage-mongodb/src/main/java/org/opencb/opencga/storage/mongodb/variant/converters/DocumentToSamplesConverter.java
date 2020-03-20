@@ -475,7 +475,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
         // Classify samples by genotype
         int sampleIdx = 0;
-        Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+        Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
         List<String> studyEntryOrderedSamplesName = studyEntry.getOrderedSamplesName();
         for (SampleEntry sampleEntry : studyEntry.getSamples()) {
             String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
@@ -540,8 +540,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 //                values.add(UNKNOWN_FIELD);
 //            }
             sampleIdx = 0;
-            if (studyEntry.getFormatPositions().containsKey(extraField)) {
-                Integer formatIdx = studyEntry.getFormatPositions().get(extraField);
+            if (studyEntry.getSampleDataKeySet().contains(extraField)) {
+                Integer formatIdx = studyEntry.getSampleDataKeyPosition(extraField);
                 for (SampleEntry sample : studyEntry.getSamples()) {
                     String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
                     sampleIdx++;

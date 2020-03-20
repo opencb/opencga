@@ -194,14 +194,14 @@ public class FillGapsTaskTest {
         StudyEntry studyEntry = variant.getStudies().get(0);
         assertEquals(1, studyEntry.getSecondaryAlternates().size());
         assertEquals("<*>", studyEntry.getSecondaryAlternates().get(0).getAlternate());
-        assertEquals("GT:DP", studyEntry.getFormatAsString());
+        assertEquals("GT:DP", studyEntry.getSampleDataKeysAsString());
         assertEquals("0/0", studyEntry.getSampleData("S1", "GT"));
         assertEquals("./.", studyEntry.getSampleData("S2", "GT"));
         assertEquals("1234", studyEntry.getSampleData("S1", "DP"));
         assertEquals("1", studyEntry.getSampleData("S2", "DP"));
-        assertEquals("PASS", studyEntry.getFiles().get(0).getAttributes().get("FILTER"));
-        assertEquals("50", studyEntry.getFiles().get(0).getAttributes().get("QUAL"));
-        assertEquals("VALUE", studyEntry.getFiles().get(0).getAttributes().get("OTHER"));
+        assertEquals("PASS", studyEntry.getFiles().get(0).getData().get("FILTER"));
+        assertEquals("50", studyEntry.getFiles().get(0).getData().get("QUAL"));
+        assertEquals("VALUE", studyEntry.getFiles().get(0).getData().get("OTHER"));
         assertEquals("100:A:<*>:0", studyEntry.getFiles().get(0).getCall());
 
 
@@ -210,14 +210,14 @@ public class FillGapsTaskTest {
 
         studyEntry = variant.getStudies().get(0);
         assertEquals(0, studyEntry.getSecondaryAlternates().size());
-        assertEquals("GT:DP", studyEntry.getFormatAsString());
+        assertEquals("GT:DP", studyEntry.getSampleDataKeysAsString());
         assertEquals("0/0", studyEntry.getSampleData("S1", "GT"));
         assertEquals("./.", studyEntry.getSampleData("S2", "GT"));
         assertEquals("1234", studyEntry.getSampleData("S1", "DP"));
         assertEquals("1", studyEntry.getSampleData("S2", "DP"));
-        assertEquals("PASS", studyEntry.getFiles().get(0).getAttributes().get("FILTER"));
-        assertEquals("50", studyEntry.getFiles().get(0).getAttributes().get("QUAL"));
-        assertEquals("VALUE", studyEntry.getFiles().get(0).getAttributes().get("OTHER"));
+        assertEquals("PASS", studyEntry.getFiles().get(0).getData().get("FILTER"));
+        assertEquals("50", studyEntry.getFiles().get(0).getData().get("QUAL"));
+        assertEquals("VALUE", studyEntry.getFiles().get(0).getData().get("OTHER"));
         assertEquals("100:A:.:0", studyEntry.getFiles().get(0).getCall());
     }
 
@@ -231,14 +231,14 @@ public class FillGapsTaskTest {
         StudyEntry studyEntry = variant.getStudies().get(0);
         assertEquals(1, studyEntry.getSecondaryAlternates().size());
         assertEquals("<*>", studyEntry.getSecondaryAlternates().get(0).getAlternate());
-        assertEquals("GT:DP", studyEntry.getFormatAsString());
+        assertEquals("GT:DP", studyEntry.getSampleDataKeysAsString());
         assertEquals("2/2", studyEntry.getSampleData("S1", "GT"));
         assertEquals("2/2", studyEntry.getSampleData("S2", "GT"));
         assertEquals(".", studyEntry.getSampleData("S1", "DP"));
         assertEquals(".", studyEntry.getSampleData("S2", "DP"));
-        assertEquals(null, studyEntry.getFiles().get(0).getAttributes().get("FILTER"));
-        assertEquals(null, studyEntry.getFiles().get(0).getAttributes().get("QUAL"));
-        assertEquals(null, studyEntry.getFiles().get(0).getAttributes().get("OTHER"));
+        assertEquals(null, studyEntry.getFiles().get(0).getData().get("FILTER"));
+        assertEquals(null, studyEntry.getFiles().get(0).getData().get("QUAL"));
+        assertEquals(null, studyEntry.getFiles().get(0).getData().get("OTHER"));
         assertEquals(null, studyEntry.getFiles().get(0).getCall());
     }
 
@@ -252,14 +252,14 @@ public class FillGapsTaskTest {
         StudyEntry studyEntry = variant.getStudies().get(0);
         assertEquals(1, studyEntry.getSecondaryAlternates().size());
         assertEquals("C", studyEntry.getSecondaryAlternates().get(0).getAlternate());
-        assertEquals("GT:DP", studyEntry.getFormatAsString());
+        assertEquals("GT:DP", studyEntry.getSampleDataKeysAsString());
         assertEquals("0/2", studyEntry.getSampleData("S1", "GT"));
         assertEquals("2/2", studyEntry.getSampleData("S2", "GT"));
         assertEquals("1234", studyEntry.getSampleData("S1", "DP"));
         assertEquals("1234", studyEntry.getSampleData("S2", "DP"));
-        assertEquals("PASS", studyEntry.getFiles().get(0).getAttributes().get("FILTER"));
-        assertEquals("50", studyEntry.getFiles().get(0).getAttributes().get("QUAL"));
-        assertEquals("VALUE", studyEntry.getFiles().get(0).getAttributes().get("OTHER"));
+        assertEquals("PASS", studyEntry.getFiles().get(0).getData().get("FILTER"));
+        assertEquals("50", studyEntry.getFiles().get(0).getData().get("QUAL"));
+        assertEquals("VALUE", studyEntry.getFiles().get(0).getData().get("OTHER"));
         assertEquals("100:A:C:0", studyEntry.getFiles().get(0).getCall());
     }
 
@@ -273,14 +273,14 @@ public class FillGapsTaskTest {
         StudyEntry studyEntry = variant.getStudies().get(0);
         assertEquals(1, studyEntry.getSecondaryAlternates().size());
         assertEquals("<*>", studyEntry.getSecondaryAlternates().get(0).getAlternate());
-        assertEquals("GT:DP", studyEntry.getFormatAsString());
+        assertEquals("GT:DP", studyEntry.getSampleDataKeysAsString());
         assertEquals("0/2", studyEntry.getSampleData("S1", "GT"));
         assertEquals("2/2", studyEntry.getSampleData("S2", "GT"));
         assertEquals(".", studyEntry.getSampleData("S1", "DP"));
         assertEquals(".", studyEntry.getSampleData("S2", "DP"));
-        assertEquals("PASS", studyEntry.getFiles().get(0).getAttributes().get("FILTER"));
-        assertEquals("50", studyEntry.getFiles().get(0).getAttributes().get("QUAL"));
-        assertEquals(null, studyEntry.getFiles().get(0).getAttributes().get("OTHER"));
+        assertEquals("PASS", studyEntry.getFiles().get(0).getData().get("FILTER"));
+        assertEquals("50", studyEntry.getFiles().get(0).getData().get("QUAL"));
+        assertEquals(null, studyEntry.getFiles().get(0).getData().get("OTHER"));
         assertEquals("100:A:C:0", studyEntry.getFiles().get(0).getCall());
 
 
@@ -321,23 +321,23 @@ public class FillGapsTaskTest {
     protected Variant variantFile1(String variant) {
         if (new Variant(variant).getType().equals(VariantType.NO_VARIATION)) {
             return new VariantBuilder(variant).setStudyId("S")
-                    .setFormat("GT", "DP")
+                    .setSampleDataKeys("GT", "DP")
                     .addSample("S1", "0/0", "1234")
                     .addSample("S2", "./.", "1")
                     .setFileId("file1.vcf")
                     .setFilter("PASS")
                     .setQuality(50.0)
-                    .addAttribute("OTHER", "VALUE")
+                    .addFileData("OTHER", "VALUE")
                     .build();
         } else {
             return new VariantBuilder(variant).setStudyId("S")
-                    .setFormat("GT", "DP")
+                    .setSampleDataKeys("GT", "DP")
                     .addSample("S1", "0/1", "1234")
                     .addSample("S2", "1/1", "1234")
                     .setFileId("file1.vcf")
                     .setFilter("PASS")
                     .setQuality(50.0)
-                    .addAttribute("OTHER", "VALUE")
+                    .addFileData("OTHER", "VALUE")
                     .build();
         }
     }

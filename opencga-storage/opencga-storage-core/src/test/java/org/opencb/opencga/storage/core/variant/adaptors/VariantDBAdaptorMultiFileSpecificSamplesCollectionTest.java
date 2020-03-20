@@ -93,7 +93,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
                 withSampleData(sampleNA12877, "GT", anyOf(is("0/1"), is("1/1"))),
                 withFileId(file12877,
-                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(
+                        with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(
                                 containsString("LowGQX"),
                                 containsString("LowMQ"),
                                 containsString("LowQD"),
@@ -110,7 +110,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
                 withSampleData(sampleNA12877, "GT", anyOf(is("0/1"), is("1/1"))),
                 withFileId(file12877,
-                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), anyOf(
+                        with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
                                 containsString("MaxDepth")
                         )))
         ))));
@@ -125,7 +125,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
                 withSampleData(sampleNA12877, "GT", anyOf(is("0/1"), is("1/1"))),
                 withFileId(file12877,
-                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), anyOf(
+                        with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
                                 containsString("LowGQX"),
                                 containsString("LowMQ")
                         )))))));
@@ -140,7 +140,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
                 withSampleData(sampleNA12877, "GT", anyOf(is("0/1"), is("1/1"))),
                 withFileId(file12877,
-                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00")))))));
+                        with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00")))))));
 
         query = new Query()
                 .append(VariantQueryParam.FILTER.key(), "\"LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00\",\"LowGQX;LowQD;SiteConflict\"")
@@ -152,7 +152,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(
                 withSampleData(sampleNA12877, "GT", anyOf(is("0/1"), is("1/1"))),
                 withFileId(file12877,
-                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), anyOf(
+                        with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
                                 is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00"),
                                 is("LowGQX;LowQD;SiteConflict")
                         )))))));

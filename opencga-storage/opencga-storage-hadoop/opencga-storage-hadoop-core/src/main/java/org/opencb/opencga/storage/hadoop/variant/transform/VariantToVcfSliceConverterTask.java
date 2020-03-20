@@ -113,7 +113,7 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
             throw new IllegalArgumentException("Required one Study per variant. Found " + variant.getStudies().size() + " studies instead");
         }
         StudyEntry studyEntry = variant.getStudies().get(0);
-        Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+        Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
         if (gtIdx == null || gtIdx < 0) {
             return false;
         }

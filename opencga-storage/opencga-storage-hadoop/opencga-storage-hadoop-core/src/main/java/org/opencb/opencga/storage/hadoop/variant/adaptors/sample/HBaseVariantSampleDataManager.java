@@ -144,7 +144,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             List<Pair<String, PhoenixArray>> filesMap = new ArrayList<>();
             Set<Integer> fileIdsFromSampleIds = metadataManager.getFileIdsFromSampleIds(studyId, samples);
             HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter();
-            Map<String, VariantStats> stats = new HashMap<>();
+            List<VariantStats> stats = new LinkedList<>();
             dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
                 Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
                 // Add file columns
@@ -174,7 +174,8 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                         })
                         .onCohortStats(statsCell -> {
                             VariantStats variantStats = statsConverter.convert(statsCell);
-                            stats.put(metadataManager.getCohortName(studyId, statsCell.getCohortId()), variantStats);
+                            variantStats.setCohortId(metadataManager.getCohortName(studyId, statsCell.getCohortId()));
+                            stats.add(variantStats);
                         })
                         .onVariantAnnotation(column -> {
                             ImmutableBytesWritable b = column.toBytesWritable();

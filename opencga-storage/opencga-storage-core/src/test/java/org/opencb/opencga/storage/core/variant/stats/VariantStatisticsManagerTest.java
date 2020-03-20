@@ -45,6 +45,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -200,7 +201,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
              iterator.hasNext(); ) {
             Variant variant = iterator.next();
             for (StudyEntry studyEntry : variant.getStudies()) {
-                Map<String, VariantStats> cohortsStats = studyEntry.getStats();
+                Map<String, VariantStats> cohortsStats = studyEntry.getStats()
+                        .stream()
+                        .collect(Collectors.toMap(VariantStats::getCohortId, i -> i));
                 String calculatedCohorts = cohortsStats.keySet().toString();
                 for (Map.Entry<String, CohortMetadata> entry : cohorts.entrySet()) {
                     CohortMetadata cohort = entry.getValue();
@@ -231,7 +234,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
                         String fileName = dbAdaptor.getMetadataManager().getFileName(studyMetadata.getId(), file);
                         FileEntry fileEntry = studyEntry.getFile(fileName);
                         if (fileEntry != null) {
-                            VariantStatsCalculator.addFileFilter(fileEntry.getAttributes().get(StudyEntry.FILTER), stats.getFilterCount());
+                            VariantStatsCalculator.addFileFilter(fileEntry.getData().get(StudyEntry.FILTER), stats.getFilterCount());
                             numFiles++;
                         }
                     }

@@ -516,7 +516,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variant = queryResult.first();
         if (variant != null && !variant.getStudies().isEmpty()) {
             StudyEntry studyEntry = variant.getStudies().get(0);
-            Integer psIdx = studyEntry.getFormatPositions().get(VCFConstants.PHASE_SET_KEY);
+            Integer psIdx = studyEntry.getSampleDataKeyPosition(VCFConstants.PHASE_SET_KEY);
             if (psIdx != null) {
                 String ps = studyEntry.getSamples().get(0).getData().get(psIdx);
                 if (!ps.equals(DocumentToSamplesConverter.UNKNOWN_FIELD)) {
@@ -930,7 +930,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
-            Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
+            List<VariantStats> cohortStats = wrapper.getCohortStats();
 
             if (cohortStats.isEmpty()) {
                 continue;

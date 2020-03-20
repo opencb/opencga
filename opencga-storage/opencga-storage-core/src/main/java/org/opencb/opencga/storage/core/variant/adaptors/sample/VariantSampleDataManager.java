@@ -91,7 +91,7 @@ public class VariantSampleDataManager {
         List<SampleEntry> sampleEntries = new ArrayList<>(limit);
         Map<String, Integer> filesIdx = new HashMap<>();
         List<FileEntry> files = new ArrayList<>(limit);
-        Map<String, VariantStats> stats = Collections.emptyMap();
+        List<VariantStats> stats = Collections.emptyList();
         int fileIdxFormatIdx = -1;
         List<String> format = null;
         VariantAnnotation annotation = null;
@@ -132,7 +132,7 @@ public class VariantSampleDataManager {
             if (queries == 1) {
                 annotation = partialVariant.getAnnotation();
                 stats = partialStudy.getStats();
-                format = partialStudy.getFormat();
+                format = partialStudy.getSampleDataKeys();
                 fileIdxFormatIdx = format.indexOf(VariantQueryParser.FILE_IDX);
             }
             boolean hasGt = format.get(0).equals("GT");

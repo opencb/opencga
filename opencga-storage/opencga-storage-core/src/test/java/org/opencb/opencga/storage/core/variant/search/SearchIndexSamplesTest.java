@@ -246,10 +246,10 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
             StudyEntry expectedStudy = expected.getStudies().get(0);
             StudyEntry actualStudy = actual.getStudies().get(0);
 
-            Map<String, VariantStats> expectedStudyStats = expectedStudy.getStats();
-            expectedStudy.setStats(Collections.emptyMap());
-            Map<String, VariantStats> actualStudyStats = actualStudy.getStats();
-            actualStudy.setStats(Collections.emptyMap());
+            List<VariantStats> expectedStudyStats = expectedStudy.getStats();
+            expectedStudy.setStats(Collections.emptyList());
+            List<VariantStats> actualStudyStats = actualStudy.getStats();
+            actualStudy.setStats(Collections.emptyList());
 
             //assertEquals(expected.toString(), expectedStudy, actualStudy);
             System.out.println("Checking: " + expected.toString());
@@ -300,18 +300,18 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
                 fail("File entry call mismatch: " + expectedFileEntry.getCall() + ", " + actualFileEntry.getCall());
             }
         }
-        if (expectedFileEntry.getAttributes() != null || actualFileEntry.getAttributes() != null) {
-            if (expectedFileEntry.getAttributes().size() != actualFileEntry.getAttributes().size()) {
-                fail("File entry attribute size mismatch: " + expectedFileEntry.getAttributes().size()
-                        + ", " + actualFileEntry.getAttributes().size());
+        if (expectedFileEntry.getData() != null || actualFileEntry.getData() != null) {
+            if (expectedFileEntry.getData().size() != actualFileEntry.getData().size()) {
+                fail("File entry attribute size mismatch: " + expectedFileEntry.getData().size()
+                        + ", " + actualFileEntry.getData().size());
             }
-            for (String key : actualFileEntry.getAttributes().keySet()) {
-                if (!expectedFileEntry.getAttributes().containsKey(key)) {
+            for (String key : actualFileEntry.getData().keySet()) {
+                if (!expectedFileEntry.getData().containsKey(key)) {
                     fail("File entry attribute '" + key + "' not found");
                 }
-                if (!expectedFileEntry.getAttributes().get(key).equals(actualFileEntry.getAttributes().get(key))) {
-                    fail("File entry attribute '" + key + "' mismatch: " + expectedFileEntry.getAttributes().get(key)
-                            + ", " + actualFileEntry.getAttributes().get(key));
+                if (!expectedFileEntry.getData().get(key).equals(actualFileEntry.getData().get(key))) {
+                    fail("File entry attribute '" + key + "' mismatch: " + expectedFileEntry.getData().get(key)
+                            + ", " + actualFileEntry.getData().get(key));
                 }
             }
         }

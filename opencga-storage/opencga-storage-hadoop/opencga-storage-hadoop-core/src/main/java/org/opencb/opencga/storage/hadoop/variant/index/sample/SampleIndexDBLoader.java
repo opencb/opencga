@@ -185,7 +185,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
             IndexChunk indexChunk = new IndexChunk(variant.getChromosome(), getChunkStart(variant.getStart()));
             int sampleIdx = 0;
             StudyEntry studyEntry = variant.getStudies().get(0);
-            boolean hasGT = studyEntry.getFormat().get(0).equals("GT");
+            boolean hasGT = studyEntry.getSampleDataKeys().get(0).equals("GT");
             for (SampleEntry sample : studyEntry.getSamples()) {
                 String gt = hasGT ? sample.getData().get(0) : GenotypeClass.NA_GT_VALUE;
                 if (validVariant(variant) && validGenotype(gt)) {

@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created on 28/11/16.
@@ -132,9 +133,9 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
                 }
                 variant.addStudyEntry(st);
                 for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(sm.getId())) {
-                    VariantStats stats = new VariantStats();
+                    VariantStats stats = new VariantStats(cohort.getName());
                     stats.addGenotype(new Genotype("0/0"), cohort.getSamples().size());
-                    st.setStats(cohort.getName(), stats);
+                    st.addStats(stats);
                 }
                 List<FileEntry> files = new ArrayList<>();
                 for (Integer id : metadataManager.getIndexedFiles(sm.getId())) {
@@ -198,7 +199,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     @Override
     public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions) {
         System.out.println("Update stats : "
-                + (variantStatsWrappers.isEmpty() ? "" : variantStatsWrappers.get(0).getCohortStats().keySet().toString()));
+                + (variantStatsWrappers.isEmpty() ? "" : variantStatsWrappers.get(0).getCohortStats().stream().map(VariantStats::getCohortId).collect(Collectors.joining(","))));
 
         return new DataResult();
     }

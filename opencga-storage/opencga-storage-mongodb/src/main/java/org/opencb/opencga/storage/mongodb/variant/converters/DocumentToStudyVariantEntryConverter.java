@@ -316,9 +316,9 @@ public class DocumentToStudyVariantEntryConverter {
         int fileId = Integer.parseInt(file.getFileId());
         Document fileObject = new Document(FILEID_FIELD, fileId);
         // Attributes
-        if (file.getAttributes().size() > 0) {
+        if (file.getData().size() > 0) {
             Document attrs = null;
-            for (Map.Entry<String, String> entry : file.getAttributes().entrySet()) {
+            for (Map.Entry<String, String> entry : file.getData().entrySet()) {
                 String stringValue = entry.getValue();
                 String key = entry.getKey().replace(".", GenericDocumentComplexConverter.TO_REPLACE_DOTS);
                 Object value = stringValue;

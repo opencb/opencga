@@ -540,7 +540,7 @@ public class VariantLocalConflictResolver {
         if (samples == null || samples.isEmpty()) {
             return null;
         }
-        Integer keyPos = studyEntry.getFormatPositions().get(GENOTYPE_FILTER_KEY);
+        Integer keyPos = studyEntry.getSampleDataKeyPosition(GENOTYPE_FILTER_KEY);
         if (null == keyPos) {
             return null;
         }
@@ -562,7 +562,7 @@ public class VariantLocalConflictResolver {
         if (files == null || files.isEmpty()) {
             return null;
         }
-        return files.get(0).getAttributes().get(key);
+        return files.get(0).getData().get(key);
     }
 
     /**
@@ -721,15 +721,15 @@ public class VariantLocalConflictResolver {
             } else {
                 se.setSamplesPosition(new HashMap<>());
             }
-            if (null != vse.getFormat()) {
-                se.setFormat(new ArrayList<>(vse.getFormat()));
+            if (null != vse.getSampleDataKeys()) {
+                se.setFormat(new ArrayList<>(vse.getSampleDataKeys()));
             } else {
                 se.setFormat(new ArrayList<>());
             }
 
             List<FileEntry> files = new ArrayList<>(vse.getFiles().size());
             for (FileEntry file : vse.getFiles()) {
-                HashMap<String, String> attributes = new HashMap<>(file.getAttributes()); //TODO: Check file attributes
+                HashMap<String, String> attributes = new HashMap<>(file.getData()); //TODO: Check file attributes
                 files.add(new FileEntry(file.getFileId(), file.getCall(), attributes));
             }
             se.setFiles(files);
@@ -754,7 +754,7 @@ public class VariantLocalConflictResolver {
         String genotype = NOCALL;
         var.setType(NO_VARIATION);
         StudyEntry se = var.getStudies().get(0);
-        Map<String, Integer> formatPositions = se.getFormatPositions();
+        Map<String, Integer> formatPositions = se.getSampleDataKeyPositions();
         int gtpos = formatPositions.get(GENOTYPE_KEY);
         int filterPos = formatPositions.containsKey(GENOTYPE_FILTER_KEY)
                 ? formatPositions.get(GENOTYPE_FILTER_KEY) : -1;
@@ -771,14 +771,14 @@ public class VariantLocalConflictResolver {
         se.setSamples(oLst);
         se.setSecondaryAlternates(new ArrayList<>());
         for (FileEntry fe : se.getFiles()) {
-            Map<String, String> feAttr = fe.getAttributes();
+            Map<String, String> feAttr = fe.getData();
             if (null == feAttr) {
                 feAttr = new HashMap<>();
             } else {
                 feAttr = new HashMap<>(feAttr);
             }
             feAttr.put(VariantVcfFactory.FILTER, "SiteConflict");
-            fe.setAttributes(feAttr);
+            fe.setData(feAttr);
         }
     }
 

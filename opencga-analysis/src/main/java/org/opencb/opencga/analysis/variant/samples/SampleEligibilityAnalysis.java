@@ -408,7 +408,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                 numSamples = studyEntry.getSamples().size();
                 skip += numSamples;
 
-                int sampleIdPos = studyEntry.getFormatPositions().get(VariantQueryParser.SAMPLE_ID);
+                int sampleIdPos = studyEntry.getSampleDataKeyPosition(VariantQueryParser.SAMPLE_ID);
                 for (SampleEntry sampleEntry : studyEntry.getSamples()) {
                     if (GenotypeClass.MAIN_ALT.test(sampleEntry.getData().get(0))) {
                         String sampleId = sampleEntry.getData().get(sampleIdPos);

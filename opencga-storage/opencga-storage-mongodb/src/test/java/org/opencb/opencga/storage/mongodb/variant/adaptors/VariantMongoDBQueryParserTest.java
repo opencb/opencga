@@ -531,7 +531,6 @@ public class VariantMongoDBQueryParserTest {
         checkEqualDocuments(expected, projection);
 
         expected.append(LENGTH_FIELD, 1);
-        expected.append(HGVS_FIELD, 1);
         expected.append(IDS_FIELD, 1);
         projection = parser.createProjection(new Query().append(INCLUDE_SAMPLE.key(), ALL)
                 .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.EXCLUDE, ANNOTATION.fieldName()));

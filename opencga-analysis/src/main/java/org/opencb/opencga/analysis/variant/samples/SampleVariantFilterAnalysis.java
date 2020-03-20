@@ -230,7 +230,7 @@ public class SampleVariantFilterAnalysis extends OpenCgaToolScopeStudy {
                 }
                 numVariants++;
                 StudyEntry studyEntry = variant.getStudies().get(0);
-                Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+                Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
                 if (gtIdx == null || gtIdx < 0) {
                     throw new VariantQueryException("Missing GT at variant " + variant);
                 }

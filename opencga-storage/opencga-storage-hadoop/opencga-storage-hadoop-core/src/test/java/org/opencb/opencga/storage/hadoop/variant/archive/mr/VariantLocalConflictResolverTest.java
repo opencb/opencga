@@ -571,14 +571,14 @@ public class VariantLocalConflictResolverTest {
     }
 
     public static Variant addAttribute(Variant var, String key, String value) {
-        var.getStudy("1").getFile("1").getAttributes().put(key, value);
+        var.getStudy("1").getFile("1").getData().put(key, value);
         return var;
     }
 
     public static Variant addGT(Variant var, String gt) {
         StudyEntry se = var.getStudy("1");
-        se.addFormat("GT");
-        se.getFormatPositions();
+        se.addSampleDataKey("GT");
+        se.getSampleDataKeyPositions();
         se.setSamplesPosition(Collections.singletonMap("1", 0));
 //        se.setFormat(Collections.singletonList("GT"));
         se.addSampleData("1", Collections.singletonList(gt));

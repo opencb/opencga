@@ -72,7 +72,7 @@ public class VariantFileIndexConverter {
         StudyEntry study = variant.getStudies().get(0);
         FileEntry file = study.getFiles().get(0);
 
-        Integer dpIdx = study.getFormatPositions().get(VCFConstants.DEPTH_KEY);
+        Integer dpIdx = study.getSampleDataKeyPosition(VCFConstants.DEPTH_KEY);
         String dpStr;
         if (dpIdx != null) {
             dpStr = study.getSampleData(sampleIdx).get(dpIdx);
@@ -80,7 +80,7 @@ public class VariantFileIndexConverter {
             dpStr = null;
         }
 
-        return createFileIndexValue(variant.getType(), filePosition, file.getAttributes(), dpStr);
+        return createFileIndexValue(variant.getType(), filePosition, file.getData(), dpStr);
     }
 
     /**
