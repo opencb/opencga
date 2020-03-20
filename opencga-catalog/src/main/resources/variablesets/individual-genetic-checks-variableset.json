@@ -1,12 +1,81 @@
 {
+  "uid" : 0,
   "id" : "opencga_individual_genetic_checks",
   "name" : "opencga_individual_genetic_checks",
   "unique" : false,
   "confidential" : false,
   "description" : "OpenCGA individual genetic checks",
-  "entities" : [ "INDIVIDUAL" ],
-  "attributes" : null,
   "variables" : [ {
+    "id" : "individualId",
+    "name" : "individualId",
+    "category" : null,
+    "type" : "STRING",
+    "defaultValue" : null,
+    "required" : false,
+    "multiValue" : false,
+    "allowedValues" : null,
+    "rank" : 0,
+    "dependsOn" : null,
+    "description" : "Individual ID",
+    "variableSet" : null,
+    "attributes" : null
+  }, {
+    "id" : "sampleId",
+    "name" : "sampleId",
+    "category" : null,
+    "type" : "STRING",
+    "defaultValue" : null,
+    "required" : false,
+    "multiValue" : false,
+    "allowedValues" : null,
+    "rank" : 1,
+    "dependsOn" : null,
+    "description" : "Sample ID",
+    "variableSet" : null,
+    "attributes" : null
+  }, {
+    "id" : "fatherId",
+    "name" : "fatherId",
+    "category" : null,
+    "type" : "STRING",
+    "defaultValue" : null,
+    "required" : false,
+    "multiValue" : false,
+    "allowedValues" : null,
+    "rank" : 2,
+    "dependsOn" : null,
+    "description" : "Father ID",
+    "variableSet" : null,
+    "attributes" : null
+  }, {
+    "id" : "motherId",
+    "name" : "motherId",
+    "category" : null,
+    "type" : "STRING",
+    "defaultValue" : null,
+    "required" : false,
+    "multiValue" : false,
+    "allowedValues" : null,
+    "rank" : 3,
+    "dependsOn" : null,
+    "description" : "Mother ID",
+    "variableSet" : null,
+    "attributes" : null
+  }, {
+    "id" : "siblingsIds",
+    "name" : "siblingsIds",
+    "category" : null,
+    "type" : "STRING",
+    "defaultValue" : null,
+    "required" : false,
+    "multiValue" : true,
+    "allowedValues" : null,
+    "rank" : 4,
+    "dependsOn" : null,
+    "description" : "Siblings IDs",
+    "variableSet" : null,
+    "attributes" : null
+  }, {
     "id" : "sexReport",
     "name" : "sexReport",
     "category" : null,
@@ -15,7 +84,7 @@
     "required" : false,
     "multiValue" : false,
     "allowedValues" : null,
-    "rank" : 0,
+    "rank" : 5,
     "dependsOn" : null,
     "description" : "Sex report",
     "variableSet" : [ {
@@ -113,7 +182,7 @@
     "required" : false,
     "multiValue" : false,
     "allowedValues" : null,
-    "rank" : 1,
+    "rank" : 6,
     "dependsOn" : null,
     "description" : "Relatedness report",
     "variableSet" : [ {
@@ -253,7 +322,7 @@
     "required" : false,
     "multiValue" : false,
     "allowedValues" : null,
-    "rank" : 2,
+    "rank" : 7,
     "dependsOn" : null,
     "description" : "Mendelian errors report",
     "variableSet" : [ {
@@ -356,5 +425,8 @@
       "attributes" : null
     } ],
     "attributes" : null
-  } ]
+  } ],
+  "entities" : [ "INDIVIDUAL" ],
+  "release" : 0,
+  "attributes" : null
 }
