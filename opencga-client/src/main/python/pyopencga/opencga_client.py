@@ -134,7 +134,7 @@ class OpencgaClient(object):
                      retry_seconds=10):
         if response is not None:
             study_id = response['result'][0]['study']['id']
-            job_id = response['result'][0]['uuid']
+            job_id = response['result'][0]['id']
 
         if response is None and (study_id is None or job_id is None):
             raise ValueError('Argument "response" or arguments "study" and'
