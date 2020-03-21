@@ -5,7 +5,8 @@ set -e
 display_help() {
     echo "Usage: {build|push|push-test}" >&2
     echo
-    echo "   build            Build pyOpenCGA python PyPI pacjage"
+    echo "   clean            Clean PyPI build packages"
+    echo "   build            Build pyOpenCGA python PyPI package"
     echo "   push             Push pyOpenCGA to PyPI"
     echo "   push-test        Push pyOpenCGA to test PyPI"
     echo ""
@@ -37,6 +38,13 @@ build () {
   python3 setup.py sdist bdist_wheel
   echo ""
 }
+
+if [ $ACTION = "clean" ]; then
+  echo "******************************"
+  echo "Deleting build, dist and pyopencga.egg-info ..."
+  echo "******************************"
+  rm -rfv build dist pyopencga.egg-info
+fi
 
 if [ $ACTION = "build" ]; then
   build
