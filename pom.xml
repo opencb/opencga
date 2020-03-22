@@ -39,6 +39,7 @@
 
     <properties>
         <opencga.version>2.0.0-dev</opencga.version>
+        <pyopencga.version>${opencga.version}</pyopencga.version>
         <cellbase.version>4.6.3-SNAPSHOT</cellbase.version>
         <biodata.version>2.0.0-SNAPSHOT</biodata.version>
         <oskar.version>0.2.0-SNAPSHOT</oskar.version>

@@ -308,7 +308,7 @@
                                 </exec>
                                 <exec executable="sed">
                                     <arg value="-i"/>
-                                    <arg value="s/OPENCGA_VERSION/${opencga.version}/"/>
+                                    <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
                                     <arg value="${build.dir}/clients/python/setup.py"/>
                                 </exec>
                                 <exec executable="cp">
