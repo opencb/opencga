@@ -64,7 +64,6 @@ class OpencgaClient(object):
             sys.stdout.write('{}{}{}'.format(ansi_yellow, msg, ansi_reset))
 
     def _create_clients(self):
-
         self.users = User(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.projects = Project(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.studies = Study(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
@@ -102,16 +101,12 @@ class OpencgaClient(object):
         not to do so. This way, the password stored in the closure is inaccessible
         to other code
         """
-
         def login_handler(refresh=False):
             self.user_id = user
             data = {'password': pwd} if refresh else {}
-            self.token = User(self.configuration).login(
-                user=user, data=data
-            ).get_result(0)['token']
-
+            self.token = User(self.configuration).login(user=user, data=data).get_result(0)['token']
             for client in self.clients:
-                client.token = self.token  # renew the client's token
+                client.token = self.token  # renew token in all clients
             return self.token
 
         return login_handler
@@ -130,24 +125,21 @@ class OpencgaClient(object):
         for client in self.clients:
             client.token = self.token
 
-    def wait_for_job(self, response=None, study_id=None, job_id=None,
-                     retry_seconds=10):
+    def wait_for_job(self, response=None, study_id=None, job_id=None, retry_seconds=10):
         if response is not None:
-            study_id = response['result'][0]['study']['id']
-            job_id = response['result'][0]['id']
+            study_id = response['results'][0]['study']['id']
+            job_id = response['results'][0]['id']
 
         if response is None and (study_id is None or job_id is None):
-            raise ValueError('Argument "response" or arguments "study" and'
-                             ' "job_id" must be provided')
+            raise ValueError('Argument "response" or arguments "study" and "job_id" must be provided')
 
         if len(job_id.split(',')) > 1:
             raise ValueError('Only one job ID is allowed')
 
         retry_seconds = retry_seconds if retry_seconds >= 10 else 10
         while True:
-            job_info = self.jobs.info(study=study_id, jobs=job_id,
-                                      include='internal.status').get_result(0)
-            if job_info['status']['name'] in ['ERROR', 'ABORTED']:
+            job_info = self.jobs.info(study=study_id, jobs=job_id, include='internal.status').get_result(0)
+            if job_info['internal']['status']['name'] in ['ERROR', 'ABORTED']:
                 raise ValueError('{} ({}): {}'.format(
                     job_info['status']['name'], job_info['status']['date'],
                     job_info['status']['message']
@@ -171,8 +163,7 @@ class OpencgaClient(object):
             # Description and path
             class_docstring = client.__doc__
             cls_desc = re.findall('(.+)\n +Client version', class_docstring)[0]
-            cls_desc = cls_desc.strip().replace('This class contains methods',
-                                                'Client')
+            cls_desc = cls_desc.strip().replace('This class contains methods', 'Client')
             cls_path = re.findall('PATH: (.+)\n', class_docstring)[0]
 
             # Methods
