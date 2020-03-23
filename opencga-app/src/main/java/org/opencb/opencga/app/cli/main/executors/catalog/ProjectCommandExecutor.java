@@ -80,17 +80,11 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
 
         ProjectCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
 
-        ProjectOrganism organism = new ProjectOrganism(commandOptions.scientificName, commandOptions.assembly);
-        if (StringUtils.isNotEmpty(commandOptions.commonName)) {
-            organism.setCommonName(commandOptions.commonName);
-        }
-
         ProjectCreateParams createParams = new ProjectCreateParams()
                 .setId(commandOptions.id)
                 .setName(commandOptions.name)
                 .setDescription(commandOptions.description)
-                .setOrganism(organism);
-
+                .setOrganism(new ProjectOrganism(commandOptions.scientificName, commandOptions.commonName, commandOptions.assembly));
         return openCGAClient.getProjectClient().create(createParams);
     }
 
