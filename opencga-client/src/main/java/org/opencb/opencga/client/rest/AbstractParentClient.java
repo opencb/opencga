@@ -253,7 +253,6 @@ public abstract class AbstractParentClient {
      * @throws ClientException if the path is wrong and cannot be converted to a proper url.
      */
     private <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method) throws ClientException {
-
         Response response;
         switch (method) {
             case DELETE:
@@ -265,9 +264,8 @@ public abstract class AbstractParentClient {
                     }
                 }
 
-                logger.debug(method + " URL: {}", path.getUri());
-                Invocation.Builder header = path.request()
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+                logger.debug("{} URL: {}", method, path.getUri());
+                Invocation.Builder header = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
                 if (method.equals(GET)) {
                     response = header.get();
                 } else {
@@ -284,9 +282,8 @@ public abstract class AbstractParentClient {
                     }
                 }
 
-                Object paramBody = (params == null || params.get("body") == null ? "" : params.get("body"));
-                logger.debug(method + " URL: {}", path.getUri());
-                logger.debug("Body {}", paramBody);
+                Object paramBody = (params != null && params.get("body") != null) ? params.get("body") : "";
+                logger.debug("{} URL: {}, Body {}", method, path.getUri(), paramBody);
                 response = path.request()
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
                         .post(Entity.json(paramBody));
