@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadata
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -314,7 +315,7 @@ public class FillGapsTaskTest {
     private Variant putToVariant(Put put) {
         Result result = Result.create(put.getFamilyCellMap().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
         return HBaseToVariantConverter.fromResult(metadataManager)
-                .setFormats(Arrays.asList("GT", "DP"))
+                .configure(HBaseVariantConverterConfiguration.builder().setFormat(Arrays.asList("GT", "DP")).build())
                 .convert(result);
     }
 

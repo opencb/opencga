@@ -408,10 +408,9 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                 numSamples = studyEntry.getSamples().size();
                 skip += numSamples;
 
-                int sampleIdPos = studyEntry.getSampleDataKeyPosition(VariantQueryParser.SAMPLE_ID);
                 for (SampleEntry sampleEntry : studyEntry.getSamples()) {
                     if (GenotypeClass.MAIN_ALT.test(sampleEntry.getData().get(0))) {
-                        String sampleId = sampleEntry.getData().get(sampleIdPos);
+                        String sampleId = sampleEntry.getSampleId();
                         samples.add(sampleId);
                         thisVariantSamples.add(sampleId);
                     }
@@ -434,7 +433,8 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         Query query = new Query(baseQuery);
         query.putAll(node.getQuery());
         query.put(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples);
-        query.put(VariantQueryParam.INCLUDE_FORMAT.key(), "GT," + VariantQueryParser.SAMPLE_ID);
+        query.put(VariantQueryParam.INCLUDE_FORMAT.key(), "GT");
+        query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
         Predicate<String> genotypeFilter = GenotypeClass.MAIN_ALT;
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.GENOTYPE)) {
             String genotypes = query.getString(VariantQueryParam.GENOTYPE.key());

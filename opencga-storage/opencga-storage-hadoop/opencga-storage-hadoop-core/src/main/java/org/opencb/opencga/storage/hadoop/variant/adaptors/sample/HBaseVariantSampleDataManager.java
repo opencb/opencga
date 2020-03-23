@@ -20,15 +20,15 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
@@ -186,10 +186,16 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
             // Convert to VariantSampleData
             HBaseToStudyEntryConverter converter = new HBaseToStudyEntryConverter(metadataManager, statsConverter);
-            converter.setStudyNameAsStudyId(true);
-            converter.setFormats(Arrays.asList(VariantQueryUtils.ALL, VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX));
-            converter.setSelectVariantElements(
-                    new VariantQueryProjection(metadataManager.getStudyMetadata(studyId), samples, new ArrayList<>(fileIdsFromSampleIds)));
+
+            converter.configure(HBaseVariantConverterConfiguration.builder()
+                    .setStudyNameAsStudyId(true)
+                    .setIncludeSampleId(true)
+                    .setProjection(
+                            new VariantQueryProjection(
+                                    metadataManager.getStudyMetadata(studyId),
+                                    samples,
+                                    new ArrayList<>(fileIdsFromSampleIds)))
+                    .build());
 
             StudyEntry studyEntry = converter.convert(sampleDataMap, filesMap, variant, studyId);
 

@@ -61,6 +61,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.load.VariantHadoopDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
@@ -170,7 +171,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         merger.setDefaultValue("AD", ".");
         merger.configure(sm1.getVariantHeader());
 
-        Map<String, Variant> loadedVariants = dbAdaptor.stream(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "."), new QueryOptions(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, false))
+        Map<String, Variant> loadedVariants = dbAdaptor.stream(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "."),
+                new QueryOptions(HBaseVariantConverterConfiguration.STUDY_NAME_AS_STUDY_ID, false))
                 .collect(Collectors.toMap(Variant::toString, i -> i));
 
         for (Variant variant : variants1) {

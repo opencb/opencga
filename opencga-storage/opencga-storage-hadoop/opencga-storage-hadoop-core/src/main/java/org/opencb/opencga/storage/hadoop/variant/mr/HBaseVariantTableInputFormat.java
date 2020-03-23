@@ -9,6 +9,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.IOException;
@@ -26,18 +27,20 @@ public class HBaseVariantTableInputFormat extends AbstractHBaseVariantTableInput
 
     protected Function<Result, Variant> initConverter(Configuration configuration) throws IOException {
         VariantTableHelper helper = new VariantTableHelper(configuration);
-        VariantQueryProjection selectVariantElements;
+        VariantQueryProjection projection;
 
         HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
         try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory)) {
             Query query = getQueryFromConfig(configuration);
             QueryOptions queryOptions = getQueryOptionsFromConfig(configuration);
-            selectVariantElements = VariantQueryProjectionParser.parseVariantQueryFields(query, queryOptions, scm);
+            projection = VariantQueryProjectionParser.parseVariantQueryFields(query, queryOptions, scm);
         }
 
         HBaseToVariantConverter<Result> converter = HBaseToVariantConverter.fromResult(helper)
-                .configure(configuration)
-                .setSelectVariantElements(selectVariantElements);
+                .configure(HBaseVariantConverterConfiguration
+                        .builder(configuration)
+                        .setProjection(projection)
+                        .build());
         return converter::convert;
     }
 

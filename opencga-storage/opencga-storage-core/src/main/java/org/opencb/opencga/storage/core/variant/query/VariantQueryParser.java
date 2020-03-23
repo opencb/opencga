@@ -41,10 +41,6 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
  */
 public class VariantQueryParser {
 
-    public static final String SAMPLE_ID = "SAMPLE_ID";
-    public static final String FILE_IDX = "FILE_IDX";
-    public static final String FILE_ID = "FILE_ID";
-
     protected final CellBaseUtils cellBaseUtils;
     protected final VariantStorageMetadataManager metadataManager;
     protected final VariantQueryProjectionParser projectionParser;

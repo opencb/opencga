@@ -17,21 +17,16 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 
 /**
  * Created on 16/12/15.
@@ -42,8 +37,6 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
 
     private final Statement statement;
     private final ResultSet resultSet;
-    private final GenomeHelper genomeHelper;
-    private final VariantStorageMetadataManager scm;
     private final HBaseToVariantConverter<ResultSet> converter;
     private final Logger logger = LoggerFactory.getLogger(VariantHBaseResultSetIterator.class);
 
@@ -51,25 +44,11 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
     private int count = 0;
 
     public VariantHBaseResultSetIterator(
-            Statement statement, ResultSet resultSet, GenomeHelper genomeHelper, VariantStorageMetadataManager scm,
-            VariantQueryProjection select, List<String> formats,
-            String unknownGenotype, Query query, QueryOptions options)
+            Statement statement, ResultSet resultSet, VariantStorageMetadataManager mm, HBaseVariantConverterConfiguration configuraiton)
             throws SQLException {
         this.statement = statement;
         this.resultSet = resultSet;
-        this.genomeHelper = genomeHelper;
-        this.scm = scm;
-        if (options == null) {
-            options = QueryOptions.empty();
-        }
-        converter = HBaseToVariantConverter.fromResultSet(this.scm)
-                .setSelectVariantElements(select)
-                .setMutableSamplesPosition(false)
-                .setStudyNameAsStudyId(options.getBoolean(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, true))
-                .setUnknownGenotype(unknownGenotype)
-                .setSimpleGenotypes(options.getBoolean(HBaseToVariantConverter.SIMPLE_GENOTYPES, true))
-                .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
-                .setFormats(formats);
+        converter = HBaseToVariantConverter.fromResultSet(mm).configure(configuraiton);
         hasNext = fetch(resultSet::next);
     }
 

@@ -14,8 +14,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +90,6 @@ public class VariantSampleDataManager {
         Map<String, Integer> filesIdx = new HashMap<>();
         List<FileEntry> files = new ArrayList<>(limit);
         List<VariantStats> stats = Collections.emptyList();
-        int fileIdxFormatIdx = -1;
         List<String> format = null;
         VariantAnnotation annotation = null;
 
@@ -104,10 +101,7 @@ public class VariantSampleDataManager {
             Query query = new Query(VariantQueryParam.ID.key(), variantStr)
                     .append(VariantQueryParam.STUDY.key(), study)
                     .append(VariantQueryParam.SAMPLE_LIMIT.key(), sampleLimit)
-                    .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip)
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), VariantQueryUtils.ALL + ","
-                            + VariantQueryParser.SAMPLE_ID + ","
-                            + VariantQueryParser.FILE_IDX);
+                    .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip);
             if (includeSamples != null && !includeSamples.isEmpty()) {
                 query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples); // if empty, will return all
             }
@@ -133,7 +127,6 @@ public class VariantSampleDataManager {
                 annotation = partialVariant.getAnnotation();
                 stats = partialStudy.getStats();
                 format = partialStudy.getSampleDataKeys();
-                fileIdxFormatIdx = format.indexOf(VariantQueryParser.FILE_IDX);
             }
             boolean hasGt = format.get(0).equals("GT");
             List<String> samples = partialStudy.getOrderedSamplesName();
@@ -175,7 +168,6 @@ public class VariantSampleDataManager {
                                 filesIdx.put(fileEntry.getFileId(), fileIdx);
                                 files.add(fileEntry);
                             }
-                            sampleData.set(fileIdxFormatIdx, String.valueOf(fileIdx));
                             sampleEntries.add(new SampleEntry(sample, fileIdx, sampleData));
                         }
                     }

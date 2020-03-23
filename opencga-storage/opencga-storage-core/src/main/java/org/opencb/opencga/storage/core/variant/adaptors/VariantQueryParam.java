@@ -103,6 +103,10 @@ public final class VariantQueryParam implements QueryParam {
             + ACCEPTS_ALL_NONE;
     public static final VariantQueryParam INCLUDE_SAMPLE = new VariantQueryParam("includeSample", TEXT_ARRAY, INCLUDE_SAMPLE_DESCR);
 
+    public static final String INCLUDE_SAMPLE_ID_DESCR
+            = "Include sampleId on each result";
+    public static final VariantQueryParam INCLUDE_SAMPLE_ID = new VariantQueryParam("includeSampleId", TEXT_ARRAY, INCLUDE_SAMPLE_ID_DESCR);
+
     public static final String SAMPLE_METADATA_DESCR
             = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
     public static final VariantQueryParam SAMPLE_METADATA = new VariantQueryParam("sampleMetadata", TEXT_ARRAY, SAMPLE_METADATA_DESCR);
