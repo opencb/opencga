@@ -233,11 +233,6 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         return submitOperation(VariantAggregateOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
-    public Response submitOperation(String toolId, ToolParams params, String jobName, String jobDescription, String jobDependsOn,
-                                    String jobTags) {
-        return submitOperation(toolId, null, params, jobName, jobDescription, jobDependsOn, jobTags);
-    }
-
     public Response submitOperation(String toolId, String study, ToolParams params,
                                     String jobName, String jobDescription, String jobDependsOn, String jobTags) {
         return submitOperation(toolId, null, study, params, jobName, jobDescription, jobDependsOn, jobTags);

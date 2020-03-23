@@ -129,6 +129,8 @@ public final class Enums {
 
         AGGREGATION_STATS,
 
+        RELATIVES,
+
         UPLOAD,
         LINK,
         UNLINK,

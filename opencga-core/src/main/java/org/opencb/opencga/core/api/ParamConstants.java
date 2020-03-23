@@ -83,7 +83,7 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual names or ids" + UP_TO_100;
-    public static final String INDIVIDUAL_DESCRIPTION = "Individual ID or name";
+    public static final String INDIVIDUAL_DESCRIPTION = "Individual ID or UUID";
 
     // ---------------------------------------------
 

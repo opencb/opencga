@@ -99,6 +99,29 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{individual}/relatives")
+    @ApiOperation(value = "Get individual relatives", response = Individual.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+                    dataType = "boolean", paramType = "query")
+    })
+    public Response relatives(
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION, required = true) @PathParam("individual") String individualStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Pedigree degree", defaultValue = "2") @QueryParam("degree") Integer degree) {
+        try {
+            int degreeCopy = degree != null ? degree : 2;
+            return createOkResponse(individualManager.relatives(studyStr, individualStr, degreeCopy, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/search")
     @ApiOperation(value = "Search for individuals", response = Individual.class)
     @ApiImplicitParams({
