@@ -70,7 +70,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     private final JobCommandOptions jobCommandOptions;
     private final IndividualCommandOptions individualCommandOptions;
     private final SampleCommandOptions sampleCommandOptions;
-    private final ClinicalCommandOptions clinicalCommandOptions;
     private final CohortCommandOptions cohortCommandOptions;
     private final FamilyCommandOptions familyCommandOptions;
     private final PanelCommandOptions panelCommandOptions;
@@ -79,6 +78,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     // Analysis commands
     private final AlignmentCommandOptions alignmentCommandOptions;
     private final VariantCommandOptions variantCommandOptions;
+    private final ClinicalCommandOptions clinicalCommandOptions;
 
     private final OperationsCommandOptions operationsCommandOptions;
 
@@ -200,14 +200,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         familySubCommands.addCommand("acl-update", familyCommandOptions.aclsUpdateCommandOptions);
         familySubCommands.addCommand("annotation-sets-update", familyCommandOptions.annotationUpdateCommandOptions);
 
-        clinicalCommandOptions = new ClinicalCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
-        jCommander.addCommand("clinical", clinicalCommandOptions);
-        JCommander clinicalSubcommands = jCommander.getCommands().get("clinical");
-        clinicalSubcommands.addCommand("info", clinicalCommandOptions.infoCommandOptions);
-        clinicalSubcommands.addCommand("search", clinicalCommandOptions.searchCommandOptions);
-        clinicalSubcommands.addCommand("acl", clinicalCommandOptions.aclsCommandOptions);
-        clinicalSubcommands.addCommand("acl-update", clinicalCommandOptions.aclsUpdateCommandOptions);
-
         panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("panels", panelCommandOptions);
         JCommander panelSubcommands = jCommander.getCommands().get("panels");
@@ -285,6 +277,14 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
         variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);
 
+        clinicalCommandOptions = new ClinicalCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
+        jCommander.addCommand("clinical", clinicalCommandOptions);
+        JCommander clinicalSubcommands = jCommander.getCommands().get("clinical");
+        clinicalSubcommands.addCommand("info", clinicalCommandOptions.infoCommandOptions);
+        clinicalSubcommands.addCommand("search", clinicalCommandOptions.searchCommandOptions);
+        clinicalSubcommands.addCommand("acl", clinicalCommandOptions.aclsCommandOptions);
+        clinicalSubcommands.addCommand("acl-update", clinicalCommandOptions.aclsUpdateCommandOptions);
+
         operationsCommandOptions = new OperationsCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand(OPERATIONS_COMMAND, operationsCommandOptions);
         JCommander operationsSubCommands = jCommander.getCommands().get(OPERATIONS_COMMAND);
@@ -351,7 +351,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
 
     @Override
     protected void printMainUsage() {
-        Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant"));
+        Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant", "clinical"));
         Set<String> operationsCommands = new HashSet<>(Collections.singletonList(OPERATIONS_COMMAND));
 
         System.err.println("Catalog commands:");
@@ -422,10 +422,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         return familyCommandOptions;
     }
 
-    public ClinicalCommandOptions getClinicalCommandOptions() {
-        return clinicalCommandOptions;
-    }
-
     public PanelCommandOptions getPanelCommands() {
         return panelCommandOptions;
     }
@@ -440,6 +436,10 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
 
     public VariantCommandOptions getVariantCommands() {
         return variantCommandOptions;
+    }
+
+    public ClinicalCommandOptions getClinicalCommandOptions() {
+        return clinicalCommandOptions;
     }
 
     public OperationsCommandOptions getOperationsCommands() {

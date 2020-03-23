@@ -18,6 +18,47 @@ public class GeneticChecksReportTest {
         long geneticChecksVarsCounter = 0;
         Set<Variable> geneticChecksVars = new LinkedHashSet<>();
 
+        // Individual ID
+        geneticChecksVars.add(new Variable()
+                .setName("individualId")
+                .setId("individualId")
+                .setType(Variable.VariableType.STRING)
+                .setRank(geneticChecksVarsCounter++)
+                .setDescription("Individual ID"));
+
+        // Sample ID
+        geneticChecksVars.add(new Variable()
+                .setName("sampleId")
+                .setId("sampleId")
+                .setType(Variable.VariableType.STRING)
+                .setRank(geneticChecksVarsCounter++)
+                .setDescription("Sample ID"));
+
+        // Father ID
+        geneticChecksVars.add(new Variable()
+                .setName("fatherId")
+                .setId("fatherId")
+                .setType(Variable.VariableType.STRING)
+                .setRank(geneticChecksVarsCounter++)
+                .setDescription("Father ID"));
+
+        // Mother ID
+        geneticChecksVars.add(new Variable()
+                .setName("motherId")
+                .setId("motherId")
+                .setType(Variable.VariableType.STRING)
+                .setRank(geneticChecksVarsCounter++)
+                .setDescription("Mother ID"));
+
+        // Siblings IDs
+        geneticChecksVars.add(new Variable()
+                .setName("siblingsIds")
+                .setId("siblingsIds")
+                .setType(Variable.VariableType.STRING)
+                .setMultiValue(true)
+                .setRank(geneticChecksVarsCounter++)
+                .setDescription("Siblings IDs"));
+
         //---------------------------------------------------------------------
         // Sex report
         //---------------------------------------------------------------------
@@ -254,9 +295,9 @@ public class GeneticChecksReportTest {
 
         // Variable set
         VariableSet geneticChecksVs = new VariableSet()
-                .setId("opencga_genetic_checks")
-                .setName("opencga_genetic_checks")
-                .setDescription("OpenCGA genetic checks")
+                .setId("opencga_individual_genetic_checks")
+                .setName("opencga_individual_genetic_checks")
+                .setDescription("OpenCGA individual genetic checks")
                 .setEntities(Collections.singletonList(VariableSet.AnnotableDataModels.INDIVIDUAL))
                 .setVariables(geneticChecksVars);
 

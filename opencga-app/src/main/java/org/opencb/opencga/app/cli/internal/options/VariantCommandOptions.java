@@ -949,7 +949,7 @@ public class VariantCommandOptions {
                 + " For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
         public String samplesAnnotation;
 
-        @Parameter(names = {"--index"}, description = "Index results in catalog."
+        @Parameter(names = {"--index"}, description = "Index results in catalog1111."
                 + "Create an AnnotationSet for the VariableSet " + SampleVariantStatsAnalysis.VARIABLE_SET_ID)
         public boolean index;
 

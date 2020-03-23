@@ -839,11 +839,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case TOOL_ID:
                         addAutoOrQuery(QueryParams.TOOL_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-                    case INPUT:
                     case INPUT_UID:
                         addAutoOrQuery(QueryParams.INPUT_UID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-                    case OUTPUT:
                     case OUTPUT_UID:
                         addAutoOrQuery(QueryParams.OUTPUT_UID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;

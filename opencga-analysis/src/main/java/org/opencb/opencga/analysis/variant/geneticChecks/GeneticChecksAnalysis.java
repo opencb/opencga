@@ -213,8 +213,28 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
         }
     }
 
-    private ObjectMap buildAnnotations(GeneticChecksReport report, String sampleId) {
+    private ObjectMap buildAnnotations(GeneticChecksReport report, String sampleId) throws ToolException {
         ObjectMap annot = new ObjectMap();
+
+        // Get individual from sample and update
+        try {
+            Individual individual = GeneticChecksUtils.getIndividualBySampleId(studyId, sampleId, catalogManager, token);
+            if (individual != null) {
+                annot.put("individual", individual.getId());
+                annot.put("sample", sampleId);
+                if (individual.getFather() != null) {
+                    annot.put("father", individual.getFather().getId());
+                }
+                if (individual.getMother() != null) {
+                    annot.put("mother", individual.getMother().getId());
+                }
+                if (individual.getMultiples() != null && individual.getMultiples().getSiblings() != null) {
+                    annot.put("siblings", individual.getMultiples().getSiblings());
+                }
+            }
+        } catch (ToolException e) {
+            throw new ToolException(e);
+        }
 
         // Relatedness annotations
         if (report.getRelatednessReport() != null) {

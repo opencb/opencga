@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
@@ -480,27 +481,27 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
-        if (query.containsKey("inputFiles")) {
-            List<File> inputFiles = catalogManager.getFileManager().internalGet(study.getUid(), query.getAsStringList("inputFiles"),
-                    FileManager.INCLUDE_FILE_IDS, userId, true).getResults();
+        if (query.containsKey(ParamConstants.JOB_INPUT_FILES_PARAM)) {
+            List<File> inputFiles = catalogManager.getFileManager().internalGet(study.getUid(),
+                    query.getAsStringList(ParamConstants.JOB_INPUT_FILES_PARAM), FileManager.INCLUDE_FILE_IDS, userId, true).getResults();
             if (ListUtils.isNotEmpty(inputFiles)) {
                 query.put(JobDBAdaptor.QueryParams.INPUT_UID.key(), inputFiles.stream().map(File::getUid).collect(Collectors.toList()));
             } else {
                 // We add 0 so the query returns no results
                 query.put(JobDBAdaptor.QueryParams.INPUT_UID.key(), 0);
             }
-            query.remove("inputFiles");
+            query.remove(ParamConstants.JOB_INPUT_FILES_PARAM);
         }
-        if (query.containsKey("outputFiles")) {
-            List<File> inputFiles = catalogManager.getFileManager().internalGet(study.getUid(), query.getAsStringList("outputFiles"),
-                    FileManager.INCLUDE_FILE_IDS, userId, true).getResults();
+        if (query.containsKey(ParamConstants.JOB_OUTPUT_FILES_PARAM)) {
+            List<File> inputFiles = catalogManager.getFileManager().internalGet(study.getUid(),
+                    query.getAsStringList(ParamConstants.JOB_OUTPUT_FILES_PARAM), FileManager.INCLUDE_FILE_IDS, userId, true).getResults();
             if (ListUtils.isNotEmpty(inputFiles)) {
                 query.put(JobDBAdaptor.QueryParams.OUTPUT_UID.key(), inputFiles.stream().map(File::getUid).collect(Collectors.toList()));
             } else {
                 // We add 0 so the query returns no results
                 query.put(JobDBAdaptor.QueryParams.OUTPUT_UID.key(), 0);
             }
-            query.remove("outputFiles");
+            query.remove(ParamConstants.JOB_OUTPUT_FILES_PARAM);
         }
     }
 

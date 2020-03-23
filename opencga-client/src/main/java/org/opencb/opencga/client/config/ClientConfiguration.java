@@ -19,7 +19,6 @@ package org.opencb.opencga.client.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +39,6 @@ public class ClientConfiguration {
     private String version;
     private int sessionDuration;
 
-    private ProjectOrganism organism;
     private String defaultStudy;
 
     private Map<String, String> alias;
@@ -51,12 +49,8 @@ public class ClientConfiguration {
     private VariantClientConfiguration variant;
 
     private static Logger logger;
-
     private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
 
-    static {
-        logger = LoggerFactory.getLogger(ClientConfiguration.class);
-    }
 
     public ClientConfiguration() {
     }
@@ -64,6 +58,8 @@ public class ClientConfiguration {
     public ClientConfiguration(RestConfig rest, GrpcConfig grpc) {
         this.rest = rest;
         this.grpc = grpc;
+
+        logger = LoggerFactory.getLogger(ClientConfiguration.class);
     }
 
     public static ClientConfiguration load(Path configurationPath) throws IOException {
@@ -105,15 +101,6 @@ public class ClientConfiguration {
             if (variable.startsWith("OPENCGA_")) {
                 logger.debug("Overwriting environment parameter '{}'", variable);
                 switch (variable) {
-                    case "OPENCGA_CLIENT_ORGANISM_SCIENTIFIC_NAME":
-                        configuration.getOrganism().setScientificName(envVariables.get(variable));
-                        break;
-                    case "OPENCGA_CLIENT_ORGANISM_COMMON_NAME":
-                        configuration.getOrganism().setCommonName(envVariables.get(variable));
-                        break;
-                    case "OPENCGA_CLIENT_ORGANISM_ASSEMBLY":
-                        configuration.getOrganism().setAssembly(envVariables.get(variable));
-                        break;
                     case "OPENCGA_CLIENT_REST_HOST":
                         configuration.getRest().setHost(envVariables.get(variable));
                         break;
@@ -137,7 +124,6 @@ public class ClientConfiguration {
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", version='").append(version).append('\'');
         sb.append(", sessionDuration=").append(sessionDuration);
-        sb.append(", organism=").append(organism);
         sb.append(", defaultStudy='").append(defaultStudy).append('\'');
         sb.append(", alias=").append(alias);
         sb.append(", rest=").append(rest);
@@ -180,15 +166,6 @@ public class ClientConfiguration {
 
     public ClientConfiguration setSessionDuration(int sessionDuration) {
         this.sessionDuration = sessionDuration;
-        return this;
-    }
-
-    public ProjectOrganism getOrganism() {
-        return organism;
-    }
-
-    public ClientConfiguration setOrganism(ProjectOrganism organism) {
-        this.organism = organism;
         return this;
     }
 

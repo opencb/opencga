@@ -76,25 +76,25 @@ public class AvroToAnnotationConverter {
             case FIXED:
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.STRING,
                         field.defaultValue() == null ? null : field.defaultValue().getTextValue(),
-                        defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
+                        defaultRequired, false, null, null, field.pos(), null, field.doc(), null, null);
             case INT:
             case LONG:
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.INTEGER,
                         field.defaultValue() == null ? null : field.defaultValue().getLongValue(),
-                        defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
+                        defaultRequired, false, null, null, field.pos(), null, field.doc(), null, null);
             case FLOAT:
             case DOUBLE:
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.DOUBLE,
                         field.defaultValue() == null ? null : field.defaultValue().getDoubleValue(),
-                        defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
+                        defaultRequired, false, null, null, field.pos(), null, field.doc(), null, null);
             case BOOLEAN:
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.BOOLEAN,
                         field.defaultValue() == null ? null : field.defaultValue().getBooleanValue(),
-                        defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
+                        defaultRequired, false, null, null, field.pos(), null, field.doc(), null, null);
             case ENUM:
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.CATEGORICAL,
                         field.defaultValue() == null ? null : field.defaultValue().getTextValue(),
-                        defaultRequired, false, schema.getEnumSymbols(), field.pos(), null, field.doc(), null, null);
+                        defaultRequired, false, schema.getEnumSymbols(), null, field.pos(), null, field.doc(), null, null);
             case ARRAY:
                 return getVariable(field, schema.getElementType()).setMultiValue(true);
             case UNION: {
@@ -139,12 +139,12 @@ public class AvroToAnnotationConverter {
                         mapType = Variable.VariableType.OBJECT;
                 }
                 return new Variable(field.name(), field.name(), "", mapType,
-                        null, defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
+                        null, defaultRequired, false, null, null, field.pos(), null, field.doc(), null, null);
             }
             case RECORD: {
                 Set<Variable> variableSet = new HashSet<>(convertToVariableSet(schema));
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.OBJECT,
-                        null, defaultRequired, false, null, field.pos(), null, field.doc(), variableSet, null);
+                        null, defaultRequired, false, null, null, field.pos(), null, field.doc(), variableSet, null);
             }
             default:
             case NULL:
