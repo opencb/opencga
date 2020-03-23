@@ -129,6 +129,7 @@ public class VariantQueryCommandUtils {
         addParam(query, INCLUDE_SAMPLE, queryVariantsOptions.includeSample);
         addParam(query, INCLUDE_FORMAT, queryVariantsOptions.includeFormat);
         addParam(query, INCLUDE_GENOTYPE, queryVariantsOptions.includeGenotype);
+        addParam(query, INCLUDE_SAMPLE_ID, queryVariantsOptions.includeSampleId);
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.unknownGenotype);
         addParam(query, SAMPLE_METADATA, queryVariantsOptions.samplesMetadata);
         addParam(query, SAMPLE_LIMIT, queryVariantsOptions.sampleLimit);

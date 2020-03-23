@@ -409,6 +409,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--include-genotype"}, description = INCLUDE_GENOTYPE_DESCR)
         public boolean includeGenotype;
 
+        @Parameter(names = {"--include-sample-id"}, description = INCLUDE_SAMPLE_ID_DESCR)
+        public boolean includeSampleId;
+
         @Parameter(names = {"--annotations", "--output-vcf-info"}, description = "Set variant annotation to return in the INFO column. " +
                 "Accepted values include 'all', 'default' or a comma-separated list such as 'gene,biotype,consequenceType'", arity = 1)
         public String annotations;
