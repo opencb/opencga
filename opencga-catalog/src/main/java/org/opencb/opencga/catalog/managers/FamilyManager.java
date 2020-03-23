@@ -244,7 +244,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             autoCompleteFamilyMembers(study, family, members, userId);
             validateFamily(family);
-            validateMultiples(family);
             validatePhenotypes(family);
             validateDisorders(family);
 
@@ -896,7 +895,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
 
             validateFamily(tmpFamily);
-            validateMultiples(tmpFamily);
             validatePhenotypes(tmpFamily);
             validateDisorders(tmpFamily);
 
@@ -1198,7 +1196,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Parse all the individuals
         for (Individual member : members) {
             Member individual = new Member(
-                    member.getId(), member.getName(), null, null, member.getMultiples(),
+                    member.getId(), member.getName(), null, null, null,
                     Member.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
                     member.getPhenotypes(), member.getDisorders(), member.getAttributes());
             individualMap.put(individual.getId(), individual);
@@ -1344,36 +1342,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 //                    + noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
             logger.warn("Some members that are not related to any other have been found: {}",
                     noParentsSet.stream().map(Individual::getId).collect(Collectors.joining(", ")));
-        }
-    }
-
-    private void validateMultiples(Family family) throws CatalogException {
-        if (family.getMembers() == null || family.getMembers().isEmpty()) {
-            return;
-        }
-
-        Map<String, List<String>> multiples = new HashMap<>();
-        // Look for all the multiples
-        for (Individual individual : family.getMembers()) {
-            if (individual.getMultiples() != null && individual.getMultiples().getSiblings() != null
-                    && !individual.getMultiples().getSiblings().isEmpty()) {
-                multiples.put(individual.getId(), individual.getMultiples().getSiblings());
-            }
-        }
-
-        if (multiples.size() > 0) {
-            // Check if they are all cross-referenced
-            for (Map.Entry<String, List<String>> entry : multiples.entrySet()) {
-                for (String sibling : entry.getValue()) {
-                    if (!multiples.containsKey(sibling)) {
-                        throw new CatalogException("Missing sibling " + sibling + " of member " + entry.getKey());
-                    }
-                    if (!multiples.get(sibling).contains(entry.getKey())) {
-                        throw new CatalogException("Incomplete sibling information. Sibling " + sibling + " does not contain "
-                                + entry.getKey() + " as its sibling");
-                    }
-                }
-            }
         }
     }
 

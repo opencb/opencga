@@ -567,8 +567,6 @@
     <field name="studyId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="hasMother" type="boolean" indexed="true" stored="true" multiValued="false"/>
     <field name="hasFather" type="boolean" indexed="true" stored="true" multiValued="false"/>
-    <field name="numMultiples" type="pint" indexed="true" stored="true" multiValued="false"/>
-    <field name="multiplesType" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="locationCity" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="locationState" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="locationCountry" type="string" indexed="true" stored="true" multiValued="false"/>

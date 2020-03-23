@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
@@ -24,7 +23,6 @@ public class IndividualCreateParams {
 
     private String father;
     private String mother;
-    private Multiples multiples;
     private Location location;
     private List<SampleCreateParams> samples;
     private IndividualProperty.Sex sex;
@@ -43,7 +41,7 @@ public class IndividualCreateParams {
     public IndividualCreateParams() {
     }
 
-    public IndividualCreateParams(String id, String name, String father, String mother, Multiples multiples, Location location,
+    public IndividualCreateParams(String id, String name, String father, String mother, Location location,
                                   List<SampleCreateParams> samples, IndividualProperty.Sex sex, String ethnicity,
                                   Boolean parentalConsanguinity, IndividualPopulation population, String dateOfBirth,
                                   IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
@@ -53,7 +51,6 @@ public class IndividualCreateParams {
         this.name = name;
         this.father = father;
         this.mother = mother;
-        this.multiples = multiples;
         this.location = location;
         this.samples = samples;
         this.sex = sex;
@@ -74,7 +71,7 @@ public class IndividualCreateParams {
         return new IndividualCreateParams(individual.getId(), individual.getName(),
                 individual.getFather() != null ? individual.getFather().getId() : null,
                 individual.getMother() != null ? individual.getMother().getId() : null,
-                individual.getMultiples(), individual.getLocation(),
+                individual.getLocation(),
                 individual.getSamples() != null
                         ? individual.getSamples().stream().map(SampleCreateParams::of).collect(Collectors.toList())
                         : Collections.emptyList(),
@@ -91,7 +88,6 @@ public class IndividualCreateParams {
         sb.append(", name='").append(name).append('\'');
         sb.append(", father='").append(father).append('\'');
         sb.append(", mother='").append(mother).append('\'');
-        sb.append(", multiples=").append(multiples);
         sb.append(", location=").append(location);
         sb.append(", samples=").append(samples);
         sb.append(", sex=").append(sex);
@@ -122,7 +118,7 @@ public class IndividualCreateParams {
 
         String individualId = StringUtils.isEmpty(id) ? name : id;
         String individualName = StringUtils.isEmpty(name) ? individualId : name;
-        return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
+        return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother),
                 location, sex, karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, "", lifeStatus, phenotypes, disorders, sampleList,
                 parentalConsanguinity != null ? parentalConsanguinity : false, annotationSets,
                 status != null ? status.toCustomStatus() : new CustomStatus(), null, attributes);
@@ -161,15 +157,6 @@ public class IndividualCreateParams {
 
     public IndividualCreateParams setMother(String mother) {
         this.mother = mother;
-        return this;
-    }
-
-    public Multiples getMultiples() {
-        return multiples;
-    }
-
-    public IndividualCreateParams setMultiples(Multiples multiples) {
-        this.multiples = multiples;
         return this;
     }
 

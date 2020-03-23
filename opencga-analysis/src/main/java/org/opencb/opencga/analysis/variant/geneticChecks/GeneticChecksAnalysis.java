@@ -228,9 +228,6 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
                 if (individual.getMother() != null) {
                     annot.put("mother", individual.getMother().getId());
                 }
-                if (individual.getMultiples() != null && individual.getMultiples().getSiblings() != null) {
-                    annot.put("siblings", individual.getMultiples().getSiblings());
-                }
             }
         } catch (ToolException e) {
             throw new ToolException(e);

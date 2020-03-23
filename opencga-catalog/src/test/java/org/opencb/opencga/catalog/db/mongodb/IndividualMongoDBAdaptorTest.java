@@ -64,7 +64,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testCreateIndividualFatherNotFound() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual().setId("father").setUid(10), null, null,
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual().setId("father").setUid(10), null,
                 null, null, null, "", null, null, "", Collections.emptyList(), false, 1, Collections.emptyList(),
                 Collections.emptyList(), null), null, null);
     }
@@ -113,7 +113,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_4", "ind_4", IndividualProperty.Sex.FEMALE, "",
                 new IndividualPopulation(), 1, Collections.emptyList(), null), null, null);
         Individual mother = getIndividual(studyId, "ind_4");
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_5", "ind_5", father, mother, null, null, IndividualProperty.Sex.MALE,
+        catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_5", "ind_5", father, mother, null, IndividualProperty.Sex.MALE,
                 IndividualProperty.KaryotypicSex.XY, "", new IndividualPopulation(), null, null, null, true, 1, Collections.emptyList(),
                 null, null), null, null);
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_6", "ind_6", IndividualProperty.Sex.FEMALE, "",

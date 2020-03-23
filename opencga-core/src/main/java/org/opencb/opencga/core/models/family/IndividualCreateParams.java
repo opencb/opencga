@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
@@ -23,7 +22,6 @@ public class IndividualCreateParams {
 
     private String father;
     private String mother;
-    private Multiples multiples;
     private Location location;
 
     private IndividualProperty.Sex sex;
@@ -42,7 +40,7 @@ public class IndividualCreateParams {
     public IndividualCreateParams() {
     }
 
-    public IndividualCreateParams(String id, String name, String father, String mother, Multiples multiples, Location location,
+    public IndividualCreateParams(String id, String name, String father, String mother, Location location,
                                   IndividualProperty.Sex sex, String ethnicity, Boolean parentalConsanguinity,
                                   IndividualPopulation population, String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
@@ -51,7 +49,6 @@ public class IndividualCreateParams {
         this.name = name;
         this.father = father;
         this.mother = mother;
-        this.multiples = multiples;
         this.location = location;
         this.sex = sex;
         this.ethnicity = ethnicity;
@@ -71,7 +68,7 @@ public class IndividualCreateParams {
         return new IndividualCreateParams(individual.getId(), individual.getName(),
                 individual.getFather() != null ? individual.getFather().getId() : null,
                 individual.getMother() != null ? individual.getMother().getId() : null,
-                individual.getMultiples(), individual.getLocation(),
+                individual.getLocation(),
                 individual.getSex(), individual.getEthnicity(), individual.isParentalConsanguinity(), individual.getPopulation(),
                 individual.getDateOfBirth(), individual.getKaryotypicSex(), individual.getLifeStatus(),
                 individual.getAnnotationSets(), individual.getPhenotypes(), individual.getDisorders(),
@@ -85,7 +82,6 @@ public class IndividualCreateParams {
         sb.append(", name='").append(name).append('\'');
         sb.append(", father='").append(father).append('\'');
         sb.append(", mother='").append(mother).append('\'');
-        sb.append(", multiples=").append(multiples);
         sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
@@ -106,7 +102,7 @@ public class IndividualCreateParams {
     public Individual toIndividual() {
         String individualId = StringUtils.isEmpty(id) ? name : id;
         String individualName = StringUtils.isEmpty(name) ? individualId : name;
-        return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
+        return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother),
                 location, sex, karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, "", lifeStatus, phenotypes, disorders,
                 Collections.emptyList(), parentalConsanguinity != null ? parentalConsanguinity : false, annotationSets,
                 status != null ? status.toCustomStatus() : new CustomStatus(), null, attributes);
@@ -145,15 +141,6 @@ public class IndividualCreateParams {
 
     public IndividualCreateParams setMother(String mother) {
         this.mother = mother;
-        return this;
-    }
-
-    public Multiples getMultiples() {
-        return multiples;
-    }
-
-    public IndividualCreateParams setMultiples(Multiples multiples) {
-        this.multiples = multiples;
         return this;
     }
 

@@ -414,8 +414,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Has father") @QueryParam("hasFather") Boolean hasFather,
             @ApiParam(value = "Has mother") @QueryParam("hasMother") Boolean hasMother,
-            @ApiParam(value = "Number of multiples") @QueryParam("numMultiples") String numMultiples,
-            @ApiParam(value = "Multiples type") @QueryParam("multiplesType") String multiplesType,
             @ApiParam(value = "Sex") @QueryParam("sex") String sex,
             @ApiParam(value = "Karyotypic sex") @QueryParam("karyotypicSex") String karyotypicSex,
             @ApiParam(value = "Ethnicity") @QueryParam("ethnicity") String ethnicity,

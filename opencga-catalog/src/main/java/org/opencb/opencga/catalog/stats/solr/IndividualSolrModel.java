@@ -19,12 +19,6 @@ public class IndividualSolrModel extends CatalogSolrModel {
     private boolean hasMother;
 
     @Field
-    private int numMultiples;
-
-    @Field
-    private String multiplesType;
-
-    @Field
     private String locationCity;
 
     @Field
@@ -93,8 +87,6 @@ public class IndividualSolrModel extends CatalogSolrModel {
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", hasFather=").append(hasFather);
         sb.append(", hasMother=").append(hasMother);
-        sb.append(", numMultiples=").append(numMultiples);
-        sb.append(", multiplesType='").append(multiplesType).append('\'');
         sb.append(", locationCity='").append(locationCity).append('\'');
         sb.append(", locationState='").append(locationState).append('\'');
         sb.append(", locationCountry='").append(locationCountry).append('\'');
@@ -139,24 +131,6 @@ public class IndividualSolrModel extends CatalogSolrModel {
 
     public IndividualSolrModel setHasMother(boolean hasMother) {
         this.hasMother = hasMother;
-        return this;
-    }
-
-    public int getNumMultiples() {
-        return numMultiples;
-    }
-
-    public IndividualSolrModel setNumMultiples(int numMultiples) {
-        this.numMultiples = numMultiples;
-        return this;
-    }
-
-    public String getMultiplesType() {
-        return multiplesType;
-    }
-
-    public IndividualSolrModel setMultiplesType(String multiplesType) {
-        this.multiplesType = multiplesType;
         return this;
     }
 

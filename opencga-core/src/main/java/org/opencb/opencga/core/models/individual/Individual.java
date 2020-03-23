@@ -22,7 +22,6 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;
 import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
 import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -43,7 +42,6 @@ public class Individual extends Annotable {
 
     private Individual father;
     private Individual mother;
-    private Multiples multiples;
     private Location location;
 
     private Sex sex;
@@ -71,21 +69,21 @@ public class Individual extends Annotable {
 
     public Individual(String id, String name, Sex sex, String ethnicity, IndividualPopulation population, int release,
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, new Individual(), new Individual(), new Multiples(), new Location(), sex, null, ethnicity, population, "", release,
+        this(id, name, new Individual(), new Individual(), new Location(), sex, null, ethnicity, population, "", release,
                 1, TimeUtils.getTime(), LifeStatus.UNKNOWN, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                 false, annotationSets, new CustomStatus(), new IndividualInternal(new Status()), attributes);
     }
 
-    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
+    public Individual(String id, String name, Individual father, Individual mother, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, IndividualPopulation population, LifeStatus lifeStatus,
                       String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
                       List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders) {
-        this(id, name, father, mother, multiples, location, sex, karyotypicSex, ethnicity, population, dateOfBirth, release, 1,
+        this(id, name, father, mother, location, sex, karyotypicSex, ethnicity, population, dateOfBirth, release, 1,
                 TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples, parentalConsanguinity,
                 annotationSets, new CustomStatus(), new IndividualInternal(new Status()), Collections.emptyMap());
     }
 
-    public Individual(String id, String name, Individual father, Individual mother, Multiples multiples, Location location, Sex sex,
+    public Individual(String id, String name, Individual father, Individual mother, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, IndividualPopulation population, String dateOfBirth, int release,
                       int version, String creationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
                       List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
@@ -94,7 +92,6 @@ public class Individual extends Annotable {
         this.name = name;
         this.father = ObjectUtils.defaultIfNull(father, new Individual());
         this.mother = ObjectUtils.defaultIfNull(mother, new Individual());
-        this.multiples = ObjectUtils.defaultIfNull(multiples, new Multiples());
         this.location = location;
         this.sex = sex;
         this.karyotypicSex = karyotypicSex;
@@ -123,7 +120,6 @@ public class Individual extends Annotable {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", father=").append(father);
         sb.append(", mother=").append(mother);
-        sb.append(", multiples=").append(multiples);
         sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
         sb.append(", karyotypicSex=").append(karyotypicSex);
@@ -165,7 +161,6 @@ public class Individual extends Annotable {
                 && Objects.equals(name, that.name)
                 && Objects.equals(father, that.father)
                 && Objects.equals(mother, that.mother)
-                && Objects.equals(multiples, that.multiples)
                 && sex == that.sex
                 && karyotypicSex == that.karyotypicSex
                 && Objects.equals(ethnicity, that.ethnicity)
@@ -182,7 +177,7 @@ public class Individual extends Annotable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, id, name, father, mother, multiples, sex, karyotypicSex, ethnicity, population, dateOfBirth, release,
+        return Objects.hash(uuid, id, name, father, mother, sex, karyotypicSex, ethnicity, population, dateOfBirth, release,
                 version, creationDate, lifeStatus, internal, phenotypes, samples, parentalConsanguinity, status, attributes);
     }
 
@@ -240,15 +235,6 @@ public class Individual extends Annotable {
 
     public Individual setMother(Individual mother) {
         this.mother = mother;
-        return this;
-    }
-
-    public Multiples getMultiples() {
-        return multiples;
-    }
-
-    public Individual setMultiples(Multiples multiples) {
-        this.multiples = multiples;
         return this;
     }
 

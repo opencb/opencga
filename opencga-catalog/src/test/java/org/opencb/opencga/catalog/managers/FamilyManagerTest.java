@@ -26,7 +26,6 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
@@ -34,14 +33,14 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.AclParams;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -262,19 +261,16 @@ public class FamilyManagerTest extends GenericTest {
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype2))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(phenotype1))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(phenotype1))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
                 .setParentalConsanguinity(true);
 
         List<Individual> members = null;
@@ -346,19 +342,16 @@ public class FamilyManagerTest extends GenericTest {
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1")))
                 .setParentalConsanguinity(true);
 
         Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), null,
@@ -387,19 +380,16 @@ public class FamilyManagerTest extends GenericTest {
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child20")))
                 .setParentalConsanguinity(true);
 
         Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), null,

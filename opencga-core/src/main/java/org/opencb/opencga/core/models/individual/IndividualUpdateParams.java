@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
@@ -23,7 +22,6 @@ public class IndividualUpdateParams {
     private String father;
     private String mother;
     private Boolean parentalConsanguinity;
-    private Multiples multiples;
     private Location location;
     private IndividualProperty.Sex sex;
     private String ethnicity;
@@ -42,7 +40,7 @@ public class IndividualUpdateParams {
     public IndividualUpdateParams() {
     }
 
-    public IndividualUpdateParams(String id, String name, String father, String mother, Boolean parentalConsanguinity, Multiples multiples,
+    public IndividualUpdateParams(String id, String name, String father, String mother, Boolean parentalConsanguinity,
                                   Location location, IndividualProperty.Sex sex, String ethnicity, IndividualPopulation population,
                                   String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
@@ -53,7 +51,6 @@ public class IndividualUpdateParams {
         this.father = father;
         this.mother = mother;
         this.parentalConsanguinity = parentalConsanguinity;
-        this.multiples = multiples;
         this.location = location;
         this.sex = sex;
         this.ethnicity = ethnicity;
@@ -94,7 +91,6 @@ public class IndividualUpdateParams {
         sb.append(", father='").append(father).append('\'');
         sb.append(", mother='").append(mother).append('\'');
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
-        sb.append(", multiples=").append(multiples);
         sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
@@ -155,15 +151,6 @@ public class IndividualUpdateParams {
 
     public IndividualUpdateParams setParentalConsanguinity(Boolean parentalConsanguinity) {
         this.parentalConsanguinity = parentalConsanguinity;
-        return this;
-    }
-
-    public Multiples getMultiples() {
-        return multiples;
-    }
-
-    public IndividualUpdateParams setMultiples(Multiples multiples) {
-        this.multiples = multiples;
         return this;
     }
 

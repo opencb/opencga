@@ -354,12 +354,6 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--has-mother"}, description = "Has mother.", arity = 1)
         public Boolean hasMother;
 
-        @Parameter(names = {"--num-multiples"}, description = "Number of multiples.", arity = 1)
-        public String numMultiples;
-
-        @Parameter(names = {"--multiples-type"}, description = "Type of multiples.", arity = 1)
-        public String multiplesType;
-
         @Parameter(names = {"--sex"}, description = "Sex.", arity = 1)
         public String sex;
 

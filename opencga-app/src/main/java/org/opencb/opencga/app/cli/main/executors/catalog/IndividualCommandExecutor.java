@@ -257,8 +257,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty("lifeStatus", commandOptions.lifeStatus);
         params.putIfNotEmpty("affectationStatus", commandOptions.affectationStatus);
         params.putIfNotEmpty("numSamples", commandOptions.numSamples);
-        params.putIfNotEmpty("numMultiples", commandOptions.numMultiples);
-        params.putIfNotEmpty("multiplesType", commandOptions.multiplesType);
         params.putIfNotEmpty("sex", commandOptions.sex);
         params.putIfNotEmpty("karyotypicSex", commandOptions.karyotypicSex);
         params.putIfNotEmpty("ethnicity", commandOptions.ethnicity);

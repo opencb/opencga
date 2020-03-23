@@ -35,7 +35,7 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         Individual individual = new Individual("Id", "individual", IndividualProperty.Sex.MALE, "Spanish",
                 new IndividualPopulation("valencian", "", ""), 2, AnnotationHelper.createAnnotation(), null);
 
-        individual.setUid(300).setMultiples(new Multiples("twin", Arrays.asList("Pedro")))
+        individual.setUid(300)
                 .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).setVersion(4).setInternal(new IndividualInternal(new Status("READY")))
                 .setLifeStatus(IndividualProperty.LifeStatus.ABORTED)
                 .setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2"))).setParentalConsanguinity(true);
@@ -43,7 +43,6 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         IndividualSolrModel individualSolrModel = new CatalogIndividualToSolrIndividualConverter(study).convertToStorageType(individual);
 
         assertEquals(individualSolrModel.getUid(), individual.getUid());
-        assertEquals(individualSolrModel.getMultiplesType(), individual.getMultiples().getType());
         assertEquals(individualSolrModel.getSex(), individual.getSex().name());
         assertEquals(individualSolrModel.getKaryotypicSex(), individual.getKaryotypicSex().name());
         assertEquals(individualSolrModel.getEthnicity(), individual.getEthnicity());

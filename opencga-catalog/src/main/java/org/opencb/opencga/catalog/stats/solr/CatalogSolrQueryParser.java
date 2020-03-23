@@ -23,7 +23,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT;
 
 /**
  * Created by wasim on 09/07/18.
@@ -77,8 +76,6 @@ public class CatalogSolrQueryParser {
         // Individual
         HAS_FATHER("hasFather", BOOLEAN),
         HAS_MOTHER("hasMother", BOOLEAN),
-        NUM_MULTIPLES("numMultiples", INTEGER),
-        MULTIPLES_TYPE("multiplesType", TEXT),
         SEX("sex", TEXT),
         KARYOTYPIC_SEX("karyotypicSex", TEXT),
         ETHNICITY("ethnicity", TEXT),

@@ -71,7 +71,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    private final String defaultFacet = "creationYear>>creationMonth;status;multiplesType;ethnicity;population;lifeStatus;"
+    private final String defaultFacet = "creationYear>>creationMonth;status;ethnicity;population;lifeStatus;"
             + "affectationStatus;phenotypes;sex;numSamples[0..10]:1";
 
     public static final QueryOptions INCLUDE_INDIVIDUAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -1254,18 +1254,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 if (!TimeUtils.isValidFormat("yyyyMMdd", updateParams.getDateOfBirth())) {
                     throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
                 }
-            }
-        }
-        if (updateParams != null && updateParams.getMultiples() != null) {
-            // Check individual names exist
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(IndividualDBAdaptor.QueryParams.ID.key(), StringUtils.join(updateParams.getMultiples().getSiblings(), ","));
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
-            OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(query, queryOptions);
-            if (individualDataResult.getNumResults() < updateParams.getMultiples().getSiblings().size()) {
-                int missing = updateParams.getMultiples().getSiblings().size() - individualDataResult.getNumResults();
-                throw new CatalogDBException("Missing " + missing + " siblings in the database.");
             }
         }
         if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSamples())) {

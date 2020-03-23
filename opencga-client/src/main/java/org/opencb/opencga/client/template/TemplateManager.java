@@ -18,7 +18,6 @@ package org.opencb.opencga.client.template;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
@@ -230,7 +229,7 @@ public class TemplateManager {
             openCGAClient.setThrowExceptionOnError(false);
             existing = openCGAClient.getIndividualClient()
                     .info(study.getIndividuals().stream().map(Individual::getId).collect(Collectors.joining(",")),
-                            new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id,father.id,mother.id,multiples"))
+                            new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id,father.id,mother.id"))
                     .allResults()
                     .stream()
                     .collect(Collectors.toMap(Individual::getId, i -> i));
@@ -244,7 +243,6 @@ public class TemplateManager {
                 IndividualCreateParams createParams = IndividualCreateParams.of(individual);
                 createParams.setFather(null);
                 createParams.setMother(null);
-                createParams.setMultiples(null);
                 openCGAClient.getIndividualClient().create(createParams, params);
             }
         }
@@ -267,14 +265,6 @@ public class TemplateManager {
                 if (existingIndividual == null || existingIndividual.getMother() == null) {
                     // Only if mother does not exist already for this individual
                     updateParams.setMother(mother.getId());
-                    empty = false;
-                }
-            }
-            Multiples multiples = individual.getMultiples();
-            if (multiples != null) {
-                if (existingIndividual == null || existingIndividual.getMultiples() == null) {
-                    // Only if multiples does not exist already for this individual
-                    updateParams.setMultiples(multiples);
                     empty = false;
                 }
             }
