@@ -39,6 +39,7 @@
 
     <properties>
         <opencga.version>2.0.0-dev</opencga.version>
+        <pyopencga.version>${opencga.version}</pyopencga.version>
         <cellbase.version>4.6.3-SNAPSHOT</cellbase.version>
         <biodata.version>2.0.0-SNAPSHOT</biodata.version>
         <oskar.version>0.2.0-SNAPSHOT</oskar.version>
@@ -622,9 +623,6 @@
                 <OPENCGA.CLIENT.REST.HOST>http://localhost:9090/${opencga.war.name}</OPENCGA.CLIENT.REST.HOST>
                 <OPENCGA.CLIENT.REST.TIMEOUT>30000</OPENCGA.CLIENT.REST.TIMEOUT>
                 <OPENCGA.CLIENT.GRPC.HOST>localhost:9091</OPENCGA.CLIENT.GRPC.HOST>
-                <OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME></OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME>
-                <OPENCGA.CLIENT.ORGANISM.COMMON_NAME></OPENCGA.CLIENT.ORGANISM.COMMON_NAME>
-                <OPENCGA.CLIENT.ORGANISM.ASSEMBLY></OPENCGA.CLIENT.ORGANISM.ASSEMBLY>
 
                 <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
                 <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>

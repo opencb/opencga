@@ -1,5 +1,4 @@
 import json
-
 import requests
 import yaml
 
@@ -53,11 +52,10 @@ class ClientConfiguration(object):
             raise ValueError('Missing configuration dictionary')
 
         if 'rest' not in config:
-            raise ValueError('Missing "rest" field from configuration dictionary. Please, pass a valid OpenCGA'
-                             ' configuration dictionary')
+            raise ValueError('Missing "rest" field from configuration dictionary. Please, pass a valid OpenCGA configuration dictionary')
 
         if 'host' not in config['rest'] or not config['rest']['host']:
-            raise ValueError('Missing or empty "host" in OpenCGA configuration.')
+            raise ValueError('Missing or empty "host" in OpenCGA configuration')
 
         self._validate_host(config['rest']['host'])
 
@@ -77,8 +75,7 @@ class ClientConfiguration(object):
 
     @host.setter
     def host(self, new_host):
-        if not (new_host.startswith('http://') or
-                    new_host.startswith('https://')):
+        if not (new_host.startswith('http://') or new_host.startswith('https://')):
             new_host = 'http://' + new_host
         self._config['rest']['host'] = new_host
 

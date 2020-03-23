@@ -23,6 +23,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.clients.UserClient;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;

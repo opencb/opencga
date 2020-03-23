@@ -268,7 +268,6 @@
                                     <arg value="-r"/>
                                     <arg value="${app.dir}/conf"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
-                                    <arg value="${project.basedir}/target/conf"/>
                                     <arg value="${app.dir}/analysis"/>
                                     <arg value="${app.dir}/cloud"/>
                                     <arg value="${app.dir}/misc"/>
@@ -304,12 +303,13 @@
                                 <echo>Copying Python and R to ${build.dir}/clients</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-client/src/main/python/pyOpenCGA"/>
+                                    <arg value="${project.basedir}/../opencga-client/src/main/python"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
-                                <exec executable="mv">
-                                    <arg value="${build.dir}/clients/pyOpenCGA"/>
-                                    <arg value="${build.dir}/clients/python"/>
+                                <exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
+                                    <arg value="${build.dir}/clients/python/setup.py"/>
                                 </exec>
                                 <exec executable="cp">
                                     <arg value="-r"/>
