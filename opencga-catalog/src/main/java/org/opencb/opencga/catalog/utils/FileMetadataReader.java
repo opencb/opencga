@@ -292,7 +292,7 @@ public class FileMetadataReader {
         }
     }
 
-    public static AlignmentHeader readAlignmentHeader(String studyId, File file, URI fileUri) {
+    public static AlignmentHeader readAlignmentHeader(String studyId, File file, URI fileUri) throws CatalogIOException {
         try {
             if (file.getFormat() == File.Format.SAM || file.getFormat() == File.Format.BAM
                     || FileUtils.detectFormat(fileUri) == File.Format.SAM || FileUtils.detectFormat(fileUri) == File.Format.BAM) {
@@ -309,10 +309,10 @@ public class FileMetadataReader {
                 BamManager bamManager = new BamManager(Paths.get(fileUri), reference);
                 return bamManager.getHeader(studyId);
             }
+            return null;
         } catch (IOException e) {
-            logger.warn("{}", e.getMessage(), e);
+            throw new CatalogIOException(e.getMessage(), e);
         }
-        return null;
     }
 
 
