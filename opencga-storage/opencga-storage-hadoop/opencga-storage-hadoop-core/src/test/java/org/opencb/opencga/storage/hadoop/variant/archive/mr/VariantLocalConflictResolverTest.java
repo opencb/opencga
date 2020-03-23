@@ -162,7 +162,7 @@ public class VariantLocalConflictResolverTest {
         StudyEntry se = new StudyEntry("1");
         se.setFiles(Collections.singletonList(new FileEntry("1", "", new HashMap<>())));
         v1.setStudies(Collections.singletonList(se));
-        se.setFormat(Arrays.asList(GENOTYPE_KEY, GENOTYPE_FILTER_KEY));
+        se.setSampleDataKeys(Arrays.asList(GENOTYPE_KEY, GENOTYPE_FILTER_KEY));
         se.setSamplesPosition(asMap("S1", 0));
         se.addSampleData("S1", Arrays.asList("1/2", "LowGQXHetDel"));
         se.getSecondaryAlternates().add(new AlternateCoordinate(null, null, 328, "CTT", "CTTTC", INDEL));
@@ -174,7 +174,7 @@ public class VariantLocalConflictResolverTest {
         se.setFiles(Collections.singletonList(new FileEntry("1", "", new HashMap<>())));
         v2.setStudies(Collections.singletonList(se));
         se.setSamplesPosition(asMap("S1", 0));
-        se.setFormat(Arrays.asList(GENOTYPE_KEY, GENOTYPE_FILTER_KEY));
+        se.setSampleDataKeys(Arrays.asList(GENOTYPE_KEY, GENOTYPE_FILTER_KEY));
         se.addSampleData("S1", Arrays.asList("0/1", "PASS"));
         addAttribute(v2, FILTER, "PASS");
 
@@ -588,7 +588,7 @@ public class VariantLocalConflictResolverTest {
     public static Variant addGTAndFilter(Variant var, String gt, String filter) {
         StudyEntry se = var.getStudy("1");
         se.setSamplesPosition(Collections.singletonMap("1", 0));
-        se.setFormat(Arrays.asList(GENOTYPE_KEY, GENOTYPE_FILTER_KEY));
+        se.setSampleDataKeys(Arrays.asList(GENOTYPE_KEY, GENOTYPE_FILTER_KEY));
         se.addSampleData("1", Arrays.asList(gt, filter));
         return var;
     }

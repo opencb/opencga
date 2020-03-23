@@ -2299,29 +2299,29 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testIncludeFormat() {
-        Variant variant = query(new Query(INCLUDE_FORMAT.key(), "GT"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        Variant variant = query(new Query(INCLUDE_SAMPLE_DATA.key(), "GT"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
         assertEquals("GT", variant.getStudies().get(0).getSampleDataKeysAsString());
 
-        variant = query(new Query(INCLUDE_FORMAT.key(), "GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        variant = query(new Query(INCLUDE_SAMPLE_DATA.key(), "GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
         assertEquals("GL", variant.getStudies().get(0).getSampleDataKeysAsString());
 
-        variant = query(new Query(INCLUDE_FORMAT.key(), "GT,GL,DS"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        variant = query(new Query(INCLUDE_SAMPLE_DATA.key(), "GT,GL,DS"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
         assertEquals("GT:GL:DS", variant.getStudies().get(0).getSampleDataKeysAsString());
 
-        variant = query(new Query(INCLUDE_FORMAT.key(), "GT,XX,GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        variant = query(new Query(INCLUDE_SAMPLE_DATA.key(), "GT,XX,GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
         assertEquals("GT:XX:GL", variant.getStudies().get(0).getSampleDataKeysAsString());
 
-        variant = query(new Query(INCLUDE_FORMAT.key(), "GT,SAMPLE_ID"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        variant = query(new Query(INCLUDE_SAMPLE_DATA.key(), "GT,SAMPLE_ID"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         assertEquals("GT:SAMPLE_ID", variant.getStudies().get(0).getSampleDataKeysAsString());
 
-        variant = query(new Query(INCLUDE_FORMAT.key(), "all"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        variant = query(new Query(INCLUDE_SAMPLE_DATA.key(), "all"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         assertEquals("GT:DS:GL", variant.getStudies().get(0).getSampleDataKeysAsString());
 
-        variant = query(new Query(INCLUDE_FORMAT.key(), "none"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        variant = query(new Query(INCLUDE_SAMPLE_DATA.key(), "none"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         assertEquals("", variant.getStudies().get(0).getSampleDataKeysAsString());
     }
 

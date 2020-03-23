@@ -90,7 +90,7 @@ public class VariantSampleDataManager {
         Map<String, Integer> filesIdx = new HashMap<>();
         List<FileEntry> files = new ArrayList<>(limit);
         List<VariantStats> stats = Collections.emptyList();
-        List<String> format = null;
+        List<String> sampleDataKeys = null;
         VariantAnnotation annotation = null;
 
         int sampleSkip = 0;
@@ -126,9 +126,9 @@ public class VariantSampleDataManager {
             if (queries == 1) {
                 annotation = partialVariant.getAnnotation();
                 stats = partialStudy.getStats();
-                format = partialStudy.getSampleDataKeys();
+                sampleDataKeys = partialStudy.getSampleDataKeys();
             }
-            boolean hasGt = format.get(0).equals("GT");
+            boolean hasGt = sampleDataKeys.get(0).equals("GT");
             List<String> samples = partialStudy.getOrderedSamplesName();
             readSamples += samples.size();
             for (int i = 0; i < samples.size(); i++) {
@@ -192,7 +192,7 @@ public class VariantSampleDataManager {
         studyEntry.setSamples(sampleEntries);
         studyEntry.setFiles(files);
         studyEntry.setStats(stats);
-        studyEntry.setFormat(format);
+        studyEntry.setSampleDataKeys(sampleDataKeys);
 //        String msg = "Queries : " + queries + " , readSamples : " + readSamples;
         return new DataResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(variant), 1);
     }

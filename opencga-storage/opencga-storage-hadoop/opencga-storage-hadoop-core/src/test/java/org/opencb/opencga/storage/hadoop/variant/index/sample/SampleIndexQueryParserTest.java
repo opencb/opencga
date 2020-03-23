@@ -326,7 +326,7 @@ public class SampleIndexQueryParserTest {
     public void parseFileDPTest() {
         SampleFileIndexQuery fileQuery;
         for (Double dp : Arrays.asList(3.0, 5.0, 10.0, 15.0, 20.0, 30.0, 35.0)) {
-            for (Pair<String, String> pair : Arrays.asList(Pair.of(INFO.key(), "F1"), Pair.of(FORMAT.key(), "S1"))) {
+            for (Pair<String, String> pair : Arrays.asList(Pair.of(FILE_DATA.key(), "F1"), Pair.of(SAMPLE_DATA.key(), "S1"))) {
                 fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP=" + dp), "S1", n -> Collections.singletonList("F1"));
                 assertEquals("=" + dp, new RangeQuery(dp, dp + DELTA,
                                 IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS),
@@ -365,31 +365,31 @@ public class SampleIndexQueryParserTest {
         }
 
 
-        Query query = new Query(FORMAT.key(), "S1:DP>=15");
+        Query query = new Query(SAMPLE_DATA.key(), "S1:DP>=15");
         fileQuery = parseFileQuery(query, "S1", n -> Collections.singletonList("F1"));
         assertTrue(fileQuery.getDpQuery().isExactQuery());
-        assertFalse(isValidParam(query, FORMAT));
+        assertFalse(isValidParam(query, SAMPLE_DATA));
 
-        query = new Query(FORMAT.key(), "S1:DP>=15;S2:DP>34");
+        query = new Query(SAMPLE_DATA.key(), "S1:DP>=15;S2:DP>34");
         fileQuery = parseFileQuery(query, "S1", n -> Collections.singletonList("F1"));
         assertTrue(fileQuery.getDpQuery().isExactQuery());
         fileQuery = parseFileQuery(query, "S2", n -> Collections.singletonList("F1"));
         assertFalse(fileQuery.getDpQuery().isExactQuery());
-        assertEquals("S2:DP>34", query.getString(FORMAT.key()));
+        assertEquals("S2:DP>34", query.getString(SAMPLE_DATA.key()));
 
-        query = new Query(FORMAT.key(), "S1:DP>=15,S2:DP>34");
+        query = new Query(SAMPLE_DATA.key(), "S1:DP>=15,S2:DP>34");
         fileQuery = parseFileQuery(query, "S1", n -> Collections.singletonList("F1"));
         assertNull(fileQuery.getDpQuery());
         fileQuery = parseFileQuery(query, "S2", n -> Collections.singletonList("F1"));
         assertNull(fileQuery.getDpQuery());
-        assertEquals("S1:DP>=15,S2:DP>34", query.getString(FORMAT.key()));
+        assertEquals("S1:DP>=15,S2:DP>34", query.getString(SAMPLE_DATA.key()));
 
-        query = new Query(FORMAT.key(), "S2:DP>34;S1:DP>=15;S3:DP>16");
+        query = new Query(SAMPLE_DATA.key(), "S2:DP>34;S1:DP>=15;S3:DP>16");
         fileQuery = parseFileQuery(query, "S2", n -> Collections.singletonList("F1"));
         assertFalse(fileQuery.getDpQuery().isExactQuery());
         fileQuery = parseFileQuery(query, "S1", n -> Collections.singletonList("F1"));
         assertTrue(fileQuery.getDpQuery().isExactQuery());
-        assertEquals("S2:DP>34;S3:DP>16", query.getString(FORMAT.key()));
+        assertEquals("S2:DP>34;S3:DP>16", query.getString(SAMPLE_DATA.key()));
     }
 
     @Test
@@ -493,13 +493,13 @@ public class SampleIndexQueryParserTest {
 
         query = new Query()
                 .append(SAMPLE.key(), "fam1_child;fam1_father;fam1_mother")
-                .append(FORMAT.key(), "fam1_father:DP>15;fam1_child:DP>=15;fam1_mother:DP>15");
+                .append(SAMPLE_DATA.key(), "fam1_father:DP>15;fam1_child:DP>=15;fam1_mother:DP>15");
         indexQuery = parse(query);
 
         assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
         assertEquals(1, indexQuery.getFatherFilterMap().size());
         assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").getDpQuery().isExactQuery());
-        assertEquals("fam1_father:DP>15;fam1_mother:DP>15", query.getString(FORMAT.key()));
+        assertEquals("fam1_father:DP>15;fam1_mother:DP>15", query.getString(SAMPLE_DATA.key()));
 
     }
 

@@ -315,7 +315,7 @@ public class FillGapsTaskTest {
     private Variant putToVariant(Put put) {
         Result result = Result.create(put.getFamilyCellMap().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
         return HBaseToVariantConverter.fromResult(metadataManager)
-                .configure(HBaseVariantConverterConfiguration.builder().setFormat(Arrays.asList("GT", "DP")).build())
+                .configure(HBaseVariantConverterConfiguration.builder().setSampleDataKeys(Arrays.asList("GT", "DP")).build())
                 .convert(result);
     }
 

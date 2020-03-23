@@ -546,7 +546,7 @@ public class VariantMongoDBQueryParser {
                 }
             }
 
-            if (isValidParam(query, FILTER) || isValidParam(query, QUAL) || isValidParam(query, INFO)) {
+            if (isValidParam(query, FILTER) || isValidParam(query, QUAL) || isValidParam(query, FILE_DATA)) {
                 String filterValue = query.getString(FILTER.key());
                 QueryOperation filterOperation = checkOperator(filterValue);
                 List<String> filterValues = splitValue(filterValue, filterOperation);
@@ -646,8 +646,8 @@ public class VariantMongoDBQueryParser {
                 }
             }
 
-            if (isValidParam(query, FORMAT)) {
-                throw VariantQueryException.unsupportedVariantQueryFilter(FORMAT, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+            if (isValidParam(query, SAMPLE_DATA)) {
+                throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DATA, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
             }
 
             Map<Object, List<String>> genotypesFilter = new HashMap<>();
@@ -1141,7 +1141,7 @@ public class VariantMongoDBQueryParser {
         }
 
         if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
-            List<String> formats = VariantQueryUtils.getIncludeFormats(query);
+            List<String> formats = VariantQueryUtils.getIncludeSampleData(query);
             if (formats != null) { // If null, undefined. Return all
                 // Special conversion
                 returnedFields.remove(VariantField.STUDIES_SAMPLES_DATA);

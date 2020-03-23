@@ -275,14 +275,24 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--sample"}, description = SAMPLE_DESCR)
         public String samples;
 
-        @Parameter(names = {"--format"}, description = FORMAT_DESCR)
-        public String format;
+        @Parameter(names = {"--sample-data"}, description = SAMPLE_DATA_DESCR)
+        public String sampleData;
+
+        @Parameter(names = {"--format"}, hidden = true)
+        public void setFormat(String format) {
+            sampleData = format;
+        }
 
         @Parameter(names = {"-f", "--file"}, description = FILE_DESCR)
         public String file;
 
-        @Parameter(names = {"--info"}, description = INFO_DESCR)
-        public String info;
+        @Parameter(names = {"--file-data"}, description = FILE_DATA_DESCR)
+        public String fileData;
+
+        @Parameter(names = {"--info"}, hidden = true)
+        public void setInfo(String info) {
+            fileData = info;
+        }
 
         @Parameter(names = {"--filter"}, description = FILTER_DESCR)
         public String filter;
@@ -403,8 +413,13 @@ public class StorageVariantCommandOptions {
             includeSample = outputSample;
         }
 
-        @Parameter(names = {"--include-format"}, description = INCLUDE_FORMAT_DESCR)
-        public String includeFormat;
+        @Parameter(names = {"--include-sample-data"}, description = INCLUDE_SAMPLE_DATA_DESCR)
+        public String includeSampleData;
+
+        @Parameter(names = {"--include-format"}, hidden = true)
+        public void setIncludeFormat(String includeFormat) {
+            includeSampleData = includeFormat;
+        }
 
         @Parameter(names = {"--include-genotype"}, description = INCLUDE_GENOTYPE_DESCR)
         public boolean includeGenotype;

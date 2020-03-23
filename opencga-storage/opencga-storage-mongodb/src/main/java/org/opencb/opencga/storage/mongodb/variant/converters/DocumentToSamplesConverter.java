@@ -189,7 +189,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         final List<Integer> includeFileIds;
         final Set<Integer> loadedSamples;
         final List<String> extraFields;
-        final List<String> format;
+        final List<String> sampleDataKeys;
         if (object.containsKey(DocumentToStudyVariantEntryConverter.FILES_FIELD)) {
             List<Document> fileObjects = getList(object, DocumentToStudyVariantEntryConverter.FILES_FIELD);
             includeFileIds = new ArrayList<>(fileObjects.size());
@@ -222,7 +222,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             loadedSamples = Collections.emptySet();
         }
         extraFields = getExtraFormatFields(studyId, filesWithSamplesData, files);
-        format = getFormat(excludeGenotypes, extraFields);
+        sampleDataKeys = getSampleDataKeys(excludeGenotypes, extraFields);
         List<SampleEntry> sampleEntries = new ArrayList<>(sampleIds.size());
 
 
@@ -242,7 +242,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             Integer sampleId = sampleIds.get(sampleName);
 
             String[] values;
-            values = new String[format.size()];
+            values = new String[sampleDataKeys.size()];
             if (!excludeGenotypes) {
                 if (loadedSamples.contains(sampleId)) {
                     values[0] = defaultGenotype;
@@ -440,7 +440,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                                       List<SampleEntry> samples, boolean excludeGenotypes) {
         if (study != null) {
             //Set FORMAT
-            study.setFormat(getFormat(excludeGenotypes, extraFields));
+            study.setSampleDataKeys(getSampleDataKeys(excludeGenotypes, extraFields));
 
             //Set Samples Position
             study.setSamplesPosition(samplesPositionToReturn);
@@ -623,30 +623,30 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         this.unknownGenotype = unknownGenotype;
     }
 
-    private List<String> getFormat(boolean excludeGenotypes, List<String> extraFields) {
-        List<String> format;
+    private List<String> getSampleDataKeys(boolean excludeGenotypes, List<String> extraFields) {
+        List<String> sampleDataKeys;
         if (extraFields.isEmpty()) {
             if (excludeGenotypes) {
-                format = Collections.emptyList();
+                sampleDataKeys = Collections.emptyList();
             } else {
-                format = Collections.singletonList("GT");
+                sampleDataKeys = Collections.singletonList("GT");
             }
         } else {
-            format = new ArrayList<>(1 + extraFields.size());
+            sampleDataKeys = new ArrayList<>(1 + extraFields.size());
             if (!excludeGenotypes) {
-                format.add("GT");
+                sampleDataKeys.add("GT");
             }
-            format.addAll(extraFields);
+            sampleDataKeys.addAll(extraFields);
         }
-        return format;
+        return sampleDataKeys;
     }
 
-    public void setFormat(List<String> format) {
-        if (format != null && format.contains(VariantQueryUtils.GT)) {
-            this.expectedExtraFields = new ArrayList<>(format);
+    public void setSampleDataKeys(List<String> sampleDataKeys) {
+        if (sampleDataKeys != null && sampleDataKeys.contains(VariantQueryUtils.GT)) {
+            this.expectedExtraFields = new ArrayList<>(sampleDataKeys);
             this.expectedExtraFields.remove(VariantQueryUtils.GT);
         } else {
-            this.expectedExtraFields = format;
+            this.expectedExtraFields = sampleDataKeys;
         }
     }
 

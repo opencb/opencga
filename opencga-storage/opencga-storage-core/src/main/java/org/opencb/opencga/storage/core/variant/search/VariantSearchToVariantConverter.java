@@ -113,7 +113,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // Format
                 stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "format");
                 if (StringUtils.isNotEmpty(stringToList)) {
-                    studyEntry.setFormat(Arrays.asList(StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP)));
+                    studyEntry.setSampleDataKeys(Arrays.asList(StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP)));
                 }
 
                 // Sample Data management

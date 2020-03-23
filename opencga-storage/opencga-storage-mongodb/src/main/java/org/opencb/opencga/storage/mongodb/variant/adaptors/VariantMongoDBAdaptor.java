@@ -1085,7 +1085,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<Integer> returnedStudies = selectVariantElements.getStudyIds();
         DocumentToSamplesConverter samplesConverter;
         samplesConverter = new DocumentToSamplesConverter(metadataManager, selectVariantElements);
-        samplesConverter.setFormat(getIncludeFormats(query));
+        samplesConverter.setSampleDataKeys(getIncludeSampleData(query));
         samplesConverter.setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key()));
         if (query.containsKey(UNKNOWN_GENOTYPE.key())) {
             samplesConverter.setUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));

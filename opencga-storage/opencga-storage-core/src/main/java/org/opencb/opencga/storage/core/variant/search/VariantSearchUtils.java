@@ -48,8 +48,8 @@ public class VariantSearchUtils {
             Arrays.asList(VariantQueryParam.FILE,
                     VariantQueryParam.FILTER,
                     VariantQueryParam.QUAL,
-                    VariantQueryParam.FORMAT,
-                    VariantQueryParam.INFO,
+                    VariantQueryParam.SAMPLE_DATA,
+                    VariantQueryParam.FILE_DATA,
                     VariantQueryParam.GENOTYPE,
                     VariantQueryParam.SAMPLE,
                     VariantQueryParam.COHORT,
@@ -64,7 +64,7 @@ public class VariantSearchUtils {
                     VariantQueryParam.INCLUDE_SAMPLE,
 //                    VariantQueryParam.INCLUDE_STUDY,
                     VariantQueryParam.UNKNOWN_GENOTYPE,
-                    VariantQueryParam.INCLUDE_FORMAT,
+                    VariantQueryParam.INCLUDE_SAMPLE_DATA,
                     VariantQueryParam.INCLUDE_GENOTYPE,
                     VariantQueryParam.SAMPLE_METADATA
                     // RETURNED_COHORTS
@@ -141,7 +141,7 @@ public class VariantSearchUtils {
         }
         searchEngineQuery.put(INCLUDE_SAMPLE.key(), NONE);
         searchEngineQuery.put(INCLUDE_FILE.key(), NONE);
-        searchEngineQuery.put(INCLUDE_FORMAT.key(), NONE);
+        searchEngineQuery.put(INCLUDE_SAMPLE_DATA.key(), NONE);
         searchEngineQuery.put(INCLUDE_GENOTYPE.key(), false);
         return searchEngineQuery;
     }
@@ -209,7 +209,7 @@ public class VariantSearchUtils {
                 }
             }
 
-            if (isValidParam(query, INFO)) {
+            if (isValidParam(query, FILE_DATA)) {
                 // INFO not supported
                 return null;
             }
@@ -226,7 +226,7 @@ public class VariantSearchUtils {
 
             boolean validFormatFilter = false;
             Map<String, String> formatMap = Collections.emptyMap();
-            if (isValidParam(query, VariantQueryParam.FORMAT)) {
+            if (isValidParam(query, VariantQueryParam.SAMPLE_DATA)) {
                 validFormatFilter = true;
                 formatMap = parseFormat(query).getValue();
 

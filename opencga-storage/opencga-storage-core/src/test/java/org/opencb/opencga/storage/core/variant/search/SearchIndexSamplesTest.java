@@ -178,7 +178,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         check(null, new Query(FILE.key(), files1), new QueryOptions());  // About to return all samples from file1.
         check(null, new Query(SAMPLE.key(), "!" + samples1.get(0)).append(GENOTYPE.key(), samples1.get(1) + ":!0/0"), new QueryOptions()); // None positive filter
         check(null, new Query(FILE.key(), files1).append(SAMPLE.key(), "!" + samples2.get(0)), new QueryOptions()); // Filter sample2 not covered
-        check(null, new Query(FORMAT.key(), samples1.get(0) + ":AN>3;DP>3"), new QueryOptions());
+        check(null, new Query(SAMPLE_DATA.key(), samples1.get(0) + ":AN>3;DP>3"), new QueryOptions());
 
         check(COLLECTION_1, new Query(SAMPLE.key(), samples1).append(INCLUDE_SAMPLE.key(), NONE), new QueryOptions());
         check(COLLECTION_1, new Query(SAMPLE.key(), samples1), new QueryOptions());
@@ -190,7 +190,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         check(COLLECTION_1, new Query(FILE.key(), files1).append(SAMPLE.key(), "!" + samples1.get(0)), new QueryOptions()); // Filter sample not covered
         check(COLLECTION_1, new Query(SAMPLE.key(), samples1).append(FILE.key(), files1), new QueryOptions());
         check(COLLECTION_1, new Query(FILE.key(), files1).append(INCLUDE_SAMPLE.key(), samples1), new QueryOptions());
-        check(COLLECTION_1, new Query(FORMAT.key(), samples1.get(0) + ":DP>3"), new QueryOptions());
+        check(COLLECTION_1, new Query(SAMPLE_DATA.key(), samples1.get(0) + ":DP>3"), new QueryOptions());
 
         check(COLLECTION_2, new Query(SAMPLE.key(), samples2), new QueryOptions());
         check(COLLECTION_2, new Query(SAMPLE.key(), samples2.get(0)), new QueryOptions());

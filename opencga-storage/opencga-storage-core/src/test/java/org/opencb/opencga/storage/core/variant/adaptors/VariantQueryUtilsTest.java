@@ -206,51 +206,51 @@ public class VariantQueryUtilsTest extends GenericTest {
     @Test
     public void testParseFormatFilter() throws Exception {
 
-        checkParseFormat(new Query(SAMPLE.key(), "HG00096").append(FORMAT.key(), "DP>8"),
+        checkParseFormat(new Query(SAMPLE.key(), "HG00096").append(SAMPLE_DATA.key(), "DP>8"),
                 null,
                 "HG00096", "DP>8");
-        checkParseFormat(new Query(SAMPLE.key(), "HG00096,!HG00097").append(FORMAT.key(), "DP>8"),
+        checkParseFormat(new Query(SAMPLE.key(), "HG00096,!HG00097").append(SAMPLE_DATA.key(), "DP>8"),
                 null,
                 "HG00096", "DP>8");
-        checkParseFormat(new Query(SAMPLE.key(), "HG00096,HG00097").append(FORMAT.key(), "DP>8"),
+        checkParseFormat(new Query(SAMPLE.key(), "HG00096,HG00097").append(SAMPLE_DATA.key(), "DP>8"),
                 QueryOperation.OR,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
-        checkParseFormat(new Query(SAMPLE.key(), "HG00096;HG00097").append(FORMAT.key(), "DP>8"),
+        checkParseFormat(new Query(SAMPLE.key(), "HG00096;HG00097").append(SAMPLE_DATA.key(), "DP>8"),
                 QueryOperation.AND,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
 
-        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1").append(FORMAT.key(), "DP>8"),
+        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1").append(SAMPLE_DATA.key(), "DP>8"),
                 null,
                 "HG00096", "DP>8");
-        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1,HG00097:0/1").append(FORMAT.key(), "DP>8"),
+        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1,HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
                 QueryOperation.OR,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
-        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1;HG00097:0/1").append(FORMAT.key(), "DP>8"),
+        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1;HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
                 QueryOperation.AND,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
 
-        checkParseFormat(new Query(FORMAT.key(), "HG00096:GQ>5.0,HG00097:DP>8"),
+        checkParseFormat(new Query(SAMPLE_DATA.key(), "HG00096:GQ>5.0,HG00097:DP>8"),
                 QueryOperation.OR,
                 "HG00096", "GQ>5.0",
                 "HG00097", "DP>8");
-        checkParseFormat(new Query(FORMAT.key(), "HG00097:DP>8,HG00096:GQ>5.0"),
+        checkParseFormat(new Query(SAMPLE_DATA.key(), "HG00097:DP>8,HG00096:GQ>5.0"),
                 QueryOperation.OR,
                 "HG00097", "DP>8",
                 "HG00096", "GQ>5.0");
-        checkParseFormat(new Query(FORMAT.key(), "HG00096:GT=0/1,1/1;HG00097:GT=1/1;DP>3"),
+        checkParseFormat(new Query(SAMPLE_DATA.key(), "HG00096:GT=0/1,1/1;HG00097:GT=1/1;DP>3"),
                 QueryOperation.AND,
                 "HG00096", "GT=0/1,1/1",
                 "HG00097", "GT=1/1;DP>3");
-        checkParseFormat(new Query(FORMAT.key(), "HG00096:GT=0/1,1/1;HG00097:GT=1/1;HG00097:DP>3"),
+        checkParseFormat(new Query(SAMPLE_DATA.key(), "HG00096:GT=0/1,1/1;HG00097:GT=1/1;HG00097:DP>3"),
                 QueryOperation.AND,
                 "HG00096", "GT=0/1,1/1",
                 "HG00097", "GT=1/1;DP>3");
 
-        checkParseFormat(new Query(FORMAT.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10,"
+        checkParseFormat(new Query(SAMPLE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10,"
                         + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100"),
                 QueryOperation.OR,
                 "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "HaplotypeScore<10",
@@ -276,16 +276,16 @@ public class VariantQueryUtilsTest extends GenericTest {
 
     @Test
     public void extractGenotypeFromFormatTest() {
-        assertEquals(new Query(FORMAT.key(), "").append(GENOTYPE.key(), "S1:1/1"),
-                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:GT=1/1")));
-        assertEquals(new Query(FORMAT.key(), "S1:DP>4").append(GENOTYPE.key(), "S1:1/1,0/1"),
-                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:GT=1/1,0/1;DP>4")));
-        assertEquals(new Query(FORMAT.key(), "S1:PL<3;DP>4").append(GENOTYPE.key(), "S1:1/1,0/1"),
-                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:PL<3;GT=1/1,0/1;DP>4")));
-        assertEquals(new Query(FORMAT.key(), "S1:PL<3;DP>4;S2:DP>3").append(GENOTYPE.key(), "S1:1/1,0/1;S2:1/1"),
-                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:PL<3;GT=1/1,0/1;DP>4;S2:DP>3;GT=1/1")));
-        assertEquals(new Query(FORMAT.key(), "S1:PL<3;DP>4,S2:DP>3").append(GENOTYPE.key(), "S1:1/1,0/1,S2:1/1"),
-                extractGenotypeFromFormatFilter(new Query(FORMAT.key(), "S1:PL<3;GT=1/1,0/1;DP>4,S2:DP>3;GT=1/1")));
+        assertEquals(new Query(SAMPLE_DATA.key(), "").append(GENOTYPE.key(), "S1:1/1"),
+                extractGenotypeFromFormatFilter(new Query(SAMPLE_DATA.key(), "S1:GT=1/1")));
+        assertEquals(new Query(SAMPLE_DATA.key(), "S1:DP>4").append(GENOTYPE.key(), "S1:1/1,0/1"),
+                extractGenotypeFromFormatFilter(new Query(SAMPLE_DATA.key(), "S1:GT=1/1,0/1;DP>4")));
+        assertEquals(new Query(SAMPLE_DATA.key(), "S1:PL<3;DP>4").append(GENOTYPE.key(), "S1:1/1,0/1"),
+                extractGenotypeFromFormatFilter(new Query(SAMPLE_DATA.key(), "S1:PL<3;GT=1/1,0/1;DP>4")));
+        assertEquals(new Query(SAMPLE_DATA.key(), "S1:PL<3;DP>4;S2:DP>3").append(GENOTYPE.key(), "S1:1/1,0/1;S2:1/1"),
+                extractGenotypeFromFormatFilter(new Query(SAMPLE_DATA.key(), "S1:PL<3;GT=1/1,0/1;DP>4;S2:DP>3;GT=1/1")));
+        assertEquals(new Query(SAMPLE_DATA.key(), "S1:PL<3;DP>4,S2:DP>3").append(GENOTYPE.key(), "S1:1/1,0/1,S2:1/1"),
+                extractGenotypeFromFormatFilter(new Query(SAMPLE_DATA.key(), "S1:PL<3;GT=1/1,0/1;DP>4,S2:DP>3;GT=1/1")));
     }
 
     @Test
@@ -308,20 +308,20 @@ public class VariantQueryUtilsTest extends GenericTest {
     }
 
     private void checkIncludeFormats(String expected, boolean includeGenotype, String includeFormat) {
-        checkIncludeFormats(expected, new Query(INCLUDE_FORMAT.key(), includeFormat).append(INCLUDE_GENOTYPE.key(), includeGenotype));
-        checkIncludeFormats(expected, new Query(INCLUDE_FORMAT.key(), includeFormat.replace(',', ':')).append(INCLUDE_GENOTYPE.key(), includeGenotype));
+        checkIncludeFormats(expected, new Query(INCLUDE_SAMPLE_DATA.key(), includeFormat).append(INCLUDE_GENOTYPE.key(), includeGenotype));
+        checkIncludeFormats(expected, new Query(INCLUDE_SAMPLE_DATA.key(), includeFormat.replace(',', ':')).append(INCLUDE_GENOTYPE.key(), includeGenotype));
     }
 
     private void checkIncludeFormats(String expected, String includeFormat) {
-        checkIncludeFormats(expected, new Query(INCLUDE_FORMAT.key(), includeFormat));
-        checkIncludeFormats(expected, new Query(INCLUDE_FORMAT.key(), includeFormat.replace(',', ':')));
+        checkIncludeFormats(expected, new Query(INCLUDE_SAMPLE_DATA.key(), includeFormat));
+        checkIncludeFormats(expected, new Query(INCLUDE_SAMPLE_DATA.key(), includeFormat.replace(',', ':')));
     }
 
     private static void checkIncludeFormats(String expected, Query query) {
         List<String> expectedList = expected == null ? null
                 : expected.isEmpty() ? Collections.emptyList() : Arrays.asList(expected.split(","));
 
-        assertEquals(expectedList, getIncludeFormats(query));
+        assertEquals(expectedList, getIncludeSampleData(query));
     }
 
     @Test

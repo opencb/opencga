@@ -593,8 +593,8 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#TYPE}
      * {@link VariantQueryParam#STUDY}
      * {@link VariantQueryParam#FILE}
-     * {@link VariantQueryParam#FORMAT}
-     * {@link VariantQueryParam#INFO}
+     * {@link VariantQueryParam#SAMPLE_DATA}
+     * {@link VariantQueryParam#FILE_DATA}
      * {@link VariantQueryParam#FILTER}
      * {@link VariantQueryParam#QUAL}
      * {@link VariantQueryParam#COHORT}
@@ -731,11 +731,11 @@ public class VariantSqlQueryParser {
             }
         }
 
-        if (isValidParam(query, INFO)) {
+        if (isValidParam(query, FILE_DATA)) {
             addInfoFilter(query, filters, defaultStudyMetadata);
         }
 
-        if (isValidParam(query, FORMAT)) {
+        if (isValidParam(query, SAMPLE_DATA)) {
             addFormatFilter(query, filters, defaultStudyMetadata);
         }
 
@@ -1077,7 +1077,7 @@ public class VariantSqlQueryParser {
 
                     if (toNumber) {
                         sb.append(')');
-                        double parsedValue = parseDouble(filterValue, INFO, infoValues);
+                        double parsedValue = parseDouble(filterValue, FILE_DATA, infoValues);
                         sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
 
                         if (op.startsWith(">>") || op.startsWith("<<")) {
@@ -1145,7 +1145,7 @@ public class VariantSqlQueryParser {
 
                     if (toNumber) {
                         sb.append(')');
-                        double parsedValue = parseDouble(filterValue, INFO, formatValues);
+                        double parsedValue = parseDouble(filterValue, FILE_DATA, formatValues);
                         sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
 
                         if (op.startsWith(">>") || op.startsWith("<<")) {

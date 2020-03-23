@@ -299,7 +299,7 @@ public class SampleIndexQueryParser {
 
             if (!partialGtIndex) {
                 // Do not remove genotypes list if FORMAT is present.
-                if (!isValidParam(query, FORMAT)) {
+                if (!isValidParam(query, SAMPLE_DATA)) {
                     query.remove(GENOTYPE.key());
                 }
             }
@@ -314,7 +314,7 @@ public class SampleIndexQueryParser {
                 }
             }
 
-            if (!isValidParam(query, FORMAT)) {
+            if (!isValidParam(query, SAMPLE_DATA)) {
                 // Do not remove FORMAT
                 query.remove(SAMPLE.key());
             }
@@ -617,7 +617,7 @@ public class SampleIndexQueryParser {
         }
 
         RangeQuery dpQuery = null;
-        if (isValidParam(query, INFO)) {
+        if (isValidParam(query, FILE_DATA)) {
             Pair<QueryOperation, Map<String, String>> pair = parseInfo(query);
             if (pair.getKey() != QueryOperation.OR) {
                 Map<String, String> infoMap = pair.getValue();
@@ -643,7 +643,7 @@ public class SampleIndexQueryParser {
             }
         }
 
-        if (isValidParam(query, FORMAT)) {
+        if (isValidParam(query, SAMPLE_DATA)) {
             Pair<QueryOperation, Map<String, String>> pair = parseFormat(query);
             QueryOperation formatOp = pair.getKey();
             Map<String, String> format = pair.getValue();
@@ -662,13 +662,13 @@ public class SampleIndexQueryParser {
                             if (sampleFormatFilters.size() == 1) {
                                 format.remove(sample);
                                 if (format.isEmpty()) {
-                                    query.remove(FORMAT.key());
+                                    query.remove(SAMPLE_DATA.key());
                                 } else {
                                     String newFormatFilter = format.entrySet()
                                             .stream()
                                             .map(e -> e.getKey() + IS + e.getValue())
                                             .collect(Collectors.joining(formatOp.separator()));
-                                    query.put(FORMAT.key(), newFormatFilter);
+                                    query.put(SAMPLE_DATA.key(), newFormatFilter);
                                 }
                             }
                         }

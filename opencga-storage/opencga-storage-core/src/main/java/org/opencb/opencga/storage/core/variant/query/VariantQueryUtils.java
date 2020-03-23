@@ -122,7 +122,7 @@ public final class VariantQueryUtils {
             INCLUDE_FILE,
             INCLUDE_SAMPLE,
 //            INCLUDE_COHORT,
-            INCLUDE_FORMAT,
+            INCLUDE_SAMPLE_DATA,
             INCLUDE_GENOTYPE,
             UNKNOWN_GENOTYPE,
             SAMPLE_METADATA,
@@ -524,46 +524,46 @@ public final class VariantQueryUtils {
     }
 
     /**
-     * Gets a list of elements formats to return.
+     * Gets a list of elements sample data keys to return.
      *
      * @param query Variants Query
-     * @return List of formats to include. Null if undefined or all. Empty list if none.
-     * @see VariantQueryParam#INCLUDE_FORMAT
+     * @return List of sample data keys to include. Null if undefined or all. Empty list if none.
+     * @see VariantQueryParam#INCLUDE_SAMPLE_DATA
      * @see VariantQueryParam#INCLUDE_GENOTYPE
      */
-    public static List<String> getIncludeFormats(Query query) {
-        final Set<String> formatsSet;
+    public static List<String> getIncludeSampleData(Query query) {
+        final Set<String> keysSet;
         boolean all = false;
         boolean none = false;
         boolean gt = query.getBoolean(INCLUDE_GENOTYPE.key(), false);
 
-        if (isValidParam(query, INCLUDE_FORMAT)) {
-            List<String> includeFormat = query.getAsStringList(INCLUDE_FORMAT.key(), "[,:]");
+        if (isValidParam(query, INCLUDE_SAMPLE_DATA)) {
+            List<String> includeFormat = query.getAsStringList(INCLUDE_SAMPLE_DATA.key(), "[,:]");
             if (includeFormat.size() == 1) {
                 String format = includeFormat.get(0);
                 if (format.equals(NONE)) {
                     none = true;
-                    formatsSet = Collections.emptySet();
+                    keysSet = Collections.emptySet();
                 } else if (format.equals(ALL)) {
                     all = true;
-                    formatsSet = Collections.emptySet();
+                    keysSet = Collections.emptySet();
                 } else {
                     if (format.equals(GT)) {
                         gt = true;
-                        formatsSet = Collections.emptySet();
+                        keysSet = Collections.emptySet();
                     } else {
-                        formatsSet = Collections.singleton(format);
+                        keysSet = Collections.singleton(format);
                     }
                 }
             } else {
-                formatsSet = new LinkedHashSet<>(includeFormat);
-                if (formatsSet.contains(GT)) {
-                    formatsSet.remove(GT);
+                keysSet = new LinkedHashSet<>(includeFormat);
+                if (keysSet.contains(GT)) {
+                    keysSet.remove(GT);
                     gt = true;
                 }
             }
         } else {
-            formatsSet = Collections.emptySet();
+            keysSet = Collections.emptySet();
         }
 
         if (none) {
@@ -574,18 +574,18 @@ public final class VariantQueryUtils {
                 // Empty list as none elements
                 return Collections.emptyList();
             }
-        } else if (all || formatsSet.isEmpty() && !gt) {
+        } else if (all || keysSet.isEmpty() && !gt) {
             // Null as all or undefined
             return null;
         } else {
             // Ensure GT is the first element
-            ArrayList<String> formats = new ArrayList<>(formatsSet.size());
+            ArrayList<String> keys = new ArrayList<>(keysSet.size());
             if (gt) {
-                formats.add(GT);
+                keys.add(GT);
             }
-            formats.addAll(formatsSet);
+            keys.addAll(keysSet);
 
-            return formats;
+            return keys;
         }
     }
 
@@ -596,12 +596,12 @@ public final class VariantQueryUtils {
      * @return a pair with the internal QueryOperation (AND/OR) and a map between Files and INFO filters.
      */
     public static Pair<QueryOperation, Map<String, String>> parseInfo(Query query) {
-        if (!isValidParam(query, INFO)) {
+        if (!isValidParam(query, FILE_DATA)) {
             return Pair.of(null, Collections.emptyMap());
         }
-        String value = query.getString(INFO.key());
+        String value = query.getString(FILE_DATA.key());
         if (value.contains(IS)) {
-            return parseMultiKeyValueFilter(INFO, value);
+            return parseMultiKeyValueFilter(FILE_DATA, value);
         } else {
             List<String> files = query.getAsStringList(FILE.key());
             files.removeIf(VariantQueryUtils::isNegated);
@@ -611,7 +611,7 @@ public final class VariantQueryUtils {
             }
 
             if (files.isEmpty()) {
-                throw VariantQueryException.malformedParam(INFO, value, "Missing \"" + FILE.key() + "\" param.");
+                throw VariantQueryException.malformedParam(FILE_DATA, value, "Missing \"" + FILE.key() + "\" param.");
             }
 
             QueryOperation operator = checkOperator(value);
@@ -632,12 +632,12 @@ public final class VariantQueryUtils {
      * @return a pair with the internal QueryOperation (AND/OR) and a map between Samples and FORMAT filters.
      */
     public static Pair<QueryOperation, Map<String, String>> parseFormat(Query query) {
-        if (!isValidParam(query, FORMAT)) {
+        if (!isValidParam(query, SAMPLE_DATA)) {
             return Pair.of(null, Collections.emptyMap());
         }
-        String value = query.getString(FORMAT.key());
+        String value = query.getString(SAMPLE_DATA.key());
         if (value.contains(IS)) {
-            return parseMultiKeyValueFilter(FORMAT, value);
+            return parseMultiKeyValueFilter(SAMPLE_DATA, value);
         } else {
             QueryOperation operator = checkOperator(value);
             QueryOperation samplesOperator;
@@ -668,7 +668,7 @@ public final class VariantQueryUtils {
             }
 
             if (samples.isEmpty()) {
-                throw VariantQueryException.malformedParam(FORMAT, value,
+                throw VariantQueryException.malformedParam(SAMPLE_DATA, value,
                         "Missing \"" + SAMPLE.key() + "\" or \"" + GENOTYPE.key() + "\" param.");
             }
 
@@ -814,7 +814,7 @@ public final class VariantQueryUtils {
 
         if (formatPair.getValue().values().stream().anyMatch(v -> v.contains("GT"))) {
             if (isValidParam(query, SAMPLE) || isValidParam(query, GENOTYPE)) {
-                throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()),
+                throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
                         "Can not be used along with filter \"" + GENOTYPE.key() + "\" or \"" + SAMPLE.key() + '"');
             }
 
@@ -867,8 +867,8 @@ public final class VariantQueryUtils {
                         genotypeBuilder.append(formatPair.getLeft().separator());
                     }
                     if (gt.endsWith(OR) || gtOp.equals(OR)) {
-                        throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()), "Unable to add GT filter with "
-                                + "operator OR (" + OR + ").");
+                        throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
+                                "Unable to add GT filter with operator OR (" + OR + ").");
                     } else if (gt.endsWith(AND)) {
                         gt = gt.substring(0, gt.length() - 1);
                     }
@@ -877,7 +877,7 @@ public final class VariantQueryUtils {
             }
 
             query.put(GENOTYPE.key(), genotypeBuilder.toString());
-            query.put(FORMAT.key(), formatBuilder.toString());
+            query.put(SAMPLE_DATA.key(), formatBuilder.toString());
         }
 
         return query;

@@ -392,9 +392,9 @@ public class SolrQueryParser {
         addFileFilters(query, filterList);
 
         // File info filter are not supported
-        key = INFO.key();
+        key = FILE_DATA.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            throw VariantQueryException.unsupportedVariantQueryFilter(INFO, "Solr", "");
+            throw VariantQueryException.unsupportedVariantQueryFilter(FILE_DATA, "Solr", "");
         }
 
         // Create Solr query, adding filter queries and fields to show
@@ -772,10 +772,10 @@ public class SolrQueryParser {
             }
         }
 
-        key = FORMAT.key();
+        key = SAMPLE_DATA.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             if (studies == null) {
-                throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()),
+                throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
                         "Missing study parameter when filtering by 'format'");
             }
 
@@ -788,7 +788,7 @@ public class SolrQueryParser {
                 // Sanity check, only DP is permitted
                 Pair<QueryOperation, List<String>> formats = splitValue(parsedSampleFormats.getValue().get(sampleId));
                 if (formats.getValue().size() > 1) {
-                    throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()),
+                    throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
                             "Only one format name (and it has to be 'DP') is permitted in Solr search");
                 }
                 if (!first) {
@@ -796,7 +796,7 @@ public class SolrQueryParser {
                 }
                 String[] split = splitOperator(parsedSampleFormats.getValue().get(sampleId));
                 if (split[0] == null) {
-                    throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()),
+                    throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
                             "Invalid format value");
                 }
                 if ("DP".equals(split[0].toUpperCase())) {
@@ -804,7 +804,7 @@ public class SolrQueryParser {
                             + FIELD_SEPARATOR + sampleId, split[1] + split[2]));
                     first = false;
                 } else {
-                    throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()),
+                    throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
                             "Only format name 'DP' is permitted in Solr search");
                 }
             }

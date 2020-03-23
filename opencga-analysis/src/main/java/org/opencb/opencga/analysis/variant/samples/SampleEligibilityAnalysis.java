@@ -60,7 +60,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
 //        INVALID_QUERY_PARAMS.add(VariantQueryParam.SAMPLE);
         INVALID_QUERY_PARAMS.add(VariantQueryParam.FILE);
         INVALID_QUERY_PARAMS.add(VariantQueryParam.STUDY);
-        INVALID_QUERY_PARAMS.add(VariantQueryParam.FORMAT);
+        INVALID_QUERY_PARAMS.add(VariantQueryParam.SAMPLE_DATA);
         INVALID_QUERY_PARAMS.add(VariantQueryParam.FILTER);
         INVALID_QUERY_PARAMS.add(VariantQueryParam.QUAL);
         INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.FAMILY);
@@ -433,7 +433,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         Query query = new Query(baseQuery);
         query.putAll(node.getQuery());
         query.put(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples);
-        query.put(VariantQueryParam.INCLUDE_FORMAT.key(), "GT");
+        query.put(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
         query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
         Predicate<String> genotypeFilter = GenotypeClass.MAIN_ALT;
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.GENOTYPE)) {

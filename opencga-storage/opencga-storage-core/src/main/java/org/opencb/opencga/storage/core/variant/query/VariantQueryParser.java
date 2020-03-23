@@ -249,7 +249,7 @@ public class VariantQueryParser {
     protected void preProcessStudyParams(Query query, QueryOptions options) {
         StudyMetadata defaultStudy = getDefaultStudy(query);
         QueryOperation formatOperator = null;
-        if (isValidParam(query, FORMAT)) {
+        if (isValidParam(query, SAMPLE_DATA)) {
             extractGenotypeFromFormatFilter(query);
 
             Pair<QueryOperation, Map<String, String>> pair = parseFormat(query);
@@ -269,7 +269,7 @@ public class VariantQueryParser {
                     String[] split = splitOperator(format);
                     VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("FORMAT", split[0]);
                     if (line == null) {
-                        throw VariantQueryException.malformedParam(FORMAT, query.getString(FORMAT.key()),
+                        throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
                                 "FORMAT field \"" + split[0] + "\" not found. Available keys in study: "
                                         + defaultStudy.getVariantHeaderLines("FORMAT").keySet());
                     }
@@ -277,12 +277,12 @@ public class VariantQueryParser {
             }
         }
 
-        if (isValidParam(query, INFO)) {
+        if (isValidParam(query, FILE_DATA)) {
             Pair<QueryOperation, Map<String, String>> pair = parseInfo(query);
             if (isValidParam(query, FILE) && pair.getKey() != null) {
                 QueryOperation fileOperator = checkOperator(query.getString(FILE.key()));
                 if (fileOperator != null && pair.getKey() != fileOperator) {
-                    throw VariantQueryException.mixedAndOrOperators(FILE, INFO);
+                    throw VariantQueryException.mixedAndOrOperators(FILE, FILE_DATA);
                 }
             }
             for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
@@ -299,7 +299,7 @@ public class VariantQueryParser {
                     String[] split = splitOperator(info);
                     VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("INFO", split[0]);
                     if (line == null) {
-                        throw VariantQueryException.malformedParam(INFO, query.getString(INFO.key()),
+                        throw VariantQueryException.malformedParam(FILE_DATA, query.getString(FILE_DATA.key()),
                                 "INFO field \"" + split[0] + "\" not found. Available keys in study: "
                                         + defaultStudy.getVariantHeaderLines("INFO").keySet());
                     }
@@ -372,7 +372,7 @@ public class VariantQueryParser {
         }
 
         if (formatOperator != null && genotypeOperator != null && formatOperator != genotypeOperator) {
-            throw VariantQueryException.mixedAndOrOperators(FORMAT, genotypeParam);
+            throw VariantQueryException.mixedAndOrOperators(SAMPLE_DATA, genotypeParam);
         }
 
         if (isValidParam(query, SAMPLE_MENDELIAN_ERROR) || isValidParam(query, SAMPLE_DE_NOVO)) {
@@ -489,14 +489,14 @@ public class VariantQueryParser {
             }
         }
 
-        List<String> formats = getIncludeFormats(query);
+        List<String> formats = getIncludeSampleData(query);
         if (formats == null) {
             formats = Collections.singletonList(ALL);
         } else if (formats.isEmpty()) {
             formats = Collections.singletonList(NONE);
         }
 
-        query.put(INCLUDE_FORMAT.key(), formats);
+        query.put(INCLUDE_SAMPLE_DATA.key(), formats);
         query.remove(INCLUDE_GENOTYPE.key(), formats);
     }
 

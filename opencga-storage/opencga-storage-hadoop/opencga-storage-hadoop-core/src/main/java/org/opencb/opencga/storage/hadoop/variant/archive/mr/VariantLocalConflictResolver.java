@@ -722,9 +722,9 @@ public class VariantLocalConflictResolver {
                 se.setSamplesPosition(new HashMap<>());
             }
             if (null != vse.getSampleDataKeys()) {
-                se.setFormat(new ArrayList<>(vse.getSampleDataKeys()));
+                se.setSampleDataKeys(new ArrayList<>(vse.getSampleDataKeys()));
             } else {
-                se.setFormat(new ArrayList<>());
+                se.setSampleDataKeys(new ArrayList<>());
             }
 
             List<FileEntry> files = new ArrayList<>(vse.getFiles().size());

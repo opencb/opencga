@@ -25,13 +25,13 @@ public class HBaseVariantConverterConfiguration {
     private final boolean simpleGenotypes;
     private final String unknownGenotype;
     private final boolean mutableSamplesPosition;
-    private final List<String> format;
+    private final List<String> sampleDataKeys;
     private final boolean includeSampleId;
     private final boolean includeIndexStatus;
 
     public HBaseVariantConverterConfiguration(VariantQueryProjection projection, boolean failOnWrongVariants, boolean failOnEmptyVariants,
                                               boolean studyNameAsStudyId, boolean simpleGenotypes, String unknownGenotype,
-                                              boolean mutableSamplesPosition, List<String> format, boolean includeSampleId,
+                                              boolean mutableSamplesPosition, List<String> sampleDataKeys, boolean includeSampleId,
                                               boolean includeIndexStatus) {
         this.projection = projection;
         this.failOnWrongVariants = failOnWrongVariants;
@@ -40,7 +40,7 @@ public class HBaseVariantConverterConfiguration {
         this.simpleGenotypes = simpleGenotypes;
         this.unknownGenotype = unknownGenotype;
         this.mutableSamplesPosition = mutableSamplesPosition;
-        this.format = format;
+        this.sampleDataKeys = sampleDataKeys;
         this.includeSampleId = includeSampleId;
         this.includeIndexStatus = includeIndexStatus;
     }
@@ -114,11 +114,11 @@ public class HBaseVariantConverterConfiguration {
 
     /**
      * Format of the converted variants. Discard other values.
-     * @see org.opencb.opencga.storage.core.variant.query.VariantQueryUtils#getIncludeFormats(Query)
+     * @see org.opencb.opencga.storage.core.variant.query.VariantQueryUtils#getIncludeSampleData(Query)
      * @return expected format
      */
-    public List<String> getFormat() {
-        return format;
+    public List<String> getSampleDataKeys() {
+        return sampleDataKeys;
     }
 
     public boolean getIncludeSampleId() {
@@ -137,7 +137,7 @@ public class HBaseVariantConverterConfiguration {
         private boolean failOnEmptyVariants = false;
         private String unknownGenotype = UNKNOWN_GENOTYPE;
         private boolean mutableSamplesPosition = true;
-        private List<String> format;
+        private List<String> sampleDataKeys;
         private boolean includeSampleId;
         private boolean includeIndexStatus;
 
@@ -180,8 +180,8 @@ public class HBaseVariantConverterConfiguration {
             return this;
         }
 
-        public Builder setFormat(List<String> format) {
-            this.format = format;
+        public Builder setSampleDataKeys(List<String> sampleDataKeys) {
+            this.sampleDataKeys = sampleDataKeys;
             return this;
         }
 
@@ -203,7 +203,7 @@ public class HBaseVariantConverterConfiguration {
                     simpleGenotypes,
                     unknownGenotype,
                     mutableSamplesPosition,
-                    format,
+                    sampleDataKeys,
                     includeSampleId,
                     includeIndexStatus);
         }

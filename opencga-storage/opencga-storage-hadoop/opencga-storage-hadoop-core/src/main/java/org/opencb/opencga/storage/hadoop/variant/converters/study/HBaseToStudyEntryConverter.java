@@ -217,15 +217,15 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
                                  Variant variant, StudyMetadata studyMetadata, int fillMissingColumnValue) {
-        List<String> fixedFormat = getFixedFormat(studyMetadata);
-        StudyEntry studyEntry = newStudyEntry(studyMetadata, fixedFormat);
+        List<String> fixedSampleDataKeys = getFixedSampleDataKeys(studyMetadata);
+        StudyEntry studyEntry = newStudyEntry(studyMetadata, fixedSampleDataKeys);
 
-        int[] formatsMap = getFormatsMap(studyMetadata.getId(), fixedFormat);
+        int[] sampleDataKeysMap = getFormatsMap(studyMetadata.getId(), fixedSampleDataKeys);
 
         for (Pair<Integer, List<String>> pair : sampleDataMap) {
             Integer sampleId = pair.getKey();
             List<String> sampleData = pair.getValue();
-            addMainSampleDataColumn(studyMetadata, studyEntry, formatsMap, sampleId, sampleData);
+            addMainSampleDataColumn(studyMetadata, studyEntry, sampleDataKeysMap, sampleId, sampleData);
         }
 
         Map<String, List<String>> alternateFileMap = new HashMap<>();
@@ -241,7 +241,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return studyEntry;
     }
 
-    protected StudyEntry newStudyEntry(StudyMetadata studyMetadata, List<String> fixedFormat) {
+    protected StudyEntry newStudyEntry(StudyMetadata studyMetadata, List<String> fixedSampleDataKeys) {
         StudyEntry studyEntry;
         if (configuration.getStudyNameAsStudyId()) {
             studyEntry = new StudyEntry(studyMetadata.getName());
@@ -249,7 +249,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             studyEntry = new StudyEntry(String.valueOf(studyMetadata.getId()));
         }
 
-        studyEntry.setFormat(new ArrayList<>(getFormat(studyMetadata.getId(), fixedFormat)));
+        studyEntry.setSampleDataKeys(new ArrayList<>(getSampleDataKeys(studyMetadata.getId(), fixedSampleDataKeys)));
 
         LinkedHashMap<String, Integer> returnedSamplesPosition;
         if (configuration.getMutableSamplesPosition()) {
@@ -262,33 +262,34 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return studyEntry;
     }
 
-    private List<String> getFormat(int studyId, List<String> fixedFormat) {
-        if (configuration.getFormat() == null) {
-            return fixedFormat;
+    private List<String> getSampleDataKeys(int studyId, List<String> fixedSampleDataKeys) {
+        if (configuration.getSampleDataKeys() == null) {
+            return fixedSampleDataKeys;
         } else {
             return expectedFormatPerStudy.computeIfAbsent(studyId, id -> {
-                if (configuration.getFormat().size() == 1 && configuration.getFormat().get(0).equals(VariantQueryUtils.NONE)) {
+                if (configuration.getSampleDataKeys().size() == 1
+                        && configuration.getSampleDataKeys().get(0).equals(VariantQueryUtils.NONE)) {
                     return Collections.emptyList();
-                } else if (configuration.getFormat().contains(VariantQueryUtils.ALL)) {
-                    List<String> format = new ArrayList<>(configuration.getFormat().size() + fixedFormat.size());
-                    for (String f : configuration.getFormat()) {
+                } else if (configuration.getSampleDataKeys().contains(VariantQueryUtils.ALL)) {
+                    List<String> format = new ArrayList<>(configuration.getSampleDataKeys().size() + fixedSampleDataKeys.size());
+                    for (String f : configuration.getSampleDataKeys()) {
                         if (f.equals(VariantQueryUtils.ALL)) {
-                            format.addAll(fixedFormat);
+                            format.addAll(fixedSampleDataKeys);
                         } else {
                             format.add(f);
                         }
                     }
                     return format;
                 } else {
-                    return configuration.getFormat();
+                    return configuration.getSampleDataKeys();
                 }
             });
         }
     }
 
     protected void addMainSampleDataColumn(StudyMetadata studyMetadata, StudyEntry studyEntry,
-                                           int[] formatsMap, Integer sampleId, List<String> sampleData) {
-        sampleData = remapSamplesData(sampleData, formatsMap);
+                                           int[] sampleDataKeysMap, Integer sampleId, List<String> sampleData) {
+        sampleData = remapSamplesData(sampleData, sampleDataKeysMap);
         Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
         // Replace UNKNOWN_GENOTYPE, if any
         if (gtIdx != null && UNKNOWN_GENOTYPE.equals(sampleData.get(gtIdx))) {
@@ -306,7 +307,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private int[] getFormatsMap(int studyId, List<String> fixedFormat) {
         int[] formatsMap;
-        List<String> format = getFormat(studyId, fixedFormat);
+        List<String> format = getSampleDataKeys(studyId, fixedFormat);
         if (format != null && !format.equals(fixedFormat)) {
             formatsMap = new int[format.size()];
             for (int i = 0; i < format.size(); i++) {
@@ -639,7 +640,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                         .setSv(variant.getSv());
                 StudyEntry se = new StudyEntry("0");
                 se.setSecondaryAlternates(getAlternateCoordinates(secondaryAlternates));
-                se.setFormat(studyEntry.getSampleDataKeys());
+                se.setSampleDataKeys(studyEntry.getSampleDataKeys());
                 se.setSamples(new ArrayList<>(fileIds.size()));
 
                 for (String fileId : fileIds) {
@@ -790,7 +791,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         });
     }
 
-    private List<String> getFixedFormat(StudyMetadata studyMetadata) {
+    private List<String> getFixedSampleDataKeys(StudyMetadata studyMetadata) {
         return fixedFormatsMap.computeIfAbsent(studyMetadata.getId(),
                 (s) -> HBaseToVariantConverter.getFixedFormat(studyMetadata.getAttributes()));
     }

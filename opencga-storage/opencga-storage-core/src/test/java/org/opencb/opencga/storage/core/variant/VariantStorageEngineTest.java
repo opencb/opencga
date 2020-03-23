@@ -606,7 +606,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             variant.setStudies(Collections.singletonList(studyEntry));
 
             Variant loadedVariant = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), variant.toString())
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT,GL,DS"), new QueryOptions()).first();
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT,GL,DS"), new QueryOptions()).first();
 
             loadedVariant.setAnnotation(null);                                          //Remove annotation
             StudyEntry loadedStudy = loadedVariant.getStudy(STUDY_NAME);

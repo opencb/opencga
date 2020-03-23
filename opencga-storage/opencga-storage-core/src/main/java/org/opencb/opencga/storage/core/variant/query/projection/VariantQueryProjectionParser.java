@@ -344,7 +344,7 @@ public class VariantQueryProjectionParser {
                     .filter(value -> !VariantQueryUtils.isNegated(value))
                     .collect(Collectors.toList());
         }
-        if (VariantQueryUtils.isValidParam(query, INFO)) {
+        if (VariantQueryUtils.isValidParam(query, FILE_DATA)) {
             Map<String, String> infoMap = VariantQueryUtils.parseInfo(query).getValue();
             if (includeFiles == null) {
                 includeFiles = new ArrayList<>(infoMap.size());
@@ -497,7 +497,7 @@ public class VariantQueryProjectionParser {
                 }
                 map.keySet().stream().map(Object::toString).forEach(samples::add);
             }
-            if (VariantQueryUtils.isValidParam(query, FORMAT)) {
+            if (VariantQueryUtils.isValidParam(query, SAMPLE_DATA)) {
                 Map<String, String> formatMap = VariantQueryUtils.parseFormat(query).getValue();
                 if (samples == null) {
                     samples = new ArrayList<>(formatMap.size());

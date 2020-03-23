@@ -499,9 +499,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 && !isValidParam(query, FILE)
                 && !isValidParam(query, FILTER)
                 && !isValidParam(query, QUAL)
-                && !isValidParam(query, INFO)
+                && !isValidParam(query, FILE_DATA)
                 && !isValidParam(query, SAMPLE)
-                && !isValidParam(query, FORMAT)
+                && !isValidParam(query, SAMPLE_DATA)
                 && !isValidParam(query, GENOTYPE)) {
             query.remove(VariantQueryParam.STUDY.key());
         }

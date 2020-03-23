@@ -238,7 +238,7 @@ public class VariantHbaseTestUtils {
     }
 
     private static void printVariantsFromDBAdaptor(VariantHadoopDBAdaptor dbAdaptor, PrintStream out) {
-        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.INCLUDE_FORMAT.key(), "all,SAMPLE_ID"),
+        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "all,SAMPLE_ID"),
                 new QueryOptions("simpleGenotypes", true));
         ObjectMapper mapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         while (iterator.hasNext()) {

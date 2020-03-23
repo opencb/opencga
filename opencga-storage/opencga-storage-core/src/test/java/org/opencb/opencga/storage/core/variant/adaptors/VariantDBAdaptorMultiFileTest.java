@@ -17,7 +17,6 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.IOException;
@@ -469,7 +468,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         Query query = new Query(STUDY.key(), study1)
                 .append(SAMPLE.key(), "NA12877,NA12878")
-                .append(FORMAT.key(), "NA12877:DP<100");
+                .append(SAMPLE_DATA.key(), "NA12877:DP<100");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
@@ -484,7 +483,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         query = new Query(STUDY.key(), study1)
                 .append(INCLUDE_SAMPLE.key(), "NA12877,NA12878")
-                .append(FORMAT.key(), "NA12877:DP<100;GT=1/1");
+                .append(SAMPLE_DATA.key(), "NA12877:DP<100;GT=1/1");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
@@ -496,7 +495,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         query = new Query(STUDY.key(), study1)
                 .append(INCLUDE_SAMPLE.key(), "NA12877,NA12878")
-                .append(FORMAT.key(), "NA12877:DP<100;GT=1/1,0/1");
+                .append(SAMPLE_DATA.key(), "NA12877:DP<100;GT=1/1,0/1");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
@@ -507,7 +506,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         ))));
 
         query = new Query(STUDY.key(), study1)
-                .append(FORMAT.key(), "NA12877:DP<100" + OR + "NA12878:DP<50");
+                .append(SAMPLE_DATA.key(), "NA12877:DP<100" + OR + "NA12878:DP<50");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
@@ -519,7 +518,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         ))));
 
         query = new Query(STUDY.key(), study1)
-                .append(FORMAT.key(), "NA12877:DP<100" + AND + "NA12878:DP<50");
+                .append(SAMPLE_DATA.key(), "NA12877:DP<100" + AND + "NA12878:DP<50");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
@@ -537,7 +536,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     public void testGetAllVariants_formatFail() {
         thrown.expect(VariantQueryException.class);
         thrown.expectMessage("FORMAT field \"JJ\" not found.");
-        Query query = new Query(STUDY.key(), study1).append(FORMAT.key(), "NA12877:JJ<100");
+        Query query = new Query(STUDY.key(), study1).append(SAMPLE_DATA.key(), "NA12877:JJ<100");
         queryResult = query(query, new QueryOptions());
     }
 
@@ -551,7 +550,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         Query query = new Query(STUDY.key(), study1)
 //                .append(INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
-                .append(INFO.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
+                .append(FILE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
                         + ",1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
@@ -568,7 +567,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         query = new Query(STUDY.key(), study1)
 //                .append(FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
-                .append(INFO.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
+                .append(FILE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
                         + ",1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
@@ -593,11 +592,11 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
 
         thrown.expect(VariantQueryException.class);
-        thrown.expectMessage(VariantQueryException.mixedAndOrOperators(FILE, INFO).getMessage());
+        thrown.expectMessage(VariantQueryException.mixedAndOrOperators(FILE, FILE_DATA).getMessage());
 
         query = new Query(STUDY.key(), study1)
                 .append(FILE.key(), file12877 + OR + file12878)
-                .append(INFO.key(),
+                .append(FILE_DATA.key(),
                         "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
                                 + AND
                                 + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
@@ -622,11 +621,11 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(VariantQueryParam.INCLUDE_FILE.key(), file12877 + "," + file12878), options);
 
         thrown.expect(VariantQueryException.class);
-        thrown.expectMessage(VariantQueryException.mixedAndOrOperators(FILE, INFO).getMessage());
+        thrown.expectMessage(VariantQueryException.mixedAndOrOperators(FILE, FILE_DATA).getMessage());
 
         query = new Query(STUDY.key(), study1)
                 .append(FILE.key(), file12877 + AND + file12878)
-                .append(INFO.key(),
+                .append(FILE_DATA.key(),
                         "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
                                 + OR
                                 + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
@@ -651,7 +650,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     public void testGetAllVariants_infoFail() {
         thrown.expect(VariantQueryException.class);
         thrown.expectMessage("INFO field \"JJ\" not found.");
-        Query query = new Query(STUDY.key(), study1).append(INFO.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:JJ<100");
+        Query query = new Query(STUDY.key(), study1).append(FILE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:JJ<100");
         queryResult = query(query, new QueryOptions());
     }
 

@@ -526,7 +526,7 @@ public class VariantMongoDBQueryParserTest {
 
         projection = parser.createProjection(new Query()
                 .append(INCLUDE_GENOTYPE.key(), true)
-                .append(INCLUDE_FORMAT.key(), ALL)
+                .append(INCLUDE_SAMPLE_DATA.key(), ALL)
                 .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.INCLUDE, STUDIES.fieldName()));
         checkEqualDocuments(expected, projection);
 

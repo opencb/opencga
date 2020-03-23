@@ -211,7 +211,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                                        Predicate<String> geneFilter)
                 throws Exception {
             query = new Query(query)
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT")
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
                     .append(VariantQueryParam.GENOTYPE.key(), sample + IS + "1/1");
 
             int numVariants = iterate(query, v -> {
@@ -237,7 +237,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 throws Exception {
 
             query = new Query(query)
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT")
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
                     .append(VariantQueryParam.GENOTYPE.key(), sample + IS + "1/2");
 
             Map<String, KnockoutVariant> variants = new HashMap<>();
@@ -292,7 +292,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     .append(VariantCatalogQueryUtils.FAMILY_PROBAND.key(), sample)
                     .append(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key(), COMPOUND_HETEROZYGOUS)
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), family.toList())
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT");
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
 
             int numVariants = iterate(query, v -> {
                 StudyEntry studyEntry = v.getStudies().get(0);
@@ -317,7 +317,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             Query query = new Query(baseQuery)
                     .append(VariantQueryParam.SAMPLE.key(), sample)
                     .append(VariantQueryParam.TYPE.key(), VariantType.DELETION)
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT");
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
 //                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), LOF + "," + VariantAnnotationUtils.FEATURE_TRUNCATION);
 //        Set<String> cts = new HashSet<>(LOF_SET);
 //        cts.add(VariantAnnotationUtils.FEATURE_TRUNCATION);
@@ -498,7 +498,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     .append(VariantQueryParam.GENE.key(), knockoutByGene.getName())
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), trio.toList())
                     .append(VariantCatalogQueryUtils.FAMILY.key(), trio.getId())
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT")
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
                     .append(VariantQueryParam.INCLUDE_FILE.key(), null)
 //                            .append(VariantCatalogQueryUtils.FAMILY_DISORDER.key(), getDisorder())
                     .append(VariantCatalogQueryUtils.FAMILY_PROBAND.key(), sampleId)
@@ -532,7 +532,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             Query query = new Query(baseQuery)
                     .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId)
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT")
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
                     .append(VariantQueryParam.INCLUDE_FILE.key(), null)
                     .append(VariantQueryParam.GENOTYPE.key(), sampleId + IS + "1/2");
 
@@ -591,7 +591,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             Query query = new Query(baseQuery)
                     .append(VariantQueryParam.SAMPLE.key(), sampleId)
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId)
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT")
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
                     .append(VariantQueryParam.TYPE.key(), VariantType.DELETION);
 
             KnockoutByGene.KnockoutSample sample = knockout.getSample(sampleId);
@@ -610,7 +610,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 Query thisSvQuery = new Query(baseQuery)
                         .append(VariantQueryParam.SAMPLE.key(), sampleId)
                         .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId)
-                        .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT")
+                        .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
                         .append(VariantQueryParam.REGION.key(), new Region(svVariant.getChromosome(), svVariant.getStart(), svVariant.getEnd()));
 
                 iterate(thisSvQuery, variant -> {
