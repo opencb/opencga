@@ -563,14 +563,19 @@
      </similarity>
     -->
 
-    <field name="uid" type="plong" indexed="true" stored="true" multiValued="false"/>
+    <fieldType name="int" class="solr.TrieIntField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+    <fieldType name="double" class="solr.TrieDoubleField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+    <fieldType name="float" class="solr.TrieFloatField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+    <fieldType name="long" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+
+    <field name="uid" type="long" indexed="true" stored="true" multiValued="false"/>
     <field name="studyId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="creationYear" type="pint" indexed="true" stored="true" multiValued="false"/>
+    <field name="creationYear" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="creationMonth" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="creationDay" type="pint" indexed="true" stored="true" multiValued="false"/>
+    <field name="creationDay" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="creationDayOfWeek" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="release" type="pint" indexed="true" stored="true" multiValued="false"/>
+    <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="acl" type="string" indexed="true" stored="true" multiValued="true"/>
 
     <field name="toolId" type="string" indexed="true" stored="true" multiValued="false"/>
