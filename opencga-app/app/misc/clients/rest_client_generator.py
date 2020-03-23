@@ -23,7 +23,7 @@ class RestClientGenerator(ABC):
         self.id2 = None
 
         self.endpoints = {
-            'users/{user}/filters/{id}/update': {'method_name': 'update_filter'},
+            'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
             'analysis/clinical/{clinicalAnalysis}/interpretations/{interpretation}/update': {'method_name': 'update_interpretation'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'}
         }
