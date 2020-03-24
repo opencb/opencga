@@ -1,32 +1,23 @@
 package org.opencb.opencga.analysis.clinical;
 
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.bionetdb.core.BioNetDbManager;
-import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
-import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.AnalysisResult;
 
-import java.util.List;
-import java.util.Map;
+public abstract class XQueryAnalysis /*extends FamilyAnalysis<Interpretation>*/ {
 
-public class XQueryAnalysis extends FamilyAnalysis<Interpretation> {
+//    private BioNetDbManager bioNetDbManager;
+//
+//    private final static String XQUERY_ANALYSIS_NAME = "BioNetInterpretation";
+//
+//   public XQueryAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
+//                          Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap options,
+//                          BioNetDBConfiguration configuration, String opencgaHome, String token) throws BioNetDBException {
+//        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, penetrance, options, studyStr, opencgaHome, token);
+//
+//        this.bioNetDbManager = new BioNetDbManager(configuration);
+//    }
 
-    private BioNetDbManager bioNetDbManager;
-
-    private final static String XQUERY_ANALYSIS_NAME = "BioNetInterpretation";
-
-    public XQueryAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
-                          Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap options,
-                          BioNetDBConfiguration configuration, String opencgaHome, String token) throws BioNetDBException {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, penetrance, options, studyStr, opencgaHome, token);
-
-        this.bioNetDbManager = new BioNetDbManager(configuration);
-    }
-
-    @Override
+//    @Override
     public AnalysisResult<Interpretation> execute() throws Exception {
 /*
         StopWatch watcher = StopWatch.createStarted();

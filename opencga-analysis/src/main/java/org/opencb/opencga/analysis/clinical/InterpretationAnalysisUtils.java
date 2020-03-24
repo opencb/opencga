@@ -195,7 +195,7 @@ public class InterpretationAnalysisUtils {
         Map<String, Map<String, List<String>>> actionableVariantsByAssembly = new HashMap<>();
         java.io.File folder = opencgaHome.resolve("/analysis/resources/").toFile();
         java.io.File[] files = folder.listFiles();
-        if (ArrayUtils.isNotEmpty(files)) {
+        if (files != null) {
             for (java.io.File file : files) {
                 if (file.isFile() && file.getName().startsWith("actionableVariants_")) {
                     String[] split = file.getName().split("[_\\.]");
