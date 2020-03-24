@@ -11,7 +11,7 @@
  */
 
 
-package org.opencb.opencga.server.rest.ga4gh.models.defaultSchemas;
+package org.opencb.opencga.server.rest.ga4gh.models.schemas;
 
 import java.util.Objects;
 

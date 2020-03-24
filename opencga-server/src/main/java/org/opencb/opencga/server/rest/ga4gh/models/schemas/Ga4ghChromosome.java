@@ -11,7 +11,7 @@
  */
 
 
-package org.opencb.opencga.server.rest.ga4gh.models.defaultSchemas;
+package org.opencb.opencga.server.rest.ga4gh.models.schemas;
 
 import java.io.IOException;
 import com.google.gson.TypeAdapter;

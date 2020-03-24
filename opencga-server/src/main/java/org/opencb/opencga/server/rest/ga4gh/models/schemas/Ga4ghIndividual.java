@@ -11,13 +11,14 @@
  */
 
 
-package org.opencb.opencga.server.rest.ga4gh.models;
+package org.opencb.opencga.server.rest.ga4gh.models.schemas;
 
 import java.util.Objects;
 
 import com.google.gson.annotations.SerializedName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import org.opencb.opencga.server.rest.ga4gh.models.Ga4ghPedigree;
 
 import java.util.ArrayList;
 import java.util.List;

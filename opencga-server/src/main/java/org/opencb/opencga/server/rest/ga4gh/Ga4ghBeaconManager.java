@@ -20,6 +20,8 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.server.rest.ga4gh.models.*;
+import org.opencb.opencga.server.rest.ga4gh.models.schemas.Ga4ghDisease;
+import org.opencb.opencga.server.rest.ga4gh.models.schemas.Ga4ghIndividual;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
