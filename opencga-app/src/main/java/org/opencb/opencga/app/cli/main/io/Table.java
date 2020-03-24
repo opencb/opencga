@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 public class Table<T> {
     private final List<TableColumnSchema<T>> schema = new ArrayList<>();
-    private List<TableColumn<T>> columns;
+    private List<TableColumn<T>> columns = new ArrayList<>();
 
     public Table() {
         this(new JAnsiTablePrinter());

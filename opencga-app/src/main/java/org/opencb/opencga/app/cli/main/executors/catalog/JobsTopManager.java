@@ -12,7 +12,7 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobsTop;
+import org.opencb.opencga.core.models.job.JobTop;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -21,10 +21,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.Optional.ofNullable;
 
 public class JobsTopManager {
 
@@ -62,8 +59,8 @@ public class JobsTopManager {
         columns.add(new TableColumnSchema<>("Status", job -> job.getInternal().getStatus()  .getName()));
         columns.add(new TableColumnSchema<>("Submission", Job::getCreationDate));
         columns.add(new TableColumnSchema<>("Time", JobsTopManager::getDurationString));
-        columns.add(new TableColumnSchema<>("Start", job -> SIMPLE_DATE_FORMAT.format(getStart(job))));
-        columns.add(new TableColumnSchema<>("End", job -> SIMPLE_DATE_FORMAT.format(getEnd(job))));
+        columns.add(new TableColumnSchema<>("Start", job -> getStart(job) != null ? SIMPLE_DATE_FORMAT.format(getStart(job)) : ""));
+        columns.add(new TableColumnSchema<>("End", job -> getEnd(job) != null ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : ""));
 
 
         // TODO: Decide if use Ascii or JAnsi
@@ -90,7 +87,7 @@ public class JobsTopManager {
         }
     }
 
-    public void print(JobsTop top) {
+    public void print(JobTop top) {
         // Reuse buffer to avoid allocate new memory
         buffer.reset();
 
@@ -104,15 +101,12 @@ public class JobsTopManager {
         out.println("  Version " + GitRepositoryState.get().getBuildVersion());
         out.println("  " + SIMPLE_DATE_FORMAT.format(Date.from(Instant.now())));
         out.println();
-        TreeMap<String, Long> counts = new TreeMap<>(top.getJobStatusCount());
-        out.print(Enums.ExecutionStatus.RUNNING + ": " + ofNullable(counts.remove(Enums.ExecutionStatus.RUNNING + ", ")).orElse(0L));
-        out.print(Enums.ExecutionStatus.QUEUED + ": " + ofNullable(counts.remove(Enums.ExecutionStatus.QUEUED + ", ")).orElse(0L));
-        out.print(Enums.ExecutionStatus.PENDING + ": " + ofNullable(counts.remove(Enums.ExecutionStatus.PENDING + ", ")).orElse(0L));
-        out.print(Enums.ExecutionStatus.DONE + ": " + ofNullable(counts.remove(Enums.ExecutionStatus.DONE + ", ")).orElse(0L));
-        out.print(Enums.ExecutionStatus.ERROR + ": " + ofNullable(counts.remove(Enums.ExecutionStatus.ERROR + ", ")).orElse(0L));
-        counts.forEach((status, count) -> {
-            out.print(", " + status + ": " + count);
-        });
+        out.print(Enums.ExecutionStatus.RUNNING + ": " + top.getStats().getRunning() + ", ");
+        out.print(Enums.ExecutionStatus.QUEUED + ": " + top.getStats().getQueued() + ", ");
+        out.print(Enums.ExecutionStatus.PENDING + ": " + top.getStats().getPending() + ", ");
+        out.print(Enums.ExecutionStatus.DONE + ": " + top.getStats().getDone() + ", ");
+        out.print(Enums.ExecutionStatus.ERROR + ": " + top.getStats().getError() + ", ");
+        out.print(Enums.ExecutionStatus.ABORTED + ": " + top.getStats().getAborted());
         out.println();
 
         jobTable.updateTable(top.getJobs());

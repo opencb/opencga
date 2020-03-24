@@ -25,7 +25,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
 import org.opencb.opencga.core.models.job.JobCreateParams;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
-import org.opencb.opencga.core.models.job.JobsTop;
+import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -124,9 +124,9 @@ public class JobClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<JobsTop> top(ObjectMap params) throws ClientException {
+    public RestResponse<JobTop> top(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("jobs", null, null, null, "top", params, GET, JobsTop.class);
+        return execute("jobs", null, null, null, "top", params, GET, JobTop.class);
     }
 
     /**

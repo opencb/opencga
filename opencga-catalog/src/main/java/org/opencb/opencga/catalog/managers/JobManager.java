@@ -1261,7 +1261,7 @@ public class JobManager extends ResourceManager<Job> {
         return endResult(result, ignoreException);
     }
 
-    public OpenCGAResult<JobsTop> top(String studyStr, Query baseQuery, int limit, String token) throws CatalogException {
+    public OpenCGAResult<JobTop> top(String studyStr, Query baseQuery, int limit, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -1269,7 +1269,9 @@ public class JobManager extends ResourceManager<Job> {
 
         StopWatch stopWatch = StopWatch.createStarted();
         QueryOptions queryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, "id,name,status,execution,creationDate")
+                .append(QueryOptions.INCLUDE, Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.TOOL.key(),
+                        JobDBAdaptor.QueryParams.INTERNAL.key(), JobDBAdaptor.QueryParams.EXECUTION.key(),
+                        JobDBAdaptor.QueryParams.CREATION_DATE.key()))
                 .append(QueryOptions.COUNT, false)
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
@@ -1292,7 +1294,7 @@ public class JobManager extends ResourceManager<Job> {
                         .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED),
                 new QueryOptions(queryOptions)
                         .append(QueryOptions.LIMIT, jobsLimit)
-                        .append(QueryOptions.SORT, "creationDate"),
+                        .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
                 userId);
         jobsLimit -= queued.getResults().size();
 
@@ -1302,7 +1304,7 @@ public class JobManager extends ResourceManager<Job> {
                         .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING),
                 new QueryOptions(queryOptions)
                         .append(QueryOptions.LIMIT, jobsLimit)
-                        .append(QueryOptions.SORT, "creationDate"),
+                        .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
                 userId);
         jobsLimit -= pending.getResults().size();
 
@@ -1324,17 +1326,38 @@ public class JobManager extends ResourceManager<Job> {
         allJobs.addAll(running.getResults());
         allJobs.addAll(queued.getResults());
         allJobs.addAll(pending.getResults());
-        Map<String, Long> jobStatusCount = new HashMap<>();
 
         OpenCGAResult result = jobDBAdaptor.groupBy(new Query(baseQuery),
                 Collections.singletonList(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()), new QueryOptions(QueryOptions.COUNT, true),
                 userId);
+        JobTopStats stats = new JobTopStats();
         for (Object o : result.getResults()) {
-            String status = ((Map) ((Map) o).get("_id")).get("status.name").toString();
-            long count = ((Number) ((Map) o).get("count")).longValue();
-            jobStatusCount.put(status, count);
+            String status = ((Map) ((Map) o).get("_id")).get(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()).toString();
+            int count = ((Number) ((Map) o).get("count")).intValue();
+            switch (status) {
+                case Enums.ExecutionStatus.RUNNING:
+                    stats.setRunning(count);
+                    break;
+                case Enums.ExecutionStatus.QUEUED:
+                    stats.setQueued(count);
+                    break;
+                case Enums.ExecutionStatus.PENDING:
+                    stats.setPending(count);
+                    break;
+                case Enums.ExecutionStatus.DONE:
+                    stats.setDone(count);
+                    break;
+                case Enums.ExecutionStatus.ERROR:
+                    stats.setError(count);
+                    break;
+                case Enums.ExecutionStatus.ABORTED:
+                    stats.setAborted(count);
+                    break;
+                default:
+                    break;
+            }
         }
-        JobsTop top = new JobsTop(Date.from(Instant.now()), jobStatusCount, allJobs);
+        JobTop top = new JobTop(Date.from(Instant.now()), stats, allJobs);
         return new OpenCGAResult<>(((int) stopWatch.getTime()), null, 1, Collections.singletonList(top), 1);
     }
 

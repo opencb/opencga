@@ -217,7 +217,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/top")
-    @ApiOperation(value = "Provide a summary of the running jobs", response = JobsTop.class)
+    @ApiOperation(value = "Provide a summary of the running jobs", response = JobTop.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of jobs to be returned", dataType = "integer",
                     paramType = "query", defaultValue = "20")
