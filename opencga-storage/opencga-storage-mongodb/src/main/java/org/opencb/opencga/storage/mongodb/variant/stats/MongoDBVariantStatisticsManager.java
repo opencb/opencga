@@ -1,12 +1,12 @@
 package org.opencb.opencga.storage.mongodb.variant.stats;
 
-import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
@@ -14,7 +14,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.json.JsonSerializerTask;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -64,6 +63,9 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
         int numTasks = options.getInt(
                 VariantStorageOptions.STATS_CALCULATE_THREADS.key(),
                 VariantStorageOptions.STATS_CALCULATE_THREADS.defaultValue());
+        boolean statsMultiAllelic = options.getBoolean(
+                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
+                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
         boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
 
@@ -83,26 +85,28 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
         QueryOptions readerOptions = VariantStatisticsManager.buildIncludeExclude().append(QueryOptions.SORT, true);
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
 
-        try (MongoCursor<Document> cursor = ((VariantMongoDBAdaptor) variantDBAdaptor).nativeIterator(readerQuery, readerOptions, true)) {
+        try (MongoDBIterator<Document> it = ((VariantMongoDBAdaptor) variantDBAdaptor).nativeIterator(readerQuery, readerOptions, true)) {
             // reader
             DataReader<Document> reader = i -> {
                 List<Document> documents = new ArrayList<>(i);
-                while (cursor.hasNext() && i-- > 0) {
-                    documents.add(cursor.next());
+                while (it.hasNext() && i-- > 0) {
+                    documents.add(it.next());
                 }
                 return documents;
             };
 
             // tasks
             List<Integer> cohortIds = variantDBAdaptor.getMetadataManager().getCohortIds(studyMetadata.getId(), cohorts.keySet());
-            List<CohortMetadata> cohortsMetadata = new ArrayList<>(cohortIds.size());
-            for (Integer cohortId : cohortIds) {
-                cohortsMetadata.add(variantDBAdaptor.getMetadataManager().getCohortMetadata(studyMetadata.getId(), cohortId));
-            }
+
             List<Task<Document, String>> tasks = new ArrayList<>(numTasks);
             ProgressLogger progressLogger = buildCreateStatsProgressLogger(variantDBAdaptor, readerQuery, options);
+            MongoDBVariantStatsCalculator statsCalculatorTask = new MongoDBVariantStatsCalculator(
+                    variantDBAdaptor.getMetadataManager(),
+                    studyMetadata,
+                    cohortIds,
+                    getUnknownGenotype(options), statsMultiAllelic);
             for (int i = 0; i < numTasks; i++) {
-                tasks.add(new MongoDBVariantStatsCalculator(studyMetadata, cohortsMetadata, getUnknownGenotype(options))
+                tasks.add(statsCalculatorTask
                         .then((Task<VariantStatsWrapper, VariantStatsWrapper>) batch -> {
                             progressLogger.increment(batch.size(), () -> ", up to position "
                                     + batch.get(batch.size() - 1).getChromosome()

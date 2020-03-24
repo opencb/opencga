@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -29,15 +28,20 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FileStatus;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 /**
@@ -48,7 +52,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void createJobTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Job job = new Job()
-                .setStatus(new Enums.ExecutionStatus());
+                .setInternal(new JobInternal());
 
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         job.setId("jobName1");
@@ -68,10 +72,13 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job().setStatus(new Enums.ExecutionStatus()).setId("name").setUserId(user3.getId())
+        catalogJobDBAdaptor.insert(studyId, new Job()
+                .setId("name")
+                .setUserId(user3.getId())
+                .setInternal(new JobInternal(new Enums.ExecutionStatus()))
                 .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
-        assertEquals(Enums.ExecutionStatus.PENDING, job.getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getName());
         catalogJobDBAdaptor.delete(job);
 
         Query query = new Query()
@@ -97,7 +104,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job().setStatus(new Enums.ExecutionStatus()).setId("name").setUserId(user3.getId())
+        catalogJobDBAdaptor.insert(studyId, new Job().setInternal(new JobInternal()).setId("name").setUserId(user3.getId())
                 .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
 
@@ -122,14 +129,14 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         // Create 100 jobs
         for (int i = 0; i < 100; i++) {
             Job job = new Job().setId(String.valueOf(i))
-                    .setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED))
+                    .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED)))
                     .setPriority(Enums.Priority.getPriority((i % 4) + 1))
                     .setCreationDate(TimeUtils.getTime());
 
             catalogJobDBAdaptor.insert(studyUid, job, QueryOptions.empty());
         }
 
-        Query query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
+        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
                         JobDBAdaptor.QueryParams.CREATION_DATE.key()))
@@ -180,7 +187,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Job job1 = new Job()
                 .setId("job1")
                 .setCreationDate(TimeUtils.getTime())
-                .setStatus(new Enums.ExecutionStatus());
+                .setInternal(new JobInternal());
 
         // Job with current date one hour before
         Calendar cal = Calendar.getInstance();
@@ -191,7 +198,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Job job2 = new Job()
                 .setId("job2")
                 .setCreationDate(TimeUtils.getTime(oneHourBack))
-                .setStatus(new Enums.ExecutionStatus());
+                .setInternal(new JobInternal());
 
         // We create the jobs
         catalogJobDBAdaptor.insert(studyId, job1, new QueryOptions());
@@ -224,20 +231,20 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Job job = new Job()
                 .setId("jobName1")
                 .setOutDir(new File().setUid(5))
-                .setStatus(new Enums.ExecutionStatus());
+                .setInternal(new JobInternal());
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogJobDBAdaptor.insert(studyId, job, null);
         job = getJob(studyId, "jobName1");
 
         List<File> fileInput = Arrays.asList(
-                new File().setUid(5L).setName("file1").setStatus(new File.FileStatus()),
-                new File().setUid(6L).setName("file2").setStatus(new File.FileStatus()),
-                new File().setUid(7L).setName("file3").setStatus(new File.FileStatus())
+                new File().setUid(5L).setName("file1").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap())),
+                new File().setUid(6L).setName("file2").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap())),
+                new File().setUid(7L).setName("file3").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap()))
         );
         List<File> fileOutput = Arrays.asList(
-                new File().setUid(15L).setName("file1").setStatus(new File.FileStatus()),
-                new File().setUid(16L).setName("file2").setStatus(new File.FileStatus()),
-                new File().setUid(17L).setName("file3").setStatus(new File.FileStatus())
+                new File().setUid(15L).setName("file1").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap())),
+                new File().setUid(16L).setName("file2").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap())),
+                new File().setUid(17L).setName("file3").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap()))
         );
         ObjectMap params = new ObjectMap()
                 .append(JobDBAdaptor.QueryParams.INPUT.key(), fileInput)
@@ -269,7 +276,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
             Job job = new Job()
                     .setId("jobName" + i)
                     .setOutDir(new File().setUid(5))
-                    .setStatus(status);
+                    .setInternal(new JobInternal(status));
             catalogJobDBAdaptor.insert(studyId, job, null);
         }
 

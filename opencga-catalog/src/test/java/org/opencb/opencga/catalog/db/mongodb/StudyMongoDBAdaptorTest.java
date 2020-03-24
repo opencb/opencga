@@ -26,10 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,7 +63,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void createStudySameAliasDifferentProject() throws CatalogException {
-        catalogStudyDBAdaptor.insert(user1.getProjects().get(0), new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", new Status(),
+        catalogStudyDBAdaptor.insert(user1.getProjects().get(0), new Study("Phase 1", "ph1", "", new StudyInternal(new Status()),
                 null, 1), null);
         Study ph1 = getStudy(user1.getProjects().get(0).getUid(), "ph1");
         assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getUid() > 0);
@@ -75,15 +72,15 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     private DataResult<VariableSet> createExampleVariableSet(String name, boolean confidential) throws CatalogDBException {
         Set<Variable> variables = new HashSet<>();
         variables.addAll(Arrays.asList(
-                new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "", null,
+                new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "", null,
                         Collections.emptyMap()),
-                new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
+                new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), null, 1, "", "",
                         null, Collections.emptyMap()),
-                new Variable("HEIGHT", "", Variable.VariableType.DOUBLE, "1.5", false, false, Collections.singletonList("0:"), 2, "",
+                new Variable("HEIGHT", "", Variable.VariableType.DOUBLE, "1.5", false, false, Collections.singletonList("0:"), null, 2, "",
                         "", null, Collections.emptyMap()),
-                new Variable("ALIVE", "", Variable.VariableType.BOOLEAN, "", true, false, Collections.emptyList(), 3, "", "",
+                new Variable("ALIVE", "", Variable.VariableType.BOOLEAN, "", true, false, Collections.emptyList(), null, 3, "", "",
                         null, Collections.emptyMap()),
-                new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "",
+                new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), null, 4, "", "",
                         null, Collections.emptyMap())
         ));
         VariableSet variableSet = new VariableSet(name, name, false, confidential, "My description", variables,
@@ -156,7 +153,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void addFieldToVariableSetTest1() throws CatalogDBException, CatalogAuthorizationException {
         createExampleVariableSet("VARSET_1", false);
         createExampleVariableSet("VARSET_2", true);
-        Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "", null,
+        Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "", null,
                 Collections.emptyMap());
         DataResult result = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());
         assertEquals(1, result.getNumUpdated());
@@ -179,7 +176,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void addFieldToVariableSetTest2() throws CatalogDBException, CatalogAuthorizationException {
-        Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "", null,
+        Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "", null,
                 Collections.emptyMap());
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found");

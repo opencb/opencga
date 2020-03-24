@@ -1,8 +1,9 @@
 package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 
 import java.util.Collections;
 import java.util.List;
@@ -11,47 +12,46 @@ import java.util.stream.Collectors;
 
 public class CohortCreateParams {
 
-    public String id;
-    @Deprecated
-    public String name;
-    public Study.Type type;
-    public String description;
-    public List<String> samples;
-    public List<AnnotationSet> annotationSets;
-    public Map<String, Object> attributes;
+    private String id;
+    private Enums.CohortType type;
+    private String description;
+    private List<String> samples;
+    private List<AnnotationSet> annotationSets;
+    private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public CohortCreateParams() {
     }
 
-    public CohortCreateParams(String id, String name, Study.Type type, String description, List<String> samples,
-                              List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public CohortCreateParams(String id, Enums.CohortType type, String description, List<String> samples,
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
-        this.name = name;
         this.type = type;
         this.description = description;
         this.samples = samples;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
+        this.status = status;
     }
 
     public static CohortCreateParams of(Cohort cohort) {
-        return new CohortCreateParams(cohort.getId(), cohort.getName(), cohort.getType(), cohort.getDescription(),
+        return new CohortCreateParams(cohort.getId(), cohort.getType(), cohort.getDescription(),
                 cohort.getSamples() != null
                         ? cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList())
                         : Collections.emptyList(),
-                cohort.getAnnotationSets(), cohort.getAttributes());
+                cohort.getAnnotationSets(), cohort.getAttributes(), CustomStatusParams.of(cohort.getStatus()));
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortCreateParams{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -66,20 +66,11 @@ public class CohortCreateParams {
         return this;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public CohortCreateParams setName(String name) {
-        this.name = name;
-        return this;
-    }
-
-    public Study.Type getType() {
+    public Enums.CohortType getType() {
         return type;
     }
 
-    public CohortCreateParams setType(Study.Type type) {
+    public CohortCreateParams setType(Enums.CohortType type) {
         this.type = type;
         return this;
     }
@@ -108,6 +99,15 @@ public class CohortCreateParams {
 
     public CohortCreateParams setAnnotationSets(List<AnnotationSet> annotationSets) {
         this.annotationSets = annotationSets;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public CohortCreateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 

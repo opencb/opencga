@@ -5,16 +5,18 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -58,8 +60,12 @@ public class FetchAndRegisterTask extends OpenCgaTool {
             throw new ToolException("Missing mandatory url");
         }
 
-        String[] split = urlStr.split("/");
-        fileName = split[split.length - 1];
+        URI uri = new URI(urlStr);
+        fileName = UriUtils.fileName(uri);
+
+        if (!path.endsWith("/")) {
+            path = path + "/";
+        }
 
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
@@ -109,6 +115,7 @@ public class FetchAndRegisterTask extends OpenCgaTool {
                 moveFile(studyFqn, getOutDir().resolve(fileName), null, path, token);
             } catch (Exception e) {
                 deleteTemporaryFile();
+                throw new CatalogException(e.getMessage(), e);
             }
         });
     }
@@ -129,7 +136,12 @@ public class FetchAndRegisterTask extends OpenCgaTool {
 
     private void deleteTemporaryFile() throws CatalogIOException {
         if (Files.exists(getOutDir().resolve(fileName))) {
-            catalogManager.getCatalogIOManagerFactory().get(getOutDir().toUri()).deleteFile(getOutDir().resolve(fileName).toUri());
+            URI outDirUri = getOutDir().toUri();
+            try {
+                catalogManager.getIoManagerFactory().get(outDirUri).deleteFile(getOutDir().resolve(fileName).toUri());
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(outDirUri, e);
+            }
         }
     }
 }

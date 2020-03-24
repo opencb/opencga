@@ -26,7 +26,6 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
@@ -34,14 +33,14 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.family.FamilyUpdateParams;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualAclParams;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.user.Account;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -75,13 +74,12 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
-        String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
-        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null,
-                null, null, null, null, sessionIdUser);
+        String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
+        catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
     @After
@@ -136,7 +134,7 @@ public class FamilyManagerTest extends GenericTest {
     public void getFamilyWithOnlyAllowedMembers() throws CatalogException, IOException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.GUEST, null);
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
         String token = catalogManager.getUserManager().login("user2", PASSWORD);
 
         try {
@@ -152,14 +150,14 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(0, familyDataResult.first().getMembers().size());
 
         catalogManager.getIndividualManager().updateAcl(STUDY, Collections.singletonList("child2"), "user2",
-                new Individual.IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
+                new IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
         familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(1, familyDataResult.first().getMembers().size());
         assertEquals("child2", familyDataResult.first().getMembers().get(0).getId());
 
         catalogManager.getIndividualManager().updateAcl(STUDY, Collections.singletonList("child3"), "user2",
-                new Individual.IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
+                new IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
         familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(2, familyDataResult.first().getMembers().size());
@@ -203,11 +201,11 @@ public class FamilyManagerTest extends GenericTest {
     /*
     *
     *  private DataResult<Family> createDummyFamily(String familyName) throws CatalogException {
-        String fatherStr = org.opencb.commons.utils.StringUtils.randomString(5);
-        String motherStr = org.opencb.commons.utils.StringUtils.randomString(5);
-        String child1 = org.opencb.commons.utils.StringUtils.randomString(5);
-        String child2 = org.opencb.commons.utils.StringUtils.randomString(5);
-        String child3 = org.opencb.commons.utils.StringUtils.randomString(5);
+        String fatherStr = RandomStringUtils.randomAlphanumeric(5);
+        String motherStr = RandomStringUtils.randomAlphanumeric(5);
+        String child1 = RandomStringUtils.randomAlphanumeric(5);
+        String child2 = RandomStringUtils.randomAlphanumeric(5);
+        String child3 = RandomStringUtils.randomAlphanumeric(5);
 
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
         Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
@@ -263,19 +261,16 @@ public class FamilyManagerTest extends GenericTest {
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype2))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
                 .setPhenotypes(Arrays.asList(phenotype1))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(phenotype1))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
                 .setParentalConsanguinity(true);
 
         List<Individual> members = null;
@@ -328,88 +323,6 @@ public class FamilyManagerTest extends GenericTest {
 
         family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
         assertEquals(0, family.first().getDisorders().size());
-    }
-
-    @Test
-    public void createFamilyMissingMultiple() throws CatalogException {
-        Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
-        Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
-
-        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
-
-        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
-        // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
-
-        Individual relChild1 = new Individual().setId("child1")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
-                .setFather(father)
-                .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
-                .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setId("child2")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
-                .setFather(father)
-                .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
-                .setParentalConsanguinity(true);
-        Individual relChild3 = new Individual().setId("child3")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
-                .setFather(father)
-                .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1")))
-                .setParentalConsanguinity(true);
-
-        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), null,
-                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", 5,
-                Collections.emptyList(), Collections.emptyMap());
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("Incomplete sibling information");
-        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
-    }
-
-    @Test
-    public void createFamilyMissingMultiple2() throws CatalogException {
-        Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
-        Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
-
-        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
-
-        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
-        // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
-
-        Individual relChild1 = new Individual().setId("child1")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
-                .setFather(father)
-                .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
-                .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setId("child2")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
-                .setFather(father)
-                .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
-                .setParentalConsanguinity(true);
-        Individual relChild3 = new Individual().setId("child3")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
-                .setFather(father)
-                .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child20")))
-                .setParentalConsanguinity(true);
-
-        Family family = new Family("Martinez-Martinez", "Martinez-Martinez", Arrays.asList(phenotype1, phenotype2), null,
-                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1,
-                Collections.emptyList(), Collections.emptyMap());
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("Incomplete sibling information");
-        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test

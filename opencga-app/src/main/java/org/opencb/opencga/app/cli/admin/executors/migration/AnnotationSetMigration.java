@@ -1,6 +1,5 @@
 package org.opencb.opencga.app.cli.admin.executors.migration;
 
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Updates;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -9,6 +8,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.mongodb.AnnotationMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -43,7 +43,7 @@ public class AnnotationSetMigration {
 
     public void migrate() throws CatalogException {
         logger.info("Starting migration of annotations from samples...");
-        MongoCursor<Document> iterator = getAnnotatedDocuments(dbAdaptorFactory.getCatalogSampleDBAdaptor().getSampleCollection(), true);
+        MongoDBIterator<Document> iterator = getAnnotatedDocuments(dbAdaptorFactory.getCatalogSampleDBAdaptor().getSampleCollection(), true);
         migrateAnnotations(dbAdaptorFactory.getCatalogSampleDBAdaptor(),
                 dbAdaptorFactory.getCatalogSampleDBAdaptor().getSampleCollection(), iterator);
 
@@ -63,7 +63,7 @@ public class AnnotationSetMigration {
                 dbAdaptorFactory.getCatalogFamilyDBAdaptor().getFamilyCollection(), iterator);
     }
 
-    private void migrateAnnotations(AnnotationMongoDBAdaptor dbAdaptor, MongoDBCollection collection, MongoCursor<Document> iterator)
+    private void migrateAnnotations(AnnotationMongoDBAdaptor dbAdaptor, MongoDBCollection collection, MongoDBIterator<Document> iterator)
             throws CatalogException {
 
         Bson update = Updates.unset("annotationSets");
@@ -117,12 +117,12 @@ public class AnnotationSetMigration {
         return variableSetMap.get(variableSetId);
     }
 
-    private MongoCursor<Document> getAnnotatedDocuments(MongoDBCollection sampleCollection, boolean version) {
+    private MongoDBIterator<Document> getAnnotatedDocuments(MongoDBCollection sampleCollection, boolean version) {
         Document queryDocument = new Document("annotationSets", new Document("$exists", true).append("$ne", Collections.emptyList()));
         if (version) {
             queryDocument.append("_lastOfVersion", true);
         }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("annotationSets", "id", "_studyId"));
-        return sampleCollection.nativeQuery().find(queryDocument, options).iterator();
+        return sampleCollection.iterator(queryDocument, options);
     }
 }

@@ -27,7 +27,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaTool {
 
     public static final String ID = "cohort-variant-stats";
     public static final String DESCRIPTION = "Compute cohort variant stats for the selected list of samples.";
-    public static final String VARIABLE_SET_ID = "COHORT_VARIANT_STATS";
+    public static final String VARIABLE_SET_ID = "opencga_cohort_variant_stats";
     private String study;
     private List<String> sampleNames;
     private Query samplesQuery;

@@ -31,13 +31,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.study.PermissionRule;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SampleInternal;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.user.User;
 
 import java.io.IOException;
 import java.util.*;
@@ -70,8 +71,6 @@ public class AuthorizationMongoDBAdaptorTest {
         MongoDBAdaptorTest dbAdaptorTest = new MongoDBAdaptorTest();
         dbAdaptorTest.before();
 
-        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
-
         user1 = MongoDBAdaptorTest.user1;
         user2 = MongoDBAdaptorTest.user2;
         user3 = MongoDBAdaptorTest.user3;
@@ -79,8 +78,9 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbAdaptorFactory);
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", "", null, null, null, 1, 1, "", "", false,
-                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), Collections.emptyList(), QueryOptions.empty());
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", null, null, null, 1, 1, "", false,
+                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), new SampleInternal(new Status()), Collections.emptyMap()),
+                Collections.emptyList(), QueryOptions.empty());
         s1 = getSample(studyId, "s1");
         acls = new HashMap<>();
         acls.put(user1.getId(), Arrays.asList());
@@ -226,17 +226,18 @@ public class AuthorizationMongoDBAdaptorTest {
     @Test
     public void testPermissionRulesPlusManualPermissions() throws CatalogException {
         // We create a new sample s2
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", "", null, null, null, 1, 1, "", "", false,
-                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), Collections.emptyList(), QueryOptions.empty());
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", null, null, null, 1, 1, "", false,
+                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), new SampleInternal(new Status()), Collections.emptyMap()),
+                Collections.emptyList(), QueryOptions.empty());
         Sample s2 = getSample(studyId, "s2");
 
         // We create a new permission rule
         PermissionRule pr = new PermissionRule("myPermissionRule", new Query(), Arrays.asList(user3.getId()),
                 Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name()));
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().createPermissionRule(studyId, Study.Entity.SAMPLES, pr);
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().createPermissionRule(studyId, Enums.Entity.SAMPLES, pr);
 
         // Apply the permission rule
-        aclDBAdaptor.applyPermissionRules(studyId, pr, Study.Entity.SAMPLES);
+        aclDBAdaptor.applyPermissionRules(studyId, pr, Enums.Entity.SAMPLES);
 
         // All the samples should have view permissions for user user2
         DataResult<Map<String, List<String>>> dataResult = aclDBAdaptor.get(Arrays.asList(s1.getUid(), s2.getUid()),

@@ -5,18 +5,15 @@ import java.util.Map;
 public class ProjectUpdateParams {
     private String name;
     private String description;
-    private String organization;
-    private Project.Organism organism;
+    private ProjectOrganism organism;
     private Map<String, Object> attributes;
 
     public ProjectUpdateParams() {
     }
 
-    public ProjectUpdateParams(String name, String description, String organization, Project.Organism organism,
-                               Map<String, Object> attributes) {
+    public ProjectUpdateParams(String name, String description, ProjectOrganism organism, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
-        this.organization = organization;
         this.organism = organism;
         this.attributes = attributes;
     }
@@ -26,7 +23,6 @@ public class ProjectUpdateParams {
         final StringBuilder sb = new StringBuilder("ProjectUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", organization='").append(organization).append('\'');
         sb.append(", organism=").append(organism);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -51,20 +47,11 @@ public class ProjectUpdateParams {
         return this;
     }
 
-    public String getOrganization() {
-        return organization;
-    }
-
-    public ProjectUpdateParams setOrganization(String organization) {
-        this.organization = organization;
-        return this;
-    }
-
-    public Project.Organism getOrganism() {
+    public ProjectOrganism getOrganism() {
         return organism;
     }
 
-    public ProjectUpdateParams setOrganism(Project.Organism organism) {
+    public ProjectUpdateParams setOrganism(ProjectOrganism organism) {
         this.organism = organism;
         return this;
     }

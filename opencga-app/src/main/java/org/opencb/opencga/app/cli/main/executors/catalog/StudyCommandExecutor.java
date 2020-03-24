@@ -144,7 +144,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 .setId(commandOptions.id)
                 .setAlias(commandOptions.alias)
                 .setName(commandOptions.name)
-                .setType(commandOptions.type)
                 .setDescription(commandOptions.description);
 
         ObjectMap params = new ObjectMap();
@@ -174,8 +173,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         StudyUpdateParams updateParams = new StudyUpdateParams()
                 .setName(c.name)
                 .setDescription(c.description)
-                .setType(c.type)
-                .setStats(new ObjectMap(c.stats))
                 .setAttributes(new ObjectMap(c.attributes));
 
         return openCGAClient.getStudyClient().update(getSingleValidStudy(c.study), updateParams);
@@ -209,9 +206,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), c.id);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), c.name);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), c.alias);
-        params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), c.type);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.CREATION_DATE.key(), c.creationDate);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), c.status);
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), c.status);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), c.attributes);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), c.nattributes);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), c.battributes);
@@ -245,7 +241,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         GroupCreateParams createParams = new GroupCreateParams()
                 .setId(c.groupId)
-                .setName(c.groupName)
                 .setUsers(c.users);
 
         ObjectMap params = new ObjectMap("action", ParamUtils.BasicUpdateAction.ADD);

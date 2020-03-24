@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.*;
@@ -300,7 +301,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return OpenCGAResult object.
      * @throws CatalogDBException if the permission rule id already existed.
      */
-    OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Study.Entity entry, PermissionRule permissionRules)
+    OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Enums.Entity entry, PermissionRule permissionRules)
             throws CatalogDBException;
 
     /**
@@ -311,7 +312,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return the list of permission rules defined.
      * @throws CatalogDBException if there is any error.
      */
-    OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Study.Entity entry) throws CatalogDBException;
+    OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Enums.Entity entry) throws CatalogDBException;
 
     /**
      * Mark a concrete permission rule to be deleted by the daemon.
@@ -328,8 +329,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return OpenCGAResult object.
      * @throws CatalogDBException if the permission rule does not exist.
      */
-    OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Study.Entity entry, String permissionRuleId,
-                                                         PermissionRule.DeleteAction deleteAction) throws CatalogDBException;
+    OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Enums.Entity entry, String permissionRuleId,
+                                                            PermissionRule.DeleteAction deleteAction) throws CatalogDBException;
 
     /*
      * VariableSet Methods
@@ -422,19 +423,22 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         DESCRIPTION("description", TEXT, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        STATUS_DESCRIPTION("status.description", TEXT, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
+        NOTIFICATION("notification", OBJECT, ""),
+        NOTIFICATION_WEBHOOK("notification.webhook", TEXT, ""),
         PROJECT_ID("projectId", TEXT, ""),
         PROJECT_UID("projectUid", INTEGER, ""),
         PROJECT_UUID("projectUuid", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        STATS("stats", TEXT, ""),
-        TYPE("type", TEXT, ""),
         RELEASE("release", INTEGER, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),

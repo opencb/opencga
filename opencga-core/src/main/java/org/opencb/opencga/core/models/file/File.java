@@ -17,19 +17,14 @@
 package org.opencb.opencga.core.models.file;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.net.URI;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -66,52 +61,43 @@ public class File extends Annotable {
     private int release;
     private String creationDate;
     private String modificationDate;
-
     private String description;
-    private FileStatus status;
     private boolean external;
 
     private long size;
     private Software software;
-    private Experiment experiment;
+    private FileExperiment experiment;
     private List<Sample> samples;
-
+    private String jobId;
     private List<String> tags;
-
-    /**
-     * This field values -1 when file has been uploaded.
-     */
-    @Deprecated
-    private Job job;
-    private List<RelatedFile> relatedFiles;
-
-    private FileIndex index;
+    private List<FileRelatedFile> relatedFiles;
 
     private Map<String, Object> stats;
+    private CustomStatus status;
+    private FileInternal internal;
     private Map<String, Object> attributes;
-
 
     public File() {
     }
 
-    public File(String name, Type type, Format format, Bioformat bioformat, String path, URI uri, String description, FileStatus status,
+    public File(String name, Type type, Format format, Bioformat bioformat, String path, URI uri, String description, FileInternal internal,
                 long size, int release) {
-        this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
-                false, size, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
-                new FileIndex(), release, Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
+        this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
+                false, size, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", release,
+                Collections.emptyList(), Collections.emptyMap(), new CustomStatus(), internal, Collections.emptyMap());
     }
 
-    public File(Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
-                List<Sample> samples, long jobId, Software software, Map<String, Object> stats, Map<String, Object> attributes) {
-        this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
-                false, size, software, new Experiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), -1,
-                Collections.emptyList(), stats, attributes);
+    public File(Type type, Format format, Bioformat bioformat, String path, String description, FileInternal internal, long size,
+                List<Sample> samples, Software software, Map<String, Object> stats, Map<String, Object> attributes) {
+        this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
+                false, size, software, new FileExperiment(), samples, Collections.emptyList(), "", -1, Collections.emptyList(), stats,
+                new CustomStatus(), internal, attributes);
     }
 
-    public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum,
-                String creationDate, String modificationDate, String description, FileStatus status, boolean external, long size,
-                Software software, Experiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index,
-                int release, List<AnnotationSet> annotationSets, Map<String, Object> stats, Map<String, Object> attributes) {
+    public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum, String creationDate,
+                String modificationDate, String description, boolean external, long size, Software software, FileExperiment experiment,
+                List<Sample> samples, List<FileRelatedFile> relatedFiles, String jobId, int release, List<AnnotationSet> annotationSets,
+                Map<String, Object> stats, CustomStatus status, FileInternal internal, Map<String, Object> attributes) {
         this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
         this.type = type;
@@ -123,64 +109,20 @@ public class File extends Annotable {
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.description = description;
-        this.status = status;
         this.release = release;
         this.external = external;
+        this.internal = internal;
         this.size = size;
         this.software = software;
         this.experiment = experiment;
         this.samples = samples;
         this.tags = Collections.emptyList();
-        this.job = job;
         this.relatedFiles = relatedFiles;
-        this.index = index != null ? index : new FileIndex();
         this.annotationSets = annotationSets;
+        this.jobId = jobId;
         this.stats = stats;
+        this.status = status;
         this.attributes = attributes;
-    }
-
-    public static class FileStatus extends Status {
-
-        /**
-         * TRASHED name means that the object is marked as deleted although is still available in the database.
-         */
-        public static final String TRASHED = "TRASHED";
-
-        public static final String STAGE = "STAGE";
-        public static final String MISSING = "MISSING";
-        public static final String PENDING_DELETE = "PENDING_DELETE";
-        public static final String DELETING = "DELETING"; // This status is set exactly before deleting the file from disk.
-        public static final String REMOVED = "REMOVED";
-
-        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING,
-                REMOVED);
-
-        public FileStatus(String status, String message) {
-            if (isValid(status)) {
-                init(status, message);
-            } else {
-                throw new IllegalArgumentException("Unknown status " + status);
-            }
-        }
-
-        public FileStatus(String status) {
-            this(status, "");
-        }
-
-        public FileStatus() {
-            this(READY, "");
-        }
-
-        public static boolean isValid(String status) {
-            if (Status.isValid(status)) {
-                return true;
-            }
-            if (status != null && (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED)
-                    || status.equals(PENDING_DELETE) || status.equals(DELETING) || status.equals(REMOVED))) {
-                return true;
-            }
-            return false;
-        }
     }
 
     public enum Type {
@@ -267,79 +209,6 @@ public class File extends Annotable {
         UNKNOWN
     }
 
-    public static class RelatedFile {
-
-        private File file;
-        private Relation relation;
-
-        public enum Relation {
-            PRODUCED_FROM,
-            PART_OF_PAIR,
-            PEDIGREE,
-            REFERENCE_GENOME
-        }
-
-        public RelatedFile() {
-        }
-
-        public RelatedFile(File file, Relation relation) {
-            this.file = file;
-            this.relation = relation;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("RelatedFile{");
-            sb.append("file=").append(file);
-            sb.append(", relation=").append(relation);
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public File getFile() {
-            return file;
-        }
-
-        public void setFile(File file) {
-            this.file = file;
-        }
-
-        public Relation getRelation() {
-            return relation;
-        }
-
-        public RelatedFile setRelation(Relation relation) {
-            this.relation = relation;
-            return this;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-
-            if (o == null || getClass() != o.getClass()) return false;
-
-            RelatedFile that = (RelatedFile) o;
-
-            if (file == null || that.file == null) {
-                return false;
-            }
-
-            return new EqualsBuilder()
-                    .append(file.getId(), that.file.getId())
-                    .append(relation, that.relation)
-                    .isEquals();
-        }
-
-        @Override
-        public int hashCode() {
-            return new HashCodeBuilder(17, 37)
-                    .append(file.getId())
-                    .append(relation)
-                    .toHashCode();
-        }
-    }
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
@@ -349,26 +218,26 @@ public class File extends Annotable {
         sb.append(", type=").append(type);
         sb.append(", format=").append(format);
         sb.append(", bioformat=").append(bioformat);
+        sb.append(", checksum='").append(checksum).append('\'');
         sb.append(", uri=").append(uri);
         sb.append(", path='").append(path).append('\'');
         sb.append(", release=").append(release);
-        sb.append(", checksum=").append(checksum);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", status=").append(status);
         sb.append(", external=").append(external);
         sb.append(", size=").append(size);
         sb.append(", software=").append(software);
         sb.append(", experiment=").append(experiment);
         sb.append(", samples=").append(samples);
+        sb.append(", jobId='").append(jobId).append('\'');
         sb.append(", tags=").append(tags);
-        sb.append(", job=").append(job);
         sb.append(", relatedFiles=").append(relatedFiles);
-        sb.append(", index=").append(index);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
+        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
     }
@@ -503,21 +372,21 @@ public class File extends Annotable {
         return this;
     }
 
-    public FileStatus getStatus() {
-        return status;
-    }
-
-    public File setStatus(FileStatus status) {
-        this.status = status;
-        return this;
-    }
-
     public boolean isExternal() {
         return external;
     }
 
     public File setExternal(boolean external) {
         this.external = external;
+        return this;
+    }
+
+    public FileInternal getInternal() {
+        return internal;
+    }
+
+    public File setInternal(FileInternal internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -557,39 +426,30 @@ public class File extends Annotable {
         return this;
     }
 
-    public Experiment getExperiment() {
+    public FileExperiment getExperiment() {
         return experiment;
     }
 
-    public File setExperiment(Experiment experiment) {
+    public File setExperiment(FileExperiment experiment) {
         this.experiment = experiment;
         return this;
     }
 
-    public Job getJob() {
-        return job;
-    }
-
-    public File setJob(Job job) {
-        this.job = job;
-        return this;
-    }
-
-    public List<RelatedFile> getRelatedFiles() {
+    public List<FileRelatedFile> getRelatedFiles() {
         return relatedFiles;
     }
 
-    public File setRelatedFiles(List<RelatedFile> relatedFiles) {
+    public File setRelatedFiles(List<FileRelatedFile> relatedFiles) {
         this.relatedFiles = relatedFiles;
         return this;
     }
 
-    public FileIndex getIndex() {
-        return index;
+    public String getJobId() {
+        return jobId;
     }
 
-    public File setIndex(FileIndex index) {
-        this.index = index;
+    public File setJobId(String jobId) {
+        this.jobId = jobId;
         return this;
     }
 
@@ -607,6 +467,15 @@ public class File extends Annotable {
         return this;
     }
 
+    public CustomStatus getStatus() {
+        return status;
+    }
+
+    public File setStatus(CustomStatus status) {
+        this.status = status;
+        return this;
+    }
+
     public Map<String, Object> getAttributes() {
         return attributes;
     }
@@ -615,48 +484,4 @@ public class File extends Annotable {
         this.attributes = attributes;
         return this;
     }
-
-    // Acl params to communicate the WS and the sample manager
-    public static class FileAclParams extends AclParams {
-
-        private String sample;
-
-        public FileAclParams() {
-        }
-
-        public FileAclParams(String permissions, Action action, String sample) {
-            super(permissions, action);
-            this.sample = sample;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("FileAclParams{");
-            sb.append("permissions='").append(permissions).append('\'');
-            sb.append(", action=").append(action);
-            sb.append(", sample='").append(sample).append('\'');
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getSample() {
-            return sample;
-        }
-
-        public FileAclParams setSample(String sample) {
-            this.sample = sample;
-            return this;
-        }
-
-        public FileAclParams setPermissions(String permissions) {
-            super.setPermissions(permissions);
-            return this;
-        }
-
-        public FileAclParams setAction(Action action) {
-            super.setAction(action);
-            return this;
-        }
-    }
-
 }

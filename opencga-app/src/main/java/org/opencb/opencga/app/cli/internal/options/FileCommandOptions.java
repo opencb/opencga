@@ -15,6 +15,8 @@ public class FileCommandOptions {
     public DeleteCommandOptions deleteCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
+    public SecondaryIndex secondaryIndex;
+    public TsvLoad tsvLoad;
 
     public GeneralCliOptions.CommonCommandOptions fileCommonOptions;
     public JCommander jCommander;
@@ -26,6 +28,8 @@ public class FileCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
+        this.secondaryIndex = new SecondaryIndex();
+        this.tsvLoad = new TsvLoad();
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file task")
@@ -67,7 +71,7 @@ public class FileCommandOptions {
         public String outDir;
     }
 
-    @Parameters(commandNames = {"unlink"}, commandDescription = "Unlink file task")
+    @Parameters(commandNames = {"fetch"}, commandDescription = "Fetch file")
     public class FetchCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
@@ -83,6 +87,44 @@ public class FileCommandOptions {
         @Parameter(names = {"--url"}, description = "External url where the file to be registered can be downloaded from", required = true,
                 arity = 1)
         public String url;
+
+        @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
+                arity = 1)
+        public String outDir;
+    }
+
+    @Parameters(commandNames = {"secondary-index"}, commandDescription = "Creates a secondary index for files using a search engine")
+    public class SecondaryIndex {
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
+
+        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = false,
+                arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
+                arity = 1)
+        public String outDir;
+    }
+
+    @Parameters(commandNames = {"tsv-load"}, commandDescription = "Load annotations from a TSV file")
+    public class TsvLoad {
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
+
+        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
+                arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"--file"}, description = "Path to the TSV file.", required = true, arity = 1)
+        public String filePath;
+
+        @Parameter(names = {"--variable-set-id"}, description = ParamConstants.VARIABLE_SET_DESCRIPTION, required = true, arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation-set-id"}, description = "AnnotationSet id that will be given to the new annotations.",
+                required = true, arity = 1)
+        public String annotationSetId;
 
         @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
                 arity = 1)

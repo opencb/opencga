@@ -21,6 +21,27 @@ public final class Enums {
     private Enums() {
     }
 
+    public enum Entity {
+        SAMPLES(Resource.SAMPLE),
+        FILES(Resource.FILE),
+        COHORTS(Resource.COHORT),
+        INDIVIDUALS(Resource.INDIVIDUAL),
+        FAMILIES(Resource.FAMILY),
+        JOBS(Resource.JOB),
+        CLINICAL_ANALYSES(Resource.CLINICAL_ANALYSIS),
+        DISEASE_PANELS(Resource.DISEASE_PANEL);
+
+        private final Resource resource;
+
+        Entity(Resource resource) {
+            this.resource = resource;
+        }
+
+        public Resource getResource() {
+            return resource;
+        }
+    }
+
     public enum Resource {
         USER,
         PROJECT,
@@ -76,6 +97,10 @@ public final class Enums {
         COUNT,
         DELETE,
         DOWNLOAD,
+        VIEW_LOG,
+        VIEW_CONTENT,
+        HEAD_CONTENT,
+        TAIL_CONTENT,
         INDEX,
         CHANGE_PERMISSION,
 
@@ -103,6 +128,8 @@ public final class Enums {
         REMOVE_VARIABLE_FROM_VARIABLE_SET,
 
         AGGREGATION_STATS,
+
+        RELATIVES,
 
         UPLOAD,
         LINK,
@@ -168,6 +195,19 @@ public final class Enums {
         REMOVE,
         REVERT,
         NONE
+    }
+
+    public enum CohortType {
+        CASE_CONTROL,
+        CASE_SET,
+        CONTROL_SET,
+        PAIRED,
+        PAIRED_TUMOR,
+        AGGREGATE,
+        TIME_SERIES,
+        FAMILY,
+        TRIO,
+        COLLECTION
     }
 
     public static class ExecutionStatus extends Status {

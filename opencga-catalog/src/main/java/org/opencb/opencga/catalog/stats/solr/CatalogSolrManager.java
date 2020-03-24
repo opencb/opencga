@@ -55,13 +55,15 @@ public class CatalogSolrManager {
     public static final String FAMILY_SOLR_COLLECTION = "Catalog_Family";
     public static final String INDIVIDUAL_SOLR_COLLECTION = "Catalog_Individual";
     public static final String SAMPLE_SOLR_COLLECTION = "Catalog_Sample";
+    public static final String JOB_SOLR_COLLECTION = "Catalog_Job";
 
     public static final String COHORT_CONF_SET = "OpenCGACatalogCohortConfSet";
     public static final String FILE_CONF_SET = "OpenCGACatalogFileConfSet";
     public static final String FAMILY_CONF_SET = "OpenCGACatalogFamilyConfSet";
     public static final String INDIVIDUAL_CONF_SET = "OpenCGACatalogIndividualConfSet";
     public static final String SAMPLE_CONF_SET = "OpenCGACatalogSampleConfSet";
-    public static final Map<String, String> CONFIGS_COLLECTION = new HashMap<>();
+    public static final String JOB_CONF_SET = "OpenCGACatalogJobConfSet";
+    private final Map<String, String> CONFIGS_COLLECTION = new HashMap<>();
 
     private Logger logger;
 
@@ -223,7 +225,7 @@ public class CatalogSolrManager {
             List<String> groups = new ArrayList<>();
             study.getGroups().forEach(group -> {
                 if (group.getUserIds().contains(userId)) {
-                    groups.add(group.getName());
+                    groups.add(group.getId());
                 }
             });
 
@@ -259,6 +261,7 @@ public class CatalogSolrManager {
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET);
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
         CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLE_SOLR_COLLECTION, SAMPLE_CONF_SET);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + JOB_SOLR_COLLECTION, JOB_CONF_SET);
     }
 
     protected void setSolrClient(SolrClient solrClient) {

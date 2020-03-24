@@ -26,12 +26,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
+import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +47,6 @@ public abstract class AbstractManager {
     protected static Logger logger;
     protected final AuthorizationManager authorizationManager;
     protected final AuditManager auditManager;
-    protected final CatalogIOManagerFactory catalogIOManagerFactory;
     protected final CatalogManager catalogManager;
 
     protected Configuration configuration;
@@ -76,8 +74,7 @@ public abstract class AbstractManager {
     protected static final String INTERNAL_DELIMITER = "__";
 
     AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                           DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                           Configuration configuration) {
+                    DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         this.authorizationManager = authorizationManager;
         this.auditManager = auditManager;
         this.configuration = configuration;
@@ -92,7 +89,6 @@ public abstract class AbstractManager {
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.interpretationDBAdaptor = catalogDBAdaptorFactory.getInterpretationDBAdaptor();
-        this.catalogIOManagerFactory = ioManagerFactory;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.catalogManager = catalogManager;
 

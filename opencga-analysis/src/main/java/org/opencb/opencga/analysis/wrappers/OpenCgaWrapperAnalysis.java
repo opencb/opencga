@@ -19,8 +19,8 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
     public final static String DOCKER_INPUT_PATH = "/data/input";
     public final static String DOCKER_OUTPUT_PATH = "/data/output";
 
-    public final String STDOUT_FILENAME = "stdout.txt";
-    public final String STDERR_FILENAME = "stderr.txt";
+    public static final String STDOUT_FILENAME = "stdout.txt";
+    public static final String STDERR_FILENAME = "stderr.txt";
 
     private String study;
 

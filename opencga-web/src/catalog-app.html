@@ -266,7 +266,7 @@
                         <opencga-variant-interpretation opencga-session="{{opencgaSession}}" config="[[config.tools.interpretation]]"
                                                         opencga-client="{{opencgaSession.opencgaClient}}" cellbase-client="{{cellbaseClient}}"
                                                         active="{{config.tools.interpretation.active}}"
-                                                        population-frequencies="{{config.populationFrequencies}}"
+                                                        minorAlleleFreq-frequencies="{{config.populationFrequencies}}"
                                                         protein-substitution-scores="{{config.proteinSubstitutionScores}}"
                                                         consequence-types="{{config.consequenceTypes}}"
                                                         beacon-hosts="{{config.tools.beacon.hosts}}" on-gene="geneSelected"
@@ -280,7 +280,7 @@
                         <opencga-variant-facet opencga-session="{{opencgaSession}}" config="[[config.tools.facet]]"
                                                opencga-client="{{opencgaSession.opencgaClient}}"
                                                cellbase-client="{{cellbaseClient}}"
-                                               population-frequencies="{{config.populationFrequencies}}"
+                                               minorAlleleFreq-frequencies="{{config.populationFrequencies}}"
                                                protein-substitution-scores="{{config.proteinSubstitutionScores}}"
                                                consequence-types="{{config.consequenceTypes}}">
                         </opencga-variant-facet>
@@ -290,7 +290,7 @@
                 <template is="dom-if" if="{{config.enabledComponents.clinical}}">
                     <div class="content" id="clinical">
                         <opencga-variant-clinical opencga-session="{{opencgaSession}}" config="[[config.tools.clinical]]"
-                                                  population-frequencies="{{config.populationFrequencies}}"
+                                                  minorAlleleFreq-frequencies="{{config.populationFrequencies}}"
                                                   protein-substitution-scores="{{config.proteinSubstitutionScores}}"
                                                   consequence-types="{{config.consequenceTypes}}"
                                                   opencga-client="{{opencgaClient}}" cellbase-client="{{cellbaseClient}}"
@@ -325,7 +325,7 @@
                     <div class="content" id="gene" style="margin: auto; width: 90%">
                         <opencga-gene-view opencga-session="{{opencgaSession}}" cellbase-client="{{cellbaseClient}}" opencga-client="{{opencgaClient}}"
                                            project="{{opencgaSession.project}}" study="{{opencgaSession.study}}"
-                                           gene="{{gene}}" population-frequencies="{{config.populationFrequencies}}"
+                                           gene="{{gene}}" minorAlleleFreq-frequencies="{{config.populationFrequencies}}"
                                            consequence-types="{{config.consequenceTypes}}"
                                            protein-substitution-scores="{{config.proteinSubstitutionScores}}"
                                            config="{{config.tools.gene}}" summary="{{config.opencga.summary}}">
@@ -337,7 +337,7 @@
                     <div class="content feature-view" id="transcript">
                         <opencga-transcript-view cellbase-client="{{cellbaseClient}}" opencga-client="{{opencgaClient}}"
                                                  project="{{opencgaSession.project}}" study="{{opencgaSession.study}}" transcript="{{transcript}}" gene="{{gene}}"
-                                                 population-frequencies="{{config.populationFrequencies}}" consequence-types="{{config.consequenceTypes}}"
+                                                 minorAlleleFreq-frequencies="{{config.populationFrequencies}}" consequence-types="{{config.consequenceTypes}}"
                                                  protein-substitution-scores="{{config.proteinSubstitutionScores}}"
                                                  config="{{config.tools.gene}}">
                         </opencga-transcript-view>
@@ -348,7 +348,7 @@
                     <div class="content feature-view" id="protein">
                         <opencga-protein-view opencga-session="{{opencgaSession}}" cellbase-client="{{cellbaseClient}}" opencga-client="{{opencgaClient}}"
                                               project="{{opencgaSession.project}}" study="{{opencgaSession.study}}"
-                                              protein="{{protein}}" population-frequencies="{{config.populationFrequencies}}"
+                                              protein="{{protein}}" minorAlleleFreq-frequencies="{{config.populationFrequencies}}"
                                               consequence-types="{{config.consequenceTypes}}"
                                               protein-substitution-scores="{{config.proteinSubstitutionScores}}"
                                               config="{{config.tools.gene.protein}}">

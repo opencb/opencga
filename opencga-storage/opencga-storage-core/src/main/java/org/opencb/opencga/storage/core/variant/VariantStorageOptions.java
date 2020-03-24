@@ -25,8 +25,9 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     LOAD_BATCH_SIZE("load.batchSize", 100),
     LOAD_THREADS("load.numThreads", 6),
-    LOAD_SPLIT_DATA("load.splitData", false),
+    LOAD_SPLIT_DATA("load.splitData"),
     POST_LOAD_CHECK_SKIP("postLoad.skipCheck", false),
+    SAMPLE_INDEX_SKIP("sampleIndex.skip", false),
 
     STATS_DEFAULT_GENOTYPE("stats.defaultGenotype", "0/0"), // Default genotype to be used for calculating stats.
     STATS_MULTI_ALLELIC("stats.multiAllelic", false),  // Include secondary alternates in the variant stats calculation
@@ -51,6 +52,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_CELLBASE_USE_CACHE("annotator.cellbase.useCache"),
     ANNOTATOR_CELLBASE_INCLUDE("annotator.cellbase.include"),
     ANNOTATOR_CELLBASE_EXCLUDE("annotator.cellbase.exclude"),
+    ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", 10000),
     ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.impreciseVariants"),
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.

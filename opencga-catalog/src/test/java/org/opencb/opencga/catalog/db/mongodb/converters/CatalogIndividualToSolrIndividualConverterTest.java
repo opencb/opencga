@@ -7,6 +7,8 @@ import org.opencb.opencga.catalog.stats.solr.IndividualSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogIndividualToSolrIndividualConverter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualInternal;
+import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.study.Study;
@@ -31,17 +33,16 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         Individual individual = new Individual("Id", "individual", IndividualProperty.Sex.MALE, "Spanish",
-                new Individual.Population("valencian", "", ""), 2, AnnotationHelper.createAnnotation(), null);
+                new IndividualPopulation("valencian", "", ""), 2, AnnotationHelper.createAnnotation(), null);
 
-        individual.setUid(300).setMultiples(new Multiples("twin", Arrays.asList("Pedro")))
-                .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).setVersion(4).setStatus(new Status("READY")).
-                setLifeStatus(IndividualProperty.LifeStatus.ABORTED).setAffectationStatus(IndividualProperty.AffectationStatus.AFFECTED).
-                setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2"))).setParentalConsanguinity(true);
+        individual.setUid(300)
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).setVersion(4).setInternal(new IndividualInternal(new Status("READY")))
+                .setLifeStatus(IndividualProperty.LifeStatus.ABORTED)
+                .setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2"))).setParentalConsanguinity(true);
 
         IndividualSolrModel individualSolrModel = new CatalogIndividualToSolrIndividualConverter(study).convertToStorageType(individual);
 
         assertEquals(individualSolrModel.getUid(), individual.getUid());
-        assertEquals(individualSolrModel.getMultiplesType(), individual.getMultiples().getType());
         assertEquals(individualSolrModel.getSex(), individual.getSex().name());
         assertEquals(individualSolrModel.getKaryotypicSex(), individual.getKaryotypicSex().name());
         assertEquals(individualSolrModel.getEthnicity(), individual.getEthnicity());
@@ -58,9 +59,8 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         assertEquals(localDate.getDayOfWeek().toString(), individualSolrModel.getCreationDayOfWeek());
 
         assertEquals(individualSolrModel.getVersion(), individual.getVersion());
-        assertEquals(individualSolrModel.getStatus(), individual.getStatus().getName());
+        assertEquals(individualSolrModel.getStatus(), individual.getInternal().getStatus().getName());
         assertEquals(individualSolrModel.getLifeStatus(), individual.getLifeStatus().name());
-        assertEquals(individualSolrModel.getAffectationStatus(), individual.getAffectationStatus().name());
         assertEquals(individualSolrModel.getPhenotypes().size(), 0);
         assertEquals(individualSolrModel.isParentalConsanguinity(), individual.isParentalConsanguinity());
 

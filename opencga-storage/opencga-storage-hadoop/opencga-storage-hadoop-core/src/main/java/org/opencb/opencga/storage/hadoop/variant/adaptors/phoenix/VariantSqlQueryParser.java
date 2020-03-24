@@ -1515,6 +1515,22 @@ public class VariantSqlQueryParser {
                     return "";
                 }, null, null);
 
+        addQueryFilter(query, STATS_PASS_FREQ,
+                (String[] keyOpValue, String v) -> getCohortColumn(keyOpValue, defaultStudyMetadata,
+                        VariantPhoenixHelper::getStatsPassFreqColumn),
+                null, filters,
+                (String[] keyOpValue) -> {
+                    if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<=")) {
+                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixHelper::getStatsPassFreqColumn);
+                        Integer studyId = VariantPhoenixHelper.extractStudyId(column.column(), true);
+
+                        if (!studiesFilter.contains(studyId) || studyOp == QueryOperation.OR) {
+                            return " OR \"" + column.column() + "\"[2] IS NULL ";
+                        }
+                    }
+                    return "";
+                }, -1);
+
         unsupportedFilter(query, MISSING_ALLELES);
 
         unsupportedFilter(query, MISSING_GENOTYPES);

@@ -60,10 +60,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -71,6 +68,8 @@ import java.util.function.Supplier;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERGE_MODE;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_SLICE_BUFFER_SIZE;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_TABLE_SKIP;
 
 /**
  * Created by mh719 on 13/05/2016.
@@ -135,6 +134,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                                                 DataReader<String> stringReader, Supplier<Task<String, Variant>> task)
             throws StorageEngineException {
 
+        int sliceBufferSize = options.getInt(ARCHIVE_SLICE_BUFFER_SIZE.key(), ARCHIVE_SLICE_BUFFER_SIZE.defaultValue());
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter;
         try {
@@ -151,7 +151,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         logger.info("Generating output file {}", outputVariantsFile);
 
         VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader,
-                helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()));
+                helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()), sliceBufferSize);
 
         // Use a supplier to avoid concurrent modifications of non thread safe objects.
         Supplier<Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> supplier = VariantToVcfSliceConverterTask::new;
@@ -173,9 +173,13 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     public URI preLoad(URI input, URI output) throws StorageEngineException {
         super.preLoad(input, output);
 
+        boolean skipArchiveTable = getOptions().getBoolean(ARCHIVE_TABLE_SKIP.key(), ARCHIVE_TABLE_SKIP.defaultValue());
         try {
-            ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), getArchiveTable(),
-                    dbAdaptor.getConnection());
+            if (skipArchiveTable) {
+                logger.info("Skip archive table");
+            } else {
+                ArchiveTableHelper.createArchiveTableIfNeeded(getOptions(), getArchiveTable(), dbAdaptor.getConnection());
+            }
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + getArchiveTable(), e);
         }

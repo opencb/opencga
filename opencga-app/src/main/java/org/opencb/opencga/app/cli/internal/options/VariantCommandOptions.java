@@ -21,11 +21,15 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -111,6 +115,10 @@ public class VariantCommandOptions {
     public final KnockoutCommandOptions knockoutCommandOptions;
     public final SampleEligibilityCommandOptions sampleEligibilityCommandOptions;
     public final MutationalSignatureCommandOptions mutationalSignatureCommandOptions;
+    public final MendelianErrorCommandOptions mendelianErrorCommandOptions;
+    public final InferredSexCommandOptions inferredSexCommandOptions;
+    public final RelatednessCommandOptions relatednessCommandOptions;
+    public final GeneticChecksCommandOptions geneticChecksCommandOptions;
 
     // Wrappers
     public final PlinkCommandOptions plinkCommandOptions;
@@ -165,6 +173,10 @@ public class VariantCommandOptions {
         this.knockoutCommandOptions = new KnockoutCommandOptions();
         this.sampleEligibilityCommandOptions = new SampleEligibilityCommandOptions();
         this.mutationalSignatureCommandOptions = new MutationalSignatureCommandOptions();
+        this.mendelianErrorCommandOptions = new MendelianErrorCommandOptions();
+        this.inferredSexCommandOptions = new InferredSexCommandOptions();
+        this.relatednessCommandOptions = new RelatednessCommandOptions();
+        this.geneticChecksCommandOptions = new GeneticChecksCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
         this.gatkCommandOptions = new GatkCommandOptions();
@@ -455,7 +467,7 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
-        @Parameter(names = {"-p", "--project-id"}, description = "Project to annotate.", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = "Project to annotate.", arity = 1)
         public String project;
 
 //        @Parameter(names = {"-s", "--study-id"}, description = "Studies to annotate. Must be in the same database.", arity = 1)
@@ -937,7 +949,7 @@ public class VariantCommandOptions {
                 + " For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
         public String samplesAnnotation;
 
-        @Parameter(names = {"--index"}, description = "Index results in catalog."
+        @Parameter(names = {"--index"}, description = "Index results in catalog1111."
                 + "Create an AnnotationSet for the VariableSet " + SampleVariantStatsAnalysis.VARIABLE_SET_ID)
         public boolean index;
 
@@ -1078,7 +1090,7 @@ public class VariantCommandOptions {
 
     @Parameters(commandNames = MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND, commandDescription = MutationalSignatureAnalysis.DESCRIPTION)
     public class MutationalSignatureCommandOptions {
-        public static final String MUTATIONAL_SIGNATURE_RUN_COMMAND = "mutational-signature-run";
+        public static final String MUTATIONAL_SIGNATURE_RUN_COMMAND = MutationalSignatureAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1088,6 +1100,104 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--sample"}, description = "Sample name.")
         public String sample;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND, commandDescription = MendelianErrorAnalysis.DESCRIPTION)
+    public class MendelianErrorCommandOptions {
+        public static final String MENDELIAN_ERROR_RUN_COMMAND = MendelianErrorAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--family"}, description = "Family ID.")
+        public String family;
+
+        @Parameter(names = {"--individual"}, description = "Individual ID to get the family.")
+        public String individual;
+
+        @Parameter(names = {"--sample"}, description = "Sample ID to get the family.")
+        public String sample;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND, commandDescription = InferredSexAnalysis.DESCRIPTION)
+    public class InferredSexCommandOptions {
+        public static final String INFERRED_SEX_RUN_COMMAND = InferredSexAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study ID where the individual or sample belong to.")
+        public String study;
+
+        @Parameter(names = {"--individual"}, description = "Individual ID.")
+        public String individual;
+
+        @Parameter(names = {"--sample"}, description = "Sample ID.")
+        public String sample;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND, commandDescription = RelatednessAnalysis.DESCRIPTION)
+    public class RelatednessCommandOptions {
+        public static final String RELATEDNESS_RUN_COMMAND = RelatednessAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study ID where all the individuals or samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--individuals"}, description = "List of individual IDs (incompatible with --samples).")
+        public List<String> individuals;
+
+        @Parameter(names = {"--samples"}, description = "List of sample IDs (incompatible with --individuals).")
+        public List<String> samples;
+
+        @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
+        public String minorAlleleFreq;
+
+        @Parameter(names = {"--method"}, description = "Method to compute relatedness.")
+        public String method = "IBD";
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND, commandDescription = GeneticChecksAnalysis.DESCRIPTION)
+    public class GeneticChecksCommandOptions {
+        public static final String GENETIC_CHECKS_RUN_COMMAND = GeneticChecksAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--family"}, description = "Family ID to get the family members).")
+        public String family;
+
+        @Parameter(names = {"--individual"}, description = "Individual ID: it will be considered a child individual to get the family members).")
+        public String individual;
+
+        @Parameter(names = {"--sample"}, description = "Sample ID: it will be considered a child sample to get the family members).")
+        public String sample;
+
+        @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
+        public String minorAlleleFreq;
+
+        @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
+        public String relatednessMethod = "IBD";
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;

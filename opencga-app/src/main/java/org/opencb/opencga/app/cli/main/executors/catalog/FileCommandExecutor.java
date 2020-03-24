@@ -23,7 +23,9 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.io.TextOutputWriter;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
+import org.opencb.opencga.app.cli.main.options.FileCommandOptions.GrepCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -89,15 +91,18 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 //            case "index":
 //                queryResponse = index();
 //                break;
-            case "content":
-                queryResponse = content();
+            case "head":
+                queryResponse = head();
+                break;
+            case "tail":
+                queryResponse = tail();
                 break;
             case "stats":
                 queryResponse = stats();
                 break;
-//            case "fetch":
-//                queryResponse = fetch();
-//                break;
+            case "fetch":
+                queryResponse = fetch();
+                break;
             case "update":
                 queryResponse = update();
                 break;
@@ -181,14 +186,14 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().download(commandOptions.file, params);
     }
 
-    private RestResponse grep() throws ClientException {
+    private RestResponse<FileContent> grep() throws ClientException {
         logger.debug("Grep command: File content");
 
-        FileCommandOptions.GrepCommandOptions commandOptions = filesCommandOptions.grepCommandOptions;
+        GrepCommandOptions commandOptions = filesCommandOptions.grepCommandOptions;
 
         ObjectMap params = new ObjectMap();
         params.put("ignoreCase", commandOptions.ignoreCase);
-        params.put("multi", commandOptions.multi);
+        params.put("maxCount", commandOptions.maxCount);
         params.putIfNotNull("pattern", commandOptions.pattern);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
         return openCGAClient.getFileClient().grep(commandOptions.file, params);
@@ -206,7 +211,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(FileDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
         params.putIfNotNull(FileDBAdaptor.QueryParams.BIOFORMAT.key(), commandOptions.bioformat);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), commandOptions.format);
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), commandOptions.status);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.DIRECTORY.key(), commandOptions.folder);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.OWNER_ID.key(), commandOptions.ownerId);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
@@ -214,7 +219,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.SIZE.key(), commandOptions.size);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_UID.key(), commandOptions.jobId);
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), commandOptions.jobId);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), commandOptions.attributes);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), commandOptions.nattributes);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.ANNOTATION.key(), commandOptions.annotation);
@@ -257,16 +262,32 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull("maxDepth", filesCommandOptions.treeCommandOptions.maxDepth);
         params.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.treeCommandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.treeCommandOptions.dataModelOptions.exclude);
+        if (writer instanceof TextOutputWriter
+                && StringUtils.isEmpty(filesCommandOptions.treeCommandOptions.dataModelOptions.include)
+                && StringUtils.isEmpty(filesCommandOptions.treeCommandOptions.dataModelOptions.exclude)) {
+            params.put(QueryOptions.INCLUDE, "id,name,path,type,size,internal,status");
+        }
         params.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.treeCommandOptions.limit);
         return openCGAClient.getFileClient().tree(filesCommandOptions.treeCommandOptions.folderId, params);
     }
 
-    private RestResponse<String> content() throws ClientException {
+    private RestResponse<FileContent> head() throws ClientException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.contentCommandOptions.study);
-        objectMap.put("start", filesCommandOptions.contentCommandOptions.start);
-        objectMap.put(QueryOptions.LIMIT, filesCommandOptions.contentCommandOptions.limit);
-        return openCGAClient.getFileClient().content(filesCommandOptions.contentCommandOptions.file, objectMap);
+        objectMap.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.headCommandOptions.study);
+        objectMap.put("lines", filesCommandOptions.headCommandOptions.lines);
+        objectMap.put("offset", filesCommandOptions.headCommandOptions.offset);
+        RestResponse<FileContent> head = openCGAClient.getFileClient().head(filesCommandOptions.headCommandOptions.file, objectMap);
+        System.out.println(head.first().first().getContent());
+        return new RestResponse<>();
+    }
+
+    private RestResponse<FileContent> tail() throws ClientException {
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.tailCommandOptions.study);
+        objectMap.put("lines", filesCommandOptions.tailCommandOptions.lines);
+        RestResponse<FileContent> tail = openCGAClient.getFileClient().tail(filesCommandOptions.tailCommandOptions.file, objectMap);
+        System.out.println(tail.first().first().getContent());
+        return new RestResponse<>();
     }
 
     private RestResponse<File> update() throws ClientException {
@@ -416,6 +437,17 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull("field", commandOptions.field);
 
         return openCGAClient.getFileClient().aggregationStats(params);
+    }
+
+    private RestResponse<Job> fetch() throws ClientException {
+        FileCommandOptions.FetchCommandOptions commandOptions = filesCommandOptions.fetchCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty("study", commandOptions.study);
+
+        FileFetch data = new FileFetch(commandOptions.url, commandOptions.path);
+
+        return openCGAClient.getFileClient().fetch(data, params);
     }
 
     private RestResponse<File> updateAnnotations() throws ClientException, IOException {

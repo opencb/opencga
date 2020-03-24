@@ -65,7 +65,7 @@ public class VariantMetadataConverterTest {
                 .setSamples(new LinkedHashSet<>(Arrays.asList(4, 5, 6)))
                 .setIndexStatus(TaskMetadata.Status.READY)
         );
-        metadataManager.unsecureUpdateCohortMetadata(1, new CohortMetadata(1, 20, "ALL", Arrays.asList(1, 2, 3, 4, 5, 6))
+        metadataManager.unsecureUpdateCohortMetadata(1, new CohortMetadata(1, 20, "ALL", Arrays.asList(1, 2, 3, 4, 5, 6), Arrays.asList(10, 11))
                 .setStatsStatus(TaskMetadata.Status.READY));
 
         variantMetadataConverter = new VariantMetadataConverter(metadataManager);

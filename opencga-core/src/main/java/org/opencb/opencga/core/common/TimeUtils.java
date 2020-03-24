@@ -16,12 +16,11 @@
 
 package org.opencb.opencga.core.common;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.crypto.Data;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -115,7 +114,7 @@ public class TimeUtils {
     public static Date add24HtoDate(Date date) {
         Calendar cal = new GregorianCalendar();
         cal.setTime(date);
-        cal.setTimeInMillis(date.getTime());// sumamos 24h a la fecha del login
+        cal.setTimeInMillis(date.getTime());
         cal.add(Calendar.DATE, 1);
         return new Date(cal.getTimeInMillis());
     }

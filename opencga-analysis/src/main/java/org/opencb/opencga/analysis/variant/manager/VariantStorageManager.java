@@ -155,7 +155,7 @@ public class VariantStorageManager extends StorageManager {
      * @throws StorageEngineException  If there is any error exporting variants
      */
     public void exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
-                                Query query, QueryOptions queryOptions, String token)
+                           Query query, QueryOptions queryOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
         catalogUtils.parseQuery(query, token);
         checkSamplesPermissions(query, queryOptions, token);
@@ -245,7 +245,7 @@ public class VariantStorageManager extends StorageManager {
         secureOperationByProject(VariantAnnotationIndexOperationTool.ID, projectId, params, token, engine -> {
             List<String> studiesFqn = getStudiesFqn(studies, token);
             new VariantAnnotationOperationManager(this, engine)
-                    .annotate(projectStr, studiesFqn, region, outputFileName, Paths.get(outDir), params, token, overwriteAnnotations);
+                    .annotate(projectId, studiesFqn, region, outputFileName, Paths.get(outDir), params, token, overwriteAnnotations);
             return null;
         });
     }
@@ -403,6 +403,27 @@ public class VariantStorageManager extends StorageManager {
             return null;
         });
     }
+
+    public ObjectMap configureProject(String projectStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
+        return secureOperationByProject("configure", projectStr, params, token, engine -> {
+            DataStore dataStore = getDataStoreByProjectId(projectStr, token);
+
+            dataStore.getConfiguration().putAll(params);
+            catalogManager.getProjectManager()
+                    .update(projectStr, new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), dataStore),
+                            new QueryOptions(), token);
+            return dataStore.getConfiguration();
+        });
+    }
+
+//    public void configureStudy(String studyStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
+//        secureOperation("configure", studyStr, params, token, engine -> {
+//            String studyFqn = getStudyFqn(studyStr, token);
+//            engine.getConfigurationManager().configureStudy(studyFqn, params);
+//            return null;
+//        });
+//    }
+
 
     // ---------------------//
     //   Query methods      //
@@ -598,12 +619,12 @@ public class VariantStorageManager extends StorageManager {
 
     protected VariantStorageEngine getVariantStorageEngine(String study, String token) throws StorageEngineException, CatalogException {
         DataStore dataStore = getDataStore(study, token);
-        return storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        return getVariantStorageEngine(dataStore);
     }
 
     protected VariantStorageEngine getVariantStorageEngine(String study, ObjectMap params, String token) throws StorageEngineException, CatalogException {
         DataStore dataStore = getDataStore(study, token);
-        VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
         }
@@ -611,7 +632,12 @@ public class VariantStorageManager extends StorageManager {
     }
 
     protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
-        return storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine variantStorageEngine = storageEngineFactory
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        if (dataStore.getConfiguration() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getConfiguration());
+        }
+        return variantStorageEngine;
     }
 
     public boolean isSolrAvailable() {
@@ -1094,26 +1120,22 @@ public class VariantStorageManager extends StorageManager {
 
     private static DataStore getDataStore(CatalogManager catalogManager, Study study, File.Bioformat bioformat, String token)
             throws CatalogException {
-        DataStore dataStore;
-        if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
-            dataStore = study.getDataStores().get(bioformat);
-        } else {
-            String projectId = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
-            dataStore = getDataStoreByProjectId(catalogManager, projectId, bioformat, token);
-        }
-        return dataStore;
+        String projectId = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
+        return getDataStoreByProjectId(catalogManager, projectId, bioformat, token);
     }
 
     public static DataStore getDataStoreByProjectId(CatalogManager catalogManager, String projectStr, File.Bioformat bioformat,
                                                     String token)
             throws CatalogException {
-        DataStore dataStore;
+        DataStore dataStore = null;
         QueryOptions queryOptions = new QueryOptions(INCLUDE,
-                Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
+                Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES.key()));
         Project project = catalogManager.getProjectManager().get(projectStr, queryOptions, token).first();
-        if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
-            dataStore = project.getDataStores().get(bioformat);
-        } else { //get default datastore
+        if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
+            dataStore = project.getInternal().getDatastores().getDataStore(bioformat);
+        }
+
+        if (dataStore == null) { //get default datastore
             //Must use the UserByStudyId instead of the file owner.
             String userId = catalogManager.getProjectManager().getOwner(project.getUid());
             // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
@@ -1124,6 +1146,10 @@ public class VariantStorageManager extends StorageManager {
             String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
             dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
         }
+        if (dataStore.getConfiguration() == null) {
+            dataStore.setConfiguration(new ObjectMap());
+        }
+
         return dataStore;
     }
 

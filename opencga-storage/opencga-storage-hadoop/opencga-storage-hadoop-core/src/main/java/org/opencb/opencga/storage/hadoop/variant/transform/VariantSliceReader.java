@@ -37,7 +37,7 @@ import java.util.*;
  */
 public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<Variant>>> {
 
-    public static final int MAX_SLICES = 100;
+    private final int sliceBufferSize;
     private int numSlices;
     protected final Logger logger = LoggerFactory.getLogger(VariantSliceReader.class);
     private final int chunkSize;
@@ -50,11 +50,13 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
     private String currentChromosome = null;
     private final ProgressLogger progressLogger;
 
-    public VariantSliceReader(int chunkSize, DataReader<Variant> reader, int studyId, int fileId) {
-        this(chunkSize, reader, studyId, fileId, null);
+    public VariantSliceReader(int chunkSize, DataReader<Variant> reader, int studyId, int fileId, int sliceBufferSize) {
+        this(chunkSize, reader, studyId, fileId, sliceBufferSize, null);
     }
 
-    public VariantSliceReader(int chunkSize, DataReader<Variant> reader, int studyId, int fileId, ProgressLogger progressLogger) {
+    public VariantSliceReader(int chunkSize, DataReader<Variant> reader, int studyId, int fileId, int sliceBufferSize,
+                              ProgressLogger progressLogger) {
+        this.sliceBufferSize = sliceBufferSize;
         this.chunkSize = chunkSize;
         this.studyId = String.valueOf(studyId);
         this.fileId = String.valueOf(fileId);
@@ -97,7 +99,7 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
         while (slices.size() < batchSize) {
 
             List<Variant> read;
-            while (numSlices < MAX_SLICES) {
+            while (numSlices < sliceBufferSize) {
                 read = reader.read(10);
                 if (read == null || read.isEmpty()) {
                     break;

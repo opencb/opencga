@@ -107,8 +107,11 @@ public class VariantSearchModel {
     @Field("other")
     private List<String> other;
 
-    @Field("stats_*")
-    private Map<String, Float> stats;
+    @Field("passStats_*")
+    private Map<String, Float> passStats;
+
+    @Field("altStats_*")
+    private Map<String, Float> altStats;
 
     @Field("score_*")
     private Map<String, Float> score;
@@ -157,7 +160,8 @@ public class VariantSearchModel {
         this.geneToSoAcc = new ArrayList<>();
         this.traits = new ArrayList<>();
         this.other = new ArrayList<>();
-        this.stats = new HashMap<>();
+        this.passStats = new HashMap<>();
+        this.altStats = new HashMap<>();
         this.score = new HashMap<>();
         this.scorePValue = new HashMap<>();
         this.popFreq = new HashMap<>();
@@ -197,7 +201,8 @@ public class VariantSearchModel {
         sb.append(", clinicalSig=").append(clinicalSig);
         sb.append(", traits=").append(traits);
         sb.append(", other=").append(other);
-        sb.append(", stats=").append(stats);
+        sb.append(", passStats=").append(passStats);
+        sb.append(", altStats=").append(altStats);
         sb.append(", score=").append(score);
         sb.append(", scorePValue=").append(scorePValue);
         sb.append(", popFreq=").append(popFreq);
@@ -436,12 +441,21 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Map<String, Float> getStats() {
-        return stats;
+    public Map<String, Float> getPassStats() {
+        return passStats;
     }
 
-    public VariantSearchModel setStats(Map<String, Float> stats) {
-        this.stats = stats;
+    public VariantSearchModel setPassStats(Map<String, Float> passStats) {
+        this.passStats = passStats;
+        return this;
+    }
+
+    public Map<String, Float> getAltStats() {
+        return altStats;
+    }
+
+    public VariantSearchModel setAltStats(Map<String, Float> altStats) {
+        this.altStats = altStats;
         return this;
     }
 

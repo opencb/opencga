@@ -23,6 +23,7 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.VariableSet;
 
@@ -57,7 +58,7 @@ public class FileConverter extends AnnotableConverter<File> {
 
     @Override
     public Document convertToStorageType(File file, List<VariableSet> variableSetList) {
-        List<File.RelatedFile> relatedFileList = file.getRelatedFiles();
+        List<FileRelatedFile> relatedFileList = file.getRelatedFiles();
         file.setRelatedFiles(null);
 
         Document document = super.convertToStorageType(file, variableSetList);
@@ -65,9 +66,6 @@ public class FileConverter extends AnnotableConverter<File> {
 
         document.put("uid", file.getUid());
         document.put("studyUid", file.getStudyUid());
-
-        long jobId = file.getJob() != null ? (file.getJob().getUid() == 0 ? -1L : file.getJob().getUid()) : -1L;
-        document.put("job", new Document("uid", jobId));
 
         document.put("samples", convertSamples(file.getSamples()));
         document.put("relatedFiles", convertRelatedFiles(relatedFileList));
@@ -91,13 +89,13 @@ public class FileConverter extends AnnotableConverter<File> {
         return samples;
     }
 
-    public List<Document> convertRelatedFiles(List<File.RelatedFile> relatedFileList) {
+    public List<Document> convertRelatedFiles(List<FileRelatedFile> relatedFileList) {
         if (relatedFileList == null || relatedFileList.isEmpty()) {
             return Collections.emptyList();
         }
         List<Document> relatedFiles = new ArrayList<>();
         if (ListUtils.isNotEmpty(relatedFileList)) {
-            for (File.RelatedFile relatedFile : relatedFileList) {
+            for (FileRelatedFile relatedFile : relatedFileList) {
                 relatedFiles.add(new Document()
                         .append("relation", relatedFile.getRelation().name())
                         .append("file", new Document("uid", relatedFile.getFile().getUid()))

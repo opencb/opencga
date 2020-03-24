@@ -51,7 +51,7 @@ public class CatalogFileToSolrFileConverter implements ComplexTypeConverter<File
     public FileSolrModel convertToStorageType(File file) {
         FileSolrModel fileSolrModel = new FileSolrModel();
 
-        fileSolrModel.setId(file.getId());
+        fileSolrModel.setId(file.getUuid());
         fileSolrModel.setUid(file.getUid());
         fileSolrModel.setName(file.getName());
         fileSolrModel.setStudyId(study.getFqn().replace(":", "__"));
@@ -71,15 +71,33 @@ public class CatalogFileToSolrFileConverter implements ComplexTypeConverter<File
         fileSolrModel.setCreationMonth(localDate.getMonth().toString());
         fileSolrModel.setCreationDay(localDate.getDayOfMonth());
         fileSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        fileSolrModel.setStatus(file.getStatus().getName());
+        fileSolrModel.setStatus(file.getInternal().getStatus().getName());
 
-        fileSolrModel.setStatus(file.getStatus().getName());
+        fileSolrModel.setStatus(file.getInternal().getStatus().getName());
         fileSolrModel.setExternal(file.isExternal());
         fileSolrModel.setSize(file.getSize());
         if (file.getSoftware() != null) {
-            fileSolrModel.setSoftware(file.getSoftware().getName());
+            fileSolrModel.setSoftwareName(file.getSoftware().getName());
+            fileSolrModel.setSoftwareVersion(file.getSoftware().getVersion());
         }
-//        fileSolrModel.setExperiment(file.getExperiment().getName());
+
+        fileSolrModel.setTags(file.getTags());
+
+        if (file.getExperiment() != null) {
+            fileSolrModel.setExperimentTechnology(file.getExperiment().getTechnology() != null
+                    ? file.getExperiment().getTechnology().name() : null);
+            fileSolrModel.setExperimentMethod(file.getExperiment().getMethod() != null
+                    ? file.getExperiment().getMethod().name() : null);
+            fileSolrModel.setExperimentNucleicAcidType(file.getExperiment().getNucleicAcidType() != null
+                    ? file.getExperiment().getNucleicAcidType().name() : null);
+            fileSolrModel.setExperimentManufacturer(file.getExperiment().getManufacturer());
+            fileSolrModel.setExperimentPlatform(file.getExperiment().getPlatform());
+            fileSolrModel.setExperimentLibrary(file.getExperiment().getLibrary());
+            fileSolrModel.setExperimentCenter(file.getExperiment().getCenter());
+            fileSolrModel.setExperimentLab(file.getExperiment().getLab());
+            fileSolrModel.setExperimentResponsible(file.getExperiment().getResponsible());
+        }
+
 
         fileSolrModel.setNumSamples(file.getSamples() != null ? file.getSamples().size() : 0);
         fileSolrModel.setNumRelatedFiles(file.getRelatedFiles() != null ? file.getRelatedFiles().size() : 0);

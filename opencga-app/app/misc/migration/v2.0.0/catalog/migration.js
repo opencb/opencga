@@ -23,20 +23,18 @@ db.getCollection("dataset").drop()
 
 // Add new opencga administrator user to user collection #1425
 var user = db.getCollection("user").findOne({"id": "opencga"});
-
 if (user === null) {
     var metadata = db.getCollection("metadata").findOne({});
     db.getCollection("user").insert({
         "id": "opencga",
         "name": "opencga",
         "email": metadata["admin"]["email"],
-        "password": metadata["admin"]["password"],
+        "_password": metadata["admin"]["password"],
         "organization": "",
         "account": {
             "type": "ADMINISTRATOR",
             "creationDate": metadata["creationDate"],
             "expirationDate": "",
-            "authOrigin": null,
             "authentication": {
                 "id": "internal",
                 "application": false
@@ -47,9 +45,12 @@ if (user === null) {
             "date": metadata["creationDate"],
             "message": ""
         },
-        "lastModified": metadata["creationDate"],
-        "size": -1,
-        "quota": -1,
+        "quota": {
+            "diskUsage": -1,
+            "cpuUsage": -1,
+            "maxDisk": -1,
+            "maxCpu": -1
+        },
         "projects": [],
         "tools": [],
         "configs": {
@@ -95,5 +96,240 @@ migrateCollection("study", {"variableSets" : { $exists: true, $ne: [] } }, {"var
     }
 });
 
+// Ticket #1487
+db.getCollection("study").update({"notification": { $exists: false }}, {
+    "$set": {
+        "notification": {
+            "webhook": null
+        }}}, {"multi": true})
+
+// Ticket #1513 - Remove 'name' field from groups
+migrateCollection("study", {}, {groups: 1}, function(bulk, doc) {
+    if (isEmptyArray(doc.groups) || isUndefinedOrNull(doc.groups[0].name)) {
+        return;
+    }
+
+    for (var i = 0; i < doc.groups.length; i++) {
+        delete doc.groups[i]['name'];
+    }
+
+    var params = {
+        groups: doc.groups
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": params});
+});
+
+var customStatus = {
+    "name": "",
+    "description": "",
+    "date" :""
+};
+
+// Tickets #1528 #1529
+migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, doc) {
+    // #1531
+    doc['status']['description'] = doc['status']['message'];
+
+    var filters = [];
+    if (isNotUndefinedOrNull(doc.configs) && isNotEmptyArray(doc.configs.filters)) {
+        filters = doc.configs.filters;
+    }
+
+    for (var filter of filters) {
+        filter['id'] = filter['name'];
+        filter['resource'] = filter['bioformat'];
+
+        delete filter['name'];
+        delete filter['bioformat'];
+    }
+
+    var set = {
+        "quota": {
+            "diskUsage": doc['size'],
+            "cpuUsage": -1,
+            "maxDisk": doc['quota'],
+            "maxCpu": -1
+        },
+        "internal": {
+            "status": doc['status']
+        },
+        "_password": doc["password"],
+        "filters": filters
+    };
+    var unset = {
+        "password": "",
+        "lastModified": "",
+        "size": "",
+        "account.authOrigin": "",
+        "status": "",
+        "configs.filters": ""
+    };
+
+    // #1529
+    if (isNotEmptyArray(doc.projects)) {
+        for (var i = 0; i < doc.projects.length; i++) {
+            var project = doc.projects[i];
+
+            project['internal'] = {
+                'status': project['status'],
+                'datastores': project['dataStores']
+            };
+
+            // #1531
+            project['internal']['status']['description'] = project['internal']['status']['message']
+
+            delete project['lastModified'];
+            delete project['size'];
+            delete project['organization'];
+            delete project['organism']['taxonomyCode'];
+            delete project['status'];
+            delete project['dataStores'];
+        }
+
+        set['projects'] = doc.projects;
+    }
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1532
+migrateCollection("study", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+    var unset = {
+        "stats": "",
+        "type": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1535
+migrateCollection("individual", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+    var unset = {
+        "affectationStatus": "",
+        "multiples": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1536
+migrateCollection("family", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set});
+});
+
+// #1537
+migrateCollection("clinical", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+    var unset = {
+        "name": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1540
+migrateCollection("sample", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+    var unset = {
+        "name": "",
+        "source": "",
+        "stats": "",
+        "type": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1539
+migrateCollection("cohort", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+    var unset = {
+        "name": "",
+        "stats": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1533
+migrateCollection("file", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "internal": {
+            "status": doc['status'],
+            "index": doc['index']
+        },
+        "jobId": "",
+        "status": customStatus
+    };
+    var unset = {
+        "index": "",
+        "job": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+migrateCollection("interpretation", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    var set = {
+        "internal": {
+            "status": {
+                "name": doc['status'],
+                "description": "",
+                "date": ""
+            }
+        }
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set});
+});
 
 // TODO: Add indexes for new "deleted" collections

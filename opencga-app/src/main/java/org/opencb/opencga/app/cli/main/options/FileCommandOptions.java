@@ -26,6 +26,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.StudyOption;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
@@ -45,7 +46,8 @@ public class FileCommandOptions {
     public ListCommandOptions listCommandOptions;
 //    public IndexCommandOptions indexCommandOptions;
     public TreeCommandOptions treeCommandOptions;
-    public ContentCommandOptions contentCommandOptions;
+    public HeadCommandOptions headCommandOptions;
+    public TailCommandOptions tailCommandOptions;
 //    public FetchCommandOptions fetchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public UploadCommandOptions uploadCommandOptions;
@@ -56,6 +58,7 @@ public class FileCommandOptions {
     public RefreshCommandOptions refreshCommandOptions;
 //    public GroupByCommandOptions groupByCommandOptions;
     public StatsCommandOptions statsCommandOptions;
+    public final FetchCommandOptions fetchCommandOptions;
 //    public VariantsCommandOptions variantsCommandOptions;
 
     public FileAclCommandOptions.AclsCommandOptions aclsCommandOptions;
@@ -85,7 +88,8 @@ public class FileCommandOptions {
         this.listCommandOptions = new ListCommandOptions();
 //        this.indexCommandOptions = new IndexCommandOptions();
         this.treeCommandOptions = new TreeCommandOptions();
-        this.contentCommandOptions = new ContentCommandOptions();
+        this.headCommandOptions = new HeadCommandOptions();
+        this.tailCommandOptions = new TailCommandOptions();
 //        this.fetchCommandOptions = new FetchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -94,6 +98,7 @@ public class FileCommandOptions {
         this.linkCommandOptions = new LinkCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
+        this.fetchCommandOptions = new FetchCommandOptions();
 //        this.variantsCommandOptions = new VariantsCommandOptions();
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
@@ -189,14 +194,14 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"grep"}, commandDescription = "Get file information")
     public class GrepCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
-        public String pattern = ".*";
+        @Parameter(names = {"--pattern"}, description = "String pattern", arity = 1)
+        public String pattern = "";
 
-        @Parameter(names = {"-i", "--ignore-case"}, description = "Do a case insensitive search", required = false, arity = 0)
+        @Parameter(names = {"-i", "--ignore-case"}, description = "Do a case insensitive search", arity = 0)
         public boolean ignoreCase;
 
-        @Parameter(names = {"-m", "--multi"}, description = "Return multiple matches. Default = true", required = false, arity = 0)
-        public boolean multi = true;
+        @Parameter(names = {"-m", "--max-count"}, description = "Stop reading a file after 'n' matching lines. 0 means no limit.", arity = 0)
+        public int maxCount;
 
     }
 
@@ -356,15 +361,21 @@ public class FileCommandOptions {
 //        public boolean annotate;
     }
 
-    @Parameters(commandNames = {"content"}, commandDescription = "Show the content of a file (up to a limit)")
-    public class ContentCommandOptions extends BaseFileCommand{
+    @Parameters(commandNames = {"head"}, commandDescription = "Show the first lines of a file (up to a limit)")
+    public class HeadCommandOptions extends BaseFileCommand{
 
-        @Parameter(names = {"--start"}, description = "Start", arity = 1)
-        public int start = -1;
+        @Parameter(names = {"--offset"}, description = "Starting byte from which the file will be read", arity = 1)
+        public int offset = -1;
 
-        @Parameter(names = {"--limit"}, description = "Limit", arity = 1)
-        public int limit = -1;
+        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
+        public int lines = -1;
+    }
 
+    @Parameters(commandNames = {"tail"}, commandDescription = "Show the last lines of a file (up to a limit)")
+    public class TailCommandOptions extends BaseFileCommand{
+
+        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
+        public int lines = -1;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
@@ -426,11 +437,16 @@ public class FileCommandOptions {
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = true, arity = 1)
-        public String folderId;
+        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = false, arity = 1)
+        public String folderId = ".";
 
-        @Parameter(names = {"--max-Depth"}, description = "Maximum depth to get files from. Default: 5", required = false, arity = 1)
+        @Parameter(names = {"-n", "--max-depth"}, description = "Descend only 'level' directories deep. Default: 5", arity = 1)
         public Integer maxDepth = 5;
+
+        @Parameter(names = {"--max-Depth"}, hidden = true)
+        public void setMaxDepth(int maxDepth) {
+            this.maxDepth = maxDepth;
+        }
 
         @Parameter(names = {"--limit"}, description = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", arity = 1)
         public String limit;
@@ -535,6 +551,18 @@ public class FileCommandOptions {
             }
             return aclsUpdateCommandOptions;
         }
+    }
+
+    @Parameters
+    public class FetchCommandOptions extends StudyOption {
+
+        @Parameter(names = {"--" + ParamConstants.FILE_PATH_PARAM},
+                description = "Folder path where the downloaded file will be registered", required = true, arity = 1)
+        public String path;
+
+        @Parameter(names = {"--url"}, description = "External url where the file to be registered can be downloaded from", required = true,
+                arity = 1)
+        public String url;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "File stats")

@@ -43,24 +43,23 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         ID("id", TEXT, ""),
         UID("uid", INTEGER, ""),
         UUID("uuid", TEXT, ""),
-        NAME("name", TEXT, ""),
-        SOURCE("source", TEXT_ARRAY, ""),
         PROCESSING("processing", TEXT_ARRAY, ""),
         COLLECTION("collection", TEXT_ARRAY, ""),
         INDIVIDUAL("individual", TEXT, ""),
         INDIVIDUAL_UID("individual.uid", INTEGER_ARRAY, ""),
         INDIVIDUAL_ID("individualId", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
-        TYPE("type", TEXT, ""),
         SOMATIC("somatic", BOOLEAN, ""),
-        STATS("stats", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        STATUS_DESCRIPTION("status.description", TEXT, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         RELEASE("release", INTEGER, ""), //  Release where the sample was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the sample

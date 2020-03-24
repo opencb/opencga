@@ -46,21 +46,20 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
-        ORGANIZATION("organization", TEXT_ARRAY, ""),
         ORGANISM("organism", TEXT_ARRAY, ""),
         ORGANISM_SCIENTIFIC_NAME("organism.scientificName", TEXT, ""),
         ORGANISM_COMMON_NAME("organism.commonName", TEXT, ""),
-        ORGANISM_TAXONOMY_CODE("organism.taxonomyCode", TEXT, ""),
         ORGANISM_ASSEMBLY("organism.assembly", TEXT, ""),
         CURRENT_RELEASE("currentRelease", INTEGER, ""),
         FQN("fqn", TEXT, ""),
-        STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
-        STATUS_DATE("status.date", TEXT, ""),
-        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
-        SIZE("size", INTEGER, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_MSG("internal.status.msg", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         USER_ID("userId", TEXT, ""),
-        DATASTORES("dataStores", TEXT_ARRAY, ""),
+        INTERNAL_DATASTORES("internal.datastores", TEXT_ARRAY, ""),
+        INTERNAL_DATASTORES_VARIANT("internal.datastores.variant", TEXT_ARRAY, ""),
+        INTERNAL("internal", TEXT_ARRAY, ""),
+
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

@@ -23,14 +23,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.job.JobsTop;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobAclUpdateParams;
-import org.opencb.opencga.core.models.job.JobCreateParams;
-import org.opencb.opencga.core.models.job.JobUpdateParams;
+import org.opencb.opencga.core.models.file.FileContent;
+import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
@@ -93,6 +91,39 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{job}/log/head")
+    @ApiOperation(value = "Show the first lines of a log file (up to a limit)", response = FileContent.class)
+    public Response log(
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION, required = true) @PathParam("job") String jobId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Starting byte from which the file will be read") @QueryParam("offset") long offset,
+            @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines,
+            @ApiParam(value = "Log file to be shown (stdout or stderr)") @DefaultValue("stderr") @QueryParam("type") String type) {
+        try {
+            ParamUtils.checkIsSingleID(jobId);
+            return createOkResponse(catalogManager.getJobManager().log(studyStr, jobId, offset, lines, type, false, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{job}/log/tail")
+    @ApiOperation(value = "Show the last lines of a log file (up to a limit)", response = FileContent.class)
+    public Response log(
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION, required = true) @PathParam("job") String jobId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines,
+            @ApiParam(value = "Log file to be shown (stdout or stderr)") @DefaultValue("stderr") @QueryParam("type") String type) {
+        try {
+            ParamUtils.checkIsSingleID(jobId);
+            return createOkResponse(catalogManager.getJobManager().log(studyStr, jobId, 0, lines, type, true, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/search")
     @ApiOperation(value = "Job search method", response = Job.class)
     @ApiImplicitParams({
@@ -104,7 +135,9 @@ public class JobWSServer extends OpenCGAWSServer {
     })
     public Response search(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String name,
+            @ApiParam(value = ParamConstants.OTHER_STUDIES_FLAG_DESCRIPTION, defaultValue = "false")
+                @QueryParam(ParamConstants.OTHER_STUDIES_FLAG) boolean others,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String name,
             @ApiParam(value = ParamConstants.JOB_TOOL_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_PARAM) String tool,
             @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,
@@ -132,7 +165,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update some job attributes", hidden = true, response = Job.class)
     public Response updateByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String name,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String name,
             @ApiParam(value = ParamConstants.JOB_TOOL_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_PARAM) String tool,
             @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,

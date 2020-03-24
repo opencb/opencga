@@ -117,9 +117,6 @@ public class OpencgaMain {
                         case "cohorts":
                             commandExecutor = new CohortCommandExecutor(cliOptionsParser.getCohortCommands());
                             break;
-                        case "clinical":
-                            commandExecutor = new ClinicalCommandExecutor(cliOptionsParser.getClinicalCommandOptions());
-                            break;
                         case "panels":
                             commandExecutor = new PanelCommandExecutor(cliOptionsParser.getPanelCommands());
                             break;
@@ -131,6 +128,9 @@ public class OpencgaMain {
                             break;
                         case "variant":
                             commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommands());
+                            break;
+                        case "clinical":
+                            commandExecutor = new ClinicalCommandExecutor(cliOptionsParser.getClinicalCommandOptions());
                             break;
                         case OperationsCommandOptions.OPERATIONS_COMMAND:
                             commandExecutor = new OperationsCommandExecutor(cliOptionsParser.getOperationsCommands());

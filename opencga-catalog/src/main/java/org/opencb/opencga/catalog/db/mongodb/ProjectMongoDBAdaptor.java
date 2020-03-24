@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -31,22 +30,24 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -108,9 +109,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     Project insert(ClientSession clientSession, Project project, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        List<Study> studies = project.getStudies();
-        if (studies == null) {
-            studies = Collections.emptyList();
+        if (project.getStudies() != null && !project.getStudies().isEmpty()) {
+            throw new CatalogParameterException("Creating project and studies in a single transaction is forbidden");
         }
         project.setStudies(Collections.emptyList());
 
@@ -125,7 +125,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         project.setUid(projectUid);
         project.setFqn(userId + "@" + project.getId());
         if (StringUtils.isEmpty(project.getUuid())) {
-            project.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PROJECT));
+            project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         }
         if (StringUtils.isEmpty(project.getCreationDate())) {
             project.setCreationDate(TimeUtils.getTime());
@@ -144,11 +144,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         userCollection.update(clientSession, query, update, null);
-
-        // Create nested studies
-        for (Study study : studies) {
-            dbAdaptorFactory.getCatalogStudyDBAdaptor().insert(clientSession, project, study);
-        }
 
         return project;
     }
@@ -336,24 +331,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return endWrite(tmpStartTime, 1, 1, null);
     }
 
-    Document getDocumentUpdateParams(ObjectMap parameters) {
+    Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document projectParameters = new Document();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
-                QueryParams.ORGANIZATION.key(), QueryParams.LAST_MODIFIED.key(), QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
-                QueryParams.ORGANISM_COMMON_NAME.key(), QueryParams.ORGANISM_ASSEMBLY.key(), };
+                QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), QueryParams.ORGANISM_COMMON_NAME.key(), QueryParams.ORGANISM_ASSEMBLY.key(), };
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
                 projectParameters.put("projects.$." + s, parameters.getString(s));
-            }
-        }
-        String[] acceptedIntParams = {QueryParams.SIZE.key(), QueryParams.ORGANISM_TAXONOMY_CODE.key(), };
-        for (String s : acceptedIntParams) {
-            if (parameters.containsKey(s)) {
-                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
-                if (anInt != Integer.MIN_VALUE) {
-                    projectParameters.put("projects.$." + s, anInt);
-                }
             }
         }
         Map<String, Object> attributes = parameters.getMap(QueryParams.ATTRIBUTES.key());
@@ -363,9 +348,26 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
         }
 
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            projectParameters.put("projects.$." + QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            projectParameters.put("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        Object datastores = parameters.get(QueryParams.INTERNAL_DATASTORES_VARIANT.key());
+        if (datastores != null) {
+            if (datastores instanceof DataStore) {
+                datastores = getMongoDBDocument(datastores, "Datastore");
+            }
+            projectParameters.put("projects.$." + QueryParams.INTERNAL_DATASTORES_VARIANT.key(), datastores);
+        } else {
+            datastores = parameters.get(QueryParams.INTERNAL_DATASTORES.key());
+            if (datastores instanceof DataStore) {
+                datastores = getMongoDBDocument(datastores, "Datastore");
+            }
+            if (datastores != null) {
+                projectParameters.put("projects.$." + QueryParams.INTERNAL_DATASTORES.key(), datastores);
+            }
+        }
+
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            projectParameters.put("projects.$." + QueryParams.INTERNAL_STATUS_NAME.key(),
+                    parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            projectParameters.put("projects.$." + QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (!projectParameters.isEmpty()) {
@@ -420,8 +422,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public OpenCGAResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        query.append(QueryParams.STATUS_NAME.key(), Status.READY);
-        OpenCGAResult<Project> projectDataResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key()));
+        query.append(QueryParams.INTERNAL_STATUS_NAME.key(), Status.READY);
+        OpenCGAResult<Project> projectDataResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.UID.key()));
         OpenCGAResult writeResult = new OpenCGAResult();
         for (Project project : projectDataResult.getResults()) {
             writeResult.append(delete(project.getUid(), queryOptions));
@@ -470,8 +472,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         // Mark the study as deleted
         ObjectMap updateParams = new ObjectMap()
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
+                .append(QueryParams.INTERNAL_STATUS_NAME.key(), Status.DELETED)
+                .append(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime())
                 .append(QueryParams.ID.key(), project.getId() + deleteSuffix);
 
         Bson bsonQuery = parseQuery(studyQuery);
@@ -495,12 +497,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     OpenCGAResult setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return update(query, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     private OpenCGAResult setStatus(long projectId, String status)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(projectId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return update(projectId, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override
@@ -515,7 +517,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
+        query.put(QueryParams.INTERNAL_STATUS_NAME.key(), Status.DELETED);
         return setStatus(query, Status.READY);
     }
 
@@ -526,7 +528,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         checkId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.UID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
+                .append(QueryParams.INTERNAL_STATUS_NAME.key(), Status.DELETED);
         if (count(query).getNumMatches() == 0) {
             throw new CatalogDBException("The project {" + id + "} is not deleted");
         }
@@ -539,13 +541,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(QueryParams.USER_ID.key(), userId);
-        return endQuery(startTime, get(query, options).getResults());
+        return endQuery(startTime, get(query, options));
     }
 
     @Override
     public OpenCGAResult<Project> get(long projectId, QueryOptions options) throws CatalogDBException {
         checkId(projectId);
-        Query query = new Query(QueryParams.UID.key(), projectId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), projectId).append(QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
 //        // Fixme: Check the code below
 //        List<Project> projects = user.getProjects();
@@ -557,14 +559,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public OpenCGAResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Project> documentList = new ArrayList<>();
         OpenCGAResult<Project> queryResult;
         try (DBIterator<Project> dbIterator = iterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            queryResult = endQuery(startTime, dbIterator);
         }
-        queryResult = endQuery(startTime, documentList);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
@@ -587,14 +585,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Project> documentList = new ArrayList<>();
         OpenCGAResult<Project> queryResult;
         try (DBIterator<Project> dbIterator = iterator(query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            queryResult = endQuery(startTime, dbIterator);
         }
-        queryResult = endQuery(startTime, documentList);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
@@ -616,32 +610,24 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
     public DBIterator<Project> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor, projectConverter);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options);
+        return new CatalogMongoDBIterator<>(mongoCursor, projectConverter);
     }
 
     @Override
@@ -649,15 +635,15 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new MongoDBIterator<>(mongoCursor);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        return new CatalogMongoDBIterator<>(mongoCursor);
     }
 
     @Override
     public DBIterator<Project> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, user);
-        return new MongoDBIterator<>(mongoCursor, projectConverter);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options, user);
+        return new CatalogMongoDBIterator<>(mongoCursor, projectConverter);
     }
 
     @Override
@@ -666,11 +652,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
-        return new MongoDBIterator<>(mongoCursor);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
+        return new CatalogMongoDBIterator(mongoCursor);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, String user)
+    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
 
         // Fetch all the studies that the user can see
@@ -731,10 +717,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return getMongoCursor(query, options);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
 
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            query.append(QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + Status.DELETED);
         }
         List<Bson> aggregates = new ArrayList<>();
 
@@ -770,7 +756,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             qOptions.put(QueryOptions.INCLUDE, includeList);
         }
 
-        return userCollection.nativeQuery().aggregate(aggregates, qOptions).iterator();
+        return userCollection.iterator(aggregates, qOptions);
     }
 
     @Override
@@ -850,7 +836,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STATUS_NAME:
+                    case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
                                 Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
@@ -861,17 +847,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case ID:
                     case FQN:
                     case DESCRIPTION:
-                    case ORGANIZATION:
                     case ORGANISM:
                     case ORGANISM_SCIENTIFIC_NAME:
                     case ORGANISM_COMMON_NAME:
-                    case ORGANISM_TAXONOMY_CODE:
                     case ORGANISM_ASSEMBLY:
-                    case STATUS_MSG:
-                    case STATUS_DATE:
-                    case LAST_MODIFIED:
-                    case SIZE:
-                    case DATASTORES:
+                    case INTERNAL_STATUS_MSG:
+                    case INTERNAL_STATUS_DATE:
+                    case INTERNAL_DATASTORES:
                     case ACL_USER_ID:
                         addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
@@ -899,7 +881,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     private void checkCanDelete(long projectId) throws CatalogDBException {
         checkId(projectId);
         Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
-                .append(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), Status.READY);
+                .append(StudyDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Status.READY);
         Long count = dbAdaptorFactory.getCatalogStudyDBAdaptor().count(query).getNumMatches();
         if (count > 0) {
             throw new CatalogDBException("The project {" + projectId + "} cannot be deleted. The project has " + count

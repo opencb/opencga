@@ -59,12 +59,12 @@ public class VariantQueryParser {
 
         preProcessStudyParams(query, options);
 
-        if (options.getLong(QueryOptions.LIMIT) < 0) {
+        if (options != null && options.getLong(QueryOptions.LIMIT) < 0) {
             throw VariantQueryException.malformedParam(QueryOptions.LIMIT, options.getString(QueryOptions.LIMIT),
                     "Invalid negative limit");
         }
 
-        if (options.getLong(QueryOptions.SKIP) < 0) {
+        if (options != null && options.getLong(QueryOptions.SKIP) < 0) {
             throw VariantQueryException.malformedParam(QueryOptions.SKIP, options.getString(QueryOptions.SKIP),
                     "Invalid negative skip");
         }

@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -30,6 +29,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
@@ -40,9 +40,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -618,7 +618,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException {
+    public OpenCGAResult applyPermissionRules(long studyId, PermissionRule permissionRule, Enums.Entity entry) throws CatalogException {
         MongoDBCollection collection = dbCollectionMap.get(entry.getResource());
 
         // We will apply the permission rules to all the entries matching the query defined in the permission rules that does not have
@@ -647,7 +647,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     //TODO: Make transactional !
     @Override
-    public OpenCGAResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
+    public OpenCGAResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Enums.Entity entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
         Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
@@ -669,7 +669,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_UID));
-        MongoCursor<Document> iterator = collection.nativeQuery().find(query, options).iterator();
+        MongoDBIterator<Document> iterator = collection.iterator(query, options);
         while (iterator.hasNext()) {
             Document myDocument = iterator.next();
             Set<String> effectivePermissions = new HashSet<>();
@@ -735,7 +735,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
+    public OpenCGAResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Enums.Entity entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
         Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
@@ -757,7 +757,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_UID));
-        MongoCursor<Document> iterator = collection.nativeQuery().find(query, options).iterator();
+        MongoDBIterator<Document> iterator = collection.iterator(query, options);
         while (iterator.hasNext()) {
             Document myDocument = iterator.next();
             Set<String> effectivePermissions = new HashSet<>();
@@ -820,7 +820,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     //TODO: Make transactional !
     @Override
-    public OpenCGAResult removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException {
+    public OpenCGAResult removePermissionRule(long studyId, String permissionRuleToDelete, Enums.Entity entry) throws CatalogException {
         // Remove the __TODELETE tag...
         String permissionRuleId = permissionRuleToDelete.split(INTERNAL_DELIMITER)[0];
 
@@ -846,16 +846,16 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     private boolean isPermissionRuleEntity(Enums.Resource resource) {
-        if (Study.Entity.CLINICAL_ANALYSES.getResource() == resource || Study.Entity.COHORTS.getResource() == resource
-                || Study.Entity.FAMILIES.getResource() == resource || Study.Entity.FILES.getResource() == resource
-                || Study.Entity.INDIVIDUALS.getResource() == resource || Study.Entity.JOBS.getResource() == resource
-                || Study.Entity.SAMPLES.getResource() == resource) {
+        if (Enums.Entity.CLINICAL_ANALYSES.getResource() == resource || Enums.Entity.COHORTS.getResource() == resource
+                || Enums.Entity.FAMILIES.getResource() == resource || Enums.Entity.FILES.getResource() == resource
+                || Enums.Entity.INDIVIDUALS.getResource() == resource || Enums.Entity.JOBS.getResource() == resource
+                || Enums.Entity.SAMPLES.getResource() == resource) {
             return true;
         }
         return false;
     }
 
-    private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Study.Entity entry)
+    private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Enums.Entity entry)
             throws CatalogException {
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
@@ -879,7 +879,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case INDIVIDUAL:
                 return dbAdaptorFactory.getCatalogIndividualDBAdaptor().parseQuery(query, rawQuery);
             case JOB:
-                return dbAdaptorFactory.getCatalogJobDBAdaptor().parseQuery(query, rawQuery);
+                return dbAdaptorFactory.getCatalogJobDBAdaptor().parseQuery(query, rawQuery, QueryOptions.empty());
             case FILE:
                 return dbAdaptorFactory.getCatalogFileDBAdaptor().parseQuery(query, rawQuery);
             case SAMPLE:

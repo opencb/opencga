@@ -21,6 +21,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.ObjectMap;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_CHUNK_SIZE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_FILE_BATCH_SIZE;
@@ -34,7 +35,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 public class ArchiveRowKeyFactory {
 
     public static final char SEPARATOR = '_';
-    private final int chunkSize;
+    private final long chunkSize;
     private final int fileBatchSize;
 
     private static final int FILE_BATCH_IDX = 0;
@@ -46,8 +47,24 @@ public class ArchiveRowKeyFactory {
     private static final int POSITION_PAD = 12;
 
     public ArchiveRowKeyFactory(Configuration conf) {
-        this.chunkSize = conf.getInt(ARCHIVE_CHUNK_SIZE.key(), ARCHIVE_CHUNK_SIZE.defaultValue());
-        this.fileBatchSize = conf.getInt(ARCHIVE_FILE_BATCH_SIZE.key(), ARCHIVE_FILE_BATCH_SIZE.defaultValue());
+        this(conf.getInt(ARCHIVE_CHUNK_SIZE.key(), ARCHIVE_CHUNK_SIZE.defaultValue()),
+                conf.getInt(ARCHIVE_FILE_BATCH_SIZE.key(), ARCHIVE_FILE_BATCH_SIZE.defaultValue()));
+    }
+
+    public ArchiveRowKeyFactory(ObjectMap conf) {
+        this(conf.getInt(ARCHIVE_CHUNK_SIZE.key(), ARCHIVE_CHUNK_SIZE.defaultValue()),
+                conf.getInt(ARCHIVE_FILE_BATCH_SIZE.key(), ARCHIVE_FILE_BATCH_SIZE.defaultValue()));
+    }
+
+    private ArchiveRowKeyFactory(long chunkSize, int fileBatchSize) {
+        this.chunkSize = chunkSize;
+        this.fileBatchSize = fileBatchSize;
+        if (chunkSize <= 0) {
+            throw new IllegalArgumentException("Invalid " + ARCHIVE_CHUNK_SIZE.key() + " = " + chunkSize);
+        }
+        if (fileBatchSize <= 0) {
+            throw new IllegalArgumentException("Invalid " + ARCHIVE_FILE_BATCH_SIZE.key() + " = " + fileBatchSize);
+        }
     }
 
     public ArchiveRowKeyFactory(int chunkSize, int fileBatchSize) {
@@ -55,7 +72,7 @@ public class ArchiveRowKeyFactory {
         this.fileBatchSize = fileBatchSize;
     }
 
-    public int getChunkSize() {
+    public long getChunkSize() {
         return chunkSize;
     }
 
@@ -64,9 +81,7 @@ public class ArchiveRowKeyFactory {
     }
 
     public long getSliceId(long position) {
-        return chunkSize > 0
-                ? position / (long) chunkSize
-                : position;
+        return position / chunkSize;
     }
 
     public int getFileBatch(int fileId) {
@@ -108,6 +123,7 @@ public class ArchiveRowKeyFactory {
     public String generateBlockIdFromSlice(int fileId, String chrom, long slice) {
         return generateBlockIdFromSliceAndBatch(getFileBatch(fileId), chrom, slice);
     }
+
     public String generateBlockIdFromSliceAndBatch(int fileBatch, String chrom, long slice) {
         String chromosome = Region.normalizeChromosome(chrom);
         StringBuilder sb = new StringBuilder(FILE_BATCH_PAD + 1 + chromosome.length() + 1 + POSITION_PAD);
@@ -148,7 +164,7 @@ public class ArchiveRowKeyFactory {
     }
 
     public long getStartPositionFromSlice(long slice) {
-        return slice * (long) getChunkSize();
+        return slice * getChunkSize();
     }
 
     public long extractPositionFromBlockId(String blockId) {

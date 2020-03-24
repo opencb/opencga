@@ -180,6 +180,9 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         int numTasks = options.getInt(
                 VariantStorageOptions.STATS_CALCULATE_THREADS.key(),
                 VariantStorageOptions.STATS_CALCULATE_THREADS.defaultValue());
+        boolean statsMultiAllelic = options.getBoolean(
+                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
+                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
         boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
         Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);

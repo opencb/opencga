@@ -51,7 +51,7 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
     public FamilySolrModel convertToStorageType(Family family) {
         FamilySolrModel familySolrModel = new FamilySolrModel();
 
-        familySolrModel.setId(family.getId());
+        familySolrModel.setId(family.getUuid());
         familySolrModel.setUid(family.getUid());
         familySolrModel.setStudyId(study.getFqn().replace(":", "__"));
 
@@ -62,12 +62,13 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
         familySolrModel.setCreationMonth(localDate.getMonth().toString());
         familySolrModel.setCreationDay(localDate.getDayOfMonth());
         familySolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        familySolrModel.setStatus(family.getStatus().getName());
+        familySolrModel.setStatus(family.getInternal().getStatus().getName());
 
-        if (family.getStatus() != null) {
-            familySolrModel.setStatus(family.getStatus().getName());
+        if (family.getInternal().getStatus() != null) {
+            familySolrModel.setStatus(family.getInternal().getStatus().getName());
         }
         familySolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(family.getPhenotypes()));
+        familySolrModel.setPhenotypes(SolrConverterUtil.populateDisorders(family.getDisorders()));
 
         familySolrModel.setNumMembers(family.getMembers() != null ? family.getMembers().size() : 0);
         familySolrModel.setExpectedSize(family.getExpectedSize());

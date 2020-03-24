@@ -29,20 +29,19 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.old.AnalysisExecutionException;
-import org.opencb.opencga.analysis.old.execution.plugins.PluginExecutor;
-import org.opencb.opencga.analysis.old.execution.plugins.hist.VariantHistogramAnalysis;
-import org.opencb.opencga.analysis.old.execution.plugins.ibs.IbsAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
-import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -54,13 +53,11 @@ import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
-import org.opencb.opencga.core.models.variant.VariantExportParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
-import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -80,10 +77,14 @@ import java.util.Map;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
@@ -128,9 +129,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory);
 
         switch (subCommandString) {
-            case "ibs":
-                ibs();
-                break;
             case VARIANT_DELETE_COMMAND:
                 fileDelete();
                 break;
@@ -194,9 +192,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             case SAMPLE_RUN_COMMAND:
                 sampleRun();
                 break;
-            case "histogram":
-                histogram();
-                break;
             case GWAS_RUN_COMMAND:
                 gwas();
             case KNOCKOUT_RUN_COMMAND:
@@ -206,6 +201,18 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 sampleEligibility();
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 mutationalSignature();
+                break;
+            case MENDELIAN_ERROR_RUN_COMMAND:
+                mendelianError();
+                break;
+            case INFERRED_SEX_RUN_COMMAND:
+                inferredSex();
+                break;
+            case RELATEDNESS_RUN_COMMAND:
+                relatedness();
+                break;
+            case GENETIC_CHECKS_RUN_COMMAND:
+                geneticChecks();
                 break;
             case PLINK_RUN_COMMAND:
                 plink();
@@ -227,19 +234,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
         }
     }
-
-    private void ibs() throws CatalogException, AnalysisExecutionException {
-        VariantCommandOptions.VariantIbsCommandOptions cliOptions = variantCommandOptions.ibsVariantCommandOptions;
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IbsAnalysis.SAMPLES, cliOptions.samples);
-        params.putIfNotEmpty(IbsAnalysis.OUTDIR, cliOptions.outdir);
-
-        String userId1 = catalogManager.getUserManager().getUserId(token);
-        new PluginExecutor(catalogManager, token).execute(IbsAnalysis.class, "default", catalogManager.getStudyManager().resolveId
-                (cliOptions.study, userId1).getUid(), params);
-    }
-
 
     private void exportFrequencies() throws Exception {
 
@@ -346,6 +340,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.gvcf,
                 cliOptions.genericVariantIndexOptions.load,
                 cliOptions.genericVariantIndexOptions.loadSplitData,
+                cliOptions.genericVariantIndexOptions.skipSampleIndex,
                 cliOptions.genericVariantIndexOptions.skipPostLoadCheck,
                 cliOptions.genericVariantIndexOptions.excludeGenotype,
                 cliOptions.genericVariantIndexOptions.includeExtraFields,
@@ -610,20 +605,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 Paths.get(cliOptions.outdir), token);
     }
 
-    private void histogram() throws Exception {
-        VariantCommandOptions.VariantHistogramCommandOptions cliOptions = variantCommandOptions.histogramCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-        params.put(VariantHistogramAnalysis.INTERVAL, cliOptions.interval.toString());
-        params.put(VariantHistogramAnalysis.OUTDIR, cliOptions.outdir);
-        Query query = VariantQueryCommandUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
-        params.putAll(query);
-
-        String userId1 = catalogManager.getUserManager().getUserId(token);
-        new PluginExecutor(catalogManager, token)
-                .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyManager().resolveId(cliOptions.study, userId1).getUid(), params);
-    }
-
     private void gwas() throws Exception {
         VariantCommandOptions.GwasCommandOptions cliOptions = variantCommandOptions.gwasCommandOptions;
         ObjectMap params = new ObjectMap();
@@ -745,6 +726,64 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         mutationalSignatureAnalysis.setStudy(cliOptions.study)
                 .setSampleName(cliOptions.sample)
+                .start();
+    }
+
+    private void mendelianError() throws Exception {
+        VariantCommandOptions.MendelianErrorCommandOptions cliOptions = variantCommandOptions.mendelianErrorCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        MendelianErrorAnalysis mendelianErrorAnalysis = new MendelianErrorAnalysis();
+        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        mendelianErrorAnalysis.setStudy(cliOptions.study)
+                .setFamilyId(cliOptions.family)
+                .setIndividualId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
+                .start();
+    }
+
+    private void inferredSex() throws Exception {
+        VariantCommandOptions.InferredSexCommandOptions cliOptions = variantCommandOptions.inferredSexCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
+        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        inferredSexAnalysis.setStudyId(cliOptions.study)
+                .setSampleId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
+                .start();
+    }
+
+    private void relatedness() throws Exception {
+        VariantCommandOptions.RelatednessCommandOptions cliOptions = variantCommandOptions.relatednessCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        RelatednessAnalysis relatednessAnalysis = new RelatednessAnalysis();
+        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        relatednessAnalysis.setStudyId(cliOptions.study)
+                .setIndividualIds(cliOptions.individuals)
+                .setSampleIds(cliOptions.samples)
+                .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
+                .setMethod(cliOptions.method)
+                .start();
+    }
+
+    private void geneticChecks() throws Exception {
+        VariantCommandOptions.GeneticChecksCommandOptions cliOptions = variantCommandOptions.geneticChecksCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        GeneticChecksAnalysis geneticChecksAnalysis = new GeneticChecksAnalysis();
+        geneticChecksAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        geneticChecksAnalysis.setStudy(cliOptions.study)
+                .setFamilyId(cliOptions.family)
+                .setIndividualId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
+                .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
+                .setRelatednessMethod(cliOptions.relatednessMethod)
                 .start();
     }
 

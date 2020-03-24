@@ -86,9 +86,8 @@ public class SolrQueryParser {
 
         // Remove from this map filter_*,qual_*, fileInfo__* and sampleFormat__*, they will be processed with include-file,
         // include-sample, include-genotype...
-        //includeMap.put("studies", "studies,stats__*,gt_*,filter_*,qual_*,fileInfo_*,sampleFormat_*");
-        includeMap.put("studies", "studies,stats_*,score_*");
-        includeMap.put("studies.stats", "studies,stats_*");
+        includeMap.put("studies", "studies,altStats_*,passStats_*,score_*");
+        includeMap.put("studies.stats", "studies,altStats_*,passStats_*");
         includeMap.put("studies.scores", "studies,score_*");
 
         includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq_*,"
@@ -279,26 +278,34 @@ public class SolrQueryParser {
         }
 
         // Stats ALT
-        // In the model: "stats__1kg_phase3__ALL"=0.02
+        // In the model: "altStats__1kg_phase3__ALL"=0.02
         key = STATS_ALT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_ALT, "stats", query.getString(key), "ALT", defaultStudyName,
+            filterList.add(parsePopFreqValue(STATS_ALT, "altStats", query.getString(key), "ALT", defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
         // Stats MAF
-        // In the model: "stats__1kg_phase3__ALL"=0.02
+        // In the model: "altStats__1kg_phase3__ALL"=0.02
         key = STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_MAF, "stats", query.getString(key), "MAF", defaultStudyName,
+            filterList.add(parsePopFreqValue(STATS_MAF, "altStats", query.getString(key), "MAF", defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
         // Stats REF
-        // In the model: "stats__1kg_phase3__ALL"=0.02
+        // In the model: "altStats__1kg_phase3__ALL"=0.02
         key = STATS_REF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_REF, "stats", query.getString(key), "REF", defaultStudyName,
+            filterList.add(parsePopFreqValue(STATS_REF, "altStats", query.getString(key), "REF", defaultStudyName,
+                    query.getString(STUDY.key())));
+        }
+
+        // Stats PASS filter
+        // In the model: "passStats__1kg_phase3__ALL">0.2
+        key = STATS_PASS_FREQ.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parsePopFreqValue(STATS_PASS_FREQ, "passStats", query.getString(key), "", defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
@@ -626,7 +633,7 @@ public class SolrQueryParser {
         } else if (facet.contains(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {
             return parseFacetWithStudy(facet, "popFreq");
         } else if (facet.contains(STATS_ALT.key())) {
-            return parseFacetWithStudy(facet, "stats");
+            return parseFacetWithStudy(facet, "altStats");
         } else if (facet.contains(SCORE.key())) {
             return parseFacetWithStudy(facet, SCORE.key());
         } else {
@@ -1101,16 +1108,16 @@ public class SolrQueryParser {
     }
 
     /**
-     * Parse population/stats values, e.g.: 1000g:all>0.4 or 1Kg_phase3:JPN<0.00982. This function takes into account
+     * Parse population/altStats values, e.g.: 1000g:all>0.4 or 1Kg_phase3:JPN<0.00982. This function takes into account
      * multiple values and the separator between them can be:
      *     "," to apply a "OR condition"
      *     ";" to apply a "AND condition"
      *
      *
      * @param param        Param name
-     * @param name         Parameter type: propFreq or stats
+     * @param name         Parameter type: propFreq or altStats
      * @param value        Parameter value
-     * @param type         Type of frequency: REF, ALT, MAF
+     * @param type         Type of frequency: REF, ALT, MAF, empty
      * @param defaultStudy Default study. To be used only if the study is not present.
      * @param studies    True if multiple studies are present joined by , (i.e., OR logical operation), only for STATS
      * @return             The string with the boolean conditions
@@ -1131,7 +1138,7 @@ public class SolrQueryParser {
 
             // We need to know if
             boolean addOr = true;
-            if (name.equals("stats")) {
+            if (name.equals("altStats") || name.equals("passStats")) {
                 if (StringUtils.isNotEmpty(studies) || StringUtils.isNotEmpty(defaultStudy)) {
                     Set<String> studiesSet = new HashSet<>();
                     if (defaultStudy != null) {
@@ -1292,7 +1299,7 @@ public class SolrQueryParser {
     /**
      * Build Solr query range, e.g.: query range [0 TO 23}.
      *
-     * @param prefix    Prefix, e.g.: popFreq__study__cohort, stats__ or null
+     * @param prefix    Prefix, e.g.: popFreq__study__cohort, altStats__ or null
      * @param name      Parameter name, e.g.: sift, phylop, gerp, caddRaw,...
      * @param op        Operator, e.g.: =, !=, <, <=, <<, <<=, >,...
      * @param value     Parameter value, e.g.: 0.314, tolerated,...
@@ -1371,7 +1378,8 @@ public class SolrQueryParser {
             case "<<":
             case "<<=":
                 String rightCloseOperator = ("<<").equals(op) ? "}" : "]";
-                if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
+                if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("altStats_")
+                        || prefix.startsWith("passStats_"))) {
                     sb.append("(");
                     sb.append(prefix).append(getSolrFieldName(name)).append(":[0 TO ").append(value).append(rightCloseOperator);
                     if (addOr) {
@@ -1388,7 +1396,8 @@ public class SolrQueryParser {
             case ">>=":
                 String leftCloseOperator = (">>").equals(op) ? "{" : "[";
                 sb.append("(");
-                if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
+                if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("altStats_")
+                        || prefix.startsWith("passStats_"))) {
                     sb.append(prefix).append(getSolrFieldName(name)).append(":").append(leftCloseOperator).append(value).append(" TO *]");
                     if (addOr) {
                         sb.append(" OR ");

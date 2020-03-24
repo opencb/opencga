@@ -25,12 +25,16 @@ import java.util.Calendar;
  */
 public class Account {
 
-    private Type type;
+    private AccountType type;
     private String creationDate;
     private String expirationDate;
-    @Deprecated
-    private String authOrigin;
     private AuthenticationOrigin authentication;
+
+    public enum AccountType {
+        GUEST,
+        FULL,
+        ADMINISTRATOR
+    }
 
     public Account() {
         String creationDate = TimeUtils.getTime();
@@ -40,13 +44,13 @@ public class Account {
         cal.add(Calendar.YEAR, +1);
         String expirationDate = TimeUtils.getTime(cal.getTime());
 
-        this.type = Type.FULL;
+        this.type = AccountType.FULL;
         this.creationDate = creationDate;
         this.expirationDate = expirationDate;
         this.authentication = null;
     }
 
-    public Account(Type type, String creationDate, String expirationDate, AuthenticationOrigin authentication) {
+    public Account(AccountType type, String creationDate, String expirationDate, AuthenticationOrigin authentication) {
         this.type = type;
         this.expirationDate = expirationDate;
         this.creationDate = creationDate;
@@ -64,11 +68,11 @@ public class Account {
         return sb.toString();
     }
 
-    public Type getType() {
+    public AccountType getType() {
         return type;
     }
 
-    public Account setType(Type type) {
+    public Account setType(AccountType type) {
         this.type = type;
         return this;
     }
@@ -91,17 +95,6 @@ public class Account {
         return this;
     }
 
-    @Deprecated
-    public String getAuthOrigin() {
-        return authOrigin;
-    }
-
-    @Deprecated
-    public Account setAuthOrigin(String authOrigin) {
-        this.authOrigin = authOrigin;
-        return this;
-    }
-
     public AuthenticationOrigin getAuthentication() {
         return authentication;
     }
@@ -109,12 +102,6 @@ public class Account {
     public Account setAuthentication(AuthenticationOrigin authentication) {
         this.authentication = authentication;
         return this;
-    }
-
-    public enum Type {
-        GUEST,
-        FULL,
-        ADMINISTRATOR
     }
 
     public static class AuthenticationOrigin {
@@ -128,6 +115,15 @@ public class Account {
         public AuthenticationOrigin(String id, boolean application) {
             this.id = id;
             this.application = application;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("AuthenticationOrigin{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", application=").append(application);
+            sb.append('}');
+            return sb.toString();
         }
 
         public String getId() {

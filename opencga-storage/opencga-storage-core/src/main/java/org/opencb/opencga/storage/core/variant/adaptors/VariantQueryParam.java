@@ -170,6 +170,10 @@ public final class VariantQueryParam implements QueryParam {
             = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
     public static final VariantQueryParam STATS_MGF = new VariantQueryParam("cohortStatsMgf", TEXT_ARRAY, STATS_MGF_DESCR);
 
+    public static final String STATS_PASS_FREQ_DESCR
+            = "Filter PASS frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8";
+    public static final VariantQueryParam STATS_PASS_FREQ = new VariantQueryParam("cohortStatsPass", TEXT_ARRAY, STATS_PASS_FREQ_DESCR);
+
     public static final String MISSING_ALLELES_DESCR
             = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}";
     public static final VariantQueryParam MISSING_ALLELES = new VariantQueryParam("missingAlleles", TEXT_ARRAY, MISSING_ALLELES_DESCR);

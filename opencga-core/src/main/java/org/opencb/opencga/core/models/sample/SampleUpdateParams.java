@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -15,33 +16,31 @@ public class SampleUpdateParams {
 
     private String id;
     private String description;
-    private String type;
     private String individualId;
     private SampleProcessing processing;
     private SampleCollection collection;
-    private String source;
     private Boolean somatic;
     private List<Phenotype> phenotypes;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public SampleUpdateParams() {
     }
 
-    public SampleUpdateParams(String id, String description, String type, String individualId, SampleProcessing processing,
-                              SampleCollection collection, String source, Boolean somatic, List<Phenotype> phenotypes,
-                              List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public SampleUpdateParams(String id, String description, String individualId, SampleProcessing processing, SampleCollection collection,
+                              Boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets,
+                              Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
-        this.type = type;
         this.individualId = individualId;
         this.processing = processing;
         this.collection = collection;
-        this.source = source;
         this.somatic = somatic;
         this.phenotypes = phenotypes;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
+        this.status = status;
     }
 
     @JsonIgnore
@@ -65,15 +64,14 @@ public class SampleUpdateParams {
         final StringBuilder sb = new StringBuilder("SampleUpdateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", type='").append(type).append('\'');
         sb.append(", individualId='").append(individualId).append('\'');
         sb.append(", processing=").append(processing);
         sb.append(", collection=").append(collection);
-        sb.append(", source='").append(source).append('\'');
         sb.append(", somatic=").append(somatic);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -94,15 +92,6 @@ public class SampleUpdateParams {
 
     public SampleUpdateParams setDescription(String description) {
         this.description = description;
-        return this;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public SampleUpdateParams setType(String type) {
-        this.type = type;
         return this;
     }
 
@@ -130,15 +119,6 @@ public class SampleUpdateParams {
 
     public SampleUpdateParams setCollection(SampleCollection collection) {
         this.collection = collection;
-        return this;
-    }
-
-    public String getSource() {
-        return source;
-    }
-
-    public SampleUpdateParams setSource(String source) {
-        this.source = source;
         return this;
     }
 
@@ -175,6 +155,15 @@ public class SampleUpdateParams {
 
     public SampleUpdateParams setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public SampleUpdateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 }

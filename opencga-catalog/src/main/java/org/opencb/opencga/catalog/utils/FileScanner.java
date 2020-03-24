@@ -23,11 +23,14 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileStatus;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.SmallFileInternal;
 import org.opencb.opencga.core.models.study.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,8 +71,8 @@ public class FileScanner {
     /**
      * Check tracking from all files from a study.
      *
-     * Set file status {@link File.FileStatus#MISSING} if the file (fileUri) is unreachable
-     * Set file status to {@link File.FileStatus#READY} if was {@link File.FileStatus#MISSING} and file (fileUri) is reachable
+     * Set file status {@link FileStatus#MISSING} if the file (fileUri) is unreachable
+     * Set file status to {@link FileStatus#READY} if was {@link FileStatus#MISSING} and file (fileUri) is reachable
      *
      * @param study             The study to check
      * @param sessionId         User sessionId
@@ -79,8 +82,8 @@ public class FileScanner {
      */
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
         Query query = new Query();
-        query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(
-                File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.TRASHED));
+        query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Arrays.asList(
+                FileStatus.READY, FileStatus.MISSING, FileStatus.TRASHED));
 
         DBIterator<File> iterator = catalogManager.getFileManager().iterator(study.getFqn(), query, new QueryOptions(), sessionId);
 
@@ -131,12 +134,16 @@ public class FileScanner {
      * @return              Untracked files
      * @throws CatalogException     if a Catalog error occurs
      */
-    public Map<String, URI> untrackedFiles(Study study, String sessionId)
-            throws CatalogException {
+    public Map<String, URI> untrackedFiles(Study study, String sessionId) throws CatalogException {
         long studyId = study.getUid();
         URI studyUri = study.getUri();
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
+        IOManager ioManager = null;
+        try {
+            ioManager = catalogManager.getIoManagerFactory().get(studyUri);
+        } catch (IOException e) {
+            throw CatalogIOException.ioManagerException(studyUri, e);
+        }
         Map<String, URI> linkedFolders = new HashMap<>();
         linkedFolders.put("", studyUri);
         Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
@@ -220,9 +227,9 @@ public class FileScanner {
         Study study = catalogManager.getFileManager().getStudy(directory, sessionId);
 
         long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(directoryToScan);
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(directoryToScan);
         Stream<URI> uris = ioManager.exists(directoryToScan)
-                ? catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFilesStream(directoryToScan)
+                ? catalogManager.getIoManagerFactory().get(directoryToScan).listFilesStream(directoryToScan)
                 : Stream.empty();
         List<File> files = new LinkedList<>();
 
@@ -255,7 +262,7 @@ public class FileScanner {
 
                         // Set the status of the file to PENDING DELETE
                         FileUpdateParams updateParams = new FileUpdateParams()
-                                .setStatus(new File.FileStatus(File.FileStatus.PENDING_DELETE));
+                                .setInternal(new SmallFileInternal(new FileStatus(FileStatus.PENDING_DELETE)));
                         catalogManager.getFileManager().update(study.getFqn(), tmpQuery, updateParams, QueryOptions.empty(), sessionId);
 
                         // Delete completely the file/folder !
@@ -279,7 +286,7 @@ public class FileScanner {
             if (file == null) {
                 long start, end;
                 if (uri.getPath().endsWith("/")) {
-                    file = catalogManager.getFileManager().createFolder(study.getFqn(), Paths.get(filePath).toString(), null, true,
+                    file = catalogManager.getFileManager().createFolder(study.getFqn(), Paths.get(filePath).toString(), true,
                             null, QueryOptions.empty(), sessionId).first();
                 } else {
                     start = System.currentTimeMillis();
@@ -299,9 +306,9 @@ public class FileScanner {
                 logger.debug("Created new file entry for " + uri + " { uid:" + file.getUid() + ", path:\"" + file.getPath() + "\" } ");
             } else {
                 if (file.getType() == File.Type.FILE) {
-                    if (file.getStatus().getName().equals(File.FileStatus.MISSING)) {
+                    if (file.getInternal().getStatus().getName().equals(FileStatus.MISSING)) {
                         logger.info("File { uid:" + file.getUid() + ", path:'" + file.getPath() + "' } recover tracking from file " + uri);
-                        logger.debug("Set status to " + File.FileStatus.READY);
+                        logger.debug("Set status to " + FileStatus.READY);
                         returnFile = true;      //Return file because was missing
                     }
                     long start = System.currentTimeMillis();

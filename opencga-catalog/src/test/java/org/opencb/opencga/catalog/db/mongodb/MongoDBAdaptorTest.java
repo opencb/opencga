@@ -37,15 +37,23 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.project.Datastores;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectInternal;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.StudyInternal;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserInternal;
+import org.opencb.opencga.core.models.user.UserQuota;
+import org.opencb.opencga.core.models.user.UserStatus;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -164,80 +172,77 @@ public class MongoDBAdaptorTest extends GenericTest {
         /**
          * Let's init the database with some basic data to perform each of the tests
          */
-        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", null, User.UserStatus.READY, "", 100, 1000,
-                Arrays.<Project>asList(new Project("P1", "project", "", new Status(), "", null, 1), new Project("P2", "project", "",
-                        new Status(), "", null, 1), new Project("P3", "project", "", new Status(), "", null, 1)),
-                new HashMap<>(), new HashMap<>());
-        catalogUserDBAdaptor.insert(user1, null);
+        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
+                Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
+        catalogUserDBAdaptor.insert(user1, "1234", null);
+        catalogProjectDBAdaptor.insert(new Project("P1", "project", "", null, 1,
+                new ProjectInternal(new Datastores(), new Status())), "jcoll", null);
+        catalogProjectDBAdaptor.insert(new Project("P2", "project", "", null, 1,
+                new ProjectInternal(new Datastores(), new Status())), "jcoll", null);
+        catalogProjectDBAdaptor.insert(new Project("P3", "project", "", null, 1,
+                new ProjectInternal(new Datastores(), new Status())), "jcoll", null);
 
-        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.UserStatus.READY);
-        catalogUserDBAdaptor.insert(user2, null);
+        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "ACME", new UserInternal(new UserStatus()));
+        catalogUserDBAdaptor.insert(user2, "1111", null);
 
-        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, User.UserStatus.READY, "", 1222, 122222,
-                Arrays.asList(new Project("pr1", "90 GigaGenomes", null, "very long description", "Spain", null, new Status(), "", 0,
-                                Arrays.asList(new Study("name", "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(),
-                                        0, Arrays.asList(new Group("@members", Collections.emptyList())),
-                                        Arrays.asList(
-                                        new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
-                                                new File.FileStatus(File.FileStatus.READY), 1000, 1),
-                                        new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
-                                                new File.FileStatus(File.FileStatus.READY), 1000, 1)
-                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                                        Collections.emptyList(), new LinkedList<>(), null, null, null, 1, Collections.emptyMap(),
-                                        Collections.emptyMap()
-                        )
-                ), Collections.emptyMap(), Collections.emptyMap(), 1)
-                ), new HashMap<>(), new HashMap<>());
-        catalogUserDBAdaptor.insert(user3, null);
+        user3 = new User("imedina", "Nacho", "nacho@gmail", "SPAIN", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
+                Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
+        catalogUserDBAdaptor.insert(user3, "2222", null);
+        catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", null, "very long description", null,
+                Collections.emptyList(), 1, new ProjectInternal(new Datastores(), new Status()), Collections.emptyMap()
+        ), "imedina", null);
+        catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
+                new Study("name", "Study name", "ph1", "", "", null, 0,
+                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
+                                new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
+                                        FileInternal.initialize(), 1000, 1),
+                                new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
+                                        FileInternal.initialize(), 1000, 1)
+                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
+                        null, null, 1, new CustomStatus(), new StudyInternal(new Status()), Collections.emptyMap()), null);
 
-        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
-                Arrays.asList(new Project("pr", "lncRNAs", null, "My description", "My org", null, new Status(), "", 0,
-                        Arrays.asList(
-                                new Study("spongeScan", "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), 0,
-                                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
-                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
-                                                        null, "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
-                                                new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file1.txt", null, "Description",
-                                                        new File.FileStatus(File.FileStatus.READY), 100, 1),
-                                                new File("file2.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file2.txt", null, "Description2",
-                                                        new File.FileStatus(File.FileStatus.READY), 100, 1),
-                                                new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                                        "data/alignment.bam", null, "Tophat alignment file",
-                                                        new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
-                                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
-                                        Collections.emptyMap(), Collections.emptyMap()
-                                ),
-                                new Study("mineco", "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), 0,
-                                        Arrays.asList(new Group("@members", Collections.emptyList())),
-                                        Arrays.asList(
-                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
-                                                        null, "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
-                                                new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file1.txt", null, "Description",
-                                                        new File.FileStatus(File.FileStatus.READY), 100, 1),
-                                                new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                                        "data/alignment.bam", null, "Tophat alignment file",
-                                                        new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
-                                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
-                                        Collections.emptyMap(), Collections.emptyMap())
-                        ), Collections.emptyMap(), Collections.emptyMap(), 1)
-                ),
-                new HashMap<>(), new HashMap<>());
+        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "Organization", null, new UserInternal(new UserStatus()),
+                new UserQuota(-1, -1, -1, -1), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
 
-        catalogUserDBAdaptor.insert(user4, null);
+        catalogUserDBAdaptor.insert(user4, "pfuriopass", null);
+        catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", null, "My description", null,
+                Collections.emptyList(), 1, new ProjectInternal(new Datastores(), new Status()), Collections.emptyMap()), "pfurio", null);
+        catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
+                new Study("spongeScan", "spongeScan", "sponges", "", "", null,
+                        0, Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
+                        new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
+                                null, "Description", FileInternal.initialize(), 10, 1),
+                        new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
+                                File.Bioformat.NONE, "data/file1.txt", null, "Description", FileInternal.initialize(), 100, 1),
+                        new File("file2.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
+                                File.Bioformat.NONE, "data/file2.txt", null, "Description2", FileInternal.initialize(), 100, 1),
+                        new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
+                                "data/alignment.bam", null, "Tophat alignment file", FileInternal.initialize(), 5000, 1)
+                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new CustomStatus(),
+                        new StudyInternal(new Status()), Collections.emptyMap()), null);
+        catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
+                new Study("mineco", "MINECO", "mineco", "", "", null, 0,
+                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
+                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
+                                        null, "Description", FileInternal.initialize(), 10, 1),
+                                new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
+                                        File.Bioformat.NONE, "data/file1.txt", null, "Description", FileInternal.initialize(), 100, 1),
+                                new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
+                                        "data/alignment.bam", null, "Tophat alignment file", FileInternal.initialize(), 5000, 1)
+                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new CustomStatus(),
+                        new StudyInternal(new Status()), Collections.emptyMap()), null);
 
         QueryOptions options = new QueryOptions("includeStudies", true);
         options.put("includeFiles", true);
         options.put("includeJobs", true);
         options.put("includeSamples", true);
-        user1 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user1.getId(), options, null).first();
-        user2 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user2.getId(), options, null).first();
-        user3 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user3.getId(), options, null).first();
-        user4 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user4.getId(), options, null).first();
+        user1 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user1.getId(), options).first();
+        user2 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user2.getId(), options).first();
+        user3 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user3.getId(), options).first();
+        user4 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user4.getId(), options).first();
 
     }
 

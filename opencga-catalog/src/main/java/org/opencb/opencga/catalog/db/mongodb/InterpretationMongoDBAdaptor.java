@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.NotImplementedException;
@@ -13,15 +12,16 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.InterpretationConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
@@ -78,7 +78,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
         if (StringUtils.isEmpty(interpretation.getUuid())) {
-            interpretation.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INTERPRETATION));
+            interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
         }
 
         Document interpretationObject = interpretationConverter.convertToStorageType(interpretation);
@@ -145,13 +145,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     @Override
     public OpenCGAResult<Interpretation> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Interpretation> documentList = new ArrayList<>();
         try (DBIterator<Interpretation> dbIterator = iterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -163,14 +159,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
-        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -347,8 +338,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     @Override
     public DBIterator<Interpretation> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor, interpretationConverter);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options);
+        return new CatalogMongoDBIterator<>(mongoCursor, interpretationConverter);
     }
 
     @Override
@@ -356,8 +347,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new MongoDBIterator(mongoCursor);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        return new CatalogMongoDBIterator(mongoCursor);
     }
 
     @Override
@@ -372,7 +363,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -382,7 +373,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         logger.debug("Interpretation query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return interpretationCollection.nativeQuery().find(bson, qOptions).iterator();
+        return interpretationCollection.iterator(bson, qOptions);
     }
 
     @Override

@@ -58,9 +58,9 @@ public class VariantImportTest extends AbstractVariantOperationManagerTest {
         indexFile(getSmallFile(), new QueryOptions(VariantStorageOptions.STATS_CALCULATE.key(), true), outputId);
 
         catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, Arrays.asList(
-                new Variable("name", "", "", Variable.VariableType.STRING, null, true, false, null, 0, null, null, null, null),
-                new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
-                new Variable("other", "", "", Variable.VariableType.STRING, "unknown", false, false, null, 0, null, null, null, null)),
+                new Variable("name", "", "", Variable.VariableType.STRING, null, true, false, null, null, 0, null, null, null, null),
+                new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, null, 0, null, null, null, null),
+                new Variable("other", "", "", Variable.VariableType.STRING, "unknown", false, false, null, null, 0, null, null, null, null)),
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId);
 
         catalogManager.getSampleManager().update(studyId, "NA19600", new SampleUpdateParams()

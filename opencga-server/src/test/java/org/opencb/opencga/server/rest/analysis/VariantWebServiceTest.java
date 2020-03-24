@@ -20,7 +20,7 @@ public class VariantWebServiceTest {
     @Test
     public void testVariantQueryParams() {
         Set<String> other = VARIANT_CATALOG_QUERY_PARAMS.stream().map(QueryParam::key).collect(Collectors.toSet());
-        List<String> excluded = Arrays.asList("chromosome", "maf", "mgf", "sort", "groupBy");
+        List<String> excluded = Arrays.asList("chromosome", "sort");
 
         Map<String, Class<?>> fields = new VariantQueryParams().fields();
         for (String field : fields.keySet()) {

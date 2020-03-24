@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -22,11 +23,15 @@ public class FileUpdateParams {
     private File.Format format;
     private File.Bioformat bioformat;
     private Software software;
+    private FileExperiment experiment;
     private List<String> tags;
-    private File.FileStatus status;
+    private SmallFileInternal internal;
 
     private List<SmallRelatedFileParams> relatedFiles;
 
+    private Long size;
+
+    private CustomStatusParams status;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -35,9 +40,9 @@ public class FileUpdateParams {
     }
 
     public FileUpdateParams(String name, String description, List<String> samples, String checksum, File.Format format,
-                            File.Bioformat bioformat, Software software, List<String> tags, File.FileStatus status,
-                            List<SmallRelatedFileParams> relatedFiles, List<AnnotationSet> annotationSets, Map<String, Object> stats,
-                            Map<String, Object> attributes) {
+                            File.Bioformat bioformat, Software software, FileExperiment experiment, List<String> tags,
+                            SmallFileInternal internal, Long size, List<SmallRelatedFileParams> relatedFiles, CustomStatusParams status,
+                            List<AnnotationSet> annotationSets, Map<String, Object> stats, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
         this.samples = samples;
@@ -45,9 +50,12 @@ public class FileUpdateParams {
         this.format = format;
         this.bioformat = bioformat;
         this.software = software;
+        this.experiment = experiment;
         this.tags = tags;
-        this.status = status;
+        this.internal = internal;
+        this.size = size;
         this.relatedFiles = relatedFiles;
+        this.status = status;
         this.annotationSets = annotationSets;
         this.stats = stats;
         this.attributes = attributes;
@@ -78,10 +86,13 @@ public class FileUpdateParams {
         sb.append(", checksum='").append(checksum).append('\'');
         sb.append(", format=").append(format);
         sb.append(", bioformat=").append(bioformat);
-        sb.append(", status=").append(status);
         sb.append(", software=").append(software);
+        sb.append(", experiment=").append(experiment);
         sb.append(", tags=").append(tags);
+        sb.append(", internal=").append(internal);
         sb.append(", relatedFiles=").append(relatedFiles);
+        sb.append(", size=").append(size);
+        sb.append(", status=").append(status);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
@@ -143,12 +154,12 @@ public class FileUpdateParams {
         return this;
     }
 
-    public File.FileStatus getStatus() {
-        return status;
+    public SmallFileInternal getInternal() {
+        return internal;
     }
 
-    public FileUpdateParams setStatus(File.FileStatus status) {
-        this.status = status;
+    public FileUpdateParams setInternal(SmallFileInternal internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -170,12 +181,39 @@ public class FileUpdateParams {
         return this;
     }
 
+    public FileExperiment getExperiment() {
+        return experiment;
+    }
+
+    public FileUpdateParams setExperiment(FileExperiment experiment) {
+        this.experiment = experiment;
+        return this;
+    }
+
+    public Long getSize() {
+        return size;
+    }
+
+    public FileUpdateParams setSize(Long size) {
+        this.size = size;
+        return this;
+    }
+
     public List<SmallRelatedFileParams> getRelatedFiles() {
         return relatedFiles;
     }
 
     public FileUpdateParams setRelatedFiles(List<SmallRelatedFileParams> relatedFiles) {
         this.relatedFiles = relatedFiles;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public FileUpdateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 

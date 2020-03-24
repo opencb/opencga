@@ -103,22 +103,22 @@
         </dependency>
         <!--Uncomment if hadoop dependencies are provided-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.hadoop</groupId>-->
-            <!--<artifactId>hadoop-common</artifactId>-->
-            <!--<version>${hadoop.version}</version>-->
-            <!--<scope>test</scope>-->
+        <!--<groupId>org.apache.hadoop</groupId>-->
+        <!--<artifactId>hadoop-common</artifactId>-->
+        <!--<version>${hadoop.version}</version>-->
+        <!--<scope>test</scope>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.hadoop</groupId>-->
-            <!--<artifactId>hadoop-client</artifactId>-->
-            <!--<version>${hadoop.version}</version>-->
-            <!--<scope>test</scope>-->
+        <!--<groupId>org.apache.hadoop</groupId>-->
+        <!--<artifactId>hadoop-client</artifactId>-->
+        <!--<version>${hadoop.version}</version>-->
+        <!--<scope>test</scope>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.hbase</groupId>-->
-            <!--<artifactId>hbase-server</artifactId>-->
-            <!--<version>${hbase.version}</version>-->
-            <!--<scope>test</scope>-->
+        <!--<groupId>org.apache.hbase</groupId>-->
+        <!--<artifactId>hbase-server</artifactId>-->
+        <!--<version>${hbase.version}</version>-->
+        <!--<scope>test</scope>-->
         <!--</dependency>-->
         <dependency>
             <groupId>junit</groupId>
@@ -156,11 +156,11 @@
                         </goals>
                     </execution>
                     <!--<execution>-->
-                        <!--<id>daemon-1</id>-->
-                        <!--<phase>package</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>generate-daemons</goal>-->
-                        <!--</goals>-->
+                    <!--<id>daemon-1</id>-->
+                    <!--<phase>package</phase>-->
+                    <!--<goals>-->
+                    <!--<goal>generate-daemons</goal>-->
+                    <!--</goals>-->
                     <!--</execution>-->
                 </executions>
                 <configuration>
@@ -272,7 +272,6 @@
                                     <arg value="-r"/>
                                     <arg value="${app.dir}/conf"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
-                                    <arg value="${project.basedir}/target/conf"/>
                                     <arg value="${app.dir}/analysis"/>
                                     <arg value="${app.dir}/cloud"/>
                                     <arg value="${app.dir}/misc"/>
@@ -280,6 +279,12 @@
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
                                     <arg value="${build.dir}"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-analysis/src/main/R/"/>
+                                    <arg value="${build.dir}/analysis"/>
                                 </exec>
 
                                 <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion</echo>
@@ -302,12 +307,13 @@
                                 <echo>Copying Python and R to ${build.dir}/clients</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-client/src/main/python/pyOpenCGA"/>
+                                    <arg value="${project.basedir}/../opencga-client/src/main/python"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
-                                <exec executable="mv">
-                                    <arg value="${build.dir}/clients/pyOpenCGA"/>
-                                    <arg value="${build.dir}/clients/python"/>
+                                <exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
+                                    <arg value="${build.dir}/clients/python/setup.py"/>
                                 </exec>
                                 <exec executable="cp">
                                     <arg value="-r"/>

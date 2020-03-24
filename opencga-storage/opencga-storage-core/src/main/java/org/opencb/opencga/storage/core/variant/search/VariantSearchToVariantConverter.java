@@ -31,7 +31,6 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.common.ArrayUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.slf4j.Logger;
@@ -43,6 +42,8 @@ import java.util.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.RELEASE;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.FIELD_SEPARATOR;
+
+//import org.opencb.opencga.core.common.ArrayUtils;
 
 /**
  * Created by imedina on 14/11/16.
@@ -166,16 +167,41 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
 
-        // Stats management
-        if (MapUtils.isNotEmpty(variantSearchModel.getStats())) {
-            for (String key: variantSearchModel.getStats().keySet()) {
-                // key consists of 'stats' + "__" + studyId + "__" + cohort
+        // Allele stats management
+        if (MapUtils.isNotEmpty(variantSearchModel.getAltStats())) {
+            for (String key: variantSearchModel.getAltStats().keySet()) {
+                // key consists of 'altStats' + "__" + studyId + "__" + cohort
                 String[] fields = StringUtils.splitByWholeSeparator(key, FIELD_SEPARATOR);
                 if (studyEntryMap.containsKey(fields[1])) {
-                    VariantStats variantStats = new VariantStats();
-                    variantStats.setRefAlleleFreq(1 - variantSearchModel.getStats().get(key));
-                    variantStats.setAltAlleleFreq(variantSearchModel.getStats().get(key));
-                    variantStats.setMaf(Math.min(variantSearchModel.getStats().get(key), 1 - variantSearchModel.getStats().get(key)));
+                    VariantStats variantStats;
+                    if (studyEntryMap.get(fields[1]).getStats() != null) {
+                        variantStats = studyEntryMap.get(fields[1]).getStats().getOrDefault(fields[2], new VariantStats());
+                    } else {
+                        variantStats = new VariantStats();
+                    }
+                    variantStats.setRefAlleleFreq(1 - variantSearchModel.getAltStats().get(key));
+                    variantStats.setAltAlleleFreq(variantSearchModel.getAltStats().get(key));
+                    variantStats.setMaf(Math.min(variantSearchModel.getAltStats().get(key), 1 - variantSearchModel.getAltStats().get(key)));
+                    studyEntryMap.get(fields[1]).setStats(fields[2], variantStats);
+                }
+            }
+        }
+
+        // Filter stats (PASS) management
+        if (MapUtils.isNotEmpty(variantSearchModel.getPassStats())) {
+            for (String key: variantSearchModel.getPassStats().keySet()) {
+                // key consists of 'passStats' + "__" + studyId + "__" + cohort
+                String[] fields = StringUtils.splitByWholeSeparator(key, FIELD_SEPARATOR);
+                if (studyEntryMap.containsKey(fields[1])) {
+                    VariantStats variantStats;
+                    if (studyEntryMap.get(fields[1]).getStats() != null) {
+                        variantStats = studyEntryMap.get(fields[1]).getStats().getOrDefault(fields[2], new VariantStats());
+                    } else {
+                        variantStats = new VariantStats();
+                    }
+                    Map<String, Float> filterFreq = new HashMap<>();
+                    filterFreq.put(VCFConstants.PASSES_FILTERS_v4, variantSearchModel.getPassStats().get(key));
+                    variantStats.setFilterFreq(filterFreq);
                     studyEntryMap.get(fields[1]).setStats(fields[2], variantStats);
                 }
             }
@@ -398,13 +424,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // prepare protein substitution scores: sift and polyphen
         List<Score> scores;
 //        ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
-//        if (!ArrayUtils.equals(variantSearchModel.getSift(), MISSING_VALUE)
-//                || !ArrayUtils.equals(variantSearchModel.getPolyphen(), MISSING_VALUE)) {
+//        if (!equalWithEpsilon(variantSearchModel.getSift(), MISSING_VALUE)
+//                || !equalWithEpsilon(variantSearchModel.getPolyphen(), MISSING_VALUE)) {
 //            scores = new ArrayList<>();
-//            if (!ArrayUtils.equals(variantSearchModel.getSift(), MISSING_VALUE)) {
+//            if (!equalWithEpsilon(variantSearchModel.getSift(), MISSING_VALUE)) {
 //                scores.add(new Score(variantSearchModel.getSift(), "sift", variantSearchModel.getSiftDesc()));
 //            }
-//            if (!ArrayUtils.equals(variantSearchModel.getPolyphen(), MISSING_VALUE)) {
+//            if (!equalWithEpsilon(variantSearchModel.getPolyphen(), MISSING_VALUE)) {
 //                scores.add(new Score(variantSearchModel.getPolyphen(), "polyphen", variantSearchModel.getPolyphenDesc()));
 //            }
 //            proteinAnnotation.setSubstitutionScores(scores);
@@ -472,23 +498,23 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // Set conservations scores
         scores = new ArrayList<>();
-        if (!ArrayUtils.equals(variantSearchModel.getPhylop(), MISSING_VALUE)) {
+        if (!equalWithEpsilon(variantSearchModel.getPhylop(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getPhylop(), "phylop", ""));
         }
-        if (!ArrayUtils.equals(variantSearchModel.getPhastCons(), MISSING_VALUE)) {
+        if (!equalWithEpsilon(variantSearchModel.getPhastCons(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getPhastCons(), "phastCons", ""));
         }
-        if (!ArrayUtils.equals(variantSearchModel.getGerp(), MISSING_VALUE)) {
+        if (!equalWithEpsilon(variantSearchModel.getGerp(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getGerp(), "gerp", ""));
         }
         variantAnnotation.setConservation(scores);
 
         // Set CADD scores
         scores = new ArrayList<>();
-        if (!ArrayUtils.equals(variantSearchModel.getCaddRaw(), MISSING_VALUE)) {
+        if (!equalWithEpsilon(variantSearchModel.getCaddRaw(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getCaddRaw(), "cadd_raw", ""));
         }
-        if (!ArrayUtils.equals(variantSearchModel.getCaddScaled(), MISSING_VALUE)) {
+        if (!equalWithEpsilon(variantSearchModel.getCaddScaled(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
         }
         variantAnnotation.setFunctionalScore(scores);
@@ -1027,12 +1053,22 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             String studyId = studyIdToSearchModel(studyEntry.getStudyId());
             variantSearchModel.getStudies().add(studyId);
 
-            // We store the cohort stats with the format stats__STUDY__COHORT = value, e.g. stats_1kg_phase3_ALL=0.02
+            // We store the cohort stats:
+            //    - altStats__STUDY__COHORT = alternalte allele freq, e.g. altStats_1kg_phase3_ALL=0.02
+            //    - passStats__STUDY__COHORT = pass filter freq
             if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
                 Map<String, VariantStats> studyStats = studyEntry.getStats();
                 for (String key : studyStats.keySet()) {
-                    variantSearchModel.getStats().put("stats" + FIELD_SEPARATOR + studyId
-                            + FIELD_SEPARATOR + key, studyStats.get(key).getAltAlleleFreq());
+                    // Alternate allele frequency
+                    variantSearchModel.getAltStats().put("altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + key,
+                            studyStats.get(key).getAltAlleleFreq());
+
+                    // PASS filter frequency
+                    if (MapUtils.isNotEmpty(studyStats.get(key).getFilterCount())
+                            && studyStats.get(key).getFilterCount().containsKey(VCFConstants.PASSES_FILTERS_v4)) {
+                        variantSearchModel.getPassStats().put("passStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + key,
+                                studyStats.get(key).getFilterFreq().get(VCFConstants.PASSES_FILTERS_v4));
+                    }
                 }
             }
 
@@ -1201,7 +1237,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // If sift not exist we set it to -100.0
-        if (ArrayUtils.equals(sift, 10)) {
+        if (equalWithEpsilon(sift, 10)) {
             sift = MISSING_VALUE;
         }
 
@@ -1223,6 +1259,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
         return null;
+    }
+
+    boolean equalWithEpsilon(double first, double second) {
+//        return Precision.equals(d1, d2, Precision.EPSILON);
+        final double epsilon = 0.000000000000001;
+        return (Math.abs(second - first) < epsilon);
     }
 
     private Double parseDouble(String value, Double defaultValue) {

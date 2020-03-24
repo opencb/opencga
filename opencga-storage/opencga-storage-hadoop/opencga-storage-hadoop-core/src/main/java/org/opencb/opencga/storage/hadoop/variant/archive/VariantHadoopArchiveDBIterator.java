@@ -78,6 +78,9 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
 
     @Override
     public boolean hasNext() {
+        if (count >= limit) {
+            return false;
+        }
         if (nextVariant != null) {
             return true;
         } else {
@@ -88,7 +91,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
 
     @Override
     public Variant next() {
-        if (!(count < limit)) {
+        if (count >= limit) {
             throw new NoSuchElementException("Limit reached");
         }
 

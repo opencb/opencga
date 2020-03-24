@@ -12,20 +12,17 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,8 +32,8 @@ import java.util.stream.Collectors;
 public abstract class ResourceManager<R extends IPrivateStudyUid> extends AbstractManager {
 
     ResourceManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                    DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                    DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
     }
 
     abstract Enums.Resource getEntity();
@@ -118,7 +115,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                 .append("options", new QueryOptions(options))
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         auditManager.initAuditBatch(operationUuid);
 
         try {
@@ -285,15 +282,6 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
             }
         }
         return result;
-    }
-
-    void mergeCount(OpenCGAResult<R> queryResult, Future<OpenCGAResult<Long>> countFuture) throws InterruptedException, ExecutionException {
-        while (!countFuture.isDone()) {
-            Thread.sleep(100);
-        }
-        OpenCGAResult<Long> countResult = countFuture.get();
-        queryResult.setNumMatches(countResult.getNumMatches());
-        queryResult.setTime(Math.max(queryResult.getTime(), countResult.getTime()));
     }
 
 }

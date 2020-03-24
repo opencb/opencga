@@ -73,6 +73,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
         }
         catalogManager = new CatalogManager(configuration);
         catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
+        // FIXME!! Should not need to create again the catalogManager
+        //  Have to create again the CatalogManager, as it has a random "secretKey" inside
+        catalogManager = new CatalogManager(configuration);
     }
 
     @Override
@@ -119,15 +122,15 @@ public class CatalogManagerExternalResource extends ExternalResource {
         }
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
 
-        if (catalogManager == null) {
-            catalogManager = new CatalogManager(configuration);
-        }
+//        if (catalogManager == null) {
+//            catalogManager = new CatalogManager(configuration);
+//        }
 
 //        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
-        MongoDataStore db = mongoManager.get(catalogManager.getCatalogDatabase());
+        MongoDataStore db = mongoManager.get(configuration.getDatabasePrefix() + "_catalog");
         db.getDb().drop();
 //        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
-        mongoManager.close(catalogManager.getCatalogDatabase());
+        mongoManager.close(configuration.getDatabasePrefix() + "_catalog");
 
         Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
         deleteFolderTree(rootdir.toFile());

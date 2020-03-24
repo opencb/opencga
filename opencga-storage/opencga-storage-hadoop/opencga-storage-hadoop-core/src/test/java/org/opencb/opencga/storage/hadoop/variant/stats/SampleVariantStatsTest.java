@@ -175,9 +175,9 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
 
         Pedigree pedigree = new Pedigree();
         pedigree.setMembers(Collections.singletonList(
-                new Member(child, child, Member.Sex.UNKNOWN, Member.AffectionStatus.UNKNOWN)
-                        .setFather(new Member(father, father, Member.Sex.MALE, Member.AffectionStatus.UNKNOWN))
-                        .setMother(new Member(mother, mother, Member.Sex.FEMALE, Member.AffectionStatus.UNKNOWN))));
+                new Member(child, child, Member.Sex.UNKNOWN)
+                        .setFather(new Member(father, father, Member.Sex.MALE))
+                        .setMother(new Member(mother, mother, Member.Sex.FEMALE))));
 
         SampleVariantStatsCalculator calculator = new SampleVariantStatsCalculator(pedigree, Arrays.asList(father, mother, child), sampleFileMap);
         List<SampleVariantStats> stats = calculator.compute(engine.iterator());

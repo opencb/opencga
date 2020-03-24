@@ -134,8 +134,11 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
         public boolean resume;
 
-        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)")
-        public boolean loadSplitData;
+        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files by CHROMOSOME, REGION or TYPE")
+        public String loadSplitData;
+
+        @Parameter(names = {"--skip-sample-index"}, description = "Do not build sample index while loading", arity = 0)
+        public boolean skipSampleIndex;
 
         @Parameter(names = {"--skip-post-load-check"}, description = "Do not execute post load checks over the database")
         public boolean skipPostLoadCheck;
@@ -347,6 +350,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--mgf", "--cohort-stats-mgf"}, description = STATS_MGF_DESCR)
         public String mgf;
+
+        @Parameter(names = {"--cohort-stats-pass"}, description = STATS_PASS_FREQ_DESCR)
+        public String cohortStatsPass;
 
         @Parameter(names = {"--stats-missing-allele"}, description = MISSING_ALLELES_DESCR)
         public String missingAlleleCount;

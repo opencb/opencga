@@ -1,32 +1,29 @@
 package org.opencb.opencga.catalog.stats.solr;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.junit.Test;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.CohortMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogCohortToSolrCohortConverter;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
-import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
+import org.opencb.opencga.catalog.stats.solr.converters.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.InputStream;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -62,9 +59,8 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
     public void testCohortIterator() throws CatalogException, SolrServerException, IOException {
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
-                CohortDBAdaptor.QueryParams.STUDY_UID.key(),
-                CohortDBAdaptor.QueryParams.TYPE.key(), CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.STUDY_UID.key(),
+                CohortDBAdaptor.QueryParams.TYPE.key(), CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
 
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
@@ -114,17 +110,17 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
     }
 
     @Test
-    public void testIndividusalIterator() throws CatalogException, SolrServerException, IOException {
+    public void testIndividualIterator() throws CatalogException, SolrServerException, IOException {
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
 //        queryOptions.add("limit", 2);
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
-                IndividualDBAdaptor.QueryParams.STUDY_UID.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.UUID.key(),
+                IndividualDBAdaptor.QueryParams.STUDY_UID.key(),
                 IndividualDBAdaptor.QueryParams.SEX.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
                 IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
-                IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
+                IndividualDBAdaptor.QueryParams.INTERNAL_STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
+                IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                 IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
                 IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
@@ -146,6 +142,44 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
     @Test
     public void testInsertSamples() throws CatalogException, IOException {
+        // Create annotationSet
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("a", "a", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
+                Collections.emptySet(), Collections.emptyMap()));
+        variables.add(new Variable("a1", "a1", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
+                                Collections.emptySet(), Collections.emptyMap()))),
+                Collections.emptyMap()));
+        variables.add(new Variable("a2", "a2", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, false, null, null, 0, "", "",
+                                new HashSet<>(Arrays.asList(
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, true, null, null, 0, "", "",
+                                                Collections.emptySet(), Collections.emptyMap()))),
+                                Collections.emptyMap()))),
+                Collections.emptyMap()));
+        variables.add(new Variable("a3", "a3", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                                new HashSet<>(Arrays.asList(
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
+                                                Collections.emptySet(), Collections.emptyMap()))),
+                                Collections.emptyMap()))),
+                Collections.emptyMap()));
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdOwner).first();
+
+        InputStream inputStream = this.getClass().getClassLoader().getResource("annotation_sets/complete_annotation.json").openStream();
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMap annotations = objectMapper.readValue(inputStream, ObjectMap.class);
+
+        catalogManager.getSampleManager().update(studyFqn, "sample1", new SampleUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotations))),
+                QueryOptions.empty(), sessionIdOwner);
+
+        study = catalogManager.getStudyManager().get(studyFqn, new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
+
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
 
         Map<String, Set<String>> studyAcls =
@@ -154,12 +188,11 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         study.getAttributes().put("OPENCGA_ACL", studyAcls);
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, true);
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
-
-                SampleDBAdaptor.QueryParams.STUDY_UID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UUID.key(),
+                SampleDBAdaptor.QueryParams.STUDY_UID.key(),
                 SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
                 SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
-                SampleDBAdaptor.QueryParams.STATUS.key(), SampleDBAdaptor.QueryParams.TYPE.key(),
+                SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
                 SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),SampleDBAdaptor.QueryParams.UID.key(),
                 SampleDBAdaptor.QueryParams.ATTRIBUTES.key()));
@@ -174,6 +207,15 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 //        facet = catalogSolrManager.facetedQuery(CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
 //                new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()));
 //        assertEquals(3, facet.getResults().get(0).getBuckets().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, "annotation.a.x"), "user1");
+        assertEquals(1, facet.getResults().get(0).getBuckets().get(0).getCount());
+
+        facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, "annotation.a.x;id"), "user1");
+        assertEquals(1, facet.getResults().get(0).getBuckets().get(0).getCount());
+        assertEquals(2, facet.getResults().get(1).getBuckets().size());
 
         facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
                 new Query(), new QueryOptions(QueryOptions.FACET, SampleDBAdaptor.QueryParams.RELEASE.key()), "user1");
@@ -198,42 +240,54 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
     @Test
     public void testInsertFiles() throws CatalogException, SolrServerException, IOException {
+        Map<String, Set<String>> studyAcls =
+                SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+        // We replace the current studyAcls for the parsed one
+        study.getAttributes().put("OPENCGA_ACL", studyAcls);
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
         //queryOptions.put("nativeQuery", true);
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.UUID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(),
                 FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
                 FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
-                FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
+                FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
-                FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT_UID.key(),
+                FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT.key(),
                 FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
+        queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
 
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         FileDBAdaptor fileDBAdaptor = factory.getCatalogFileDBAdaptor();
         DBIterator<File> fileDBIterator = fileDBAdaptor.iterator(new Query(), queryOptions);
-//        catalogSolrManager.insertCatalogCollection(fileDBIterator, new CatalogFileToSolrFileConverter(), CatalogSolrManager.FILE_SOLR_COLLECTION);
+        catalogSolrManager.insertCatalogCollection(fileDBIterator, new CatalogFileToSolrFileConverter(study),
+                CatalogSolrManager.FILE_SOLR_COLLECTION);
     }
 
     @Test
     public void testInsertIndividuals() throws CatalogException, SolrServerException, IOException {
+        Map<String, Set<String>> studyAcls =
+                SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+        // We replace the current studyAcls for the parsed one
+        study.getAttributes().put("OPENCGA_ACL", studyAcls);
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
-                IndividualDBAdaptor.QueryParams.STUDY_UID.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.UUID.key(),
+                IndividualDBAdaptor.QueryParams.STUDY_UID.key(),
                 IndividualDBAdaptor.QueryParams.SEX.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
                 IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
-                IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
+                IndividualDBAdaptor.QueryParams.INTERNAL_STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
+                IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                 IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
                 IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
+        queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
+
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         IndividualDBAdaptor individualDBAdaptor = factory.getCatalogIndividualDBAdaptor();
         DBIterator<Individual> individualDBIterator = individualDBAdaptor.iterator(new Query(), queryOptions);
-//        catalogSolrManager.insertCatalogCollection(individualDBIterator, new CatalogIndividualToSolrIndividualConverter(),
-//                CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
+        catalogSolrManager.insertCatalogCollection(individualDBIterator, new CatalogIndividualToSolrIndividualConverter(study),
+                CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
     }
 
     @Test
@@ -246,8 +300,8 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         study.getAttributes().put("OPENCGA_ACL", studyAcls);
 
         QueryOptions queryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
-                        CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
+                .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.UUID.key(),
+                        CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                         CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true)

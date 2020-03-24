@@ -27,7 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -98,7 +98,7 @@ public class AuditManager {
 
     public void auditCreate(String userId, Enums.Action action, Enums.Resource resource, String resourceId, String resourceUuid,
                             String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         audit(operationUuid, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
@@ -165,7 +165,7 @@ public class AuditManager {
 
     public void audit(String userId, Enums.Action action, Enums.Resource resource, String resourceId, String resourceUuid,
                       String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status, ObjectMap attributes) {
-        audit(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), userId, action, resource, resourceId, resourceUuid, studyId, studyUuid,
+        audit(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT), userId, action, resource, resourceId, resourceUuid, studyId, studyUuid,
                 params, status, attributes);
     }
 
@@ -175,7 +175,7 @@ public class AuditManager {
         String apiVersion = GitRepositoryState.get().getBuildVersion();
         Date date = TimeUtils.getDate();
 
-        String auditId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String auditId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         AuditRecord auditRecord = new AuditRecord(auditId, operationId, userId, apiVersion, action, resource, resourceId, resourceUuid,
                 studyId, studyUuid, params, status, date, attributes);

@@ -66,6 +66,9 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
             case "top":
                 top();
                 break;
+            case "log":
+                log();
+                break;
             case "delete":
                 queryResponse = delete();
                 break;
@@ -94,7 +97,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
                 .setCommandLine(commandOptions.commandLine)
                 .setPriority(commandOptions.priority)
                 .setCreationDate(commandOptions.creationDate)
-                .setStatus(commandOptions.executionStatus)
+                .setInternal(new JobCreateParams.JobInternal(commandOptions.executionStatus))
                 .setOutDir(commandOptions.outDir != null ? new JobCreateParams.TinyFile().setPath(commandOptions.outDir) : null)
                 .setInput(commandOptions.input != null
                         ? commandOptions.input.stream().map(f -> new JobCreateParams.TinyFile().setPath(f)).collect(Collectors.toList())
@@ -133,7 +136,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.ID.key(), commandOptions.id);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), commandOptions.toolName);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), commandOptions.status);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), commandOptions.status);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.USER_ID.key(), commandOptions.ownerId);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.date);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.INPUT.key(), commandOptions.inputFiles);
@@ -153,6 +156,12 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         JobCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
         String study = resolveStudy(c.study);
         new JobsTopManager(openCGAClient, study, c.iterations, c.jobsLimit, c.delay).run();
+    }
+
+    private void log() throws Exception {
+        JobCommandOptions.LogCommandOptions c = jobsCommandOptions.logCommandOptions;
+        c.study = resolveStudy(c.study);
+        new JobsLog(openCGAClient, c, System.out).run();
     }
 
     private RestResponse<Job> delete() throws ClientException {

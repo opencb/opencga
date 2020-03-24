@@ -19,7 +19,7 @@ SOLR_DIR="$OPENCGA_BUILD_DIR/misc/solr"
 sed -i s/VERSION/$VERSION/g $SOLR_DIR/INSTALL.md
 
 # Iterate over the different config sets
-for name in variant file sample individual family cohort; do
+for name in variant file sample individual family cohort job; do
     CONFIG_SET_NAME="opencga-$name-configset-$VERSION"
     CONFIG_SET_DIR="$SOLR_DIR/$CONFIG_SET_NAME"
 

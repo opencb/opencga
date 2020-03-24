@@ -136,6 +136,28 @@ public class AnnotationUtils {
                     throw new CatalogException("Variable " + variable.getId() + " of type " + variable.getType().name() + " cannot "
                             + "have an internal array of VariableSets");
                 }
+                if (variable.getAllowedKeys() != null && !variable.getAllowedKeys().isEmpty()) {
+                    // We edit the current variable because the allowedKeys field is populated
+                    Set<Variable> variables = new HashSet<>(variable.getAllowedKeys().size());
+                    for (String allowedKey : variable.getAllowedKeys()) {
+                        Variable.VariableType type;
+                        if (variable.getType() == Variable.VariableType.MAP_BOOLEAN) {
+                            type = Variable.VariableType.BOOLEAN;
+                        } else if (variable.getType() == Variable.VariableType.MAP_INTEGER) {
+                            type = Variable.VariableType.INTEGER;
+                        } else if (variable.getType() == Variable.VariableType.MAP_DOUBLE) {
+                            type = Variable.VariableType.DOUBLE;
+                        } else {
+                            type = Variable.VariableType.STRING;
+                        }
+                        variables.add(new Variable(allowedKey, allowedKey, "", type, variable.getDefaultValue(), false, false,
+                                variable.getAllowedValues(), null, variable.getRank(), variable.getDependsOn(),
+                                "Dynamically created variable '" + allowedKey + "'.", null, null));
+                    }
+                    // Edit current variable
+                    variable.setVariableSet(variables)
+                            .setType(Variable.VariableType.OBJECT);
+                }
                 break;
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
@@ -146,6 +168,36 @@ public class AnnotationUtils {
         if (variable.getDefaultValue() != null) {
             checkAllowedValue(variable, variable.getDefaultValue(), "Default");
         }
+    }
+
+    /**
+     * Checks whether a variable id is defined in the given VariableSet.
+     * Example: variableId = a.b.c will check if there is an object variable a containing an object variable b containing a variable c.
+     * @param variableId Variable id to be checked.
+     * @param variableSet Variable set where the variable id will be checked.
+     * @return a boolean indicating whether the variable id is found in the given variable set or not.
+     */
+    public static boolean checkVariableIdInVariableSet(String variableId, Set<Variable> variableSet) {
+        if (variableSet == null) {
+            return false;
+        }
+
+        String[] split = StringUtils.split(variableId, ".");
+        if (split.length == 1) {
+            for (Variable variable : variableSet) {
+                if (variable.getId().equals(split[0])) {
+                    return true;
+                }
+            }
+        } else {
+            for (Variable variable : variableSet) {
+                if (variable.getId().equals(split[0])) {
+                    String subVariableId = StringUtils.split(variableId, ".", 2)[1];
+                    return checkVariableIdInVariableSet(subVariableId, variable.getVariableSet());
+                }
+            }
+        }
+        return false;
     }
 
     /**

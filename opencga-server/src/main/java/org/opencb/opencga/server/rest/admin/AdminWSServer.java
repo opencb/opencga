@@ -7,12 +7,19 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.cohort.CohortIndexTask;
+import org.opencb.opencga.analysis.family.FamilyIndexTask;
+import org.opencb.opencga.analysis.file.FileIndexTask;
+import org.opencb.opencga.analysis.individual.IndividualIndexTask;
+import org.opencb.opencga.analysis.job.JobIndexTask;
+import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelCreateParams;
 import org.opencb.opencga.core.models.study.Group;
@@ -25,6 +32,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.core.models.admin.UserImportParams.ResourceType.*;
@@ -52,7 +61,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             }
 
             if (user.getType() == null) {
-                user.setType(Account.Type.GUEST);
+                user.setType(Account.AccountType.GUEST);
             }
 
             OpenCGAResult<User> queryResult = catalogManager.getUserManager()
@@ -169,7 +178,15 @@ public class AdminWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Sync Catalog into the Solr", response = Boolean.class)
     public Response syncSolr() {
         try {
-            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(token));
+            ObjectMap params = new ObjectMap();
+            List<OpenCGAResult<Job>> results = new ArrayList<>(6);
+            results.add(catalogManager.getJobManager().submit("admin", FileIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", SampleIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", IndividualIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", FamilyIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", CohortIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", JobIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            return createOkResponse(OpenCGAResult.merge(results));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

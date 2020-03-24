@@ -256,7 +256,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        ObjectMap options = variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
+        ObjectMap options = variantStorageManager.getOptions();
         options.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
 
@@ -287,7 +287,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         List<URI> protoFiles = new LinkedList<>();
 
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        ObjectMap options = variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
+        ObjectMap options = variantStorageManager.getOptions();
         options.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
 
@@ -362,7 +362,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             inputFiles.add(getResourceUri(fileName));
         }
 
-        ObjectMap options = variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
+        ObjectMap options = variantStorageManager.getOptions();
         options.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
 //        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyMetadata.getStudyId());
         options.put(VariantStorageOptions.STUDY.key(), studyMetadata.getName());

@@ -34,10 +34,14 @@ import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOption
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
@@ -66,7 +70,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     private final JobCommandOptions jobCommandOptions;
     private final IndividualCommandOptions individualCommandOptions;
     private final SampleCommandOptions sampleCommandOptions;
-    private final ClinicalCommandOptions clinicalCommandOptions;
     private final CohortCommandOptions cohortCommandOptions;
     private final FamilyCommandOptions familyCommandOptions;
     private final PanelCommandOptions panelCommandOptions;
@@ -75,6 +78,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     // Analysis commands
     private final AlignmentCommandOptions alignmentCommandOptions;
     private final VariantCommandOptions variantCommandOptions;
+    private final ClinicalCommandOptions clinicalCommandOptions;
 
     private final OperationsCommandOptions operationsCommandOptions;
 
@@ -97,6 +101,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         userSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
         userSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         userSubCommands.addCommand("logout", usersCommandOptions.logoutCommandOptions);
+        userSubCommands.addCommand("template", usersCommandOptions.templateCommandOptions);
 
         projectCommandOptions = new ProjectCommandOptions(this.commonCommandOptions, this.dataModelOptions, this.numericOptions, jCommander);
         jCommander.addCommand("projects", projectCommandOptions);
@@ -139,7 +144,8 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
         fileSubCommands.addCommand("tree", fileCommandOptions.treeCommandOptions);
 //        fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
-        fileSubCommands.addCommand("content", fileCommandOptions.contentCommandOptions);
+        fileSubCommands.addCommand("head", fileCommandOptions.headCommandOptions);
+        fileSubCommands.addCommand("tail", fileCommandOptions.tailCommandOptions);
 //        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
         fileSubCommands.addCommand("update", fileCommandOptions.updateCommandOptions);
         fileSubCommands.addCommand("upload", fileCommandOptions.uploadCommandOptions);
@@ -149,6 +155,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
 //        fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
         fileSubCommands.addCommand("stats", fileCommandOptions.statsCommandOptions);
+        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
 //        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
         fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
         fileSubCommands.addCommand("acl-update", fileCommandOptions.aclsUpdateCommandOptions);
@@ -161,6 +168,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         jobSubCommands.addCommand("info", jobCommandOptions.infoCommandOptions);
         jobSubCommands.addCommand("search", jobCommandOptions.searchCommandOptions);
         jobSubCommands.addCommand("top", jobCommandOptions.topCommandOptions);
+        jobSubCommands.addCommand("log", jobCommandOptions.logCommandOptions);
         jobSubCommands.addCommand("delete", jobCommandOptions.deleteCommandOptions);
         jobSubCommands.addCommand("acl", jobCommandOptions.aclsCommandOptions);
         jobSubCommands.addCommand("acl-update", jobCommandOptions.aclsUpdateCommandOptions);
@@ -191,14 +199,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         familySubCommands.addCommand("acl", familyCommandOptions.aclsCommandOptions);
         familySubCommands.addCommand("acl-update", familyCommandOptions.aclsUpdateCommandOptions);
         familySubCommands.addCommand("annotation-sets-update", familyCommandOptions.annotationUpdateCommandOptions);
-
-        clinicalCommandOptions = new ClinicalCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
-        jCommander.addCommand("clinical", clinicalCommandOptions);
-        JCommander clinicalSubcommands = jCommander.getCommands().get("clinical");
-        clinicalSubcommands.addCommand("info", clinicalCommandOptions.infoCommandOptions);
-        clinicalSubcommands.addCommand("search", clinicalCommandOptions.searchCommandOptions);
-        clinicalSubcommands.addCommand("acl", clinicalCommandOptions.aclsCommandOptions);
-        clinicalSubcommands.addCommand("acl-update", clinicalCommandOptions.aclsUpdateCommandOptions);
 
         panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("panels", panelCommandOptions);
@@ -269,13 +269,26 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(KNOCKOUT_RUN_COMMAND, variantCommandOptions.knockoutCommandOptions);
         variantSubCommands.addCommand(SAMPLE_ELIGIBILITY_RUN_COMMAND, variantCommandOptions.sampleEligibilityCommandOptions);
         variantSubCommands.addCommand(MUTATIONAL_SIGNATURE_RUN_COMMAND, variantCommandOptions.mutationalSignatureCommandOptions);
+        variantSubCommands.addCommand(MENDELIAN_ERROR_RUN_COMMAND, variantCommandOptions.mendelianErrorCommandOptions);
+        variantSubCommands.addCommand(INFERRED_SEX_RUN_COMMAND, variantCommandOptions.inferredSexCommandOptions);
+        variantSubCommands.addCommand(RELATEDNESS_RUN_COMMAND, variantCommandOptions.relatednessCommandOptions);
+        variantSubCommands.addCommand(GENETIC_CHECKS_RUN_COMMAND, variantCommandOptions.geneticChecksCommandOptions);
         variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
         variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
         variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);
 
+        clinicalCommandOptions = new ClinicalCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
+        jCommander.addCommand("clinical", clinicalCommandOptions);
+        JCommander clinicalSubcommands = jCommander.getCommands().get("clinical");
+        clinicalSubcommands.addCommand("info", clinicalCommandOptions.infoCommandOptions);
+        clinicalSubcommands.addCommand("search", clinicalCommandOptions.searchCommandOptions);
+        clinicalSubcommands.addCommand("acl", clinicalCommandOptions.aclsCommandOptions);
+        clinicalSubcommands.addCommand("acl-update", clinicalCommandOptions.aclsUpdateCommandOptions);
+
         operationsCommandOptions = new OperationsCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand(OPERATIONS_COMMAND, operationsCommandOptions);
         JCommander operationsSubCommands = jCommander.getCommands().get(OPERATIONS_COMMAND);
+        operationsSubCommands.addCommand(VARIANT_CONFIGURE, operationsCommandOptions.variantConfigure);
         operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX, operationsCommandOptions.variantSecondaryIndex);
         operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX_DELETE, operationsCommandOptions.variantSecondaryIndexDelete);
         operationsSubCommands.addCommand(VARIANT_ANNOTATION_INDEX, operationsCommandOptions.variantAnnotation);
@@ -338,7 +351,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
 
     @Override
     protected void printMainUsage() {
-        Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant"));
+        Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant", "clinical"));
         Set<String> operationsCommands = new HashSet<>(Collections.singletonList(OPERATIONS_COMMAND));
 
         System.err.println("Catalog commands:");
@@ -409,10 +422,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         return familyCommandOptions;
     }
 
-    public ClinicalCommandOptions getClinicalCommandOptions() {
-        return clinicalCommandOptions;
-    }
-
     public PanelCommandOptions getPanelCommands() {
         return panelCommandOptions;
     }
@@ -427,6 +436,10 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
 
     public VariantCommandOptions getVariantCommands() {
         return variantCommandOptions;
+    }
+
+    public ClinicalCommandOptions getClinicalCommandOptions() {
+        return clinicalCommandOptions;
     }
 
     public OperationsCommandOptions getOperationsCommands() {

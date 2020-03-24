@@ -13,8 +13,9 @@ import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchr
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -61,18 +62,18 @@ public class VariantStatsOperationManager extends OperationManager {
 
         try {
             // Modify cohort status to "CALCULATING"
-            updateCohorts(study, cohortsMap.keySet(), token, Cohort.CohortStatus.CALCULATING, "Start calculating stats");
+            updateCohorts(study, cohortsMap.keySet(), token, CohortStatus.CALCULATING, "Start calculating stats");
 
             variantStorageEngine.calculateStats(study, cohortsMap, calculateStatsOptions);
 
             // Modify cohort status to "READY"
-            updateCohorts(study, cohortsMap.keySet(), token, Cohort.CohortStatus.READY, "");
+            updateCohorts(study, cohortsMap.keySet(), token, CohortStatus.READY, "");
         } catch (Exception e) {
             // Error!
-            logger.error("Error executing stats. Set cohorts status to " + Cohort.CohortStatus.INVALID, e);
+            logger.error("Error executing stats. Set cohorts status to " + CohortStatus.INVALID, e);
             // Modify to "INVALID"
             try {
-                updateCohorts(study, cohortsMap.keySet(), token, Cohort.CohortStatus.INVALID,
+                updateCohorts(study, cohortsMap.keySet(), token, CohortStatus.INVALID,
                         "Error calculating stats: " + e.getMessage());
             } catch (CatalogException ex) {
                 e.addSuppressed(ex);
@@ -160,13 +161,13 @@ public class VariantStatsOperationManager extends OperationManager {
         Map<String, List<String>> cohortMap = new HashMap<>(cohortIds.size());
         for (String cohortId : cohortIds) {
             Cohort cohort = catalogManager.getCohortManager().get(studyFqn, cohortId, null, sessionId).first();
-            switch (cohort.getStatus().getName()) {
-                case Cohort.CohortStatus.NONE:
-                case Cohort.CohortStatus.INVALID:
+            switch (cohort.getInternal().getStatus().getName()) {
+                case CohortStatus.NONE:
+                case CohortStatus.INVALID:
                     break;
-                case Cohort.CohortStatus.READY:
+                case CohortStatus.READY:
                     if (updateStats) {
-                        catalogManager.getCohortManager().setStatus(studyFqn, cohortId, Cohort.CohortStatus.INVALID, "", sessionId);
+                        catalogManager.getCohortManager().setStatus(studyFqn, cohortId, CohortStatus.INVALID, "", sessionId);
                         break;
                     } else {
                         // If not updating the stats or resuming, can't calculate statistics for a cohort READY
@@ -175,13 +176,13 @@ public class VariantStatsOperationManager extends OperationManager {
                         }
                     }
                     break;
-                case Cohort.CohortStatus.CALCULATING:
+                case CohortStatus.CALCULATING:
                     if (!resume) {
                         throw unableToCalculateCohortCalculating(cohort);
                     }
                     break;
                 default:
-                    throw new IllegalStateException("Unknown status " + cohort.getStatus().getName());
+                    throw new IllegalStateException("Unknown status " + cohort.getInternal().getStatus().getName());
             }
             cohortMap.put(cohort.getId(), cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
         }
@@ -215,7 +216,7 @@ public class VariantStatsOperationManager extends OperationManager {
                 .collect(Collectors.toSet());
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.contains(cohortName)) {
-                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Study.Type.COLLECTION, "",
+                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Enums.CohortType.COLLECTION, "",
                         Collections.emptyList(), null, null, sessionId);
                 logger.info("Creating cohort {}", cohortName);
                 cohorts.add(cohort.first().getId());
@@ -249,14 +250,14 @@ public class VariantStatsOperationManager extends OperationManager {
     public static StorageEngineException unableToCalculateCohortReady(Cohort cohort) {
         return new StorageEngineException("Unable to calculate stats for cohort "
                 + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
-                + " with status \"" + cohort.getStatus().getName() + "\". "
+                + " with status \"" + cohort.getInternal().getStatus().getName() + "\". "
                 + "Resume or update stats for continue calculation");
     }
 
     public static StorageEngineException unableToCalculateCohortCalculating(Cohort cohort) {
         return new StorageEngineException("Unable to calculate stats for cohort "
                 + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
-                + " with status \"" + cohort.getStatus().getName() + "\". "
+                + " with status \"" + cohort.getInternal().getStatus().getName() + "\". "
                 + "Resume for continue calculation.");
     }
 }

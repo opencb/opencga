@@ -36,10 +36,14 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
@@ -79,6 +83,11 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private AlignmentCommandOptions alignmentCommandOptions;
     private InterpretationCommandOptions interpretationCommandOptions;
     private FileCommandOptions fileCommandOptions;
+    private SampleCommandOptions sampleCommandOptions;
+    private FamilyCommandOptions familyCommandOptions;
+    private CohortCommandOptions cohortCommandOptions;
+    private IndividualCommandOptions individualCommandOptions;
+    private JobCommandOptions jobCommandOptions;
 
 
     public InternalCliOptionsParser() {
@@ -138,6 +147,10 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(KNOCKOUT_RUN_COMMAND, variantCommandOptions.knockoutCommandOptions);
         variantSubCommands.addCommand(SAMPLE_ELIGIBILITY_RUN_COMMAND, variantCommandOptions.sampleEligibilityCommandOptions);
         variantSubCommands.addCommand(MUTATIONAL_SIGNATURE_RUN_COMMAND, variantCommandOptions.mutationalSignatureCommandOptions);
+        variantSubCommands.addCommand(MENDELIAN_ERROR_RUN_COMMAND, variantCommandOptions.mendelianErrorCommandOptions);
+        variantSubCommands.addCommand(INFERRED_SEX_RUN_COMMAND, variantCommandOptions.inferredSexCommandOptions);
+        variantSubCommands.addCommand(RELATEDNESS_RUN_COMMAND, variantCommandOptions.relatednessCommandOptions);
+        variantSubCommands.addCommand(GENETIC_CHECKS_RUN_COMMAND, variantCommandOptions.geneticChecksCommandOptions);
         variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
         variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
         variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);
@@ -176,6 +189,37 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
         fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
+        fileSubCommands.addCommand("secondary-index", fileCommandOptions.secondaryIndex);
+        fileSubCommands.addCommand("tsv-load", fileCommandOptions.tsvLoad);
+
+        sampleCommandOptions = new SampleCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("samples", sampleCommandOptions);
+        JCommander sampleSubCommands = jCommander.getCommands().get("samples");
+        sampleSubCommands.addCommand("secondary-index", sampleCommandOptions.secondaryIndex);
+        sampleSubCommands.addCommand("tsv-load", sampleCommandOptions.tsvLoad);
+
+        individualCommandOptions = new IndividualCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("individuals", individualCommandOptions);
+        JCommander individualSubCommands = jCommander.getCommands().get("individuals");
+        individualSubCommands.addCommand("secondary-index", individualCommandOptions.secondaryIndex);
+        individualSubCommands.addCommand("tsv-load", individualCommandOptions.tsvLoad);
+
+        cohortCommandOptions = new CohortCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("cohorts", cohortCommandOptions);
+        JCommander cohortSubCommands = jCommander.getCommands().get("cohorts");
+        cohortSubCommands.addCommand("secondary-index", cohortCommandOptions.secondaryIndex);
+        cohortSubCommands.addCommand("tsv-load", cohortCommandOptions.tsvLoad);
+
+        familyCommandOptions = new FamilyCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("families", familyCommandOptions);
+        JCommander familySubCommands = jCommander.getCommands().get("families");
+        familySubCommands.addCommand("secondary-index", familyCommandOptions.secondaryIndex);
+        familySubCommands.addCommand("tsv-load", familyCommandOptions.tsvLoad);
+
+        jobCommandOptions = new JobCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("jobs", jobCommandOptions);
+        JCommander jobSubCommands = jCommander.getCommands().get("jobs");
+        jobSubCommands.addCommand("secondary-index", jobCommandOptions.secondaryIndex);
     }
 
     @Override
@@ -412,5 +456,25 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
     public FileCommandOptions getFileCommandOptions() {
         return fileCommandOptions;
+    }
+
+    public SampleCommandOptions getSampleCommandOptions() {
+        return sampleCommandOptions;
+    }
+
+    public FamilyCommandOptions getFamilyCommandOptions() {
+        return familyCommandOptions;
+    }
+
+    public CohortCommandOptions getCohortCommandOptions() {
+        return cohortCommandOptions;
+    }
+
+    public IndividualCommandOptions getIndividualCommandOptions() {
+        return individualCommandOptions;
+    }
+
+    public JobCommandOptions getJobCommandOptions() {
+        return jobCommandOptions;
     }
 }

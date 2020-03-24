@@ -1,16 +1,27 @@
 package org.opencb.opencga.analysis.variant.knockout.result;
 
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.*;
 
 public class KnockoutBySample {
 
+    private Individual individual;
     private Sample sample;
 
     private GeneKnockoutBySampleStats stats;
 
     private Map<String, KnockoutGene> genesMap = new HashMap<>();
+
+    public Individual getIndividual() {
+        return individual;
+    }
+
+    public KnockoutBySample setIndividual(Individual individual) {
+        this.individual = individual;
+        return this;
+    }
 
     public Sample getSample() {
         return sample;

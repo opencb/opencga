@@ -6,6 +6,7 @@ import org.opencb.opencga.catalog.stats.solr.FileSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -29,7 +30,7 @@ public class CatalogFileToSolrFileConverterTest {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         File file = new File("name", File.Type.FILE, File.Format.BAM, File.Bioformat.MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
-                "test/base", null, "convertorTest", new File.FileStatus("READY"), 1111L, 2);
+                "test/base", null, "convertorTest", FileInternal.initialize(), 1111L, 2);
         file.setUid(111).setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2")))
                 .setSoftware(new Software().setName("Software"));
         file.setAnnotationSets(AnnotationHelper.createAnnotation());
@@ -52,10 +53,10 @@ public class CatalogFileToSolrFileConverterTest {
         assertEquals(localDate.getDayOfMonth(), fileSolrModel.getCreationDay());
         assertEquals(localDate.getDayOfWeek().toString(), fileSolrModel.getCreationDayOfWeek());
 
-        assert (fileSolrModel.getStatus().equals(file.getStatus().getName()));
+        assert (fileSolrModel.getStatus().equals(file.getInternal().getStatus().getName()));
         assert (fileSolrModel.isExternal() == file.isExternal());
         assert (fileSolrModel.getSize() == file.getSize());
-        assert (fileSolrModel.getSoftware().equals(file.getSoftware().getName()));
+        assert (fileSolrModel.getSoftwareName().equals(file.getSoftware().getName()));
         assert (fileSolrModel.getNumSamples() == file.getSamples().size());
 
         assertEquals(Arrays.asList(1, 2, 3, 4, 11, 12, 13, 14, 21), fileSolrModel.getAnnotations().get("annotations__im__vsId.a.ab2.ab2c1.ab2c1d1"));

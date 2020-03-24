@@ -225,7 +225,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         sc.getAttributes().append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         VariantStorageMetadataManager metadataManager = this.metadataManager;
         metadataManager.unsecureUpdateStudyMetadata(sc);
-        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
+        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper().getConf(), archiveTableName);
         VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable());
         metadataManager.updateProjectMetadata(projectMetadata -> {
             if (projectMetadata == null) {
@@ -256,7 +256,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null, null);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
-        ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice> ptr =
+        ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, Object> ptr =
                 new ParallelTaskRunner<>(reader, task, null, config);
         ptr.run();
 
@@ -271,7 +271,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
     private void stageVariants(StudyMetadata study, int fileId, List<Variant> variants) throws Exception {
         String archiveTableName = engine.getArchiveTableName(study.getId());
-        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
+        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper().getConf(), archiveTableName);
 
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
@@ -320,7 +320,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                     return variants;
                 }
             }
-        }, studyId, fileId);
+        }, studyId, fileId, 10);
     }
 
     private Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context mockContext(Map<String, Counter> counterMap) throws IOException, InterruptedException {

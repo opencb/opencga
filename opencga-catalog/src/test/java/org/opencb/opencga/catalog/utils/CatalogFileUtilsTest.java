@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,17 +24,17 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -75,13 +76,13 @@ public class CatalogFileUtilsTest {
         catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
 
         //Create USER
-        catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.AccountType.FULL, null);
         userSessionId = catalogManager.getUserManager().login("user", "asdf");
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
-        String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), userSessionId).getResults().get(0).getId();
-        Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", Study.Type.CONTROL_SET, null, "", null, null,
-                null, null, null, null, null, null, userSessionId).getResults().get(0);
+        String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), userSessionId).getResults().get(0).getId();
+        Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", "", null, null, null, null, null,
+                userSessionId).getResults().get(0);
         studyUid = study.getUid();
         studyFqn = study.getFqn();
 
@@ -94,12 +95,12 @@ public class CatalogFileUtilsTest {
         File returnedFile;
 
         file = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", null, 0, null, (long) -1, null, null, true,
-                StringUtils.randomString(100), null, userSessionId).first();
+                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", 0, null, null, null, true,
+                RandomStringUtils.randomAlphanumeric(100), null, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertSame("Should not modify the status, so should return the same file.", file, returnedFile);
-        assertEquals(Status.READY, file.getStatus().getName());
+        assertEquals(Status.READY, file.getInternal().getStatus().getName());
 
 //        /** Check READY and existing file **/
 //        catalogFileUtils.upload(sourceUri, file, null, userSessionId, false, false, false, true);
@@ -115,25 +116,25 @@ public class CatalogFileUtilsTest {
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertNotSame(file, returnedFile);
-        assertEquals(File.FileStatus.MISSING, returnedFile.getStatus().getName());
+        assertEquals(FileStatus.MISSING, returnedFile.getInternal().getStatus().getName());
 
         /** Check MISSING file still missing **/
         file = catalogManager.getFileManager().get(studyFqn, file.getPath(), null, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
-        assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getStatus().getName(),
-                returnedFile.getStatus().getName());
+        assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getInternal().getStatus().getName(),
+                returnedFile.getInternal().getStatus().getName());
         //assertSame("Should not modify the still MISSING file, so should return the same file.", file, returnedFile);
 
         /** Check MISSING file with found file **/
         FileOutputStream os = new FileOutputStream(file.getUri().getPath());
-        os.write(StringUtils.randomString(1000).getBytes());
+        os.write(RandomStringUtils.randomAlphanumeric(1000).getBytes());
         os.write('\n');
         os.close();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertNotSame(file, returnedFile);
-        assertEquals(File.FileStatus.READY, returnedFile.getStatus().getName());
+        assertEquals(FileStatus.READY, returnedFile.getInternal().getStatus().getName());
 
 //        /** Check TRASHED file with found file **/
 //        FileUpdateParams updateParams = new FileUpdateParams()

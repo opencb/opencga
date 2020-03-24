@@ -24,6 +24,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
@@ -211,11 +212,22 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             variant.addStudyEntry(studyEntry);
         }
         variant.setAnnotation(annotation);
-        if (annotation != null && StringUtils.isNotEmpty(annotation.getId())) {
-            variant.setId(annotation.getId());
-        } else {
-            variant.setId(variant.toString());
+        variant.setId(variant.toString());
+
+        Set<String> names = new HashSet<>();
+        for (StudyEntry studyEntry : studies.values()) {
+            List<FileEntry> files = studyEntry.getFiles();
+            if (files != null) {
+                for (FileEntry fileEntry : files) {
+                    String id = fileEntry.getAttributes().get(StudyEntry.VCF_ID);
+                    if (id != null) {
+                        names.add(id);
+                    }
+                }
+            }
         }
+        variant.setNames(new ArrayList<>(names));
+
         if (failOnEmptyVariants && variant.getStudies().isEmpty()) {
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }

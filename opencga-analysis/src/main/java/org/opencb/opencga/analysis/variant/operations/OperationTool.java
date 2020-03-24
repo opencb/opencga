@@ -41,23 +41,6 @@ public abstract class OperationTool extends OpenCgaToolScopeStudy {
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.FQN.key()), token).first().getFqn();
     }
 
-    public static boolean isVcfFormat(File file) {
-        File.Format format = file.getFormat();
-        if (isVcfFormat(format)) {
-            return true;
-        } else {
-            // Do not trust the file format. Defect format from URI
-            format = org.opencb.opencga.catalog.managers.FileUtils.detectFormat(file.getUri());
-            if (isVcfFormat(format)) {
-                // Overwrite temporary the format
-                file.setFormat(format);
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-
     private static boolean isVcfFormat(File.Format format) {
         return format.equals(File.Format.VCF) || format.equals(File.Format.GVCF) || format.equals(File.Format.BCF);
     }

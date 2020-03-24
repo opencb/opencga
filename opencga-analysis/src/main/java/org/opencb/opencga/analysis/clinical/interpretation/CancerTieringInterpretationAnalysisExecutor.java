@@ -149,7 +149,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(outDir + "/primary-findings.json"));
+        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(getOutDir() + "/primary-findings.json"));
     }
 
     //-------------------------------------------------------------------------

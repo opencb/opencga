@@ -1,28 +1,30 @@
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.opencga.core.models.common.CustomStatusParams;
+
 import java.util.Map;
 
 public class StudyUpdateParams {
 
     private String name;
     private String alias;
-    private Study.Type type;
     private String description;
+    private StudyNotification notification;
 
-    private Map<String, Object> stats;
     private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public StudyUpdateParams() {
     }
 
-    public StudyUpdateParams(String name, String alias, Study.Type type, String description, Map<String, Object> stats,
-                             Map<String, Object> attributes) {
+    public StudyUpdateParams(String name, String alias, String description, StudyNotification notification,
+                             Map<String, Object> attributes, CustomStatusParams status) {
         this.name = name;
         this.alias = alias;
-        this.type = type;
         this.description = description;
-        this.stats = stats;
+        this.notification = notification;
         this.attributes = attributes;
+        this.status = status;
     }
 
     @Override
@@ -30,10 +32,10 @@ public class StudyUpdateParams {
         final StringBuilder sb = new StringBuilder("StudyUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
-        sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
-        sb.append(", stats=").append(stats);
+        sb.append(", notification=").append(notification);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -56,15 +58,6 @@ public class StudyUpdateParams {
         return this;
     }
 
-    public Study.Type getType() {
-        return type;
-    }
-
-    public StudyUpdateParams setType(Study.Type type) {
-        this.type = type;
-        return this;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -74,12 +67,21 @@ public class StudyUpdateParams {
         return this;
     }
 
-    public Map<String, Object> getStats() {
-        return stats;
+    public StudyNotification getNotification() {
+        return notification;
     }
 
-    public StudyUpdateParams setStats(Map<String, Object> stats) {
-        this.stats = stats;
+    public StudyUpdateParams setNotification(StudyNotification notification) {
+        this.notification = notification;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public StudyUpdateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 
@@ -91,5 +93,4 @@ public class StudyUpdateParams {
         this.attributes = attributes;
         return this;
     }
-
 }

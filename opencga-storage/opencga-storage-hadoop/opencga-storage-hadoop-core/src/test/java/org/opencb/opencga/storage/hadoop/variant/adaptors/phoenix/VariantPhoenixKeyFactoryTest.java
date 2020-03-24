@@ -3,9 +3,12 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.ByteStringer;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.phoenix.coprocessor.generated.PTableProtos;
 import org.apache.phoenix.schema.*;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 
 import java.sql.SQLException;
@@ -20,6 +23,9 @@ import static org.junit.Assert.assertEquals;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantPhoenixKeyFactoryTest {
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void testVariantRowKey() throws Exception {
@@ -42,6 +48,19 @@ public class VariantPhoenixKeyFactoryTest {
         checkVariantRowKeyGeneration(new Variant("5:100<110<120-500<510<520:A:<CN5>"));
         checkVariantRowKeyGeneration(new Variant("5:100<110<120-500<510<520:-:<CN5>"));
         checkVariantRowKeyGeneration(new Variant("5:100:A:A]:chr5:234]"));
+    }
+
+    @Test
+    public void testExtractChrPosFromVariantRowKeyPartial() {
+        byte[] phoenixRowKey = VariantPhoenixKeyFactory.generateVariantRowKey("1", 20 << 16);
+        Pair<String, Integer> expected = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(phoenixRowKey, 0, phoenixRowKey.length, false);
+
+        phoenixRowKey = Arrays.copyOf(phoenixRowKey, phoenixRowKey.length - 1); // Remove leading zero
+        Pair<String, Integer> actual = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(phoenixRowKey, 0, phoenixRowKey.length, true);
+        assertEquals(expected, actual);
+
+        thrown.expect(RuntimeException.class);
+        VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(phoenixRowKey, 0, phoenixRowKey.length, false);
     }
 
     public void checkVariantRowKeyGeneration(Variant variant) {

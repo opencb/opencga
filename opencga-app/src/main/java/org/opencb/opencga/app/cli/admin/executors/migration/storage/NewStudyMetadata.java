@@ -93,7 +93,7 @@ public class NewStudyMetadata extends AbstractStorageMigrator {
                 String cohortName = entry.getKey();
 
                 CohortMetadata cohortMetadata = new CohortMetadata(studyId, cohortId, cohortName,
-                        new ArrayList<>(sc.getCohorts().get(cohortId)));
+                        new ArrayList<>(sc.getCohorts().get(cohortId)), Collections.emptyList());
                 TaskMetadata.Status status;
                 if (sc.getCalculatedStats().contains(cohortId)) {
                     status = TaskMetadata.Status.READY;

@@ -26,39 +26,36 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.project.ProjectUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.RestResponse;
 
-/**
- * Created by imedina on 03/06/16.
- */
+
 public class ProjectCommandExecutor extends OpencgaCommandExecutor {
-    // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     private ProjectCommandOptions projectsCommandOptions;
 
     public ProjectCommandExecutor(ProjectCommandOptions projectsCommandOptions) {
         super(projectsCommandOptions.commonCommandOptions);
+
         this.projectsCommandOptions = projectsCommandOptions;
     }
 
-
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing Project command line");
-
-        String subCommandString = getParsedSubCommand(projectsCommandOptions.jCommander);
         RestResponse queryResponse = null;
+        String subCommandString = getParsedSubCommand(projectsCommandOptions.jCommander);
+        logger.debug("Executing Project subcommand '{}'", subCommandString);
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
                 break;
-            case "search":
-                queryResponse = search();
-                break;
             case "info":
                 queryResponse = info();
+                break;
+            case "search":
+                queryResponse = search();
                 break;
             case "update":
                 queryResponse = update();
@@ -75,99 +72,70 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Project> create() throws ClientException {
-        logger.debug("Creating a new project");
-
-        ProjectCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
-
-        Project.Organism organism = clientConfiguration.getOrganism();
-        organism.setAssembly(StringUtils.isNotEmpty(commandOptions.assembly) ? commandOptions.assembly : organism.getAssembly());
-        organism.setCommonName(StringUtils.isNotEmpty(commandOptions.commonName) ? commandOptions.commonName : organism.getCommonName());
-        organism.setScientificName(StringUtils.isNotEmpty(commandOptions.scientificName)
-                ? commandOptions.scientificName : organism.getScientificName());
-        organism.setTaxonomyCode(StringUtils.isNotEmpty(commandOptions.taxonomyCode)
-                ? Integer.parseInt(commandOptions.taxonomyCode) : organism.getTaxonomyCode());
+        ProjectCommandOptions.CreateCommandOptions createCommandOptions = projectsCommandOptions.createCommandOptions;
 
         ProjectCreateParams createParams = new ProjectCreateParams()
-                .setId(commandOptions.id)
-                .setName(commandOptions.name)
-                .setAlias(commandOptions.alias)
-                .setDescription(commandOptions.description)
-                .setOrganization(commandOptions.organization)
-                .setOrganism(organism);
-
+                .setId(createCommandOptions.id)
+                .setName(createCommandOptions.name)
+                .setDescription(createCommandOptions.description)
+                .setOrganism(new ProjectOrganism(createCommandOptions.scientificName, createCommandOptions.commonName,
+                        createCommandOptions.assembly));
         return openCGAClient.getProjectClient().create(createParams);
     }
 
     private RestResponse<Project> info() throws ClientException {
-        logger.debug("Getting the project info");
-
-        ProjectCommandOptions.InfoCommandOptions c = projectsCommandOptions.infoCommandOptions;
+        ProjectCommandOptions.InfoCommandOptions infoCommandOptions = projectsCommandOptions.infoCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
-        params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
-        return openCGAClient.getProjectClient().info(c.project, params);
+        params.putIfNotEmpty(QueryOptions.INCLUDE, infoCommandOptions.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, infoCommandOptions.dataModelOptions.exclude);
+        return openCGAClient.getProjectClient().info(infoCommandOptions.project, params);
     }
 
     private RestResponse<Project> search() throws ClientException {
-        logger.debug("Search projects");
-
-        ProjectCommandOptions.SearchCommandOptions commandOptions = projectsCommandOptions.searchCommandOptions;
+        ProjectCommandOptions.SearchCommandOptions searchCommandOptions = projectsCommandOptions.searchCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty("owner", commandOptions.owner);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), commandOptions.alias);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), commandOptions.organization);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
-        params.putIfNotEmpty("status", commandOptions.status);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), commandOptions.attributes);
-        params.putAll(commandOptions.commonOptions.params);
+        params.putIfNotEmpty("owner", searchCommandOptions.owner);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.STUDY.key(), searchCommandOptions.study);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), searchCommandOptions.name);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), searchCommandOptions.alias);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), searchCommandOptions.description);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.CREATION_DATE.key(), searchCommandOptions.creationDate);
+        params.putIfNotEmpty("status", searchCommandOptions.status);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), searchCommandOptions.attributes);
+        params.putAll(searchCommandOptions.commonOptions.params);
 
-        params.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
-        params.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
+        params.putIfNotEmpty(QueryOptions.INCLUDE, searchCommandOptions.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, searchCommandOptions.dataModelOptions.exclude);
 
         return openCGAClient.getProjectClient().search(params);
     }
-
-
+    
     private RestResponse<Project> update() throws ClientException {
-        logger.debug("Updating project");
-
         ProjectCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
 
-        Project.Organism organism = null;
-        if (commandOptions.taxonomyCode != null || StringUtils.isNotEmpty(commandOptions.commonName)) {
-            organism = new Project.Organism()
-                    .setCommonName(commandOptions.commonName);
-            if (commandOptions.taxonomyCode != null) {
-                organism.setTaxonomyCode(commandOptions.taxonomyCode);
-            }
+        ProjectOrganism organism = null;
+        if (StringUtils.isNotEmpty(commandOptions.commonName)) {
+            organism = new ProjectOrganism().setCommonName(commandOptions.commonName);
         }
 
         ProjectUpdateParams params = new ProjectUpdateParams()
                 .setName(commandOptions.name)
                 .setDescription(commandOptions.description)
-                .setOrganization(commandOptions.organization)
                 .setOrganism(organism);
-
         return openCGAClient.getProjectClient().update(commandOptions.project, params);
     }
 
     private RestResponse<Study> studies() throws ClientException {
-        logger.debug("Getting all studies the from a project ");
-
-        ProjectCommandOptions.StudiesCommandOptions commandOptions = projectsCommandOptions.studiesCommandOptions;
+        ProjectCommandOptions.StudiesCommandOptions studiesCommandOptions = projectsCommandOptions.studiesCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
-        params.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
-        params.put(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
-        params.put(QueryOptions.SKIP, commandOptions.numericOptions.skip);
-
-        return openCGAClient.getProjectClient().studies(commandOptions.project, params);
+        params.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.dataModelOptions.exclude);
+        params.put(QueryOptions.LIMIT, studiesCommandOptions.numericOptions.limit);
+        params.put(QueryOptions.SKIP, studiesCommandOptions.numericOptions.skip);
+        return openCGAClient.getProjectClient().studies(studiesCommandOptions.project, params);
     }
 
 }

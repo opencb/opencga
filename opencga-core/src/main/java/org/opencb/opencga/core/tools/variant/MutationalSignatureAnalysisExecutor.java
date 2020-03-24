@@ -1,15 +1,13 @@
 package org.opencb.opencga.core.tools.variant;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.io.File;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExecutor {
 
@@ -21,7 +19,8 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
 
     private String study;
     private String sampleName;
-    private Path outputFile;
+    private Path refGenomePath;
+    private Path mutationalSignaturePath;
 
     public MutationalSignatureAnalysisExecutor() {
     }
@@ -44,12 +43,21 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return this;
     }
 
-    public Path getOutputFile() {
-        return outputFile;
+    public Path getRefGenomePath() {
+        return refGenomePath;
     }
 
-    public MutationalSignatureAnalysisExecutor setOutputFile(Path outputFile) {
-        this.outputFile = outputFile;
+    public MutationalSignatureAnalysisExecutor setRefGenomePath(Path refGenomePath) {
+        this.refGenomePath = refGenomePath;
+        return this;
+    }
+
+    public Path getMutationalSignaturePath() {
+        return mutationalSignaturePath;
+    }
+
+    public MutationalSignatureAnalysisExecutor setMutationalSignaturePath(Path mutationalSignaturePath) {
+        this.mutationalSignaturePath = mutationalSignaturePath;
         return this;
     }
 
@@ -67,31 +75,22 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return map;
     }
 
-    protected void normalizeFreqMap(Map<String, Map<String, Double>> map) {
+    protected void writeCountMap(Map<String, Map<String, Double>> map, File outputFile) throws ToolException {
         double sum = sumFreqMap(map);
-        for (String firstKey : FIRST_LEVEL_KEYS) {
-            String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;
-            for (String secondKey : secondLevelKeys) {
-                map.get(firstKey).put(secondKey, map.get(firstKey).get(secondKey) / sum);
-            }
-        }
-    }
-
-    protected void writeResult(Map<String, Map<String, Double>> counterMap) throws ToolException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-
-        File outFilename = getOutputFile().toFile();
         try {
-            PrintWriter pw = new PrintWriter(outFilename);
-            pw.println(objectMapper.writer().writeValueAsString(counterMap));
+            PrintWriter pw = new PrintWriter(outputFile);
+            pw.println("Substitution Type\tTrinucleotide\tSomatic Mutation Type\tCount\tNormalized Count");
+            for (String firstKey : FIRST_LEVEL_KEYS) {
+                String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;
+                for (String secondKey : secondLevelKeys) {
+                    pw.println(firstKey + "\t" + secondKey + "\t" + secondKey.substring(0,1) + "[" + firstKey + "]"
+                                    + secondKey.substring(2) + "\t" + map.get(firstKey).get(secondKey) + "\t"
+                            + (map.get(firstKey).get(secondKey) / sum));
+                }
+            }
             pw.close();
         } catch (Exception e) {
-            throw new ToolException("Error writing output file: " + outFilename, e);
+            throw new ToolException("Error writing output file: " + outputFile.getName(), e);
         }
     }
 

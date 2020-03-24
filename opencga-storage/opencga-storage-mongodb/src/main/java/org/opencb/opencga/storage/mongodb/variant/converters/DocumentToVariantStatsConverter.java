@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.bson.Document;
 import org.opencb.biodata.models.feature.AllelesCode;
 import org.opencb.biodata.models.feature.Genotype;
@@ -50,6 +51,9 @@ public class DocumentToVariantStatsConverter {
     public static final String MISSALLELE_FIELD = "missAl";
     public static final String MISSGENOTYPE_FIELD = "missGt";
     public static final String NUMGT_FIELD = "numGt";
+    public static final String FILTER_COUNT_FIELD = "fc";
+    public static final String FILTER_FREQ_FIELD = "ff";
+    public static final String QUAL_AVG_FIELD = "qualAvg";
 
     protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantStatsConverter.class);
 
@@ -162,6 +166,26 @@ public class DocumentToVariantStatsConverter {
                 stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
             }
         }
+
+        if (object.containsKey(FILTER_COUNT_FIELD)) {
+            for (Map.Entry<String, Object> entry : object.get(FILTER_COUNT_FIELD, Document.class).entrySet()) {
+                stats.getFilterCount().put(entry.getKey(), ((Number)entry.getValue()).intValue());
+            }
+            for (Map.Entry<String, Object> entry : object.get(FILTER_FREQ_FIELD, Document.class).entrySet()) {
+                stats.getFilterFreq().put(entry.getKey(), ((Number)entry.getValue()).floatValue());
+            }
+            if (stats.getFilterFreq().size() == 1) {
+                Float freq = stats.getFilterFreq().get(VCFConstants.PASSES_FILTERS_v4);
+                if (freq != null && freq == 0) {
+                    stats.getFilterFreq().remove(VCFConstants.PASSES_FILTERS_v4);
+                }
+            }
+        }
+        if (object.containsKey(QUAL_AVG_FIELD)) {
+            stats.setQualityAvg(object.getDouble(QUAL_AVG_FIELD).floatValue());
+        }
+
+
         return stats;
     }
 
@@ -184,6 +208,11 @@ public class DocumentToVariantStatsConverter {
         mongoStats.append(MGFGENOTYPE_FIELD, vs.getMgfGenotype());
         mongoStats.append(MISSALLELE_FIELD, vs.getMissingAlleleCount());
         mongoStats.append(MISSGENOTYPE_FIELD, vs.getMissingGenotypeCount());
+        vs.getFilterCount().putIfAbsent(VCFConstants.PASSES_FILTERS_v4, 0);
+        mongoStats.append(FILTER_COUNT_FIELD, vs.getFilterCount());
+        vs.getFilterFreq().putIfAbsent(VCFConstants.PASSES_FILTERS_v4, 0F);
+        mongoStats.append(FILTER_FREQ_FIELD, vs.getFilterFreq());
+        mongoStats.append(QUAL_AVG_FIELD, vs.getQualityAvg());
 
         // Genotype counts
         Document genotypes = new Document();

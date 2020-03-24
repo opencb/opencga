@@ -17,12 +17,13 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.config.Email;
@@ -31,7 +32,6 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.security.Key;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 /**
@@ -43,7 +43,6 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     private final Email emailConfig;
 
     private final UserDBAdaptor userDBAdaptor;
-    private final MetaDBAdaptor metaDBAdaptor;
 
     private long expiration;
 
@@ -52,7 +51,6 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
         this.emailConfig = emailConfig;
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
-        this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
 
         this.expiration = expiration;
 
@@ -62,37 +60,12 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         this.logger = LoggerFactory.getLogger(CatalogAuthenticationManager.class);
     }
 
-    public static String cypherPassword(String password) throws CatalogException {
-        if (password.matches("^[a-fA-F0-9]{40}$")) {
-            // Password already cyphered
-            return password;
-        }
-
-        try {
-            return StringUtils.sha1(password);
-        } catch (NoSuchAlgorithmException e) {
-            throw new CatalogDBException("Could not encode password", e);
-        }
-    }
-
     @Override
     public String authenticate(String username, String password) throws CatalogAuthenticationException {
-        String cypherPassword;
         try {
-            cypherPassword = cypherPassword(password);
-        } catch (CatalogException e) {
-            throw new CatalogAuthenticationException(e.getMessage(), e);
-        }
-
-        try {
-            String storedPassword = userDBAdaptor.get(username, new QueryOptions(QueryOptions.INCLUDE, "password"), null)
-                    .first().getPassword();
-            if (storedPassword.equals(cypherPassword)) {
-                return jwtManager.createJWTToken(username, expiration);
-            } else {
-                throw CatalogAuthenticationException.incorrectUserOrPassword();
-            }
-        } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+            userDBAdaptor.authenticate(username, password);
+            return jwtManager.createJWTToken(username, expiration);
+        } catch (CatalogDBException e) {
             throw new CatalogAuthenticationException("Could not validate '" + username + "' password\n" + e.getMessage(), e);
         }
     }
@@ -114,15 +87,12 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
     @Override
     public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
-        String oldCryptPass = (oldPassword.length() != 40) ? cypherPassword(oldPassword) : oldPassword;
-        String newCryptPass = (newPassword.length() != 40) ? cypherPassword(newPassword) : newPassword;
-        userDBAdaptor.changePassword(userId, oldCryptPass, newCryptPass);
+        userDBAdaptor.changePassword(userId, oldPassword, newPassword);
     }
 
     @Override
     public void newPassword(String userId, String newPassword) throws CatalogException {
-        String newCryptPass = (newPassword.length() != 40) ? cypherPassword(newPassword) : newPassword;
-        userDBAdaptor.changePassword(userId, "", newCryptPass);
+        userDBAdaptor.changePassword(userId, "", newPassword);
     }
 
     @Override
@@ -133,14 +103,11 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     @Override
     public OpenCGAResult resetPassword(String userId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        userDBAdaptor.updateUserLastModified(userId);
 
-        String newPassword = StringUtils.randomString(6);
-
-        String newCryptPass = cypherPassword(newPassword);
+        String newPassword = RandomStringUtils.randomAlphanumeric(12);
 
         OpenCGAResult<User> user =
-                userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.EMAIL.key()), "");
+                userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.EMAIL.key()));
 
         if (user == null || user.getNumResults() != 1) {
             throw new CatalogException("Could not retrieve the user e-mail.");
@@ -148,7 +115,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
         String email = user.first().getEmail();
 
-        OpenCGAResult result = userDBAdaptor.resetPassword(userId, email, newCryptPass);
+        OpenCGAResult result = userDBAdaptor.resetPassword(userId, email, newPassword);
 
         String mailUser = this.emailConfig.getFrom();
         String mailPassword = this.emailConfig.getPassword();

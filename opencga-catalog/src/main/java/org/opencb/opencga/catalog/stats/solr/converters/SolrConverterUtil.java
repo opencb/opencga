@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.collections.map.HashedMap;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -18,10 +19,19 @@ public class SolrConverterUtil {
         Map<String, Object> result = new HashedMap();
         if (annotationSets != null) {
             for (AnnotationSet annotationSet : annotationSets) {
+                Map<String, QueryParam.Type> typeMap = variableTypeMap.get(annotationSet.getVariableSetId());
+
                 for (String annotationKey : annotationSet.getAnnotations().keySet()) {
                     Object value = annotationSet.getAnnotations().get(annotationKey);
-                    result.put("annotations" + type(variableTypeMap.get(annotationSet.getVariableSetId()).get(annotationKey))
-                            + annotationSet.getVariableSetId() + "." + annotationKey, value);
+                    if (typeMap.containsKey(annotationKey)) {
+                        result.put("annotations" + type(typeMap.get(annotationKey)) + annotationSet.getVariableSetId() + "."
+                                + annotationKey, value);
+                    } else {
+                        // Dynamic annotation
+                        String dynamicKey = annotationKey.substring(0, annotationKey.lastIndexOf(".") + 1) + "*";
+                        result.put("annotations" + type(typeMap.get(dynamicKey)) + annotationSet.getVariableSetId() + "." + annotationKey,
+                                value);
+                    }
                 }
             }
         }
@@ -29,14 +39,25 @@ public class SolrConverterUtil {
     }
 
     public static List<String> populatePhenotypes(List<Phenotype> phenotypes) {
-        List<String> phenotypesIds = new ArrayList<>();
+        Set<String> phenotypesIds = new HashSet<>();
         if (phenotypes != null) {
             for (Phenotype phenotype : phenotypes) {
                 phenotypesIds.add(phenotype.getId());
                 phenotypesIds.add(phenotype.getName());
             }
         }
-        return phenotypesIds;
+        return new ArrayList(phenotypesIds);
+    }
+
+    public static List<String> populateDisorders(List<Disorder> disorders) {
+        Set<String> disorderIds = new HashSet<>();
+        if (disorders != null) {
+            for (Disorder disorder : disorders) {
+                disorderIds.add(disorder.getId());
+                disorderIds.add(disorder.getName());
+            }
+        }
+        return new ArrayList(disorderIds);
     }
 
     public static String type(QueryParam.Type type) {

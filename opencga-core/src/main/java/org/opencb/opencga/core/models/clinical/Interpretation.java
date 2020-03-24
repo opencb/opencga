@@ -19,6 +19,8 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     private long studyUid;
     private long uid;
 
+    private InterpretationInternal internal;
+
     public Interpretation() {
         super();
     }
@@ -35,16 +37,18 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
                           List<ReportedVariant> primaryFindinds, List<ReportedVariant> secondaryFindings,
                           List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
         super(id, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
-                reportedLowCoverages, comments, Status.NOT_REVIEWED, creationDate, 1, attributes);
+                reportedLowCoverages, comments, InterpretationStatus.NOT_REVIEWED, creationDate, 1, attributes);
     }
 
     public Interpretation(String uuid, String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
                           Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
                           List<ReportedVariant> primaryFindinds, List<ReportedVariant> secondaryFindings,
-                          List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
+                          List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes,
+                          InterpretationInternal internal) {
         super(id, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
-                reportedLowCoverages, comments, Status.NOT_REVIEWED, creationDate, 1, attributes);
+                reportedLowCoverages, comments, InterpretationStatus.NOT_REVIEWED, creationDate, 1, attributes);
         this.uuid = uuid;
+        this.internal = internal;
     }
 
     @Override
@@ -54,19 +58,20 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(this.getDescription()).append('\'');
         sb.append(", clinicalAnalysisId='").append(this.getClinicalAnalysisId()).append('\'');
-        sb.append(", software=").append(this.getSoftware());
-        sb.append(", analyst=").append(this.getAnalyst());
-        sb.append(", dependencies=").append(this.getDependencies());
-        sb.append(", filters=").append(this.getFilters());
-        sb.append(", panels=").append(this.getPanels());
-        sb.append(", primaryFindings=").append(this.getPrimaryFindings());
-        sb.append(", secondaryFindings=").append(this.getSecondaryFindings());
-        sb.append(", lowCoverageRegions=").append(this.getLowCoverageRegions());
-        sb.append(", comments=").append(this.getComments());
-        sb.append(", status=").append(this.getStatus());
+        sb.append(", software=").append(this.getSoftware()).append('\'');
+        sb.append(", analyst=").append(this.getAnalyst()).append('\'');
+        sb.append(", dependencies=").append(this.getDependencies()).append('\'');
+        sb.append(", filters=").append(this.getFilters()).append('\'');
+        sb.append(", panels=").append(this.getPanels()).append('\'');
+        sb.append(", primaryFindings=").append(this.getPrimaryFindings()).append('\'');
+        sb.append(", secondaryFindings=").append(this.getSecondaryFindings()).append('\'');
+        sb.append(", lowCoverageRegions=").append(this.getLowCoverageRegions()).append('\'');
+        sb.append(", comments=").append(this.getComments()).append('\'');
+        sb.append(", status=").append(this.getStatus()).append('\'');
         sb.append(", creationDate='").append(this.getCreationDate()).append('\'');
-        sb.append(", version=").append(this.getVersion());
-        sb.append(", attributes=").append(this.getAttributes());
+        sb.append(", version=").append(this.getVersion()).append('\'');
+        sb.append(", attributes=").append(this.getAttributes()).append('\'');
+        sb.append(", internal=").append(internal);
         sb.append('}');
         return sb.toString();
     }
@@ -178,7 +183,7 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     }
 
     @Override
-    public Interpretation setStatus(Interpretation.Status status) {
+    public Interpretation setStatus(String status) {
         super.setStatus(status);
         return this;
     }
@@ -201,4 +206,12 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         return this;
     }
 
+    public InterpretationInternal getInternal() {
+        return internal;
+    }
+
+    public Interpretation setInternal(InterpretationInternal internal) {
+        this.internal = internal;
+        return this;
+    }
 }

@@ -21,7 +21,7 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
     public static final String DESCRIPTION = "Plink is a whole genome association analysis toolset, designed to perform"
             + " a range of basic, large-scale analyses.";
 
-    public static final String PLINK_DOCKER_IMAGE = "gelog/plink";
+    public static final String PLINK_DOCKER_IMAGE = "jrose77/plinkdocker"; //"gelog/plink";
     public static final String OUT_NAME = "plink";
 
     public static final String TPED_FILE_PARAM = "tpedFile";

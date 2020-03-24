@@ -38,9 +38,11 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -158,22 +160,22 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 //        Policies policies = new Policies();
 //        policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.Type.FULL, null).first();
+        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, null).first();
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectAlias = "p1";
-        projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
-        Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1", Study.Type.CASE_CONTROL, null,
-                "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
+        projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), sessionId).first().getId();
+        Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1",
+                "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
                 .first();
         studyId = study.getId();
         studyFqn = study.getFqn();
-        outputId = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index").toString(), null,  true, null,
+        outputId = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index").toString(), true, null,
                 QueryOptions.empty(), sessionId).first().getId();
         outputPath = "data/index/";
-        studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", "s2", Study.Type.CASE_CONTROL, null, "Study " +
-                "2", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId).first().getId();
-        outputId2 = catalogManager.getFileManager().createFolder(studyId2, Paths.get("data", "index").toString(), null,
+        studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", "s2", "Study " + "2", null, null,
+                null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId).first().getId();
+        outputId2 = catalogManager.getFileManager().createFolder(studyId2, Paths.get("data", "index").toString(),
                 true, null, QueryOptions.empty(), sessionId).first().getId();
 
         files = Arrays.asList(new File[5]);
@@ -212,14 +214,11 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         return create(studyId, uri, "data/vcfs/");
     }
 
-    protected File create(String studyId, URI uri, String path) throws IOException, CatalogException {
-        File file;
-        file = fileMetadataReader.create(studyId, uri, path, "", true, null, sessionId).first();
-//        File.Format format = FormatDetector.detect(uri);
-//        File.Bioformat bioformat = BioformatDetector.detect(uri);
-//        file = catalogManager.createFile(studyId, format, bioformat, "data/vcfs/", "", true, -1, sessionId).first();
-        catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
-        return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
+    protected File create(String studyId, URI uri, String path) throws CatalogException {
+        FileLinkParams params = new FileLinkParams()
+                .setUri(uri.toString())
+                .setPath(path);
+        return catalogManager.getFileManager().link(studyId, params, true, sessionId).first();
     }
 
     protected Cohort getDefaultCohort(String studyId) throws CatalogException {
@@ -235,7 +234,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     protected File transformFile(File inputFile, QueryOptions queryOptions, String outputId) throws CatalogException, IOException, StorageEngineException {
 
         try {
-            catalogManager.getFileManager().createFolder(studyFqn, outputId, null, true, null, null, sessionId);
+            catalogManager.getFileManager().createFolder(studyFqn, outputId, true, null, null, sessionId);
         } catch (CatalogException ignore) {}
 
         queryOptions.append(VariantFileIndexerOperationManager.TRANSFORM, true);
@@ -255,7 +254,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             copyResults(Paths.get(tmpOutdir), studyId, outputId, sessionId);
         }
         inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
-        assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getIndex().getStatus().getName());
+        assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getInternal().getIndex().getStatus().getName());
         assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
         // Default cohort should not be modified
@@ -274,13 +273,13 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
 
         System.out.println("transformedFile = " + transformedFile);
-        List<File.RelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
-                .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
+        List<FileRelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
+                .filter(relatedFile -> relatedFile.getRelation().equals(FileRelatedFile.Relation.PRODUCED_FROM))
                 .collect(Collectors.toList());
         assertEquals(1, relatedFiles.size());
         assertEquals(inputFile.getUid(), relatedFiles.get(0).getFile().getUid());
 
-        assertEquals(transformedFile.getUid(), inputFile.getIndex().getTransformedFile().getId());
+        assertEquals(transformedFile.getUid(), inputFile.getInternal().getIndex().getTransformedFile().getId());
 
         return transformedFile;
     }
@@ -315,7 +314,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             assertTrue(samplesInCohort.containsAll(samplesInFile));
         }
         if (calculateStats) {
-            assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
+            assertEquals(CohortStatus.READY, defaultCohort.getInternal().getStatus().getName());
             checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
         }
         return etlResults;
@@ -361,7 +360,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             assertThat(samplesInCohort, hasItems(samplesInFiles));
         }
         if (calculateStats) {
-            assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
+            assertEquals(CohortStatus.READY, defaultCohort.getInternal().getStatus().getName());
             checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
         }
 
@@ -369,14 +368,14 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         // Check transformed file relations
         for (File inputFile : expectedLoadedFiles) {
             inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
-            assertNotNull(inputFile.getIndex().getTransformedFile());
+            assertNotNull(inputFile.getInternal().getIndex().getTransformedFile());
             String transformedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
-                    inputFile.getIndex().getTransformedFile().getId()), new QueryOptions(), sessionId).first().getId();
+                    inputFile.getInternal().getIndex().getTransformedFile().getId()), new QueryOptions(), sessionId).first().getId();
 
             File transformedFile = catalogManager.getFileManager().get(studyFqn, transformedFileId, new QueryOptions(), sessionId).first();
 
-            List<File.RelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
-                    .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
+            List<FileRelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
+                    .filter(relatedFile -> relatedFile.getRelation().equals(FileRelatedFile.Relation.PRODUCED_FROM))
                     .collect(Collectors.toList());
             assertEquals(1, relatedFiles.size());
             assertEquals(inputFile.getUid(), relatedFiles.get(0).getFile().getUid());
@@ -441,7 +440,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 indexedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                         indexedFileUid), new QueryOptions(), sessionId).first().getId();
             }
-            assertEquals(expectedStatus, catalogManager.getFileManager().get(studyId, indexedFileId, null, sessionId).first().getIndex().getStatus().getName());
+            assertEquals(expectedStatus, catalogManager.getFileManager().get(studyId, indexedFileId, null, sessionId).first().getInternal().getIndex().getStatus().getName());
             System.out.println("etlResult = " + etlResult);
         }
     }

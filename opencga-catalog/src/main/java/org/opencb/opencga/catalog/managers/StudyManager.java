@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -33,13 +34,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
-import org.opencb.opencga.catalog.stats.solr.converters.*;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
@@ -47,14 +44,16 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.job.JobAclEntry;
-import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.*;
@@ -71,22 +70,21 @@ import javax.annotation.Nullable;
 import javax.naming.NamingException;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class StudyManager extends AbstractManager {
+
+    private final CatalogIOManager catalogIOManager;
 
     private static final String MEMBERS = "@members";
     private static final String ADMINS = "@admins";
@@ -107,9 +105,10 @@ public class StudyManager extends AbstractManager {
     protected Logger logger;
 
     StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
+        this.catalogIOManager = catalogIOManager;
         logger = LoggerFactory.getLogger(StudyManager.class);
     }
 
@@ -166,7 +165,7 @@ public class StudyManager extends AbstractManager {
         }
 
         if (StringUtils.isNotEmpty(studyStr)) {
-            if (UUIDUtils.isOpenCGAUUID(studyStr)) {
+            if (UuidUtils.isOpenCgaUuid(studyStr)) {
                 query.putIfNotEmpty(StudyDBAdaptor.QueryParams.UUID.key(), studyStr);
             } else {
                 String study;
@@ -206,14 +205,16 @@ public class StudyManager extends AbstractManager {
             queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                     StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
                     StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
+                    StudyDBAdaptor.QueryParams.NOTIFICATION.key(), StudyDBAdaptor.QueryParams.FQN.key(),
+                    StudyDBAdaptor.QueryParams.URI.key()
             ));
         } else {
             List<String> includeList = new ArrayList<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
             includeList.addAll(Arrays.asList(
                     StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
                     StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()));
+                    StudyDBAdaptor.QueryParams.NOTIFICATION.key(), StudyDBAdaptor.QueryParams.FQN.key(),
+                    StudyDBAdaptor.QueryParams.URI.key()));
             // We create a new object in case there was an exclude or any other field. We only want to include fields in this case
             queryOptions = new QueryOptions(QueryOptions.INCLUDE, includeList);
         }
@@ -244,13 +245,11 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.get(query, options);
     }
 
-    public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, Study.Type type, String creationDate,
-                                       String description, Status status, String cipher, String uriScheme, URI uri,
-                                       Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
-                                       QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, String description,
+                                       StudyNotification notification, StudyInternal internal, CustomStatus status,
+                                       Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkObj(type, "type");
         ParamUtils.checkAlias(id, "id");
 
         String userId = catalogManager.getUserManager().getUserId(token);
@@ -259,46 +258,26 @@ public class StudyManager extends AbstractManager {
         long projectId = project.getUid();
 
         description = ParamUtils.defaultString(description, "");
-        creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
-        status = ParamUtils.defaultObject(status, Status::new);
-        cipher = ParamUtils.defaultString(cipher, "none");
-        if (uri != null) {
-            if (uri.getScheme() == null) {
-                throw new CatalogException("StudyUri must specify the scheme");
-            } else {
-                if (uriScheme != null && !uriScheme.isEmpty()) {
-                    if (!uriScheme.equals(uri.getScheme())) {
-                        throw new CatalogException("StudyUri must specify the scheme");
-                    }
-                } else {
-                    uriScheme = uri.getScheme();
-                }
-            }
-        } else {
-            uriScheme = catalogIOManagerFactory.getDefaultCatalogScheme();
-        }
-        datastores = ParamUtils.defaultObject(datastores, HashMap::new);
-        stats = ParamUtils.defaultObject(stats, HashMap::new);
-        attributes = ParamUtils.defaultObject(attributes, HashMap::new);
+        String creationDate = TimeUtils.getTime();
 
-        CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
+        internal = ParamUtils.defaultObject(internal, StudyInternal::new);
+        internal.setStatus(ParamUtils.defaultObject(internal.getStatus(), Status::new));
+        attributes = ParamUtils.defaultObject(attributes, HashMap::new);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("id", id)
                 .append("alias", alias)
                 .append("name", name)
-                .append("type", type)
                 .append("creationDate", creationDate)
                 .append("description", description)
-                .append("status", status)
-                .append("cipher", cipher)
-                .append("uriScheme", uriScheme)
-                .append("uri", uri)
-                .append("datastores", datastores)
-                .append("stats", stats)
+                .append("notification", notification)
+                .append("internal", internal)
                 .append("attributes", attributes)
+                .append("status", status)
                 .append("options", options)
                 .append("token", token);
+
+        status = ParamUtils.defaultObject(status, CustomStatus::new);
 
         try {
             /* Check project permissions */
@@ -308,36 +287,36 @@ public class StudyManager extends AbstractManager {
 
             LinkedList<File> files = new LinkedList<>();
             File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
-                    new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
-            File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/", null,
-                    "Default jobs folder", new File.FileStatus(), 0, project.getCurrentRelease());
+                    FileInternal.initialize(), 0, project.getCurrentRelease());
+            File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/",
+                    catalogIOManager.getJobsUri(), "Default jobs folder", FileInternal.initialize(), 0, project.getCurrentRelease());
 
             files.add(rootFile);
             files.add(jobsFile);
 
-            Study study = new Study(id, name, alias, type, creationDate, description, status,
-                    0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
-                    new Group(ADMINS, Collections.emptyList())), files, null, null, null, null, null, null, null, null,
-                    datastores, project.getCurrentRelease(), stats, attributes);
+            Study study = new Study(id, name, alias, creationDate, description, notification, 0,
+                    Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)), new Group(ADMINS, Collections.emptyList())), files,
+                    null, null, new LinkedList<>(), null, null, null, null, null, null, null, project.getCurrentRelease(),
+                    status, internal, attributes);
+
+            study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
 
             /* CreateStudy */
-            study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
+            study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
             studyDBAdaptor.insert(project, study, options);
             OpenCGAResult<Study> result = getStudy(projectId, study.getUuid(), options);
             study = result.getResults().get(0);
 
-            if (uri == null) {
+            URI uri;
+            try {
+                uri = catalogIOManager.createStudy(userId, Long.toString(project.getUid()), Long.toString(study.getUid()));
+            } catch (CatalogIOException e) {
                 try {
-                    uri = catalogIOManager.getStudyURI(userId, Long.toString(project.getUid()), Long.toString(study.getUid()));
-                    catalogIOManager.createStudy(uri);
-                } catch (CatalogIOException e) {
-                    try {
-                        studyDBAdaptor.delete(study);
-                    } catch (Exception e1) {
-                        logger.error("Can't delete study after failure creating study", e1);
-                    }
-                    throw e;
+                    studyDBAdaptor.delete(study);
+                } catch (Exception e1) {
+                    logger.error("Can't delete study after failure creating study", e1);
                 }
+                throw e;
             }
 
             // Update uri of study
@@ -347,30 +326,28 @@ public class StudyManager extends AbstractManager {
             long rootFileId = fileDBAdaptor.getId(study.getUid(), "");    //Set studyUri to the root folder too
             fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty());
 
-            long jobFolder = fileDBAdaptor.getId(study.getUid(), "JOBS/");
-            URI jobUri = Paths.get(configuration.getJobDir()).resolve("JOBS/").toUri();
-            catalogIOManager.createDirectory(jobUri, true);
-            fileDBAdaptor.update(jobFolder, new ObjectMap("uri", jobUri), QueryOptions.empty());
-
             // Read and process installation variable sets
             Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
-            for (String variableset : variablesets) {
+            for (String variableSetFile : variablesets) {
                 VariableSet vs = null;
                 try {
                     vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
-                            getClass().getClassLoader().getResourceAsStream(variableset), VariableSet.class);
+                            getClass().getClassLoader().getResourceAsStream(variableSetFile), VariableSet.class);
                 } catch (IOException e) {
-                    logger.error("Could not parse variable set '{}'", variableset, e);
+                    logger.error("Could not parse variable set '{}'", variableSetFile, e);
                 }
                 if (vs != null) {
+                    if (vs.getAttributes() == null) {
+                        vs.setAttributes(new HashMap<>());
+                    }
+                    vs.getAttributes().put("resource", variableSetFile);
                     createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.getDescription(),
-                            vs.getAttributes(), vs.getVariables().stream().collect(Collectors.toList()), vs.getEntities(), token);
+                            vs.getAttributes(), new ArrayList<>(vs.getVariables()), vs.getEntities(), token);
                 }
             }
 
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            userDBAdaptor.updateUserLastModified(userId);
 
             result.setResults(Arrays.asList(study));
             return result;
@@ -562,7 +539,8 @@ public class StudyManager extends AbstractManager {
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<Study> update(String studyId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Study> update(String studyId, StudyUpdateParams parameters, QueryOptions options, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
 
         ObjectMap auditParams = new ObjectMap()
@@ -584,22 +562,18 @@ public class StudyManager extends AbstractManager {
 
             authorizationManager.checkCanEditStudy(study.getUid(), userId);
 
-            for (String s : parameters.keySet()) {
-                if (!s.matches("id|alias|name|type|description|attributes|stats")) {
-                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-                }
+            if (StringUtils.isNotEmpty(parameters.getAlias())) {
+                ParamUtils.checkAlias(parameters.getAlias(), "alias");
             }
 
-            if (parameters.containsKey("id")) {
-                ParamUtils.checkAlias(parameters.getString("id"), "id");
-            }
-            if (parameters.containsKey("alias")) {
-                ParamUtils.checkAlias(parameters.getString("alias"), "alias");
+            ObjectMap update;
+            try {
+                update = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
             }
 
-            String ownerId = getOwner(study);
-            userDBAdaptor.updateUserLastModified(ownerId);
-            OpenCGAResult result = studyDBAdaptor.update(study.getUid(), parameters, options);
+            OpenCGAResult result = studyDBAdaptor.update(study.getUid(), update, options);
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -614,7 +588,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<PermissionRule> createPermissionRule(String studyId, Study.Entity entry, PermissionRule permissionRule,
+    public OpenCGAResult<PermissionRule> createPermissionRule(String studyId, Enums.Entity entry, PermissionRule permissionRule,
                                                               String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
@@ -647,7 +621,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public void markDeletedPermissionRule(String studyId, Study.Entity entry, String permissionRuleId,
+    public void markDeletedPermissionRule(String studyId, Enums.Entity entry, String permissionRuleId,
                                           PermissionRule.DeleteAction deleteAction, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
@@ -677,7 +651,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<PermissionRule> getPermissionRules(String studyId, Study.Entity entry, String token) throws CatalogException {
+    public OpenCGAResult<PermissionRule> getPermissionRules(String studyId, Enums.Entity entry, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
 
@@ -758,19 +732,17 @@ public class StudyManager extends AbstractManager {
                 .setAttributes(study.getAttributes())
                 .setCreationDate(study.getCreationDate())
                 .setDescription(study.getDescription())
-                .setDiskUsage(study.getSize())
+                .setSize(study.getSize())
                 .setGroups(study.getGroups())
                 .setName(study.getName())
-                .setStats(study.getStats())
-                .setStatus(study.getStatus())
-                .setType(study.getType())
+                .setInternal(study.getInternal())
                 .setVariableSets(study.getVariableSets());
 
         Long nFiles = fileDBAdaptor.count(
                 new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
-                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
-                                + File.FileStatus.DELETED))
+                        .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + FileStatus.TRASHED + ";!="
+                                + FileStatus.DELETED))
                 .getNumMatches();
         studySummary.setFiles(nFiles);
 
@@ -810,12 +782,10 @@ public class StudyManager extends AbstractManager {
         return results;
     }
 
-    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, String groupName, List<String> users, String sessionId)
+    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, List<String> users, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(groupId, "group id");
-        String name = StringUtils.isEmpty(groupName) ? groupId : groupName;
-
-        return createGroup(studyStr, new Group(groupId, name, users, null), sessionId);
+        return createGroup(studyStr, new Group(groupId, users, null), sessionId);
     }
 
     public OpenCGAResult<Group> createGroup(String studyId, Group group, String token) throws CatalogException {
@@ -1047,7 +1017,7 @@ public class StudyManager extends AbstractManager {
             studyDBAdaptor.syncGroup(study.getUid(), catalogGroup, new Group.Sync(authenticationOriginId, externalGroup));
         } else {
             // We need to create a new group
-            Group newGroup = new Group(catalogGroup, catalogGroup, Collections.emptyList(), new Group.Sync(authenticationOriginId,
+            Group newGroup = new Group(catalogGroup, Collections.emptyList(), new Group.Sync(authenticationOriginId,
                     externalGroup));
             studyDBAdaptor.createGroup(study.getUid(), newGroup);
         }
@@ -1116,7 +1086,7 @@ public class StudyManager extends AbstractManager {
             OpenCGAResult<Group> group = studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
 
             // Remove the permissions the group might have had
-            Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
+            StudyAclParams aclParams = new StudyAclParams(null, AclParams.Action.RESET, null);
             updateAcl(Collections.singletonList(studyId), groupId, aclParams, token);
 
             studyDBAdaptor.deleteGroup(study.getUid(), groupId);
@@ -1419,7 +1389,7 @@ public class StudyManager extends AbstractManager {
                 .append("member", member)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         OpenCGAResult<Map<String, List<String>>> studyAclList = OpenCGAResult.empty();
 
@@ -1454,7 +1424,7 @@ public class StudyManager extends AbstractManager {
         return studyAclList;
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, Study.StudyAclParams aclParams,
+    public OpenCGAResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, StudyAclParams aclParams,
                                                               String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studies = resolveIds(studyIdList, userId);
@@ -1464,7 +1434,7 @@ public class StudyManager extends AbstractManager {
                 .append("memberIds", memberIds)
                 .append("aclParams", aclParams)
                 .append("token", token);
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         try {
             if (studyIdList == null || studyIdList.isEmpty()) {
                 throw new CatalogException("Missing study parameter");
@@ -1577,52 +1547,6 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public boolean indexCatalogIntoSolr(String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-
-        if (authorizationManager.checkIsAdmin(userId)) {
-            // Get all the studies
-            Query query = new Query();
-            QueryOptions options = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(),
-                            StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
-                            StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true);
-            OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, options);
-            if (studyDataResult.getNumResults() == 0) {
-                throw new CatalogException("Could not index catalog into solr. No studies found");
-            }
-
-            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
-            // Create solr collections if they don't exist
-            catalogSolrManager.createSolrCollections();
-
-            ExecutorService threadPool = Executors.newFixedThreadPool(5);
-            for (Study study : studyDataResult.getResults()) {
-                Map<String, Set<String>> studyAcls = SolrConverterUtil
-                        .parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
-                // We replace the current studyAcls for the parsed one
-                study.getAttributes().put("OPENCGA_ACL", studyAcls);
-
-                threadPool.submit(() -> indexCohort(catalogSolrManager, study));
-                threadPool.submit(() -> indexFile(catalogSolrManager, study));
-                threadPool.submit(() -> indexFamily(catalogSolrManager, study));
-                threadPool.submit(() -> indexIndividual(catalogSolrManager, study));
-                threadPool.submit(() -> indexSample(catalogSolrManager, study));
-            }
-
-
-            threadPool.shutdown();
-            try {
-                threadPool.awaitTermination(10, TimeUnit.MINUTES);
-            } catch (InterruptedException e) {
-                throw new CatalogException(e);
-            }
-            return true;
-        }
-        throw new CatalogException("Only the " + OPENCGA + " user can index in Solr");
-    }
-
     public Map<String, Object> facet(String studyStr, String fileFields, String sampleFields, String individualFields, String cohortFields,
                                      String familyFields, boolean defaultStats, String sessionId) throws CatalogException, IOException {
         Map<String, Object> result = new HashMap<>();
@@ -1648,181 +1572,6 @@ public class StudyManager extends AbstractManager {
 
     // **************************   Private methods  ******************************** //
 
-    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
-        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
-        try {
-            logger.info("Indexing cohorts of study {}", study.getFqn());
-
-            Query query = new Query()
-                    .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions cohortQueryOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(),
-                            CohortDBAdaptor.QueryParams.NAME.key(),
-                            CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
-                            CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                            CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true)
-                    .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-            catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
-                    cohortQueryOptions), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return true;
-        } catch (CatalogException e) {
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            logger.error("Could not index cohorts: {}", e.getMessage());
-            throw e;
-        }
-    }
-
-    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
-        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
-
-        try {
-            logger.info("Indexing files of study {}", study.getFqn());
-
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions fileQueryOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                            FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(),
-                            FileDBAdaptor.QueryParams.FORMAT.key(),
-                            FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
-                            FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
-                            FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
-                            FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT_UID.key(),
-                            FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
-                            FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true)
-                    .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-            catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
-                    fileQueryOptions), new CatalogFileToSolrFileConverter(study), CatalogSolrManager.FILE_SOLR_COLLECTION);
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return true;
-        } catch (CatalogException e) {
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            logger.error("Could not index files: {}", e.getMessage());
-            throw e;
-        }
-    }
-
-
-    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
-        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
-
-        try {
-            logger.info("Indexing families of study {}", study.getFqn());
-
-            Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions familyQueryOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(),
-                            FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.STATUS.key(),
-                            FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
-                            FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                            FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true)
-                    .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-            catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
-                    familyQueryOptions), new CatalogFamilyToSolrFamilyConverter(study), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return true;
-        } catch (CatalogException e) {
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            logger.error("Could not index families: {}", e.getMessage());
-            throw e;
-        }
-    }
-
-
-    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
-        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
-
-        try {
-            logger.info("Indexing individuals of study {}", study.getFqn());
-
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions individualQueryOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
-                            IndividualDBAdaptor.QueryParams.FATHER_UID.key(), IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
-                            IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key(),
-                            IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                            IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
-                            IndividualDBAdaptor.QueryParams.VERSION.key(),
-                            IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                            IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
-                            IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
-                            IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true)
-                    .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-            catalogSolrManager.insertCatalogCollection(this.individualDBAdaptor.iterator(query,
-                    individualQueryOptions), new CatalogIndividualToSolrIndividualConverter(study),
-                    CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return true;
-        } catch (CatalogException e) {
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            logger.error("Could not index individuals: {}", e.getMessage());
-            throw e;
-        }
-    }
-
-    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
-        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
-
-        try {
-            logger.info("Indexing samples of study {}", study.getFqn());
-
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions sampleQueryOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
-                            SampleDBAdaptor.QueryParams.SOURCE.key(),
-                            SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
-                            SampleDBAdaptor.QueryParams.PROCESSING.key(), SampleDBAdaptor.QueryParams.COLLECTION.key(),
-                            SampleDBAdaptor.QueryParams.CREATION_DATE.key(), SampleDBAdaptor.QueryParams.STATUS.key(),
-                            SampleDBAdaptor.QueryParams.TYPE.key(), SampleDBAdaptor.QueryParams.SOMATIC.key(),
-                            SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                            SampleDBAdaptor.QueryParams.UID.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true)
-                    .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-            catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query, sampleQueryOptions),
-                    new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return true;
-        } catch (CatalogException e) {
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            logger.error("Could not index samples: {}", e.getMessage());
-            throw e;
-        }
-    }
-
-
-    private int getProjectCurrentRelease(long projectId) throws CatalogException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
-        OpenCGAResult<Project> projectDataResult = projectDBAdaptor.get(projectId, options);
-        if (projectDataResult.getNumResults() == 0) {
-            throw new CatalogException("Internal error. Cannot retrieve current release from project");
-        }
-        return projectDataResult.first().getCurrentRelease();
-    }
-
     private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {
         Query query = new Query()
                 .append(StudyDBAdaptor.QueryParams.UID.key(), studyId)
@@ -1830,7 +1579,7 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.count(query).getNumMatches() > 0;
     }
 
-    private void validatePermissionRules(long studyId, Study.Entity entry, PermissionRule permissionRule) throws CatalogException {
+    private void validatePermissionRules(long studyId, Enums.Entity entry, PermissionRule permissionRule) throws CatalogException {
         ParamUtils.checkIdentifier(permissionRule.getId(), "PermissionRules");
 
         if (permissionRule.getPermissions() == null || permissionRule.getPermissions().isEmpty()) {

@@ -58,9 +58,13 @@ import java.util.concurrent.TimeUnit;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
@@ -98,18 +102,23 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case "index":
                 queryResponse = index();
                 break;
+
             case VARIANT_DELETE_COMMAND:
                 queryResponse = fileDelete();
                 break;
+
             case "query":
                 queryResponse = query();
                 break;
+
             case "export":
                 queryResponse = export();
                 break;
+
             case ANNOTATION_QUERY_COMMAND:
                 queryResponse = annotationQuery();
                 break;
+
             case ANNOTATION_METADATA_COMMAND:
                 queryResponse = annotationMetadata();
                 break;
@@ -117,27 +126,35 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case STATS_RUN_COMMAND:
                 queryResponse = stats();
                 break;
+
             case SAMPLE_VARIANT_STATS_RUN_COMMAND:
                 queryResponse = sampleStats();
                 break;
+
             case SAMPLE_QUERY_COMMAND:
                 queryResponse = sampleQuery();
                 break;
+
             case SAMPLE_RUN_COMMAND:
                 queryResponse = sampleRun();
                 break;
+
             case SAMPLE_VARIANT_STATS_QUERY_COMMAND:
                 queryResponse = sampleStatsQuery();
                 break;
+
             case COHORT_VARIANT_STATS_RUN_COMMAND:
                 queryResponse = cohortStats();
                 break;
+
             case COHORT_VARIANT_STATS_QUERY_COMMAND:
                 queryResponse = cohortStatsQuery();
                 break;
+
             case VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND:
                 queryResponse = knockout();
                 break;
+
             case SAMPLE_ELIGIBILITY_RUN_COMMAND:
                 queryResponse = sampleEligibility();
                 break;
@@ -147,6 +164,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //            case "family-stats-query":
 //                queryResponse = familyStatsQuery();
 //                break;
+
             case GWAS_RUN_COMMAND:
                 queryResponse = gwas();
                 break;
@@ -155,15 +173,34 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = mutationalSignature();
                 break;
 
+            case MENDELIAN_ERROR_RUN_COMMAND:
+                queryResponse = mendelianError();
+                break;
+
+            case INFERRED_SEX_RUN_COMMAND:
+                queryResponse = inferredSex();
+                break;
+
+            case RELATEDNESS_RUN_COMMAND:
+                queryResponse = relatedness();
+                break;
+
+            case GENETIC_CHECKS_RUN_COMMAND:
+                queryResponse = geneticChecks();
+                break;
+
             case PLINK_RUN_COMMAND:
                 queryResponse = plink();
                 break;
+
             case RVTEST_RUN_COMMAND:
                 queryResponse = rvtests();
                 break;
+
             case GATK_RUN_COMMAND:
                 queryResponse = gatk();
                 break;
+
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -290,6 +327,56 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         );
     }
 
+    private RestResponse<Job> mendelianError() throws ClientException {
+        return openCGAClient.getVariantClient().runMendelianError(
+                new MendelianErrorAnalysisParams(
+                        variantCommandOptions.mendelianErrorCommandOptions.family,
+                        variantCommandOptions.mendelianErrorCommandOptions.individual,
+                        variantCommandOptions.mendelianErrorCommandOptions.sample,
+                        variantCommandOptions.mendelianErrorCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.mendelianErrorCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> inferredSex() throws ClientException {
+        return openCGAClient.getVariantClient().runInferredSex(
+                new InferredSexAnalysisParams(
+                        variantCommandOptions.inferredSexCommandOptions.individual,
+                        variantCommandOptions.inferredSexCommandOptions.sample,
+                        variantCommandOptions.inferredSexCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.inferredSexCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> relatedness() throws ClientException {
+        return openCGAClient.getVariantClient().runRelatedness(
+                new RelatednessAnalysisParams(
+                        variantCommandOptions.relatednessCommandOptions.individuals,
+                        variantCommandOptions.relatednessCommandOptions.samples,
+                        variantCommandOptions.relatednessCommandOptions.minorAlleleFreq,
+                        variantCommandOptions.relatednessCommandOptions.method,
+                        variantCommandOptions.relatednessCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.relatednessCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> geneticChecks() throws ClientException {
+        return openCGAClient.getVariantClient().runGeneticChecks(
+                new GeneticChecksAnalysisParams(
+                        variantCommandOptions.geneticChecksCommandOptions.family,
+                        variantCommandOptions.geneticChecksCommandOptions.individual,
+                        variantCommandOptions.geneticChecksCommandOptions.sample,
+                        variantCommandOptions.geneticChecksCommandOptions.minorAlleleFreq,
+                        variantCommandOptions.geneticChecksCommandOptions.relatednessMethod,
+                        variantCommandOptions.geneticChecksCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.geneticChecksCommandOptions.study)
+        );
+    }
+
     private RestResponse<Job> gwas() throws ClientException {
         return openCGAClient.getVariantClient().runGwas(
                 new GwasAnalysisParams(
@@ -349,6 +436,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantIndex.genericVariantIndexOptions.gvcf,
                         variantIndex.genericVariantIndexOptions.load,
                         variantIndex.genericVariantIndexOptions.loadSplitData,
+                        variantIndex.genericVariantIndexOptions.skipSampleIndex,
                         variantIndex.genericVariantIndexOptions.skipPostLoadCheck,
                         variantIndex.genericVariantIndexOptions.excludeGenotype,
                         variantIndex.genericVariantIndexOptions.includeExtraFields,
@@ -672,8 +760,12 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
         params.putIfNotEmpty(ParamConstants.JOB_ID, variantCommandOptions.commonJobOptions.jobId);
         params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, variantCommandOptions.commonJobOptions.jobDescription);
-        params.putIfNotNull(ParamConstants.JOB_DEPENDS_ON, variantCommandOptions.commonJobOptions.jobDependsOn);
-        params.putIfNotNull(ParamConstants.JOB_TAGS, variantCommandOptions.commonJobOptions.jobTags);
+        if (variantCommandOptions.commonJobOptions.jobDependsOn != null) {
+            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", variantCommandOptions.commonJobOptions.jobDependsOn));
+        }
+        if (variantCommandOptions.commonJobOptions.jobTags != null) {
+            params.put(ParamConstants.JOB_TAGS, String.join(",", variantCommandOptions.commonJobOptions.jobTags));
+        }
         if (variantCommandOptions.commonNumericOptions.limit > 0) {
             params.put(QueryOptions.LIMIT, variantCommandOptions.commonNumericOptions.limit);
         }

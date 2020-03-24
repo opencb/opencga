@@ -59,7 +59,7 @@ public class JobsTopManager {
         // TODO: Make this configurable
         List<TableColumnSchema<Job>> columns = new ArrayList<>();
         columns.add(new TableColumnSchema<>("ID", Job::getId, 50));
-        columns.add(new TableColumnSchema<>("Status", job -> job.getStatus().getName()));
+        columns.add(new TableColumnSchema<>("Status", job -> job.getInternal().getStatus()  .getName()));
         columns.add(new TableColumnSchema<>("Submission", Job::getCreationDate));
         columns.add(new TableColumnSchema<>("Time", JobsTopManager::getDurationString));
         columns.add(new TableColumnSchema<>("Start", job -> SIMPLE_DATE_FORMAT.format(getStart(job))));

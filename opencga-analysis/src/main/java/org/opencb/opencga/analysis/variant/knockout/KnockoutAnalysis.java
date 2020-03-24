@@ -1,6 +1,10 @@
 package org.opencb.opencga.analysis.variant.knockout;
 
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Gene;
@@ -10,17 +14,23 @@ import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByGene;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutBySample;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
+import java.io.File;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -35,7 +45,11 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
 
     @Override
     protected List<String> getSteps() {
-        return Arrays.asList("list-genes", "list-families", getId());
+        return Arrays.asList(
+                "list-genes",
+                "list-families",
+                getId(),
+                "add-metadata-to-output-files");
     }
 
     @Override
@@ -185,6 +199,49 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                     .setCt(analysisParams.getConsequenceType())
                     .setTrios(triosMap)
                     .execute();
+        });
+
+        step("add-metadata-to-output-files", () -> {
+            ObjectReader reader = JacksonUtils.getDefaultObjectMapper().readerFor(KnockoutBySample.class);
+            ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().forType(KnockoutBySample.class);
+            for (File file : FileUtils.listFiles(getOutDir().toFile(), new RegexFileFilter("knockout.sample..*.json"), null)) {
+                KnockoutBySample knockoutBySample = reader.readValue(file);
+                Sample sample = catalogManager
+                        .getSampleManager()
+                        .get(studyFqn, knockoutBySample.getSample().getId(), new QueryOptions(), getToken())
+                        .first();
+                sample.getAttributes().remove("OPENCGA_INDIVIDUAL");
+                knockoutBySample.setSample(sample);
+                if (StringUtils.isNotEmpty(sample.getIndividualId())) {
+                    Individual individual = catalogManager
+                            .getIndividualManager()
+                            .get(studyFqn,
+                                    sample.getIndividualId(),
+                                    new QueryOptions(QueryOptions.EXCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key()),
+                                    getToken())
+                            .first();
+                    if (individual.getFather() != null && individual.getFather().getId() == null) {
+                        individual.setFather(null);
+                    }
+                    if (individual.getMother() != null && individual.getMother().getId() == null) {
+                        individual.setMother(null);
+                    }
+                    knockoutBySample.setIndividual(individual);
+                }
+                writer.writeValue(file, knockoutBySample);
+            }
+
+
+            reader = JacksonUtils.getDefaultObjectMapper().readerFor(KnockoutByGene.class);
+            writer = JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().forType(KnockoutByGene.class);
+            for (File file : FileUtils.listFiles(getOutDir().toFile(), new RegexFileFilter("knockout.gene..*.json"), null)) {
+                KnockoutByGene knockoutByGene = reader.readValue(file);
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, "annotation.expression");
+                Gene gene = getVariantStorageManager().getCellBaseUtils(studyFqn, getToken()).getCellBaseClient().getGeneClient()
+                        .search(new Query(GeneDBAdaptor.QueryParams.NAME.key(), knockoutByGene.getName()), queryOptions).firstResult();
+                knockoutByGene.setGene(gene);
+                writer.writeValue(file, knockoutByGene);
+            }
         });
     }
 

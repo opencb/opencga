@@ -32,7 +32,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
 
     public static final String ID = "sample-variant-stats";
     public static final String DESCRIPTION = "Compute sample variant stats for the selected list of samples.";
-    public static final String VARIABLE_SET_ID = "SAMPLE_VARIANT_STATS";
+    public static final String VARIABLE_SET_ID = "opencga_sample_variant_stats";
     private String study;
     private Query samplesQuery;
     private List<String> sampleNames;

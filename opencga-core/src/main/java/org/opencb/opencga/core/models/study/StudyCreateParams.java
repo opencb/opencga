@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.opencga.core.models.common.CustomStatusParams;
+
 import java.util.Map;
 
 public class StudyCreateParams {
@@ -7,29 +9,28 @@ public class StudyCreateParams {
     private String id;
     private String name;
     private String alias;
-    private Study.Type type;
     private String description;
-
-    private Map<String, Object> stats;
+    private StudyNotification notification;
     private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public StudyCreateParams() {
     }
 
-    public StudyCreateParams(String id, String name, String alias, Study.Type type, String description, Map<String, Object> stats,
-                             Map<String, Object> attributes) {
+    public StudyCreateParams(String id, String name, String alias, String description, StudyNotification notification,
+                             Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.name = name;
         this.alias = alias;
-        this.type = type;
         this.description = description;
-        this.stats = stats;
+        this.notification = notification;
         this.attributes = attributes;
+        this.status = status;
     }
 
     public static StudyCreateParams of(Study study) {
-        return new StudyCreateParams(study.getId(), study.getName(), study.getAlias(), study.getType(), study.getDescription(),
-                study.getStats(), study.getAttributes());
+        return new StudyCreateParams(study.getId(), study.getName(), study.getAlias(), study.getDescription(),
+                study.getNotification(), study.getAttributes(), CustomStatusParams.of(study.getStatus()));
     }
 
     @Override
@@ -38,10 +39,10 @@ public class StudyCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
-        sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
-        sb.append(", stats=").append(stats);
+        sb.append(", notification=").append(notification);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -73,15 +74,6 @@ public class StudyCreateParams {
         return this;
     }
 
-    public Study.Type getType() {
-        return type;
-    }
-
-    public StudyCreateParams setType(Study.Type type) {
-        this.type = type;
-        return this;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -91,12 +83,21 @@ public class StudyCreateParams {
         return this;
     }
 
-    public Map<String, Object> getStats() {
-        return stats;
+    public StudyNotification getNotification() {
+        return notification;
     }
 
-    public StudyCreateParams setStats(Map<String, Object> stats) {
-        this.stats = stats;
+    public StudyCreateParams setNotification(StudyNotification notification) {
+        this.notification = notification;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public StudyCreateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 

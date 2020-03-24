@@ -22,11 +22,10 @@ import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -48,10 +47,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -72,9 +67,8 @@ public class PanelManager extends ResourceManager<Panel> {
             PanelDBAdaptor.QueryParams.VERSION.key(), PanelDBAdaptor.QueryParams.STUDY_UID.key()));
 
     PanelManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                 Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                 DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
@@ -93,7 +87,7 @@ public class PanelManager extends ResourceManager<Panel> {
         queryCopy.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
-        if (UUIDUtils.isOpenCGAUUID(entry)) {
+        if (UuidUtils.isOpenCgaUuid(entry)) {
             queryCopy.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
             queryCopy.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
@@ -129,7 +123,7 @@ public class PanelManager extends ResourceManager<Panel> {
         PanelDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             PanelDBAdaptor.QueryParams param = PanelDBAdaptor.QueryParams.ID;
-            if (UUIDUtils.isOpenCGAUUID(entry)) {
+            if (UuidUtils.isOpenCgaUuid(entry)) {
                 param = PanelDBAdaptor.QueryParams.UUID;
                 panelStringFunction = Panel::getUuid;
             }
@@ -170,7 +164,7 @@ public class PanelManager extends ResourceManager<Panel> {
     private OpenCGAResult<Panel> getInstallationPanel(String entry) throws CatalogException {
         Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
 
-        if (UUIDUtils.isOpenCGAUUID(entry)) {
+        if (UuidUtils.isOpenCgaUuid(entry)) {
             query.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
             query.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
@@ -217,7 +211,7 @@ public class PanelManager extends ResourceManager<Panel> {
             panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
             panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
             panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
-            panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+            panel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
 
             fillDefaultStats(panel);
 
@@ -243,7 +237,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("studyId", studyId)
                 .append("options", options)
                 .append("token", token);
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         try {
             // 1. We check everything can be done
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
@@ -283,7 +277,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("panelIds", panelIds)
                 .append("options", options)
                 .append("token", token);
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         int counter = 0;
         try {
@@ -323,7 +317,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     private OpenCGAResult<Panel> importGlobalPanel(Study study, Panel diseasePanel, QueryOptions options) throws CatalogException {
-        diseasePanel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+        diseasePanel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
         diseasePanel.setCreationDate(TimeUtils.getTime());
         diseasePanel.setRelease(studyManager.getCurrentRelease(study));
         diseasePanel.setVersion(1);
@@ -341,7 +335,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("overwrite", overwrite)
                 .append("token", token);
 
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
             authorizationManager.checkIsAdmin(userId);
@@ -634,7 +628,7 @@ public class PanelManager extends ResourceManager<Panel> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -690,7 +684,7 @@ public class PanelManager extends ResourceManager<Panel> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -759,7 +753,7 @@ public class PanelManager extends ResourceManager<Panel> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -893,36 +887,16 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("token", token);
 
         try {
-            Future<OpenCGAResult<Long>> countFuture = null;
             OpenCGAResult<Panel> result = OpenCGAResult.empty();
             if (INSTALLATION_PANELS.equals(studyId)) {
                 query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
 
-                if (options.getBoolean(QueryOptions.COUNT)) {
-                    ExecutorService executor = Executors.newSingleThreadExecutor();
-                    Query finalQuery = query;
-                    countFuture = executor.submit(() -> panelDBAdaptor.count(finalQuery));
-                }
-                if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
-                    // Here view permissions won't be checked
-                    result = panelDBAdaptor.get(query, options);
-                }
+                // Here view permissions won't be checked
+                result = panelDBAdaptor.get(query, options);
             } else {
                 query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-                if (options.getBoolean(QueryOptions.COUNT)) {
-                    ExecutorService executor = Executors.newSingleThreadExecutor();
-                    Query finalQuery = query;
-                    countFuture = executor.submit(() -> panelDBAdaptor.count(finalQuery, userId));
-                }
-                if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
-                    // Here permissions will be checked
-                    result = panelDBAdaptor.get(study.getUid(), query, options, userId);
-                }
-            }
-
-            if (countFuture != null) {
-                mergeCount(result, countFuture);
+                // Here permissions will be checked
+                result = panelDBAdaptor.get(study.getUid(), query, options, userId);
             }
 
             auditManager.auditSearch(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
@@ -932,10 +906,6 @@ public class PanelManager extends ResourceManager<Panel> {
             auditManager.auditSearch(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
-        } catch (InterruptedException | ExecutionException e) {
-            auditManager.auditSearch(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "", e.getMessage())));
-            throw new CatalogException("Unexpected error", e);
         }
     }
 
@@ -996,7 +966,7 @@ public class PanelManager extends ResourceManager<Panel> {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -1072,7 +1042,7 @@ public class PanelManager extends ResourceManager<Panel> {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -1182,7 +1152,7 @@ public class PanelManager extends ResourceManager<Panel> {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("panelList", panelList)
@@ -1259,7 +1229,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
                 .append("token", token);
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
             if (panelStrList == null || panelStrList.isEmpty()) {
@@ -1352,7 +1322,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("token", token);
 
         if (StringUtils.isEmpty(operationUuid)) {
-            operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+            operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         }
 
         try {
@@ -1377,7 +1347,7 @@ public class PanelManager extends ResourceManager<Panel> {
             panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
             panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
             panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
-            panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+            panel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
 
             fillDefaultStats(panel);
 

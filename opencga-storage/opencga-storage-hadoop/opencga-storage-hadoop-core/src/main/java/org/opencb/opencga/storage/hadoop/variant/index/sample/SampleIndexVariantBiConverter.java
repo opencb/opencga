@@ -16,8 +16,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.MENDELIAN_ERROR_COLUMN_BYTES;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.META_PREFIX;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
 
 /**
  * Created on 11/04/19.
@@ -133,8 +132,7 @@ public class SampleIndexVariantBiConverter {
 
     public List<Variant> toVariants(Cell cell) {
         List<Variant> variants;
-        byte[] column = CellUtil.cloneQualifier(cell);
-        if (column[0] != META_PREFIX && column[0] != MENDELIAN_ERROR_COLUMN_BYTES[0]) {
+        if (isGenotypeColumn(cell)) {
             byte[] row = CellUtil.cloneRow(cell);
             String chromosome = SampleIndexSchema.chromosomeFromRowKey(row);
             int batchStart = SampleIndexSchema.batchStartFromRowKey(row);

@@ -948,7 +948,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         if (cohortId == null) {
             newCohort = true;
             cohortId = newCohortId(studyId);
-            unsecureUpdateCohortMetadata(studyId, new CohortMetadata(studyId, cohortId, cohortName, Collections.emptyList()));
+            unsecureUpdateCohortMetadata(studyId, new CohortMetadata(studyId, cohortId, cohortName,
+                    Collections.emptyList(),
+                    Collections.emptyList()));
         } else {
             newCohort = false;
         }
@@ -985,6 +987,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 }
             }
         }
+        List<Integer> fileIds = new ArrayList<>(getFileIdsFromSampleIds(studyId, sampleIds));
 
         // Then, add samples to the cohort
         return updateCohortMetadata(studyId, cohortId,
@@ -993,20 +996,30 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     sampleIdsList.sort(Integer::compareTo);
 
                     List<Integer> oldSamples = cohort.getSamples();
+                    List<Integer> oldFiles = cohort.getFiles() == null ? Collections.emptyList() : cohort.getFiles();
                     oldSamples.sort(Integer::compareTo);
-                    List<Integer> newSamples;
+                    final List<Integer> newSamples;
+                    final List<Integer> newFiles;
                     if (addSamples) {
-                        Set<Integer> allSamples = new HashSet<>(oldSamples);
+                        Set<Integer> allSamples = new HashSet<>(oldSamples.size() + sampleIds.size());
+                        allSamples.addAll(oldSamples);
                         allSamples.addAll(sampleIds);
                         newSamples = new ArrayList<>(allSamples);
+
+                        Set<Integer> allFiles = new HashSet<>(oldFiles.size() + fileIds.size());
+                        allFiles.addAll(oldFiles);
+                        allFiles.addAll(fileIds);
+                        newFiles = new ArrayList<>(allFiles);
                     } else {
                         newSamples = sampleIdsList;
+                        newFiles = fileIds;
                     }
                     cohort.setSamples(newSamples);
+                    cohort.setFiles(newFiles);
 
-                    if (!oldSamples.equals(sampleIdsList)) {
-                        // Cohort has been modified! Invalidate if needed.
-                        if (cohort.isStatsReady()) {
+                    if (cohort.isStatsReady()) {
+                        if (!oldSamples.equals(sampleIdsList) || !oldFiles.equals(fileIds)) {
+                            // Cohort has been modified! Invalidate stats
                             cohort.setStatsStatus(TaskMetadata.Status.ERROR);
                         }
                     }

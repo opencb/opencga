@@ -26,6 +26,12 @@ import java.util.*;
  */
 public class Status {
 
+    private String name;
+    private String date;
+    private String description;
+    @Deprecated
+    private String message;
+
     /**
      * READY name means that the object is being used.
      */
@@ -38,9 +44,6 @@ public class Status {
 
     public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED);
 
-    private String name;
-    private String date;
-    private String message;
 
     public Status() {
         this(READY, "");
@@ -50,63 +53,26 @@ public class Status {
         this(name, "");
     }
 
-    public Status(String name, String message) {
+    public Status(String name, String description) {
         if (isValid(name)) {
-            init(name, message);
+            init(name, description);
         } else {
             throw new IllegalArgumentException("Unknown name '" + name + "'");
         }
     }
 
-    protected void init(String status, String message) {
+    protected void init(String status, String description) {
         this.name = status;
         this.date = TimeUtils.getTime();
-        this.message = message;
+        this.description = description;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDate() {
-        return date;
-    }
-
-    public void setDate(String date) {
-        this.date = date;
-    }
-
-    public void setCurrentDate() {
-        this.date = TimeUtils.getTime();
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
 
     public static boolean isValid(String status) {
         if (status != null && (status.equals(READY) || status.equals(DELETED))) {
             return true;
         }
         return false;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Status{");
-        sb.append("name='").append(name).append('\'');
-        sb.append(", date='").append(date).append('\'');
-        sb.append(", message='").append(message).append('\'');
-        sb.append('}');
-        return sb.toString();
     }
 
     @Override
@@ -120,12 +86,12 @@ public class Status {
         Status status = (Status) o;
         return Objects.equals(name, status.name)
                 && Objects.equals(date, status.date)
-                && Objects.equals(message, status.message);
+                && Objects.equals(description, status.description);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, date, message);
+        return Objects.hash(name, date, description);
     }
 
     public static String getPositiveStatus(List<String> acceptedStatusList, String status) {
@@ -167,5 +133,42 @@ public class Status {
                 positiveStatusList.add(s);
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Status{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Status setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public Status setDate(String date) {
+        this.date = date;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Status setDescription(String description) {
+        this.description = description;
+        return this;
     }
 }

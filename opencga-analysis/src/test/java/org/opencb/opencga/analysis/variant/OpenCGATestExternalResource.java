@@ -133,6 +133,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.createDirectories(conf);
         Files.createDirectories(userHome);
 
+        catalogManagerExternalResource.getConfiguration().getAdmin().setSecretKey(null);
+        catalogManagerExternalResource.getConfiguration().getAdmin().setAlgorithm(null);
         catalogManagerExternalResource.getConfiguration().serialize(
                 new FileOutputStream(conf.resolve("configuration.yml").toFile()));
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
@@ -181,7 +183,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
             folder += resourceName.substring(0, idx);
             resourceName = resourceName.substring(idx + 1);
         }
-        catalogManager.getFileManager().createFolder(studyId, folder, null, true, "", new QueryOptions(), sessionId);
+        catalogManager.getFileManager().createFolder(studyId, folder, true, "", new QueryOptions(), sessionId);
         catalogManager.getFileManager().link(studyId, uri, folder, new ObjectMap(), sessionId);
 //        System.out.println("resourceName = " + resourceName);
 //        file = new FileMetadataReader(catalogManager).create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();

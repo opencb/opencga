@@ -29,4 +29,6 @@ public interface DBIterator<E> extends Iterator<E>, Closeable {
     @Override
     void close();
 
+    long getNumMatches();
+
 }

@@ -2,17 +2,23 @@ package org.opencb.opencga.analysis.variant.mutationalSignature;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Tool(id = MutationalSignatureAnalysis.ID, resource = Enums.Resource.VARIANT)
@@ -21,11 +27,13 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
     public static final String ID = "mutational-signature";
     public static final String DESCRIPTION = "Run mutational signature analysis for a given sample.";
 
+    public final static String SIGNATURES_FILENAME = "signatures_probabilities_v2.txt";
+
     private String study;
     private String sampleName;
 
-//    private List<String> checkedSamplesList;
-    private Path outputFile;
+    private Path refGenomePath;
+    private Path mutationalSignaturePath;
 
     /**
      * Study of the sample.
@@ -64,26 +72,52 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
                     throw new ToolException("Unable to compute mutational signature analysis. Sample '" + sampleName + "' not found");
                 }
             }
-
-//            // Remove non-indexed samples
-//            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
-//            allSamples.removeIf(s -> !indexedSamples.contains(s));
-
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
         addAttribute("sampleName", sampleName);
-        outputFile = getOutDir().resolve("mutational_signature_analysis.json");
+    }
+
+    @Override
+    protected List<String> getSteps() {
+        List<String> steps = new ArrayList<>();
+        steps.add("download-ref-genomes");
+        steps.add("download-mutational-signatures");
+        steps.add(getId());
+        return steps;
     }
 
     @Override
     protected void run() throws ToolException {
+        step("download-ref-genomes", () -> {
+            // FIXME to make URLs dependent on assembly (and Ensembl/NCBI ?)
+            ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(ResourceUtils.Species.hsapiens,
+                    ResourceUtils.Assembly.GRCh38, ResourceUtils.Authority.Ensembl, getScratchDir());
+
+            if (refGenome == null) {
+                throw new ToolException("Something wrong happened downloading reference genome from " + ResourceUtils.URL);
+            }
+
+            refGenomePath = refGenome.getGzFile().toPath();
+        });
+
+        step("download-mutational-signatures", () -> {
+            // To compare, downloadAnalysis signatures probabilities at
+            File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
+            if (signatureFile == null) {
+                throw new ToolException("Error downloading mutational signatures file from " + ResourceUtils.URL);
+            }
+
+            mutationalSignaturePath = signatureFile.toPath();
+        });
+
         step(getId(), () -> {
             getToolExecutor(MutationalSignatureAnalysisExecutor.class)
                     .setStudy(study)
-                    .setOutputFile(outputFile)
                     .setSampleName(sampleName)
+                    .setRefGenomePath(refGenomePath)
+                    .setMutationalSignaturePath(mutationalSignaturePath)
                     .execute();
         });
     }

@@ -562,39 +562,48 @@
        <str name="paramkey">param value</str>
      </similarity>
     -->
-    
-    <field name="uid" type="plong" indexed="true" stored="true" multiValued="false"/>
+
+    <fieldType name="int" class="solr.TrieIntField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+    <fieldType name="double" class="solr.TrieDoubleField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+    <fieldType name="float" class="solr.TrieFloatField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+    <fieldType name="long" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
+
+    <field name="uid" type="long" indexed="true" stored="true" multiValued="false"/>
     <field name="studyId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="hasMother" type="boolean" indexed="true" stored="true" multiValued="false"/>
     <field name="hasFather" type="boolean" indexed="true" stored="true" multiValued="false"/>
-    <field name="numMultiples" type="pint" indexed="true" stored="true" multiValued="false"/>
-    <field name="multiplesType" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="locationCity" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="locationState" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="locationCountry" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="yearOfBirth" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="monthOfBirth" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="dayOfBirth" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="sex" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="karyotypicSex" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="ethnicity" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="population" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="release" type="pint" indexed="true" stored="true" multiValued="false"/>
-    <field name="version" type="pint" indexed="true" stored="true" multiValued="false"/>
-    <field name="creationYear" type="pint" indexed="true" stored="true" multiValued="false"/>
+    <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="version" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="creationYear" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="creationMonth" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="creationDay" type="pint" indexed="true" stored="true" multiValued="false"/>
+    <field name="creationDay" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="creationDayOfWeek" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="lifeStatus" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="affectationStatus" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="phenotypes" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="numSamples" type="pint" indexed="true" stored="true" multiValued="false"/>
+    <field name="disorders" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="numSamples" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="parentalConsanguinity" type="boolean" indexed="true" stored="true" multiValued="false"/>
     <field name="acl" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="annotationSets" type="strings" multiValued="true" indexed="true" stored="true"/>
 
     <dynamicField name="annotations__s__*" type="string" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations__d__*" type="pdouble" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations__i__*" type="pint" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__d__*" type="double" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__i__*" type="int" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="annotations__b__*" type="boolean" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="annotations__sm__*" type="strings" multiValued="true" indexed="true" stored="true"/>
-    <dynamicField name="annotations__dm__*" type="pdouble" indexed="true" stored="true" multiValued="true"/>
-    <dynamicField name="annotations__im__*" type="pint" indexed="true" stored="true" multiValued="true"/>
+    <dynamicField name="annotations__dm__*" type="double" indexed="true" stored="true" multiValued="true"/>
+    <dynamicField name="annotations__im__*" type="int" indexed="true" stored="true" multiValued="true"/>
     <dynamicField name="annotations__bm__*" type="boolean" indexed="true" stored="true" multiValued="true"/>
 
 </schema>

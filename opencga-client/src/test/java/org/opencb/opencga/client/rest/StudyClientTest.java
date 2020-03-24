@@ -22,6 +22,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.clients.StudyClient;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.RestResponse;
 

@@ -1,6 +1,7 @@
 
 # OpenCGA folders
 build
+dist
 
 # Web
 bower_components
@@ -53,6 +54,7 @@ local.properties
 #python
 *.pyc
 *.ipynb_checkpoints/
+pyopencga.egg-info
 
 # NetBeans
 nb*.xml

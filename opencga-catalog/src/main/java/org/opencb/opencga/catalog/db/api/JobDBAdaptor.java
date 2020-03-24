@@ -63,12 +63,12 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     default OpenCGAResult setStatus(long jobId, String status)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(jobId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return update(jobId, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     default OpenCGAResult setStatus(Query query, String status)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return update(query, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     default OpenCGAResult<Job> get(long jobId, QueryOptions options)
@@ -114,7 +114,9 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
         PRIORITY("priority", TEXT, ""),
 
-        STATUS("status", OBJECT, ""),
+        INTERNAL_STATUS("internal.status", OBJECT, ""),
+        INTERNAL_WEBHOOK("internal.webhook", OBJECT, ""),
+        INTERNAL_EVENTS("internal.events", OBJECT, ""),
         OUT_DIR("outDir", OBJECT, ""),
 
         INPUT("input", OBJECT, ""),
@@ -139,9 +141,9 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         OUTPUT_ERROR("outputError", TEXT_ARRAY, ""),
         //PARAMS,
         VISITED("visited", BOOLEAN, ""),
-        STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
-        STATUS_DATE("status.date", TEXT, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         SIZE("size", DECIMAL, ""),
         OUT_DIR_UID("outDir.uid", INTEGER, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),
@@ -155,7 +157,9 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         DELETED("deleted", BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
-        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
+        STUDY("study", TEXT_ARRAY, ""),
+        STUDY_ID("study.id", TEXT, ""),
+        STUDY_OTHERS("study.others", TEXT, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
         static {

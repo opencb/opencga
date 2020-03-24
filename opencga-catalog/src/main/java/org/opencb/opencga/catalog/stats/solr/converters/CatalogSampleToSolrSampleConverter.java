@@ -50,12 +50,10 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
 
     @Override
     public SampleSolrModel convertToStorageType(Sample sample) {
-
         SampleSolrModel sampleSolrModel = new SampleSolrModel();
 
-        sampleSolrModel.setId(sample.getId());
+        sampleSolrModel.setId(sample.getUuid());
         sampleSolrModel.setUid(sample.getUid());
-        sampleSolrModel.setSource(sample.getSource());
         sampleSolrModel.setStudyId(study.getFqn().replace(":", "__"));
 
         sampleSolrModel.setRelease(sample.getRelease());
@@ -68,10 +66,9 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         sampleSolrModel.setCreationMonth(localDate.getMonth().toString());
         sampleSolrModel.setCreationDay(localDate.getDayOfMonth());
         sampleSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        sampleSolrModel.setStatus(sample.getStatus().getName());
+        sampleSolrModel.setStatus(sample.getInternal().getStatus().getName());
 
-        sampleSolrModel.setStatus(sample.getStatus().getName());
-        sampleSolrModel.setType(sample.getType());
+        sampleSolrModel.setStatus(sample.getInternal().getStatus().getName());
         sampleSolrModel.setSomatic(sample.isSomatic());
 
         if (sample.getPhenotypes() != null) {

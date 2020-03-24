@@ -21,7 +21,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -42,8 +41,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 
 @Path("/{apiVersion}/studies")
@@ -75,8 +72,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             }
 
             String studyId = StringUtils.isEmpty(study.getId()) ? study.getAlias() : study.getId();
-            return createOkResponse(catalogManager.getStudyManager().create(project, studyId, study.getAlias(), study.getName(), study.getType(),
-                    null, study.getDescription(), null, null, null, null, null, study.getStats(), study.getAttributes(), queryOptions, token));
+            return createOkResponse(catalogManager.getStudyManager().create(project, studyId, study.getAlias(), study.getName(),
+                    study.getDescription(), study.getNotification(), null,
+                    study.getStatus() != null ? study.getStatus().toCustomStatus() : null, study.getAttributes(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -135,8 +133,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyUpdateParams());
-            DataResult queryResult = catalogManager.getStudyManager().update(studyStr,
-                    new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams)), null, token);
+            DataResult queryResult = catalogManager.getStudyManager().update(studyStr, updateParams, null, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -213,12 +210,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             }
             OpenCGAResult<Group> group;
             if (action == ParamUtils.BasicUpdateAction.ADD) {
-                // TODO: Remove if condition in v2.0
-                if (StringUtils.isEmpty(params.getId())) {
-                    params.setId(params.getName());
-                }
-
-                group = catalogManager.getStudyManager().createGroup(studyStr, params.getId(), params.getName(), params.getUsers(), token);
+                group = catalogManager.getStudyManager().createGroup(studyStr, params.getId(), params.getUsers(), token);
             } else {
                 group = catalogManager.getStudyManager().deleteGroup(studyStr, params.getId(), token);
             }
@@ -255,7 +247,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response getPermissionRules(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true)
-                @QueryParam("entity") Study.Entity entity) {
+                @QueryParam("entity") Enums.Entity entity) {
         try {
             ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, token));
@@ -270,7 +262,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updatePermissionRules(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true) @QueryParam("entity")
-                    Study.Entity entity,
+                    Enums.Entity entity,
             @ApiParam(value = "Action to be performed: ADD to add a new permission rule; REMOVE to remove all permissions assigned by an "
                     + "existing permission rule (even if it overlaps any manual permission); REVERT to remove all permissions assigned by"
                     + " an existing permission rule (keep manual overlaps); NONE to remove an existing permission rule without removing "
@@ -320,7 +312,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     // Temporal method used by deprecated methods. This will be removed at some point.
-    private Study.StudyAclParams getAclParams(
+    private StudyAclParams getAclParams(
             @ApiParam(value = "Comma separated list of permissions to add") @QueryParam("add") String addPermissions,
             @ApiParam(value = "Comma separated list of permissions to remove") @QueryParam("remove") String removePermissions,
             @ApiParam(value = "Comma separated list of permissions to set") @QueryParam("set") String setPermissions,
@@ -352,7 +344,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             permissions = removePermissions;
             action = AclParams.Action.REMOVE;
         }
-        return new Study.StudyAclParams(permissions, action, template);
+        return new StudyAclParams(permissions, action, template);
     }
 
     @POST
@@ -365,7 +357,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new StudyAclUpdateParams());
 
-            Study.StudyAclParams aclParams = new Study.StudyAclParams(params.getPermissions(), params.getAction(), params.getTemplate());
+            StudyAclParams aclParams = new StudyAclParams(params.getPermissions(), params.getAction(), params.getTemplate());
             List<String> idList = getIdList(params.getStudy(), false);
             return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, token));
         } catch (Exception e) {

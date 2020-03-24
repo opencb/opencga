@@ -67,6 +67,7 @@ public class VariantPhoenixHelper {
     public static final String COHORT_STATS_FREQ_SUFFIX = "_CF";
     public static final String COHORT_STATS_MAF_SUFFIX = "_MAF";
     public static final String COHORT_STATS_MGF_SUFFIX = "_MGF";
+    public static final String COHORT_STATS_PASS_FREQ_SUFFIX = "_PSF";
 
     public static final char COLUMN_KEY_SEPARATOR = '_';
     public static final String COLUMN_KEY_SEPARATOR_STR = String.valueOf(COLUMN_KEY_SEPARATOR);
@@ -617,7 +618,8 @@ public class VariantPhoenixHelper {
                 getStatsColumn(studyId, cohortId),
                 getStatsFreqColumn(studyId, cohortId),
                 getStatsMafColumn(studyId, cohortId),
-                getStatsMgfColumn(studyId, cohortId));
+                getStatsMgfColumn(studyId, cohortId),
+                getStatsPassFreqColumn(studyId, cohortId));
     }
 
     public static Column getStatsColumn(int studyId, int cohortId) {
@@ -773,6 +775,10 @@ public class VariantPhoenixHelper {
 
     public static Column getStatsMgfColumn(int studyId, int cohortId) {
         return Column.build(buildStudyColumnsPrefix(studyId) + cohortId + COHORT_STATS_MGF_SUFFIX, PFloat.INSTANCE);
+    }
+
+    public static Column getStatsPassFreqColumn(int studyId, int cohortId) {
+        return Column.build(buildStudyColumnsPrefix(studyId) + cohortId + COHORT_STATS_PASS_FREQ_SUFFIX, PFloat.INSTANCE);
     }
 
     public static byte[] buildSampleColumnKey(int studyId, int sampleId) {

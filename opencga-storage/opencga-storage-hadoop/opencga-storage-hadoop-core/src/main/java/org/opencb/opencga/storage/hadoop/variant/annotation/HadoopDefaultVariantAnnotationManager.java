@@ -208,7 +208,6 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     protected void updateSampleIndexAnnotation(ObjectMap params) throws IOException, StorageEngineException {
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         SampleIndexAnnotationLoader indexAnnotationLoader = new SampleIndexAnnotationLoader(
-                dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(),
                 metadataManager, mrExecutor);
@@ -225,10 +224,10 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             // Run on all pending samples
             for (Integer studyId : studies) {
                 Set<Integer> samplesToUpdate = new HashSet<>();
-                for (Integer file : filesToBeAnnotated.get(studyId)) {
+                for (Integer file : filesToBeAnnotated.getOrDefault(studyId, Collections.emptyList())) {
                     samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
                 }
-                for (Integer file : alreadyAnnotatedFiles.get(studyId)) {
+                for (Integer file : alreadyAnnotatedFiles.getOrDefault(studyId, Collections.emptyList())) {
                     samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
                 }
                 if (!samplesToUpdate.isEmpty()) {

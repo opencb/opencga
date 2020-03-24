@@ -207,8 +207,6 @@ public class IndividualWSServerTest {
         Individual individual = response.getResponse().get(0).first();
         assertTrue(individual.getFather().getUid() > 0);
         assertTrue(individual.getMother().getUid() > 0);
-        assertEquals(1, individual.getMultiples().getSiblings().size());
-        assertEquals("in4", individual.getMultiples().getSiblings().get(0));
     }
 
     @Test

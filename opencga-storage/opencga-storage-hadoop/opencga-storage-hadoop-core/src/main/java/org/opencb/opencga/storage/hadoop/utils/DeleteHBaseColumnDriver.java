@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.utils;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
@@ -23,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created on 19/02/18.
@@ -39,14 +42,18 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
     private static final String REGION_SEPARATOR = "\\\\";
     public static final String DELETE_HBASE_COLUMN_MAPPER_CLASS = "delete.hbase.column.mapper.class";
 
-    private List<String> columns;
+    private Map<String, List<String>> columns;
     private List<Pair<byte[], byte[]>> regions;
 
     public void setupJob(Job job, String table) throws IOException {
-        job.getConfiguration().setStrings(COLUMNS_TO_DELETE, columns.toArray(new String[columns.size()]));
+        Set<String> allColumns = columns.entrySet()
+                .stream()
+                .flatMap(e -> Stream.concat(Stream.of(e.getKey()), e.getValue().stream()))
+                .collect(Collectors.toSet());
+        job.getConfiguration().set(COLUMNS_TO_DELETE, serializeColumnsToDelete(columns));
         // There is a maximum number of counters
-        job.getConfiguration().setStrings(COLUMNS_TO_COUNT, columns.subList(0, Math.min(columns.size(), 80))
-                .toArray(new String[columns.size()]));
+        job.getConfiguration().setStrings(COLUMNS_TO_COUNT, new ArrayList<>(allColumns)
+                .subList(0, Math.min(allColumns.size(), 50)).toArray(new String[0]));
 
         Scan templateScan = new Scan();
         int caching = job.getConfiguration().getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), 100);
@@ -54,7 +61,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
         templateScan.setCaching(caching);        // 1 is the default in Scan
         templateScan.setCacheBlocks(false);  // don't set to true for MR jobs
         templateScan.setFilter(new KeyOnlyFilter());
-        for (String column : columns) {
+        for (String column : allColumns) {
             String[] split = column.split(":");
             templateScan.addColumn(Bytes.toBytes(split[0]), Bytes.toBytes(split[1]));
         }
@@ -95,9 +102,11 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                 throw new IllegalArgumentException("No columns specified!");
             }
         }
-        for (String column : columns) {
-            if (!column.contains(":")) {
-                throw new IllegalArgumentException("Malformed column '" + column + "'. Requires <family>:<column>");
+
+        for (Map.Entry<String, List<String>> entry : columns.entrySet()) {
+            checkColumn(entry.getKey());
+            for (String s : entry.getValue()) {
+                checkColumn(s);
             }
         }
 
@@ -114,13 +123,46 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
         }
     }
 
-    private static List<String> getColumnsToDelete(Configuration conf) {
-        List<String> columns;
-        String[] columnStrings = conf.getStrings(COLUMNS_TO_DELETE);
-        if (columnStrings == null) {
-            columns = Collections.emptyList();
+
+    private void checkColumn(String column) {
+        if (!column.contains(":")) {
+            throw new IllegalArgumentException("Malformed column '" + column + "'. Requires <family>:<column>");
+        }
+    }
+
+    private static String serializeColumnsToDelete(Map<String, List<String>> columnsToDelete) {
+        StringBuilder sb = new StringBuilder();
+
+        for (Map.Entry<String, List<String>> entry : columnsToDelete.entrySet()) {
+            if (sb.length() > 0) {
+                sb.append(";");
+            }
+
+            sb.append(entry.getKey());
+            if (CollectionUtils.isNotEmpty(entry.getValue())) {
+                sb.append("-->");
+                sb.append(String.join(",", entry.getValue()));
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private static Map<String, List<String>> getColumnsToDelete(Configuration conf) {
+        Map<String, List<String>> columns;
+        if (conf.get(COLUMNS_TO_DELETE) == null) {
+            columns = Collections.emptyMap();
         } else {
-            columns = Arrays.asList(columnStrings);
+            String[] columnStrings = conf.get(COLUMNS_TO_DELETE).split(";");
+            columns = new HashMap<>(columnStrings.length);
+            for (String elem : columnStrings) {
+                String[] split = elem.split("-->");
+                if (split.length > 1) {
+                    columns.put(split[0], Arrays.asList(split[1].split(",")));
+                } else {
+                    columns.put(elem, Collections.emptyList());
+                }
+            }
         }
         return columns;
     }
@@ -137,16 +179,20 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
     }
 
     public static String[] buildArgs(String table, List<String> columns, ObjectMap options) {
+        return buildArgs(table, columns.stream().collect(Collectors.toMap(s -> s, s -> Collections.emptyList())), options);
+    }
+
+    public static String[] buildArgs(String table, Map<String, List<String>> columns, ObjectMap options) {
         return buildArgs(table, columns, false, null, options);
     }
 
-    public static String[] buildArgs(String table, List<String> columns, boolean deleteAllColumns, List<Pair<byte[], byte[]>> regions,
-                                     ObjectMap options) {
+    public static String[] buildArgs(String table, Map<String, List<String>> columns, boolean deleteAllColumns,
+                                     List<Pair<byte[], byte[]>> regions, ObjectMap options) {
         ObjectMap args = new ObjectMap();
         if (deleteAllColumns) {
             args.append(DELETE_ALL_COLUMNS, true);
         } else {
-            args.append(COLUMNS_TO_DELETE, String.join(",", columns));
+            args.append(COLUMNS_TO_DELETE, serializeColumnsToDelete(columns));
         }
 
         if (regions != null) {
@@ -192,7 +238,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
     public static class DeleteHBaseColumnMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
 
         private Set<String> columnsToCount;
-        private Set<String> columnsToDelete;
+        private Map<String, List<String>> columnsToDelete;
         private boolean deleteAllColumns;
 
         @Override
@@ -201,7 +247,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
             columnsToCount = new HashSet<>(context.getConfiguration().get(COLUMNS_TO_COUNT) == null
                     ? Collections.emptyList()
                     : Arrays.asList(context.getConfiguration().getStrings(COLUMNS_TO_COUNT)));
-            columnsToDelete = new HashSet<>(getColumnsToDelete(context.getConfiguration()));
+            columnsToDelete = getColumnsToDelete(context.getConfiguration());
         }
 
         @Override
@@ -215,8 +261,16 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                     byte[] family = CellUtil.cloneFamily(cell);
                     byte[] qualifier = CellUtil.cloneQualifier(cell);
                     String c = Bytes.toString(family) + ':' + Bytes.toString(qualifier);
-                    if (columnsToDelete.contains(c)) {
+                    List<String> otherColumns = columnsToDelete.get(c);
+                    if (columnsToDelete.containsKey(c)) {
                         delete.addColumn(family, qualifier);
+                        for (String otherColumn : otherColumns) {
+                            if (columnsToCount.contains(otherColumn)) {
+                                context.getCounter("DeleteColumn", otherColumn).increment(1);
+                            }
+                            String[] split = otherColumn.split(":", 2);
+                            delete.addColumn(Bytes.toBytes(split[0]), Bytes.toBytes(split[1]));
+                        }
                         if (columnsToCount.contains(c)) {
                             context.getCounter("DeleteColumn", c).increment(1);
                         }

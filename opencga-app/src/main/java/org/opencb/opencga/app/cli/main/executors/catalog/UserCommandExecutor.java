@@ -26,6 +26,8 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.template.TemplateManager;
+import org.opencb.opencga.client.template.config.TemplateConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;
@@ -36,6 +38,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -84,6 +87,9 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "logout":
                 logout();
+                break;
+            case "template":
+                loadTemplate();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -166,7 +172,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             throw new ClientException("Missing user parameter");
         }
 
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), c.lastModified);
         params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
 
@@ -225,6 +230,18 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 .setNewPassword(c.npassword);
 
         return openCGAClient.getUserClient().password(c.user, changeParams);
+    }
+
+    private void loadTemplate() throws IOException, ClientException {
+        UserCommandOptions.TemplateCommandOptions options = usersCommandOptions.templateCommandOptions;
+
+        TemplateConfiguration template = TemplateConfiguration.load(Paths.get(options.file));
+        TemplateManager templateManager = new TemplateManager(clientConfiguration, options.resume, cliSession.getToken());
+        if (options.validate) {
+            templateManager.validate(template);
+        } else {
+            templateManager.execute(template);
+        }
     }
 
 }

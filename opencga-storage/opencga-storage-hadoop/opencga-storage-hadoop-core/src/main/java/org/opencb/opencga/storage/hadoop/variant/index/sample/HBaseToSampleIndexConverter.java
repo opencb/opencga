@@ -10,9 +10,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConve
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
 
@@ -113,14 +111,39 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
     }
 
     public Map<String, List<Variant>> convertToMap(Result result) {
+        if (result == null) {
+            return Collections.emptyMap();
+        }
         Map<String, List<Variant>> map = new HashMap<>();
         for (Cell cell : result.rawCells()) {
-            String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-            if (gt.charAt(0) != META_PREFIX) {
+            if (SampleIndexSchema.isGenotypeColumn(cell)) {
+                String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
                 map.put(gt, converter.toVariants(cell));
             }
         }
         return map;
+    }
+
+    public Map<String, SortedSet<VariantFileIndexConverter.VariantFileIndex>> convertToMapVariantFileIndex(Result result) {
+        if (result == null || result.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, List<Variant>> map = convertToMap(result);
+
+        Map<String, SortedSet<VariantFileIndexConverter.VariantFileIndex>> mapVariantFileIndex = new HashMap<>();
+        for (Cell cell : result.rawCells()) {
+            if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
+                String gt = SampleIndexSchema.getGt(cell, FILE_PREFIX_BYTES);
+                TreeSet<VariantFileIndexConverter.VariantFileIndex> values = new TreeSet<>();
+                mapVariantFileIndex.put(gt, values);
+                int i = cell.getValueOffset();
+                for (Variant variant : map.get(gt)) {
+                    values.add(new VariantFileIndexConverter.VariantFileIndex(variant, cell.getValueArray()[i]));
+                    i++;
+                }
+            }
+        }
+        return mapVariantFileIndex;
     }
 
     public int convertToCount(Result result) {

@@ -242,7 +242,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 // indexVariantsCommandOptions.aggregated);
 
         /* Add CLi options to the variant options */
-        ObjectMap params = storageConfiguration.getOptions();
+        ObjectMap params = variantStorageEngine.getOptions();
         params.put(VariantStorageOptions.MERGE_MODE.key(), indexVariantsCommandOptions.merge);
         params.put(VariantStorageOptions.STUDY.key(), indexVariantsCommandOptions.study);
         params.put(VariantStorageOptions.STATS_CALCULATE.key(), indexVariantsCommandOptions.calculateStats);
@@ -264,6 +264,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        }
         params.put(VariantStorageOptions.RESUME.key(), indexVariantsCommandOptions.resume);
         params.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), indexVariantsCommandOptions.loadSplitData);
+        params.put(VariantStorageOptions.SAMPLE_INDEX_SKIP.key(), indexVariantsCommandOptions.skipSampleIndex);
         params.put(VariantStorageOptions.POST_LOAD_CHECK_SKIP.key(), indexVariantsCommandOptions.skipPostLoadCheck);
         params.put(VariantStorageOptions.INDEX_SEARCH.key(), indexVariantsCommandOptions.indexSearch);
         params.put(VariantStorageOptions.SPECIES.key(), indexVariantsCommandOptions.species);

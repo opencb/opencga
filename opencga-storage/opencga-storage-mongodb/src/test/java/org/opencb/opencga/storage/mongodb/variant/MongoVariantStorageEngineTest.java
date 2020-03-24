@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -616,8 +617,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertEquals(expectedCollection.count().first(), actualCollection.count().first());
         assertNotEquals(0L, expectedCollection.count().first().longValue());
 
-        Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), options).iterator();
-        Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), options).iterator();
+        Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), options);
+        Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), options);
 
         long c = 0;
         while (actualIterator.hasNext() && expectedIterator.hasNext()) {
@@ -976,7 +977,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
             StudyMetadata sc1 = dbAdaptor.getMetadataManager().getStudyMetadata(1);
             StudyMetadata sc2 = dbAdaptor.getMetadataManager().getStudyMetadata(2);
-            for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
+            MongoDBIterator<Document> it = variantsCollection.nativeQuery().find(new Document(), new QueryOptions());
+            while (it.hasNext()) {
+                Document document = it.next();
                 String id = document.getString("_id");
                 List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
                 assertEquals(id, 2, studies.size());
@@ -1125,7 +1128,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor()) {
             MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
 
-            for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
+            MongoDBIterator<Document> it = variantsCollection.nativeQuery().find(new Document(), new QueryOptions());
+            while (it.hasNext()) {
+                Document document = it.next();
                 String id = document.getString("_id");
                 List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
 

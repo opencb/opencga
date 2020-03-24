@@ -1,8 +1,12 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewProjectMetadataMigration;
@@ -12,12 +16,14 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.file.FileExperiment;
+import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.io.BufferedReader;
@@ -181,10 +187,27 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
+        // Check administrator password
+        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
+        MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
+
+        String cypheredPassword = CryptoUtils.sha1(options.commonOptions.adminPassword);
+        Document document = new Document("admin.password", cypheredPassword);
+        if (metaCollection.count(document).getNumMatches() == 0) {
+            throw CatalogAuthenticationException.incorrectUserOrPassword();
+        }
+
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // 1. Catalog Javascript migration
             logger.info("Starting Catalog migration for 2.0.0");
             runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v1.4.2_to_v.2.0.0.js");
+
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
+
+            // Create default project and study for administrator #1491
+            catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
+            catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", "Default study",
+                    null, null, null, Collections.emptyMap(), null, token);
 
             // Create default JOBS folder for analysis
             MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
@@ -205,17 +228,17 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                             org.opencb.opencga.core.models.file.File.Bioformat.UNKNOWN,
                             Paths.get(options.jobFolder).normalize().toAbsolutePath().resolve("JOBS").toUri(),
                             "JOBS/", null, TimeUtils.getTime(), TimeUtils.getTime(), "Default jobs folder",
-                            new org.opencb.opencga.core.models.file.File.FileStatus(), false, 0, null, null, Collections.emptyList(), new Job(),
-                            Collections.emptyList(), new FileIndex(), study.getRelease(), Collections.emptyList(), Collections.emptyMap(),
-                            Collections.emptyMap());
-                    file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+                            false, 0, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "",
+                            study.getRelease(), Collections.emptyList(), Collections.emptyMap(), new CustomStatus(),
+                            FileInternal.initialize(), Collections.emptyMap());
+                    file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                     file.setTags(Collections.emptyList());
                     file.setId(file.getPath().replace("/", ":"));
 
                     dbAdaptorFactory.getCatalogFileDBAdaptor().insert(study.getUid(), file, null, QueryOptions.empty());
 
                     // Create physical folder
-                    catalogManager.getCatalogIOManagerFactory().get(file.getUri()).createDirectory(file.getUri(), true);
+                    catalogManager.getIoManagerFactory().get(file.getUri()).createDirectory(file.getUri(), true);
                 } else {
                     logger.info("JOBS/ folder already present for study {}", study.getFqn());
                 }

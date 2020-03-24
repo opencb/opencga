@@ -64,7 +64,8 @@ public class VariantsTableInputSplitter {
         byte[] newStartRow;
         byte[] newEndRow;
         if (!ArrayUtils.isEmpty(tableSplit.getStartRow())) {
-            start = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(tableSplit.getStartRow());
+            start = VariantPhoenixKeyFactory
+                    .extractChrPosFromVariantRowKey(tableSplit.getStartRow(), 0, tableSplit.getStartRow().length, true);
             newStartPos = start.getSecond() - (start.getSecond() % frameSize);
             newStartRow = VariantPhoenixKeyFactory.generateVariantRowKey(start.getFirst(), newStartPos);
 //            System.err.println("Move start " + printPair(start) + "->" + newStartPos);
@@ -74,7 +75,8 @@ public class VariantsTableInputSplitter {
             newStartRow = tableSplit.getStartRow();
         }
         if (!ArrayUtils.isEmpty(tableSplit.getEndRow())) {
-            end = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(tableSplit.getEndRow());
+            end = VariantPhoenixKeyFactory
+                    .extractChrPosFromVariantRowKey(tableSplit.getEndRow(), 0, tableSplit.getEndRow().length, true);
             newEndPos = end.getSecond() - (end.getSecond() % frameSize);
             newEndRow = VariantPhoenixKeyFactory.generateVariantRowKey(end.getFirst(), newEndPos);
 //            System.err.println("Move end " + printPair(end) + "->" + newEndPos);

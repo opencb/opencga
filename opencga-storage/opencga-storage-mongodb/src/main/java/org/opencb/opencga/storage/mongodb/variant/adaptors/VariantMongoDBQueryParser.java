@@ -1036,34 +1036,37 @@ public class VariantMongoDBQueryParser {
                         });
             }
 
-            if (query.get(STATS_REF.key()) != null && !query.getString(STATS_REF.key()).isEmpty()) {
+            if (isValidParam(query, STATS_REF)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.REF_FREQ_FIELD, query.getString(STATS_REF.key()),
                         builder, defaultStudy);
             }
 
-            if (query.get(STATS_ALT.key()) != null && !query.getString(STATS_ALT.key()).isEmpty()) {
+            if (isValidParam(query, STATS_ALT)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.ALT_FREQ_FIELD, query.getString(STATS_ALT.key()),
                         builder, defaultStudy);
             }
 
-            if (query.get(STATS_MAF.key()) != null && !query.getString(STATS_MAF.key()).isEmpty()) {
+            if (isValidParam(query, STATS_MAF)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MAF_FIELD, query.getString(STATS_MAF.key()),
                         builder, defaultStudy);
             }
 
-            if (query.get(STATS_MGF.key()) != null && !query.getString(STATS_MGF.key()).isEmpty()) {
+            if (isValidParam(query, STATS_MGF)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MGF_FIELD, query.getString(STATS_MGF.key()),
                         builder, defaultStudy);
             }
 
-            if (query.get(MISSING_ALLELES.key()) != null && !query.getString(MISSING_ALLELES.key())
-                    .isEmpty()) {
+            if (isValidParam(query, STATS_PASS_FREQ)) {
+                addStatsFilterList(DocumentToVariantStatsConverter.FILTER_FREQ_FIELD + '.' + VCFConstants.PASSES_FILTERS_v4,
+                        query.getString(STATS_PASS_FREQ.key()), builder, defaultStudy);
+            }
+
+            if (isValidParam(query, MISSING_ALLELES)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MISSALLELE_FIELD, query.getString(MISSING_ALLELES
                         .key()), builder, defaultStudy);
             }
 
-            if (query.get(MISSING_GENOTYPES.key()) != null && !query.getString(MISSING_GENOTYPES
-                    .key()).isEmpty()) {
+            if (isValidParam(query, MISSING_GENOTYPES)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MISSGENOTYPE_FIELD, query.getString(
                         MISSING_GENOTYPES.key()), builder, defaultStudy);
             }

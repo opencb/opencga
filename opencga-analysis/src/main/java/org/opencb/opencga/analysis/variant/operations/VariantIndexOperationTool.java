@@ -73,7 +73,7 @@ public class VariantIndexOperationTool extends OperationTool {
         }
         params.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), indexParams.isOverwriteAnnotations());
         params.put(VariantStorageOptions.RESUME.key(), indexParams.isResume());
-        params.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), indexParams.isLoadSplitData());
+        params.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), indexParams.getLoadSplitData());
         params.put(VariantStorageOptions.POST_LOAD_CHECK_SKIP.key(), indexParams.isSkipPostLoadCheck());
         params.put(VariantStorageOptions.INDEX_SEARCH.key(), indexParams.isIndexSearch());
     }

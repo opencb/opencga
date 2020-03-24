@@ -13,15 +13,6 @@ defaultStudy: ""
 #  1kg_grch37: hgvauser@reference_grch37:1kG_phase3
 #  1kg_grch38: reference_grch38:1kG_phase3
 
-
-# The default organism values can be defined here, this useful when creating a new Project
-organism:
-  taxonomyCode: ${OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE}
-  scientificName: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
-  commonName: ${OPENCGA.CLIENT.ORGANISM.COMMON_NAME}
-  assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
-
-
 ## REST client configuration options
 rest:
   host: "${OPENCGA.CLIENT.REST.HOST}"

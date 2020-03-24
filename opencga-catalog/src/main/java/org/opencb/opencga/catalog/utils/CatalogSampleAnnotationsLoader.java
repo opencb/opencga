@@ -135,7 +135,7 @@ public class CatalogSampleAnnotationsLoader {
                 DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(study.getFqn(),
                         new Sample()
                                 .setId(individual.getId())
-                                .setSource(pedFile.getName())
+                                .setFileIds(Collections.singletonList(pedFile.getPath()))
                                 .setDescription("Sample loaded from the pedigree File = {path: " + pedFile.getPath() + ", name: \""
                                         + pedFile.getName() + "\" }")
                                 .setAnnotationSets(Collections.singletonList(annotationSet)),
@@ -239,19 +239,19 @@ public class CatalogSampleAnnotationsLoader {
 
         String category = "PEDIGREE";
         variableList.add(new Variable("family", category, Variable.VariableType.STRING, null, true,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
+                false, Collections.<String>emptyList(), null, variableList.size(), null, "", null, null));
         variableList.add(new Variable("id", category, Variable.VariableType.DOUBLE, null, true,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
+                false, Collections.<String>emptyList(), null, variableList.size(), null, "", null, null));
         variableList.add(new Variable("name", category, Variable.VariableType.STRING, null, true,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
+                false, Collections.<String>emptyList(), null, variableList.size(), null, "", null, null));
         variableList.add(new Variable("fatherId", category, Variable.VariableType.DOUBLE, null, false,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
+                false, Collections.<String>emptyList(), null, variableList.size(), null, "", null, null));
         variableList.add(new Variable("fatherName", category, Variable.VariableType.STRING, null, false,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
+                false, Collections.<String>emptyList(), null, variableList.size(), null, "", null, null));
         variableList.add(new Variable("motherId", category, Variable.VariableType.DOUBLE, null, false,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
+                false, Collections.<String>emptyList(), null, variableList.size(), null, "", null, null));
         variableList.add(new Variable("motherName", category, Variable.VariableType.STRING, null, false,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
+                false, Collections.<String>emptyList(), null, variableList.size(), null, "", null, null));
 
         Set<String> allowedSexValues = new HashSet<>();
         HashSet<String> allowedPhenotypeValues = new HashSet<>();
@@ -260,9 +260,9 @@ public class CatalogSampleAnnotationsLoader {
             allowedSexValues.add(individual.getSex());
         }
         variableList.add(new Variable("sex", category, Variable.VariableType.CATEGORICAL, null, true,
-                false, new LinkedList<>(allowedSexValues), variableList.size(), null, "", null, null));
+                false, new LinkedList<>(allowedSexValues), null, variableList.size(), null, "", null, null));
         variableList.add(new Variable("phenotype", category, Variable.VariableType.CATEGORICAL, null, true,
-                false, new LinkedList<>(allowedPhenotypeValues), variableList.size(), null, "", null, null));
+                false, new LinkedList<>(allowedPhenotypeValues), null, variableList.size(), null, "", null, null));
 
 
         int categoricalThreshold = (int) (ped.getIndividuals().size() * 0.1);
@@ -314,7 +314,7 @@ public class CatalogSampleAnnotationsLoader {
             }
 
             variableList.add(new Variable(entry.getKey(), category, type, null, false, false, new ArrayList<>(allowedValues),
-                    variableList.size(), null, "", null, null));
+                    null, variableList.size(), null, "", null, null));
         }
 
         VariableSet variableSet = new VariableSet("", "", false, false, "", new HashSet(variableList),

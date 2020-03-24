@@ -152,6 +152,7 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_CLINICAL_SIGNIFICANCE, queryVariantsOptions.clinicalSignificance);
 
         addParam(query, STATS_MGF, queryVariantsOptions.mgf);
+        addParam(query, STATS_PASS_FREQ, queryVariantsOptions.cohortStatsPass);
         addParam(query, MISSING_ALLELES, queryVariantsOptions.missingAlleleCount);
         addParam(query, MISSING_GENOTYPES, queryVariantsOptions.missingGenotypeCount);
 

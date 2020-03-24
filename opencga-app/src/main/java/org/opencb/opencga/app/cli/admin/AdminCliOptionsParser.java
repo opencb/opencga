@@ -111,7 +111,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         migrationSubCommands.addCommand("v1.3.0", this.migrationCommandOptions.getMigrateV130CommandOptions());
         migrationSubCommands.addCommand("v1.4.0", this.migrationCommandOptions.getMigrateV140CommandOptions());
         migrationSubCommands.addCommand("v2.0.0", this.migrationCommandOptions.getMigrateV200CommandOptions());
-
     }
 
     @Override
@@ -519,7 +518,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String userPassword;
 
         @Parameter(names = {"--type"}, description = "User account type of the user (guest or full).", arity = 1)
-        public Account.Type type = Account.Type.FULL;
+        public Account.AccountType type = Account.AccountType.FULL;
 
         @Parameter(names = {"--email"}, description = "User email", required = true, arity = 1)
         public String userEmail;
@@ -560,7 +559,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String authOrigin;
 
         @Parameter(names = {"--type"}, description = "User account type of the users to be imported (guest or full).", arity = 1)
-        public String type = Account.Type.GUEST.name();
+        public String type = Account.AccountType.GUEST.name();
 
         @Parameter(names = {"--resource-type"}, description = "Resource to be imported. One of 'user', 'group' or 'application'", arity = 1)
         public String resourceType = "user";
@@ -596,7 +595,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public boolean syncAll;
 
         @Parameter(names = {"--type"}, description = "User account type of the users to be imported (guest or full).", arity = 1)
-        public Account.Type type = Account.Type.GUEST;
+        public Account.AccountType type = Account.AccountType.GUEST;
 
         @Parameter(names = {"--force"}, description = "Flag to force the synchronisation into groups that already exist and were not " +
                 "previously synchronised.", arity = 0)
@@ -737,7 +736,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String algorithm;
     }
 
-
     @Override
     public void printUsage() {
         String parsedCommand = getCommand();
@@ -805,4 +803,5 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public MigrationCommandOptions getMigrationCommandOptions() {
         return migrationCommandOptions;
     }
+
 }
