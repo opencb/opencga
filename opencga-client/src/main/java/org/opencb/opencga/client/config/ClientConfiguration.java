@@ -53,6 +53,7 @@ public class ClientConfiguration {
 
 
     public ClientConfiguration() {
+        logger = LoggerFactory.getLogger(ClientConfiguration.class);
     }
 
     public ClientConfiguration(RestConfig rest, GrpcConfig grpc) {
