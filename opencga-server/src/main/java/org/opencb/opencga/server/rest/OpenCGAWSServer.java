@@ -609,8 +609,14 @@ public class OpenCGAWSServer {
     }
 
     protected Response createJsonResponse(RestResponse queryResponse) {
+        return createJsonResponse(queryResponse, Response.Status.OK);
+    }
+
+    protected Response createJsonResponse(Object queryResponse, Response.Status status) {
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
+            return buildResponse(Response.status(status)
+                    .entity(jsonObjectWriter.writeValueAsString(queryResponse))
+                    .type(MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing queryResponse object");
