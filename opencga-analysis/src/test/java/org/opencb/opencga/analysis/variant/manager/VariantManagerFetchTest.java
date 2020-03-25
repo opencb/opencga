@@ -105,7 +105,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryExcludeSamples() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES);
         Query query = new Query();
 
         // Without studies

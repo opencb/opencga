@@ -598,7 +598,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         // then, load variants
-        queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
+        queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
         try (VariantDBIterator iterator = getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor)) {
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
             VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());

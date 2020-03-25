@@ -72,7 +72,7 @@ public class VariantSearchUtils {
 
     private static final List<VariantField> UNSUPPORTED_VARIANT_FIELDS =
             Arrays.asList(VariantField.STUDIES_FILES,
-                    VariantField.STUDIES_SAMPLES_DATA);
+                    VariantField.STUDIES_SAMPLES);
 
     private static final Set<String> ACCEPTED_FORMAT_FILTERS = Collections.singleton("DP");
 

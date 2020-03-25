@@ -666,7 +666,7 @@ public class SolrQueryParserTest {
     @Test
     public void parseFormat() {
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES + "," + VariantField.STUDIES_SAMPLES_DATA);
+        queryOptions.put(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES + "," + VariantField.STUDIES_SAMPLES);
 
         Query query = new Query();
         query.put(STUDY.key(), studyName);

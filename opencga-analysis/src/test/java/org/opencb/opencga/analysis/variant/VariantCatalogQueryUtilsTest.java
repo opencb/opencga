@@ -310,7 +310,7 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
         assertFalse(VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO));
-        assertTrue(VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA)));
+        assertTrue(VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES)));
     }
 
     @Test
@@ -319,7 +319,7 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_DE_NOVO.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
         assertFalse(VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR));
-        assertTrue(VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA)));
+        assertTrue(VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES)));
     }
 
     @Test

@@ -121,7 +121,7 @@ public class VariantSampleFilter {
 
     protected void iterate(Query query, Consumer<Variant> init, GenotypeWalker walker) {
         QueryOptions options = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Collections.singletonList(VariantField.STUDIES_SAMPLES_DATA))
+                .append(QueryOptions.INCLUDE, Collections.singletonList(VariantField.STUDIES_SAMPLES))
                 .append(QueryOptions.LIMIT, maxVariants + 1);
         try (VariantDBIterator iterator = iterable.iterator(query, options)) {
             if (!iterator.hasNext()) {

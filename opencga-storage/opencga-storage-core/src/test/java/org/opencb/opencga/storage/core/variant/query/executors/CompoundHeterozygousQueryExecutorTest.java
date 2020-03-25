@@ -52,7 +52,7 @@ public class CompoundHeterozygousQueryExecutorTest {
         assertEquals(new HashSet<>(
                 Arrays.asList(ID,
                         ANNOTATION, ANNOTATION_CONSEQUENCE_TYPES,
-                        STUDIES, STUDIES_SAMPLES_DATA)), includeFields);
+                        STUDIES, STUDIES_SAMPLES)), includeFields);
 
 
         options = ch.buildQueryOptions(new QueryOptions()
@@ -60,9 +60,9 @@ public class CompoundHeterozygousQueryExecutorTest {
         );
         includeFields = getIncludeFields(options);
         assertEquals(new HashSet<>(
-                Arrays.asList(ID, CHROMOSOME, START, END, REFERENCE, ALTERNATE, TYPE, LENGTH, HGVS, SV,
+                Arrays.asList(ID, CHROMOSOME, START, END, REFERENCE, ALTERNATE, TYPE, LENGTH, SV,
                         ANNOTATION, ANNOTATION_CONSEQUENCE_TYPES,
-                        STUDIES, STUDIES_SAMPLES_DATA)), includeFields);
+                        STUDIES, STUDIES_SAMPLES)), includeFields);
     }
 
     @Test

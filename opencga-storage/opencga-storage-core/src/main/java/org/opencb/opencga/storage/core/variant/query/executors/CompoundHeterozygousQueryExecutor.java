@@ -186,7 +186,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
         includeFields.add(VariantField.ANNOTATION);
         includeFields.add(VariantField.ANNOTATION_CONSEQUENCE_TYPES);
-        includeFields.add(VariantField.STUDIES_SAMPLES_DATA);
+        includeFields.add(VariantField.STUDIES_SAMPLES);
 
         VariantField.prune(includeFields);
 

@@ -200,7 +200,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 query.append(VariantQueryParam.INCLUDE_FILE.key(), includeFiles);
             }
             // If no list of included samples is specified:
-            if (!VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA))) {
+            if (!VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES))) {
                 List<String> includeSamples = new ArrayList<>();
                 Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
                 QueryOptions sampleOptions = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID.key());

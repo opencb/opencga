@@ -213,7 +213,7 @@ public class SampleVariantFilterAnalysis extends OpenCgaToolScopeStudy {
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), toolParams.getSample())
                 .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
         QueryOptions options = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Collections.singletonList(VariantField.STUDIES_SAMPLES_DATA))
+                .append(QueryOptions.INCLUDE, Collections.singletonList(VariantField.STUDIES_SAMPLES))
                 .append(QueryOptions.LIMIT, variants.size());
 
         try (VariantDBIterator iterator = variantStorageManager.iterator(query, options, token)) {

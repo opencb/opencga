@@ -233,7 +233,7 @@ public class VariantSqlQueryParser {
                         sb.append('"');
                     }
                 }
-                if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
+                if (returnedFields.contains(VariantField.STUDIES_SAMPLES)) {
                     for (Map.Entry<Integer, List<Integer>> entry : study.getMultiFileSamples().entrySet()) {
                         Integer sampleId = entry.getKey();
                         List<Integer> fileIds = entry.getValue();

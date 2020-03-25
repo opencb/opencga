@@ -1140,11 +1140,11 @@ public class VariantMongoDBQueryParser {
             );
         }
 
-        if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
+        if (returnedFields.contains(VariantField.STUDIES_SAMPLES)) {
             List<String> formats = VariantQueryUtils.getIncludeSampleData(query);
             if (formats != null) { // If null, undefined. Return all
                 // Special conversion
-                returnedFields.remove(VariantField.STUDIES_SAMPLES_DATA);
+                returnedFields.remove(VariantField.STUDIES_SAMPLES);
                 if (formats.contains(VariantQueryUtils.ALL)) {
                     projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
                             + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, 1);

@@ -105,10 +105,9 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.ALTERNATE, singletonList(ALTERNATE_FIELD));
         map.put(VariantField.LENGTH, singletonList(LENGTH_FIELD));
         map.put(VariantField.TYPE, singletonList(TYPE_FIELD));
-        map.put(VariantField.HGVS, singletonList(HGVS_FIELD));
         map.put(VariantField.SV, singletonList(SV_FIELD));
         map.put(VariantField.STUDIES, Arrays.asList(STUDIES_FIELD, STATS_FIELD));
-        map.put(VariantField.STUDIES_SAMPLES_DATA, Arrays.asList(
+        map.put(VariantField.STUDIES_SAMPLES, Arrays.asList(
                 STUDIES_FIELD + '.' + GENOTYPES_FIELD,
                 STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD,
                 STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD

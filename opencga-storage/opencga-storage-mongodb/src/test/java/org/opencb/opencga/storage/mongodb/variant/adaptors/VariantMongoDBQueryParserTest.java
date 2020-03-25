@@ -521,7 +521,7 @@ public class VariantMongoDBQueryParserTest {
                 .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD, 1);
 
         Document projection = parser.createProjection(new Query(), new QueryOptions(QueryOptions.INCLUDE,
-                STUDIES_SAMPLES_DATA + "," + STUDIES_SECONDARY_ALTERNATES + ',' + STUDIES_STATS));
+                STUDIES_SAMPLES + "," + STUDIES_SECONDARY_ALTERNATES + ',' + STUDIES_STATS));
         checkEqualDocuments(expected, projection);
 
         projection = parser.createProjection(new Query()

@@ -902,7 +902,7 @@ public class VariantStorageManager extends StorageManager {
                     .collect(Collectors.toList());
             List<Study> studies = catalogManager.getStudyManager().get(includeStudies,
                     new QueryOptions(INCLUDE, FQN.key()), false, token).getResults();
-            if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
+            if (!returnedFields.contains(VariantField.STUDIES_SAMPLES)) {
                 for (String returnedStudy : includeStudies) {
                     samplesMap.put(returnedStudy, Collections.emptyList());
                 }

@@ -96,8 +96,8 @@ public class VariantQueryProjectionParser {
         }
 
         if (studies.values().stream().allMatch(s -> s.getSamples().isEmpty())) {
-            includeFields.remove(VariantField.STUDIES_SAMPLES_DATA);
-            includeFields.removeAll(VariantField.STUDIES_SAMPLES_DATA.getChildren());
+            includeFields.remove(VariantField.STUDIES_SAMPLES);
+            includeFields.removeAll(VariantField.STUDIES_SAMPLES.getChildren());
         }
 
         if (includeFields.contains(VariantField.STUDIES_STATS)) {
@@ -451,7 +451,7 @@ public class VariantQueryProjectionParser {
 
     public static List<String> getIncludeSamplesList(Query query, Set<VariantField> fields) {
         List<String> samples;
-        if (!fields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
+        if (!fields.contains(VariantField.STUDIES_SAMPLES)) {
             samples = Collections.emptyList();
         } else {
             //Remove the studyName, if any
