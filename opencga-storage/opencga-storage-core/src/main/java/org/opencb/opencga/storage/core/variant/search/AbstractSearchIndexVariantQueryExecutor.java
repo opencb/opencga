@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.core.variant.search;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 /**

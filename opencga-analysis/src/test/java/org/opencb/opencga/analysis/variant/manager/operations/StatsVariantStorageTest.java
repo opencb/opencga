@@ -464,12 +464,12 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
                 assertEquals("In variant " + variant.toString(), cohorts.size(), sourceEntry.getStats().size());
-                for (Map.Entry<String, VariantStats> entry : sourceEntry.getStats().entrySet()) {
-                    assertTrue("In variant " + variant.toString(), cohorts.containsKey(entry.getKey()));
-                    if (cohorts.get(entry.getKey()) != null) {
-                        assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples in cohort '" + entry.getKey() + "'. jsonVariant: " + variant.toJson() ,
-                                cohorts.get(entry.getKey()).getSamples().size(),
-                                entry.getValue().getGenotypeCount().values().stream().reduce(Integer::sum).orElse(0).intValue());
+                for (VariantStats stats : sourceEntry.getStats()) {
+                    assertTrue("In variant " + variant.toString(), cohorts.containsKey(stats.getCohortId()));
+                    if (cohorts.get(stats.getCohortId()) != null) {
+                        assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples in cohort '" + stats.getCohortId() + "'. jsonVariant: " + variant.toJson() ,
+                                cohorts.get(stats.getCohortId()).getSamples().size(),
+                                stats.getGenotypeCount().values().stream().reduce(Integer::sum).orElse(0).intValue());
                     }
                 }
             }
@@ -485,9 +485,9 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
 
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
-                assertEquals(cohortNames, sourceEntry.getStats().keySet());
-                for (Map.Entry<String, VariantStats> entry : sourceEntry.getStats().entrySet()) {
-                    assertTrue(cohortNames.contains(entry.getKey()));
+                assertEquals(cohortNames, sourceEntry.getStats().stream().map(VariantStats::getCohortId).collect(Collectors.toSet()));
+                for (VariantStats stats : sourceEntry.getStats()) {
+                    assertTrue(cohortNames.contains(stats.getCohortId()));
                 }
             }
         }

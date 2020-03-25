@@ -99,9 +99,12 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION, required = true) @PathParam("job") String jobId,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Starting byte from which the file will be read") @QueryParam("offset") long offset,
-            @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines,
+            @ApiParam(value = "Maximum number of lines to be returned", defaultValue = "20") @QueryParam("lines") Integer lines,
             @ApiParam(value = "Log file to be shown (stdout or stderr)") @DefaultValue("stderr") @QueryParam("type") String type) {
         try {
+            if (lines == null) {
+                lines = 20;
+            }
             ParamUtils.checkIsSingleID(jobId);
             return createOkResponse(catalogManager.getJobManager().log(studyStr, jobId, offset, lines, type, false, token));
         } catch (Exception e) {
@@ -115,9 +118,12 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response log(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION, required = true) @PathParam("job") String jobId,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines,
+            @ApiParam(value = "Maximum number of lines to be returned", defaultValue = "20") @QueryParam("lines") Integer lines,
             @ApiParam(value = "Log file to be shown (stdout or stderr)") @DefaultValue("stderr") @QueryParam("type") String type) {
         try {
+            if (lines == null) {
+                lines = 20;
+            }
             ParamUtils.checkIsSingleID(jobId);
             return createOkResponse(catalogManager.getJobManager().log(studyStr, jobId, 0, lines, type, true, token));
         } catch (Exception e) {

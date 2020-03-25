@@ -308,9 +308,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                     || IndividualProperty.Sex.UNDETERMINED.equals(member.getSex())) {
                                 roleToProband.put(member.getId(), ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
                             } else if (IndividualProperty.Sex.MALE.equals(member.getSex())) {
-                                roleToProband.put(member.getId(), ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING_M);
+                                roleToProband.put(member.getId(), ClinicalAnalysis.FamiliarRelationship.BROTHER);
                             } else if (IndividualProperty.Sex.FEMALE.equals(member.getSex())) {
-                                roleToProband.put(member.getId(), ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING_F);
+                                roleToProband.put(member.getId(), ClinicalAnalysis.FamiliarRelationship.SISTER);
                             }
                         } else {
                             // We don't know the relation

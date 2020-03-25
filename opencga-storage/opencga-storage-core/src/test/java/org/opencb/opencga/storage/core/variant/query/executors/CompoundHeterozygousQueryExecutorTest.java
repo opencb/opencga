@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.query;
+package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +18,7 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.ALL;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.ALL;
 
 /**
  * Created on 09/04/19.
@@ -52,7 +52,7 @@ public class CompoundHeterozygousQueryExecutorTest {
         assertEquals(new HashSet<>(
                 Arrays.asList(ID,
                         ANNOTATION, ANNOTATION_CONSEQUENCE_TYPES,
-                        STUDIES, STUDIES_SAMPLES_DATA)), includeFields);
+                        STUDIES, STUDIES_SAMPLES)), includeFields);
 
 
         options = ch.buildQueryOptions(new QueryOptions()
@@ -60,9 +60,9 @@ public class CompoundHeterozygousQueryExecutorTest {
         );
         includeFields = getIncludeFields(options);
         assertEquals(new HashSet<>(
-                Arrays.asList(ID, CHROMOSOME, START, END, REFERENCE, ALTERNATE, TYPE, LENGTH, HGVS, SV,
+                Arrays.asList(ID, CHROMOSOME, START, END, REFERENCE, ALTERNATE, TYPE, LENGTH, SV,
                         ANNOTATION, ANNOTATION_CONSEQUENCE_TYPES,
-                        STUDIES, STUDIES_SAMPLES_DATA)), includeFields);
+                        STUDIES, STUDIES_SAMPLES)), includeFields);
     }
 
     @Test

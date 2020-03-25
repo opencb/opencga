@@ -152,12 +152,12 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
         ((VariantMongoDBAdaptor) dbAdaptor).removeStats(studyMetadata.getName(), deletedCohort, new QueryOptions());
 
         for (Variant variant : dbAdaptor) {
-            for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
-                assertFalse("The cohort '" + deletedCohort + "' is not completely deleted in variant: '" + variant + "'", entry.getValue
-                        ().getStats().keySet().contains(deletedCohort));
+            for (StudyEntry studyEntry : variant.getStudies()) {
+                assertNull("The cohort '" + deletedCohort + "' is not completely deleted in variant: '" + variant + "'",
+                        studyEntry.getStats(deletedCohort));
             }
         }
-        DataResult<Long> allVariants = dbAdaptor.count(new Query());
+        DataResult<Long> allVariants = dbAdaptor.count();
         assertEquals(numVariants, allVariants.first().intValue());
     }
 

@@ -61,7 +61,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -88,6 +88,12 @@ public class VariantWebService extends AnalysisWebService {
 
     static {
         Map<String, org.opencb.commons.datastore.core.QueryParam> map = new LinkedHashMap<>();
+        // v2.0.0
+        map.put("includeFormat", INCLUDE_SAMPLE_DATA);
+        map.put("format", SAMPLE_DATA);
+        map.put("info", FILE_DATA);
+
+        // v1.3.0
         map.put("ids", ID);
         map.put(ParamConstants.STUDIES_PARAM, STUDY);
         map.put("files", FILE);
@@ -98,7 +104,7 @@ public class VariantWebService extends AnalysisWebService {
         map.put("returnedStudies", INCLUDE_STUDY);
         map.put("returnedSamples", INCLUDE_SAMPLE);
         map.put("returnedFiles", INCLUDE_FILE);
-        map.put("include-format", INCLUDE_FORMAT);
+        map.put("include-format", INCLUDE_SAMPLE_DATA);
         map.put("include-genotype", INCLUDE_GENOTYPE);
         map.put("sampleFilter", VariantCatalogQueryUtils.SAMPLE_ANNOTATION);
         map.put("maf", STATS_MAF);
@@ -110,7 +116,7 @@ public class VariantWebService extends AnalysisWebService {
         map.put("protein_substitution", ANNOT_PROTEIN_SUBSTITUTION);
         map.put("alternate_frequency", ANNOT_POPULATION_ALTERNATE_FREQUENCY);
         map.put("reference_frequency", ANNOT_POPULATION_REFERENCE_FREQUENCY);
-        map.put("annot-populHay empate de votos, por tanto habría que saber en el caso de que el administrador comunique que por su parte quiere continuar, como se resolverían el empate de votos. No hay nada decididoation-maf", ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
+        map.put("annot-population-maf", ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
         map.put("annot-transcription-flags", ANNOT_TRANSCRIPT_FLAG);
         map.put("transcriptionFlag", ANNOT_TRANSCRIPT_FLAG);
         map.put("annot-gene-trait-id", ANNOT_GENE_TRAIT_ID);
@@ -201,11 +207,11 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "info", value = INFO_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "fileData", value = FILE_DATA_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "format", value = FORMAT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "sampleData", value = SAMPLE_DATA_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sampleMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
@@ -231,8 +237,9 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeSample", value = INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "includeFormat", value = INCLUDE_FORMAT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "includeSampleData", value = INCLUDE_SAMPLE_DATA_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeGenotype", value = INCLUDE_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "includeSampleId", value = INCLUDE_SAMPLE_ID_DESCR, dataType = "string", paramType = "query"),
 
             // Annotation filters
             @ApiImplicitParam(name = "annotationExists", value = ANNOT_EXISTS_DESCR, dataType = "boolean", paramType = "query"),

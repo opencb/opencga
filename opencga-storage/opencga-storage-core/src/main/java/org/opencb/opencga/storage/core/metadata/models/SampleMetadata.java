@@ -2,8 +2,11 @@ package org.opencb.opencga.storage.core.metadata.models;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -13,11 +16,13 @@ import java.util.Set;
  */
 public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
 
-    private Set<Integer> files;
+    private List<Integer> files;
     private Set<Integer> cohorts;
     // Prepared to have more than one secondary index per sample.
     // Currently only one is allowed.
     private Set<Integer> secondaryIndexCohorts;
+
+    private VariantStorageEngine.LoadSplitData splitData;
 
     private Integer father;
     private Integer mother;
@@ -25,23 +30,23 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     private SampleVariantStats stats;
 
     public SampleMetadata() {
-        files = new HashSet<>();
+        files = new ArrayList<>(1);
         cohorts = new HashSet<>();
         secondaryIndexCohorts = new HashSet<>();
     }
 
     public SampleMetadata(int studyId, int id, String name) {
         super(studyId, id, name);
-        files = new HashSet<>();
+        files = new ArrayList<>(1);
         cohorts = new HashSet<>();
         secondaryIndexCohorts = new HashSet<>();
     }
 
-    public Set<Integer> getFiles() {
+    public List<Integer> getFiles() {
         return files;
     }
 
-    public SampleMetadata setFiles(Set<Integer> files) {
+    public SampleMetadata setFiles(List<Integer> files) {
         this.files = files;
         return this;
     }
@@ -75,6 +80,19 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
 
     public SampleMetadata addSecondaryIndexCohort(int cohortId) {
         this.secondaryIndexCohorts.add(cohortId);
+        return this;
+    }
+
+    public boolean isMultiFileSample() {
+        return VariantStorageEngine.LoadSplitData.MULTI.equals(splitData);
+    }
+
+    public VariantStorageEngine.LoadSplitData getSplitData() {
+        return splitData;
+    }
+
+    public SampleMetadata setSplitData(VariantStorageEngine.LoadSplitData splitData) {
+        this.splitData = splitData;
         return this;
     }
 

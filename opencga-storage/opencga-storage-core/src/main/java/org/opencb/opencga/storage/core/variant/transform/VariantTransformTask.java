@@ -145,8 +145,8 @@ public class VariantTransformTask implements Task<String, Variant> {
                         if (!includeSrc) {
                             for (StudyEntry studyEntry : variant.getStudies()) {
                                 for (FileEntry fileEntry : studyEntry.getFiles()) {
-                                    if (fileEntry.getAttributes().containsKey(VariantVcfFactory.SRC)) {
-                                        fileEntry.getAttributes().remove(VariantVcfFactory.SRC);
+                                    if (fileEntry.getData().containsKey(VariantVcfFactory.SRC)) {
+                                        fileEntry.getData().remove(VariantVcfFactory.SRC);
                                     }
                                 }
                             }

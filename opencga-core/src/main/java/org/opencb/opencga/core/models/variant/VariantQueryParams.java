@@ -16,6 +16,7 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String includeSample;
     private String includeFile;
     private String includeFormat;
+    private String includeSampleId;
     private String includeGenotype;
 
     private String file;
@@ -154,6 +155,15 @@ public class VariantQueryParams extends BasicVariantQueryParams {
 
     public VariantQueryParams setIncludeGenotype(String includeGenotype) {
         this.includeGenotype = includeGenotype;
+        return this;
+    }
+
+    public String getIncludeSampleId() {
+        return includeSampleId;
+    }
+
+    public VariantQueryParams setIncludeSampleId(String includeSampleId) {
+        this.includeSampleId = includeSampleId;
         return this;
     }
 

@@ -71,27 +71,73 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     public enum FamiliarRelationship {
-        TWINS_MONOZYGOUS("TwinsMonozygous"), TWINS_DIZYGOUS("TwinsDizygous"), TWINS_UNKNOWN("TwinsUnknown"), FULL_SIBLING("FullSibling"),
-        FULL_SIBLING_F("FullSiblingF"), FULL_SIBLING_M("FullSiblingM"), MOTHER("Mother"), FATHER("Father"), SON("Son"),
-        DAUGHTER("Daughter"), CHILD_OF_UNKNOWN_SEX("ChildOfUnknownSex"), MATERNAL_AUNT("MaternalAunt"), MATERNAL_UNCLE("MaternalUncle"),
-        MATERNAL_UNCLE_OR_AUNT("MaternalUncleOrAunt"), PATERNAL_AUNT("PaternalAunt"), PATERNAL_UNCLE("PaternalUncle"),
-        PATERNAL_UNCLE_OR_AUNT("PaternalUncleOrAunt"), MATERNAL_GRANDMOTHER("MaternalGrandmother"),
-        PATERNAL_GRANDMOTHER("PaternalGrandmother"), MATERNAL_GRANDFATHER("MaternalGrandfather"),
-        PATERNAL_GRANDFATHER("PaternalGrandfather"), DOUBLE_FIRST_COUSIN("DoubleFirstCousin"),
-        MATERNAL_COUSIN_SISTER("MaternalCousinSister"), PATERNAL_COUSIN_SISTER("PaternalCousinSister"),
-        MATERNAL_COUSIN_BROTHER("MaternalCousinBrother"), PATERNAL_COUSIN_BROTHER("PaternalCousinBrother"), COUSIN("Cousin"),
-        SPOUSE("Spouse"), HUSBAND("Husband"), OTHER("Other"), RELATION_IS_NOT_CLEAR("RelationIsNotClear"), UNRELATED("Unrelated"),
-        PROBAND("Proband"), UNKNOWN("Unknown");
+        MOTHER("", "mother"),
+        FATHER("", "father"),
+        STEP_MOTHER("", "mother"),
+        STEP_FATHER("", "father"),
+        IDENTICAL_TWIN("", "twin"),
+        FRATERNAL_TWIN("", "twin"),
+        FULL_SIBLING("", "sibling"),
+        HALF_SIBLING("", "sibling"),
+        STEP_SIBLING("", "sibling"),
+        SISTER("", "sister"),
+        BROTHER("", "brother"),
+        STEP_SISTER("", "sister"),
+        STEP_BROTHER("", "brother"),
+        SON("", "son"),
+        DAUGHTER("", "daughter"),
 
-        private final String value;
+        CHILD_OF_UNKNOWN_SEX("", "child"),
 
-        FamiliarRelationship(String value) {
-            this.value = value;
+        UNCLE("", "uncle"),
+        AUNT("", "aunt"),
+        MATERNAL_AUNT("", "aunt"),
+        MATERNAL_UNCLE("", "uncle"),
+        PATERNAL_AUNT("", "aunt"),
+        PATERNAL_UNCLE("", "uncle"),
+        NEPHEW("", "nephew"),
+        NIECE("", "niece"),
+        GRANDFATHER("", "grandfather"),
+        GRANDMOTHER("", "grandmother"),
+        MATERNAL_GRANDMOTHER("", "grandmother"),
+        PATERNAL_GRANDMOTHER("", "grandmother"),
+        MATERNAL_GRANDFATHER("", "grandfather"),
+        PATERNAL_GRANDFATHER("", "grandfather"),
+        GREAT_GRANDFATHER("", "great-grandfather"),
+        GREAT_GRANDMOTHER("", "great-grandmother"),
+        DOUBLE_FIRST_COUSING("", "cousin"),
+        COUSIN("", "cousin"),
+        MALE_COUSIN("", "cousin"),
+        FEMALE_COUSIN("", "cousin"),
+        SECOND_COUSIN("", "cousin"),
+        MALE_SECOND_COUSIN("", "cousin"),
+        FEMALE_SECOND_COUSIN("", "cousin"),
+        SPOUSE("", "spouse"),
+        HUSBAND("", "husband"),
+        OTHER("", "other"),
+        UNKNOWN("", "unknown"),
+        UNRELATED("", "unrelated"),
+
+        PROBAND("", "proband");
+
+        private final String snomedCtId;
+        private final String isA;
+
+        FamiliarRelationship(String snomedCtId, String isA) {
+            this.snomedCtId = snomedCtId;
+            this.isA = isA;
         }
 
-        @Override
-        public String toString() {
-            return value;
+        public String getId() {
+            return this.name();
+        }
+
+        public String getSnomedCtId() {
+            return snomedCtId;
+        }
+
+        public String getIsA() {
+            return isA;
         }
     }
 

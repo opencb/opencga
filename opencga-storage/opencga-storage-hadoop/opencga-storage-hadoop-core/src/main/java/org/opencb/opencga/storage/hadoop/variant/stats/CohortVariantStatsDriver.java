@@ -86,7 +86,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
                 .append(VariantQueryParam.FILE.key(), fileIds);
         query.remove(VariantQueryParam.COHORT.key());
 
-        queryOptions = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_STATS));
+        queryOptions = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_STATS));
     }
 
     @Override

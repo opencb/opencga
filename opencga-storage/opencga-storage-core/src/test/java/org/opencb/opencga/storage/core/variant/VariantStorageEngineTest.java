@@ -30,6 +30,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -43,7 +44,7 @@ import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
@@ -266,11 +267,11 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
             assertTrue(variant.toString(), map.containsKey(studyMetadataMultiFile.getName()));
             assertTrue(variant.toString(), map.containsKey(studyMetadataSingleFile.getName()));
-            String expected = map.get(studyMetadataSingleFile.getName()).getSamplesData().toString();
-            String actual = map.get(studyMetadataMultiFile.getName()).getSamplesData().toString();
+            String expected = map.get(studyMetadataSingleFile.getName()).getSamples().toString();
+            String actual = map.get(studyMetadataMultiFile.getName()).getSamples().toString();
             if (!assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual))) {
-                List<List<String>> samplesDataSingle = map.get(studyMetadataSingleFile.getName()).getSamplesData();
-                List<List<String>> samplesDataMulti = map.get(studyMetadataMultiFile.getName()).getSamplesData();
+                List<SampleEntry> samplesDataSingle = map.get(studyMetadataSingleFile.getName()).getSamples();
+                List<SampleEntry> samplesDataMulti = map.get(studyMetadataMultiFile.getName()).getSamples();
                 for (int i = 0; i < samplesDataSingle.size(); i++) {
                     String sampleName = map.get(studyMetadataMultiFile.getName()).getOrderedSamplesName().get(i);
                     String message = variant.toString()
@@ -605,17 +606,17 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             variant.setStudies(Collections.singletonList(studyEntry));
 
             Variant loadedVariant = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), variant.toString())
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), "GT,GL,DS"), new QueryOptions()).first();
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT,GL,DS"), new QueryOptions()).first();
 
             loadedVariant.setAnnotation(null);                                          //Remove annotation
             StudyEntry loadedStudy = loadedVariant.getStudy(STUDY_NAME);
-            loadedStudy.setStats(Collections.emptyMap());        //Remove calculated stats
-            loadedStudy.getSamplesData().forEach(values -> {
-                values.set(0, values.get(0).replace("0/0", "0|0"));
-                while (values.get(2).length() < 5) values.set(2, values.get(2) + "0");   //Set lost zeros
+            loadedStudy.setStats(Collections.emptyList());        //Remove calculated stats
+            loadedStudy.getSamples().forEach(sampleEntry -> {
+                sampleEntry.getData().set(0, sampleEntry.getData().get(0).replace("0/0", "0|0"));
+                while (sampleEntry.getData().get(2).length() < 5) sampleEntry.getData().set(2, sampleEntry.get(2) + "0");   //Set lost zeros
             });
             for (FileEntry fileEntry : loadedStudy.getFiles()) {
-                if(StringUtils.isEmpty(fileEntry.getCall())) {
+                if (fileEntry.getCall() != null && StringUtils.isEmpty(fileEntry.getCall().getVariantId())) {
                     fileEntry.setCall(null);
                 }
             }
@@ -639,7 +640,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            assertEquals("GT", variant.getStudy(STUDY_NAME).getFormatAsString());
+            assertEquals("GT", variant.getStudy(STUDY_NAME).getSampleDataKeysAsString());
         }
     }
 
@@ -722,22 +723,22 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 }
                 assertEquals(expectedStudyId, entry.getValue().getStudyId());
                 if (includeSamples) {
-                    assertNotNull(entry.getValue().getSamplesData());
-                    assertEquals(samples.size(), entry.getValue().getSamplesData().size());
+                    assertNotNull(entry.getValue().getSamples());
+                    assertEquals(samples.size(), entry.getValue().getSamples().size());
 
-                    assertEquals(samples.size(), entry.getValue().getSamplesData().size());
-                    assertEquals(new HashSet<>(samples), entry.getValue().getSamplesDataAsMap().keySet());
+                    assertEquals(samples.size(), entry.getValue().getSamples().size());
+//                    assertEquals(new HashSet<>(samples), entry.getValue().getSamplesDataAsMap().keySet());
                 }
                 for (FileEntry fileEntry : entry.getValue().getFiles()) {
                     if (includeSrc) {
-                        assertNotNull(fileEntry.getAttributes().get(VariantVcfFactory.SRC));
+                        assertNotNull(fileEntry.getData().get(VariantVcfFactory.SRC));
                     } else {
-                        assertNull(fileEntry.getAttributes().getOrDefault(VariantVcfFactory.SRC, null));
+                        assertNull(fileEntry.getData().getOrDefault(VariantVcfFactory.SRC, null));
                     }
                 }
                 for (CohortMetadata cohort : cohorts.values()) {
                     try {
-                        VariantStats variantStats = entry.getValue().getStats().get(cohort.getName());
+                        VariantStats variantStats = entry.getValue().getStats(cohort.getName());
                         assertNotNull(variantStats);
                         assertEquals(variant + " has incorrect stats for cohort \"" + cohort.getName() + "\":"+cohort.getId(),
                                 cohort.getSamples().size(),

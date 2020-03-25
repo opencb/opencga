@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,9 +67,11 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
         metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(hBaseManager, helper.getMetaTableAsString(), context.getConfiguration()));
 
-        hbaseToVariantConverter = HBaseToVariantConverter.fromResult(getHelper())
+        hbaseToVariantConverter = HBaseToVariantConverter.fromResult(getHelper());
+        hbaseToVariantConverter.configure(HBaseVariantConverterConfiguration.builder()
                 .setFailOnEmptyVariants(true)
-                .setSimpleGenotypes(false);
+                .setSimpleGenotypes(false)
+                .build());
 //        timestamp = HConstants.LATEST_TIMESTAMP;
         if (AbstractVariantsTableDriver.NONE_TIMESTAMP.equals(context.getConfiguration().get(AbstractVariantsTableDriver.TIMESTAMP))) {
             timestamp = -1;

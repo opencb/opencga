@@ -243,8 +243,11 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "File uuid, id, or name.") @PathParam("file") String fileIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Starting byte from which the file will be read") @QueryParam("offset") long offset,
-            @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines) {
+            @ApiParam(value = "Maximum number of lines to be returned", defaultValue = "20") @QueryParam("lines") Integer lines) {
         try {
+            if (lines == null) {
+                lines = 20;
+            }
             ParamUtils.checkIsSingleID(fileIdStr);
             return createOkResponse(catalogManager.getFileManager().head(studyStr, fileIdStr, offset, lines, token));
         } catch (Exception e) {
@@ -258,8 +261,11 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response tail(
             @ApiParam(value = "File uuid, id, or name.") @PathParam("file") String fileIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines) {
+            @ApiParam(value = "Maximum number of lines to be returned", defaultValue = "20") @QueryParam("lines") Integer lines) {
         try {
+            if (lines == null) {
+                lines = 20;
+            }
             ParamUtils.checkIsSingleID(fileIdStr);
             return createOkResponse(catalogManager.getFileManager().tail(studyStr, fileIdStr, lines, token));
         } catch (Exception e) {

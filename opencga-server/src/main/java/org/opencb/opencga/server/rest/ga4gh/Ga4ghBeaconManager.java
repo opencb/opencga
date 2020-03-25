@@ -136,7 +136,7 @@ public class Ga4ghBeaconManager {
         query.append(VariantQueryParam.SAMPLE_METADATA.key(), true);
 //            logger.info("query.toJson() = " + query.toJson());
         VariantQueryResult<Variant> result = variantManager.get(query, new QueryOptions()
-                .append(QueryOptions.EXCLUDE, Collections.singletonList(VariantField.STUDIES_SAMPLES_DATA))
+                .append(QueryOptions.EXCLUDE, Collections.singletonList(VariantField.STUDIES_SAMPLES))
                 .append(QueryOptions.LIMIT, 10), token);
         for (Variant variant : result.getResults()) {
             Ga4ghVariantsFoundResponse ga4ghVariantsFoundResponse = new Ga4ghVariantsFoundResponse();

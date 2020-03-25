@@ -52,7 +52,8 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,8 +64,8 @@ import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.core.variant.query.CompoundHeterozygousQueryExecutor.MISSING_SAMPLE;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.executors.CompoundHeterozygousQueryExecutor.MISSING_SAMPLE;
 
 /**
  * Created on 28/02/17.
@@ -184,7 +185,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
         if (release != null) {
             // If no list of included files is specified:
-            if (VariantQueryUtils.isIncludeFilesDefined(query, Collections.singleton(VariantField.STUDIES_FILES))) {
+            if (VariantQueryProjectionParser.isIncludeFilesDefined(query, Collections.singleton(VariantField.STUDIES_FILES))) {
                 List<String> includeFiles = new ArrayList<>();
                 QueryOptions fileOptions = new QueryOptions(INCLUDE, FileDBAdaptor.QueryParams.UID.key());
                 Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
@@ -199,7 +200,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 query.append(VariantQueryParam.INCLUDE_FILE.key(), includeFiles);
             }
             // If no list of included samples is specified:
-            if (!VariantQueryUtils.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA))) {
+            if (!VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES))) {
                 List<String> includeSamples = new ArrayList<>();
                 Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
                 QueryOptions sampleOptions = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID.key());

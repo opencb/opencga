@@ -514,8 +514,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             if (mother != null) {
                 relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDMOTHER);
                 relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDFATHER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING_M);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING_F);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
                 relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
                         ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
 
@@ -528,8 +528,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             if (father != null) {
                 relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.PATERNAL_GRANDMOTHER);
                 relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.PATERNAL_GRANDFATHER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING_M);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING_F);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
                 relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
                         ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
 
@@ -543,8 +543,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
             for (Individual child : children) {
                 // TODO: Change relations !!
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING_M);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING_F);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
                 relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
                         ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
 
@@ -582,12 +582,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     break;
                 case SON:
                     for (Individual child : entry.getValue()) {
-                        addRelativeToList(child, ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING_M, degree, individualList);
+                        addRelativeToList(child, ClinicalAnalysis.FamiliarRelationship.BROTHER, degree, individualList);
                     }
                     break;
                 case DAUGHTER:
                     for (Individual child : entry.getValue()) {
-                        addRelativeToList(child, ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING_F, degree, individualList);
+                        addRelativeToList(child, ClinicalAnalysis.FamiliarRelationship.SISTER, degree, individualList);
                     }
                     break;
                 case CHILD_OF_UNKNOWN_SEX:

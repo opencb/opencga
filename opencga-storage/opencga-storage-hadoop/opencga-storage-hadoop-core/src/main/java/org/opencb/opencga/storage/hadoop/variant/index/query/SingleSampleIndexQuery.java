@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -15,6 +17,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
     private final boolean[] fatherFilter;
     private final boolean[] motherFilter;
     private final boolean mendelianError;
+    private final boolean multiFileSample;
 
     protected SingleSampleIndexQuery(SampleIndexQuery query, String sample) {
         this(query, sample, query.getSamplesMap().get(sample));
@@ -25,6 +28,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
                 query.getVariantTypes() == null ? null : new HashSet<>(query.getVariantTypes()),
                 query.getStudy(),
                 Collections.singletonMap(sample, gts),
+                query.getMultiFileSamplesSet(),
                 query.getNegatedSamples(),
                 query.getFatherFilterMap(),
                 query.getMotherFilterMap(),
@@ -35,6 +39,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
                 query.getQueryOperation());
         this.sample = sample;
         this.gts = gts;
+        multiFileSample = query.getMultiFileSamplesSet().contains(sample);
         fatherFilter = getFatherFilter(sample);
         motherFilter = getMotherFilter(sample);
         sampleFileIndexQuery = getSampleFileIndexQuery(sample);
@@ -58,6 +63,10 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
         return super.isNegated(sample);
     }
 
+    public boolean isMultiFileSample() {
+        return multiFileSample;
+    }
+
     public boolean[] getFatherFilter() {
         return fatherFilter;
     }
@@ -74,8 +83,16 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
         return motherFilter != EMPTY_PARENT_FILTER;
     }
 
-    public byte getFileIndexMask() {
+    public short getFileIndexMask() {
         return sampleFileIndexQuery.getFileIndexMask();
+    }
+
+    public byte getFileIndexMask1() {
+        return (byte) IndexUtils.getByte1(sampleFileIndexQuery.getFileIndexMask());
+    }
+
+    public byte getFileIndexMask2() {
+        return (byte) IndexUtils.getByte2(sampleFileIndexQuery.getFileIndexMask());
     }
 
     public SampleFileIndexQuery getSampleFileIndexQuery() {

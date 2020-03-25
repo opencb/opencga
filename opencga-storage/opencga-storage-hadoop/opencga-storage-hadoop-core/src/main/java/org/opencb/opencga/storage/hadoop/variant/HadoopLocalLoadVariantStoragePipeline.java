@@ -91,9 +91,17 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         Set<String> alreadyIndexedSamples = new LinkedHashSet<>();
         Set<Integer> processedSamples = new LinkedHashSet<>();
         int studyId = getStudyId();
+        VariantStorageEngine.LoadSplitData loadSplitData = VariantStorageEngine.LoadSplitData.from(options);
         for (String sample : fileMetadata.getSampleIds()) {
             Integer sampleId = getMetadataManager().getSampleId(studyId, sample);
             SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(studyId, sampleId);
+            if (loadSplitData != null && sampleMetadata.getSplitData() != null) {
+                if (!loadSplitData.equals(sampleMetadata.getSplitData())) {
+                    throw new StorageEngineException("Incompatible split data methods. "
+                            + "Unable to mix requested " + loadSplitData
+                            + " with existing " + sampleMetadata.getSplitData());
+                }
+            }
             for (Integer fileId : sampleMetadata.getFiles()) {
                 if (fileId != getFileId()) {
                     if (getMetadataManager().getFileMetadata(studyId, fileId).getIndexStatus() != TaskMetadata.Status.NONE) {
@@ -110,7 +118,6 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         }
 
         if (!alreadyIndexedSamples.isEmpty()) {
-            VariantStorageEngine.LoadSplitData loadSplitData = VariantStorageEngine.LoadSplitData.from(options);
             if (loadSplitData != null) {
                 logger.info("Loading split data");
             } else {
@@ -125,6 +132,15 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.NONE);
                     return sampleMetadata;
                 });
+            }
+        }
+
+        if (loadSplitData != null) {
+            // Register loadSplitData
+            for (String sample : fileMetadata.getSampleIds()) {
+                Integer sampleId = getMetadataManager().getSampleId(studyId, sample);
+                getMetadataManager().updateSampleMetadata(studyId, sampleId,
+                        sampleMetadata -> sampleMetadata.setSplitData(loadSplitData));
             }
         }
 
@@ -398,8 +414,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), getMetadataManager());
         sampleIndexDBLoader = new SampleIndexDBLoader(sampleIndexDbAdaptor, dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator().getSampleIndexTableName(helper.getStudyId()),
-                getStudyId(), sampleIds,
-                GenomeHelper.COLUMN_FAMILY_BYTES,
+                getMetadataManager(),
+                getStudyId(), getFileId(), sampleIds,
                 VariantStorageEngine.LoadSplitData.from(getOptions()),
                 getOptions());
         return sampleIndexDBLoader;
@@ -410,9 +426,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 VARIANT_TABLE_LOAD_REFERENCE.key(),
                 VARIANT_TABLE_LOAD_REFERENCE.defaultValue());
         return new VariantHadoopDBWriter(
-                dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getCredentials().getTable(),
                 getStudyId(),
+                getFileId(),
                 getMetadataManager(),
                 dbAdaptor.getHBaseManager(), includeReferenceVariantsData);
     }

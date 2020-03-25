@@ -17,13 +17,14 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import htsjdk.variant.variantcontext.VariantContext;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.OriginalCall;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.DataResult;
@@ -46,7 +47,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Tests that all the VariantDBAdaptor filters and methods work correctly with more than one study loaded.
@@ -769,18 +770,20 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     }
 
 
-    private boolean sameVariant(Variant variant, String call) {
-        if (StringUtils.isEmpty(call)) {
+    private boolean sameVariant(Variant variant, OriginalCall call) {
+        if (call == null) {
             return true;
         }
-        String[] split = call.split(":", -1);
+        String[] split = call.getVariantId().split(",", -1);
+        Variant v = new Variant(split[0]);
+        split[0] = v.getAlternate();
         List<VariantNormalizer.VariantKeyFields> normalized;
         if (variant.isSymbolic()) {
             normalized = new VariantNormalizer()
-                    .normalizeSymbolic(Integer.parseInt(split[0]), variant.getEnd(), split[1], Arrays.asList(split[2].split(",")));
+                    .normalizeSymbolic(v.getStart(), v.getEnd(), v.getReference(), Arrays.asList(split));
         } else {
             normalized = new VariantNormalizer()
-                    .normalize(variant.getChromosome(), Integer.parseInt(split[0]), split[1], Arrays.asList(split[2].split(",")));
+                    .normalize(v.getChromosome(), v.getStart(), v.getReference(), Arrays.asList(split));
         }
         for (VariantNormalizer.VariantKeyFields variantKeyFields : normalized) {
             if (variantKeyFields.getStart() == variant.getStart()
@@ -798,7 +801,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.STUDY.key(), studyMetadata1.getName()), null);
         for (int i = 0; i < 20; i++) {
             Variant variant = iterator.next();
-            int expectedNumSamples = (int) variant.getStudies().get(0).getSamplesData().stream().filter(data -> validGts.contains(data.get(0))).count();
+            int expectedNumSamples = (int) variant.getStudies().get(0).getSamples().stream().map(SampleEntry::getData).filter(data -> validGts.contains(data.get(0))).count();
             int actualNumSamples = 0;
             Set<String> sampleNames = new HashSet<>(); // look for repeated samples
             int queries = 0;
@@ -809,12 +812,12 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 queries++;
 
                 StudyEntry studyEntry = queryResult.first().getStudies().get(0);
-                int numSamples = studyEntry.getSamplesData().size();
+                int numSamples = studyEntry.getSamples().size();
                 if (numSamples == 0) {
                     break;
                 }
-                for (List<String> sample : studyEntry.getSamplesData()) {
-                    sampleNames.add(sample.get(sample.size() - 2));
+                for (SampleEntry sample : studyEntry.getSamples()) {
+                    sampleNames.add(sample.getData().get(sample.getData().size() - 2));
                 }
                 actualNumSamples += numSamples;
 //                System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult));

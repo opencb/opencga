@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
 import org.slf4j.Logger;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.MODIFIER_QUERY_PARAMS;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.MODIFIER_QUERY_PARAMS;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
 

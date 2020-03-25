@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

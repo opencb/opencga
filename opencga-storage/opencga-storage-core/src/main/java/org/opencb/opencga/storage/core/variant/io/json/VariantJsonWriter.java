@@ -152,16 +152,14 @@ public class VariantJsonWriter implements VariantWriter {
             for (StudyEntry studyEntry : variant.getStudies()) {
                 if (!includeSrc) {
                     for (FileEntry fileEntry : studyEntry.getFiles()) {
-                        if (fileEntry.getAttributes().containsKey(VariantVcfFactory.SRC)) {
-                            fileEntry.getAttributes().remove(VariantVcfFactory.SRC);
-                        }
+                        fileEntry.getData().remove(VariantVcfFactory.SRC);
                     }
                 }
                 if (!includeSamples) {
-                    studyEntry.getSamplesData().clear();
+                    studyEntry.getSamples().clear();
                 }
                 if (!includeStats) {
-                    studyEntry.setStats(Collections.emptyMap());
+                    studyEntry.setStats(Collections.emptyList());
                 }
             }
             variantsGenerator.writeObject(variant);

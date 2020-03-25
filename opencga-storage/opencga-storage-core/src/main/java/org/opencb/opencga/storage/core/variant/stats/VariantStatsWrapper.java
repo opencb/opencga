@@ -20,7 +20,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * Class to link a VariantStats with its variant, using just the chromosome and the position.
@@ -33,7 +33,7 @@ public class VariantStatsWrapper {
     private String alternate;
 
     private StructuralVariation sv;
-    private Map<String, VariantStats> cohortStats;
+    private List<VariantStats> cohortStats;
 
     public VariantStatsWrapper() {
         this.chromosome = null;
@@ -43,7 +43,7 @@ public class VariantStatsWrapper {
         this.sv = null;
     }
 
-    public VariantStatsWrapper(Variant variant, Map<String, VariantStats> cohortStats) {
+    public VariantStatsWrapper(Variant variant, List<VariantStats> cohortStats) {
         this.chromosome = variant.getChromosome();
         this.start = variant.getStart();
         this.end = variant.getEnd();
@@ -96,11 +96,11 @@ public class VariantStatsWrapper {
         return this;
     }
 
-    public Map<String, VariantStats> getCohortStats() {
+    public List<VariantStats> getCohortStats() {
         return cohortStats;
     }
 
-    public void setCohortStats(Map<String, VariantStats> cohortStats) {
+    public void setCohortStats(List<VariantStats> cohortStats) {
         this.cohortStats = cohortStats;
     }
 

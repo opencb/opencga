@@ -90,6 +90,8 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 } else if (columnStartsWith(cell, ANNOTATION_CLINICAL_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_CLINICAL_PREFIX_BYTES))
                             .setClinicalIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                } else if (columnStartsWith(cell, GENOTYPE_DISCREPANCY_COUNT_BYTES)) {
+                    entry.setDiscrepancies(Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
                 }
             } else {
                 if (columnStartsWith(cell, MENDELIAN_ERROR_COLUMN_BYTES)) {
@@ -124,22 +126,26 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         return map;
     }
 
-    public Map<String, SortedSet<VariantFileIndexConverter.VariantFileIndex>> convertToMapVariantFileIndex(Result result) {
+    public Map<String, TreeSet<SampleVariantIndexEntry>> convertToMapSampleVariantIndex(Result result) {
         if (result == null || result.isEmpty()) {
             return Collections.emptyMap();
         }
         Map<String, List<Variant>> map = convertToMap(result);
 
-        Map<String, SortedSet<VariantFileIndexConverter.VariantFileIndex>> mapVariantFileIndex = new HashMap<>();
+        Map<String, TreeSet<SampleVariantIndexEntry>> mapVariantFileIndex = new HashMap<>();
         for (Cell cell : result.rawCells()) {
             if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
                 String gt = SampleIndexSchema.getGt(cell, FILE_PREFIX_BYTES);
-                TreeSet<VariantFileIndexConverter.VariantFileIndex> values = new TreeSet<>();
+                TreeSet<SampleVariantIndexEntry> values = new TreeSet<>();
                 mapVariantFileIndex.put(gt, values);
                 int i = cell.getValueOffset();
                 for (Variant variant : map.get(gt)) {
-                    values.add(new VariantFileIndexConverter.VariantFileIndex(variant, cell.getValueArray()[i]));
-                    i++;
+                    short fileIndex;
+                    do {
+                        fileIndex = Bytes.toShort(cell.getValueArray(), i);
+                        values.add(new SampleVariantIndexEntry(variant, fileIndex));
+                        i += VariantFileIndexConverter.BYTES;
+                    } while (VariantFileIndexConverter.isMultiFile(fileIndex));
                 }
             }
         }

@@ -36,7 +36,7 @@ import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.parseConsequenceType;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.parseConsequenceType;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;

@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -165,7 +166,7 @@ public class DocumentToStudyVariantEntryConverter {
                 }
                 if (fileObject.containsKey(ORI_FIELD)) {
                     Document ori = (Document) fileObject.get(ORI_FIELD);
-                    fileEntry.setCall(ori.get("s") + ":" + ori.get("i"));
+                    fileEntry.setCall(new OriginalCall(ori.getString("s"), ori.getInteger("i")));
                 }
             }
             study.setFiles(files);
@@ -316,9 +317,9 @@ public class DocumentToStudyVariantEntryConverter {
         int fileId = Integer.parseInt(file.getFileId());
         Document fileObject = new Document(FILEID_FIELD, fileId);
         // Attributes
-        if (file.getAttributes().size() > 0) {
+        if (file.getData().size() > 0) {
             Document attrs = null;
-            for (Map.Entry<String, String> entry : file.getAttributes().entrySet()) {
+            for (Map.Entry<String, String> entry : file.getData().entrySet()) {
                 String stringValue = entry.getValue();
                 String key = entry.getKey().replace(".", GenericDocumentComplexConverter.TO_REPLACE_DOTS);
                 Object value = stringValue;
@@ -359,12 +360,11 @@ public class DocumentToStudyVariantEntryConverter {
                 fileObject.put(ATTRIBUTES_FIELD, attrs);
             }
         }
-        String call = studyEntry.getFile(Integer.toString(fileId)).getCall();
-        if (call != null && !call.isEmpty()) {
-            int indexOf = call.lastIndexOf(":");
+        OriginalCall call = studyEntry.getFile(Integer.toString(fileId)).getCall();
+        if (call != null) {
             fileObject.append(ORI_FIELD,
-                    new Document("s", call.substring(0, indexOf))
-                            .append("i", Integer.parseInt(call.substring(indexOf + 1))));
+                    new Document("s", call.getVariantId())
+                            .append("i", call.getAlleleIndex()));
         }
         return fileObject;
     }

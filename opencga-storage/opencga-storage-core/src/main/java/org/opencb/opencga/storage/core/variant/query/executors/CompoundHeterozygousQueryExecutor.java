@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.query;
+package org.opencb.opencga.storage.core.variant.query.executors;
 
 import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
@@ -16,13 +16,14 @@ import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 05/04/19.
@@ -185,7 +186,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
         includeFields.add(VariantField.ANNOTATION);
         includeFields.add(VariantField.ANNOTATION_CONSEQUENCE_TYPES);
-        includeFields.add(VariantField.STUDIES_SAMPLES_DATA);
+        includeFields.add(VariantField.STUDIES_SAMPLES);
 
         VariantField.prune(includeFields);
 

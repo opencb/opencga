@@ -67,7 +67,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         variantStorageEngine.importData(outputFile, new ObjectMap());
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            assertEquals(4, variant.getStudies().get(0).getSamplesData().size());
+            assertEquals(4, variant.getStudies().get(0).getSamples().size());
         }
     }
 
@@ -87,7 +87,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         variantStorageEngine.importData(outputFile, new ObjectMap());
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            assertEquals(2, variant.getStudies().get(0).getSamplesData().size());
+            assertEquals(2, variant.getStudies().get(0).getSamples().size());
             assertEquals(samplesSet, variant.getStudies().get(0).getSamplesName());
         }
     }
@@ -98,7 +98,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
 
         System.out.println("outputFile = " + outputFile);
         Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA.toString());
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES.toString());
         variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, null, query, queryOptions);
 
         clearDB(DB_NAME);
@@ -106,7 +106,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         variantStorageEngine.importData(outputFile, new ObjectMap());
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            assertEquals(0, variant.getStudies().get(0).getSamplesData().size());
+            assertEquals(0, variant.getStudies().get(0).getSamples().size());
         }
     }
 
@@ -124,7 +124,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         variantStorageEngine.importData(outputFile, new ObjectMap());
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            assertEquals(0, variant.getStudies().get(0).getSamplesData().size());
+            assertEquals(0, variant.getStudies().get(0).getSamples().size());
         }
     }
 

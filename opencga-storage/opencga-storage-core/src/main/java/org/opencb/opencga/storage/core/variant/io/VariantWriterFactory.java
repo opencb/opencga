@@ -33,7 +33,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroWriter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.slf4j.Logger;
@@ -296,7 +296,7 @@ public class VariantWriterFactory {
     }
 
     protected StudyMetadata getStudyMetadata(Query query, boolean singleStudy) {
-        List<Integer> studyIds = VariantQueryUtils.getIncludeStudies(query, QueryOptions.empty(), variantStorageMetadataManager);
+        List<Integer> studyIds = VariantQueryProjectionParser.getIncludeStudies(query, QueryOptions.empty(), variantStorageMetadataManager);
 
         if (studyIds.isEmpty()) {
             studyIds = variantStorageMetadataManager.getStudyIds(null);
