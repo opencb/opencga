@@ -77,7 +77,6 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
     public enum StudyPermissions {
         CONFIDENTIAL_VARIABLE_SET_ACCESS,
-        EXECUTION,
 
         // FILES
         WRITE_FILES(FileAclEntry.FilePermissions.WRITE.name(), FILE),
@@ -92,17 +91,20 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         DELETE_FILE_ANNOTATIONS(FileAclEntry.FilePermissions.DELETE_ANNOTATIONS.name(), FILE),
 
         // JOBS
+        EXECUTION,
         VIEW_JOBS(JobAclEntry.JobPermissions.VIEW.name(), JOB),
         WRITE_JOBS(JobAclEntry.JobPermissions.UPDATE.name(), JOB),
         DELETE_JOBS(JobAclEntry.JobPermissions.DELETE.name(), JOB),
 
         // SAMPLES
+        VIEW_AGGREGATED_VARIANTS,
         VIEW_SAMPLES(SampleAclEntry.SamplePermissions.VIEW.name(), SAMPLE),
         WRITE_SAMPLES(SampleAclEntry.SamplePermissions.UPDATE.name(), SAMPLE),
         DELETE_SAMPLES(SampleAclEntry.SamplePermissions.DELETE.name(), SAMPLE),
         WRITE_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS.name(), SAMPLE),
         VIEW_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(), SAMPLE),
         DELETE_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS.name(), SAMPLE),
+        VIEW_SAMPLE_VARIANTS(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name(), SAMPLE),
 
         // INDIVIDUALS
         VIEW_INDIVIDUALS(IndividualAclEntry.IndividualPermissions.VIEW.name(), INDIVIDUAL),
