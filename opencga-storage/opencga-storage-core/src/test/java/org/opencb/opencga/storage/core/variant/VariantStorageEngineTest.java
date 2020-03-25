@@ -616,7 +616,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 while (sampleEntry.getData().get(2).length() < 5) sampleEntry.getData().set(2, sampleEntry.get(2) + "0");   //Set lost zeros
             });
             for (FileEntry fileEntry : loadedStudy.getFiles()) {
-                if(StringUtils.isEmpty(fileEntry.getCall())) {
+                if (fileEntry.getCall() != null && StringUtils.isEmpty(fileEntry.getCall().getVariantId())) {
                     fileEntry.setCall(null);
                 }
             }

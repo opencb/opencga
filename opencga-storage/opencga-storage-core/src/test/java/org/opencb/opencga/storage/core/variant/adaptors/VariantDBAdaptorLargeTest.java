@@ -17,13 +17,13 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import htsjdk.variant.variantcontext.VariantContext;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
@@ -770,18 +770,20 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     }
 
 
-    private boolean sameVariant(Variant variant, String call) {
-        if (StringUtils.isEmpty(call)) {
+    private boolean sameVariant(Variant variant, OriginalCall call) {
+        if (call == null) {
             return true;
         }
-        String[] split = call.split(":", -1);
+        String[] split = call.getVariantId().split(",", -1);
+        Variant v = new Variant(split[0]);
+        split[0] = v.getAlternate();
         List<VariantNormalizer.VariantKeyFields> normalized;
         if (variant.isSymbolic()) {
             normalized = new VariantNormalizer()
-                    .normalizeSymbolic(Integer.parseInt(split[0]), variant.getEnd(), split[1], Arrays.asList(split[2].split(",")));
+                    .normalizeSymbolic(v.getStart(), v.getEnd(), v.getReference(), Arrays.asList(split));
         } else {
             normalized = new VariantNormalizer()
-                    .normalize(variant.getChromosome(), Integer.parseInt(split[0]), split[1], Arrays.asList(split[2].split(",")));
+                    .normalize(v.getChromosome(), v.getStart(), v.getReference(), Arrays.asList(split));
         }
         for (VariantNormalizer.VariantKeyFields variantKeyFields : normalized) {
             if (variantKeyFields.getStart() == variant.getStart()

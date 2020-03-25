@@ -25,10 +25,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.SampleEntry;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,12 +115,11 @@ public class VariantLocalConflictResolver {
         // Get all variants with multiple calls
         Multimap<String, Variant> callVariantsMap = ArrayListMultimap.create();
         for (Variant variant : variants) {
-            String call = variant.getStudies().get(0).getFiles().get(0).getCall();
-            if (variant.getType().equals(NO_VARIATION) || StringUtils.isEmpty(call)) {
+            OriginalCall call = variant.getStudies().get(0).getFiles().get(0).getCall();
+            if (variant.getType().equals(NO_VARIATION) || call == null) {
                 notFromSameCall.add(variant);
             } else {
-                call = call.substring(0, call.lastIndexOf(':'));
-                callVariantsMap.put(call, variant);
+                callVariantsMap.put(call.getVariantId(), variant);
             }
         }
 
@@ -135,9 +131,9 @@ public class VariantLocalConflictResolver {
                 // Select the one with the lowest allele index
                 List<Variant> sorted = new ArrayList<>(variantsFromSameCall);
                 sorted.sort((v1, v2) -> {
-                    String alleleIdx1 = v1.getStudies().get(0).getFiles().get(0).getCall().substring(call.length() + 1);
-                    String alleleIdx2 = v2.getStudies().get(0).getFiles().get(0).getCall().substring(call.length() + 1);
-                    return Integer.valueOf(alleleIdx1).compareTo(Integer.valueOf(alleleIdx2));
+                    int alleleIdx1 = v1.getStudies().get(0).getFiles().get(0).getCall().getAlleleIndex();
+                    int alleleIdx2 = v2.getStudies().get(0).getFiles().get(0).getCall().getAlleleIndex();
+                    return Integer.compare(alleleIdx1, alleleIdx2);
                 });
                 notFromSameCall.add(sorted.get(0));
                 for (int i = 1; i < sorted.size(); i++) {

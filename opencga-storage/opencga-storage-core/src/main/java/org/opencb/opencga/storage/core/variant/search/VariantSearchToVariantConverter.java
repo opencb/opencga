@@ -156,7 +156,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     // We obtain the original call
                     Map<String, String> fileData = reader.readValue(variantSearchModel.getFileInfo().get(key));
                     if (MapUtils.isNotEmpty(fileData)) {
-                        fileEntry.setCall(fileData.get("fileCall"));
+                        String fileCall = fileData.get("fileCall");
+                        if (fileCall != null && !fileCall.isEmpty()) {
+                            int i = fileCall.lastIndexOf(':');
+                            OriginalCall call = new OriginalCall(
+                                    fileCall.substring(0, i),
+                                    Integer.valueOf(fileCall.substring(i + 1)));
+                            fileEntry.setCall(call);
+                        }
+
                         fileData.remove("fileCall");
                         fileEntry.setData(fileData);
                     }
@@ -1160,8 +1168,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 for (FileEntry fileEntry : studyEntry.getFiles()) {
                     // Call is stored in Solr fileInfo with key "fileCall"
                     Map<String, String> fileInfoMap = new LinkedHashMap<>();
-                    if (StringUtils.isNotEmpty(fileEntry.getCall())) {
-                        fileInfoMap.put("fileCall", fileEntry.getCall());
+                    if (fileEntry.getCall() != null) {
+                        fileInfoMap.put("fileCall", fileEntry.getCall().getVariantId() + ":" + fileEntry.getCall().getAlleleIndex());
                     }
                     // Info fields are stored in Solr fileInfo
                     if (MapUtils.isNotEmpty(fileEntry.getData())) {

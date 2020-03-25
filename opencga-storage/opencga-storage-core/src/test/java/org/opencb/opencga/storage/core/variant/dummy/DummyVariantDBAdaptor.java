@@ -139,7 +139,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
                 }
                 List<FileEntry> files = new ArrayList<>();
                 for (Integer id : metadataManager.getIndexedFiles(sm.getId())) {
-                    files.add(new FileEntry(id.toString(), "", Collections.emptyMap()));
+                    files.add(new FileEntry(id.toString(), null, Collections.emptyMap()));
                 }
                 st.setFiles(files);
             });

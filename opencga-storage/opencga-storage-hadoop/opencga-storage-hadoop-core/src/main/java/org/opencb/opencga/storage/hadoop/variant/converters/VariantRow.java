@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
+import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -302,7 +303,19 @@ public class VariantRow {
 
         PhoenixArray raw();
 
-        String getCall();
+        String getCallString();
+
+        default OriginalCall getCall() {
+            String callString = getCallString();
+            if (callString == null) {
+                return null;
+            } else {
+                int i = callString.lastIndexOf(':');
+                return new OriginalCall(
+                        callString.substring(0, i),
+                        Integer.valueOf(callString.substring(i + 1)));
+            }
+        }
 
         List<AlternateCoordinate> getSecondaryAlternates();
 
@@ -513,7 +526,7 @@ public class VariantRow {
         }
 
         @Override
-        public String getCall() {
+        public String getCallString() {
             return getString(HBaseToStudyEntryConverter.FILE_CALL_IDX);
         }
 

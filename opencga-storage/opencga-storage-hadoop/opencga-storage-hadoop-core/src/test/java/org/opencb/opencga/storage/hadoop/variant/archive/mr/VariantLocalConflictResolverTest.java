@@ -22,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
@@ -110,9 +111,9 @@ public class VariantLocalConflictResolverTest {
         Variant a = getVariant("2:10048155:TCTTTTTTTT:AC", "PASS", "220", "1/2");
         Variant b = getVariant("2:10048155:TCTTTTTTTT:-", "PASS", "220", "2/1");
         a.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2", b.getStart(), b.getEnd(), b.getReference(), b.getAlternate(), INDEL));
-        a.getStudies().get(0).getFiles().get(0).setCall("10048155:TTCTTTTTTTT:TAC,T:0");
+        a.getStudies().get(0).getFiles().get(0).setCall(new OriginalCall("2:10048155:TTCTTTTTTTT:TAC,T", 0));
         b.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2", a.getStart(), a.getEnd(), a.getReference(), a.getAlternate(), INDEL));
-        b.getStudies().get(0).getFiles().get(0).setCall("10048155:TTCTTTTTTTT:TAC,T:1");
+        b.getStudies().get(0).getFiles().get(0).setCall(new OriginalCall("2:10048155:TTCTTTTTTTT:TAC,T", 1));
 
         Collection<Variant> resolved = new VariantLocalConflictResolver().resolveConflicts(Arrays.asList(a, b));
         assertEquals(1, resolved.size());
@@ -160,7 +161,7 @@ public class VariantLocalConflictResolverTest {
         // 1:328:CTTCTT:CTTCTTTC  ~? 1:331:CTT:CTTTC ~ 1:334:-:TC
         Variant v1 = new Variant("1:328:CTT:C");
         StudyEntry se = new StudyEntry("1");
-        se.setFiles(Collections.singletonList(new FileEntry("1", "", new HashMap<>())));
+        se.setFiles(Collections.singletonList(new FileEntry("1", null, new HashMap<>())));
         v1.setStudies(Collections.singletonList(se));
         se.setSampleDataKeys(Arrays.asList(GENOTYPE_KEY, GENOTYPE_FILTER_KEY));
         se.setSamplesPosition(asMap("S1", 0));
@@ -171,7 +172,7 @@ public class VariantLocalConflictResolverTest {
 
         Variant v2 = new Variant("1:331:N:TCN");
         se = new StudyEntry("1");
-        se.setFiles(Collections.singletonList(new FileEntry("1", "", new HashMap<>())));
+        se.setFiles(Collections.singletonList(new FileEntry("1", null, new HashMap<>())));
         v2.setStudies(Collections.singletonList(se));
         se.setSamplesPosition(asMap("S1", 0));
         se.setSampleDataKeys(Arrays.asList(GENOTYPE_KEY, GENOTYPE_FILTER_KEY));
@@ -316,9 +317,9 @@ public class VariantLocalConflictResolverTest {
         a.getStudies().get(0).getSecondaryAlternates().add(
                 new AlternateCoordinate(c.getChromosome(), c.getStart(), c.getEnd(), c.getReference(), c.getAlternate(),
                         INDEL));
-        a.getStudies().get(0).getFiles().get(0).setCall("100:TT:GGTTGTT,TTAGGA:0");
-        b.getStudies().get(0).getFiles().get(0).setCall("100:TT:GGTTGTT,TTAGGA:0");
-        c.getStudies().get(0).getFiles().get(0).setCall("100:TT:GGTTGTT,TTAGGA:1");
+        a.getStudies().get(0).getFiles().get(0).setCall(new OriginalCall("1:100:TT:GGTTGTT,TTAGGA", 0));
+        b.getStudies().get(0).getFiles().get(0).setCall(new OriginalCall("1:100:TT:GGTTGTT,TTAGGA", 0));
+        c.getStudies().get(0).getFiles().get(0).setCall(new OriginalCall("1:100:TT:GGTTGTT,TTAGGA", 1));
         Collection<Variant> resolved = new VariantLocalConflictResolver().resolveConflicts(Arrays.asList(a, b, c));
         assertEquals(2, resolved.size());
     }
@@ -554,7 +555,7 @@ public class VariantLocalConflictResolverTest {
         Variant v = new Variant(var);
         StudyEntry sb = new StudyEntry("1", "1");
         String call = v.getStart() + ":" + v.getReference() + ":" + v.getAlternate() + ":" + 0;
-        sb.setFiles(Collections.singletonList(new FileEntry("1", "", new HashMap<>())));
+        sb.setFiles(Collections.singletonList(new FileEntry("1", null, new HashMap<>())));
         v.setStudies(Collections.singletonList(sb));
         if (v.getAlternate().contains(",")) {
             String[] alternates = v.getAlternate().split(",");

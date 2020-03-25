@@ -850,10 +850,10 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         String call = null;
         if (!files.isEmpty()) {
             for (FileEntry file : files) {
-                call = file.getCall();
-//                if (call != null) {
+                if (file.getCall() != null) {
+                    call = file.getCall().getVariantId();
                     calls.add(call);
-//                }
+                }
             }
         }
         if (calls.size() == 1 && StringUtils.isNotEmpty(call)) {

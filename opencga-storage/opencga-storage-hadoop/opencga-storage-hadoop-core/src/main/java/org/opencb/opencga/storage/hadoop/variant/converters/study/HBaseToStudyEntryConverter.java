@@ -361,7 +361,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
         HashMap<String, String> attributes = convertFileAttributes(fileColumn, fixedAttributes);
         // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
-        studyEntry.getFiles().add(new FileEntry(fileName, call, attributes));
+        OriginalCall originalCall = null;
+        if (call != null && !call.isEmpty()) {
+            int i = call.lastIndexOf(':');
+            originalCall = new OriginalCall(call.substring(0, i), Integer.valueOf(call.substring(i + 1)));
+        }
+        studyEntry.getFiles().add(new FileEntry(fileName, originalCall, attributes));
     }
 
     public static HashMap<String, String> convertFileAttributes(PhoenixArray fileColumn, List<String> fixedAttributes) {

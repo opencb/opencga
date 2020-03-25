@@ -10,10 +10,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.SampleEntry;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
@@ -183,12 +180,8 @@ public class FillGapsTask {
 
         FileEntry fileEntry = archiveVariant.getStudies().get(0).getFiles().get(0);
         fileEntry.getData().remove(VCFConstants.END_KEY);
-        if (StringUtils.isEmpty(fileEntry.getCall())) {
-            String alternate = archiveVariant.getAlternate();
-            if (alternate.isEmpty()) {
-                alternate = Allele.NO_CALL_STRING;
-            }
-            fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":" + alternate + ":0");
+        if (fileEntry.getCall() == null) {
+            fileEntry.setCall(new OriginalCall(archiveVariant.toString(), 0));
         }
         // SYMBOLIC reference overlap -- <*> , <NON_REF>
         if (VariantType.NO_VARIATION.equals(archiveVariant.getType())
@@ -252,13 +245,13 @@ public class FillGapsTask {
                         VariantType.SYMBOLIC));
 
                 FileEntry archiveFileEntry = archiveStudyEntry.getFiles().get(0);
-                String call = archiveFileEntry.getCall();
-                if (StringUtils.isEmpty(call)) {
-                    call = archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":" + archiveVariant.getAlternate();
+                OriginalCall call = archiveFileEntry.getCall();
+                if (call == null || StringUtils.isEmpty(call.getVariantId())) {
+                    StringBuilder variantId = new StringBuilder(archiveVariant.toString());
                     for (AlternateCoordinate secondaryAlternate : archiveStudyEntry.getSecondaryAlternates()) {
-                        call += "," + secondaryAlternate.getAlternate();
+                        variantId.append(",").append(secondaryAlternate.getAlternate());
                     }
-                    call += ":0";
+                    call = new OriginalCall(variantId.toString(), 0);
                 }
                 HashMap<String, String> attributes = new HashMap<>();
                 archiveFileEntry.getData().computeIfPresent(StudyEntry.FILTER, attributes::put);

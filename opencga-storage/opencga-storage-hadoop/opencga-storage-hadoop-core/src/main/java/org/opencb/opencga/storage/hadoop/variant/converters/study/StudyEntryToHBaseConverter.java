@@ -196,7 +196,10 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
         List<String> fileColumn = Arrays.asList(new String[capacity]);
 
         Map<String, String> data = fileEntry.getData();
-        fileColumn.set(HBaseToStudyEntryConverter.FILE_CALL_IDX, fileEntry.getCall());
+        if (fileEntry.getCall() != null) {
+            fileColumn.set(HBaseToStudyEntryConverter.FILE_CALL_IDX,
+                    fileEntry.getCall().getVariantId() + ":" + fileEntry.getCall().getAlleleIndex());
+        }
         if (addSecondaryAlternates && studyEntry.getSecondaryAlternates() != null && !studyEntry.getSecondaryAlternates().isEmpty()) {
             fileColumn.set(HBaseToStudyEntryConverter.FILE_SEC_ALTS_IDX, getSecondaryAlternates(variant, studyEntry));
         }
