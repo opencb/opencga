@@ -49,13 +49,14 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationJsonDataReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationJsonDataWriter;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -390,7 +391,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         if (annotateAll) {
-            List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, null, metadataManager);
+            List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
             for (Integer studyId : studies) {
                 List<Integer> files = new LinkedList<>();
                 List<Integer> annotatedFiles = new LinkedList<>();
@@ -536,7 +537,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                         for (Variant variant : variantList) {
                             Region region = new Region(normalizeChromosome(variant.getChromosome()), variant.getStart(), variant.getEnd());
                             Query query = new Query(VariantQueryParam.REGION.key(), region);
-                            Map<String, String> info = variant.getStudies().get(0).getFiles().get(0).getAttributes();
+                            Map<String, String> info = variant.getStudies().get(0).getFiles().get(0).getData();
                             AdditionalAttribute attribute = new AdditionalAttribute(info);
                             dbAdaptor.updateCustomAnnotations(query, key, attribute, ts, new QueryOptions());
                         }

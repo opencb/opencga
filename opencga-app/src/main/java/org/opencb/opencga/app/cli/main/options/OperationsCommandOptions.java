@@ -7,7 +7,7 @@ import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.List;
 

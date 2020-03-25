@@ -23,6 +23,7 @@ import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntrySingleFileToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 import org.slf4j.Logger;
@@ -41,7 +42,6 @@ import java.util.Map;
 public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put> {
 
     private final StudyEntryToHBaseConverter converter;
-    private final GenomeHelper helper;
     private int skippedRefBlock = 0;
     private int skippedAll = 0;
     private int skippedRefVariants = 0;
@@ -56,13 +56,12 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
         }
     };
 
-    public VariantHadoopDBWriter(GenomeHelper helper, String tableName, int studyId, VariantStorageMetadataManager metadataManager,
+    public VariantHadoopDBWriter(String tableName, int studyId, int fileId, VariantStorageMetadataManager metadataManager,
                                  HBaseManager hBaseManager, boolean includeReferenceVariantsData) {
         super(hBaseManager, tableName);
-        this.helper = helper;
         int release = metadataManager.getProjectMetadata().getRelease();
-        converter = new StudyEntryToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyId, metadataManager, true, release,
-                includeReferenceVariantsData);
+        converter = new StudyEntrySingleFileToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyId, fileId, metadataManager, true,
+                release, includeReferenceVariantsData);
     }
 
     @Override

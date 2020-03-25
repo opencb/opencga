@@ -31,15 +31,15 @@ public class VariantSampleFilterTest {
     public void setUp() throws Exception {
         List<Variant> variants = Arrays.asList(
                 Variant.newBuilder("1:100:A:C")
-                        .setStudyId(STUDY).setFormat("GT").addSample(S1, "0/0").addSample(S2, "0/1").addSample(S3, "1/1").build(),
+                        .setStudyId(STUDY).setSampleDataKeys("GT").addSample(S1, "0/0").addSample(S2, "0/1").addSample(S3, "1/1").build(),
                 Variant.newBuilder("1:101:A:C")
-                        .setStudyId(STUDY).setFormat("GT").addSample(S1, "0/1").addSample(S2, "0/1").addSample(S3, "1/1").build(),
+                        .setStudyId(STUDY).setSampleDataKeys("GT").addSample(S1, "0/1").addSample(S2, "0/1").addSample(S3, "1/1").build(),
                 Variant.newBuilder("1:102:A:C")
-                        .setStudyId(STUDY).setFormat("GT").addSample(S1, "0/1").addSample(S2, "0/0").addSample(S3, "0/1").build(),
+                        .setStudyId(STUDY).setSampleDataKeys("GT").addSample(S1, "0/1").addSample(S2, "0/0").addSample(S3, "0/1").build(),
                 Variant.newBuilder("1:103:A:C")
-                        .setStudyId(STUDY).setFormat("GT").addSample(S1, "0/0").addSample(S2, "0/0").addSample(S3, "0/0").build(),
+                        .setStudyId(STUDY).setSampleDataKeys("GT").addSample(S1, "0/0").addSample(S2, "0/0").addSample(S3, "0/0").build(),
                 Variant.newBuilder("1:104:A:C")
-                        .setStudyId(STUDY).setFormat("GT").addSample(S1, "1/1").addSample(S2, "0/1").addSample(S3, "1/1").build()
+                        .setStudyId(STUDY).setSampleDataKeys("GT").addSample(S1, "1/1").addSample(S2, "0/1").addSample(S3, "1/1").build()
         );
 
         VariantIterable iterable = (query, options) -> {

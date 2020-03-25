@@ -3,6 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.index.family;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 
+import java.util.Collection;
+
 /**
  * Created on 03/04/19.
  *
@@ -30,8 +32,8 @@ public class GenotypeCodec {
     public static final byte MISSING_HET        = 12; //  ./0 ./1 ...
     public static final byte UNKNOWN            = 13; //  ?/?
 
-    public static final byte UNUSED_14          = 14; //
-    public static final byte UNUSED_15          = 15; //
+    public static final byte DISCREPANCY_SIMPLE = 14; // 0/1 AND 1/1 , which whichever phase
+    public static final byte DISCREPANCY_ANY    = 15; // Any other combination
 
     // GT codes that refer to only one possible genotype
     private static final boolean[] AMBIGUOUS_GT_CODE = new boolean[]{
@@ -49,8 +51,8 @@ public class GenotypeCodec {
             true,   // MISSING_HOM
             true,   // MISSING_HET
             true,   // UNKNOWN
-            true,   // UNUSED_14
-            true,   // UNUSED_15
+            true,   // DISCREPANCY_SIMPLE
+            true,   // DISCREPANCY_ANY
     };
 
     public static byte[] split(byte code) {
@@ -65,6 +67,26 @@ public class GenotypeCodec {
         byte fatherCode = encode(fatherGenotype);
         byte motherCode = encode(motherGenotype);
         return join(fatherCode, motherCode);
+    }
+
+    public static byte encode(Collection<String> fatherGenotype, Collection<String> motherGenotype) {
+        byte fatherCode = encode(fatherGenotype);
+        byte motherCode = encode(motherGenotype);
+        return join(fatherCode, motherCode);
+    }
+
+    public static byte encode(Collection<String> genotypes) {
+        if (genotypes.size() == 1) {
+            return encode(genotypes.iterator().next());
+        } else {
+            for (String genotype : genotypes) {
+                byte encode = encode(genotype);
+                if (encode >= MULTI_HOM || encode == HOM_REF_UNPHASED || encode == HOM_REF_PHASED) {
+                    return DISCREPANCY_ANY;
+                }
+            }
+            return DISCREPANCY_SIMPLE;
+        }
     }
 
     public static byte encode(String genotype) {

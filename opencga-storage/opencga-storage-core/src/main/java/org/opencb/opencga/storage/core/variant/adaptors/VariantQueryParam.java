@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import java.util.*;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 30/03/17.
@@ -91,26 +91,31 @@ public final class VariantQueryParam implements QueryParam {
             + "This will automatically set 'includeSample' parameter when not provided";
     public static final VariantQueryParam GENOTYPE = new VariantQueryParam("genotype", TEXT_ARRAY, GENOTYPE_DESCR);
 
-    public static final String FORMAT_DESCR
-            = "Filter by any FORMAT field from samples. [{sample}:]{key}{op}{value}[,;]* . "
+    public static final String SAMPLE_DATA_DESCR
+            = "Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}[,;]* . "
             + "If no sample is specified, will use all samples from \"sample\" or \"genotype\" filter. "
             + "e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . "
             + "Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10";
-    public static final VariantQueryParam FORMAT = new VariantQueryParam("format", TEXT_ARRAY, FORMAT_DESCR);
+    public static final VariantQueryParam SAMPLE_DATA = new VariantQueryParam("sampleData", TEXT_ARRAY, SAMPLE_DATA_DESCR);
 
     public static final String INCLUDE_SAMPLE_DESCR
             = "List of samples to be included in the result. "
             + ACCEPTS_ALL_NONE;
     public static final VariantQueryParam INCLUDE_SAMPLE = new VariantQueryParam("includeSample", TEXT_ARRAY, INCLUDE_SAMPLE_DESCR);
 
+    public static final String INCLUDE_SAMPLE_ID_DESCR
+            = "Include sampleId on each result";
+    public static final VariantQueryParam INCLUDE_SAMPLE_ID = new VariantQueryParam("includeSampleId", TEXT_ARRAY, INCLUDE_SAMPLE_ID_DESCR);
+
     public static final String SAMPLE_METADATA_DESCR
             = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
     public static final VariantQueryParam SAMPLE_METADATA = new VariantQueryParam("sampleMetadata", TEXT_ARRAY, SAMPLE_METADATA_DESCR);
 
-    public static final String INCLUDE_FORMAT_DESCR
-            = "List of FORMAT names from Samples Data to include in the output. e.g: DP,AD. "
+    public static final String INCLUDE_SAMPLE_DATA_DESCR
+            = "List of Sample Data keys (i.e. FORMAT column from VCF file) from Sample Data to include in the output. e.g: DP,AD. "
             + ACCEPTS_ALL_NONE;
-    public static final VariantQueryParam INCLUDE_FORMAT = new VariantQueryParam("includeFormat", TEXT_ARRAY, INCLUDE_FORMAT_DESCR);
+    public static final VariantQueryParam INCLUDE_SAMPLE_DATA = new VariantQueryParam("includeSampleData",
+            TEXT_ARRAY, INCLUDE_SAMPLE_DATA_DESCR);
 
     public static final String INCLUDE_GENOTYPE_DESCR
             = "Include genotypes, apart of other formats defined with includeFormat";
@@ -128,12 +133,12 @@ public final class VariantQueryParam implements QueryParam {
             = "Filter variants from the files specified. This will set includeFile parameter when not provided";
     public static final VariantQueryParam FILE = new VariantQueryParam("file", TEXT_ARRAY, FILE_DESCR);
 
-    public static final String INFO_DESCR
-            = "Filter by INFO attributes from file. [{file}:]{key}{op}{value}[,;]* . "
+    public static final String FILE_DATA_DESCR
+            = "Filter by file data (i.e. INFO column from VCF file). [{file}:]{key}{op}{value}[,;]* . "
             + "If no file is specified, will use all files from \"file\" filter. "
             + "e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . "
             + "Many INFO fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10";
-    public static final VariantQueryParam INFO = new VariantQueryParam("info", TEXT_ARRAY, INFO_DESCR);
+    public static final VariantQueryParam FILE_DATA = new VariantQueryParam("fileData", TEXT_ARRAY, FILE_DATA_DESCR);
 
     public static final String FILTER_DESCR
             = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. "

@@ -47,7 +47,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -709,7 +709,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     public void checkLoadedVariants(Set<String> expectedVariants, VariantHadoopDBAdaptor dbAdaptor, HashSet<String> platinumSkipVariants)
             throws IOException {
-        long count = dbAdaptor.count(null).first();
+        long count = dbAdaptor.count().first();
         expectedVariants.removeAll(platinumSkipVariants);
         System.out.println("count = " + count);
         System.out.println("expectedVariants = " + expectedVariants.size());

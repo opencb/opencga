@@ -21,15 +21,15 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -169,7 +169,7 @@ public class VariantMapReduceUtil {
         } else {
             LOGGER.info("Init MapReduce job reading from Phoenix");
             String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
-                    .parse(query, queryOptions).getSql();
+                    .parse(query, queryOptions);
 
             initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
         }
@@ -214,7 +214,7 @@ public class VariantMapReduceUtil {
         VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
         VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, scm, false);
 
-        String sql = variantSqlQueryParser.parse(query, queryOptions).getSql();
+        String sql = variantSqlQueryParser.parse(query, queryOptions);
 
         initVariantMapperJobFromPhoenix(job, variantTableName, sql, variantMapperClass);
     }
@@ -270,7 +270,7 @@ public class VariantMapReduceUtil {
         } else {
             LOGGER.info("Init MapReduce job reading from Phoenix");
             String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
-                    .parse(query, queryOptions).getSql();
+                    .parse(query, queryOptions);
 
             initVariantRowMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
         }
@@ -332,7 +332,7 @@ public class VariantMapReduceUtil {
         VariantStorageMetadataManager mm = dbAdaptor.getMetadataManager();
         VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, mm, false);
 
-        String sql = variantSqlQueryParser.parse(query, queryOptions).getSql();
+        String sql = variantSqlQueryParser.parse(query, queryOptions);
 
         initVariantRowMapperJobFromPhoenix(job, variantTableName, sql, variantMapperClass);
     }
@@ -399,9 +399,9 @@ public class VariantMapReduceUtil {
                                                  boolean studyNameAsStudyId,
                                                  boolean simpleGenotypes,
                                                  String unknownGenotype) {
-        configuration.setBoolean(HBaseToVariantConverter.MUTABLE_SAMPLES_POSITION, mutableSamplesPosition);
-        configuration.setBoolean(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, studyNameAsStudyId);
-        configuration.setBoolean(HBaseToVariantConverter.SIMPLE_GENOTYPES, simpleGenotypes);
+        configuration.setBoolean(HBaseVariantConverterConfiguration.MUTABLE_SAMPLES_POSITION, mutableSamplesPosition);
+        configuration.setBoolean(HBaseVariantConverterConfiguration.STUDY_NAME_AS_STUDY_ID, studyNameAsStudyId);
+        configuration.setBoolean(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, simpleGenotypes);
         configuration.set(VariantQueryParam.UNKNOWN_GENOTYPE.key(), unknownGenotype);
     }
 

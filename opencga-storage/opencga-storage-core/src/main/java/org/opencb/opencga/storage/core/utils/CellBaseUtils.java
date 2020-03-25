@@ -131,7 +131,7 @@ public class CellBaseUtils {
                     missingGenes.add(result.getId());
                     continue;
                 }
-                int start = Math.max(0, gene.getStart() - GENE_EXTRA_REGION);
+                int start = Math.max(1, gene.getStart() - GENE_EXTRA_REGION);
                 int end = gene.getEnd() + GENE_EXTRA_REGION;
                 Region region = new Region(gene.getChromosome(), start, end);
                 regions.add(region);

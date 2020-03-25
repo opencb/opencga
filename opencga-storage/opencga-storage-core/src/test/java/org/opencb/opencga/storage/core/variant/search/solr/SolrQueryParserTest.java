@@ -666,12 +666,12 @@ public class SolrQueryParserTest {
     @Test
     public void parseFormat() {
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES + "," + VariantField.STUDIES_SAMPLES_DATA);
+        queryOptions.put(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES + "," + VariantField.STUDIES_SAMPLES);
 
         Query query = new Query();
         query.put(STUDY.key(), studyName);
 
-        query.put(FORMAT.key(), "NA12877:DP>300;NA12878:DP>500");
+        query.put(SAMPLE_DATA.key(), "NA12877:DP>300;NA12878:DP>500");
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
@@ -685,7 +685,7 @@ public class SolrQueryParserTest {
         Query query = new Query();
         query.put(STUDY.key(), studyName);
 
-        query.put(FORMAT.key(), "NA12877:AC>200");
+        query.put(SAMPLE_DATA.key(), "NA12877:AC>200");
 
         try {
             solrQueryParser.parse(query, queryOptions);

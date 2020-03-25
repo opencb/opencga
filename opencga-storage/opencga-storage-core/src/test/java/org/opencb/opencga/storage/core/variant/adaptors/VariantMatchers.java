@@ -410,7 +410,7 @@ public class VariantMatchers {
         return new FeatureMatcher<FileEntry, String>(subMatcher, "with attribute " + attribute, attribute) {
             @Override
             protected String featureValueOf(FileEntry actual) {
-                return actual.getAttributes().get(attribute);
+                return actual.getData().get(attribute);
             }
         };
     }

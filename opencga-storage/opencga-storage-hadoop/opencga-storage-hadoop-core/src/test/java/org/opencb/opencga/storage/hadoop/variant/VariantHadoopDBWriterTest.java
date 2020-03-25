@@ -38,6 +38,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
@@ -60,6 +61,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.load.VariantHadoopDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
@@ -169,7 +171,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         merger.setDefaultValue("AD", ".");
         merger.configure(sm1.getVariantHeader());
 
-        Map<String, Variant> loadedVariants = dbAdaptor.stream(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "."), new QueryOptions(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, false))
+        Map<String, Variant> loadedVariants = dbAdaptor.stream(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "."),
+                new QueryOptions(HBaseVariantConverterConfiguration.STUDY_NAME_AS_STUDY_ID, false))
                 .collect(Collectors.toMap(Variant::toString, i -> i));
 
         for (Variant variant : variants1) {
@@ -186,16 +189,16 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
             if (!expectedAlternates.equals(actualAlternates)) {
                 if (new HashSet<>(expectedAlternates).equals(new HashSet<>(actualAlternates))) {
                     assertEquals(2, expectedAlternates.size());
-                    List<List<String>> expectedSamplesData = expected.getStudies().get(0).getSamplesData();
-                    List<List<String>> actualSamplesData = actual.getStudies().get(0).getSamplesData();
+                    List<SampleEntry> expectedSamplesData = expected.getStudies().get(0).getSamples();
+                    List<SampleEntry> actualSamplesData = actual.getStudies().get(0).getSamples();
                     for (int i = 0; i < expectedSamplesData.size(); i++) {
                         // Up to 3 alternates. The first alternate must match. Swap second and third alternate (1/2 -> 1/3)
-                        String newGT = expectedSamplesData.get(i).get(0).replace('2', 'X').replace('3', '2').replace('X', '3');
-                        expectedSamplesData.get(i).set(0, newGT);
-                        if (expectedSamplesData.get(i).get(4).equals("1,2,3,0")) {
-                            expectedSamplesData.get(i).set(4, "1,2,0,3");
-                        } else if (expectedSamplesData.get(i).get(4).equals("1,2,0,3")) {
-                            expectedSamplesData.get(i).set(4, "1,2,3,0");
+                        String newGT = expectedSamplesData.get(i).getData().get(0).replace('2', 'X').replace('3', '2').replace('X', '3');
+                        expectedSamplesData.get(i).getData().set(0, newGT);
+                        if (expectedSamplesData.get(i).getData().get(4).equals("1,2,3,0")) {
+                            expectedSamplesData.get(i).getData().set(4, "1,2,0,3");
+                        } else if (expectedSamplesData.get(i).getData().get(4).equals("1,2,0,3")) {
+                            expectedSamplesData.get(i).getData().set(4, "1,2,3,0");
                         } else {
                             fail("Unexpected expected sample data " + expectedSamplesData.get(i).get(4));
                         }
@@ -213,7 +216,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                     System.out.println("Actual   = " + actual.toJson());
                 }
 
-                assertEquals(expected.getStudies().get(0).getSamplesData(), expected.getStudies().get(0).getSamplesData());
+                assertEquals(expected.getStudies().get(0).getSamples(), expected.getStudies().get(0).getSamples());
             }
         }
         assertEquals(6, loadedVariants.size());
@@ -248,9 +251,9 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
         // Writers
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, archiveTableName, dbAdaptor.getHBaseManager());
-        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, dbAdaptor.getVariantTable(),
+        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(dbAdaptor.getVariantTable(),
                 sc.getId(),
-                metadataManager, dbAdaptor.getHBaseManager(), false);
+                fileId, metadataManager, dbAdaptor.getHBaseManager(), false);
 
         // TaskMetadata
         HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null, null);
@@ -262,10 +265,10 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
         // Mark files as indexed and register new samples in phoenix
         metadataManager.unsecureUpdateStudyMetadata(sc);
-        metadataManager.updateFileMetadata(sc.getId(), fileId, f->f.setIndexStatus(TaskMetadata.Status.READY));
+        metadataManager.updateFileMetadata(sc.getId(), fileId, f -> f.setIndexStatus(TaskMetadata.Status.READY));
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId());
-        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId(), Collections.singleton(fileId), metadataManager.getFileMetadata(sc.getId(), fileId).getSamples());
+        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId(), Collections.singleton(fileId), metadataManager.getFileMetadata(sc.getId(), fileId).getSamples(), Collections.emptyList());
         phoenixHelper.registerRelease(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), 1);
     }
 
@@ -375,8 +378,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                 .setFileId(fileId.toString())
                 .setFilter("PASS_" + fileId)
                 .setQuality(fileId * 100.0)
-                .addAttribute("AD", "1,2")
-                .setFormat("GT", "DP", "GQX", "AD")
+                .addFileData("AD", "1,2")
+                .setSampleDataKeys("GT", "DP", "GQX", "AD")
                 .addSample("S" + (1 + pad), "./.", String.valueOf(11 + pad), "0.7", "1,2")
                 .addSample("S" + (2 + pad), "1/1", String.valueOf(12 + pad), "0.7", "1,2")
                 .addSample("S" + (3 + pad), "0/0", String.valueOf(13 + pad), "0.7", "1,2")
@@ -402,8 +405,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
                 .setFileId(fileId.toString())
                 .setFilter("PASS_" + fileId)
                 .setQuality(fileId * 100.0)
-                .addAttribute("AD", ad)
-                .setFormat("GT", "DP", "GQX", "AD");
+                .addFileData("AD", ad)
+                .setSampleDataKeys("GT", "DP", "GQX", "AD");
 
         int pad = (fileId - 1) * NUM_SAMPLES;
         int count = 0;

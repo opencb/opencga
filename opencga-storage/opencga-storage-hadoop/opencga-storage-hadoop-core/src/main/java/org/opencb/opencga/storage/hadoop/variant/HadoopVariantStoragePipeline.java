@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.conf.Configuration;
@@ -39,6 +38,7 @@ import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
@@ -314,19 +314,22 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             }
 
             try {
-                BiMap<String, Integer> indexedSamples = metadataManager.getIndexedSamplesMap(studyId);
-                Set<Integer> previouslyIndexedSamples = indexedSamples.values();
                 Set<Integer> newSamples = new HashSet<>();
+                List<PhoenixHelper.Column> multiFileSampleColumns = new ArrayList<>();
                 for (Integer fileId : fileIds) {
                     FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
-                    for (Integer sampleId : fileMetadata.getSamples()) {
-                        if (!previouslyIndexedSamples.contains(sampleId)) {
-                            newSamples.add(sampleId);
+                    newSamples.addAll(fileMetadata.getSamples());
+                }
+                for (Integer sampleId : newSamples) {
+                    SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+                    if (LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
+                        // If multi file load, register all secondary sample columns
+                        for (Integer fileId : sampleMetadata.getFiles().subList(1, sampleMetadata.getFiles().size())) {
+                            multiFileSampleColumns.add(VariantPhoenixHelper.getSampleColumn(studyId, sampleId, fileId));
                         }
                     }
                 }
-                phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyId, fileIds,
-                        newSamples);
+                phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyId, fileIds, newSamples, multiFileSampleColumns);
 
                 int release = metadataManager.getProjectMetadata().getRelease();
                 phoenixHelper.registerRelease(jdbcConnection, variantsTableName, release);

@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public enum VariantField {
     ID("id", "ids", "name"),
+    NAMES,
     CHROMOSOME,
     START,
     END,
@@ -37,14 +38,16 @@ public enum VariantField {
     ALTERNATE,
     LENGTH,
     TYPE,
-    HGVS,
+    STRAND,
     SV,
 
     STUDIES("studies", "sourceEntries"),
-    STUDIES_SAMPLES_DATA(STUDIES, "studies.samplesData", "samples", "samplesData"),
+    STUDIES_SAMPLES(STUDIES, "studies.samples", "studies.samplesData", "samples", "samplesData"),
     STUDIES_FILES(STUDIES, "studies.files", "files"),
     STUDIES_STATS(STUDIES, "studies.stats", "studies.cohortStats", "stats", "sourceEntries.stats"),
+    STUDIES_SAMPLE_DATA_KEYS(STUDIES, "studies.sampleDataKeys"),
     STUDIES_SCORES(STUDIES, "studies.scores"),
+    STUDIES_ISSUES(STUDIES, "studies.issues"),
     STUDIES_SECONDARY_ALTERNATES(STUDIES, "studies.secondaryAlternates"),
     STUDIES_STUDY_ID(STUDIES, "studies.studyId"),
 
@@ -111,7 +114,7 @@ public enum VariantField {
 
     private static final List<VariantField> SUMMARY_EXCLUDED_FIELDS = Arrays.asList(
             STUDIES_FILES,
-            STUDIES_SAMPLES_DATA,
+            STUDIES_SAMPLES,
             STUDIES_SECONDARY_ALTERNATES);
 
     public static final String SUMMARY = "summary";

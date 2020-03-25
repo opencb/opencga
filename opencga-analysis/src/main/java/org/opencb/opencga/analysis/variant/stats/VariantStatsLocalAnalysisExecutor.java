@@ -14,9 +14,9 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -56,11 +56,13 @@ public class VariantStatsLocalAnalysisExecutor extends VariantStatsAnalysisExecu
             ProgressLogger progressLogger = new ProgressLogger("Variants processed:");
             Task<Variant, Variant> task = Task.forEach(variant -> {
                 StudyEntry study = variant.getStudies().get(0);
-                HashMap<String, VariantStats> map = new HashMap<>();
+                List<VariantStats> statsList = new ArrayList<>();
                 for (Map.Entry<String, List<String>> entry : cohorts.entrySet()) {
-                    map.put(entry.getKey(), VariantStatsCalculator.calculate(variant, study, entry.getValue()));
+                    VariantStats stats = VariantStatsCalculator.calculate(variant, study, entry.getValue());
+                    stats.setCohortId(entry.getKey());
+                    statsList.add(stats);
                 }
-                study.setStats(map);
+                study.setStats(statsList);
                 progressLogger.increment(1);
                 return variant;
             });

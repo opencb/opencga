@@ -111,7 +111,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
-                expected = dbAdaptor.count(null).first();
+                expected = dbAdaptor.count((Query) null).first();
                 loadResult = searchIndex(true);
                 System.out.println("Load result overwrite: = " + loadResult + " , at study : " + studyId);
                 checkLoadResult(expected, loadResult);

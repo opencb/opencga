@@ -102,7 +102,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
     }
 
     public VariantStatsWrapper calculateStats(Variant variant, Document study) {
-        VariantStatsWrapper statsWrapper = new VariantStatsWrapper(variant, new HashMap<>(cohorts.size()));
+        VariantStatsWrapper statsWrapper = new VariantStatsWrapper(variant, new ArrayList<>(cohorts.size()));
 
         List<Document> files = study.getList(DocumentToStudyVariantEntryConverter.FILES_FIELD, Document.class);
         Document gt = study.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, Document.class);
@@ -141,6 +141,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
                     (key, value) -> value == null ? count : value + count));
 
             VariantStats stats = VariantStatsCalculator.calculate(variant, gtCountMap, multiAllelic);
+            stats.setCohortId(cohort.getName());
 
             int numFilterFiles = 0;
             int numQualFiles = 0;
@@ -167,7 +168,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
 
             VariantStatsCalculator.calculateFilterFreq(stats, numFilterFiles);
             stats.setQualityAvg(((float) (qualitySum / numQualFiles)));
-            statsWrapper.getCohortStats().put(cohort.getName(), stats);
+            statsWrapper.getCohortStats().add(stats);
         }
 
         return statsWrapper;

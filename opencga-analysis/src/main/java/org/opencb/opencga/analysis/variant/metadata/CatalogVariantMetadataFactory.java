@@ -16,7 +16,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -55,7 +55,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
     }
 
     @Override
-    protected VariantMetadata makeVariantMetadata(VariantQueryFields queryFields, QueryOptions queryOptions) throws StorageEngineException {
+    protected VariantMetadata makeVariantMetadata(VariantQueryProjection queryFields, QueryOptions queryOptions) throws StorageEngineException {
         VariantMetadata metadata = super.makeVariantMetadata(queryFields, queryOptions);
         if (queryOptions != null) {
             if (queryOptions.getBoolean(BASIC_METADATA, false)) {

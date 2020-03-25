@@ -7,12 +7,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -35,22 +34,23 @@ public class VariantMetadataFactory {
     }
 
     public VariantMetadata makeVariantMetadata(Query query, QueryOptions queryOptions) throws StorageEngineException {
-        VariantQueryFields queryFields = VariantQueryUtils.parseVariantQueryFields(query, queryOptions, scm);
+        VariantQueryProjection queryFields = VariantQueryProjectionParser.parseVariantQueryFields(query, queryOptions, scm);
 
         return makeVariantMetadata(queryFields, queryOptions);
     }
 
-    protected VariantMetadata makeVariantMetadata(VariantQueryFields queryFields, QueryOptions queryOptions)
+    protected VariantMetadata makeVariantMetadata(VariantQueryProjection queryFields, QueryOptions queryOptions)
             throws StorageEngineException {
         VariantMetadata metadata = new VariantMetadataConverter(scm)
                 .toVariantMetadata(queryFields);
 
-        Map<String, StudyMetadata> studyConfigurationMap = queryFields.getStudyMetadatas().values().stream()
-                .collect(Collectors.toMap(StudyMetadata::getName, Function.identity()));
+        Map<String, StudyMetadata> studyConfigurationMap = queryFields.getStudies().values().stream()
+                .collect(Collectors.toMap(VariantQueryProjection.StudyVariantQueryProjection::getName,
+                        VariantQueryProjection.StudyVariantQueryProjection::getStudyMetadata));
 
         for (VariantStudyMetadata variantStudyMetadata : metadata.getStudies()) {
             StudyMetadata studyMetadata = studyConfigurationMap.get(variantStudyMetadata.getId());
-            List<Integer> fileIds = queryFields.getFiles().get(studyMetadata.getId());
+            List<Integer> fileIds = queryFields.getStudy(studyMetadata.getId()).getFiles();
             if (fileIds != null && !fileIds.isEmpty()) {
                 Query query = new Query()
                         .append(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getId())

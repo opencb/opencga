@@ -9,11 +9,13 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
@@ -108,7 +110,10 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         }
 
         for (Integer sampleId : sampleIds) {
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.buildSampleColumnKey(getStudyId(), sampleId));
+            SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sampleId);
+            for (PhoenixHelper.Column column : VariantPhoenixHelper.getSampleColumns(sampleMetadata)) {
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column.bytes());
+            }
         }
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
 

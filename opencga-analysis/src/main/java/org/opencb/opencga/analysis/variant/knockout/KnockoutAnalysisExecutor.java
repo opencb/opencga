@@ -8,7 +8,7 @@ import org.opencb.opencga.analysis.variant.knockout.result.KnockoutVariant;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.File;
 import java.io.IOException;

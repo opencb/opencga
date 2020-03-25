@@ -25,9 +25,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,12 +115,11 @@ public class VariantLocalConflictResolver {
         // Get all variants with multiple calls
         Multimap<String, Variant> callVariantsMap = ArrayListMultimap.create();
         for (Variant variant : variants) {
-            String call = variant.getStudies().get(0).getFiles().get(0).getCall();
-            if (variant.getType().equals(NO_VARIATION) || StringUtils.isEmpty(call)) {
+            OriginalCall call = variant.getStudies().get(0).getFiles().get(0).getCall();
+            if (variant.getType().equals(NO_VARIATION) || call == null) {
                 notFromSameCall.add(variant);
             } else {
-                call = call.substring(0, call.lastIndexOf(':'));
-                callVariantsMap.put(call, variant);
+                callVariantsMap.put(call.getVariantId(), variant);
             }
         }
 
@@ -134,9 +131,9 @@ public class VariantLocalConflictResolver {
                 // Select the one with the lowest allele index
                 List<Variant> sorted = new ArrayList<>(variantsFromSameCall);
                 sorted.sort((v1, v2) -> {
-                    String alleleIdx1 = v1.getStudies().get(0).getFiles().get(0).getCall().substring(call.length() + 1);
-                    String alleleIdx2 = v2.getStudies().get(0).getFiles().get(0).getCall().substring(call.length() + 1);
-                    return Integer.valueOf(alleleIdx1).compareTo(Integer.valueOf(alleleIdx2));
+                    int alleleIdx1 = v1.getStudies().get(0).getFiles().get(0).getCall().getAlleleIndex();
+                    int alleleIdx2 = v2.getStudies().get(0).getFiles().get(0).getCall().getAlleleIndex();
+                    return Integer.compare(alleleIdx1, alleleIdx2);
                 });
                 notFromSameCall.add(sorted.get(0));
                 for (int i = 1; i < sorted.size(); i++) {
@@ -535,15 +532,15 @@ public class VariantLocalConflictResolver {
             return null;
         }
         StudyEntry studyEntry = studies.get(0);
-        List<List<String>> samplesData = studyEntry.getSamplesData();
-        if (samplesData == null || samplesData.isEmpty()) {
+        List<SampleEntry> samples = studyEntry.getSamples();
+        if (samples == null || samples.isEmpty()) {
             return null;
         }
-        Integer keyPos = studyEntry.getFormatPositions().get(GENOTYPE_FILTER_KEY);
+        Integer keyPos = studyEntry.getSampleDataKeyPosition(GENOTYPE_FILTER_KEY);
         if (null == keyPos) {
             return null;
         }
-        List<String> sample = samplesData.get(0);
+        List<String> sample = samples.get(0).getData();
         if (sample.isEmpty()) {
             return null;
         }
@@ -561,7 +558,7 @@ public class VariantLocalConflictResolver {
         if (files == null || files.isEmpty()) {
             return null;
         }
-        return files.get(0).getAttributes().get(key);
+        return files.get(0).getData().get(key);
     }
 
     /**
@@ -720,26 +717,25 @@ public class VariantLocalConflictResolver {
             } else {
                 se.setSamplesPosition(new HashMap<>());
             }
-            if (null != vse.getFormat()) {
-                se.setFormat(new ArrayList<>(vse.getFormat()));
+            if (null != vse.getSampleDataKeys()) {
+                se.setSampleDataKeys(new ArrayList<>(vse.getSampleDataKeys()));
             } else {
-                se.setFormat(new ArrayList<>());
+                se.setSampleDataKeys(new ArrayList<>());
             }
 
             List<FileEntry> files = new ArrayList<>(vse.getFiles().size());
             for (FileEntry file : vse.getFiles()) {
-                HashMap<String, String> attributes = new HashMap<>(file.getAttributes()); //TODO: Check file attributes
+                HashMap<String, String> attributes = new HashMap<>(file.getData()); //TODO: Check file attributes
                 files.add(new FileEntry(file.getFileId(), file.getCall(), attributes));
             }
             se.setFiles(files);
 
-            int samplesSize = vse.getSamplesData().size();
-            List<List<String>> newSampleData = new ArrayList<>(samplesSize);
-            for (int i = 0; i < samplesSize; i++) {
-                List<String> sd = vse.getSamplesData().get(i);
-                newSampleData.add(new ArrayList<>(sd));
+            int samplesSize = vse.getSamples().size();
+            List<SampleEntry> newSampleData = new ArrayList<>(samplesSize);
+            for (SampleEntry sample : vse.getSamples()) {
+                newSampleData.add(new SampleEntry(sample.getSampleId(), sample.getFileIndex(), sample.getData()));
             }
-            se.setSamplesData(newSampleData);
+            se.setSamples(newSampleData);
 
             v.addStudyEntry(se);
         }
@@ -754,31 +750,31 @@ public class VariantLocalConflictResolver {
         String genotype = NOCALL;
         var.setType(NO_VARIATION);
         StudyEntry se = var.getStudies().get(0);
-        Map<String, Integer> formatPositions = se.getFormatPositions();
+        Map<String, Integer> formatPositions = se.getSampleDataKeyPositions();
         int gtpos = formatPositions.get(GENOTYPE_KEY);
         int filterPos = formatPositions.containsKey(GENOTYPE_FILTER_KEY)
                 ? formatPositions.get(GENOTYPE_FILTER_KEY) : -1;
-        List<List<String>> sdLst = se.getSamplesData();
-        List<List<String>> oLst = new ArrayList<>(sdLst.size());
-        for (List<String> sd : sdLst) {
-            List<String> o = new ArrayList<>(sd);
+        List<SampleEntry> sdLst = se.getSamples();
+        List<SampleEntry> oLst = new ArrayList<>(sdLst.size());
+        for (SampleEntry sd : sdLst) {
+            List<String> o = new ArrayList<>(sd.getData());
             o.set(gtpos, genotype);
             if (filterPos != -1) {
                 o.set(filterPos, "SiteConflict");
             }
-            oLst.add(o);
+            oLst.add(new SampleEntry(sd.getSampleId(), sd.getFileIndex(), o));
         }
-        se.setSamplesData(oLst);
+        se.setSamples(oLst);
         se.setSecondaryAlternates(new ArrayList<>());
         for (FileEntry fe : se.getFiles()) {
-            Map<String, String> feAttr = fe.getAttributes();
+            Map<String, String> feAttr = fe.getData();
             if (null == feAttr) {
                 feAttr = new HashMap<>();
             } else {
                 feAttr = new HashMap<>(feAttr);
             }
             feAttr.put(VariantVcfFactory.FILTER, "SiteConflict");
-            fe.setAttributes(feAttr);
+            fe.setData(feAttr);
         }
     }
 

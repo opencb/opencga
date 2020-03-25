@@ -26,7 +26,7 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.slf4j.Logger;
@@ -72,13 +72,13 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
         addParam(query, VariantCatalogQueryUtils.FAMILY_MEMBERS, queryVariantsOptions.familyMembers);
         addParam(query, VariantCatalogQueryUtils.FAMILY_PROBAND, queryVariantsOptions.familyProband);
 
-        if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.INCLUDE_FORMAT)
+        if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.INCLUDE_SAMPLE_DATA)
                 && !VariantQueryUtils.isValidParam(query, VariantQueryParam.INCLUDE_GENOTYPE)
                 && clientConfiguration != null
                 && queryVariantsOptions.study != null) {
             List<String> formats = getFormats(queryVariantsOptions.study, clientConfiguration);
             if (formats != VcfUtils.DEFAULT_SAMPLE_FORMAT) {
-                query.put(VariantQueryParam.INCLUDE_FORMAT.key(), formats);
+                query.put(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), formats);
             }
         }
         if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)

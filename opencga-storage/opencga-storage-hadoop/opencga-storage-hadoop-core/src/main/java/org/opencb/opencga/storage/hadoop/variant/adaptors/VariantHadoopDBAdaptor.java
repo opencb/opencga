@@ -40,10 +40,12 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -59,6 +61,7 @@ import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.VariantAnnot
 import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.VariantAnnotationUpsertExecutor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseFileMetadataDBAdaptor;
@@ -78,7 +81,7 @@ import java.util.function.Consumer;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -239,7 +242,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(ParsedVariantQuery query, QueryOptions options) {
 
         List<Variant> variants = new LinkedList<>();
         VariantDBIterator iterator = iterator(query, options);
@@ -263,16 +266,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         VariantQueryResult<Variant> result = new VariantQueryResult<>(((int) iterator.getTimeFetching()), variants.size(),
                 numTotalResults, null, variants, null, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
-        return addSamplesMetadataIfRequested(result, query, options, getMetadataManager());
-    }
-
-    @Override
-    public List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
-        List<VariantQueryResult<Variant>> results = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            results.add(get(query, options));
-        }
-        return results;
+        return addSamplesMetadataIfRequested(result, query.getQuery(), options, getMetadataManager());
     }
 
     @Override
@@ -308,7 +302,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             annotationColumn = Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(saved.getId()));
             query.put(ANNOT_NAME.key(), saved.getId());
         }
-        VariantQueryFields selectElements = VariantQueryUtils.parseVariantQueryFields(query, options, getMetadataManager());
+        VariantQueryProjection selectElements = VariantQueryProjectionParser.parseVariantQueryFields(query, options, getMetadataManager());
         List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(selectElements, query, options);
 
         Iterator<Iterator<Result>> iterators = scans.stream().map(scan -> {
@@ -337,12 +331,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult<Long> count(Query query) {
-        if (query == null) {
-            query = new Query();
-        }
+    public DataResult<Long> count(ParsedVariantQuery query) {
         long startTime = System.currentTimeMillis();
-        String sql = queryParser.parse(query, new QueryOptions(QueryOptions.COUNT, true)).getSql();
+        String sql = queryParser.parse(query, new QueryOptions(QueryOptions.COUNT, true));
         logger.info(sql);
         try (Statement statement = getJdbcConnection().createStatement();
              ResultSet resultSet = statement.executeQuery(sql)) { // Cleans up Statement and RS
@@ -362,108 +353,63 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) {
-
+    public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
         }
 
-        if (query == null) {
-            query = new Query();
-        }
-
         boolean archiveIterator = options.getBoolean("archive", false);
-        boolean hbaseIterator = options.getBoolean(NATIVE, VariantHBaseQueryParser.isSupportedQuery(query));
+        boolean hbaseIterator = options.getBoolean(NATIVE, VariantHBaseQueryParser.isSupportedQuery(variantQuery.getQuery()));
         // || VariantHBaseQueryParser.fullySupportedQuery(query);
 
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
         if (archiveIterator) {
-            String study = query.getString(STUDY.key());
-            StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-            int studyId = studyMetadata.getId();
+            return archiveIterator(variantQuery, options);
+        }
 
-            String file = query.getString(FILE.key());
-            Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file, true);
-            if (fileId == null) {
-                throw VariantQueryException.fileNotFound(file, study);
-            }
-            LinkedHashSet<Integer> sampleIds = metadataManager.getFileMetadata(studyId, fileId).getSamples();
-            query.put(INCLUDE_SAMPLE.key(), new ArrayList<>(sampleIds));
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        Query query = variantQuery.getQuery();
+        String unknownGenotype = null;
+        if (isValidParam(query, UNKNOWN_GENOTYPE)) {
+            unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
+        }
+        List<String> formats = getIncludeSampleData(query);
 
-            Region region = null;
-            if (!StringUtils.isEmpty(query.getString(REGION.key()))) {
-                region = Region.parseRegion(query.getString(REGION.key()));
-            }
+        HBaseVariantConverterConfiguration converterConfiguration = HBaseVariantConverterConfiguration.builder()
+                .setMutableSamplesPosition(false)
+                .setStudyNameAsStudyId(options.getBoolean(HBaseVariantConverterConfiguration.STUDY_NAME_AS_STUDY_ID, true))
+                .setSimpleGenotypes(options.getBoolean(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true))
+                .setUnknownGenotype(unknownGenotype)
+                .setProjection(variantQuery.getProjection())
+                .setSampleDataKeys(formats)
+                .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false))
+                .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
+                .build();
 
-            //Get the ArchiveHelper related with the requested file.
-            ArchiveTableHelper archiveHelper;
-            try {
-                archiveHelper = getArchiveHelper(studyId, fileId);
-            } catch (StorageEngineException e) {
-                throw VariantQueryException.internalException(e);
-            }
-
-            Scan scan = new Scan();
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getNonRefColumnName());
-            if (options.getBoolean("ref", true)) {
-                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getRefColumnName());
-            }
-            VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper);
-            scan.setMaxResultSize(options.getInt("limit"));
-            String tableName = getTableNameGenerator().getArchiveTableName(studyId);
-
-            logger.debug("Creating {} iterator", VariantHadoopArchiveDBIterator.class);
-            logger.debug("Table name = " + tableName);
-            logger.debug("StartRow = " + new String(scan.getStartRow()));
-            logger.debug("StopRow = " + new String(scan.getStopRow()));
-            logger.debug("MaxResultSize = " + scan.getMaxResultSize());
-            logger.debug("region = " + region);
-            logger.debug("Column name = " + fileId);
-            logger.debug("Chunk size = " + archiveHelper.getChunkSize());
-
-            try (Table table = getConnection().getTable(TableName.valueOf(tableName))) {
-                ResultScanner resScan = table.getScanner(scan);
-                return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options).setRegion(region);
-            } catch (IOException e) {
-                throw VariantQueryException.internalException(e);
-            }
-        } else if (hbaseIterator) {
+        if (hbaseIterator) {
             logger.debug("Creating " + VariantHBaseScanIterator.class.getSimpleName() + " iterator");
-            VariantQueryFields selectElements = VariantQueryUtils.parseVariantQueryFields(query, options, studyConfigurationManager.get());
-            List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(selectElements, query, options);
-            try {
-                String unknownGenotype = null;
-                if (isValidParam(query, UNKNOWN_GENOTYPE)) {
-                    unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
+            List<Scan> scans = hbaseQueryParser.parseQueryMultiRegion(variantQuery, options);
+            Iterator<ResultScanner> resScans = scans.stream().map(scan -> {
+                try {
+                    return hBaseManager.getScanner(variantTable, scan);
+                } catch (IOException e) {
+                    throw VariantQueryException.internalException(e);
                 }
-                List<String> formats = getIncludeFormats(query);
-                Iterator<ResultScanner> resScans = scans.stream().map(scan -> {
-                    try {
-                        return hBaseManager.getScanner(variantTable, scan);
-                    } catch (IOException e) {
-                        throw VariantQueryException.internalException(e);
-                    }
-                }).iterator();
+            }).iterator();
 
-                VariantHBaseScanIterator iterator = new VariantHBaseScanIterator(
-                        resScans, studyConfigurationManager.get(), query, options, unknownGenotype, formats, selectElements);
+            VariantHBaseScanIterator iterator = new VariantHBaseScanIterator(
+                    resScans, metadataManager, converterConfiguration, options);
 
-                // Client side skip!
-                int skip = options.getInt(QueryOptions.SKIP, -1);
-                if (skip > 0) {
-                    logger.info("Client side skip! skip = {}", skip);
-                    iterator.skip(skip);
-                }
-                return iterator;
-            } catch (IOException e) {
-                throw VariantQueryException.internalException(e);
+            // Client side skip!
+            int skip = options.getInt(QueryOptions.SKIP, -1);
+            if (skip > 0) {
+                logger.info("Client side skip! skip = {}", skip);
+                iterator.skip(skip);
             }
+            return iterator;
         } else {
-
             logger.debug("Table name = " + variantTable);
             logger.info("Query : " + VariantQueryUtils.printQuery(query));
-            VariantSqlQueryParser.VariantPhoenixSQLQuery phoenixQuery = queryParser.parse(query, options);
-            String sql = phoenixQuery.getSql();
+            String sql = queryParser.parse(variantQuery, options);
             logger.info(sql);
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
@@ -480,16 +426,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                         logger.info(" | " +  planStep);
                     }
                 }
-                List<String> formats = getIncludeFormats(query);
-                String unknownGenotype = null;
-                if (isValidParam(query, UNKNOWN_GENOTYPE)) {
-                    unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
-                }
 
 //                VariantPhoenixCursorIterator iterator = new VariantPhoenixCursorIterator(phoenixQuery, getJdbcConnection(), converter);
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
-                        resultSet, genomeHelper, metadataManager, phoenixQuery.getSelect(),
-                        formats, unknownGenotype, query, options);
+                        resultSet, metadataManager, converterConfiguration);
 
                 if (clientSideSkip) {
                     // Client side skip!
@@ -516,6 +456,60 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 }
                 throw VariantQueryException.internalException(e);
             }
+        }
+    }
+
+    private VariantDBIterator archiveIterator(ParsedVariantQuery variantQuery, QueryOptions options) {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        Query query = variantQuery.getQuery();
+        String study = query.getString(STUDY.key());
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+        int studyId = studyMetadata.getId();
+
+        String file = query.getString(FILE.key());
+        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file, true);
+        if (fileId == null) {
+            throw VariantQueryException.fileNotFound(file, study);
+        }
+        LinkedHashSet<Integer> sampleIds = metadataManager.getFileMetadata(studyId, fileId).getSamples();
+        query.put(INCLUDE_SAMPLE.key(), new ArrayList<>(sampleIds));
+
+        Region region = null;
+        if (!StringUtils.isEmpty(query.getString(REGION.key()))) {
+            region = Region.parseRegion(query.getString(REGION.key()));
+        }
+
+        //Get the ArchiveHelper related with the requested file.
+        ArchiveTableHelper archiveHelper;
+        try {
+            archiveHelper = getArchiveHelper(studyId, fileId);
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e);
+        }
+
+        Scan scan = new Scan();
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getNonRefColumnName());
+        if (options.getBoolean("ref", true)) {
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getRefColumnName());
+        }
+        VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper);
+        scan.setMaxResultSize(options.getInt("limit"));
+        String tableName = getTableNameGenerator().getArchiveTableName(studyId);
+
+        logger.debug("Creating {} iterator", VariantHadoopArchiveDBIterator.class);
+        logger.debug("Table name = " + tableName);
+        logger.debug("StartRow = " + new String(scan.getStartRow()));
+        logger.debug("StopRow = " + new String(scan.getStopRow()));
+        logger.debug("MaxResultSize = " + scan.getMaxResultSize());
+        logger.debug("region = " + region);
+        logger.debug("Column name = " + fileId);
+        logger.debug("Chunk size = " + archiveHelper.getChunkSize());
+
+        try (Table table = getConnection().getTable(TableName.valueOf(tableName))) {
+            ResultScanner resScan = table.getScanner(scan);
+            return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options).setRegion(region);
+        } catch (IOException e) {
+            throw VariantQueryException.internalException(e);
         }
     }
 

@@ -63,8 +63,8 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
                 variantStatsWrapper.getChromosome(), variantStatsWrapper.getStart(), variantStatsWrapper.getEnd(),
                 variantStatsWrapper.getReference(), variantStatsWrapper.getAlternate(), variantStatsWrapper.getSv());
         Put put = new Put(row);
-        for (Map.Entry<String, VariantStats> entry : variantStatsWrapper.getCohortStats().entrySet()) {
-            Integer cohortId = cohortIds.get(entry.getKey());
+        for (VariantStats stats : variantStatsWrapper.getCohortStats()) {
+            Integer cohortId = cohortIds.get(stats.getCohortId());
             if (cohortId == null) {
                 continue;
             }
@@ -74,7 +74,6 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
             Column cohortColumn = VariantPhoenixHelper.getStatsFreqColumn(studyId, cohortId);
             Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
 
-            VariantStats stats = entry.getValue();
             add(put, mafColumn, stats.getMaf());
             add(put, mgfColumn, stats.getMgf());
             add(put, cohortColumn, Arrays.asList(stats.getRefAlleleFreq(), stats.getAltAlleleFreq()));

@@ -25,12 +25,15 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 06/07/17.
@@ -45,8 +48,8 @@ public class VariantSearchUtils {
             Arrays.asList(VariantQueryParam.FILE,
                     VariantQueryParam.FILTER,
                     VariantQueryParam.QUAL,
-                    VariantQueryParam.FORMAT,
-                    VariantQueryParam.INFO,
+                    VariantQueryParam.SAMPLE_DATA,
+                    VariantQueryParam.FILE_DATA,
                     VariantQueryParam.GENOTYPE,
                     VariantQueryParam.SAMPLE,
                     VariantQueryParam.COHORT,
@@ -61,7 +64,7 @@ public class VariantSearchUtils {
                     VariantQueryParam.INCLUDE_SAMPLE,
 //                    VariantQueryParam.INCLUDE_STUDY,
                     VariantQueryParam.UNKNOWN_GENOTYPE,
-                    VariantQueryParam.INCLUDE_FORMAT,
+                    VariantQueryParam.INCLUDE_SAMPLE_DATA,
                     VariantQueryParam.INCLUDE_GENOTYPE,
                     VariantQueryParam.SAMPLE_METADATA
                     // RETURNED_COHORTS
@@ -69,7 +72,7 @@ public class VariantSearchUtils {
 
     private static final List<VariantField> UNSUPPORTED_VARIANT_FIELDS =
             Arrays.asList(VariantField.STUDIES_FILES,
-                    VariantField.STUDIES_SAMPLES_DATA);
+                    VariantField.STUDIES_SAMPLES);
 
     private static final Set<String> ACCEPTED_FORMAT_FILTERS = Collections.singleton("DP");
 
@@ -138,7 +141,7 @@ public class VariantSearchUtils {
         }
         searchEngineQuery.put(INCLUDE_SAMPLE.key(), NONE);
         searchEngineQuery.put(INCLUDE_FILE.key(), NONE);
-        searchEngineQuery.put(INCLUDE_FORMAT.key(), NONE);
+        searchEngineQuery.put(INCLUDE_SAMPLE_DATA.key(), NONE);
         searchEngineQuery.put(INCLUDE_GENOTYPE.key(), false);
         return searchEngineQuery;
     }
@@ -157,7 +160,7 @@ public class VariantSearchUtils {
                 engineQuery.put(STUDY.key(), query.get(STUDY.key()));
             } else if (!isValidParam(query, INCLUDE_STUDY)) {
                 // If returned studies is not defined, we need to define it with the values from STUDIES
-                List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, options, scm);
+                List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, options, scm);
                 engineQuery.put(INCLUDE_STUDY.key(), studies);
             }
         }
@@ -206,7 +209,7 @@ public class VariantSearchUtils {
                 }
             }
 
-            if (isValidParam(query, INFO)) {
+            if (isValidParam(query, FILE_DATA)) {
                 // INFO not supported
                 return null;
             }
@@ -223,7 +226,7 @@ public class VariantSearchUtils {
 
             boolean validFormatFilter = false;
             Map<String, String> formatMap = Collections.emptyMap();
-            if (isValidParam(query, VariantQueryParam.FORMAT)) {
+            if (isValidParam(query, VariantQueryParam.SAMPLE_DATA)) {
                 validFormatFilter = true;
                 formatMap = parseFormat(query).getValue();
 
@@ -252,14 +255,14 @@ public class VariantSearchUtils {
             } else {
                 // Check that all elements from the query are in the same search collection
 
-                VariantQueryFields selectVariantElements =
-                        VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
+                VariantQueryProjection selectVariantElements =
+                        VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager);
 
-                if (selectVariantElements.getStudies().size() != 1) {
+                if (selectVariantElements.getStudyIds().size() != 1) {
                     return null;
                 }
 
-                Integer studyId = selectVariantElements.getStudies().get(0);
+                Integer studyId = selectVariantElements.getStudyIds().get(0);
                 Set<String> samples = new HashSet<>();
                 if (isValidParam(query, VariantQueryParam.SAMPLE)) {
                     String value = query.getString(VariantQueryParam.SAMPLE.key());
@@ -285,7 +288,7 @@ public class VariantSearchUtils {
                 List<Integer> sampleIds;
                 if (samples.isEmpty()) {
                     // None of the previous fields is defined. Returning all samples from study, or from the given samples
-                    sampleIds = selectVariantElements.getSamples().get(studyId);
+                    sampleIds = selectVariantElements.getStudy(studyId).getSamples();
                 } else {
                     sampleIds = samples.stream()
                             .map(sample -> isNegated(sample) ? removeNegation(sample) : sample)
@@ -293,7 +296,7 @@ public class VariantSearchUtils {
                                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                                 if (sampleId == null) {
                                     throw VariantQueryException.sampleNotFound(sample,
-                                            selectVariantElements.getStudyMetadatas().get(studyId).getName());
+                                            selectVariantElements.getStudy(studyId).getStudyMetadata().getName());
                                 }
                                 return sampleId;
                             }).collect(Collectors.toList());

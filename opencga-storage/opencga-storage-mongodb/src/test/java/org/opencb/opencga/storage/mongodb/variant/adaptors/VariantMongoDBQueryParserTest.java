@@ -22,7 +22,7 @@ import java.util.LinkedHashSet;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverterTest.ANY;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverterTest.checkEqualDocuments;
@@ -521,17 +521,16 @@ public class VariantMongoDBQueryParserTest {
                 .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD, 1);
 
         Document projection = parser.createProjection(new Query(), new QueryOptions(QueryOptions.INCLUDE,
-                STUDIES_SAMPLES_DATA + "," + STUDIES_SECONDARY_ALTERNATES + ',' + STUDIES_STATS));
+                STUDIES_SAMPLES + "," + STUDIES_SECONDARY_ALTERNATES + ',' + STUDIES_STATS));
         checkEqualDocuments(expected, projection);
 
         projection = parser.createProjection(new Query()
                 .append(INCLUDE_GENOTYPE.key(), true)
-                .append(INCLUDE_FORMAT.key(), ALL)
+                .append(INCLUDE_SAMPLE_DATA.key(), ALL)
                 .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.INCLUDE, STUDIES.fieldName()));
         checkEqualDocuments(expected, projection);
 
         expected.append(LENGTH_FIELD, 1);
-        expected.append(HGVS_FIELD, 1);
         expected.append(IDS_FIELD, 1);
         projection = parser.createProjection(new Query().append(INCLUDE_SAMPLE.key(), ALL)
                 .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.EXCLUDE, ANNOTATION.fieldName()));

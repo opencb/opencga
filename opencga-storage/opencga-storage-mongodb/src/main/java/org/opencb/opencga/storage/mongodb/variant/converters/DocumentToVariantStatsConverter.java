@@ -232,20 +232,21 @@ public class DocumentToVariantStatsConverter {
      * @param variant      contains allele info to fill the VariantStats, and it sourceEntries will be filled.
      */
     public void convertCohortsToDataModelType(List<Document> cohortsStats, Variant variant) {
-        for (Document vs : cohortsStats) {
-            VariantStats variantStats = convertToDataModelType(vs, variant);
-            if (variant != null) {
+        if (variant != null) {
+            for (Document vs : cohortsStats) {
+                VariantStats variantStats = convertToDataModelType(vs, variant);
 //                variantStats.setRefAllele(variant.getReference());
 //                variantStats.setAltAllele(variant.getAlternate());
 //                variantStats.setVariantType(variant.getType());
 //                    Integer fid = (Integer) vs.get(FILE_ID);
                 String sid = getStudyName((Integer) vs.get(STUDY_ID));
                 String cid = getCohortName((Integer) vs.get(STUDY_ID), (Integer) vs.get(COHORT_ID));
+                variantStats.setCohortId(cid);
                 StudyEntry sourceEntry;
                 if (sid != null && cid != null) {
                     sourceEntry = variant.getStudiesMap().get(sid);
                     if (sourceEntry != null) {
-                        sourceEntry.setStats(cid, variantStats);
+                        sourceEntry.addStats(variantStats);
                     } else {
                         //This could happen if the study has been excluded
                         logger.trace("ignoring non present source entry studyId={}", sid);
@@ -281,13 +282,11 @@ public class DocumentToVariantStatsConverter {
      * @param studyId     of the source entry
      * @return list of VariantStats (as Documents)
      */
-    public List<Document> convertCohortsToStorageType(Map<String, VariantStats> cohortStats, int studyId) {
+    public List<Document> convertCohortsToStorageType(List<VariantStats> cohortStats, int studyId) {
         List<Document> cohortsStatsList = new LinkedList<>();
-        VariantStats variantStats;
-        for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
-            variantStats = variantStatsEntry.getValue();
+        for (VariantStats variantStats : cohortStats) {
             Document variantStatsDocument = convertToStorageType(variantStats);
-            Integer cohortId = getCohortId(studyId, variantStatsEntry.getKey());
+            Integer cohortId = getCohortId(studyId, variantStats.getCohortId());
             if (cohortId != null) {
                 variantStatsDocument.put(DocumentToVariantStatsConverter.COHORT_ID, (int) cohortId);
                 variantStatsDocument.put(DocumentToVariantStatsConverter.STUDY_ID, studyId);

@@ -3,7 +3,9 @@ package org.opencb.opencga.storage.core.variant.io;
 import org.mortbay.io.RuntimeIOException;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 
 import java.io.*;
 import java.util.List;
@@ -44,8 +46,12 @@ public class VariantTpedWriter implements DataWriter<Variant> {
         StringBuilder sb = new StringBuilder();
 
         sb.append(variant.getChromosome()).append("\t").append(variant.getId()).append("\t0\t").append(variant.getStart());
-        for (List<String> sampleData : variant.getStudies().get(0).getSamplesData()) {
-            Genotype genotype = new Genotype(sampleData.get(0));
+        for (SampleEntry sampleEntry : variant.getStudies().get(0).getSamples()) {
+            String gtStr = sampleEntry.getData().get(0);
+            if (gtStr.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+                gtStr = "0/0";
+            }
+            Genotype genotype = new Genotype(gtStr);
             sb.append("\t");
             switch (genotype.getAllele(0)) {
                 case 0:

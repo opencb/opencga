@@ -8,6 +8,7 @@ import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
@@ -16,7 +17,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.isGenotypeColumn;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.MULTI_FILE_MASK;
 
 /**
  * Created on 11/04/19.
@@ -182,6 +184,8 @@ public class SampleIndexVariantBiConverter {
         private BitInputStream ctBtIndex;
         private int nonIntergenicCount;
         private int clinicalCount;
+        private int fileIndexCount; // Number of fileIndex elements visited
+        private int fileIndexIdx;   // Index over file index array. Index of last visited fileIndex
 
         // Reuse the annotation index entry. Avoid create a new instance for each variant.
         private final AnnotationIndexEntry annotationIndexEntry;
@@ -193,6 +197,8 @@ public class SampleIndexVariantBiConverter {
             annotationIndexEntry = new AnnotationIndexEntry();
             annotationIndexEntry.setCtBtCombination(new AnnotationIndexEntry.CtBtCombination(new byte[0], 0, 0));
             annotationIndexEntryIdx = -1;
+            fileIndexIdx = 0;
+            fileIndexCount = 0;
         }
 
         SampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexConfiguration configuration) {
@@ -220,8 +226,41 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public byte nextFileIndex() {
-            return gtEntry.getFileIndex(nextIndex());
+        public boolean isMultiFileIndex() {
+            short fileIndex = gtEntry.getFileIndex(nextFileIndex());
+            return isMultiFileIndex(fileIndex);
+        }
+
+        public boolean isMultiFileIndex(short fileIndex) {
+            return IndexUtils.testIndexAny(fileIndex, MULTI_FILE_MASK);
+        }
+
+        private int nextFileIndex() {
+            while (nextIndex() != fileIndexCount) {
+                // Move index
+                fileIndexIdx++;
+                short fileIndex = gtEntry.getFileIndex(fileIndexIdx);
+                if (!isMultiFileIndex(fileIndex)) {
+                    // If the index is not multifile, move counter
+                    fileIndexCount++;
+                }
+            }
+            return fileIndexIdx;
+        }
+
+        @Override
+        public short nextFileIndexEntry() {
+            return gtEntry.getFileIndex(nextFileIndex());
+        }
+
+        @Override
+        public short nextMultiFileIndexEntry() {
+            if (isMultiFileIndex()) {
+                fileIndexIdx++;
+                return nextFileIndexEntry();
+            } else {
+                throw new NoSuchElementException();
+            }
         }
 
         @Override
@@ -230,7 +269,7 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public byte nextParentsIndex() {
+        public byte nextParentsIndexEntry() {
             return gtEntry.getParentsIndex(nextIndex());
         }
 
@@ -386,7 +425,17 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public byte nextFileIndex() {
+        public short nextFileIndexEntry() {
+            throw new NoSuchElementException("Empty iterator");
+        }
+
+        @Override
+        public boolean isMultiFileIndex() {
+            return false;
+        }
+
+        @Override
+        public short nextMultiFileIndexEntry() {
             throw new NoSuchElementException("Empty iterator");
         }
 
@@ -396,7 +445,7 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public byte nextParentsIndex() {
+        public byte nextParentsIndexEntry() {
             throw new NoSuchElementException("Empty iterator");
         }
 
@@ -424,7 +473,7 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public int nextIndex() {
-            return variants.nextIndex();
+            return variants.previousIndex();
         }
 
         @Override

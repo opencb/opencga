@@ -26,6 +26,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
@@ -595,11 +596,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 logDuplicatedVariant(mainVariant, files.size(), fileId);
                 for (Object binary : files) {
                     Variant duplicatedVariant = getFileVariantFromStage(binary);
-                    String call = duplicatedVariant.getStudies().get(0).getFiles().get(0).getCall();
+                    OriginalCall call = duplicatedVariant.getStudies().get(0).getFiles().get(0).getCall();
                     if (call == null) {
-                        call = duplicatedVariant.toString();
+                        call = new OriginalCall(duplicatedVariant.toString(), 0);
                     }
-                    duplicatedVariantsList.add(call);
+                    duplicatedVariantsList.add(call.getVariantId());
                 }
             }
         }
@@ -868,14 +869,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
 
                     // Get the original call from the first variant
-                    String call = var.getStudies().get(0).getFiles().get(0).getCall();
-                    if (call != null) {
-                        if (call.isEmpty()) {
-                            call = null;
-                        } else {
-                            call = call.substring(0, call.lastIndexOf(':'));
-                        }
-                    }
+                    OriginalCall call = var.getStudies().get(0).getFiles().get(0).getCall();
 
                     // Do not prompt overlapping variants if genotypes are being excluded
                     if (!excludeGenotypes) {
@@ -883,8 +877,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                         for (int i = 1; i < variantsInFile.size(); i++) {
                             Variant auxVar = variantsInFile.get(i);
                             // Check if variants where part of the same multiallelic variant
-                            String auxCall = auxVar.getStudies().get(0).getFiles().get(0).getCall();
-                            if (!prompted && (auxCall == null || call == null || !auxCall.startsWith(call))) {
+                            OriginalCall auxCall = auxVar.getStudies().get(0).getFiles().get(0).getCall();
+                            if (!prompted && (auxCall == null || call == null || !auxCall.getVariantId().equals(call.getVariantId()))) {
                                 logger.warn("Overlapping variants in file {} : {}", fileId, variantsInFile);
                                 prompted = true;
                             }
@@ -934,7 +928,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     if (queryResult.getResults().size() == 1 && queryResult.first().getStudies().size() == 1) {
                         // Check if overlapping variant. If so, invert!
                         for (FileEntry fileEntry : queryResult.first().getStudies().get(0).getFiles()) {
-                            boolean empty = StringUtils.isEmpty(fileEntry.getCall());
+                            boolean empty = fileEntry.getCall() == null;
                             if (empty && !sameVariant(mainVariant, queryResult.first())
                                     || !empty && !sameVariant(mainVariant, fileEntry.getCall())) {
                                 markAsOverlapped(fileEntry);
@@ -1231,15 +1225,17 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
 
-    private boolean sameVariant(Variant variant, String call) {
-        String[] split = call.split(":", -1);
+    private boolean sameVariant(Variant variant, OriginalCall call) {
+        String[] split = call.getVariantId().split(",", -1);
+        Variant v = new Variant(split[0]);
+        split[0] = v.getAlternate();
         List<VariantNormalizer.VariantKeyFields> normalized;
         if (variant.isSymbolic()) {
             normalized = new VariantNormalizer()
-                    .normalizeSymbolic(Integer.parseInt(split[0]), variant.getEnd(), split[1], Arrays.asList(split[2].split(",")));
+                    .normalizeSymbolic(v.getStart(), v.getEnd(), v.getReference(), Arrays.asList(split));
         } else {
             normalized = new VariantNormalizer()
-                    .normalize(variant.getChromosome(), Integer.parseInt(split[0]), split[1], Arrays.asList(split[2].split(",")));
+                    .normalize(v.getChromosome(), v.getStart(), v.getReference(), Arrays.asList(split));
         }
         for (VariantNormalizer.VariantKeyFields variantKeyFields : normalized) {
             if (variantKeyFields.getStart() == variant.getStart()

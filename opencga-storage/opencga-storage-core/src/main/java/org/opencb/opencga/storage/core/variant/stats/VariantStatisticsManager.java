@@ -29,7 +29,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +38,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.STATS_DEFAULT_GENOTYPE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NOT;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.AND;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NOT;
 
 /**
  * Created on 02/12/16.

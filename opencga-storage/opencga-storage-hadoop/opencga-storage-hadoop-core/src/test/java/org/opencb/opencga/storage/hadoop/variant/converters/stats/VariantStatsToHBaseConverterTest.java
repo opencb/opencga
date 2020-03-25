@@ -31,6 +31,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,8 +70,7 @@ public class VariantStatsToHBaseConverterTest {
         statsWrapper.setStart(100);
         statsWrapper.setReference("A");
         statsWrapper.setAlternate("C");
-        HashMap<String, VariantStats> map = new HashMap<>();
-        VariantStats expected = new VariantStats();
+        VariantStats expected = new VariantStats("c1");
         expected.setAltAlleleCount(1);
         expected.setAltAlleleFreq(0.1F);
         expected.setRefAlleleCount(2);
@@ -84,8 +84,7 @@ public class VariantStatsToHBaseConverterTest {
         expected.addGenotype(new Genotype("0/0"), 10, false);
         expected.addGenotype(new Genotype("0/1"), 20, false);
         expected.addGenotype(new Genotype("1/1"), 30, false);
-        map.put("c1", expected);
-        statsWrapper.setCohortStats(map);
+        statsWrapper.setCohortStats(Collections.singletonList(expected));
         Put put = toHbase.convert(statsWrapper);
 
         List<Cell> cells = put.getFamilyCellMap().get(GenomeHelper.COLUMN_FAMILY_BYTES);

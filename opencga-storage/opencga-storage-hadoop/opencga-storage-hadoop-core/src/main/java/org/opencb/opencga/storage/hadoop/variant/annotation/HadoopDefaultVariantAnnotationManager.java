@@ -34,7 +34,8 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -212,7 +213,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 dbAdaptor.getTableNameGenerator(),
                 metadataManager, mrExecutor);
 
-        List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, null, metadataManager);
+        List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
 
         boolean skipSampleIndexAnnotation = params.getBoolean("skipSampleIndexAnnotation");
 

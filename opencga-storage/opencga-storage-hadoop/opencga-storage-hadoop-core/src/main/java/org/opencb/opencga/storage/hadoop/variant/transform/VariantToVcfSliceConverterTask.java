@@ -20,13 +20,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.filters.VariantAvroFilters;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.run.ParallelTaskRunner.Task;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -112,12 +113,12 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
             throw new IllegalArgumentException("Required one Study per variant. Found " + variant.getStudies().size() + " studies instead");
         }
         StudyEntry studyEntry = variant.getStudies().get(0);
-        Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+        Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
         if (gtIdx == null || gtIdx < 0) {
             return false;
         }
-        for (List<String> data : studyEntry.getSamplesData()) {
-            if (!isHomRef(data.get(gtIdx))) {
+        for (SampleEntry sample : studyEntry.getSamples()) {
+            if (!isHomRef(sample.getData().get(gtIdx))) {
                 return false;
             }
         }

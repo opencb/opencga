@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.query;
+package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;

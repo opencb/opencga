@@ -44,7 +44,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.BasicVariantQueryParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import java.util.List;
