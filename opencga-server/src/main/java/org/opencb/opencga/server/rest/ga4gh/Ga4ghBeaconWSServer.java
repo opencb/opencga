@@ -1,6 +1,7 @@
 package org.opencb.opencga.server.rest.ga4gh;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.core.exceptions.VersionException;
@@ -57,8 +58,8 @@ public class Ga4ghBeaconWSServer extends OpenCGAWSServer {
         Ga4ghGenomicVariantResponse response = new Ga4ghGenomicVariantResponse();
         Ga4ghGenomicVariantResponseValue value = new Ga4ghGenomicVariantResponseValue();
         response.setValue(value);
-        value.setBeaconId("org.opencb.opencga");
-        value.setApiVersion("1");
+        value.setBeaconId(Ga4ghBeaconManager.BEACON_ID);
+        value.setApiVersion(Ga4ghBeaconManager.BEACON_API_VERSION);
         value.setRequest(request);
 
         return processRequest(response, value, ga4ghBeaconManager::variant);
@@ -78,10 +79,11 @@ public class Ga4ghBeaconWSServer extends OpenCGAWSServer {
     public Response postIndividualResponse(@ApiParam(value = "", required = true) @NotNull @Valid Ga4ghIndividualRequest request, @Context SecurityContext securityContext)
             throws NotFoundException {
         Ga4ghIndividualResponse response = new Ga4ghIndividualResponse();
+        response.setMeta(new Ga4ghRequestMeta().apiVersion(Ga4ghBeaconManager.BEACON_API_VERSION));
         Ga4ghIndividualResponseValue value = new Ga4ghIndividualResponseValue();
         response.setValue(value);
-        value.setBeaconId("org.opencb.opencga");
-        value.setApiVersion("1");
+        value.setBeaconId(Ga4ghBeaconManager.BEACON_ID);
+        value.setApiVersion(Ga4ghBeaconManager.BEACON_API_VERSION);
         value.setRequest(request);
 
         return processRequest(response, value, ga4ghBeaconManager::individual);
@@ -91,32 +93,33 @@ public class Ga4ghBeaconWSServer extends OpenCGAWSServer {
         void call(T t, String token) throws Exception;
     }
 
-    private <T> Response processRequest(Object response, T value, ProcessRequestCall<T> process) {
+    private <T> Response processRequest(T response, Object value, ProcessRequestCall<T> process) {
         Response.Status status = Response.Status.OK;
         Ga4ghBeaconError error = null;
         try {
-            process.call(value, token);
+            process.call(response, token);
         } catch (CatalogAuthorizationException e) {
             // Forbidden  403
             status = Response.Status.FORBIDDEN;
             error = new Ga4ghBeaconError().errorCode(status.getStatusCode()).errorMessage(e.getMessage());
-            e.printStackTrace();
+            logger.error("Catch exception", e);
         } catch (CatalogAuthenticationException e) {
             // Unauthorised  401
             status = Response.Status.UNAUTHORIZED;
             error = new Ga4ghBeaconError().errorCode(status.getStatusCode()).errorMessage(e.getMessage());
-            e.printStackTrace();
+            logger.error("Catch exception", e);
         } catch (Exception e) {
             // Bad request  400
             status = Response.Status.BAD_REQUEST;
-            error = new Ga4ghBeaconError().errorCode(status.getStatusCode()).errorMessage(e.getMessage());
-            e.printStackTrace();
+            error = new Ga4ghBeaconError().errorCode(status.getStatusCode())
+                    .errorMessage(StringUtils.isEmpty(e.getMessage()) ? e.toString() : e.getMessage());
+            logger.error("Catch exception", e);
         }
         if (error != null) {
             try {
                 value.getClass().getMethod("setError", Ga4ghBeaconError.class).invoke(value, error);
             } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                e.printStackTrace();
+                logger.error("Unexpected exception", e);
             }
         }
 

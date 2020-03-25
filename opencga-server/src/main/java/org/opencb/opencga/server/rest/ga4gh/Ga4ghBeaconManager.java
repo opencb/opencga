@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -25,12 +26,22 @@ import org.opencb.opencga.server.rest.ga4gh.models.schemas.Ga4ghIndividual;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
 
 public class Ga4ghBeaconManager {
 
+    public static final String BEACON_API_VERSION = "v1";
+    public static final String OPENCGA_VERSION = "v2.0.0-dev";
+    public static final String BEACON_ID = "org.opencb.opencga" + "-" + OPENCGA_VERSION;
+    public static final String BEACON_INDIVIDUAL_VERSION = "beacon-Individual-v1";
+    public static final String BEACON_VARIANT_VERSION = "beacon-Variant-v1";
+    public static final String BEACON_VARIANT_ANNOTATION_VERSION = "beacon-VariantAnnotation-v1";
+
+    public static final String OPENCGA_INDIVIDUAL_VERSION = Individual.class.getName() + "-" + OPENCGA_VERSION;
+    public static final String OPENCGA_VARIANT_ANNOTATION_VERSION = VariantAnnotation.class.getName() + "-" + OPENCGA_VERSION;
     private final CatalogManager catalogManager;
     private final VariantStorageManager variantManager;
 
@@ -41,16 +52,16 @@ public class Ga4ghBeaconManager {
 
     public Ga4ghBeacon getBeacon(String token) {
         Ga4ghBeacon beacon = new Ga4ghBeacon();
-        beacon.id("org.opencb.opencga")
+        beacon.id(BEACON_ID)
                 .name("OpenCGA")
-                .apiVersion("1")
+                .apiVersion(BEACON_API_VERSION)
                 .organization(new Ga4ghBeaconOrganization()
                         .id("opencb")
                         .name("OpenCB")
                         .address("Cambridge")
                 )
                 .description("")
-                .version("1");
+                .version(OPENCGA_VERSION);
 
         try {
             for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).getResults()) {
@@ -72,10 +83,13 @@ public class Ga4ghBeaconManager {
         return beacon;
     }
 
-
-    public void variant(Ga4ghGenomicVariantResponseValue value, String token) throws Exception {
+    public void variant(Ga4ghGenomicVariantResponse response, String token) throws Exception {
+        Ga4ghGenomicVariantResponseValue value = response.getValue();
         Ga4ghRequestDatasets datasets = value.getRequest().getQuery().getDatasets();
-
+        response.setMeta(new ObjectMap()
+                .append("Variant", Collections.singletonList(BEACON_VARIANT_VERSION))
+                .append("VariantAnnotation", Arrays.asList(BEACON_VARIANT_ANNOTATION_VERSION, OPENCGA_VARIANT_ANNOTATION_VERSION))
+        );
         String assembly = null;
         if (datasets.getDatasetIds() != null && !datasets.getDatasetIds().isEmpty()) {
             String datasetId = datasets.getDatasetIds().get(0);
@@ -128,62 +142,9 @@ public class Ga4ghBeaconManager {
             Ga4ghVariantsFoundResponse ga4ghVariantsFoundResponse = new Ga4ghVariantsFoundResponse();
             value.addResultsItem(ga4ghVariantsFoundResponse);
 
-            ga4ghVariantsFoundResponse.setVariant(new Ga4ghVariant()._default(new Ga4ghVariantDefault().version("1").value(
-                    new Ga4ghVariant2()
-                            .variantDetails(new Ga4ghVariantDetails()
-                                    .chromosome(Ga4ghChromosome2.fromValue(variant.getChromosome()))
-                                    .start(((long) (variant.getStart() - 1)))
-                                    .end(((long) (variant.getEnd())))
-                                    .referenceBases(variant.getReference())
-                                    .alternateBases(variant.getAlternate())
-                                    .assemblyId(assembly)
-                                    .variantType(variant.getType().toString())
-                            )
-                    ))
-            );
-            Ga4ghVariantAnnotations ga4ghAnnotation = new Ga4ghVariantAnnotations();
-            VariantAnnotation annotation = variant.getAnnotation();
-            ga4ghAnnotation.setProteinHGVSIds(annotation.getHgvs());
-            LinkedList<String> alternativeIds = new LinkedList<>();
-            if (annotation.getId() != null) {
-                alternativeIds.add(annotation.getId());
-            }
-            if (annotation.getTraitAssociation() != null) {
-                alternativeIds.addAll(annotation.getTraitAssociation().stream().map(EvidenceEntry::getId).collect(Collectors.toSet()));
-                for (EvidenceEntry evidenceEntry : annotation.getTraitAssociation()) {
-                    ga4ghAnnotation.addClinicalRelevanceItem(new Ga4ghClinicalRelevance()
-                            .diseaseId(evidenceEntry.getId())
-                            .variantClassification(evidenceEntry.getVariantClassification() == null || evidenceEntry.getVariantClassification().getClinicalSignificance() == null
-                                    ? null
-                                    : evidenceEntry.getVariantClassification().getClinicalSignificance().toString())
-                            .references(evidenceEntry.getBibliography())
-                    );
-                }
-            }
+            ga4ghVariantsFoundResponse.setVariant(toGa4ghVariant(assembly, variant));
 
-            ga4ghAnnotation.setAlternativeIds(alternativeIds);
-            if (annotation.getConsequenceTypes() != null) {
-                annotation.getConsequenceTypes()
-                        .stream()
-                        .map(ConsequenceType::getGeneName)
-                        .filter(StringUtils::isNotEmpty)
-                        .collect(Collectors.toSet())
-                        .forEach(ga4ghAnnotation::addGeneIdsItem);
-                annotation.getConsequenceTypes()
-                        .stream()
-                        .map(ConsequenceType::getEnsemblTranscriptId)
-                        .filter(StringUtils::isNotEmpty)
-                        .collect(Collectors.toSet())
-                        .forEach(ga4ghAnnotation::addTranscriptIdsItem);
-//                    annotation.getConsequenceTypes()
-//                            .stream()
-//                            .flatMap(c->c.getSequenceOntologyTerms().stream())
-//                            .map(SequenceOntologyTerm::getAccession)
-//                            .filter(Objects::nonNull)
-//                            .collect(Collectors.toSet())
-//                            .forEach(ga4ghAnnotation::addMolecularConsequence);
-                ga4ghAnnotation.setMolecularConsequence(annotation.getDisplayConsequenceType());
-            }
+            ga4ghVariantsFoundResponse.setVariantAnnotations(toGa4ghVariantAnnotation(variant));
 
             for (String study : result.getSamples().keySet()) {
                 ga4ghVariantsFoundResponse.addDatasetAlleleResponesItem(new Ga4ghBeaconDatasetAlleleResponse()
@@ -191,23 +152,101 @@ public class Ga4ghBeaconManager {
                         .exists(variant.getStudy(study) != null));
             }
 
-            ga4ghVariantsFoundResponse.setVariantAnnotations(new Ga4ghVariantAnnotation()
-                    ._default(new Ga4ghVariantAnnotationDefault().version("1").value(ga4ghAnnotation)));
-//                ga4ghVariantsFoundResponse.getVariantAnnotations().addAlternativeSchemasItem(
-//                        new Ga4ghResponseBasicStructure().value(variant.getAnnotation()));
 
         }
     }
 
+    private Ga4ghVariant toGa4ghVariant(String assembly, Variant variant) {
+        return new Ga4ghVariant()
+                ._default(
+                        new Ga4ghVariantDefault()
+                                .version(BEACON_VARIANT_VERSION)
+                                .value(
+                                        new Ga4ghVariant2()
+                                                .variantDetails(new Ga4ghVariantDetails()
+                                                        .chromosome(Ga4ghChromosome2.fromValue(variant.getChromosome()))
+                                                        .start(((long) (variant.getStart() - 1)))
+                                                        .end(((long) (variant.getEnd())))
+                                                        .referenceBases(variant.getReference())
+                                                        .alternateBases(variant.getAlternate())
+                                                        .assemblyId(assembly)
+                                                        .variantType(variant.getType().toString())
+                                                )
+                                ));
+    }
+
+    private Ga4ghVariantAnnotation toGa4ghVariantAnnotation(Variant variant) {
+        return new Ga4ghVariantAnnotation()
+                ._default(toGa4ghVariantAnnotationDefault(variant.getAnnotation()))
+                .addAlternativeSchemasItem(
+                        new Ga4ghResponseBasicStructure()
+                                .version(OPENCGA_VARIANT_ANNOTATION_VERSION)
+                                .value(variant.getAnnotation()));
+    }
+
+    private Ga4ghVariantAnnotationDefault toGa4ghVariantAnnotationDefault(VariantAnnotation annotation) {
+        Ga4ghVariantAnnotations ga4ghAnnotation = new Ga4ghVariantAnnotations();
+        ga4ghAnnotation.setProteinHGVSIds(annotation.getHgvs());
+        LinkedList<String> alternativeIds = new LinkedList<>();
+        if (annotation.getId() != null) {
+            alternativeIds.add(annotation.getId());
+        }
+        if (annotation.getTraitAssociation() != null) {
+            alternativeIds.addAll(annotation.getTraitAssociation().stream().map(EvidenceEntry::getId).collect(Collectors.toSet()));
+            for (EvidenceEntry evidenceEntry : annotation.getTraitAssociation()) {
+                ga4ghAnnotation.addClinicalRelevanceItem(new Ga4ghClinicalRelevance()
+                        .diseaseId(evidenceEntry.getId())
+                        .variantClassification(evidenceEntry.getVariantClassification() == null || evidenceEntry.getVariantClassification().getClinicalSignificance() == null
+                                ? null
+                                : evidenceEntry.getVariantClassification().getClinicalSignificance().toString())
+                        .references(evidenceEntry.getBibliography())
+                );
+            }
+        }
+
+        ga4ghAnnotation.setAlternativeIds(alternativeIds);
+        if (annotation.getConsequenceTypes() != null) {
+            annotation.getConsequenceTypes()
+                    .stream()
+                    .map(ConsequenceType::getGeneName)
+                    .filter(StringUtils::isNotEmpty)
+                    .collect(Collectors.toSet())
+                    .forEach(ga4ghAnnotation::addGeneIdsItem);
+            annotation.getConsequenceTypes()
+                    .stream()
+                    .map(ConsequenceType::getEnsemblTranscriptId)
+                    .filter(StringUtils::isNotEmpty)
+                    .collect(Collectors.toSet())
+                    .forEach(ga4ghAnnotation::addTranscriptIdsItem);
+//                    annotation.getConsequenceTypes()
+//                            .stream()
+//                            .flatMap(c->c.getSequenceOntologyTerms().stream())
+//                            .map(SequenceOntologyTerm::getAccession)
+//                            .filter(Objects::nonNull)
+//                            .collect(Collectors.toSet())
+//                            .forEach(ga4ghAnnotation::addMolecularConsequence);
+            ga4ghAnnotation.setMolecularConsequence(annotation.getDisplayConsequenceType());
+        }
+
+        return new Ga4ghVariantAnnotationDefault()
+                .version(BEACON_VARIANT_ANNOTATION_VERSION)
+                .value(ga4ghAnnotation);
+    }
 
 
-    public void individual(Ga4ghIndividualResponseValue value, String token) throws CatalogException {
+    public void individual(Ga4ghIndividualResponse response, String token) throws CatalogException {
+        response.setMeta(new ObjectMap()
+                .append("Individual", Arrays.asList(BEACON_INDIVIDUAL_VERSION, OPENCGA_INDIVIDUAL_VERSION))
+        );
+        Ga4ghIndividualResponseValue value = response.getValue();
         Ga4ghRequestDatasets datasets = value.getRequest().getQuery().getDatasets();
         for (String datasetId : datasets.getDatasetIds()) {
             Query query = new Query();
-            for (String filter : value.getRequest().getQuery().getCustomFilters()) {
-                String[] split = filter.split("=", 2);
-                query.put(split[0], split[1]);
+            if (value.getRequest().getQuery().getCustomFilters() != null) {
+                for (String filter : value.getRequest().getQuery().getCustomFilters()) {
+                    String[] split = filter.split("=", 2);
+                    query.put(split[0], split[1]);
+                }
             }
 
             OpenCGAResult<Individual> openCGAResult = catalogManager.getIndividualManager().search(datasetId, query, new QueryOptions(), token);
@@ -216,16 +255,16 @@ public class Ga4ghBeaconManager {
                 value.addResultsItem(new Ga4ghIndividualResponseResults().individual(ga4ghResponse));
 
                 // Add default
-                Ga4ghIndividual ga4ghIndividual = convertIndividual(individual);
-                ga4ghResponse.setDefault(new Ga4ghResponseBasicStructure().version("1").value(ga4ghIndividual));
+                Ga4ghIndividual ga4ghIndividual = toGa4ghIndividual(individual);
+                ga4ghResponse.setDefault(new Ga4ghResponseBasicStructure().version(BEACON_INDIVIDUAL_VERSION).value(ga4ghIndividual));
 
                 // Add catalog model as alternative
-                ga4ghResponse.addAlternativeSchemasItem(new Ga4ghResponseBasicStructure().version("1").value(individual));
+                ga4ghResponse.addAlternativeSchemasItem(new Ga4ghResponseBasicStructure().version(OPENCGA_INDIVIDUAL_VERSION).value(individual));
             }
         }
     }
 
-    private Ga4ghIndividual convertIndividual(Individual individual) {
+    private Ga4ghIndividual toGa4ghIndividual(Individual individual) {
         Ga4ghIndividual ga4ghIndividual = new Ga4ghIndividual();
         ga4ghIndividual.setIndividualId(individual.getId());
         ga4ghIndividual.setEthnicity(individual.getEthnicity());
