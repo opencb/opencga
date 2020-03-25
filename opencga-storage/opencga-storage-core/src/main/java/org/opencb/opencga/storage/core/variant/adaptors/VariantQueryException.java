@@ -25,8 +25,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.OR;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.AND;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.OR;
 
 /**
  * Created on 29/01/16 .

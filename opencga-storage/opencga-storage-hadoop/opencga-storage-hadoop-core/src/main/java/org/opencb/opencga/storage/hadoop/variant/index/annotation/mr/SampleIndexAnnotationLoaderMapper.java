@@ -1,26 +1,23 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation.mr;
 
-import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
+import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created on 26/02/19.
@@ -31,7 +28,6 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
 
     private static final String HAS_GENOTYPE = "SampleIndexAnnotationLoaderMapper.hasGenotype";
     private byte[] family;
-    private GenomeHelper helper;
     private Map<Integer, Map<String, AnnotationIndexPutBuilder>> annotationIndices = new HashMap<>();
 
     private boolean hasGenotype;
@@ -43,7 +39,6 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        helper = new GenomeHelper(context.getConfiguration());
         family = GenomeHelper.COLUMN_FAMILY_BYTES;
         hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
         converter = new AnnotationIndexConverter();
@@ -51,46 +46,37 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
 
     @Override
     protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
-        HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter();
-
-        AnnotationIndexEntry indexEntry = converter.convert(annotationConverter.convert(result));
+        VariantRow variantRow = new VariantRow(result);
+        AnnotationIndexEntry indexEntry = converter.convert(variantRow.getVariantAnnotation());
         // TODO Get stats given index values
 
-        for (Cell cell : result.rawCells()) {
-            if (VariantPhoenixHelper.isSampleCell(cell)) {
-                Integer sampleId = VariantPhoenixHelper.extractSampleId(
-                        Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength()), true);
+        Set<String> samples = new HashSet<>(result.rawCells().length);
 
-                String gt;
-                boolean validGt;
-                if (hasGenotype) {
-                    ImmutableBytesWritable ptr = new ImmutableBytesWritable(
-                            cell.getValueArray(),
-                            cell.getValueOffset(),
-                            cell.getValueLength());
-                    PhoenixHelper.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
-                    if (ptr.getLength() == 0) {
-                        gt = GenotypeClass.NA_GT_VALUE;
-                        validGt = true;
-                    } else {
-                        gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
-                        validGt = SampleIndexSchema.isAnnotatedGenotype(gt);
-                    }
-                } else {
+        variantRow.walker().onSample(sampleColumn -> {
+            int sampleId = sampleColumn.getSampleId();
+            String gt;
+            boolean validGt;
+            if (hasGenotype) {
+                gt = sampleColumn.getGT();
+                if (gt.isEmpty()) {
                     gt = GenotypeClass.NA_GT_VALUE;
                     validGt = true;
+                } else {
+                    validGt = SampleIndexSchema.isAnnotatedGenotype(gt);
                 }
-
+            } else {
+                gt = GenotypeClass.NA_GT_VALUE;
+                validGt = true;
+            }
+            // Avoid duplicates
+            if (samples.add(sampleId + "_" + gt)) {
                 if (validGt) {
                     annotationIndices
                             .computeIfAbsent(sampleId, k -> new HashMap<>())
                             .computeIfAbsent(gt, k -> new AnnotationIndexPutBuilder()).add(indexEntry);
-
                 }
-
             }
-        }
-
+        }).walk();
     }
 
     @Override

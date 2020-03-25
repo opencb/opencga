@@ -62,10 +62,6 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
     public static final String SV_BND_MATE_CI_POS_L = "ciPosL";
     public static final String SV_BND_MATE_CI_POS_R = "ciPosR";
 
-    @Deprecated public static final String HGVS_FIELD = "hgvs";
-    @Deprecated public static final String HGVS_NAME_FIELD = "name";
-    @Deprecated public static final String HGVS_TYPE_FIELD = "type";
-
     public static final String STUDIES_FIELD = "studies";
     public static final String ANNOTATION_FIELD = "annotation";
     public static final String CUSTOM_ANNOTATION_FIELD = "customAnnotation";
@@ -240,15 +236,6 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
             variant.setType(VariantType.valueOf(object.get(TYPE_FIELD).toString()));
         }
 
-        // Transform HGVS: List of map entries -> Map of lists
-        List mongoHgvs = (List) object.get(HGVS_FIELD);
-        if (mongoHgvs != null) {
-            for (Object o : mongoHgvs) {
-                Document dbo = (Document) o;
-                variant.addHgvs((String) dbo.get(HGVS_TYPE_FIELD), (String) dbo.get(HGVS_NAME_FIELD));
-            }
-        }
-
         // SV
         Document mongoSv = object.get(SV_FIELD, Document.class);
         if (mongoSv != null) {
@@ -420,15 +407,6 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         chunkIds.add(chunkSmall);
         chunkIds.add(chunkBig);
         at.append(CHUNK_IDS_FIELD, chunkIds);
-
-        // Transform HGVS: Map of lists -> List of map entries
-        List<Document> hgvs = new LinkedList<>();
-        for (Map.Entry<String, List<String>> entry : variant.getHgvs().entrySet()) {
-            for (String value : entry.getValue()) {
-                hgvs.add(new Document(HGVS_TYPE_FIELD, entry.getKey()).append(HGVS_NAME_FIELD, value));
-            }
-        }
-        mongoVariant.append(HGVS_FIELD, hgvs);
 
         // Files
         if (variantStudyEntryConverter != null) {

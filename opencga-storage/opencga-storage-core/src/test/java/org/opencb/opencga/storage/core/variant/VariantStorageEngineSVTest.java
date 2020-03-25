@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
@@ -73,7 +74,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
     @Test
     public void checkCount() throws Exception {
         int expected = 24 + 7;
-        int count = variantStorageEngine.getDBAdaptor().count(null).first().intValue();
+        int count = variantStorageEngine.getDBAdaptor().count().first().intValue();
         assertEquals(expected, count);
     }
 
@@ -108,7 +109,12 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
             StudyEntry expectedStudyEntry = expected.getStudies().get(0);
 
             // Check GTs are correct
-            assertEquals(expectedStudyEntry.getSamplesData().stream().map(l -> Collections.singletonList(l.get(0))).collect(Collectors.toList()), actualStudyEntry.getSamplesData());
+            assertEquals(
+                    expectedStudyEntry.getSamples()
+                            .stream()
+                            .map(l -> new SampleEntry(null, null, Collections.singletonList(l.getData().get(0))))
+                            .collect(Collectors.toList()),
+                    actualStudyEntry.getSamples());
 
             // Check File Attributes are correct
             expectedStudyEntry.getFiles().get(0).setFileId("");

@@ -22,10 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created on 14/03/18.
@@ -147,11 +144,12 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
 
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(value.getRow());
-        VariantStatsWrapper wrapper = new VariantStatsWrapper(variant, new HashMap<>(calculators.size()));
+        VariantStatsWrapper wrapper = new VariantStatsWrapper(variant, new ArrayList<>(calculators.size()));
 
         calculators.forEach((cohort, calculator) -> {
             VariantStats stats = calculator.apply(value);
-            wrapper.getCohortStats().put(cohort, stats);
+            stats.setCohortId(cohort);
+            wrapper.getCohortStats().add(stats);
         });
 
         write(context, wrapper);

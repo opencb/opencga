@@ -70,6 +70,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 
@@ -84,7 +86,7 @@ import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.empty;
 import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NONE;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -874,7 +876,7 @@ public class VariantStorageManager extends StorageManager {
             return Collections.emptyMap();
         }
 
-        if (VariantQueryUtils.isIncludeSamplesDefined(query, returnedFields)) {
+        if (VariantQueryProjectionParser.isIncludeSamplesDefined(query, returnedFields)) {
             Map<String, List<String>> samplesToReturn = VariantQueryUtils.getSamplesMetadata(query, queryOptions, mm);
             for (Map.Entry<String, List<String>> entry : samplesToReturn.entrySet()) {
                 String studyId = entry.getKey();
@@ -894,7 +896,7 @@ public class VariantStorageManager extends StorageManager {
             }
         } else {
             logger.debug("Missing include samples! Obtaining samples to include from catalog.");
-            List<String> includeStudies = VariantQueryUtils.getIncludeStudies(query, queryOptions, mm)
+            List<String> includeStudies = VariantQueryProjectionParser.getIncludeStudies(query, queryOptions, mm)
                     .stream()
                     .map(mm::getStudyName)
                     .collect(Collectors.toList());

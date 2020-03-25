@@ -433,11 +433,11 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
 
     private String computeBiallelicTiering(DiseasePanel.GenePanel panelGene, Variant variant) {
         if ("BIALLELIC".equals(panelGene.getModeOfInheritance())) {
-            if (CollectionUtils.isNotEmpty(variant.getStudies()) && CollectionUtils.isNotEmpty(variant.getStudies().get(0).getSamplesData())
-                    && CollectionUtils.isNotEmpty(variant.getStudies().get(0).getSamplesData().get(0))) {
+            if (CollectionUtils.isNotEmpty(variant.getStudies()) && CollectionUtils.isNotEmpty(variant.getStudies().get(0).getSamples())
+                    && CollectionUtils.isNotEmpty(variant.getStudies().get(0).getSampleData(0))) {
                 int counter01 = 0;
                 int counter11 = 0;
-                for (String gt : variant.getStudies().get(0).getSamplesData().get(0)) {
+                for (String gt : variant.getStudies().get(0).getSampleData(0)) {
                     if ("0/1".equals(gt)) {
                         if (++counter01 >= 2) {
                             return TIER_1;

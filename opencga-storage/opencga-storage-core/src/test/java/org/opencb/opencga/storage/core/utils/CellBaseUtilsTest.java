@@ -12,7 +12,7 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,6 +45,10 @@ public class CellBaseUtilsTest {
     @Test
     public void testGetGene() {
         assertNotNull(cellBaseUtils.getGeneRegion(Arrays.asList("BRCA2"), false).get(0));
+        Region region = cellBaseUtils.getGeneRegion(Arrays.asList("MT-TQ"), false).get(0);
+        assertNotNull(region);
+        assertEquals(1, region.getStart());
+        assertEquals(region, new Region(region.toString()));
     }
 
     @Test

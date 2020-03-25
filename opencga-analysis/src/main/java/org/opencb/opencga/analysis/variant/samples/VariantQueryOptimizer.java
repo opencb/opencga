@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.variant.samples;
 
 import org.opencb.opencga.analysis.variant.samples.TreeQuery.QueryNode;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.List;
 import java.util.Objects;

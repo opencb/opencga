@@ -16,6 +16,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -229,14 +230,14 @@ public class SampleVariantFilterAnalysis extends OpenCgaToolScopeStudy {
                 }
                 numVariants++;
                 StudyEntry studyEntry = variant.getStudies().get(0);
-                Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+                Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
                 if (gtIdx == null || gtIdx < 0) {
                     throw new VariantQueryException("Missing GT at variant " + variant);
                 }
 
                 int sampleIdx = 0;
                 for (String sample : studyEntry.getOrderedSamplesName()) {
-                    String gt = studyEntry.getSamplesData().get(sampleIdx).get(gtIdx);
+                    String gt = studyEntry.getSamples().get(sampleIdx).getData().get(gtIdx);
                     if (!walker.accept(variant, sample, gt)) {
                         break;
                     }

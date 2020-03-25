@@ -15,7 +15,8 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
@@ -57,7 +58,7 @@ public class HadoopVariantExporter extends VariantExporter {
         IOConnector ioConnector = ioConnectorProvider.get(outputFileUri);
 
         boolean smallQuery = false;
-        VariantQueryParser.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+        ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
         if (xrefs.getVariants().size() < 2000) {
             if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)
                     && xrefs.getGenes().isEmpty()

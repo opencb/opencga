@@ -76,7 +76,7 @@ public class MongoDBVariantStageReaderTest implements MongoDBVariantStorageTest 
         Variant variant = new Variant(variantStr);
         variant.setNames(Collections.emptyList());
         StudyEntry studyEntry = new StudyEntry("1", "1");
-        studyEntry.setFormat(Collections.emptyList());
+        studyEntry.setSampleDataKeys(Collections.emptyList());
         variant.addStudyEntry(studyEntry);
         variantMap.put(variant.getChromosome(), variant);
         loader.write(converterTask.apply(Collections.singletonList(variant)));

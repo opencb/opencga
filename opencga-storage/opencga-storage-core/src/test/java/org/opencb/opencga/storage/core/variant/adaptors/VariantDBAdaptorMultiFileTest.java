@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.response.VariantQueryResult;
@@ -16,7 +17,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -31,7 +32,7 @@ import static org.opencb.biodata.models.variant.StudyEntry.QUAL;
 import static org.opencb.biodata.models.variant.StudyEntry.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 24/10/17.
@@ -122,7 +123,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         query = new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), study1);
         this.queryResult = query(query, options);
-        assertEquals(dbAdaptor.count(null).first().intValue(), this.queryResult.getNumResults());
+        assertEquals(dbAdaptor.count().first().intValue(), this.queryResult.getNumResults());
         assertThat(this.queryResult, everyResult(allOf(withStudy(study2, nullValue()), withStudy("S_3", nullValue()), withStudy("S_4", nullValue()))));
     }
 
@@ -158,40 +159,39 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), NONE);
         queryResult = query(query, options);
 
-        assertEquals(dbAdaptor.count(null).first().intValue(), queryResult.getNumResults());
+        assertEquals(dbAdaptor.count().first().intValue(), queryResult.getNumResults());
         assertThat(queryResult, everyResult(firstStudy(nullValue())));
     }
 
     @Test
     public void testIncludeSampleIdFileIdx() throws Exception {
-        for (Variant variant : query(new Query(INCLUDE_FORMAT.key(),
-                "all," + VariantQueryParser.SAMPLE_ID
-                        + "," + VariantQueryParser.FILE_IDX
-                        + "," + VariantQueryParser.FILE_ID), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
+        for (Variant variant : query(new Query(INCLUDE_SAMPLE_ID.key(), true), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
 
             for (StudyEntry study : variant.getStudies()) {
-                assertEquals(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF",
-                        VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX, VariantQueryParser.FILE_ID), study.getFormat());
-                List<String> sampleIds = study.getSamplesData()
+                assertEquals(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF"), study.getSampleDataKeys());
+                List<String> sampleIds = study.getSamples()
                         .stream()
-                        .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.SAMPLE_ID)))
+                        .map(SampleEntry::getSampleId)
                         .collect(Collectors.toList());
-                List<String> fileIdxs = study.getSamplesData()
+                List<Integer> fileIdxs = study.getSamples()
                         .stream()
-                        .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.FILE_IDX)))
+                        .map(SampleEntry::getFileIndex)
                         .collect(Collectors.toList());
-                List<String> fileIds = study.getSamplesData()
+                List<String> fileIds = study.getFiles()
                         .stream()
-                        .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.FILE_ID)))
+                        .map(FileEntry::getFileId)
                         .collect(Collectors.toList());
 
-                assertEquals(variant.toString(), study.getOrderedSamplesName(), sampleIds);
-                for (int i = 0; i < fileIds.size(); i++) {
-                    if (!fileIds.get(i).equals(".")) {
-                        String expected = "1K.end.platinum-genomes-vcf-" + sampleIds.get(i) + "_S1.genome.vcf.gz";
-                        assertEquals(expected, fileIds.get(i));
-                        assertEquals(study.getFiles().stream().map(FileEntry::getFileId).collect(Collectors.toList()).indexOf(expected),
-                                Integer.parseInt(fileIdxs.get(i)));
+                String id = variant.toString();
+                assertEquals(id, study.getOrderedSamplesName(), sampleIds);
+
+
+                for (SampleEntry sample : study.getSamples()) {
+                    if (sample.getData().get(0).contains("1")) {
+                        assertNotNull(sample.getFileIndex());
+                        String fileId = study.getFile(sample.getFileIndex()).getFileId();
+                        String expected = "1K.end.platinum-genomes-vcf-" + sample.getSampleId() + "_S1.genome.vcf.gz";
+                        assertEquals(id, expected, fileId);
                     }
                 }
             }
@@ -200,24 +200,19 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testIncludeSampleIdFileIdxExcludeFiles() throws Exception {
-        for (Variant variant : query(new Query(INCLUDE_FORMAT.key(),
-                "all," + VariantQueryParser.SAMPLE_ID
-                + "," + VariantQueryParser.FILE_IDX
-                + "," + VariantQueryParser.FILE_ID)
+        for (Variant variant : query(new Query(INCLUDE_SAMPLE_ID.key(), true)
                 .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
 
             for (StudyEntry study : variant.getStudies()) {
-                assertEquals(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF",
-                        VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX, VariantQueryParser.FILE_ID), study.getFormat());
-                List<String> sampleIds = study.getSamplesData()
+                assertEquals(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF"), study.getSampleDataKeys());
+                List<String> sampleIds = study.getSamples()
                         .stream()
-                        .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.SAMPLE_ID)))
+                        .map(SampleEntry::getSampleId)
                         .collect(Collectors.toList());
 
                 assertEquals(variant.toString(), study.getOrderedSamplesName(), sampleIds);
-                for (List<String> samplesDatum : study.getSamplesData()) {
-                    assertEquals(".", samplesDatum.get(study.getFormatPositions().get(VariantQueryParser.FILE_ID)));
-                    assertEquals(".", samplesDatum.get(study.getFormatPositions().get(VariantQueryParser.FILE_IDX)));
+                for (SampleEntry sampleEntry : study.getSamples()) {
+                    assertNull(sampleEntry.getFileIndex());
                 }
             }
         }
@@ -229,7 +224,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), study1)
                 .append(VariantQueryParam.INCLUDE_FILE.key(), file12877);
         queryResult = query(query, options);
-        assertEquals(dbAdaptor.count(null).first().intValue(), queryResult.getNumResults());
+        assertEquals(dbAdaptor.count().first().intValue(), queryResult.getNumResults());
         for (Variant variant : queryResult.getResults()) {
             assertTrue(variant.getStudies().size() <= 1);
             StudyEntry s_1 = variant.getStudy(study1);
@@ -473,7 +468,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         Query query = new Query(STUDY.key(), study1)
                 .append(SAMPLE.key(), "NA12877,NA12878")
-                .append(FORMAT.key(), "NA12877:DP<100");
+                .append(SAMPLE_DATA.key(), "NA12877:DP<100");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
@@ -488,7 +483,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         query = new Query(STUDY.key(), study1)
                 .append(INCLUDE_SAMPLE.key(), "NA12877,NA12878")
-                .append(FORMAT.key(), "NA12877:DP<100;GT=1/1");
+                .append(SAMPLE_DATA.key(), "NA12877:DP<100;GT=1/1");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
@@ -500,7 +495,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         query = new Query(STUDY.key(), study1)
                 .append(INCLUDE_SAMPLE.key(), "NA12877,NA12878")
-                .append(FORMAT.key(), "NA12877:DP<100;GT=1/1,0/1");
+                .append(SAMPLE_DATA.key(), "NA12877:DP<100;GT=1/1,0/1");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
@@ -511,7 +506,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         ))));
 
         query = new Query(STUDY.key(), study1)
-                .append(FORMAT.key(), "NA12877:DP<100" + OR + "NA12878:DP<50");
+                .append(SAMPLE_DATA.key(), "NA12877:DP<100" + OR + "NA12878:DP<50");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
@@ -523,7 +518,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         ))));
 
         query = new Query(STUDY.key(), study1)
-                .append(FORMAT.key(), "NA12877:DP<100" + AND + "NA12878:DP<50");
+                .append(SAMPLE_DATA.key(), "NA12877:DP<100" + AND + "NA12878:DP<50");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
@@ -541,7 +536,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     public void testGetAllVariants_formatFail() {
         thrown.expect(VariantQueryException.class);
         thrown.expectMessage("FORMAT field \"JJ\" not found.");
-        Query query = new Query(STUDY.key(), study1).append(FORMAT.key(), "NA12877:JJ<100");
+        Query query = new Query(STUDY.key(), study1).append(SAMPLE_DATA.key(), "NA12877:JJ<100");
         queryResult = query(query, new QueryOptions());
     }
 
@@ -555,7 +550,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         Query query = new Query(STUDY.key(), study1)
 //                .append(INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
-                .append(INFO.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
+                .append(FILE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
                         + ",1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
@@ -572,7 +567,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         query = new Query(STUDY.key(), study1)
 //                .append(FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
-                .append(INFO.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
+                .append(FILE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
                         + ",1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
@@ -597,11 +592,11 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
 
         thrown.expect(VariantQueryException.class);
-        thrown.expectMessage(VariantQueryException.mixedAndOrOperators(FILE, INFO).getMessage());
+        thrown.expectMessage(VariantQueryException.mixedAndOrOperators(FILE, FILE_DATA).getMessage());
 
         query = new Query(STUDY.key(), study1)
                 .append(FILE.key(), file12877 + OR + file12878)
-                .append(INFO.key(),
+                .append(FILE_DATA.key(),
                         "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
                                 + AND
                                 + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
@@ -626,11 +621,11 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(VariantQueryParam.INCLUDE_FILE.key(), file12877 + "," + file12878), options);
 
         thrown.expect(VariantQueryException.class);
-        thrown.expectMessage(VariantQueryException.mixedAndOrOperators(FILE, INFO).getMessage());
+        thrown.expectMessage(VariantQueryException.mixedAndOrOperators(FILE, FILE_DATA).getMessage());
 
         query = new Query(STUDY.key(), study1)
                 .append(FILE.key(), file12877 + AND + file12878)
-                .append(INFO.key(),
+                .append(FILE_DATA.key(),
                         "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
                                 + OR
                                 + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
@@ -655,7 +650,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     public void testGetAllVariants_infoFail() {
         thrown.expect(VariantQueryException.class);
         thrown.expectMessage("INFO field \"JJ\" not found.");
-        Query query = new Query(STUDY.key(), study1).append(INFO.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:JJ<100");
+        Query query = new Query(STUDY.key(), study1).append(FILE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:JJ<100");
         queryResult = query(query, new QueryOptions());
     }
 
@@ -717,7 +712,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
-                with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(
+                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(
                         containsString("LowGQX"),
                         containsString("LowMQ"),
                         containsString("LowQD"),
@@ -731,7 +726,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
-                with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), anyOf(
+                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
                         containsString("MaxDepth")
                 )))
         )));
@@ -743,7 +738,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
-                with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), anyOf(
+                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
                         containsString("LowGQX"),
                         containsString("LowMQ")
                 ))))));
@@ -755,7 +750,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
-                with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00"))))));
+                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00"))))));
 
         query = new Query()
                 .append(VariantQueryParam.FILTER.key(), "\"LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00\",\"LowGQX;LowQD;SiteConflict\"")
@@ -764,7 +759,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
-                with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), anyOf(
+                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
                         is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00"),
                         is("LowGQX;LowQD;SiteConflict")
                 ))))));
@@ -782,7 +777,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
-                with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(
+                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(
                         containsString("LowGQX"),
                         containsString("LowMQ"),
                         not(containsString("SiteConflict"))
@@ -794,7 +789,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
-                with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(
+                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(
                         containsString("LowGQX"),
                         containsString("LowQD"),
                         not(is("LowGQX;LowQD;SiteConflict"))
@@ -818,8 +813,8 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
 
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, anyOf(
-                withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ")))),
-                withFileId(file12878, with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ"))))
+                withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ")))),
+                withFileId(file12878, with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ"))))
         ))));
 
         query = new Query()
@@ -831,8 +826,8 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
 
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
-                withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ")))),
-                withFileId(file12878, with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ"))))
+                withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ")))),
+                withFileId(file12878, with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ"))))
         ))));
 
         query = new Query()
@@ -844,8 +839,8 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
 
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
-                withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), containsString("LowGQX"))),
-                withFileId(file12878, with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), containsString("LowGQX")))
+                withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), containsString("LowGQX"))),
+                withFileId(file12878, with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), containsString("LowGQX")))
         ))));
     }
 
@@ -914,7 +909,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
 
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
-                withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ")))),
+                withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ")))),
                 not(withFileId(file12878))
         ))));
     }
@@ -966,8 +961,8 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12882")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), asList(file12877, file12882)), options);
         assertThat(queryResult, everyResult(allVariants, anyOf(
-                withStudy(study1, withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ"))))),
-                withStudy(study2, withFileId(file12882, with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ")))))
+                withStudy(study1, withFileId(file12877, with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ"))))),
+                withStudy(study2, withFileId(file12882, with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), allOf(containsString("LowGQX"), containsString("LowMQ")))))
         )));
     }
 
@@ -985,7 +980,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         System.out.println(allVariants.first().toJson());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
-                with(QUAL, fileEntry -> fileEntry.getAttributes().get(QUAL), allOf(notNullValue(), with("", Double::valueOf, gt(50))))))));
+                with(QUAL, fileEntry -> fileEntry.getData().get(QUAL), allOf(notNullValue(), with("", Double::valueOf, gt(50))))))));
 
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), study1)
@@ -994,7 +989,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
-                with(QUAL, fileEntry -> fileEntry.getAttributes().get(QUAL), allOf(notNullValue(), with("", Double::valueOf, lt(50))))))));
+                with(QUAL, fileEntry -> fileEntry.getData().get(QUAL), allOf(notNullValue(), with("", Double::valueOf, lt(50))))))));
 
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), study1)
@@ -1003,7 +998,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
-                with(QUAL, fileEntry -> fileEntry.getAttributes().get(QUAL), anyOf(with("", Double::valueOf, lt(5)), nullValue()))))));
+                with(QUAL, fileEntry -> fileEntry.getData().get(QUAL), anyOf(with("", Double::valueOf, lt(5)), nullValue()))))));
 
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), study1)
@@ -1014,8 +1009,8 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
                 allOf(
-                        with(QUAL, fileEntry -> fileEntry.getAttributes().get(QUAL), allOf(notNullValue(), with("", Double::valueOf, lt(50)))),
-                        with(FILTER, fileEntry -> fileEntry.getAttributes().get(FILTER), anyOf(
+                        with(QUAL, fileEntry -> fileEntry.getData().get(QUAL), allOf(notNullValue(), with("", Double::valueOf, lt(50)))),
+                        with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
                                 containsString("LowGQX"),
                                 containsString("LowMQ")
                         )))))));
@@ -1152,18 +1147,18 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         // 1/1 : 78
         variant = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions()).first();
         System.out.println("variant = " + variant.toJson());
-        Map<String, Integer> formats = variant.getStudies().get(0).getFormatPositions();
-        assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(4, variant.getStudies().get(0).getSamplesData().size());
+        Map<String, Integer> formats = variant.getStudies().get(0).getSampleDataKeyPositions();
+        assertNotNull(variant.getStudies().get(0).getStats(DEFAULT_COHORT));
+        assertEquals(4, variant.getStudies().get(0).getSamples().size());
         assertEquals(4, variant.getStudies().get(0).getFiles().size());
 //
         variant = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant = " + variant.toJson());
-        assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(1, variant.getStudies().get(0).getSamplesData().size());
-        assertEquals(sampleNA12877, variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("0/1", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get("GT")));
-        assertEquals("0", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertNotNull(variant.getStudies().get(0).getStats(DEFAULT_COHORT));
+        assertEquals(1, variant.getStudies().get(0).getSamples().size());
+        assertEquals(sampleNA12877, variant.getStudies().get(0).getSample(0).getSampleId());
+        assertEquals("0/1", variant.getStudies().get(0).getSampleData(0).get(formats.get("GT")));
+        assertEquals(0, variant.getStudies().get(0).getSample(0).getFileIndex().intValue());
 //        assertEquals(file12877, variant.getStudies().get(0).getSamplesData().get("0/1").get(0).getFileId());
 //        assertEquals(sampleNA12878, variant.getStudies().get(0).getSamplesData().get("1/1").get(0).getId());
 //        assertEquals(file12878, variant.getStudies().get(0).getSamplesData().get("1/1").get(0).getFileId());
@@ -1171,41 +1166,41 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 //
         variant = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions(QueryOptions.LIMIT, 1).append(QueryOptions.SKIP, 1)).first();
         System.out.println("sampleData = " + variant);
-        assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(sampleNA12878, variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("1/1", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get("GT")));
-        assertEquals("0", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertNotNull(variant.getStudies().get(0).getStats(DEFAULT_COHORT));
+        assertEquals(sampleNA12878, variant.getStudies().get(0).getSample(0).getSampleId());
+        assertEquals("1/1", variant.getStudies().get(0).getSampleData(0).get(formats.get("GT")));
+        assertEquals(0, variant.getStudies().get(0).getSample(0).getFileIndex().intValue());
         assertEquals(1, variant.getStudies().get(0).getFiles().size());
 
         variant = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleNA12878 + "," + sampleNA12879)).first();
-        assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(2, variant.getStudies().get(0).getSamplesData().size());
+        assertNotNull(variant.getStudies().get(0).getStats(DEFAULT_COHORT));
+        assertEquals(2, variant.getStudies().get(0).getSamples().size());
         assertEquals(2, variant.getStudies().get(0).getFiles().size());
-        assertEquals(sampleNA12878, variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("0", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.FILE_IDX)));
-        assertEquals(sampleNA12879, variant.getStudies().get(0).getSamplesData().get(1).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("1", variant.getStudies().get(0).getSamplesData().get(1).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertEquals(sampleNA12878, variant.getStudies().get(0).getSample(0).getSampleId());
+        assertEquals(0, variant.getStudies().get(0).getSample(0).getFileIndex().intValue());
+        assertEquals(sampleNA12879, variant.getStudies().get(0).getSample(1).getSampleId());
+        assertEquals(1, variant.getStudies().get(0).getSample(1).getFileIndex().intValue());
 
         // 0/1 : 77
         variant = variantStorageEngine.getSampleData("MT:16184:C:A", study1, new QueryOptions()).first();
-        assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(1, variant.getStudies().get(0).getSamplesData().size());
-        assertEquals(sampleNA12877, variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("0/1", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get("GT")));
-        assertEquals("0", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertNotNull(variant.getStudies().get(0).getStats(DEFAULT_COHORT));
+        assertEquals(1, variant.getStudies().get(0).getSamples().size());
+        assertEquals(sampleNA12877, variant.getStudies().get(0).getSample(0).getSampleId());
+        assertEquals("0/1", variant.getStudies().get(0).getSampleData(0).get(formats.get("GT")));
+        assertEquals(0, variant.getStudies().get(0).getSample(0).getFileIndex().intValue());
         assertEquals(1, variant.getStudies().get(0).getFiles().size());
 
         variant = variantStorageEngine.getSampleData("MT:16184:C:A", study1, new QueryOptions(QueryOptions.LIMIT, 1)).first();
-        assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(1, variant.getStudies().get(0).getSamplesData().size());
-        assertEquals(sampleNA12877, variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.SAMPLE_ID)));
-        assertEquals("0/1", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get("GT")));
-        assertEquals("0", variant.getStudies().get(0).getSamplesData().get(0).get(formats.get(VariantQueryParser.FILE_IDX)));
+        assertNotNull(variant.getStudies().get(0).getStats(DEFAULT_COHORT));
+        assertEquals(1, variant.getStudies().get(0).getSamples().size());
+        assertEquals(sampleNA12877, variant.getStudies().get(0).getSample(0).getSampleId());
+        assertEquals("0/1", variant.getStudies().get(0).getSampleData(0).get(formats.get("GT")));
+        assertEquals(0, variant.getStudies().get(0).getSample(0).getFileIndex().intValue());
         assertEquals(1, variant.getStudies().get(0).getFiles().size());
 
         variant = variantStorageEngine.getSampleData("MT:16184:C:A", study1, new QueryOptions(QueryOptions.LIMIT, 1).append(QueryOptions.SKIP, 1)).first();
-        assertNotNull(variant.getStudies().get(0).getStats().get(DEFAULT_COHORT));
-        assertEquals(0, variant.getStudies().get(0).getSamplesData().size());
+        assertNotNull(variant.getStudies().get(0).getStats(DEFAULT_COHORT));
+        assertEquals(0, variant.getStudies().get(0).getSamples().size());
         assertEquals(0, variant.getStudies().get(0).getFiles().size());
     }
 

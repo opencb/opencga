@@ -4,6 +4,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -25,7 +26,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -57,7 +60,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
 //        INVALID_QUERY_PARAMS.add(VariantQueryParam.SAMPLE);
         INVALID_QUERY_PARAMS.add(VariantQueryParam.FILE);
         INVALID_QUERY_PARAMS.add(VariantQueryParam.STUDY);
-        INVALID_QUERY_PARAMS.add(VariantQueryParam.FORMAT);
+        INVALID_QUERY_PARAMS.add(VariantQueryParam.SAMPLE_DATA);
         INVALID_QUERY_PARAMS.add(VariantQueryParam.FILTER);
         INVALID_QUERY_PARAMS.add(VariantQueryParam.QUAL);
         INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.FAMILY);
@@ -188,7 +191,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                         v -= 250;
                     }
                 }
-                VariantQueryParser.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+                ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
                 int fromXref = 0;
 //                if (!xrefs.getGenes().isEmpty()) {
 //
@@ -402,13 +405,12 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                         .getSampleData(next.toString(), studyFqn, queryOptions, getToken()).first();
 
                 StudyEntry studyEntry = variant.getStudies().get(0);
-                numSamples = studyEntry.getSamplesData().size();
+                numSamples = studyEntry.getSamples().size();
                 skip += numSamples;
 
-                int sampleIdPos = studyEntry.getFormatPositions().get(VariantQueryParser.SAMPLE_ID);
-                for (List<String> samplesDatum : studyEntry.getSamplesData()) {
-                    if (GenotypeClass.MAIN_ALT.test(samplesDatum.get(0))) {
-                        String sampleId = samplesDatum.get(sampleIdPos);
+                for (SampleEntry sampleEntry : studyEntry.getSamples()) {
+                    if (GenotypeClass.MAIN_ALT.test(sampleEntry.getData().get(0))) {
+                        String sampleId = sampleEntry.getSampleId();
                         samples.add(sampleId);
                         thisVariantSamples.add(sampleId);
                     }
@@ -431,7 +433,8 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         Query query = new Query(baseQuery);
         query.putAll(node.getQuery());
         query.put(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples);
-        query.put(VariantQueryParam.INCLUDE_FORMAT.key(), "GT," + VariantQueryParser.SAMPLE_ID);
+        query.put(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
+        query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
         Predicate<String> genotypeFilter = GenotypeClass.MAIN_ALT;
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.GENOTYPE)) {
             String genotypes = query.getString(VariantQueryParam.GENOTYPE.key());
@@ -449,10 +452,10 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         VariantDBIterator iterator = getVariantStorageManager().iterator(query, new QueryOptions(), getToken());
         while (iterator.hasNext()) {
             Variant next = iterator.next();
-            for (List<String> samplesDatum : next.getStudies().get(0).getSamplesData()) {
-                String genotype = samplesDatum.get(0);
+            for (SampleEntry sampleEntry : next.getStudies().get(0).getSamples()) {
+                String genotype = sampleEntry.getData().get(0);
                 if (GenotypeClass.MAIN_ALT.test(genotype) && genotypeFilter.test(genotype)) {
-                    samples.add(samplesDatum.get(1));
+                    samples.add(sampleEntry.getData().get(1));
                 }
             }
         }

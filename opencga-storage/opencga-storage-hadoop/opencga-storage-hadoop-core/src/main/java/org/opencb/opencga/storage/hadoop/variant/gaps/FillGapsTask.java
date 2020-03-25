@@ -10,9 +10,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
@@ -21,6 +19,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryMultiFileToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.slf4j.Logger;
@@ -59,7 +58,7 @@ public class FillGapsTask {
 
         this.helper = helper;
         this.metadataManager = metadataManager;
-        studyConverter = new StudyEntryToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyMetadata.getId(), metadataManager,
+        studyConverter = new StudyEntryMultiFileToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyMetadata.getId(), metadataManager,
                 true,
                 null, // Do not update release
                 true); // Do not skip any genotype
@@ -180,13 +179,9 @@ public class FillGapsTask {
         VariantOverlappingStatus overlappingStatus = REFERENCE;
 
         FileEntry fileEntry = archiveVariant.getStudies().get(0).getFiles().get(0);
-        fileEntry.getAttributes().remove(VCFConstants.END_KEY);
-        if (StringUtils.isEmpty(fileEntry.getCall())) {
-            String alternate = archiveVariant.getAlternate();
-            if (alternate.isEmpty()) {
-                alternate = Allele.NO_CALL_STRING;
-            }
-            fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":" + alternate + ":0");
+        fileEntry.getData().remove(VCFConstants.END_KEY);
+        if (fileEntry.getCall() == null) {
+            fileEntry.setCall(new OriginalCall(archiveVariant.toString(), 0));
         }
         // SYMBOLIC reference overlap -- <*> , <NON_REF>
         if (VariantType.NO_VARIATION.equals(archiveVariant.getType())
@@ -202,9 +197,9 @@ public class FillGapsTask {
                     variant.getAlternate());
 
             StudyEntry studyEntry = new StudyEntry();
-            studyEntry.setFormat(archiveVariant.getStudies().get(0).getFormat());
+            studyEntry.setSampleDataKeys(archiveVariant.getStudies().get(0).getSampleDataKeys());
             studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
-            studyEntry.setSamplesData(new ArrayList<>());
+            studyEntry.setSamples(new ArrayList<>());
             mergedVariant.addStudyEntry(studyEntry);
             mergedVariant.setType(variant.getType());
 
@@ -235,12 +230,12 @@ public class FillGapsTask {
         mergedVariant.setType(variant.getType());
         StudyEntry archiveStudyEntry = archiveVariant.getStudies().get(0);
         if (simplifiedNewMultiAllelicVariants) {
-            if (archiveStudyEntry.getFormat().contains("GT")) {
-                studyEntry.setFormat(Collections.singletonList("GT"));
+            if (archiveStudyEntry.getSampleDataKeys().contains("GT")) {
+                studyEntry.setSampleDataKeys(Collections.singletonList("GT"));
 
                 studyEntry.setSortedSamplesPosition(archiveStudyEntry.getSamplesPosition());
-                ArrayList<List<String>> samplesData = new ArrayList<>(archiveStudyEntry.getSamplesPosition().size());
-                studyEntry.setSamplesData(samplesData);
+                List<SampleEntry> samplesData = new ArrayList<>(archiveStudyEntry.getSamplesPosition().size());
+                studyEntry.setSamples(samplesData);
                 studyEntry.getSecondaryAlternates().add(new AlternateCoordinate(
                         variant.getChromosome(),
                         variant.getStart(),
@@ -250,17 +245,17 @@ public class FillGapsTask {
                         VariantType.SYMBOLIC));
 
                 FileEntry archiveFileEntry = archiveStudyEntry.getFiles().get(0);
-                String call = archiveFileEntry.getCall();
-                if (StringUtils.isEmpty(call)) {
-                    call = archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":" + archiveVariant.getAlternate();
+                OriginalCall call = archiveFileEntry.getCall();
+                if (call == null || StringUtils.isEmpty(call.getVariantId())) {
+                    StringBuilder variantId = new StringBuilder(archiveVariant.toString());
                     for (AlternateCoordinate secondaryAlternate : archiveStudyEntry.getSecondaryAlternates()) {
-                        call += "," + secondaryAlternate.getAlternate();
+                        variantId.append(",").append(secondaryAlternate.getAlternate());
                     }
-                    call += ":0";
+                    call = new OriginalCall(variantId.toString(), 0);
                 }
                 HashMap<String, String> attributes = new HashMap<>();
-                archiveFileEntry.getAttributes().computeIfPresent(StudyEntry.FILTER, attributes::put);
-                archiveFileEntry.getAttributes().computeIfPresent(StudyEntry.QUAL, attributes::put);
+                archiveFileEntry.getData().computeIfPresent(StudyEntry.FILTER, attributes::put);
+                archiveFileEntry.getData().computeIfPresent(StudyEntry.QUAL, attributes::put);
                 studyEntry.setFiles(Collections.singletonList(new FileEntry(archiveFileEntry.getFileId(), call, attributes)));
 
                 for (int idx = 0; idx < archiveStudyEntry.getSamplesPosition().size(); idx++) {
@@ -290,25 +285,25 @@ public class FillGapsTask {
                             gt = genotype.toString();
                             break;
                     }
-                    samplesData.add(Collections.singletonList(gt));
+                    samplesData.add(new SampleEntry(null, null, Collections.singletonList(gt)));
                 }
             } else {
-                studyEntry.setFormat(Collections.emptyList());
+                studyEntry.setSampleDataKeys(Collections.emptyList());
             }
         } else {
             studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
-            studyEntry.setSamplesData(new ArrayList<>());
-            studyEntry.setFormat(archiveStudyEntry.getFormat());
+            studyEntry.setSamples(new ArrayList<>());
+            studyEntry.setSampleDataKeys(archiveStudyEntry.getSampleDataKeys());
             mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
         }
 
-        if (studyEntry.getFormatPositions().containsKey("GT")) {
+        if (studyEntry.getSampleDataKeySet().contains("GT")) {
             int samplePosition = 0;
-            Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+            Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
             for (String sampleName : studyEntry.getOrderedSamplesName()) {
                 Integer sampleId = getSampleId(sampleName);
                 if (missingSamples.contains(sampleId)) {
-                    String gt = studyEntry.getSamplesData().get(samplePosition).get(gtIdx);
+                    String gt = studyEntry.getSamples().get(samplePosition).getData().get(gtIdx);
                     // Only genotypes without the main alternate (0/2, 2/3, ...) should be written as pending.
                     if (SampleIndexSchema.validGenotype(gt) && !hasMainAlternate(gt)) {
                         Put sampleIndexPut = buildSampleIndexPut(variant, put, sampleId, gt);
@@ -332,9 +327,9 @@ public class FillGapsTask {
     private VariantOverlappingStatus processVariantFile(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
                                                         VariantOverlappingStatus overlappingStatus, String gt) {
         LinkedHashMap<String, Integer> samplePosition = getSamplePosition(fileId);
-        List<List<String>> samplesData = new ArrayList<>(samplePosition.size());
+        List<SampleEntry> samplesData = new ArrayList<>(samplePosition.size());
         for (int i = 0; i < samplePosition.size(); i++) {
-            samplesData.add(Collections.singletonList(gt));
+            samplesData.add(new SampleEntry(null, null, Collections.singletonList(gt)));
         }
 
         VariantBuilder builder = Variant.newBuilder(
@@ -344,10 +339,10 @@ public class FillGapsTask {
                 variant.getReference(),
                 variant.getAlternate())
                 .setStudyId(String.valueOf(studyMetadata.getId()))
-                .setFormat("GT")
+                .setSampleDataKeys("GT")
                 .setFileId(fileId.toString())
                 .setSamplesPosition(samplePosition)
-                .setSamplesData(samplesData);
+                .setSamples(samplesData);
 
         studyConverter.convert(builder.build(), put, missingSamples, overlappingStatus);
         return overlappingStatus;
@@ -359,9 +354,9 @@ public class FillGapsTask {
 
         String gt = "2/2";
         LinkedHashMap<String, Integer> samplePosition = getSamplePosition(fileId);
-        List<List<String>> samplesData = new ArrayList<>(samplePosition.size());
+        List<SampleEntry> samplesData = new ArrayList<>(samplePosition.size());
         for (int i = 0; i < samplePosition.size(); i++) {
-            samplesData.add(Collections.singletonList(gt));
+            samplesData.add(new SampleEntry(null, null, Collections.singletonList(gt)));
         }
 
         for (Integer sampleId : missingSamples) {
@@ -379,9 +374,9 @@ public class FillGapsTask {
                 .setStudyId(String.valueOf(studyMetadata.getId()))
                 .setFileId(fileId.toString())
                 // add overlapping variants at attributes
-                .setFormat("GT")
+                .setSampleDataKeys("GT")
                 .setSamplesPosition(samplePosition)
-                .setSamplesData(samplesData);
+                .setSamples(samplesData);
 
 
 //        processVariantOverlap(variant, missingSamples, put, sampleIndexPuts, builder.build());

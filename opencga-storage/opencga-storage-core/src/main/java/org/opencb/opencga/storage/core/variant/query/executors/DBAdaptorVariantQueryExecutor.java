@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.query;
+package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;

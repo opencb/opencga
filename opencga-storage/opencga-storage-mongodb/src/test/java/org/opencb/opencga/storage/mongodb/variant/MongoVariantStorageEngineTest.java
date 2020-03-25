@@ -183,7 +183,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false), false, true);
 
-        long count = dbAdaptor.count(null).first();
+        long count = dbAdaptor.count().first();
         assertEquals(stageCount, count);
     }
 
@@ -237,7 +237,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantStorageOptions.STAGE.key(), false)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true), false, false, true);
 
-        Long count = variantStorageEngine.getDBAdaptor().count(null).first();
+        Long count = variantStorageEngine.getDBAdaptor().count().first();
         assertTrue(count > 0);
     }
 
@@ -545,7 +545,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertTrue(success.get());
 
         VariantMongoDBAdaptor dbAdaptor = (VariantMongoDBAdaptor) variantStorageEngine.getDBAdaptor();
-        long count = dbAdaptor.count(null).first();
+        long count = dbAdaptor.count().first();
         System.out.println("count = " + count);
         assertTrue(count > 0);
 
@@ -641,7 +641,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), false));
 
-        long count = variantStorageEngine.getDBAdaptor().count(null).first();
+        long count = variantStorageEngine.getDBAdaptor().count().first();
         assertEquals(0L, count);
 
         runETL(variantStorageEngine, storagePipelineResult.getTransformResult(), outputUri, new ObjectMap()
@@ -659,7 +659,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
 
-        Long count = variantStorageEngine.getDBAdaptor().count(null).first();
+        Long count = variantStorageEngine.getDBAdaptor().count().first();
         assertTrue(count > 0);
 
         String fileName = Paths.get(smallInputUri).getFileName().toString();
@@ -682,7 +682,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
 
-        Long count = variantStorageEngine.getDBAdaptor().count(null).first();
+        Long count = variantStorageEngine.getDBAdaptor().count().first();
         assertTrue(count > 0);
 
         String fileName = Paths.get(smallInputUri).getFileName().toString();

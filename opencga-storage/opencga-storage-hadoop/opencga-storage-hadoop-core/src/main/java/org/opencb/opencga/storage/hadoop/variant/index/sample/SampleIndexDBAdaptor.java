@@ -18,8 +18,8 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.IntersectMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -29,7 +29,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.VariantFileIndex;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,17 +176,17 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
     protected Map<String, List<Variant>> queryByGt(int study, int sample, String chromosome, int position)
             throws IOException {
-        Result result = queryByGeneNative(study, sample, chromosome, position);
+        Result result = queryByGtInternal(study, sample, chromosome, position);
         return converter.convertToMap(result);
     }
 
-    protected Map<String, SortedSet<VariantFileIndex>> queryByGtWithFile(int study, int sample, String chromosome, int position)
+    protected SampleIndexEntryPutBuilder queryByGtBuilder(int study, int sample, String chromosome, int position)
             throws IOException {
-        Result result = queryByGeneNative(study, sample, chromosome, position);
-        return converter.convertToMapVariantFileIndex(result);
+        Result result = queryByGtInternal(study, sample, chromosome, position);
+        return new SampleIndexEntryPutBuilder(sample, chromosome, position, converter.convertToMapSampleVariantIndex(result));
     }
 
-    private Result queryByGeneNative(int study, int sample, String chromosome, int position) throws IOException {
+    private Result queryByGtInternal(int study, int sample, String chromosome, int position) throws IOException {
         String tableName = tableNameGenerator.getSampleIndexTableName(study);
         return hBaseManager.act(tableName, table -> {
             Get get = new Get(SampleIndexSchema.toRowKey(sample, chromosome, position));
@@ -232,7 +231,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public long count(List<Region> regions, String study, String sample, List<String> gts) {
-        return count(new SampleIndexQuery(regions, study, Collections.singletonMap(sample, gts), null).forSample(sample));
+        return count(parser.parse(regions, study, sample, gts));
     }
 
     public long count(SampleIndexQuery query) {
@@ -265,7 +264,9 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                         HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(configuration);
                         boolean noRegionFilter = subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion);
                         // Don't need to parse the variant to filter
-                        boolean simpleCount = CollectionUtils.isEmpty(query.getVariantTypes()) && noRegionFilter;
+                        boolean simpleCount = !query.isMultiFileSample()
+                                && CollectionUtils.isEmpty(query.getVariantTypes())
+                                && noRegionFilter;
                         try {
                             if (query.emptyOrRegionFilter() && simpleCount) {
                                 // Directly sum counters
@@ -413,6 +414,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         }
         // If genotypes are not defined, return ALL columns
         for (String gt : query.getGenotypes()) {
+            scan.addColumn(family, SampleIndexSchema.toGenotypeDiscrepanciesCountColumn());
             scan.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt));
             if (!onlyCount) {
                 if (query.getMendelianError()) {
@@ -478,10 +480,20 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         for (PopulationFrequencyQuery pf : query.getAnnotationIndexQuery().getPopulationFrequencyQueries()) {
             logger.info("PopFreq         = " + pf);
         }
-        boolean[] validFileIndex = query.getSampleFileIndexQuery().getValidFileIndex();
-        for (int i = 0; i < validFileIndex.length; i++) {
-            if (validFileIndex[i]) {
-                logger.info("FileIndex       = " + IndexUtils.maskToString(query.getFileIndexMask(), (byte) i));
+        if (query.getSampleFileIndexQuery().hasFileIndexMask1()) {
+            boolean[] validFileIndex = query.getSampleFileIndexQuery().getValidFileIndex1();
+            for (int i = 0; i < validFileIndex.length; i++) {
+                if (validFileIndex[i]) {
+                    logger.info("FileIndex1       = " + IndexUtils.maskToString(query.getFileIndexMask1(), (byte) i));
+                }
+            }
+        }
+        if (query.getSampleFileIndexQuery().hasFileIndexMask2()) {
+            boolean[] validFileIndex2 = query.getSampleFileIndexQuery().getValidFileIndex2();
+            for (int i = 0; i < validFileIndex2.length; i++) {
+                if (validFileIndex2[i]) {
+                    logger.info("FileIndex2       = " + IndexUtils.maskToString(query.getFileIndexMask2(), (byte) i));
+                }
             }
         }
         if (query.hasFatherFilter()) {

@@ -54,6 +54,10 @@ import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.query.executors.CompoundHeterozygousQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.DBAdaptorVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
@@ -74,7 +78,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
@@ -129,7 +133,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public enum LoadSplitData {
         CHROMOSOME,
         REGION,
-        TYPE;
+        MULTI;
 
         public static LoadSplitData from(ObjectMap options) {
             Objects.requireNonNull(options);

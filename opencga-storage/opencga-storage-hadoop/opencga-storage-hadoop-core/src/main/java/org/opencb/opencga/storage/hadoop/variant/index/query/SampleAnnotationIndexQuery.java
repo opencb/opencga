@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 
 import java.util.Collections;

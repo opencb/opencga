@@ -35,12 +35,14 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created on 28/11/16.
@@ -70,18 +72,13 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(ParsedVariantQuery query, QueryOptions options) {
 
         List<Variant> variants = new ArrayList<>();
         iterator(query, options).forEachRemaining(variants::add);
 
         return new VariantQueryResult<>(0, variants.size(), variants.size(), Collections.emptyList(), variants, null,
                 DummyVariantStorageEngine.STORAGE_ENGINE_ID);
-    }
-
-    @Override
-    public List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
-        return null;
     }
 
     @Override
@@ -95,7 +92,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult<Long> count(Query query) {
+    public DataResult<Long> count(ParsedVariantQuery query) {
         return new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList((long) TEMPLATES.size()), 1);
     }
 
@@ -105,13 +102,13 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) {
-        logger.info("Query " + query.toJson());
+    public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
+        logger.info("Query " + variantQuery.getQuery().toJson());
         logger.info("QueryOptions " + options.toJson());
         logger.info("dbName " + dbName);
 
         List<Variant> variants = new ArrayList<>(TEMPLATES.size());
-        HashSet<String> variantIds = new HashSet<>(query.getAsStringList(VariantQueryParam.ID.key()));
+        HashSet<String> variantIds = new HashSet<>(variantQuery.getQuery().getAsStringList(VariantQueryParam.ID.key()));
         for (String template : TEMPLATES) {
             if (!variantIds.isEmpty() && !variantIds.contains(template)) {
                 // Skip this variant
@@ -121,7 +118,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
             Variant variant = new Variant(template);
 
 
-            Map<Integer, List<Integer>> returnedSamples = getReturnedSamples(query, options);
+            Map<Integer, List<Integer>> returnedSamples = getReturnedSamples(variantQuery.getQuery(), options);
             returnedSamples.forEach((study, samples) -> {
                 VariantStorageMetadataManager metadataManager = getMetadataManager();
                 StudyMetadata sm = metadataManager.getStudyMetadata(study);
@@ -136,13 +133,13 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
                 }
                 variant.addStudyEntry(st);
                 for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(sm.getId())) {
-                    VariantStats stats = new VariantStats();
+                    VariantStats stats = new VariantStats(cohort.getName());
                     stats.addGenotype(new Genotype("0/0"), cohort.getSamples().size());
-                    st.setStats(cohort.getName(), stats);
+                    st.addStats(stats);
                 }
                 List<FileEntry> files = new ArrayList<>();
                 for (Integer id : metadataManager.getIndexedFiles(sm.getId())) {
-                    files.add(new FileEntry(id.toString(), "", Collections.emptyMap()));
+                    files.add(new FileEntry(id.toString(), null, Collections.emptyMap()));
                 }
                 st.setFiles(files);
             });
@@ -202,7 +199,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     @Override
     public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions) {
         System.out.println("Update stats : "
-                + (variantStatsWrappers.isEmpty() ? "" : variantStatsWrappers.get(0).getCohortStats().keySet().toString()));
+                + (variantStatsWrappers.isEmpty() ? "" : variantStatsWrappers.get(0).getCohortStats().stream().map(VariantStats::getCohortId).collect(Collectors.joining(","))));
 
         return new DataResult();
     }

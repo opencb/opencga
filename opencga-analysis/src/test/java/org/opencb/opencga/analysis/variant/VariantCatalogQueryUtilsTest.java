@@ -31,7 +31,8 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 import java.lang.reflect.Field;
@@ -42,7 +43,7 @@ import static org.junit.Assert.*;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.SKIP_MISSING_GENES;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.SKIP_MISSING_GENES;
 
 /**
  * Created on 12/12/17.
@@ -309,7 +310,7 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
         assertFalse(VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO));
-        assertTrue(VariantQueryUtils.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA)));
+        assertTrue(VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA)));
     }
 
     @Test
@@ -318,7 +319,7 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_DE_NOVO.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
         assertFalse(VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR));
-        assertTrue(VariantQueryUtils.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA)));
+        assertTrue(VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA)));
     }
 
     @Test

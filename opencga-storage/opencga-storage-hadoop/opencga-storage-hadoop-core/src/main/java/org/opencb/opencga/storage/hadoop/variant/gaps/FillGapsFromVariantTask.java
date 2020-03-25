@@ -121,7 +121,7 @@ public class FillGapsFromVariantTask implements Task<Variant, Put> {
         for (Map.Entry<String, Integer> entry : studyEntry.getSamplesPosition().entrySet()) {
             Integer sampleId = entry.getValue();
             String sampleName = entry.getKey();
-            if (studyEntry.getSamplesData().get(sampleId).get(0).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+            if (studyEntry.getSamples().get(sampleId).getData().get(0).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
                 missingSamples.add(fillGapsTask.getSampleId(sampleName));
             }
         }
