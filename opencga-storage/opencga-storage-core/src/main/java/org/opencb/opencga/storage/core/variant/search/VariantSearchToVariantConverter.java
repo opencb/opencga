@@ -699,6 +699,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         VariantAnnotation variantAnnotation = variant.getAnnotation();
         if (variantAnnotation != null) {
 
+            if (StringUtils.isNotEmpty(variantAnnotation.getId())) {
+                xrefs.add(variantAnnotation.getId());
+            }
+
             // This object will store all info and descriptions for full-text search
             Set<String> traits = new HashSet<>();
 

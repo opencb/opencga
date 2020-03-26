@@ -44,11 +44,32 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchM
 public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQueryExecutor {
 
     private Logger logger = LoggerFactory.getLogger(SearchIndexVariantQueryExecutor.class);
+    private boolean intersectActive;
+    private boolean intersectAlways;
+    private int intersectParamsThreshold;
 
     public SearchIndexVariantQueryExecutor(VariantDBAdaptor dbAdaptor, VariantSearchManager searchManager,
                                            String storageEngineId, String dbName, StorageConfiguration configuration,
                                            ObjectMap options) {
         super(dbAdaptor, searchManager, storageEngineId, dbName, configuration, options);
+        intersectActive = getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue());
+        intersectAlways = getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue());
+        intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
+    }
+
+    public SearchIndexVariantQueryExecutor setIntersectActive(boolean intersectActive) {
+        this.intersectActive = intersectActive;
+        return this;
+    }
+
+    public SearchIndexVariantQueryExecutor setIntersectAlways(boolean intersectAlways) {
+        this.intersectAlways = intersectAlways;
+        return this;
+    }
+
+    public SearchIndexVariantQueryExecutor setIntersectParamsThreshold(int intersectParamsThreshold) {
+        this.intersectParamsThreshold = intersectParamsThreshold;
+        return this;
     }
 
     @Override
@@ -212,10 +233,15 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
      * @return          true if should resolve only with SearchManager
      */
     public boolean doQuerySearchManager(Query query, QueryOptions options) {
-        return !VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO) // YES or AUTO
-                && isQueryCovered(query)
-                && (options.getBoolean(QueryOptions.COUNT) || isIncludeCovered(options))
-                && searchActiveAndAlive();
+        if (VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO)) {
+            return false;
+        } // else, YES or AUTO
+        if (isQueryCovered(query) && isIncludeCovered(options)) {
+            if (searchActiveAndAlive()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -230,12 +256,13 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
 
         final boolean intersect;
         boolean active = searchActiveAndAlive();
-
-        if (!getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue())
-                || useSearchIndex.equals(VariantStorageEngine.UseSearchIndex.NO)) {
+        if (useSearchIndex.equals(VariantStorageEngine.UseSearchIndex.NO)) {
+            // useSearchIndex = NO
+            intersect = false;
+        } else if (!intersectActive) {
             // If intersect is not active, do not intersect.
             intersect = false;
-        } else if (getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue())) {
+        } else if (intersectAlways) {
             // If always intersect, intersect if available
             intersect = active;
         } else if (!active) {
@@ -248,7 +275,6 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             // Count only real params
             Collection<VariantQueryParam> coveredParams = coveredParams(query);
             coveredParams.removeAll(MODIFIER_QUERY_PARAMS);
-            int intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
             intersect = coveredParams.size() >= intersectParamsThreshold;
         }
 

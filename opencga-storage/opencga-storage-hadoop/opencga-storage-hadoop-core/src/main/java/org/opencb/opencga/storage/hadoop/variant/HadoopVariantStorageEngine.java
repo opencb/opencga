@@ -973,7 +973,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         executors.add(new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SearchIndexVariantQueryExecutor(
-                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions()));
+                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions())
+                .setIntersectParamsThreshold(1));
         executors.add(new HBaseColumnIntersectVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new DBAdaptorVariantQueryExecutor(
