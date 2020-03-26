@@ -123,6 +123,7 @@ public final class VariantQueryUtils {
             INCLUDE_SAMPLE,
 //            INCLUDE_COHORT,
             INCLUDE_SAMPLE_DATA,
+            INCLUDE_SAMPLE_ID,
             INCLUDE_GENOTYPE,
             UNKNOWN_GENOTYPE,
             SAMPLE_METADATA,
