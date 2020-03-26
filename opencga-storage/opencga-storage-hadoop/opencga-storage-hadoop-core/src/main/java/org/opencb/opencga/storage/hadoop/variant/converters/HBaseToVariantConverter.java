@@ -122,7 +122,9 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     public HBaseToVariantConverter<T> configure(HBaseVariantConverterConfiguration configuration) {
         this.configuration = configuration;
         studyEntryConverter.configure(configuration);
-        annotationConverter.setIncludeFields(configuration.getProjection().getFields());
+        if (configuration.getProjection() != null) {
+            annotationConverter.setIncludeFields(configuration.getProjection().getFields());
+        }
         annotationConverter.setIncludeIndexStatus(configuration.getIncludeIndexStatus());
         return this;
     }

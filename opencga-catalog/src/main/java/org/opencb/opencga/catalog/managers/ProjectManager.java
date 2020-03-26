@@ -997,7 +997,7 @@ public class ProjectManager extends AbstractManager {
         String userOfQuery = this.catalogManager.getUserManager().getUserId(sessionId);
         if (!userOfQuery.equals(userId)) {
             // The user cannot read projects of other users.
-            throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", -1, userId);
+            throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", null, userId);
         }
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -1022,7 +1022,7 @@ public class ProjectManager extends AbstractManager {
         String userOfQuery = this.catalogManager.getUserManager().getUserId(sessionId);
         if (!userOfQuery.equals(userId)) {
             // The user cannot read projects of other users.
-            throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", -1, userId);
+            throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", null, userId);
         }
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -1047,7 +1047,7 @@ public class ProjectManager extends AbstractManager {
         String userOfQuery = this.catalogManager.getUserManager().getUserId(sessionId);
         if (!userOfQuery.equals(userId)) {
             // The user cannot read projects of other users.
-            throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", -1, userId);
+            throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", null, userId);
         }
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.

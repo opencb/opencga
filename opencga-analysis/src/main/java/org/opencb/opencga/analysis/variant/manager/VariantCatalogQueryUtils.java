@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -46,6 +47,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -858,7 +860,15 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                                                           Function<T, String> getId, Function<T, Integer> getRelease,
                                                                           Consumer<T> valueValidator, String sessionId)
                 throws CatalogException {
-            DataResult<T> queryResult = manager.get(defaultStudyStr, values, RELEASE_OPTIONS, sessionId);
+            return validate(defaultStudyStr, values, release, param, manager, getId, getRelease, valueValidator, sessionId, new Query());
+        }
+
+        protected final <T extends PrivateStudyUid> List<String> validate(String defaultStudyStr, List<String> values, Integer release,
+                                                                          VariantQueryParam param, ResourceManager<T> manager,
+                                                                          Function<T, String> getId, Function<T, Integer> getRelease,
+                                                                          Consumer<T> valueValidator, String sessionId, Query query)
+                throws CatalogException {
+            DataResult<T> queryResult = manager.get(defaultStudyStr, values, query, RELEASE_OPTIONS, false, sessionId);
             List<String> validatedValues = new ArrayList<>(values.size());
             for (T value : queryResult.getResults()) {
                 if (valueValidator != null) {
@@ -926,13 +936,25 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
+                String userId = catalogManager.getUserManager().getUserId(sessionId);
 //                DataResult<Sample> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
 //                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
-                DataResult<Sample> samples = catalogManager.getSampleManager().search(defaultStudyStr,
-                        new Query(SampleDBAdaptor.QueryParams.ID.key(), values),
-                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
+                DataResult<Sample> samples = catalogManager.getSampleManager()
+                        .search(defaultStudyStr, new Query(SampleDBAdaptor.QueryParams.ID.key(), values)
+                                        .append(ParamConstants.ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
+                                SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
                 if (samples.getResults().size() != values.size()) {
-                    throw new CatalogException("Some samples not found");
+                    samples = catalogManager.getSampleManager()
+                            .search(defaultStudyStr, new Query(SampleDBAdaptor.QueryParams.ID.key(), values),
+                                    SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
+                    if (samples.getResults().size() != values.size()) {
+                        // Can not view some samples. May not exist
+                        throw new CatalogAuthorizationException("Some samples from query param '" + param.key() + "' can not be found");
+                    } else {
+                        // Can not view_variants in some samples.
+                        throw new CatalogAuthorizationException("Some samples from query param '" + param.key() + "' "
+                                + "can not be used for filtering variants");
+                    }
                 }
                 return samples.getResults().stream().map(Sample::getId).collect(Collectors.toList());
             } else {

@@ -333,8 +333,8 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         .append(VariantQueryParam.SAMPLE.key(), sample)
                         .append(VariantQueryParam.REGION.key(), new Region(svVariant.getChromosome(), svVariant.getStart(), svVariant.getEnd()));
 
-                List<String> svSampleData = svVariant.getStudies().get(0).getSampleData(0);
-                FileEntry svFileEntry = svVariant.getStudies().get(0).getFiles().get(Integer.parseInt(svSampleData.get(1)));
+                SampleEntry svSample = svVariant.getStudies().get(0).getSample(0);
+                FileEntry svFileEntry = svVariant.getStudies().get(0).getFiles().get(svSample.getFileIndex());
 
                 iterate(thisSvQuery, variant -> {
                     if (variant.sameGenomicVariant(svVariant)) {
@@ -346,7 +346,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
                         if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
                             if (transcripts.contains(consequenceType.getEnsemblTranscriptId())) {
-                                addGene(variant.toString(), svSampleData.get(0), svFileEntry, consequenceType, knockoutGenes,
+                                addGene(variant.toString(), svSample.getData().get(0), svFileEntry, consequenceType, knockoutGenes,
                                         KnockoutVariant.KnockoutType.DELETION_OVERLAP);
                                 addGene(svVariant.toString(), sampleEntry.getData().get(0), fileEntry, consequenceType, knockoutGenes,
                                         KnockoutVariant.KnockoutType.DELETION_OVERLAP);

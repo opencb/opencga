@@ -115,6 +115,8 @@ public enum VariantField {
     private static final List<VariantField> SUMMARY_EXCLUDED_FIELDS = Arrays.asList(
             STUDIES_FILES,
             STUDIES_SAMPLES,
+            STUDIES_ISSUES,
+            STUDIES_SCORES,
             STUDIES_SECONDARY_ALTERNATES);
 
     public static final String SUMMARY = "summary";

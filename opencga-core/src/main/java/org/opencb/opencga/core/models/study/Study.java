@@ -19,7 +19,6 @@ package org.opencb.opencga.core.models.study;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;

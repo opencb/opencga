@@ -32,19 +32,19 @@ public class CatalogAuthorizationException extends CatalogException {
         super(cause);
     }
 
-    public static CatalogAuthorizationException cantRead(String userId, String resource, long id, String name) {
+    public static CatalogAuthorizationException cantRead(String userId, String resource, String id, String name) {
         return deny(userId, "read", resource, id, name);
     }
 
-    public static CatalogAuthorizationException cantWrite(String userId, String resource, long id, String name) {
+    public static CatalogAuthorizationException cantWrite(String userId, String resource, String id, String name) {
         return deny(userId, "write", resource, id, name);
     }
 
-    public static CatalogAuthorizationException cantModify(String userId, String resource, long id, String name) {
+    public static CatalogAuthorizationException cantModify(String userId, String resource, String id, String name) {
         return deny(userId, "modify", resource, id, name);
     }
 
-    public static CatalogAuthorizationException cantExecute(String userId, String resource, long id, String name) {
+    public static CatalogAuthorizationException cantExecute(String userId, String resource, String id, String name) {
         return deny(userId, "execute", resource, id, name);
     }
 
