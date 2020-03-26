@@ -16,6 +16,7 @@ class PythonClientGenerator(RestClientGenerator):
             'string': 'str',
             'integer': 'int',
             'int': 'int',
+            'long': 'int',
             'map': 'dict',
             'boolean': 'bool',
             'enum': 'str',
