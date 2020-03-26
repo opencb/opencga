@@ -847,15 +847,13 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         sampleManager.create(studyFqn, new Sample().setId("s4"), QueryOptions.empty(), ownerSessionId);
         sampleManager.create(studyFqn, new Sample().setId("s5"), QueryOptions.empty(), ownerSessionId);
 
-        sampleManager.updateAcl(studyFqn, Collections.singletonList("s1"), memberUser, new SampleAclParams(
-                SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.DELETE.name(), AclParams.Action.SET,
-                null, null, null), ownerSessionId);
-        sampleManager.updateAcl(studyFqn, Collections.singletonList("s2"), memberUser, new SampleAclParams(
-                SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(),
-                AclParams.Action.SET, null, null, null), ownerSessionId);
+        sampleManager.updateAcl(studyFqn, Collections.singletonList("s1"), memberUser,
+                new SampleAclParams(SampleAclEntry.SamplePermissions.DELETE.name(), AclParams.Action.SET, null, null, null), ownerSessionId);
+        sampleManager.updateAcl(studyFqn, Collections.singletonList("s2"), memberUser,
+                new SampleAclParams(SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(), AclParams.Action.SET, null, null, null),
+                ownerSessionId);
         sampleManager.updateAcl(studyFqn, Collections.singletonList("s3"), memberUser, new SampleAclParams(
-                SampleAclEntry.SamplePermissions.UPDATE.name() + "," + SampleAclEntry.SamplePermissions.DELETE.name(), AclParams.Action.SET,
-                null, null, null), ownerSessionId);
+                SampleAclEntry.SamplePermissions.DELETE.name(), AclParams.Action.SET, null, null, null), ownerSessionId);
         sampleManager.updateAcl(studyFqn, Collections.singletonList("s4"), memberUser, new SampleAclParams(
                 SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null), ownerSessionId);
 
@@ -864,8 +862,17 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         // member user wants to know the samples for which he has DELETE permissions
         Query query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.DELETE.name());
         List<Sample> results = sampleManager.search(studyFqn, query, options, memberSessionId).getResults();
-        assertEquals(2, results.stream().map(Sample::getId).collect(Collectors.toSet()).size());
-        assertTrue(Arrays.asList("s1", "smp6").containsAll(results.stream().map(Sample::getId).collect(Collectors.toSet())));
+        assertEquals(3, results.stream().map(Sample::getId).collect(Collectors.toSet()).size());
+        assertTrue(Arrays.asList("s1", "s3", "smp6").containsAll(results.stream().map(Sample::getId).collect(Collectors.toSet())));
+
+        // member user wants to know the samples for which he has UPDATE permissions
+        // He should have UPDATE permissions in the same samples where he has DELETE permissions
+        query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.UPDATE.name());
+        results = sampleManager.search(studyFqn, query, options, memberSessionId).getResults();
+        System.out.println(results.stream().map(Sample::getId).collect(Collectors.toSet()));
+        assertEquals(8, results.stream().map(Sample::getId).collect(Collectors.toSet()).size());
+        assertTrue(Arrays.asList("s1", "s3", "s5", "smp1", "smp3", "smp4", "smp5", "smp6")
+                .containsAll(results.stream().map(Sample::getId).collect(Collectors.toSet())));
 
         // Owner user wants to know the samples for which member user has DELETE permissions
         query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.DELETE.name());

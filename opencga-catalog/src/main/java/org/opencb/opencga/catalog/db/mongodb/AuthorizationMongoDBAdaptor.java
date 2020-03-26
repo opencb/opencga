@@ -600,9 +600,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, List<String> permissions, String entity,
                                                           ClientSession clientSession) {
         // We only store if a member has internal permissions defined if it hasn't been given VIEW permission
-        if (permissions.contains("VIEW")) {
-            return;
-        }
+//        if (permissions.contains("VIEW")) {
+//            return;
+//        }
 
         Document queryDocument = new Document()
                 .append(PRIVATE_UID, studyId);

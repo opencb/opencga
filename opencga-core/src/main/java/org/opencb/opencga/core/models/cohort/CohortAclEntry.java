@@ -19,9 +19,7 @@ package org.opencb.opencga.core.models.cohort;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -30,12 +28,32 @@ import java.util.stream.Collectors;
 public class CohortAclEntry extends AbstractAclEntry<CohortAclEntry.CohortPermissions> {
 
     public enum CohortPermissions {
-        VIEW,
-        UPDATE,
-        DELETE,
-        WRITE_ANNOTATIONS,
-        VIEW_ANNOTATIONS,
-        DELETE_ANNOTATIONS
+        VIEW(Collections.emptyList()),
+        UPDATE(Collections.singletonList(VIEW)),
+        DELETE(Arrays.asList(VIEW, UPDATE)),
+        VIEW_ANNOTATIONS(Collections.singletonList(VIEW)),
+        WRITE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, VIEW)),
+        DELETE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, WRITE_ANNOTATIONS, VIEW));
+
+        private List<CohortPermissions> implicitPermissions;
+
+        CohortPermissions(List<CohortPermissions> implicitPermissions) {
+            this.implicitPermissions = implicitPermissions;
+        }
+
+        public List<CohortPermissions> getImplicitPermissions() {
+            return implicitPermissions;
+        }
+
+        public List<CohortPermissions> getDependentPermissions() {
+            List<CohortPermissions> dependentPermissions = new LinkedList<>();
+            for (CohortPermissions permission : EnumSet.complementOf(EnumSet.of(this))) {
+                if (permission.getImplicitPermissions().contains(this)) {
+                    dependentPermissions.add(permission);
+                }
+            }
+            return dependentPermissions;
+        }
     }
 
     public CohortAclEntry() {
