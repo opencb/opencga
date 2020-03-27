@@ -109,7 +109,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
                 .setTool(StringUtils.isNotEmpty(commandOptions.toolId) ? new ToolInfo(commandOptions.toolId, "", null, null, null) : null);
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
         return openCGAClient.getJobClient().create(createParams, params);
     }
@@ -120,7 +120,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         JobCommandOptions.InfoCommandOptions commandOptions = jobsCommandOptions.infoCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
 
@@ -133,7 +133,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         JobCommandOptions.SearchCommandOptions commandOptions = jobsCommandOptions.searchCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.ID.key(), commandOptions.id);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), commandOptions.toolName);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), commandOptions.status);
@@ -154,13 +154,13 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
 
     private void top() throws Exception {
         JobCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
-        String study = resolveStudy(c.study);
+        String study = c.study;
         new JobsTopManager(openCGAClient, study, c.iterations, c.jobsLimit, c.delay).run();
     }
 
     private void log() throws Exception {
         JobCommandOptions.LogCommandOptions c = jobsCommandOptions.logCommandOptions;
-        c.study = resolveStudy(c.study);
+        c.study = c.study;
         new JobsLog(openCGAClient, c, System.out).run();
     }
 
@@ -170,7 +170,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         JobCommandOptions.DeleteCommandOptions commandOptions = jobsCommandOptions.deleteCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.put("deleteFiles", commandOptions.deleteFiles);
         return openCGAClient.getJobClient().delete(commandOptions.job, params);
     }

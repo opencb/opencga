@@ -120,7 +120,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             openCGAClient.setUserId(cliSession.getUser());
 
                             // Update token
-                            if (claimsMap.containsKey("exp")) {
+                            if (clientConfiguration.getRest().isTokenAutoRefresh() && claimsMap.containsKey("exp")) {
                                 cliSession.setToken(openCGAClient.refresh());
                                 updateCliSessionFile();
                             }
@@ -170,29 +170,6 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             throw new CatalogException("Could not parse file " + filePath + ". Is it a valid JSON file?. "
                     + e.getMessage(), e);
         }
-    }
-
-    protected String resolveStudy(String study) {
-        if (StringUtils.isEmpty(study)) {
-            if (StringUtils.isNotEmpty(clientConfiguration.getDefaultStudy())) {
-                return clientConfiguration.getDefaultStudy();
-            }
-        } else {
-            // study is not empty, let's check if it is an alias
-            if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().size() > 0) {
-                String[] studies = study.split(",");
-                List<String> studyList = new ArrayList<>(studies.length);
-                for (String s : studies) {
-                    if (clientConfiguration.getAlias().containsKey(s)) {
-                        studyList.add(clientConfiguration.getAlias().get(study));
-                    } else {
-                        studyList.add(s);
-                    }
-                }
-                return StringUtils.join(studyList, ",");
-            }
-        }
-        return study;
     }
 
     protected String extractIdsFromListOrFile(String ids) throws CatalogException {

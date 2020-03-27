@@ -101,7 +101,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
         SampleCommandOptions.CreateCommandOptions commandOptions = samplesCommandOptions.createCommandOptions;
 
-        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
         SampleCreateParams createParams = new SampleCreateParams()
                 .setId(commandOptions.id)
@@ -118,7 +118,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         SampleCommandOptions.LoadCommandOptions c = samplesCommandOptions.loadCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(c.study));
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), c.study);
         params.putIfNotEmpty(Constants.VARIABLE_SET, c.variableSetId);
 
         return openCGAClient.getSampleClient().load(c.pedFile, params);
@@ -130,7 +130,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         SampleCommandOptions.InfoCommandOptions c = samplesCommandOptions.infoCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(c.study));
+        params.putIfNotNull(SampleDBAdaptor.QueryParams.STUDY.key(), c.study);
         params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
         params.put("flattenAnnotations", c.flattenAnnotations);
@@ -145,7 +145,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         SampleCommandOptions.SearchCommandOptions c = samplesCommandOptions.searchCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(c.study));
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), c.study);
         params.putIfNotNull(SampleDBAdaptor.QueryParams.SOMATIC.key(), c.somatic);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), c.individual);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), c.annotation);
@@ -172,7 +172,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 .setIndividualId(commandOptions.individual)
                 .setSomatic(commandOptions.somatic);
 
-        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
         return openCGAClient.getSampleClient().update(commandOptions.sample, updateParams, params);
     }
@@ -211,7 +211,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         SampleCommandOptions.StatsCommandOptions commandOptions = samplesCommandOptions.statsCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty("creationYear", commandOptions.creationYear);
         params.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
         params.putIfNotEmpty("creationDay", commandOptions.creationDay);

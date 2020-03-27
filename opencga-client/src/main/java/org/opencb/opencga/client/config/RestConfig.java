@@ -22,18 +22,26 @@ package org.opencb.opencga.client.config;
 public class RestConfig {
 
     private String host;
-    private int batchQuerySize;
-    private int timeout;
-    private int defaultLimit;
+    private boolean tokenAutoRefresh;
+    private QueryRestConfig query;
 
     public RestConfig() {
     }
 
-    public RestConfig(String host, int batchQuerySize, int timeout, int defaultLimit) {
+    public RestConfig(String host, boolean tokenAutoRefresh, QueryRestConfig query) {
         this.host = host;
-        this.batchQuerySize = batchQuerySize;
-        this.timeout = timeout;
-        this.defaultLimit = defaultLimit;
+        this.tokenAutoRefresh = tokenAutoRefresh;
+        this.query = query;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("RestConfig{");
+        sb.append("host='").append(host).append('\'');
+        sb.append(", tokenAutoRefresh=").append(tokenAutoRefresh);
+        sb.append(", query=").append(query);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getHost() {
@@ -45,30 +53,21 @@ public class RestConfig {
         return this;
     }
 
-    public int getBatchQuerySize() {
-        return batchQuerySize;
+    public boolean isTokenAutoRefresh() {
+        return tokenAutoRefresh;
     }
 
-    public RestConfig setBatchQuerySize(int batchQuerySize) {
-        this.batchQuerySize = batchQuerySize;
+    public RestConfig setTokenAutoRefresh(boolean tokenAutoRefresh) {
+        this.tokenAutoRefresh = tokenAutoRefresh;
         return this;
     }
 
-    public int getTimeout() {
-        return timeout;
+    public QueryRestConfig getQuery() {
+        return query;
     }
 
-    public RestConfig setTimeout(int timeout) {
-        this.timeout = timeout;
-        return this;
-    }
-
-    public int getDefaultLimit() {
-        return defaultLimit;
-    }
-
-    public RestConfig setDefaultLimit(int defaultLimit) {
-        this.defaultLimit = defaultLimit;
+    public RestConfig setQuery(QueryRestConfig query) {
+        this.query = query;
         return this;
     }
 }

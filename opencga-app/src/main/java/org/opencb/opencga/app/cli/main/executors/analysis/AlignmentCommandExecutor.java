@@ -174,7 +174,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     private RestResponse<ReadAlignment> queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions cliOptions)
             throws ClientException {
-        String study = resolveStudy(alignmentCommandOptions.queryAlignmentCommandOptions.study);
+        String study = alignmentCommandOptions.queryAlignmentCommandOptions.study;
 
         ObjectMap params = new ObjectMap();
 
@@ -207,7 +207,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 //        watch.start();
         // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
 
-        String study = resolveStudy(alignmentCommandOptions.queryAlignmentCommandOptions.study);
+        String study = alignmentCommandOptions.queryAlignmentCommandOptions.study;
 
         Map<String, String> query = new HashMap<>();
         addParam(query, FILE_ID_PARAM, cliOptions.file);

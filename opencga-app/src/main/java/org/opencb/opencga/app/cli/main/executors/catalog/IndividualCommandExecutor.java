@@ -122,7 +122,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                         : Collections.emptyList());
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
         return openCGAClient.getIndividualClient().create(createParams, params);
     }
@@ -133,7 +133,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         IndividualCommandOptions.InfoCommandOptions commandOptions = individualsCommandOptions.infoCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotNull(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
         params.putIfNotNull(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
         params.put("flattenAnnotations", commandOptions.flattenAnnotations);
@@ -147,7 +147,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         IndividualCommandOptions.SearchCommandOptions commandOptions = individualsCommandOptions.searchCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), commandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), commandOptions.fatherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), commandOptions.motherId);
@@ -197,7 +197,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         }
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
         return openCGAClient.getIndividualClient().update(commandOptions.individual, updateParams, params);
     }
@@ -205,7 +205,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Individual> delete() throws ClientException {
         logger.debug("Deleting individual information");
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.deleteCommandOptions.study));
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.deleteCommandOptions.study);
 
         return openCGAClient.getIndividualClient().delete(individualsCommandOptions.deleteCommandOptions.individual, params);
     }
@@ -216,7 +216,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         IndividualCommandOptions.SampleCommandOptions commandOptions = individualsCommandOptions.sampleCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), commandOptions.individual);
 
         params.putIfNotNull(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);

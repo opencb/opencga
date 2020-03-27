@@ -107,27 +107,22 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
     /**
      * This method selects a single valid study from these sources and in this order. First, checks if CLI param exists,
-     * second it reads the configuration file, and third it reads the projects and studies from the session file.
+     * second it reads the projects and studies from the session file.
      * @param study parameter from the CLI
-     * @return a singe valid Study from the CLI, configuration or from the session file
+     * @return a single valid Study from the CLI, configuration or from the session file
      * @throws CatalogException when no possible single study can be chosen
      */
     private String getSingleValidStudy(String study) throws CatalogException {
         // First, check the study parameter, if is not empty we just return it, this the user's selection.
         if (StringUtils.isNotEmpty(study)) {
-            return resolveStudy(study);
+            return study;
         } else {
-            // Second, check if there is a default study in the client configuration.
-            if (StringUtils.isNotEmpty(clientConfiguration.getDefaultStudy())) {
-                return clientConfiguration.getDefaultStudy();
+            // Third, check if there is only one single project and study for this user in the current CLI session file.
+            List<String> studies = cliSession == null ? null : cliSession.getStudies();
+            if (ListUtils.isNotEmpty(studies) && studies.size() == 1) {
+                study = studies.get(0);
             } else {
-                // Third, check if there is only one single project and study for this user in the current CLI session file.
-                List<String> studies = cliSession == null ? null : cliSession.getStudies();
-                if (ListUtils.isNotEmpty(studies) && studies.size() == 1) {
-                    study = studies.get(0);
-                } else {
-                    throw new CatalogException("None or more than one study found");
-                }
+                throw new CatalogException("None or more than one study found");
             }
         }
         return study;

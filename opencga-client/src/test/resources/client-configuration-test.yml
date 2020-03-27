@@ -1,17 +1,11 @@
 ---
 rest:
   host: "http://localhost:9090/opencga"
-  batchQuerySize: 200
-  timeout: 10000
-  defaultLimit: 2000
+  query:
+    batchSize: 200
+    limit: 2000
 grpc:
   host: "http://localhost:9091"
-
-organism:
-  taxonomyCode: 9606
-  scientificName: "Homo sapiens"
-  commonName: "human"
-  assembly: "GRCh38"
 
 ## Configure the default behaviour when query variants
 variant:

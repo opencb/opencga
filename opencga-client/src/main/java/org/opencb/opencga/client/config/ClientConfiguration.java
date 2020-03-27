@@ -37,11 +37,7 @@ public class ClientConfiguration {
     private String logFile;
 
     private String version;
-    private int sessionDuration;
-
-    private String defaultStudy;
-
-    private Map<String, String> alias;
+    private int cliSessionDuration;
 
     private RestConfig rest;
     private GrpcConfig grpc;
@@ -105,9 +101,6 @@ public class ClientConfiguration {
                     case "OPENCGA_CLIENT_REST_HOST":
                         configuration.getRest().setHost(envVariables.get(variable));
                         break;
-                    case "OPENCGA_CLIENT_REST_TIMEOUT":
-                        configuration.getRest().setTimeout(Integer.valueOf(envVariables.get(variable)));
-                        break;
                     case "OPENCGA_CLIENT_GRPC_HOST":
                         configuration.getGrpc().setHost(envVariables.get(variable));
                         break;
@@ -124,9 +117,7 @@ public class ClientConfiguration {
         sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", version='").append(version).append('\'');
-        sb.append(", sessionDuration=").append(sessionDuration);
-        sb.append(", defaultStudy='").append(defaultStudy).append('\'');
-        sb.append(", alias=").append(alias);
+        sb.append(", sessionDuration=").append(cliSessionDuration);
         sb.append(", rest=").append(rest);
         sb.append(", grpc=").append(grpc);
         sb.append(", variant=").append(variant);
@@ -161,30 +152,12 @@ public class ClientConfiguration {
         return this;
     }
 
-    public int getSessionDuration() {
-        return sessionDuration;
+    public int getCliSessionDuration() {
+        return cliSessionDuration;
     }
 
-    public ClientConfiguration setSessionDuration(int sessionDuration) {
-        this.sessionDuration = sessionDuration;
-        return this;
-    }
-
-    public String getDefaultStudy() {
-        return defaultStudy;
-    }
-
-    public ClientConfiguration setDefaultStudy(String defaultStudy) {
-        this.defaultStudy = defaultStudy;
-        return this;
-    }
-
-    public Map<String, String> getAlias() {
-        return alias;
-    }
-
-    public ClientConfiguration setAlias(Map<String, String> alias) {
-        this.alias = alias;
+    public ClientConfiguration setCliSessionDuration(int cliSessionDuration) {
+        this.cliSessionDuration = cliSessionDuration;
         return this;
     }
 
