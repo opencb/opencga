@@ -182,19 +182,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // key consists of 'altStats' + "__" + studyId + "__" + cohort
                 String[] fields = StringUtils.splitByWholeSeparator(key, FIELD_SEPARATOR);
                 if (studyEntryMap.containsKey(fields[1])) {
-                    VariantStats variantStats;
-                    if (studyEntryMap.get(fields[1]).getStats() != null) {
-                        variantStats = studyEntryMap.get(fields[1]).getStats(fields[2]);
-                        if (variantStats == null) {
-                            variantStats = new VariantStats(fields[2]);
-                        }
-                    } else {
-                        variantStats = new VariantStats(fields[2]);
-                    }
+                    VariantStats variantStats = getStatsOrCreate(fields[1], fields[2]);
                     variantStats.setRefAlleleFreq(1 - variantSearchModel.getAltStats().get(key));
                     variantStats.setAltAlleleFreq(variantSearchModel.getAltStats().get(key));
                     variantStats.setMaf(Math.min(variantSearchModel.getAltStats().get(key), 1 - variantSearchModel.getAltStats().get(key)));
-                    studyEntryMap.get(fields[1]).addStats(variantStats);
                 }
             }
         }
@@ -205,19 +196,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // key consists of 'passStats' + "__" + studyId + "__" + cohort
                 String[] fields = StringUtils.splitByWholeSeparator(key, FIELD_SEPARATOR);
                 if (studyEntryMap.containsKey(fields[1])) {
-                    VariantStats variantStats;
-                    if (studyEntryMap.get(fields[1]).getStats() != null) {
-                        variantStats = studyEntryMap.get(fields[1]).getStats(fields[2]);
-                        if (variantStats == null) {
-                            variantStats = new VariantStats(fields[2]);
-                        }
-                    } else {
-                        variantStats = new VariantStats(fields[2]);
-                    }
+                    VariantStats variantStats = getStatsOrCreate(fields[1], fields[2]);
                     Map<String, Float> filterFreq = new HashMap<>();
                     filterFreq.put(VCFConstants.PASSES_FILTERS_v4, variantSearchModel.getPassStats().get(key));
                     variantStats.setFilterFreq(filterFreq);
-                    studyEntryMap.get(fields[1]).addStats(variantStats);
                 }
             }
         }
@@ -237,6 +219,21 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         return variant;
+    }
+
+    private VariantStats getStatsOrCreate(String studyId, String cohortId) {
+        VariantStats variantStats;
+        if (studyEntryMap.get(studyId).getStats() != null) {
+            variantStats = studyEntryMap.get(studyId).getStats(cohortId);
+            if (variantStats == null) {
+                variantStats = new VariantStats(cohortId);
+                studyEntryMap.get(studyId).addStats(variantStats);
+            }
+        } else {
+            variantStats = new VariantStats(cohortId);
+            studyEntryMap.get(studyId).addStats(variantStats);
+        }
+        return variantStats;
     }
 
     public VariantAnnotation getVariantAnnotation(VariantSearchModel variantSearchModel, Variant variant) {
