@@ -35,10 +35,13 @@ import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 /**
@@ -258,6 +261,40 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(queryResult.first().getInput().stream().map(File::getUid).collect(Collectors.toList())));
         assertTrue(Arrays.asList(15L, 16L, 17L)
                 .containsAll(queryResult.first().getOutput().stream().map(File::getUid).collect(Collectors.toList())));
+    }
+
+    @Test
+    public void groupByStatus() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
+        for (int i = 0; i < 10; i++) {
+            Enums.ExecutionStatus status = new Enums.ExecutionStatus();
+            if (i < 5) {
+                status.setName(Enums.ExecutionStatus.RUNNING);
+            } else {
+                status.setName(Enums.ExecutionStatus.DONE);
+            }
+            Job job = new Job()
+                    .setId("jobName" + i)
+                    .setOutDir(new File().setUid(5))
+                    .setInternal(new JobInternal(status));
+            catalogJobDBAdaptor.insert(studyId, job, null);
+        }
+
+        Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+        OpenCGAResult openCGAResult = catalogJobDBAdaptor.groupBy(query, Collections.singletonList("status.name"),
+                new QueryOptions(QueryOptions.COUNT, true), user3.getId());
+
+        assertEquals(2, openCGAResult.getResults().size());
+        for (Object o : openCGAResult.getResults()) {
+            String status = ((Map) ((Map) o).get("_id")).get("status.name").toString();
+            long count = ((Number) ((Map) o).get("count")).longValue();
+            assertThat(status, anyOf(is(Enums.ExecutionStatus.RUNNING), is(Enums.ExecutionStatus.DONE)));
+            assertEquals(5, count);
+//            System.out.println("status.name = " + status);
+//            System.out.println("count = " + count);
+        }
+
+
     }
 
 }

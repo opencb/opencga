@@ -155,7 +155,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
     private void top() throws Exception {
         JobCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
         String study = resolveStudy(c.study);
-        new JobsTop(openCGAClient, study, c.iterations, c.jobsLimit, c.delay).run();
+        new JobsTopManager(openCGAClient, study, c.iterations, c.jobsLimit, c.delay).run();
     }
 
     private void log() throws Exception {

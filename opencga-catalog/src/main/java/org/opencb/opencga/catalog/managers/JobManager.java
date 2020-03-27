@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -56,6 +57,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1259,45 +1261,105 @@ public class JobManager extends ResourceManager<Job> {
         return endResult(result, ignoreException);
     }
 
-//    public void setStatus(String studyId, String jobId, String status, String message, String token) throws CatalogException {
-//        String userId = userManager.getUserId(token);
-//        Study study = studyManager.resolveId(studyId, userId);
-//
-//        ObjectMap auditParams = new ObjectMap()
-//                .append("study", studyId)
-//                .append("jobId", jobId)
-//                .append("status", status)
-//                .append("message", message)
-//                .append("token", token);
-//        Job job;
-//        try {
-//            job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
-//        } catch (CatalogException e) {
-//            auditManager.auditUpdate(userId, Enums.Resource.JOB, jobId, "", study.getId(), study.getUuid(), auditParams,
-//                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-//            throw e;
-//        }
-//
-//        try {
-//            authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
-//
-//            if (status != null && !Job.JobStatus.isValid(status)) {
-//                throw new CatalogException("The status " + status + " is not valid job status.");
-//            }
-//
-//            ObjectMap parameters = new ObjectMap();
-//            parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
-//            parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
-//
-//            jobDBAdaptor.update(job.getUid(), parameters, QueryOptions.empty());
-//            auditManager.auditUpdate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
-//                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-//        } catch (CatalogException e) {
-//            auditManager.auditUpdate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
-//                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-//            throw e;
-//        }
-//    }
+    public OpenCGAResult<JobTop> top(String studyStr, Query baseQuery, int limit, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        authorizationManager.checkCanViewStudy(study.getUid(), userId);
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.TOOL.key(),
+                        JobDBAdaptor.QueryParams.INTERNAL.key(), JobDBAdaptor.QueryParams.EXECUTION.key(),
+                        JobDBAdaptor.QueryParams.CREATION_DATE.key()))
+                .append(QueryOptions.COUNT, false)
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+
+        baseQuery.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        int jobsLimit = limit;
+        OpenCGAResult<Job> running = jobDBAdaptor.get(
+                study.getUid(),
+                new Query(baseQuery)
+                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING),
+                new QueryOptions(queryOptions)
+                        .append(QueryOptions.LIMIT, jobsLimit)
+                        .append(QueryOptions.SORT, "execution.start"),
+                userId);
+        jobsLimit -= running.getResults().size();
+
+        OpenCGAResult<Job> queued = jobDBAdaptor.get(
+                study.getUid(),
+                new Query(baseQuery)
+                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED),
+                new QueryOptions(queryOptions)
+                        .append(QueryOptions.LIMIT, jobsLimit)
+                        .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
+                userId);
+        jobsLimit -= queued.getResults().size();
+
+        OpenCGAResult<Job> pending = jobDBAdaptor.get(
+                study.getUid(),
+                new Query(baseQuery)
+                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING),
+                new QueryOptions(queryOptions)
+                        .append(QueryOptions.LIMIT, jobsLimit)
+                        .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
+                userId);
+        jobsLimit -= pending.getResults().size();
+
+        List<Job> finishedJobs = jobDBAdaptor.get(
+                study.getUid(),
+                new Query(baseQuery)
+                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.DONE + ","
+                                + Enums.ExecutionStatus.ERROR + ","
+                                + Enums.ExecutionStatus.ABORTED),
+                new QueryOptions(queryOptions)
+                        .append(QueryOptions.LIMIT, Math.max(1, jobsLimit))
+                        .append(QueryOptions.SORT, "execution.end")
+                        .append(QueryOptions.ORDER, QueryOptions.DESCENDING), // Get last n elements,
+                userId).getResults();
+        Collections.reverse(finishedJobs); // Reverse elements
+
+        List<Job> allJobs = new ArrayList<>(running.getResults().size() + pending.getResults().size() + queued.getResults().size());
+        allJobs.addAll(finishedJobs);
+        allJobs.addAll(running.getResults());
+        allJobs.addAll(queued.getResults());
+        allJobs.addAll(pending.getResults());
+
+        OpenCGAResult result = jobDBAdaptor.groupBy(new Query(baseQuery),
+                Collections.singletonList(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()), new QueryOptions(QueryOptions.COUNT, true),
+                userId);
+        JobTopStats stats = new JobTopStats();
+        for (Object o : result.getResults()) {
+            String status = ((Map) ((Map) o).get("_id")).get(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()).toString();
+            int count = ((Number) ((Map) o).get("count")).intValue();
+            switch (status) {
+                case Enums.ExecutionStatus.RUNNING:
+                    stats.setRunning(count);
+                    break;
+                case Enums.ExecutionStatus.QUEUED:
+                    stats.setQueued(count);
+                    break;
+                case Enums.ExecutionStatus.PENDING:
+                    stats.setPending(count);
+                    break;
+                case Enums.ExecutionStatus.DONE:
+                    stats.setDone(count);
+                    break;
+                case Enums.ExecutionStatus.ERROR:
+                    stats.setError(count);
+                    break;
+                case Enums.ExecutionStatus.ABORTED:
+                    stats.setAborted(count);
+                    break;
+                default:
+                    break;
+            }
+        }
+        JobTop top = new JobTop(Date.from(Instant.now()), stats, allJobs);
+        return new OpenCGAResult<>(((int) stopWatch.getTime()), null, 1, Collections.singletonList(top), 1);
+    }
 
     @Override
     public OpenCGAResult rank(String studyId, Query query, String field, int numResults, boolean asc, String token)
