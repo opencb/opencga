@@ -477,7 +477,7 @@ public class ProjectManager extends AbstractManager {
     }
 
     public Map<String, Object> facet(String projectStr, String fileFields, String sampleFields, String individualFields,
-                                     String cohortFields, String familyFields, boolean defaultStats, String sessionId)
+                                     String cohortFields, String familyFields, String jobFields, boolean defaultStats, String sessionId)
             throws CatalogException, IOException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Project project = resolveId(projectStr, userId);
@@ -488,7 +488,7 @@ public class ProjectManager extends AbstractManager {
         Map<String, Object> result = new HashMap<>();
         for (Study study : studyDataResult.getResults()) {
             result.put(study.getId(), catalogManager.getStudyManager().facet(study.getFqn(), fileFields, sampleFields, individualFields,
-                    cohortFields, familyFields, defaultStats, sessionId));
+                    cohortFields, familyFields, jobFields, defaultStats, sessionId));
         }
 
         return result;
