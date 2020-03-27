@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.rest.name }}
+  labels:
+    app: {{  .Values.rest.name  }}
+spec:
+  replicas: {{ .Values.rest.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{  .Values.rest.name  }}
+  template:
+    metadata:
+      labels:
+        app: {{  .Values.rest.name  }}
+    spec:
+    {{- with .Values.rest.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ .Values.rest.name }}
+      securityContext:
+        {{- toYaml .Values.rest.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.rest.securityContext | nindent 12 }}
+          image: "{{ .Values.rest.image.repository }}"
+          imagePullPolicy: {{ .Values.rest.image.pullPolicy }}
+          command: ["/bin/sh"]
+          args: 
+          - "-c"
+          - "echo $PASSWORD | /opt/opencga/bin/opencga-admin.sh server rest --start"
+          env:
+          - name:  "PASSWORD"
+            value: {{ .Values.openCGApassword  }} 
+          ports:
+            - name: http
+              containerPort: 9090
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /opencga/webservices/rest/v1/meta/status
+              port: 9090
+          readinessProbe:
+            httpGet:
+              path: /opencga/webservices/rest/v1/meta/status
+              port: 9090
+          resources:
+            {{- toYaml .Values.rest.resources | nindent 12 }}
+          volumeMounts:
+          - name : conf
+            mountPath: /opt/opencga/conf
+          - name : sessions
+            mountPath: /opt/opencga/sessions
+          - name : variants
+            mountPath: /opt/opencga/variants
+      volumes:
+      - name: conf
+        azureFile:
+          secretName: azure-files-secret
+          shareName: conf
+          readOnly: true
+      - name: sessions
+        azureFile:
+          secretName: azure-files-secret
+          shareName: sessions
+          readOnly: false
+      - name: variants
+        azureFile:
+          secretName: azure-files-secret
+          shareName: variants
+          readOnly: false
+      {{- with .Values.rest.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.rest.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.rest.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

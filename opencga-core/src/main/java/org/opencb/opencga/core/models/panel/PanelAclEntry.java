@@ -19,9 +19,7 @@ package org.opencb.opencga.core.models.panel;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -30,9 +28,29 @@ import java.util.stream.Collectors;
 public class PanelAclEntry extends AbstractAclEntry<PanelAclEntry.PanelPermissions> {
 
     public enum PanelPermissions {
-        VIEW,
-        UPDATE,
-        DELETE
+        VIEW(Collections.emptyList()),
+        UPDATE(Collections.singletonList(VIEW)),
+        DELETE(Arrays.asList(VIEW, UPDATE));
+
+        private List<PanelPermissions> implicitPermissions;
+
+        PanelPermissions(List<PanelPermissions> implicitPermissions) {
+            this.implicitPermissions = implicitPermissions;
+        }
+
+        public List<PanelPermissions> getImplicitPermissions() {
+            return implicitPermissions;
+        }
+
+        public List<PanelPermissions> getDependentPermissions() {
+            List<PanelPermissions> dependentPermissions = new LinkedList<>();
+            for (PanelPermissions permission : EnumSet.complementOf(EnumSet.of(this))) {
+                if (permission.getImplicitPermissions().contains(this)) {
+                    dependentPermissions.add(permission);
+                }
+            }
+            return dependentPermissions;
+        }
     }
 
     public PanelAclEntry() {

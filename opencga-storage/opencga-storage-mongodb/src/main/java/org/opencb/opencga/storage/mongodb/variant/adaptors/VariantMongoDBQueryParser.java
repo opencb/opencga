@@ -1182,9 +1182,10 @@ public class VariantMongoDBQueryParser {
                         // Put if absent. Do not overwrite $elemMatch, if any
                         projection.putIfAbsent(key, 1);
                     }
-                } else {
-                    logger.warn("Unknown include field: {}", s);
                 }
+//                else {
+//                    logger.warn("Unknown include field: {}", s);
+//                }
             }
         }
 

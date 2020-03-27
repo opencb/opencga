@@ -1,0 +1,166 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.master.name }}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.master.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "opencga.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "opencga.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.master.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ .Values.master.name }}
+      securityContext:
+        {{- toYaml .Values.master.podSecurityContext | nindent 8 }}
+      initContainers:
+      - name: {{ .Values.init.name }}
+        securityContext:
+          {{- toYaml .Values.init.securityContext | nindent 12 }}
+        image: "{{ .Values.init.image.repository }}"
+        imagePullPolicy: {{ .Values.init.image.pullPolicy }}
+        resources:
+          {{- toYaml .Values.init.resources | nindent 12 }}
+        args: [{{ .Values.init.catalogSecretKey }}]
+        env:
+        - name:  "INIT_OPENCGA_PASS"
+          value: {{ .Values.openCGApassword  }} 
+        - name:  "INIT_HEALTH_CHECK_INTERVAL"
+          value: "30"
+        - name: "INIT_VARIANT_DEFAULT_ENGINE"
+          value: hadoop
+        - name: "INIT_HADOOP_SSH_DNS"
+          value: {{ .Values.hadoop.sshDns  }} 
+        - name: "INIT_HADOOP_SSH_USER"
+          value: {{ .Values.hadoop.sshUsername  }} 
+        - name: "INIT_HADOOP_SSH_PASS"
+          value:  {{ .Values.hadoop.sshPassword  }}
+        - name: "INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
+          value:  "/home/{{ .Values.hadoop.sshUsername  }}/opencga/" 
+        - name: "INIT_SEARCH_HOSTS"
+        {{- if .Values.deploySolr }}
+          value: http://opencga-solr-svc:8983
+        {{- else }}
+          value:  {{ .Values.search.hosts | toString | quote }}
+        {{- end }} 
+        - name: "INIT_CLINICAL_HOSTS"
+          value:  {{ .Values.clinical.hosts | toString | quote}}
+        - name: "INIT_CATALOG_DATABASE_HOSTS"
+        {{- if .Values.deployMongo }}
+          value:  opencga-mongodb-replicaset
+        {{- else }}
+          value:  {{ .Values.catalog.database.hosts | toString | quote}}
+        {{- end }} 
+        - name: "INIT_CATALOG_DATABASE_USER"
+          value:  {{ .Values.catalog.database.user  }} 
+        - name: "INIT_CATALOG_DATABASE_PASSWORD"
+          value:  {{ .Values.catalog.database.password  }} 
+        - name: "INIT_CATALOG_SEARCH_HOSTS"
+        {{- if .Values.deploySolr }}
+          value: http://opencga-solr-svc:8983
+        {{- else }}
+          value:  {{ .Values.catalog.searchEngine.hosts | toString | quote }}
+        {{- end }} 
+        - name: "INIT_CATALOG_SEARCH_USER"
+          value:  {{ .Values.catalog.searchEngine.user  }} 
+        - name: "INIT_CATALOG_SEARCH_PASSWORD"
+          value:  {{ .Values.catalog.searchEngine.password  }} 
+        - name: "INIT_REST_HOST"
+          value:   "http://{{ .Values.rest.name }}/opencga"
+        - name: "INIT_GRPC_HOST"
+          value:   {{ .Values.grpc.name }} 
+        - name: "INIT_CELLBASE_MONGO_HOSTS"
+          value: {{ .Values.cellbase.database.hosts | toString | quote}}
+        - name: "INIT_CELLBASE_MONGO_HOSTS_USER"
+          value: {{ .Values.cellbase.database.user  }} 
+        - name: "INIT_CELLBASE_MONGO_HOSTS_PASSWORD"
+          value: {{ .Values.cellbase.database.password   }} 
+        - name: "INIT_CELLBASE_REST_URLS"
+          value: {{ .Values.cellbase.hosts  | toString   | quote }}
+        - name: "INIT_K8S_MASTER_NODE"
+          value: {{ .Values.analysis.execution.options.k8s.masterNode }} 
+        - name: "INIT_ANALYSIS_EXECUTION_MODE"
+          value: {{ .Values.analysis.execution.id | quote }}
+        - name: "INIT_MAX_CONCURRENT_JOBS"
+          value: {{ .Values.analysis.index.variant.maxConcurrentJobs  | quote }}
+        volumeMounts:
+          - name: default-conf
+            mountPath: /opt/opencga/default-conf
+          - name : conf
+            mountPath: /opt/volume/conf
+          - name : sessions
+            mountPath: /opt/volume/sessions
+    {{- with .Values.init.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.init.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.init.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      
+      containers:
+        - name: {{ .Values.master.name }}
+          securityContext:
+            {{- toYaml .Values.master.securityContext | nindent 12 }}
+          image: "{{ .Values.master.image.repository }}"
+          imagePullPolicy: {{ .Values.master.image.pullPolicy }}
+          command: ["/bin/sh"]
+          args: 
+          - "-c"
+          - "echo $PASSWORD | /opt/opencga/bin/opencga-admin.sh catalog daemon --start "
+          env:
+          - name:  "PASSWORD"
+            value: {{ .Values.openCGApassword  }} 
+          resources:
+            {{- toYaml .Values.master.resources | nindent 12 }}
+          volumeMounts:
+          - name : conf
+            mountPath: /opt/opencga/conf
+          - name : sessions
+            mountPath: /opt/opencga/sessions
+          - name : variants
+            mountPath: /opt/opencga/variants
+      volumes:
+      - name: conf
+        azureFile:
+          secretName: azure-files-secret
+          shareName: conf
+          readOnly: false
+      - name: sessions
+        azureFile:
+          secretName: azure-files-secret
+          shareName: sessions
+          readOnly: false
+      - name: variants
+        azureFile:
+          secretName: azure-files-secret
+          shareName: variants
+          readOnly: false
+      - name: default-conf
+        configMap:
+          name: default-conf
+      {{- with .Values.master.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.master.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.master.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-opencga-shared-blobfuse
+spec:
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  flexVolume:
+    driver: "azure/blobfuse"
+    secretRef:
+      name: blobfusecreds
+    options:
+      container: opencgashared
+      tmppath: /tmp/blobfuse
+      mountoptions: "--file-cache-timeout-in-seconds=120"

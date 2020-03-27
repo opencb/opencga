@@ -1,0 +1,190 @@
+---
+logLevel: "INFO"
+logFile: null
+
+openRegister: false
+
+databasePrefix: opencga
+workspace: /opt/opencga/sessions
+jobDir: /opt/opencga/sessions/jobs
+
+## Configuration for Catalog databases
+catalog:
+  database:   # MongoDB database credentials
+    hosts:
+    - 127.0.0.1:27017
+    user: 
+    password: 
+    options:
+      authenticationDatabase: 
+      connectionsPerHost: 20
+  ## Solr Search engine configuration, by default is the same than storage
+  searchEngine:
+    # List of hosts pointing either to the Solr nodes directly using a complete URL or to the zookeper nodes with HOST:PORT
+    #    Example for Solr connection:       http://opencga-solr-01.zone:8983/solr
+    #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
+    hosts:
+    - http://localhost:8983/solr/
+    user: ""
+    password: ""
+    options:
+      mode: "cloud"
+      timeout: 30000
+      insertBatchSize: 2000
+
+## We support multiple Authentication providers, if none is provided then we use an internal authentication implementation
+authentication:
+  # Session expiration time in seconds
+  expiration: 3600
+  authenticationOrigins:
+# LDAP configuration example
+#  - id: ldap            # Any id
+#    type: LDAP
+#    host: ldap://localhost:9000
+#    options:
+#      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
+#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
+# Azure AD configuration example
+#  - id: aad                                               # Any id
+#    type: AzureAD
+#    host:
+#    options:
+#      tenantId: xxxx              # Mandatory. Tenant id
+#      authClientId: xxxx          # Mandatory. Client id of the client with permissions to authenticate users.
+#      syncClientId: xxxx          # Mandatory. Client id of the client with permissions to inspect active directory.
+#      syncSecretKey: xxxx         # Mandatory: Secret key of the client with permissions to inspect active directory.
+#      filters: tokenField1=aa,bb,cc;tokenField2=aa,bb,cc  # Optional. Filters to be applied. OpenCGA will check if tokenField1 = aa or bb
+#                # or cc and tokenField2 = aa or bb or cc. If any of the filters don't succeed, even if the user is properly authenticated
+#                # in AAD, the user will not be able to generate a token and login in OpenCGA.
+
+server:
+  rest:
+    port: 9090
+    logFile: null
+    defaultLimit: 2000
+    maxLimit: 5000
+  grpc:
+    port: 9091
+    logFile: null
+
+audit:
+  manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
+  maxDocuments: 20000000  # Maximum number of documents that will be created in the audit collection.
+  maxSize: 100            # Maximum size that the audit collection will have in Gigabytes (GB).
+
+monitor:
+  daysToRemove: 30
+  executionDaemonInterval: 4000 # number of milliseconds between checks
+  fileDaemonInterval: 8000      # number of milliseconds between checks
+  port: 9092
+
+healthCheck:
+  interval : 30 # seconds to get actual healthCheck than cache
+
+#execution:
+#  mode: LOCAL
+#  maxConcurrentIndexJobs : 1 # only applies to local executor
+#  defaultQueue: ""
+#  availableQueues: ""
+#  toolsPerQueue: {}
+#  options:
+
+
+analysis:
+  scratchDir: ""    # Scratch folder for the analysis.
+  index:
+    variant:
+      maxConcurrentJobs: 2
+  execution:
+    # Accepted values are "local", "SGE", "azure-batch", "k8s"
+    # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
+    id: "LOCAL"
+    defaultQueue: ""            # Default queue to be used to submit jobs
+    availableQueues:            # Other queues for specific applications
+#      - fast:
+#        - "alignmentIndex"
+#      - slow:
+#        - "coverage"
+#        - "alignmentStats"
+    options:
+     ## Local executor configuration
+      local.maxConcurrentJobs: 1    # Max number of concurrent jobs to be executed locally in the master
+     ## Azure Batch Service configuration example
+     # azure.batchAccount : "batchAccount"
+     # azure.batchKey : "batchKey"
+     # azure.batchUri : "https://batchservice.uksouth.batch.azure.com"
+     # azure.batchPoolId : "poolId"
+     # azure.dockerImageName : "openCGADockerImageName"
+     # azure.dockerArgs : "dockerRunOptions"
+     ## Kubernetes executor configuration example
+     # k8s.masterUrl: "https://192.168.99.100:8443/"
+     # k8s.imageName: "opencb/opencga-next:1.4.X"
+     # k8s.requests:
+     #   cpu: 1
+     #   memory: "2048Mi"
+     # k8s.limits:
+     #   cpu: 1
+     #   memory: "2048Mi"
+     # k8s.cpu: "1"
+     # k8s.memory: "2048Mi"
+     # k8s.namespace: "default"
+     # k8s.nodeSelector: # List of labels for the node selection
+     #   node: worker
+     # k8s.volumeMounts:
+     #   - name: "opencga-shared"
+     #     mountPath: "/opt/opencga/sessions"
+     #   - name: "conf"
+     #     mountPath: "/opt/opencga/conf"
+     #     readOnly: true
+     #   - name: "confhadoop"
+     #     mountPath: "/opt/opencga/conf/hadoop"
+     #     readOnly: true
+     # k8s.volumes:
+     #   - name: "opencganfs"
+     #     persistentVolumeClaim:
+     #       claimName: "opencganfs"
+     #       readOnly: false
+     #   - name: "conf"
+     #     configMap:
+     #       defaultMode: 365
+     #       name: "conf"
+     #   - name: "confhadoop"
+     #     configMap:
+     #       defaultMode: 365
+     #       name: "confhadoop"
+
+  # List of analysis frameworks
+  frameworks:
+    - id: "local"
+      available: true
+      options: {}
+
+    - id: "spark"
+      available: false
+      queue: "hadoop_queue" # Special executor queue to be used for jobs using this framework.
+      options:     # Spark properties from https://spark.apache.org/docs/latest/configuration.html#viewing-spark-properties
+        spark.executor.memory: "1g"
+
+    - id: "mapreduce"
+      available: false
+      queue: "hadoop_queue" # Special executor queue to be used for jobs using this framework. This is NOT a yarn queue.
+      options:   # MapReduce configuration from https://hadoop.apache.org/docs/r2.7.2/hadoop-mapreduce-client/hadoop-mapreduce-client-core/mapred-default.xml
+        mapreduce.job.queuename: default
+
+email:
+  host: 
+  port: 
+  user: 
+  password: 
+  from: ""
+  ssl: false
+
+#hooks:
+#  user@project:study:              # Full Qualified Name of the study.
+#    file:                          # Entity where the hook will be checked
+#     - field: "name"               # Field of the entity to be checked
+#       value: "~(.*)SV.vcf.gz$"    # Value that needs to be satisfied to perform the hook action
+#       stage: "CREATE"             # Stage when the hook will be checked
+#       action: "ADD"               # Action to be performed
+#       where: "tags"               # Field over which the action will be performed
+#       what: "SV"                  # Value to be updated
