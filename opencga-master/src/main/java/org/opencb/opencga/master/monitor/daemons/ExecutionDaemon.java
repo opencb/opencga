@@ -668,9 +668,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .collect(Collectors.joining(","));
             fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
                     new FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
-            // Revoke permissions to any other user that is not the one launching the job
-            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
-                    FileAclEntry.USER_OTHERS_ID, new FileAclParams("", AclParams.Action.SET, null), token);
         }
 
         return folder;
