@@ -109,11 +109,12 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
 
-        TOOL("tool", TEXT, ""),
+        TOOL("tool", OBJECT, ""),
         TOOL_ID("tool.id", TEXT, ""),
 
         PRIORITY("priority", TEXT, ""),
 
+        INTERNAL("internal", OBJECT, ""),
         INTERNAL_STATUS("internal.status", OBJECT, ""),
         INTERNAL_WEBHOOK("internal.webhook", OBJECT, ""),
         INTERNAL_EVENTS("internal.events", OBJECT, ""),

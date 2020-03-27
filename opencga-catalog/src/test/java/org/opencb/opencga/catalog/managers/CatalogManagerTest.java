@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -735,6 +736,22 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         assertEquals(1, allJobs.getNumMatches());
         assertEquals(1, allJobs.getNumResults());
+    }
+
+
+    @Test
+    public void testJobsTop() throws CatalogException {
+        Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
+        String studyId = catalogManager.getStudyManager().get(query, null, token).first().getId();
+
+        catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob"), null, token);
+
+        DataResult<JobTop> top = catalogManager.getJobManager().top(studyId, new Query(), 10, token);
+
+        System.out.println("top = " + top);
+
+        assertEquals(1, top.getNumMatches());
+        assertEquals(1, top.getNumResults());
     }
 
     @Test

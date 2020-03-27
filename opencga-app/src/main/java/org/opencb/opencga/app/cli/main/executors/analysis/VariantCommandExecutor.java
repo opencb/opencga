@@ -48,7 +48,6 @@ import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -404,8 +403,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> export() throws ClientException, IOException {
         VariantCommandOptions.VariantExportCommandOptions c = variantCommandOptions.exportVariantCommandOptions;
 
-        c.study = resolveStudy(c.study);
-        c.genericVariantQueryOptions.includeStudy = resolveStudy(c.genericVariantQueryOptions.includeStudy);
+        c.study = c.study;
+        c.genericVariantQueryOptions.includeStudy = c.genericVariantQueryOptions.includeStudy;
 
         List<String> studies = new ArrayList<>();
         if (cliSession != null && ListUtils.isNotEmpty(cliSession.getStudies())) {
@@ -467,8 +466,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
         VariantCommandOptions.VariantQueryCommandOptions queryCommandOptions = variantCommandOptions.queryVariantCommandOptions;
 
-        queryCommandOptions.study = resolveStudy(queryCommandOptions.study);
-        queryCommandOptions.genericVariantQueryOptions.includeStudy = resolveStudy(queryCommandOptions.genericVariantQueryOptions.includeStudy);
+        queryCommandOptions.study = queryCommandOptions.study;
+        queryCommandOptions.genericVariantQueryOptions.includeStudy = queryCommandOptions.genericVariantQueryOptions.includeStudy;
 
         List<String> studies = new ArrayList<>();
         if (cliSession != null && ListUtils.isNotEmpty(cliSession.getStudies())) {
@@ -630,13 +629,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             if (study.contains(":")) {
                 study = study.split(":")[1];
-            } else {
-                if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().get(study) != null) {
-                    study = clientConfiguration.getAlias().get(study);
-                    if (study.contains(":")) {
-                        study = study.split(":")[1];
-                    }
-                }
             }
             samples = samplePerStudy.get(study);
         }
@@ -646,42 +638,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             samples = new ArrayList<>();
         }
         return samples;
-    }
-
-    @Override
-    protected String resolveStudy(String study) {
-        if (StringUtils.isEmpty(study)) {
-            if (StringUtils.isNotEmpty(clientConfiguration.getDefaultStudy())) {
-                return clientConfiguration.getDefaultStudy();
-            }
-        } else {
-            // study is not empty, let's check if it is an alias
-            if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().size() > 0) {
-                VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.checkOperator(study);
-                if (queryOperation == null) {
-                    queryOperation = VariantQueryUtils.QueryOperation.AND;
-                }
-                List<String> studies = VariantQueryUtils.splitValue(study, queryOperation);
-                List<String> studyList = new ArrayList<>(studies.size());
-                for (String s : studies) {
-                    boolean negated = VariantQueryUtils.isNegated(s);
-                    if (negated) {
-                        // Remove negation to search alias
-                        s = VariantQueryUtils.removeNegation(s);
-                    }
-                    if (clientConfiguration.getAlias().containsKey(s)) {
-                        s = clientConfiguration.getAlias().get(study);
-                    }
-                    if (negated) {
-                        // restore negation
-                        s = VariantQueryUtils.NOT + s;
-                    }
-                    studyList.add(s);
-                }
-                return StringUtils.join(studyList, queryOperation.separator());
-            }
-        }
-        return study;
     }
 
     public RestResponse<VariantAnnotation> annotationQuery() throws ClientException {

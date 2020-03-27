@@ -145,7 +145,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
                     + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
             @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields) {
+                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields,
+            @ApiParam(value = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("jobFields") String jobFields) {
         try {
             if (defaultStats == null) {
                 defaultStats = true;
@@ -154,7 +156,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             Map<String, Object> result = new HashMap<>();
             for (String project : idList) {
                 result.put(project, catalogManager.getProjectManager().facet(project, fileFields, sampleFields, individualFields,
-                        cohortFields, familyFields, defaultStats, token));
+                        cohortFields, familyFields, jobFields, defaultStats, token));
             }
             return createOkResponse(result);
         } catch (Exception e) {

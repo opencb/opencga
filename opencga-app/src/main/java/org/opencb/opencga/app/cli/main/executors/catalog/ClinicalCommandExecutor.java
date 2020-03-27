@@ -66,7 +66,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         ClinicalCommandOptions.SearchCommandOptions commandOptions = clinicalCommandOptions.searchCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
         params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS.key(), commandOptions.status);
         params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), commandOptions.family);
@@ -97,7 +97,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         ClinicalCommandOptions.InfoCommandOptions commandOptions = clinicalCommandOptions.infoCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
         return openCGAClient.getClinicalAnalysisClient().info(commandOptions.clinical, params);

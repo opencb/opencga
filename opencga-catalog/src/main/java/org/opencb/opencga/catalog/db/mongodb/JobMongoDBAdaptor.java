@@ -837,7 +837,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         break;
                     case TOOL:
                     case TOOL_ID:
-                        addAutoOrQuery(QueryParams.TOOL_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.TOOL_ID.key(), queryParam.key(), queryCopy, QueryParams.TOOL_ID.type(), andBsonList);
                         break;
                     case INPUT_UID:
                         addAutoOrQuery(QueryParams.INPUT_UID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
@@ -855,7 +855,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
                                 Status.getPositiveStatus(Enums.ExecutionStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy,
+                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
                     case ID:
                     case UUID:

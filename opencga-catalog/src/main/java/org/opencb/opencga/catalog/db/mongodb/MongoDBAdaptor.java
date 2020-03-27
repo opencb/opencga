@@ -22,6 +22,7 @@ import com.mongodb.client.model.*;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
@@ -299,7 +300,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         // _id document creation to have the multiple id
         Document id = new Document();
         for (String s : groupByFields) {
-            id.append(s, "$" + s);
+            id.append(s.replace(".", GenericDocumentComplexConverter.TO_REPLACE_DOTS), "$" + s);
         }
         Bson group;
         if (options.getBoolean(QueryOptions.COUNT, false)) {
@@ -307,8 +308,16 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         } else {
             group = Aggregates.group(id, Accumulators.addToSet("items", "$" + idField));
         }
-        return new OpenCGAResult(collection.aggregate(Arrays.asList(match, project, group), options));
-//        }
+        DataResult<Document> aggregate = collection.aggregate(Arrays.asList(match, project, group), options);
+        for (String s : groupByField) {
+            if (s.contains(".")) {
+                aggregate.getResults().stream().map(d -> d.get("_id", Document.class)).forEach(d-> {
+                    Object o = d.remove(s.replace(".", GenericDocumentComplexConverter.TO_REPLACE_DOTS));
+                    d.put(s, o);
+                });
+            }
+        }
+        return new OpenCGAResult<>(aggregate);
     }
 
     /**

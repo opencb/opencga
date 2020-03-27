@@ -621,7 +621,6 @@
 
                 <!-- Client -->
                 <OPENCGA.CLIENT.REST.HOST>http://localhost:9090/${opencga.war.name}</OPENCGA.CLIENT.REST.HOST>
-                <OPENCGA.CLIENT.REST.TIMEOUT>30000</OPENCGA.CLIENT.REST.TIMEOUT>
                 <OPENCGA.CLIENT.GRPC.HOST>localhost:9091</OPENCGA.CLIENT.GRPC.HOST>
 
                 <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>

@@ -125,7 +125,7 @@ public class ParamConstants {
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job ids the job will depend on.";
     public static final String JOB_TOOL_PARAM = "tool";
     public static final String JOB_TOOL_DESCRIPTION = "Tool executed by the job";
-    public static final String JOB_USER_PARAM = "user";
+    public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
     public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";

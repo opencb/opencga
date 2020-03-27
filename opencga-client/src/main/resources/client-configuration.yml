@@ -2,23 +2,16 @@
 logLevel: "INFO"
 logFile: null
 
-# Number of seconds that session remains open without any activity [20 min]
-sessionDuration: 1200
-
-# Default study when -s, --study are empty, e.g. "reference_grch37:1kG_phase3"
-defaultStudy: ""
-
-# Alias to different studies, these can be fully qualified: user@project:study
-#alias:
-#  1kg_grch37: hgvauser@reference_grch37:1kG_phase3
-#  1kg_grch38: reference_grch38:1kG_phase3
+# Number of seconds that session remains open without any activity [10 min]
+cliSessionDuration: 600
 
 ## REST client configuration options
 rest:
   host: "${OPENCGA.CLIENT.REST.HOST}"
-  batchQuerySize: 200
-  timeout: ${OPENCGA.CLIENT.REST.TIMEOUT}
-  defaultLimit: 2000
+  tokenAutoRefresh: true
+  query:
+    batchSize: 200
+    limit: 2000
 
 
 ## gRPC configuration options

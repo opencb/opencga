@@ -145,17 +145,6 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
             String studyConfigAlias = null;
             if (clientConfiguration.getVariant().getIncludeFormats().get(study) != null) {
                 studyConfigAlias = study;
-            } else {
-                // Search for the study alias
-                if (clientConfiguration.getAlias() != null) {
-                    for (Map.Entry<String, String> stringStringEntry : clientConfiguration.getAlias().entrySet()) {
-                        if (stringStringEntry.getValue().contains(study)) {
-                            studyConfigAlias = stringStringEntry.getKey();
-                            logger.debug("Updating study name by alias (key) when including formats: from " + study + " to " + studyConfigAlias);
-                            break;
-                        }
-                    }
-                }
             }
 
             // create format arrays (names, types, arities, descriptions)

@@ -93,7 +93,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         PanelCommandOptions.InfoCommandOptions c = panelsCommandOptions.infoCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull("study", resolveStudy(c.study));
+        params.putIfNotNull("study", c.study);
         params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
         return openCGAClient.getDiseasePanelClient().info(c.id, params);
@@ -105,7 +105,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         PanelCommandOptions.SearchCommandOptions c = panelsCommandOptions.searchCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull("study", resolveStudy(c.study));
+        params.putIfNotNull("study", c.study);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.NAME.key(), c.name);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.PHENOTYPES.key(), c.phenotypes);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.VARIANTS.key(), c.variants);
