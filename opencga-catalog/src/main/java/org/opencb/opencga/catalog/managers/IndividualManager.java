@@ -71,8 +71,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    private final String defaultFacet = "creationYear>>creationMonth;status;ethnicity;population;lifeStatus;"
-            + "affectationStatus;phenotypes;sex;numSamples[0..10]:1";
+    private final String defaultFacet = "creationYear>>creationMonth;status;ethnicity;population;lifeStatus;phenotypes;sex;"
+            + "numSamples[0..10]:1";
 
     public static final QueryOptions INCLUDE_INDIVIDUAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.UUID.key(),

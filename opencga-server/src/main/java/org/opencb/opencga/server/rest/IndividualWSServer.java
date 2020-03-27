@@ -424,7 +424,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Life status") @QueryParam("lifeStatus") String lifeStatus,
-            @ApiParam(value = "Affectation status") @QueryParam("affectationStatus") String affectationStatus,
             @ApiParam(value = "Phenotypes") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
             @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
