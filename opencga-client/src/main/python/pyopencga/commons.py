@@ -38,8 +38,6 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
                      category
                      ]))
 
-    print(category, subcategory, query_id, second_query_id, resource)
-
     # If subcategory is queried, query_id can be absent
     if query_id is not None:
         url += '/' + query_id
@@ -68,7 +66,6 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
                 opts.append(k + '=' + str(v))
         if opts:
             url += '?' + '&'.join(opts)
-    print(url)
     return url, header
 
 
