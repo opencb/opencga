@@ -16,30 +16,24 @@
 
 package org.opencb.opencga.client.config;
 
-import java.util.Map;
-
 /**
  * Created by imedina on 04/05/17.
  */
 public class VariantClientConfiguration {
 
     private String unknownGenotype;
-    private Map<String, String> includeFormats;
 
     public VariantClientConfiguration() {
     }
 
-    public VariantClientConfiguration(String unknownGenotype, Map<String, String> includeFormats) {
+    public VariantClientConfiguration(String unknownGenotype) {
         this.unknownGenotype = unknownGenotype;
-        this.includeFormats = includeFormats;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("VariantClientConfiguration{");
-        sb.append("unknownGenotype='").append(unknownGenotype).append('\'');
-        sb.append(", includeFormats=").append(includeFormats);
-        sb.append('}');
+        sb.append("unknownGenotype='").append(unknownGenotype);
         return sb.toString();
     }
 
@@ -52,12 +46,4 @@ public class VariantClientConfiguration {
         return this;
     }
 
-    public Map<String, String> getIncludeFormats() {
-        return includeFormats;
-    }
-
-    public VariantClientConfiguration setIncludeFormats(Map<String, String> includeFormats) {
-        this.includeFormats = includeFormats;
-        return this;
-    }
 }
