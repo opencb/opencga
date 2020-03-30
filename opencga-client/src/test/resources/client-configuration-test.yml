@@ -10,8 +10,3 @@ grpc:
 ## Configure the default behaviour when query variants
 variant:
   unknownGenotype: "0/0"
-  # each study can have a different format
-  includeFormats:
-    1kg_grch37: "GT:String::none,GQ:Integer::none,DP:Integer::none,DPF:Integer::none,AD:String::none,PF:String::none"
-#  vcf:
-#    header: true
