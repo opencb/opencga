@@ -2988,13 +2988,14 @@ public class FileManager extends AnnotationSetManager<File> {
 
             AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
-            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-            DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.FILE_SOLR_COLLECTION, query, options,
-                    userId);
-            auditManager.auditFacet(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
+                DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.FILE_SOLR_COLLECTION, query,
+                        options, userId);
+                auditManager.auditFacet(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return result;
+                return result;
+            }
         } catch (CatalogException e) {
             auditManager.auditFacet(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));

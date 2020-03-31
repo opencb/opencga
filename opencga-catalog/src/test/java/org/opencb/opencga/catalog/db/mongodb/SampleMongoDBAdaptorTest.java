@@ -69,9 +69,9 @@ public class SampleMongoDBAdaptorTest {
     private User user4;
     private long studyId;
 
-    @AfterClass
-    public static void afterClass() {
-        MongoDBAdaptorTest.afterClass();
+    @After
+    public void after() {
+        dbAdaptorFactory.close();
     }
 
     @Before
@@ -83,7 +83,7 @@ public class SampleMongoDBAdaptorTest {
         user2 = MongoDBAdaptorTest.user2;
         user3 = MongoDBAdaptorTest.user3;
         user4 = MongoDBAdaptorTest.user4;
-        dbAdaptorFactory = MongoDBAdaptorTest.catalogDBAdaptor;
+        dbAdaptorFactory = dbAdaptorTest.catalogDBAdaptor;
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();

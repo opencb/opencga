@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -61,9 +58,9 @@ public class AuthorizationMongoDBAdaptorTest {
     private Sample s1;
     Map<String, List<String>> acls;
 
-    @AfterClass
-    public static void afterClass() {
-        MongoDBAdaptorTest.afterClass();
+    @After
+    public void after() {
+        dbAdaptorFactory.close();
     }
 
     @Before
@@ -74,7 +71,7 @@ public class AuthorizationMongoDBAdaptorTest {
         user1 = MongoDBAdaptorTest.user1;
         user2 = MongoDBAdaptorTest.user2;
         user3 = MongoDBAdaptorTest.user3;
-        dbAdaptorFactory = MongoDBAdaptorTest.catalogDBAdaptor;
+        dbAdaptorFactory = dbAdaptorTest.catalogDBAdaptor;
         aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbAdaptorFactory);
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();

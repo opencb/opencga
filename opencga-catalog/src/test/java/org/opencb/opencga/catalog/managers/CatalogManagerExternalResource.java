@@ -73,6 +73,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         }
         catalogManager = new CatalogManager(configuration);
         catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
+        catalogManager.close();
         // FIXME!! Should not need to create again the catalogManager
         //  Have to create again the CatalogManager, as it has a random "secretKey" inside
         catalogManager = new CatalogManager(configuration);

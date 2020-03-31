@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.stats.solr;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -52,6 +53,12 @@ public class AbstractSolrManagerTest extends GenericTest {
 
         catalogSolrManager = new CatalogSolrManager(catalogManager);
         catalogSolrManager.setSolrClient(solrExternalResource.getSolrClient());
+    }
+
+    @After
+    public void after() throws CatalogException {
+        solrExternalResource.after();
+        catalogSolrManager.close();
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {

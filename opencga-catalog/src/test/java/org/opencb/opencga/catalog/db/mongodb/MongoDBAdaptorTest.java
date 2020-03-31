@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.apache.commons.lang3.StringUtils;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,7 +66,7 @@ import static org.junit.Assert.assertTrue;
 
 public class MongoDBAdaptorTest extends GenericTest {
 
-    static MongoDBAdaptorFactory catalogDBAdaptor;
+    public MongoDBAdaptorFactory catalogDBAdaptor;
 
     static User user1;
     static User user2;
@@ -74,6 +75,7 @@ public class MongoDBAdaptorTest extends GenericTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
     UserMongoDBAdaptor catalogUserDBAdaptor;
     ProjectMongoDBAdaptor catalogProjectDBAdaptor;
     FileMongoDBAdaptor catalogFileDBAdaptor;
@@ -84,8 +86,8 @@ public class MongoDBAdaptorTest extends GenericTest {
 
     private Configuration configuration;
 
-    @AfterClass
-    public static void afterClass() {
+    @After
+    public void after() {
         catalogDBAdaptor.close();
     }
 
@@ -122,9 +124,9 @@ public class MongoDBAdaptorTest extends GenericTest {
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddress.getHost(), dataStoreServerAddress.getPort());
         MongoDataStore db = mongoManager.get(database);
         db.getDb().drop();
+        mongoManager.close();
 
-        catalogDBAdaptor = new MongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration,
-                database);
+        catalogDBAdaptor = new MongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration, database);
         catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
         catalogProjectDBAdaptor = catalogDBAdaptor.getCatalogProjectDbAdaptor();
