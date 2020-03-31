@@ -268,14 +268,16 @@ public class VariantQueryProjectionParser {
                 for (String file : includeFilesList) {
                     Integer fileId = metadataManager.getFileId(studyId, file);
                     if (fileId != null) {
-                        fileIds.add(fileId);
+                        if (metadataManager.isFileIndexed(studyId, fileId)) {
+                            fileIds.add(fileId);
+                        }
                     }
                 }
             } else if (returnAllFiles) {
                 fileIds = new ArrayList<>(metadataManager.getIndexedFiles(studyId));
             } else if (includeSamples != null) {
                 List<Integer> sampleIds = includeSamples.get(studyId);
-                Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
+                Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds, true);
                 fileIds = new ArrayList<>(fileSet);
             } else if (includeSamplesList != null && !includeSamplesList.isEmpty()) {
                 List<Integer> sampleIds = new ArrayList<>();
@@ -287,7 +289,7 @@ public class VariantQueryProjectionParser {
                     }
                     sampleIds.add(sampleId);
                 }
-                Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
+                Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds, true);
                 fileIds = new ArrayList<>(fileSet);
             } else {
                 // Return all files
