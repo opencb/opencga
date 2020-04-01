@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.clinical.interpretation.CancerTieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.custom.CustomInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;

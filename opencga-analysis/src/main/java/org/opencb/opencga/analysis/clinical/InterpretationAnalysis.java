@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.clinical.interpretation;
+package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
@@ -25,7 +25,6 @@ import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;

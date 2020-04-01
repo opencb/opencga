@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.clinical.interpretation;
+package org.opencb.opencga.analysis.clinical.xnet;
 
 import org.opencb.bionetdb.core.BioNetDbManager;
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;

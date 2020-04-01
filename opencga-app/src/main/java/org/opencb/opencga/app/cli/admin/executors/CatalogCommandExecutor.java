@@ -22,14 +22,11 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.analysis.demo.AnalysisDemo;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.master.monitor.MonitorService;
-import org.opencb.opencga.catalog.utils.CatalogDemo;
-import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.master.monitor.MonitorService;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -58,16 +55,11 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
     }
 
 
-
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing catalog admin command line");
-
         String subCommandString = catalogCommandOptions.getParsedSubCommand();
+        logger.debug("Executing catalog admin {} command line", subCommandString);
         switch (subCommandString) {
-            case "demo":
-                demo();
-                break;
             case "install":
                 install();
                 break;
@@ -94,31 +86,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 break;
         }
 
-    }
-
-    private void demo() throws CatalogException, IOException, URISyntaxException {
-        if (catalogCommandOptions.demoCatalogCommandOptions.prefix != null) {
-            configuration.setDatabasePrefix(catalogCommandOptions.demoCatalogCommandOptions.prefix);
-        } else {
-            configuration.setDatabasePrefix("demo");
-        }
-        configuration.setOpenRegister(true);
-
-        if (configuration.getAdmin() == null) {
-            configuration.setAdmin(new Admin());
-        }
-
-        configuration.getAdmin().setSecretKey("demo");
-        configuration.getAdmin().setAlgorithm("HS256");
-
-        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            logger.info("Creating demo database");
-            CatalogDemo.createDemoDatabase(catalogManager, adminPassword, catalogCommandOptions.demoCatalogCommandOptions.force);
-            token = catalogManager.getUserManager().login("user1", "user1_pass");
-            Path pedigreePath = Paths.get(this.appHome).resolve("misc/examples/20130606_g1k.ped");
-            logger.info("Inserting pedigree file from " + pedigreePath);
-            AnalysisDemo.insertPedigreeFile(catalogManager, pedigreePath, token);
-        }
     }
 
     private void export() throws CatalogException {

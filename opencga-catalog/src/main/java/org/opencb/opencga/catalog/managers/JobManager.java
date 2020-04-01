@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1583,13 +1583,14 @@ public class JobManager extends ResourceManager<Job> {
             }
             AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
-            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-            DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.JOB_SOLR_COLLECTION, query,
-                    options, userId);
+            try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
+                DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.JOB_SOLR_COLLECTION, query,
+                        options, userId);
 
-            auditManager.auditFacet(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return result;
+                auditManager.auditFacet(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                return result;
+            }
         } catch (CatalogException e) {
             auditManager.auditFacet(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));

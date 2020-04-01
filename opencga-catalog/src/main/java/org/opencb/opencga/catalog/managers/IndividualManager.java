@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1586,16 +1586,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 options.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
             }
 
-            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+            try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
+                AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
-            AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+                DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION, query,
+                        options, userId);
+                auditManager.auditFacet(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION, query,
-                    options, userId);
-            auditManager.auditFacet(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return result;
+                return result;
+            }
         } catch (CatalogException e) {
             auditManager.auditFacet(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));

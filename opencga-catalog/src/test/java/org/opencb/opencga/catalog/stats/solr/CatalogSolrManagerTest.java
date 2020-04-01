@@ -1,14 +1,33 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.stats.solr;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.CohortMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.stats.solr.converters.*;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -31,9 +50,20 @@ import static org.opencb.opencga.catalog.utils.Constants.FLATTENED_ANNOTATIONS;
 
 public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
+    private MongoDBAdaptorFactory factory;
+
+    @Before
+    public void before() throws CatalogDBException {
+        factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
+    }
+
+    @After
+    public void after() {
+        factory.close();
+    }
+
     @Test
     public void testIterator() throws CatalogException, SolrServerException, IOException {
-        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         FileMongoDBAdaptor fileMongoDBAdaptor = factory.getCatalogFileDBAdaptor();
 
         QueryOptions queryOptions = new QueryOptions();
@@ -63,7 +93,6 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 CohortDBAdaptor.QueryParams.TYPE.key(), CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
 
-        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         CohortMongoDBAdaptor cohortMongoDBAdaptor = factory.getCatalogCohortDBAdaptor();
         DBIterator<Cohort> cohortIterator = cohortMongoDBAdaptor.iterator(new Query(), queryOptions);
         int i = 0;
@@ -82,7 +111,6 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
     @Test
     public void testSampleIterator() throws CatalogException, SolrServerException, IOException {
-        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         SampleDBAdaptor sampleDBAdaptor = factory.getCatalogSampleDBAdaptor();
 
         QueryOptions queryOptions = new QueryOptions();
@@ -123,7 +151,6 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                 IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
                 IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
-        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         IndividualDBAdaptor individualDBAdaptor = factory.getCatalogIndividualDBAdaptor();
         DBIterator<Individual> individualDBIterator = individualDBAdaptor.iterator(new Query(), queryOptions);
         int i = 0;
@@ -179,8 +206,6 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 QueryOptions.empty(), sessionIdOwner);
 
         study = catalogManager.getStudyManager().get(studyFqn, new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
-
-        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
 
         Map<String, Set<String>> studyAcls =
                 SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
@@ -257,7 +282,6 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
         queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
 
-        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         FileDBAdaptor fileDBAdaptor = factory.getCatalogFileDBAdaptor();
         DBIterator<File> fileDBIterator = fileDBAdaptor.iterator(new Query(), queryOptions);
         catalogSolrManager.insertCatalogCollection(fileDBIterator, new CatalogFileToSolrFileConverter(study),
@@ -283,7 +307,6 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
         queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
 
-        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         IndividualDBAdaptor individualDBAdaptor = factory.getCatalogIndividualDBAdaptor();
         DBIterator<Individual> individualDBIterator = individualDBAdaptor.iterator(new Query(), queryOptions);
         catalogSolrManager.insertCatalogCollection(individualDBIterator, new CatalogIndividualToSolrIndividualConverter(study),
@@ -292,8 +315,6 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
     @Test
     public void testInsertCohorts() throws CatalogException, SolrServerException, IOException {
-        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
-
         Map<String, Set<String>> studyAcls =
                 SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
         // We replace the current studyAcls for the parsed one
