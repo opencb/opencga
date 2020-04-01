@@ -21,14 +21,14 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.opencga.analysis.clinical.interpretation.CancerTieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.custom.CustomInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 
-import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.*;
+import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 
 @Parameters(commandNames = {"interpretation"}, commandDescription = "Implement several interpretation analysis")
 public class InterpretationCommandOptions {

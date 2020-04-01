@@ -21,7 +21,14 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.clinical.interpretation.*;
+import org.opencb.opencga.analysis.clinical.custom.CustomInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.custom.CustomInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfiguration;
 import org.opencb.opencga.app.cli.internal.options.InterpretationCommandOptions;
 import org.opencb.opencga.core.exceptions.ToolException;
 

@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.clinical.interpretation;
+package org.opencb.opencga.analysis.clinical.tiering;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -27,18 +30,21 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.List;
 
-@Tool(id = CancerTieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
-public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis {
+@Tool(id = TieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
+public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 
-    public final static String ID = "cancer-tiering-interpretation";
+    public final static String ID = "tiering-interpretation";
 
     private String studyId;
     private String clinicalAnalysisId;
-    private List<String> variantIdsToDiscard;
-    private CancerTieringInterpretationConfiguration config;
+    private List<String> diseasePanelIds;
+    private ClinicalProperty.Penetrance penetrance;
+    private TieringInterpretationConfiguration config;
 
     private ClinicalAnalysis clinicalAnalysis;
+    private List<DiseasePanel> diseasePanels;
 
+    @Override
     protected void check() throws Exception {
         super.check();
 
@@ -58,7 +64,8 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
                     token);
-        } catch (CatalogException e) {
+        } catch (
+                CatalogException e) {
             throw new ToolException(e);
         }
         if (clinicalAnalysisQueryResult.getNumResults() != 1) {
@@ -67,6 +74,9 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
 
         clinicalAnalysis = clinicalAnalysisQueryResult.first();
 
+        // Check disease panels
+        diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, token);
+
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);
     }
@@ -74,14 +84,15 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
     @Override
     protected void run() throws ToolException {
         step(() -> {
-            getToolExecutor(CancerTieringInterpretationAnalysisExecutor.class)
+            getToolExecutor(TieringInterpretationAnalysisExecutor.class)
                     .setStudyId(studyId)
                     .setClinicalAnalysisId(clinicalAnalysisId)
-                    .setVariantIdsToDiscard(variantIdsToDiscard)
+                    .setDiseasePanels(diseasePanels)
+                    .setPenetrance(penetrance)
                     .setConfig(config)
                     .execute();
 
-            saveInterpretation(studyId, clinicalAnalysis, null, null, config);
+            saveInterpretation(studyId, clinicalAnalysis, diseasePanels, null, config);
         });
     }
 
@@ -89,7 +100,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         return studyId;
     }
 
-    public CancerTieringInterpretationAnalysis setStudyId(String studyId) {
+    public TieringInterpretationAnalysis setStudyId(String studyId) {
         this.studyId = studyId;
         return this;
     }
@@ -98,25 +109,34 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         return clinicalAnalysisId;
     }
 
-    public CancerTieringInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
+    public TieringInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
 
-    public List<String> getVariantIdsToDiscard() {
-        return variantIdsToDiscard;
+    public List<String> getDiseasePanelIds() {
+        return diseasePanelIds;
     }
 
-    public CancerTieringInterpretationAnalysis setVariantIdsToDiscard(List<String> variantIdsToDiscard) {
-        this.variantIdsToDiscard = variantIdsToDiscard;
+    public TieringInterpretationAnalysis setDiseasePanelIds(List<String> diseasePanelIds) {
+        this.diseasePanelIds = diseasePanelIds;
         return this;
     }
 
-    public CancerTieringInterpretationConfiguration getConfig() {
+    public ClinicalProperty.Penetrance getPenetrance() {
+        return penetrance;
+    }
+
+    public TieringInterpretationAnalysis setPenetrance(ClinicalProperty.Penetrance penetrance) {
+        this.penetrance = penetrance;
+        return this;
+    }
+
+    public TieringInterpretationConfiguration getConfig() {
         return config;
     }
 
-    public CancerTieringInterpretationAnalysis setConfig(CancerTieringInterpretationConfiguration config) {
+    public TieringInterpretationAnalysis setConfig(TieringInterpretationConfiguration config) {
         this.config = config;
         return this;
     }
