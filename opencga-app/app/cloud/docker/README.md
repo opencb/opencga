@@ -3,6 +3,7 @@ OpenCGA can be packaged as a Docker container by leveraging the included Dockerf
 These Dockerfiles contain:
  - **opencga-base** : A base image including the OpenCGA build output directory
  - **opencga-init** : An image to manipulate OpenCGA configuration files with overrides
+ - **opencga-demo** : An standalone image with a complete opencga installation. Launch with --env load=true to preload test data.
  - **opencga-r**    : An image to run R based analysis
 
 # Build
@@ -34,7 +35,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --images IMAGES       comma separated list of images to be made, e.g.
-                        base,init,r
+                        base,init,demo,r
   --tag TAG             the tag for this code, e.g. v2.0.0-hdp3.1
   --build-folder BUILD_FOLDER
                         the location of the build folder, if not default

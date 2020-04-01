@@ -31,7 +31,7 @@ def login(loginRequired=False):
         error("Error executing: docker login")
 
 def build():
-    print("Building docker images")
+    print("Building docker images " + str(images))
     for image in images:
         print("*********************************************")
         print("Building " + org + "/opencga-" + image + ":" + tag)
@@ -53,8 +53,11 @@ def build():
         run(command)
 
 def tag_latest(image):
-    all_tags = os.popen("wget -q https://registry.hub.docker.com/v1/repositories/" + org + "/opencga-" + image + "/tags -O - | sed -e 's/[][]//g' -e 's/\"//g' -e 's/[ ]//g' -e 's/latest//g' | tr '}' '\n' | awk -F: '{print $3}'")
-    latest_tag = os.popen("echo " + all_tags.read() + " + | cut -d' ' -f1 | sort -h | head")
+    latest_tag = os.popen(("curl -s https://registry.hub.docker.com/v1/repositories/" + org + "/opencga-" + image + "/tags"
+                            + " | jq -r .[].name"
+                            + " | grep -v latest"
+                            + " | sort -h"
+                            + " | head"))
     if tag >= latest_tag.read():
         print("*********************************************")
         print("Pushing " + org + "/opencga-" + image + ":latest")
@@ -95,7 +98,7 @@ parser = argparse.ArgumentParser()
 # build, push or delete
 parser.add_argument('action', help="Action to execute", choices=["build", "push", "delete"], default="build")
 
-parser.add_argument('--images', help="comma separated list of images to be made, e.g. base,init,r", default="base,init,demo,r")
+parser.add_argument('--images', help="comma separated list of images to be made, e.g. base,init,demo,r")
 parser.add_argument('--tag', help="the tag for this code, e.g. v2.0.0-hdp3.1")
 parser.add_argument('--build-folder', help="the location of the build folder, if not default location")
 parser.add_argument('--org', help="Docker organization", default="opencb")
@@ -164,7 +167,13 @@ else:
 org = args.org
 
 # get a list with all images
-images = args.images.split(",")
+if args.images is None:
+    if hadoop_flavour is None:
+        images = ["base", "init", "demo", "r"]
+    else:
+        images = ["base", "init", "r"]
+else:
+    images = args.images.split(",")
 
 if "demo" in images and hadoop_flavour is not None:
     error(("opencga-demo image requires storage-mongodb."
