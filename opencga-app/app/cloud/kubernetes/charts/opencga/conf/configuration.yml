@@ -117,7 +117,7 @@ analysis:
      # azure.dockerArgs : "dockerRunOptions"
      # Kubernetes executor configuration example
      # FOR Cluster Autoscaler and dedicated jobs agent pool:
-      k8s.imageName: "jcoll/opencga-next:2.0.0-hdp3.1-dev"
+      k8s.imageName: "opencb/opencga-base:2.0.0-hdp3.1-dev"
       k8s.namespace: "default"
       k8s.requests:
         cpu: 1
