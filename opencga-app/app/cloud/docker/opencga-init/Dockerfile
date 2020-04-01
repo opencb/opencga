@@ -12,22 +12,19 @@ RUN echo 'http://dl-cdn.alpinelinux.org/alpine/v3.6/main' >> /etc/apk/repositori
 # Mount volume to copy config into
 VOLUME /opt/volume
 
-COPY ${INIT_PATH} /tmp/
-
-RUN echo ${INIT_PATH}
-RUN ls -la /tmp/
+COPY ${INIT_PATH} /opt/opencga/init/
+COPY ${BUILD_PATH}/conf/* /opt/opencga/init/test/
 
 # Install python requirements
-RUN pip3 install -r /tmp/requirements.txt
-RUN chmod +x /tmp/setup.sh
+RUN pip3 install -r /opt/opencga/init/requirements.txt
+RUN chmod +x /opt/opencga/init/setup.sh
 
 # Run tests on config script
 # If this line fails then a configuration change has a bug
 # review override-yaml.py or override-js.py
-RUN echo ">Running init container configuration tests" && cd /tmp/test && python3 test_override_yaml.py -v 
-#&& rm -r /tmp/test
+RUN echo ">Running init container configuration tests" && cd /opt/opencga/init/test && python3 test_override_yaml.py -v && rm -r /opt/opencga/init/test
 
 # It is the responsibility of the setup.sh
 # script to initialise the volume correctly
 # and apply any runtime config transforms.
-ENTRYPOINT [ "/bin/sh","/tmp/setup.sh" ]
+ENTRYPOINT [ "/bin/sh","/opt/opencga/init/setup.sh" ]

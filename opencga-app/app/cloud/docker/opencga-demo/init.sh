@@ -35,7 +35,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
     export INIT_HADOOP_SSH_DNS=""
     export INIT_HADOOP_SSH_USER=""
     export INIT_HADOOP_SSH_PASS=""
-    python3 /tmp/override_yaml.py --save
+    python3 /opt/opencga/init/override_yaml.py --save
 
     echo "-- Installing Catalog --"
     /opt/opencga/bin/opencga-admin.sh catalog install --secret-key any_string_you_want  <<< demo

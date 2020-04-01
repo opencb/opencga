@@ -5,38 +5,40 @@
 deploySolr: false
 deployMongo: false
 
-openCGApassword:
+openCGApassword: "FILL_ME"
 
 catalog:
-  secretKey:
+  secretKey: "FILL_ME"
   database:
-    hosts:
-  searchEngine:
-    hosts:
+    hosts: "FILL_ME"
+    user: "FILL_ME"
+    password: "FILL_ME"
 
 cellbase:
+  hosts: "FILL_ME"
   database:
     hosts:
+    user:
+    password:
 
 analysis:
   index:
     variant:
-      maxConcurrentJobs:
+      maxConcurrentJobs: 100
   execution:
+    id: "k8s"
     options:
       k8s:
-        masterNode:
+        masterNode: "FILL_ME"
+        namespace: "FILL_ME"
 
-search:
-  hosts:
-
-clinical:
-  hosts:
+solr:
+  hosts: "FILL_ME"
 
 hadoop:
-  sshDns:
-  sshUsername:
-  sshPassword:
+  sshDns: "FILL_ME"
+  sshUsername: "FILL_ME"
+  sshPassword: "FILL_ME"
 
 init:
   name: init

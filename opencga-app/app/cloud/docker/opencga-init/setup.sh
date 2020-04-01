@@ -26,7 +26,7 @@ else
 
     echo "Initialising configs"
     # Override Yaml configs
-    python3 /tmp/override_yaml.py --save
+    python3 /opt/opencga/init/override_yaml.py --save
 
     # Copies the config files from our local directory into a
     # persistent volume to be shared by the other containers.

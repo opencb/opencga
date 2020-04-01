@@ -116,43 +116,61 @@ analysis:
      # azure.batchPoolId : "poolId"
      # azure.dockerImageName : "openCGADockerImageName"
      # azure.dockerArgs : "dockerRunOptions"
+
      ## Kubernetes executor configuration example
      # k8s.masterUrl: "https://192.168.99.100:8443/"
-     # k8s.imageName: "opencb/opencga-next:1.4.X"
+     # FOR Cluster Autoscaler and dedicated jobs agent pool:
+      k8s.imageName: "opencb/opencga-base:2.0.0-hdp3.1-dev"
+      k8s.namespace: "default"
+      k8s.requests:
+        cpu: 1
+        memory: "4G"
+      k8s.limits:
+        cpu: 2
+        memory: "12G"
+      k8s.nodeSelector:
+        agentpool: jobs
+        beta.kubernetes.io/os: linux
+        kubernetes.io/role: agent
+     # FOR ACI:
      # k8s.requests:
-     #   cpu: 1
-     #   memory: "2048Mi"
+     #   cpu: 2
+     #   memory: "12G"
      # k8s.limits:
-     #   cpu: 1
-     #   memory: "2048Mi"
-     # k8s.namespace: "default"
-     # k8s.nodeSelector: # List of labels for the node selection
-     #   node: worker
-     # k8s.volumeMounts:
-     #   - name: "opencga-shared"
-     #     mountPath: "/opt/opencga/sessions"
-     #   - name: "conf"
-     #     mountPath: "/opt/opencga/conf"
-     #     readOnly: true
-     #   - name: "confhadoop"
-     #     mountPath: "/opt/opencga/conf/hadoop"
-     #     readOnly: true
-     # k8s.volumes:
-     #   - name: "opencganfs"
-     #     persistentVolumeClaim:
-     #       claimName: "opencganfs"
-     #       readOnly: false
-     #   - name: "conf"
-     #     configMap:
-     #       defaultMode: 365
-     #       name: "conf"
-     #   - name: "confhadoop"
-     #     configMap:
-     #       defaultMode: 365
-     #       name: "confhadoop"
+     #   cpu: 2
+     #   memory: "12G"
+     # k8s.nodeSelector:
+     #   kubernetes.io/role: agent
+     #   beta.kubernetes.io/os: linux
+     #   type: virtual-kubelet
      # k8s.tolerations:
-     #   - key: virtual-kubelet.io/provider
-     #     operator: Exists
+     # - key: virtual-kubelet.io/provider
+     #   operator: Exists
+     # - key: azure.com/aci
+     #   effect: NoSchedule
+      k8s.volumeMounts:
+        - name: conf
+          mountPath: /opt/opencga/conf
+        - name: sessions
+          mountPath: /opt/opencga/sessions
+        - name: variants
+          mountPath: /opt/opencga/variants
+      k8s.volumes:
+        - name: conf
+          azureFile:
+            secretName: azure-files-secret
+            shareName: conf
+            readOnly: true
+        - name: sessions
+          azureFile:
+            secretName: azure-files-secret
+            shareName: sessions
+            readOnly: false
+        - name: variants
+          azureFile:
+            secretName: azure-files-secret
+            shareName: variants
+            readOnly: false
 
   # List of analysis frameworks
   frameworks:
