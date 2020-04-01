@@ -16,8 +16,8 @@ parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
 parser.add_argument("--catalog-database-password", required=True)
 parser.add_argument("--catalog-search-hosts", required=True)
-parser.add_argument("--catalog-search-user", required=True)
-parser.add_argument("--catalog-search-password", required=True)
+parser.add_argument("--catalog-search-user", required=False)
+parser.add_argument("--catalog-search-password", required=False)
 parser.add_argument("--rest-host", required=True)
 parser.add_argument("--grpc-host", required=True)
 parser.add_argument("--analysis-execution-mode", required=False)
@@ -27,13 +27,13 @@ parser.add_argument("--batch-endpoint", required=False)
 parser.add_argument("--batch-pool-id", required=False)
 parser.add_argument("--k8s-master-node", required=False)
 parser.add_argument("--max-concurrent-jobs", required=False)
-parser.add_argument("--variant-default-engine", required=False)
+parser.add_argument("--variant-default-engine", required=False, default="hadoop")
 parser.add_argument("--hadoop-ssh-dns", required=True)
 parser.add_argument("--hadoop-ssh-user", required=True)
 parser.add_argument("--hadoop-ssh-pass", required=True)
 parser.add_argument("--hadoop-ssh-key", required=False)
 parser.add_argument("--hadoop-ssh-remote-opencga-home", required=False)
-parser.add_argument("--health-check-interval", required=True)
+parser.add_argument("--health-check-interval", required=False)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
 
@@ -147,14 +147,18 @@ for i, catalog_search_host in enumerate(catalog_search_hosts):
         # clear them only on the first iteration
         config["catalog"]["searchEngine"]["hosts"].clear()
     config["catalog"]["searchEngine"]["hosts"].insert(i, catalog_search_host.strip())
-config["catalog"]["searchEngine"]["user"] = args.catalog_search_user
-config["catalog"]["searchEngine"]["password"] = args.catalog_search_password
+
+if args.catalog_search_user is not None:
+    config["catalog"]["searchEngine"]["user"] = args.catalog_search_user
+    config["catalog"]["searchEngine"]["password"] = args.catalog_search_password
 
 # Inject execution settings
 config["analysis"]["scratchDir"] = "/tmp"
-config["analysis"]["index"]["variant"]["maxConcurrentJobs"] = int(args.max_concurrent_jobs)
+if args.max_concurrent_jobs is not None:
+    config["analysis"]["index"]["variant"]["maxConcurrentJobs"] = int(args.max_concurrent_jobs)
 
-config["analysis"]["execution"]["id"] = args.analysis_execution_mode
+if args.analysis_execution_mode is not None:
+    config["analysis"]["execution"]["id"] = args.analysis_execution_mode
 
 if args.analysis_execution_mode == "AZURE":
     config["analysis"]["execution"]["options"] = {}
@@ -168,7 +172,8 @@ elif args.analysis_execution_mode == "k8s":
   
 
 # Inject healthCheck interval
-config["healthCheck"]["interval"] = args.health_check_interval
+if args.health_check_interval is not None:
+    config["healthCheck"]["interval"] = args.health_check_interval
 
 ##############################################################################################################
 # Load client configuration yaml

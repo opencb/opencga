@@ -1,56 +1,63 @@
 # Dockerized OpenCGA
 OpenCGA can be packaged as a Docker container by leveraging the included Dockerfiles.
 These Dockerfiles contain:
- - **opencga** : A base image including the OpenCGA build output directory
- - **opencga-daemon** : An image to run the OpenCGA daemon
- - **opencga-init**: An image to manipulate OpenCGA configuration files with overrides
- - **opencga-app**: An image to host the OpenCGA web service on Tomcat
- - **iva**: An image to run IVA on Apache HTTP
+ - **opencga-base** : A base image including the OpenCGA build output directory
+ - **opencga-init** : An image to manipulate OpenCGA configuration files with overrides
+ - **opencga-r**    : An image to run R based analysis
 
-# Make
-We have provided a Makefile to make it simple to work with the included Dockerfiles as part of a local development process or continous integration system.
+# Build
+We have provided a python script to make it simple to work with the included Dockerfiles as part of a local development process or continous integration system.
 
 ## Usage
-Building all the OpenCGA docker images can be achieved by running the following command in the `opencga-app/app/scripts/docker/` directory:
+You need to first compile OpenCGA with maven.
+Then, building all the OpenCGA docker images can be achieved by running the following command in the `build/cloud/docker/` directory:
 
-`make`
+`./docker-build.py`
 
-If you have an existing OpenCGA build in the `build` directory, this command will containerize it and build the related container images. If you haven't already built OpenCGA this command will build the current OpenCGA repository inside a container and write the output to the `build` directory.
-
-If you wish to run this command from any other directory, simply use the command:
-
-`make -f path/to/Makefile`
+This command will containerize the `build` folder and build the related container images.
 
 You can provide parameters to the build by passing environment variables into the command:
 
-`make DOCKER_USERNAME="user" DOCKER_PASSWORD="pass" PUBLISH=true TAG="v0.0.1"`
-
-So that you don't have to keep tweaking this command, you can also provide parameters by writing a `.env` file. The default location for the file is `opencga-app/app/scripts/docker/make_env`. If you want to override this location, please provide the command line variable `ENVFILE=/path/to/envfile`.
-
-`ENVFILE=/opencga-app/app/scripts/docker/customenv make`
+`./docker-build.py --username user --password "pass" --tag v0.0.1 push`
 
 The available parameters that can be set on the command line or in your env file are:
- - DOCKER_USERNAME=''   : Username to login to the docker registry
- - DOCKER_PASSWORD=''   : Password to login to the docker registry
- - DOCKER_SERVER=''     : Docker registry server (default: docker.io)
- - DOCKER_REPO=''       : Docker registry repository (default: docker username for docker.io)
- - DOCKER_BUILD_ARGS='' : Additional build arguments to pass to the docker build command
- - PUBLISH=''           : Set to 'true' to publish the docker images to a container registry
- - TAG=''               : Set to override the default Git commit SHA docker image tag
+```
+usage: docker-build.py [-h] [--images IMAGES] [--tag TAG]
+                       [--build-folder BUILD_FOLDER] [--org ORG]
+                       [--username USERNAME] [--password PASSWORD]
+                       [--docker-build-args DOCKER_BUILD_ARGS]
+                       {build,push,delete}
 
-If you want to perform a specific action, you can do so by using one of the following make commands:
- - `make login`
- - `make APP_NAME=opencga DOCKER_BUILD_ARGS=--no-cache build`
- - `make APP_NAME=opencga tag`
- - `make APP_NAME=opencga publish`
+positional arguments:
+  {build,push,delete}   Action to execute
 
-As you can see, you can still provide arguments to the `make` targets by defining them on the command line. Using a specific target usually means targetting a specific app, this requires you to pass the app name to make using the `APP_NAME` paramter.
+optional arguments:
+  -h, --help            show this help message and exit
+  --images IMAGES       comma separated list of images to be made, e.g.
+                        base,init,r
+  --tag TAG             the tag for this code, e.g. v2.0.0-hdp3.1
+  --build-folder BUILD_FOLDER
+                        the location of the build folder, if not default
+                        location
+  --org ORG             Docker organization
+  --username USERNAME   Username to login to the docker registry (REQUIRED if
+                        deleting from DockerHub)
+  --password PASSWORD   Password to login to the docker registry (REQUIRED if
+                        deleting from DockerHub)
+  --docker-build-args DOCKER_BUILD_ARGS
+                        Additional build arguments to pass to the docker build
+                        command. Usage: --docker-build-args='ARGS' e.g:
+                        --docker-build-args='--no-cache'
+```
 
-> Please note: Parameters defined in the `.env` file will take precedent over command line parameters.
+If you want to perform a specific action, you can do so by using one of the following commands:
+ - `docker-build.py push`
+ - `docker-build.py build --org jcoll --tag ${git log -1 --pretty=%h}`
+ - `docker-build.py build --docker-build-args "--no-cache"`
 
 # Remote Docker Daemon
 Some developers use a workflow that uses a remote docker daemon, such as, Docker for Windows or Docker for Mac.
-In this scenario you won't be able to build OpenCGA using the default `make` target or `build` target. This is because these targets expect to be able to mount the source code from a host directory. Docker doesn't support doing this to a remote daemon. There are 2 possible work arounds for this scenario.
+In this scenario you won't be able to build OpenCGA using the default `docker-build.py build` target. This is because these targets expect to be able to mount the source code from a host directory. Docker doesn't support doing this to a remote daemon. There are 2 possible work arounds for this scenario.
 
- * Build OpenCGA on the host first. If you have an existing build, `make` will pick it up at run time.
- * Create a Docker volume, run a temporary busybox container, use `docker cp` to copy the entire OpenCGA source into it, kill and remove the temporary container, edit the `build-all.sh` script to mount the docker volume at th expected `/src/` path.
+ * Build OpenCGA on the host first. If you have an existing build, `docker-build.py` will pick it up at run time.
+ * Create a Docker volume, run a temporary busybox container, use `docker cp` to copy the entire OpenCGA source into it, kill and remove the temporary container, edit the `docker-build.py` script to mount the docker volume at the expected path.
