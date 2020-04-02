@@ -22,6 +22,21 @@ sleep 2
 
 CONTAINER_ALREADY_STARTED="CONTAINER_ALREADY_STARTED"
 if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
+
+    export INIT_SEARCH_HOSTS=http://localhost:8983/solr/
+    export INIT_CLINICAL_HOSTS=http://localhost:8983/solr/
+    export INIT_CATALOG_DATABASE_HOSTS=localhost:27017
+    export INIT_CATALOG_DATABASE_USER=""
+    export INIT_CATALOG_DATABASE_PASSWORD=""
+    export INIT_CATALOG_SEARCH_HOSTS=http://localhost:8983/solr/
+    export INIT_REST_HOST="http://localhost:9090/`ls ../opencga*.war | rev | cut -d "." -f 2- | rev | xargs basename`"
+    export INIT_GRPC_HOST="localhost:9091"
+    export INIT_VARIANT_DEFAULT_ENGINE="mongodb"
+    export INIT_HADOOP_SSH_DNS=""
+    export INIT_HADOOP_SSH_USER=""
+    export INIT_HADOOP_SSH_PASS=""
+    python3 /opt/opencga/init/override_yaml.py --save
+
     echo "-- Installing Catalog --"
     /opt/opencga/bin/opencga-admin.sh catalog install --secret-key any_string_you_want  <<< demo
     status=$?
@@ -37,101 +52,21 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
       echo "Failed to start REST server: $status"
       exit $status
     fi
+    until curl $INIT_REST_HOST'/webservices/rest/v2/meta/status' &> /dev/null
+    do
+      echo "Waiting for REST server"
+      sleep 1
+    done
+
 
     if [ "$load" == "true" ]; then
-        echo Creating user for OpenCGA Catalog .....
+        echo "Creating user for OpenCGA Catalog ....."
         ./opencga-admin.sh users create -u demo --email demo@opencb.com --name "Demo User" --user-password demo <<< demo
-        echo Login user demo ....
+        echo "Login user demo ...."
         ./opencga.sh users login -u demo <<< demo
-        echo Creating Project ....
-        ./opencga.sh projects create --id "exomes_grch37" -n "Exomes GRCh37" --organism-scientific-name "Homo sapiens" --organism-assembly "GRCh37"
-        echo Creating Study ....
-        ./opencga.sh studies create -n "corpasome Genomes Project" --project "exomes_grch37" --id "corpasome"
-        sessionId=$(grep token ~/.opencga/session.json | cut -d '"' -f 4)
-	echo Creating Individuals ....
-        curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
-	  \"id\": \"ISDBM322016\",
-	  \"name\": \"ISDBM322016\",
-	  \"sex\": \"MALE\",
-	  \"parentalConsanguinity\": false,
-	  \"karyotypicSex\": \"XY\",
-	  \"lifeStatus\": \"ALIVE\",
-	  \"samples\": [
-	    {
-	      \"id\": \"ISDBM322016\"
-	    }
-	  ]
-	}" "http://localhost:9090/opencga/webservices/rest/v1/individuals/create?study=corpasome"
-
-	curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
-          \"id\": \"ISDBM322018\",
-          \"name\": \"ISDBM322018\",
-          \"sex\": \"FEMALE\",
-          \"parentalConsanguinity\": false,
-          \"karyotypicSex\": \"XX\",
-          \"lifeStatus\": \"ALIVE\",
-          \"samples\": [
-            {
-              \"id\": \"ISDBM322018\"
-            }
-          ]
-        }" "http://localhost:9090/opencga/webservices/rest/v1/individuals/create?study=corpasome"
-
-	curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
-	  \"id\": \"ISDBM322015\",
-	  \"name\": \"ISDBM322015\",
-	  \"sex\": \"MALE\",
-	  \"mother\": \"ISDBM322018\",
-	  \"father\": \"ISDBM322016\",
-	  \"parentalConsanguinity\": false,
-	  \"karyotypicSex\": \"XY\",
-	  \"lifeStatus\": \"ALIVE\",
-	  \"samples\": [
-	    {
-	      \"id\": \"ISDBM322015\"
-	    }
-	  ]
-	}" "http://localhost:9090/opencga/webservices/rest/v1/individuals/create?study=corpasome"
- 
-	curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
- 	 \"id\": \"ISDBM322017\",
-	  \"name\": \"ISDBM322017\",
-	  \"sex\": \"FEMALE\",
-	  \"mother\": \"ISDBM322018\",
-	  \"father\": \"ISDBM322016\",
-	  \"parentalConsanguinity\": false,
-	  \"karyotypicSex\": \"XX\",
-	  \"lifeStatus\": \"ALIVE\",
-	  \"samples\": [
-	    {
-	      \"id\": \"ISDBM322017\"
-	    }
-	  ]
-	}" "http://localhost:9090/opencga/webservices/rest/v1/individuals/create?study=corpasome"
-
-	curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
-	  \"id\": \"corpas\",
-	  \"name\": \"Corpas\",
-	  \"members\": [
-	    {
-	      \"id\": \"ISDBM322015\"
-	    },{
-	      \"id\": \"ISDBM322016\"
-	    },{
-	      \"id\": \"ISDBM322017\"
-	    },{
-	      \"id\": \"ISDBM322018\"
-	    }
-	  ],
-	  \"expectedSize\": 5
-	}" "http://localhost:9090/opencga/webservices/rest/v1/families/create?study=corpasome"
-
-	echo Download and link Variant File
-        wget  -O /opt/opencga/variants/quartet.variants.annotated.vcf https://ndownloader.figshare.com/files/3083423
-        ./opencga.sh files link -i ../variants/quartet.variants.annotated.vcf -s corpasome
-        echo Transforming, Loading, Annotating and Calculating Stats
-        ./opencga.sh variant index --file quartet.variants.annotated.vcf --calculate-stats --annotate --index-search -o outDir -s "corpasome"
-fi
+        echo "Loading default template ...."
+        ./opencga.sh users template --file /opt/opencga/misc/demo/main.yml
+    fi
 else
     echo 'demo' | /opt/opencga/bin/opencga-admin.sh server rest --start &
 fi

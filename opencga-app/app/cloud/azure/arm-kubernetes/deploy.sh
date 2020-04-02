@@ -102,8 +102,6 @@ fi
 
 
 helm upgrade opencga ../../kubernetes/charts/opencga \
-    --values ../../kubernetes/charts/opencga/conf/configuration.yml \
-    --values ../../kubernetes/charts/opencga/conf/storage-configuration.yml \
     --set init.catalogSecretKey=$(cat azuredeploy.parameters.private.json | jq -r '.parameters.catalogSecretKey.value') \
     --set openCGApassword=$(echo $deployment_details | jq -r '.properties.outputs.openCgaAdminPassword.value') \
     --set hadoop.sshDns=$(echo $deployment_details | jq -r '.properties.outputs.hdInsightSshDns.value')  \
@@ -112,11 +110,10 @@ helm upgrade opencga ../../kubernetes/charts/opencga \
     --set catalog.database.hosts=$(echo $deployment_details | jq -r '.properties.outputs.mongoDbHostsCSV.value')  \
     --set catalog.database.user=$(echo $deployment_details | jq -r '.properties.outputs.mongoDbUser.value')  \
     --set catalog.database.password=$(echo $deployment_details | jq -r '.properties.outputs.mongoDbPassword.value')   \
-    --set search.hosts=$(echo $deployment_details | jq -r '.properties.outputs.solrHostsCSV.value') \
-    --set catalog.searchEngine.hosts=$(echo $deployment_details | jq -r '.properties.outputs.solrHostsCSV.value') \
+    --set solr.hosts=$(echo $deployment_details | jq -r '.properties.outputs.solrHostsCSV.value') \
     --set analysis.execution.options.k8s.masterNode=https://$(echo $deployment_details | jq -r '.properties.outputs.aksApiServerAddress.value'):443 \
-    --set analysis.index.variant.maxConcurrentJobs="100" \
     --set analysis.execution.options.k8s.namespace=$K8S_NAMESPACE \
+    --set analysis.index.variant.maxConcurrentJobs="100" \
     --install --wait -n $K8S_NAMESPACE --timeout 10m
 
 

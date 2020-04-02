@@ -13,6 +13,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobTop;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -82,6 +83,13 @@ public class JobsTopManager {
                 timer.reset().start();
             }
 
+            RestResponse<JobTop> response = openCGAClient.getJobClient().top(baseQuery);
+            if (response.first().getNumResults() == 0) {
+                if (response.getEvents() != null && response.getEvents().size() > 0) {
+                    System.out.println(response.getEvents().get(0).getType() + ": " + response.getEvents().get(0).getMessage());
+                }
+                return;
+            }
             print(openCGAClient.getJobClient().top(baseQuery).firstResult());
             Thread.sleep(TimeUnit.SECONDS.toMillis(this.delay));
         }

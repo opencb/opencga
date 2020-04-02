@@ -49,10 +49,10 @@ spec:
         {{- if .Values.deploySolr }}
           value: http://opencga-solr-svc:8983
         {{- else }}
-          value:  {{ .Values.search.hosts | toString | quote }}
+          value:  {{ .Values.solr.hosts | toString | quote }}
         {{- end }} 
         - name: "INIT_CLINICAL_HOSTS"
-          value:  {{ .Values.clinical.hosts | toString | quote}}
+          value:  {{ .Values.solr.hosts | toString | quote}}
         - name: "INIT_CATALOG_DATABASE_HOSTS"
         {{- if .Values.deployMongo }}
           value:  opencga-mongodb-replicaset
@@ -67,12 +67,8 @@ spec:
         {{- if .Values.deploySolr }}
           value: http://opencga-solr-svc:8983
         {{- else }}
-          value:  {{ .Values.catalog.searchEngine.hosts | toString | quote }}
-        {{- end }} 
-        - name: "INIT_CATALOG_SEARCH_USER"
-          value:  {{ .Values.catalog.searchEngine.user  }} 
-        - name: "INIT_CATALOG_SEARCH_PASSWORD"
-          value:  {{ .Values.catalog.searchEngine.password  }} 
+          value:  {{ .Values.solr.hosts | toString | quote }}
+        {{- end }}
         - name: "INIT_REST_HOST"
           value:   "http://{{ .Values.rest.name }}/opencga"
         - name: "INIT_GRPC_HOST"

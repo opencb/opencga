@@ -3,4 +3,4 @@ kind: ConfigMap
 metadata:
   name: default-conf
 data:
-  {{- (.Files.Glob "conf/**.yml").AsConfig | nindent 2 }}
+  {{- (.Files.Glob "../../../../conf/**.yml").AsConfig | nindent 2 }}
