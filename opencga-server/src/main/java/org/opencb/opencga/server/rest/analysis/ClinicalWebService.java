@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
+import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -672,36 +673,49 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpretation/tiering/run")
-    @ApiOperation(value = "GEL Tiering interpretation analysis", response = Job.class)
-    @ApiImplicitParams({
-            // Interpretation filters
-            @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
-            @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
-    })
-    public Response tiering(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId,
-            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
-            @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance) {
-        try {
-            // Get analysis params and config from query
-            Map<String, Object> params = new HashMap<>();
-
-            params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
-            params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
-            params.put(InterpretationAnalysis.PANELS_PARAM_NAME, panelIds);
-            params.put(InterpretationAnalysis.PENETRANCE_PARAM_NAME, penetrance.toString());
-
-            setConfigParams(params, uriInfo.getQueryParameters());
-
-            // Submit job
-            OpenCGAResult<Job> result = jobManager.submit(studyId, TieringInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
-
-            return createAnalysisOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+    @ApiOperation(value = TieringInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    public Response interpretationTieringRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = TieringInterpretationAnalysisParams.DESCRIPTION) TieringInterpretationAnalysisParams params) {
+        return submitJob(TieringInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
+
+
+
+//    @ApiOperation(value = "GEL Tiering interpretation analysis", response = Job.class)
+//    @ApiImplicitParams({
+//            // Interpretation filters
+//            @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
+//            @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
+//    })
+//    public Response tiering(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId,
+//            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+//            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
+//            @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance) {
+//        try {
+//            // Get analysis params and config from query
+//            Map<String, Object> params = new HashMap<>();
+//
+//            params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
+//            params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
+//            params.put(InterpretationAnalysis.PANELS_PARAM_NAME, panelIds);
+//            params.put(InterpretationAnalysis.PENETRANCE_PARAM_NAME, penetrance.toString());
+//
+//            setConfigParams(params, uriInfo.getQueryParameters());
+//
+//            // Submit job
+//            OpenCGAResult<Job> result = jobManager.submit(studyId, TieringInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
+//
+//            return createAnalysisOkResponse(result);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/interpretation/custom/run")
@@ -958,6 +972,11 @@ public class ClinicalWebService extends AnalysisWebService {
             // Retrieve primary findings
             List<ReportedVariant> primaryFindings = clinicalInterpretationManager.getPrimaryFindings(query, queryOptions,
                     reportedVariantCreator, token);
+
+            System.out.println("Number of primary findings = " + primaryFindings.size());
+            for (ReportedVariant reportedVariant : primaryFindings) {
+                System.out.println(reportedVariant.getId());
+            }
 
             return createAnalysisOkResponse(primaryFindings);
         } catch (Exception e) {

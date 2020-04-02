@@ -27,6 +27,7 @@ import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 
@@ -34,7 +35,7 @@ import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 public class InterpretationCommandOptions {
 
     public TeamCommandOptions teamCommandOptions;
-    public TieringCommandOptions tieringCommandOptions;
+//    public ClinicalCommandOptions.TieringCommandOptions tieringCommandOptions;
     public CancerTieringCommandOptions cancerTieringCommandOptions;
     public CustomCommandOptions customCommandOptions;
 
@@ -50,7 +51,7 @@ public class InterpretationCommandOptions {
         this.jCommander = jCommander;
 
         this.teamCommandOptions = new TeamCommandOptions();
-        this.tieringCommandOptions = new TieringCommandOptions();
+//        this.tieringCommandOptions = new ClinicalCommandOptions.TieringCommandOptions();
         this.cancerTieringCommandOptions = new CancerTieringCommandOptions();
         this.customCommandOptions = new CustomCommandOptions();
     }
@@ -72,38 +73,6 @@ public class InterpretationCommandOptions {
 
         @Parameter(names = {"--" + FAMILY_SEGREGATION_PARAM_NAME}, description = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, arity = 1)
         public String familySegregation;
-
-        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
-        public boolean includeLowCoverage;
-
-        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
-        public int maxLowCoverage;
-
-        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
-        public boolean includeUntieredVariants;
-
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
-        public String outDir;
-    }
-
-    @Parameters(commandNames = {TieringInterpretationAnalysis.ID}, commandDescription = "Tiering interpretation analysis")
-    public class TieringCommandOptions {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
-
-        @Parameter(names = {"-s", "--" + STUDY_PARAM_NAME}, description = "Study [[user@]project:]study.", required = true, arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical Analysis ID", arity = 1)
-        public String clinicalAnalysisId;
-
-        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", arity = 1)
-        public String panelIds;
-
-        @Parameter(names = {"--" + PENETRANCE_PARAM_NAME}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
-        public ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
 
         @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
         public boolean includeLowCoverage;

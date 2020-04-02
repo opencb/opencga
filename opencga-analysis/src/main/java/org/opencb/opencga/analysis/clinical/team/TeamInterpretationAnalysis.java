@@ -34,7 +34,7 @@ import java.util.List;
 @Tool(id = TeamInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class TeamInterpretationAnalysis extends InterpretationAnalysis {
 
-    public final static String ID = "team-interpretation";
+    public final static String ID = "team";
 
     private String studyId;
     private String clinicalAnalysisId;

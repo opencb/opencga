@@ -37,7 +37,7 @@ import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUti
 @Tool(id = CustomInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class CustomInterpretationAnalysis extends InterpretationAnalysis {
 
-    public final static String ID = "custom-interpretation";
+    public final static String ID = "custom";
 
     private String studyId;
     private String clinicalAnalysisId;

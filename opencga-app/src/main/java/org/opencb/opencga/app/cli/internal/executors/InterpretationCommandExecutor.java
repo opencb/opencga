@@ -27,8 +27,6 @@ import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationConfiguration;
-import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfiguration;
 import org.opencb.opencga.app.cli.internal.options.InterpretationCommandOptions;
 import org.opencb.opencga.core.exceptions.ToolException;
 
@@ -56,16 +54,16 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(interpretationCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
-            case TeamInterpretationAnalysis.ID:
+            case TeamInterpretationAnalysis.ID + "-run":
                 team();
                 break;
-            case TieringInterpretationAnalysis.ID:
-                tiering();
-                break;
-            case CancerTieringInterpretationAnalysis.ID:
+//            case TieringInterpretationAnalysis.ID + "-run":
+//                tiering();
+//                break;
+            case CancerTieringInterpretationAnalysis.ID + "-run":
                 cancerTiering();
                 break;
-            case CustomInterpretationAnalysis.ID:
+            case CustomInterpretationAnalysis.ID + "-run":
                 custom();
                 break;
             default:
@@ -115,40 +113,40 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         teamAnalysis.start();
     }
 
-    private void tiering() throws Exception {
-        InterpretationCommandOptions.TieringCommandOptions options = interpretationCommandOptions.tieringCommandOptions;
-
-        // Prepare analysis parameters and config
-        String token = options.commonOptions.token;
-
-        String studyId = options.studyId;
-        String clinicalAnalysisId = options.clinicalAnalysisId;
-
-        if (StringUtils.isEmpty(options.panelIds)) {
-            throw new ToolException("Missing panel ids");
-        }
-        List<String> panelList = Arrays.asList(StringUtils.split(options.panelIds, ","));
-
-        ClinicalProperty.Penetrance penetrance = options.penetrance;
-
-        TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
-        config.setIncludeLowCoverage(options.includeLowCoverage);
-        config.setMaxLowCoverage(options.maxLowCoverage);
-        config.setSkipUntieredVariants(!options.includeUntieredVariants);
-
-        Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
-
-        // Execute tiering analysis
-        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
-        tieringAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
-        tieringAnalysis.setStudyId(studyId)
-                .setClinicalAnalysisId(clinicalAnalysisId)
-                .setDiseasePanelIds(panelList)
-                .setPenetrance(penetrance)
-                .setConfig(config);
-        tieringAnalysis.start();
-    }
+//    private void tiering() throws Exception {
+//        InterpretationCommandOptions.TieringCommandOptions options = interpretationCommandOptions.tieringCommandOptions;
+//
+//        // Prepare analysis parameters and config
+//        String token = options.commonOptions.token;
+//
+//        String studyId = options.studyId;
+//        String clinicalAnalysisId = options.clinicalAnalysisId;
+//
+//        if (StringUtils.isEmpty(options.panelIds)) {
+//            throw new ToolException("Missing panel ids");
+//        }
+//        List<String> panelList = Arrays.asList(StringUtils.split(options.panelIds, ","));
+//
+//        ClinicalProperty.Penetrance penetrance = options.penetrance;
+//
+//        TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
+//        config.setIncludeLowCoverage(options.includeLowCoverage);
+//        config.setMaxLowCoverage(options.maxLowCoverage);
+//        config.setSkipUntieredVariants(!options.includeUntieredVariants);
+//
+//        Path outDir = Paths.get(options.outDir);
+//        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
+//
+//        // Execute tiering analysis
+//        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
+//        tieringAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
+//        tieringAnalysis.setStudyId(studyId)
+//                .setClinicalAnalysisId(clinicalAnalysisId)
+//                .setDiseasePanelIds(panelList)
+//                .setPenetrance(penetrance)
+//                .setConfig(config);
+//        tieringAnalysis.start();
+//    }
 
     private void cancerTiering() throws Exception {
         InterpretationCommandOptions.CancerTieringCommandOptions options = interpretationCommandOptions.cancerTieringCommandOptions;

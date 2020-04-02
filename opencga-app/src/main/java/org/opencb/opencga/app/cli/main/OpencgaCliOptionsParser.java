@@ -48,6 +48,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.TieringCommandOptions.TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.OperationsCommandOptions.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
@@ -284,6 +285,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         clinicalSubcommands.addCommand("search", clinicalCommandOptions.searchCommandOptions);
         clinicalSubcommands.addCommand("acl", clinicalCommandOptions.aclsCommandOptions);
         clinicalSubcommands.addCommand("acl-update", clinicalCommandOptions.aclsUpdateCommandOptions);
+        clinicalSubcommands.addCommand(TIERING_RUN_COMMAND, clinicalCommandOptions.tieringCommandOptions);
 
         operationsCommandOptions = new OperationsCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand(OPERATIONS_COMMAND, operationsCommandOptions);

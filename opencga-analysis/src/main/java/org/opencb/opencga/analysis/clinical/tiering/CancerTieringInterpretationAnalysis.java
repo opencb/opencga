@@ -31,7 +31,7 @@ import java.util.List;
 @Tool(id = CancerTieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis {
 
-    public final static String ID = "cancer-tiering-interpretation";
+    public final static String ID = "cancer-tiering";
 
     private String studyId;
     private String clinicalAnalysisId;

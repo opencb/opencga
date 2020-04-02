@@ -461,6 +461,13 @@ public class ClinicalInterpretationManager extends StorageManager {
         try {
             VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, sessionId);
             List<Variant> variants = variantQueryResult.getResults();
+
+            System.out.println("Number of variants = " + variants.size());
+            for (Variant variant : variants) {
+                System.out.println(variant.getId());
+            }
+
+
             return reportedVariantCreator.create(variants);
         } catch (InterpretationAnalysisException | CatalogException | StorageEngineException | IOException e) {
             throw new ToolException(e);

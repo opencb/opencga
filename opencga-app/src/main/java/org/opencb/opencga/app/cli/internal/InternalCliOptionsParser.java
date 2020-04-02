@@ -81,7 +81,8 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 //    private VariantCommandOptions variantCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
     private AlignmentCommandOptions alignmentCommandOptions;
-    private InterpretationCommandOptions interpretationCommandOptions;
+//    private InterpretationCommandOptions interpretationCommandOptions;
+    private ClinicalCommandOptions clinicalCommandOptions;
     private FileCommandOptions fileCommandOptions;
     private SampleCommandOptions sampleCommandOptions;
     private FamilyCommandOptions familyCommandOptions;
@@ -177,11 +178,17 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         toolsSubCommands.addCommand("execute-tool", toolsCommandOptions.executeToolCommandOptions);
         toolsSubCommands.addCommand("execute-job", toolsCommandOptions.executeJobCommandOptions);
 
-        interpretationCommandOptions = new InterpretationCommandOptions(commonCommandOptions, variantQueryCommandOptions, jCommander);
-        jCommander.addCommand("interpretation", interpretationCommandOptions);
+//        interpretationCommandOptions = new InterpretationCommandOptions(commonCommandOptions, variantQueryCommandOptions, jCommander);
+//        jCommander.addCommand("interpretation", interpretationCommandOptions);
+//        JCommander interpretationSubCommands = jCommander.getCommands().get("interpretation");
+//        interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
+////        interpretationSubCommands.addCommand("tiering", interpretationCommandOptions.tieringCommandOptions);
+
+        clinicalCommandOptions = new ClinicalCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("clinical", clinicalCommandOptions);
         JCommander interpretationSubCommands = jCommander.getCommands().get("interpretation");
-        interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
-        interpretationSubCommands.addCommand("tiering", interpretationCommandOptions.tieringCommandOptions);
+//        interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
+        interpretationSubCommands.addCommand("tiering", clinicalCommandOptions.tieringCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
@@ -450,8 +457,8 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         return alignmentCommandOptions;
     }
 
-    public InterpretationCommandOptions getInterpretationCommandOptions() {
-        return interpretationCommandOptions;
+    public ClinicalCommandOptions getClinicalCommandOptions() {
+        return clinicalCommandOptions;
     }
 
     public FileCommandOptions getFileCommandOptions() {
