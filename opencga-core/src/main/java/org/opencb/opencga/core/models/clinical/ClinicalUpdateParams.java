@@ -21,17 +21,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
@@ -45,8 +39,8 @@ public class ClinicalUpdateParams {
 
     private Map<String, List<String>> files;
 
-    private ProbandParam proband;
-    private FamilyParam family;
+//    private ProbandParam proband;
+//    private FamilyParam family;
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
@@ -67,18 +61,16 @@ public class ClinicalUpdateParams {
     }
 
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
-                                Map<String, List<String>> files, ProbandParam proband, FamilyParam family,
-                                Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalystParam analyst,
-                                ClinicalAnalysisInternal internal, List<InterpretationUpdateParams> interpretations,
-                                ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
-                                Enums.Priority priority, List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
+                                Map<String, List<String>> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
+                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
+                                List<InterpretationUpdateParams> interpretations, ClinicalConsent consent, String dueDate,
+                                List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
+                                Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
         this.disorder = disorder;
         this.files = files;
-        this.proband = proband;
-        this.family = family;
         this.roleToProband = roleToProband;
         this.analyst = analyst;
         this.interpretations = interpretations;
@@ -106,8 +98,6 @@ public class ClinicalUpdateParams {
         sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
-        sb.append(", proband=").append(proband);
-        sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
@@ -136,80 +126,6 @@ public class ClinicalUpdateParams {
 
         public SampleParams setId(String id) {
             this.id = id;
-            return this;
-        }
-    }
-
-    public static class ProbandParam {
-        private String id;
-        private List<SampleParams> samples;
-
-        public ProbandParam() {
-        }
-
-        public Individual toUncheckedIndividual() {
-            Individual individual = new Individual().setId(id);
-            if (ListUtils.isNotEmpty(samples)) {
-                List<Sample> sampleList = new ArrayList<>(samples.size());
-                for (SampleParams sample : samples) {
-                    sampleList.add(new Sample().setId(sample.getId()));
-                }
-                individual.setSamples(sampleList);
-            }
-            return  individual;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public ProbandParam setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public List<SampleParams> getSamples() {
-            return samples;
-        }
-
-        public ProbandParam setSamples(List<SampleParams> samples) {
-            this.samples = samples;
-            return this;
-        }
-    }
-
-    public static class FamilyParam {
-        private String id;
-        private List<ProbandParam> members;
-
-        public FamilyParam() {
-        }
-
-        public Family toUncheckedFamily() {
-            List<Individual> memberList = null;
-            if (ListUtils.isNotEmpty(members)) {
-                memberList = members.stream().map(ProbandParam::toUncheckedIndividual).collect(Collectors.toList());
-            }
-            return new Family()
-                    .setId(id)
-                    .setMembers(memberList);
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public FamilyParam setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public List<ProbandParam> getMembers() {
-            return members;
-        }
-
-        public FamilyParam setMembers(List<ProbandParam> members) {
-            this.members = members;
             return this;
         }
     }
@@ -273,24 +189,6 @@ public class ClinicalUpdateParams {
 
     public ClinicalUpdateParams setFiles(Map<String, List<String>> files) {
         this.files = files;
-        return this;
-    }
-
-    public ProbandParam getProband() {
-        return proband;
-    }
-
-    public ClinicalUpdateParams setProband(ProbandParam proband) {
-        this.proband = proband;
-        return this;
-    }
-
-    public FamilyParam getFamily() {
-        return family;
-    }
-
-    public ClinicalUpdateParams setFamily(FamilyParam family) {
-        this.family = family;
         return this;
     }
 

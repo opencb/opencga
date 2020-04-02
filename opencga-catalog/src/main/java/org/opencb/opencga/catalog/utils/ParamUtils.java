@@ -67,7 +67,7 @@ public class ParamUtils {
 
     public static void checkObj(Object obj, String name) throws CatalogParameterException {
         if (obj == null) {
-            throw new CatalogParameterException("parameter '" + name + "' is null.");
+            throw new CatalogParameterException("Parameter '" + name + "' is missing or null.");
         }
     }
 

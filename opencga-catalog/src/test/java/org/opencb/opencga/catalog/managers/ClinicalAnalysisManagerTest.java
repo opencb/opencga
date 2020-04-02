@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalUpdateParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -73,7 +72,6 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
         catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
-
     }
 
     @After
@@ -89,17 +87,17 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
+                .setSamples(Arrays.asList(new Sample().setId("sample1")));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")))
+                .setSamples(Arrays.asList(new Sample().setId("sample3")));
 
         Individual relChild1 = new Individual().setId("child1")
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
                 .setSamples(Arrays.asList(
-                        new Sample().setId("sample1"),
                         new Sample().setId("sample2"),
-                        new Sample().setId("sample3"),
                         new Sample().setId("sample4")
                 ))
                 .setParentalConsanguinity(true);
@@ -107,11 +105,19 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
+                .setSamples(Arrays.asList(
+                        new Sample().setId("sample5"),
+                        new Sample().setId("sample6")
+                ))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setId("child3")
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
+                .setSamples(Arrays.asList(
+                        new Sample().setId("sample7"),
+                        new Sample().setId("sample8")
+                ))
                 .setParentalConsanguinity(true);
 
         Family family = new Family("family", "family", Arrays.asList(disease1, disease2), null,
@@ -170,6 +176,17 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
             member.setSamples(null);
         }
 
+        // Leave only sample2 for child1 in family
+        for (Individual member : dummyFamily.first().getMembers()) {
+            if (member.getId().equals("child1")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample2")));
+            } else if (member.getId().equals("child2")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample5")));
+            } else if (member.getId().equals("child3")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample7")));
+            }
+        }
+
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
                 .setDueDate("20180510100000")
@@ -216,66 +233,81 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
-    public void createClinicalAnalysisNoFamilyTest() throws CatalogException {
-        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(false);
+    public void sampleNotFoundInMember() throws CatalogException {
+        DataResult<Family> dummyFamily = createDummyFamily();
 
-        assertEquals(1, dummyEnvironment.getNumResults());
-        assertEquals(0, dummyEnvironment.first().getInterpretations().size());
+        // Remove all samples from the dummy family to avoid errors
+        for (Individual member : dummyFamily.first().getMembers()) {
+            member.setSamples(null);
+        }
 
-        assertEquals(catalogManager.getIndividualManager().get(STUDY, "child1", IndividualManager.INCLUDE_INDIVIDUAL_IDS, sessionIdUser)
-                .first().getUid(), dummyEnvironment.first().getProband().getUid());
-        assertEquals(1, dummyEnvironment.first().getProband().getSamples().size());
-        assertEquals(catalogManager.getSampleManager().get(STUDY, "sample2", SampleManager.INCLUDE_SAMPLE_IDS, sessionIdUser)
-                .first().getUid(), dummyEnvironment.first().getProband().getSamples().get(0).getUid());
+        // Leave only sample2 for child1 in family
+        for (Individual member : dummyFamily.first().getMembers()) {
+            if (member.getId().equals("child1")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample2")));
+            } else if (member.getId().equals("child2")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample2")));
+            } else if (member.getId().equals("child3")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample2")));
+            }
+        }
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
+                .setProband(new Individual().setId("child1"));
+        clinicalAnalysis.setFamily(dummyFamily.first());
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("could not be found in member");
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
-    public void updateSubjectsNoFamilyTest() throws CatalogException {
-        createDummyEnvironment(false);
+    public void checkMoreThanOneSample() throws CatalogException {
+        DataResult<Family> dummyFamily = createDummyFamily();
 
-        ClinicalUpdateParams updateParams = new ClinicalUpdateParams().setProband(
-                new ClinicalUpdateParams.ProbandParam()
-                        .setId("child1")
-                        .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))));
-        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
-                QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, updateResult.getNumUpdated());
+        // Remove all samples from the dummy family to avoid errors
+        for (Individual member : dummyFamily.first().getMembers()) {
+            member.setSamples(null);
+        }
 
-        ClinicalAnalysis analysis = catalogManager.getClinicalAnalysisManager().get(STUDY, "analysis", QueryOptions.empty(), sessionIdUser).first();
-
-        assertEquals(catalogManager.getIndividualManager().get(STUDY, "child1", IndividualManager.INCLUDE_INDIVIDUAL_IDS, sessionIdUser)
-                .first().getUid(), analysis.getProband().getUid());
-        assertEquals(1, analysis.getProband().getSamples().size());
-        assertEquals(catalogManager.getSampleManager().get(STUDY, "sample2", SampleManager.INCLUDE_SAMPLE_IDS, sessionIdUser)
-                .first().getUid(), analysis.getProband().getSamples().get(0).getUid());
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
+                .setProband(new Individual().setId("child1"));
+        clinicalAnalysis.setFamily(dummyFamily.first());
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("More than one sample");
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
-    public void updateSubjectsAndFamilyTest() throws CatalogException {
+    public void createClinicalAnalysisWithoutFamily() throws CatalogException {
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("missing");
         createDummyEnvironment(false);
+    }
 
-        ClinicalUpdateParams updateParams = new ClinicalUpdateParams()
-                .setProband(new ClinicalUpdateParams.ProbandParam()
-                        .setId("child1")
-                        .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))))
-                .setFamily(new ClinicalUpdateParams.FamilyParam()
-                        .setId("family")
-                        .setMembers(Collections.singletonList(new ClinicalUpdateParams.ProbandParam()
-                                .setId("child1")
-                                .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))))));
-        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
-                QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, updateResult.getNumUpdated());
+    @Test
+    public void createClinicalAnalysisWithoutProband() throws CatalogException {
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000");
 
-        ClinicalAnalysis analysis = catalogManager.getClinicalAnalysisManager().get(STUDY, "analysis", QueryOptions.empty(), sessionIdUser).first();
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("missing");
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+    }
 
-        assertEquals(catalogManager.getFamilyManager().get(STUDY, "family", FamilyManager.INCLUDE_FAMILY_IDS, sessionIdUser)
-                .first().getUid(), analysis.getFamily().getUid());
-        assertEquals(catalogManager.getIndividualManager().get(STUDY, "child1", IndividualManager.INCLUDE_INDIVIDUAL_IDS, sessionIdUser)
-                .first().getUid(), analysis.getProband().getUid());
-        assertEquals(1, analysis.getProband().getSamples().size());
-        assertEquals(catalogManager.getSampleManager().get(STUDY, "sample2", SampleManager.INCLUDE_SAMPLE_IDS, sessionIdUser)
-                .first().getUid(), analysis.getProband().getSamples().get(0).getUid());
+    @Test
+    public void createClinicalAnalysisWithoutType() throws CatalogException {
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description")
+                .setDueDate("20180510100000");
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("missing");
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
     }
 
 }

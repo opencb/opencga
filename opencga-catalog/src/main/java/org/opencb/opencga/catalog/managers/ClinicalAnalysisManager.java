@@ -204,6 +204,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
             ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
             ParamUtils.checkObj(clinicalAnalysis.getDueDate(), "dueDate");
+            ParamUtils.checkObj(clinicalAnalysis.getProband(), "proband");
             clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), CustomStatus::new));
             clinicalAnalysis.setInternal(ParamUtils.defaultObject(clinicalAnalysis.getInternal(), ClinicalAnalysisInternal::new));
             clinicalAnalysis.getInternal().setStatus(ParamUtils.defaultObject(clinicalAnalysis.getInternal().getStatus(),
@@ -224,28 +225,194 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
             }
 
-            if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getProband() != null) {
-                if (StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
-                    throw new CatalogException("Missing proband id");
+            if (StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
+                throw new CatalogException("Missing proband id");
+            }
+
+            if (clinicalAnalysis.getType() == ClinicalAnalysis.Type.FAMILY) {
+                ParamUtils.checkObj(clinicalAnalysis.getFamily(), "family");
+                if (StringUtils.isEmpty(clinicalAnalysis.getFamily().getId())) {
+                    throw new CatalogException("Missing family id");
                 }
-                // Validate the proband has also been added within the family
-                if (clinicalAnalysis.getFamily().getMembers() == null) {
-                    throw new CatalogException("Missing members information in the family");
+
+                OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(study.getFqn(),
+                        clinicalAnalysis.getFamily().getId(), new QueryOptions(), token);
+                if (familyDataResult.getNumResults() == 0) {
+                    throw new CatalogException("Family " + clinicalAnalysis.getFamily().getId() + " not found");
                 }
+                Family family = familyDataResult.first();
+
+                // Get full sample information of each member
+                for (Individual member : family.getMembers()) {
+                    if (member.getSamples() != null && !member.getSamples().isEmpty()) {
+                        Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(),
+                                member.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()));
+                        OpenCGAResult<Sample> sampleResult = sampleDBAdaptor.get(study.getUid(), query, new QueryOptions(), userId);
+                        member.setSamples(sampleResult.getResults());
+                    }
+                }
+
                 boolean found = false;
                 for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
                     if (StringUtils.isNotEmpty(member.getId()) && clinicalAnalysis.getProband().getId().equals(member.getId())) {
+                        if (member.getSamples() != null && !member.getSamples().isEmpty()) {
+                            // Validate proband has no samples or it has exactly the same ones
+                            if (clinicalAnalysis.getProband().getSamples() != null) {
+                                Set<String> sampleIdsInFamily = member.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
+                                Set<String> sampleIdsInProband = clinicalAnalysis.getProband().getSamples().stream().map(Sample::getId)
+                                        .collect(Collectors.toSet());
+                                if (sampleIdsInFamily.size() != sampleIdsInProband.size()
+                                        || !sampleIdsInFamily.containsAll(sampleIdsInProband)) {
+                                    throw new CatalogException("Sample ids '" + sampleIdsInProband + "' found in proband field do not "
+                                            + "match the sample ids found for proband under family field '" + sampleIdsInFamily + "'.");
+                                }
+                            }
+                        }
+
                         found = true;
                     }
                 }
                 if (!found) {
                     throw new CatalogException("Missing proband in the family");
                 }
+
+                boolean membersProvided = false;
+                boolean samplesProvided = false;
+                if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getMembers() != null
+                        && !clinicalAnalysis.getFamily().getMembers().isEmpty()) {
+                    membersProvided = true;
+                    for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                        if (member.getSamples() != null && !member.getSamples().isEmpty()) {
+                            samplesProvided = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (membersProvided) {
+                    // Validate and filter out members and samples
+                    Map<String, Individual> individualMap = new HashMap<>();
+                    for (Individual member : family.getMembers()) {
+                        individualMap.put(member.getId(), member);
+                    }
+
+                    List<Individual> filteredMemberList = new ArrayList<>(clinicalAnalysis.getFamily().getMembers().size());
+                    for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                        if (!individualMap.containsKey(member.getId())) {
+                            throw new CatalogException("Member '" + member.getId() + "' could not be found in family '" + family.getId()
+                                    + "'.");
+                        }
+                        filteredMemberList.add(individualMap.get(member.getId()));
+                    }
+
+                    family.setMembers(filteredMemberList);
+
+                    if (samplesProvided) {
+                        // For each member, we will filter out the samples selected by the user for the analysis
+                        for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                            List<Sample> sampleList;
+
+                            if (member.getSamples() == null || member.getSamples().size() == 0) {
+                                sampleList = individualMap.get(member.getId()).getSamples();
+//                                throw new CatalogException("Missing sample(s) for member '" + member.getId() + "'.");
+                            } else {
+                                Map<String, Sample> sampleMap = new HashMap<>();
+                                for (Sample sample : individualMap.get(member.getId()).getSamples()) {
+                                    sampleMap.put(sample.getId(), sample);
+                                }
+
+                                sampleList = new ArrayList<>(member.getSamples().size());
+                                for (Sample sample : member.getSamples()) {
+                                    if (!sampleMap.containsKey(sample.getId())) {
+                                        throw new CatalogException("Sample '" + sample.getId() + "' could not be found in member '"
+                                                + member.getId() + "'.");
+                                    }
+                                    sampleList.add(sampleMap.get(sample.getId()));
+                                }
+                            }
+
+                            // Edit the list of samples of the member from the 'family' object
+                            individualMap.get(member.getId()).setSamples(sampleList);
+                        }
+                    }
+                }
+
+                // Validate there is only one sample per member
+                for (Individual member : family.getMembers()) {
+                    if (member.getSamples() == null || member.getSamples().isEmpty()) {
+                        throw new CatalogException("Missing sample for member '" + member.getId() + "'");
+                    }
+                    if (member.getSamples().size() > 1) {
+                        throw new CatalogException("More than one sample found for member '" + member.getId() + "'.");
+                    }
+                }
+
+                clinicalAnalysis.setFamily(family);
+                Individual proband = null;
+                for (Individual member : family.getMembers()) {
+                    if (member.getId().equals(clinicalAnalysis.getProband().getId())) {
+                        proband = member;
+                        break;
+                    }
+                }
+                if (proband == null) {
+                    throw new CatalogException("Proband '" + clinicalAnalysis.getProband().getId() + "' not found in family");
+                }
+                clinicalAnalysis.setProband(proband);
+            } else {
+                OpenCGAResult<Individual> individualOpenCGAResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
+                        clinicalAnalysis.getProband().getId(), new Query(), new QueryOptions(), userId);
+                if (individualOpenCGAResult.getNumResults() == 0) {
+                    throw new CatalogException("Proband '" + clinicalAnalysis.getProband().getId() + "' not found.");
+                }
+
+                Individual proband = individualOpenCGAResult.first();
+                if (clinicalAnalysis.getProband().getSamples() != null && !clinicalAnalysis.getProband().getSamples().isEmpty()) {
+                    Map<String, Sample> sampleMap = new HashMap<>();
+                    for (Sample sample : proband.getSamples()) {
+                        sampleMap.put(sample.getId(), sample);
+                    }
+
+                    List<Sample> sampleList = new ArrayList<>(clinicalAnalysis.getProband().getSamples().size());
+                    for (Sample sample : clinicalAnalysis.getProband().getSamples()) {
+                        if (!sampleMap.containsKey(sample.getId())) {
+                            throw new CatalogException("Sample '" + sample.getId() + "' could not be found in proband '" + proband.getId()
+                                    + "'.");
+                        }
+                        sampleList.add(sampleMap.get(sample.getId()));
+                    }
+                    proband.setSamples(sampleList);
+                }
+
+                clinicalAnalysis.setProband(proband);
+
+                if (proband.getSamples() == null || proband.getSamples().isEmpty()) {
+                    throw new CatalogException("Missing samples for proband '" + proband.getId() + "'");
+                }
+
+                if (clinicalAnalysis.getType() == ClinicalAnalysis.Type.CANCER) {
+                    // Validate there are up to 2 samples
+                    if (proband.getSamples().size() > 2) {
+                        throw new CatalogException("More than two samples found for proband '" + proband.getId() + "'.");
+                    }
+                    boolean somatic = false;
+                    for (Sample sample : proband.getSamples()) {
+                        if (somatic && sample.isSomatic()) {
+                            throw new CatalogException("Found more than one somatic sample for proband '" + proband.getId() + "'.");
+                        }
+                        somatic = somatic || sample.isSomatic();
+                    }
+                    if (!somatic) {
+                        throw new CatalogException("Could not find any somatic sample for proband '" + proband.getId() + "'.");
+                    }
+                }
             }
 
-            clinicalAnalysis.setProband(getFullValidatedMember(clinicalAnalysis.getProband(), study, token));
-            clinicalAnalysis.setFamily(getFullValidatedFamily(clinicalAnalysis.getFamily(), study, token));
-            validateClinicalAnalysisFields(clinicalAnalysis, study, token);
+            if (clinicalAnalysis.getFiles() != null && !clinicalAnalysis.getFiles().isEmpty()) {
+                validateFiles(study, clinicalAnalysis, userId);
+            } else {
+                obtainFiles(study, clinicalAnalysis, userId);
+            }
 
             clinicalAnalysis.setCreationDate(TimeUtils.getTime());
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
@@ -352,76 +519,89 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     }
 
-    void validateClinicalAnalysisFields(ClinicalAnalysis clinicalAnalysis, Study study, String sessionId) throws CatalogException {
-        // Validate the proband exists if the family is provided
-        if (clinicalAnalysis.getFamily() != null && ListUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
-            // Find the proband
-            Individual proband = null;
+    private void obtainFiles(Study study, ClinicalAnalysis clinicalAnalysis, String userId) throws CatalogException {
+        Map<Long, String> sampleMap = new HashMap<>();
+        if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getMembers() != null) {
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-                if (member.getId().equals(clinicalAnalysis.getProband().getId())) {
-                    proband = member;
-                }
-            }
-
-            if (proband == null) {
-                throw new CatalogException("Missing proband in array of members of family");
-            }
-
-            if (ListUtils.isNotEmpty(proband.getSamples()) && ListUtils.isNotEmpty(clinicalAnalysis.getProband().getSamples())) {
-                Set<Long> familyProbandSamples = proband.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
-                List<Long> probandSample = clinicalAnalysis.getProband().getSamples().stream().map(Sample::getUid)
-                        .collect(Collectors.toList());
-
-                if (probandSample.size() != familyProbandSamples.size() || !familyProbandSamples.containsAll(probandSample)) {
-                    throw new CatalogException("Samples in proband from family and proband in clinical analysis differ");
-                }
-            } else if ((ListUtils.isNotEmpty(proband.getSamples()) && ListUtils.isEmpty(clinicalAnalysis.getProband().getSamples()))
-                    || (ListUtils.isEmpty(proband.getSamples()) && ListUtils.isNotEmpty(clinicalAnalysis.getProband().getSamples()))) {
-                throw new CatalogException("Samples in proband from family and proband in clinical analysis differ");
-            }
-        }
-
-        // Validate the files
-        if (clinicalAnalysis.getFiles() != null && !clinicalAnalysis.getFiles().isEmpty()) {
-            // We extract all the samples
-            Map<String, Long> sampleMap = new HashMap<>();
-            if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getMembers() != null) {
-                for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-                    if (member.getSamples() != null) {
-                        for (Sample sample : member.getSamples()) {
-                            sampleMap.put(sample.getId(), sample.getUid());
-                        }
+                if (member.getSamples() != null) {
+                    for (Sample sample : member.getSamples()) {
+                        sampleMap.put(sample.getUid(), sample.getId());
                     }
                 }
-            } else if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getSamples() != null) {
-                for (Sample sample : clinicalAnalysis.getProband().getSamples()) {
-                    sampleMap.put(sample.getId(), sample.getUid());
-                }
             }
-
-            for (String sampleKey : clinicalAnalysis.getFiles().keySet()) {
-                if (!sampleMap.containsKey(sampleKey)) {
-                    throw new CatalogException("Missing association from individual to sample " + sampleKey);
-                }
-            }
-
-            // Validate that files are related to the associated samples and get full file information
-            for (Map.Entry<String, List<File>> entry : clinicalAnalysis.getFiles().entrySet()) {
-                Query query = new Query()
-                        .append(FileDBAdaptor.QueryParams.ID.key(), entry.getValue().stream().map(File::getId).collect(Collectors.toList()))
-                        .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleMap.get(entry.getKey()));
-
-                OpenCGAResult<File> fileDataResult = catalogManager.getFileManager()
-                        .search(study.getFqn(), query, QueryOptions.empty(), sessionId);
-                if (fileDataResult.getNumResults() < entry.getValue().size()) {
-                    throw new CatalogException("Some or all of the files associated to sample " + entry.getKey() + " could not be found"
-                            + " or are not actually associated to the sample");
-                }
-
-                // Replace the files
-                clinicalAnalysis.getFiles().put(entry.getKey(), fileDataResult.getResults());
+        } else if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getSamples() != null) {
+            for (Sample sample : clinicalAnalysis.getProband().getSamples()) {
+                sampleMap.put(sample.getUid(), sample.getId());
             }
         }
+
+        if (clinicalAnalysis.getFiles() != null && !clinicalAnalysis.getFiles().isEmpty()) {
+            throw new CatalogException("Cannot obtain map of files if this is already provided");
+        }
+
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleMap.keySet())
+                .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.ALIGNMENT, File.Bioformat.VARIANT,
+                        File.Bioformat.COVERAGE));
+        OpenCGAResult<File> fileResults = fileDBAdaptor.get(study.getUid(), query, new QueryOptions(), userId);
+
+        Map<String, List<File>> fileMap = new HashMap<>();
+        for (File file : fileResults.getResults()) {
+            for (Sample sample : file.getSamples()) {
+                if (sampleMap.containsKey(sample.getUid())) {
+                    String sampleId = sampleMap.get(sample.getUid());
+                    if (!fileMap.containsKey(sampleId)) {
+                        fileMap.put(sampleId, new LinkedList<>());
+                    }
+                    fileMap.get(sampleId).add(file);
+                }
+            }
+        }
+
+        clinicalAnalysis.setFiles(fileMap);
+    }
+
+    private void validateFiles(Study study, ClinicalAnalysis clinicalAnalysis, String userId) throws CatalogException {
+        Map<String, Long> sampleMap = new HashMap<>();
+        if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getMembers() != null) {
+            for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                if (member.getSamples() != null) {
+                    for (Sample sample : member.getSamples()) {
+                        sampleMap.put(sample.getId(), sample.getUid());
+                    }
+                }
+            }
+        } else if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getSamples() != null) {
+            for (Sample sample : clinicalAnalysis.getProband().getSamples()) {
+                sampleMap.put(sample.getId(), sample.getUid());
+            }
+        }
+
+        if (clinicalAnalysis.getFiles() == null || clinicalAnalysis.getFiles().isEmpty()) {
+            throw new CatalogException("Found empty map of files");
+        }
+
+        if (!clinicalAnalysis.getFiles().keySet().containsAll(sampleMap.keySet())) {
+            throw new CatalogException("Map of files contains sample ids not related to any member/proband");
+        }
+
+        // Validate the file ids passed are related to the samples
+        Map<String, List<File>> fileMap = new LinkedHashMap<>();
+        for (Map.Entry<String, List<File>> entry : clinicalAnalysis.getFiles().entrySet()) {
+            List<String> fileIds = entry.getValue().stream().map(File::getId).collect(Collectors.toList());
+            InternalGetDataResult<File> fileResult = catalogManager.getFileManager().internalGet(study.getUid(), fileIds, new Query(),
+                    new QueryOptions(), userId, false);
+            // Validate sample id belongs to files
+            for (File file : fileResult.getResults()) {
+                if (!file.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).contains(sampleMap.get(entry.getKey()))) {
+                    throw new CatalogException("Associated file '" + file.getPath() + "' seems not to be related to sample '"
+                            + entry.getKey() + "'.");
+                }
+            }
+            fileMap.put(entry.getKey(), fileResult.getResults());
+        }
+
+        clinicalAnalysis.setFiles(fileMap);
     }
 
     private Family getFullValidatedFamily(Family family, Study study, String sessionId) throws CatalogException {
@@ -569,7 +749,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         try {
             fixQueryObject(study, query, userId);
             query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            iterator = clinicalDBAdaptor.iterator(study.getUid(), query, INCLUDE_CLINICAL_IDS, userId);
+            iterator = clinicalDBAdaptor.iterator(study.getUid(), query, new QueryOptions(), userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -736,6 +916,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
+        if (clinicalAnalysis.getInterpretations() != null && !clinicalAnalysis.getInterpretations().isEmpty()) {
+            // Check things there are no fields that cannot be updated once there are interpretations
+            if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
+                throw new CatalogException("Cannot update file map anymore. Interpretations found in clinical analysis '"
+                        + clinicalAnalysis.getId() + "'.");
+            }
+        }
+
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
             try {
@@ -764,18 +952,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             Map<String, Object> map = parameters.getMap(ClinicalAnalysisDBAdaptor.QueryParams.ANALYST.key());
             map.put("assignedBy", userId);
         }
-        if (updateParams.getFamily() != null && StringUtils.isNotEmpty(updateParams.getFamily().getId())) {
-            Family family = updateParams.getFamily().toUncheckedFamily();
-            family = getFullValidatedFamily(family, study, token);
-            clinicalAnalysis.setFamily(family);
-            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), family);
-        }
-        if (updateParams.getProband() != null && StringUtils.isNotEmpty(updateParams.getProband().getId())) {
-            Individual proband = updateParams.getProband().toUncheckedIndividual();
-            proband = getFullValidatedMember(proband, study, token);
-            clinicalAnalysis.setProband(proband);
-            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), proband);
-        }
+
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
             Map<String, List<File>> files = new HashMap<>();
             for (Map.Entry<String, List<String>> entry : updateParams.getFiles().entrySet()) {
@@ -783,9 +960,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 files.put(entry.getKey(), fileList);
             }
             clinicalAnalysis.setFiles(files);
+
+            // Validate files
+            validateFiles(study, clinicalAnalysis, userId);
         }
 
-        validateClinicalAnalysisFields(clinicalAnalysis, study, token);
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), clinicalAnalysis.getFiles());
         }
