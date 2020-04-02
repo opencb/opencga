@@ -20,6 +20,7 @@ import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.AlignmentCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.analysis.ClinicalCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.VariantCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.*;
 import org.opencb.opencga.app.cli.main.executors.operations.OperationsCommandExecutor;

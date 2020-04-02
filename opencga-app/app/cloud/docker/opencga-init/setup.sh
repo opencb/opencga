@@ -1,36 +1,57 @@
 #!/bin/sh
+FILE=/opt/volume/conf/hadoop
+if [ -d "$FILE" ]; then
+    echo "$FILE already exists"
+else
+    sshpass -p "$INIT_HADOOP_SSH_PASS" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
 
-sshpass -p "$INIT_HBASE_SSH_PASS" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$INIT_HBASE_SSH_USER@$INIT_HBASE_SSH_DNS" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
+    # copy conf files from hdinsight cluster (from /etc/hadoop/conf & /etc/hbase/conf) to opencga VM
+    # place these files in /opt/opencga/conf/hadoop, by e.g.: (todo: change connection strings)
+    echo "Fetching HDInsight configuration"
+    sshpass -p "$INIT_HADOOP_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS":/etc/hadoop/conf/* /opt/opencga/conf/hadoop
+    # same with /etc/hbase/conf, e.g.
+    sshpass -p "$INIT_HADOOP_SSH_PASS" scp -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null -r "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS":/etc/hbase/conf/* /opt/opencga/conf/hadoop
 
-# copy conf files from hdinsight cluster (from /etc/hadoop/conf & /etc/hbase/conf) to opencga VM
-# place these files in /opt/opencga/conf/hadoop, by e.g.: (todo: change connection strings)
-echo "Fetching HDInsight configuration"
-sshpass -p "$INIT_HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$INIT_HBASE_SSH_USER@$INIT_HBASE_SSH_DNS":/etc/hadoop/conf/* /opt/opencga/conf/hadoop
-# same with /etc/hbase/conf, e.g.
-sshpass -p "$INIT_HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null -r "$INIT_HBASE_SSH_USER@$INIT_HBASE_SSH_DNS":/etc/hbase/conf/* /opt/opencga/conf/hadoop
+    # Copy the OpenCGA installation directory to the hdinsights cluster
+    # TODO - Optimize this down to only required jars
+    sshpass -p "$INIT_HADOOP_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
+fi
 
-# Copy the OpenCGA installation directory to the hdinsights cluster
-# TODO - Optimize this down to only required jars
-# Note> This is exported as it is used by the `override-yaml.py` script too
-export INIT_HBASE_SSH_REMOTE_OPENCGA_HOME="/home/$INIT_HBASE_SSH_USER/opencga/"
-sshpass -p "$INIT_HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$INIT_HBASE_SSH_USER@$INIT_HBASE_SSH_DNS":"$INIT_HBASE_SSH_REMOTE_OPENCGA_HOME"
+FILE=/opt/volume/conf/configuration.yml
+if [ -f "$FILE" ]; then
+    echo "$FILE already exists"
+else
+    echo "Copying default configs"
+    cp -r -L -v /opt/opencga/default-conf/*  /opt/opencga/conf/
 
-echo "Initialising configs"
-# Override Yaml configs
-python3 /tmp/override-yaml.py --save
-# Override Js configs
-python3 /tmp/override-js.py --save
+    echo "Initialising configs"
+    # Override Yaml configs
+    python3 /opt/opencga/init/override_yaml.py --save
 
-# Copies the config files from our local directory into a
-# persistent volume to be shared by the other containers.
-echo "Initialising volume"
-mkdir -p /opt/volume/conf /opt/volume/sessions /opt/volume/variants /opt/volume/ivaconf
-cp -r /opt/opencga/conf/* /opt/volume/conf
-cp -r /opt/opencga/ivaconf/* /opt/volume/ivaconf
+    # Copies the config files from our local directory into a
+    # persistent volume to be shared by the other containers.
+    echo "Initialising volume"
+    #mkdir -p /opt/volume/conf /opt/volume/variants
+    cp -r /opt/opencga/conf/* /opt/volume/conf
+fi
+# wait for mongodb 
+until mongo mongodb://$(echo $INIT_CATALOG_DATABASE_HOSTS | cut -d',' -f1)/\?replicaSet=rs0  -u $INIT_CATALOG_DATABASE_USER -p $INIT_CATALOG_DATABASE_PASSWORD  --authenticationDatabase admin --eval 'db.getMongo().getDBNames().indexOf("admin")' --quiet
+do
+    echo "Waiting for Mongo DB"
+done
 
-echo "Installing catalog"
-echo "${INIT_OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}
+DB_EXISTS=$(mongo mongodb://$(echo $INIT_CATALOG_DATABASE_HOSTS | cut -d',' -f1)/\?replicaSet=rs0  -u $INIT_CATALOG_DATABASE_USER -p $INIT_CATALOG_DATABASE_PASSWORD  --authenticationDatabase admin --eval 'db.getMongo().getDBNames().indexOf("opencga_catalog")' --quiet | tail -1)
+echo "DB EXISTS: $DB_EXISTS"
 
-# Catalog install will create a sub-folders in sessions
-# that need copying to the volume.
-cp -r /opt/opencga/sessions/* /opt/volume/sessions
+if [ $(($DB_EXISTS)) == -1 ]; then
+
+    echo "Installing catalog"
+    echo "${INIT_OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}
+    echo "catalog installed"
+    echo "copying session files"
+    cp -r /opt/opencga/sessions/* /opt/volume/sessions
+     echo "copied session files"
+else
+    echo "DB opencga_catalog already exists"
+
+fi

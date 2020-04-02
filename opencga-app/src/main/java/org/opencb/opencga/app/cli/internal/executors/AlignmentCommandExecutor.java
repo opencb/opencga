@@ -50,7 +50,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing variant command line");
+        logger.debug("Executing alignment command line");
 
         String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
         configure();

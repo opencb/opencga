@@ -209,10 +209,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");
             put(GeneticChecksAnalysis.ID, "variant " + GeneticChecksAnalysis.ID + "-run");
 
-            put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
-            put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
-            put(CustomInterpretationAnalysis.ID, "interpretation " + CustomInterpretationAnalysis.ID);
-            put(CancerTieringInterpretationAnalysis.ID, "interpretation " + CancerTieringInterpretationAnalysis.ID);
+            put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID + "-run");
+            put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID + "-run");
+            put(CustomInterpretationAnalysis.ID, "interpretation " + CustomInterpretationAnalysis.ID + "-run");
+            put(CancerTieringInterpretationAnalysis.ID, "interpretation " + CancerTieringInterpretationAnalysis.ID + "-run");
         }};
     }
 

@@ -33,7 +33,8 @@ import java.util.List;
 @Tool(id = TieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 
-    public final static String ID = "tiering-interpretation";
+    public final static String ID = "interpretation-tiering";
+    public static final String DESCRIPTION = "GEL tiering interpretation analysis";
 
     private String studyId;
     private String clinicalAnalysisId;

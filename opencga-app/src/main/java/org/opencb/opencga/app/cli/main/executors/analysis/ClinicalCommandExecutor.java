@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.main.executors.catalog;
+package org.opencb.opencga.app.cli.main.executors.analysis;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -8,9 +8,14 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
+import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
+
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.TieringCommandOptions.TIERING_RUN_COMMAND;
 
 public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
 
@@ -40,6 +45,12 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
             case "acl-update":
                 queryResponse = updateAcl();
                 break;
+
+            case TIERING_RUN_COMMAND:
+                queryResponse = tiering();
+                break;
+
+
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -117,4 +128,42 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.memberId, updateParams, queryParams);
     }
 
+    private RestResponse<Job> tiering() throws ClientException {
+        return openCGAClient.getClinicalAnalysisClient().runInterpretationTiering(
+                new TieringInterpretationAnalysisParams(clinicalCommandOptions.tieringCommandOptions.clinicalAnalysisId,
+                        clinicalCommandOptions.tieringCommandOptions.diseasePanelIds,
+                        clinicalCommandOptions.tieringCommandOptions.penetrance,
+                        clinicalCommandOptions.tieringCommandOptions.maxLowCoverage,
+                        clinicalCommandOptions.tieringCommandOptions.includeLowCoverage),
+                getParams(clinicalCommandOptions.tieringCommandOptions.studyId)
+        );
+    }
+
+    private ObjectMap getParams(String study) {
+        return getParams(null, study);
+    }
+
+    private ObjectMap getParams(String project, String study) {
+        ObjectMap params = new ObjectMap(clinicalCommandOptions.commonCommandOptions.params);
+        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
+        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
+        params.putIfNotEmpty(ParamConstants.JOB_ID, clinicalCommandOptions.commonJobOptions.jobId);
+        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, clinicalCommandOptions.commonJobOptions.jobDescription);
+        if (clinicalCommandOptions.commonJobOptions.jobDependsOn != null) {
+            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", clinicalCommandOptions.commonJobOptions.jobDependsOn));
+        }
+        if (clinicalCommandOptions.commonJobOptions.jobTags != null) {
+            params.put(ParamConstants.JOB_TAGS, String.join(",", clinicalCommandOptions.commonJobOptions.jobTags));
+        }
+        if (clinicalCommandOptions.commonNumericOptions.limit > 0) {
+            params.put(QueryOptions.LIMIT, clinicalCommandOptions.commonNumericOptions.limit);
+        }
+        if (clinicalCommandOptions.commonNumericOptions.skip > 0) {
+            params.put(QueryOptions.SKIP, clinicalCommandOptions.commonNumericOptions.skip);
+        }
+        if (clinicalCommandOptions.commonNumericOptions.count) {
+            params.put(QueryOptions.COUNT, clinicalCommandOptions.commonNumericOptions.count);
+        }
+        return params;
+    }
 }
