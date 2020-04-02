@@ -427,6 +427,14 @@ public class JobManager extends ResourceManager<Job> {
         try {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTION);
 
+            // Check params
+            ParamUtils.checkObj(params, "params");
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                if (entry.getValue() == null) {
+                    throw new CatalogException("Found '" + entry.getKey() + "' param with null value");
+                }
+            }
+
             job.setStudy(new JobStudyParam(study.getFqn()));
             job.setUserId(userId);
             job.setParams(params);
