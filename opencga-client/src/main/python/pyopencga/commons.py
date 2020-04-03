@@ -42,13 +42,13 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
     if query_id is not None:
         url += '/' + query_id
 
-    url += '/' + resource
+    if subcategory is not None:
+        url += '/' + subcategory
 
     if second_query_id is not None:
         url += '/' + second_query_id
 
-    if subcategory is not None:
-        url += '/' + subcategory
+    url += '/' + resource
 
     header = {"Accept-Encoding": "gzip"}
     if sid is not None:
@@ -66,7 +66,6 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
                 opts.append(k + '=' + str(v))
         if opts:
             url += '?' + '&'.join(opts)
-
     return url, header
 
 
