@@ -46,6 +46,9 @@ public class ParamConstants {
     public static final String TSV_ANNOTATION_DESCRIPTION = "JSON containing the 'content' of the TSV file if this has not yet been "
             + "registered into OpenCGA";
 
+    public static final String DELETED_DESCRIPTION = "Boolean to retrieve deleted entries";
+    public static final String DELETED_PARAM = "deleted";
+
     // ---------------------------------------------
 
     public static final String USER_DESCRIPTION = "User id";
@@ -120,6 +123,7 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
+    public static final String CLINICAL_ANALYSES_PARAM = "clinicalAnalyses";
 
     // ---------------------------------------------
 

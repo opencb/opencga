@@ -25,9 +25,13 @@ import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
+import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
@@ -35,6 +39,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -165,6 +170,35 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         assertEquals(catalogManager.getSampleManager().get(STUDY, "sample2", SampleManager.INCLUDE_SAMPLE_IDS, sessionIdUser)
                 .first().getUid(), dummyEnvironment.first().getProband().getSamples().get(0).getUid());
+    }
+
+    @Test
+    public void deleteClinicalAnalysisTest() throws CatalogException {
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
+        OpenCGAResult delete = catalogManager.getClinicalAnalysisManager().delete(STUDY,
+                Collections.singletonList(dummyEnvironment.first().getId()), null, sessionIdUser);
+        assertEquals(1, delete.getNumDeleted());
+
+        OpenCGAResult<ClinicalAnalysis> clinicalResult  = catalogManager.getClinicalAnalysisManager().get(STUDY,
+                Collections.singletonList(dummyEnvironment.first().getId()),
+                new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true), new QueryOptions(), false, sessionIdUser);
+        assertEquals(1, clinicalResult.getNumResults());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(), new QueryOptions(), sessionIdUser);
+    }
+
+    @Test
+    public void deleteClinicalAnalysisWithInterpretation() throws CatalogException {
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
+        catalogManager.getInterpretationManager().create(STUDY, dummyEnvironment.first().getId(),
+                new Interpretation().setId("myInterpretation"), new QueryOptions(), sessionIdUser);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("forbidden");
+        catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(dummyEnvironment.first().getId()), null,
+                sessionIdUser);
     }
 
     @Test

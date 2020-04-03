@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -75,6 +76,8 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         SAMPLE_UID("proband.samples.uid", INTEGER, ""),
         INTERPRETATIONS("interpretations", TEXT_ARRAY, ""),
         INTERPRETATIONS_ID("interpretations.id", TEXT_ARRAY, ""),
+
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.

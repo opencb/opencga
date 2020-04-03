@@ -23,6 +23,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -87,7 +88,7 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         SOURCE_AUTHOR("source.author", TEXT, ""),
         SOURCE_PROJECT("source.project", TEXT, ""),
 
-        DELETED("deleted", BOOLEAN, ""),
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY_UID("studyUid", INTEGER_ARRAY, "");

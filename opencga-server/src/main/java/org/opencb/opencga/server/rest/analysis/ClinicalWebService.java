@@ -19,7 +19,8 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
-import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.interpretation.Comment;
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -35,12 +36,12 @@ import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
-import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -170,6 +171,19 @@ public class ClinicalWebService extends AnalysisWebService {
         }
     }
 
+    @DELETE
+    @Path("/{clinicalAnalyses}/delete")
+    @ApiOperation(value = "Delete clinical analyses", response = ClinicalAnalysis.class)
+    public Response delete(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION) @PathParam(ParamConstants.CLINICAL_ANALYSES_PARAM) String clinicalAnalyses) {
+        try {
+            return createOkResponse(clinicalManager.delete(studyStr, getIdList(clinicalAnalyses), queryOptions, true, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @POST
     @Path("/{clinicalAnalysis}/interpretations/update")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -210,7 +224,8 @@ public class ClinicalWebService extends AnalysisWebService {
     })
     public Response info(
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION) @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("clinicalAnalyses");
@@ -251,6 +266,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Clinical analyst assignee") @QueryParam("analystAssignee") String assignee,
             @ApiParam(value = "Disorder id or name") @QueryParam("disorder") String disorder,
             @ApiParam(value = "Flags") @QueryParam("flags") String flags,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
             @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes) {
         try {

@@ -212,7 +212,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
             options = ParamUtils.defaultObject(options, QueryOptions::new);
-            ParamUtils.checkObj(interpretation, "clinicalAnalysis");
+            ParamUtils.checkObj(interpretation, "interpretation");
             ParamUtils.checkAlias(interpretation.getId(), "id");
 
             interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());

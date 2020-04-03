@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -81,7 +82,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
         JOB_ID("jobId", TEXT, ""),
 
-        DELETED("deleted", BOOLEAN, ""),
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         INTERNAL_INDEX("internal.index", TEXT_ARRAY, ""),
         INTERNAL_INDEX_USER_ID("internal.index.userId", TEXT, ""),

@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -68,7 +69,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the individual
 
-        DELETED("deleted", BOOLEAN, ""),
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         DISORDERS("disorders", TEXT_ARRAY, ""),
         DISORDERS_ID("disorders.id", TEXT, ""),
