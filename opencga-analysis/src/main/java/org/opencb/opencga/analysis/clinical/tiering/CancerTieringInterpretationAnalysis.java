@@ -32,6 +32,7 @@ import java.util.List;
 public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "cancer-tiering";
+    public final static String DESCRIPTION = "Run cancer tiering interpretation analysis";
 
     private String studyId;
     private String clinicalAnalysisId;

@@ -20,14 +20,11 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.custom.CustomInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 
@@ -112,7 +109,7 @@ public class InterpretationCommandOptions {
         public String outDir;
     }
 
-    @Parameters(commandNames = {CustomInterpretationAnalysis.ID}, commandDescription = "Custom interpretation analysis")
+    @Parameters(commandNames = {ZettaInterpretationAnalysis.ID}, commandDescription = "Custom interpretation analysis")
     public class CustomCommandOptions {
 
         @ParametersDelegate

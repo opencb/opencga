@@ -5,6 +5,9 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
@@ -23,7 +26,7 @@ public class ClinicalCommandOptions {
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
-    public TieringCommandOptions tieringCommandOptions;
+    public InterpretationTieringCommandOptions tieringCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -49,7 +52,7 @@ public class ClinicalCommandOptions {
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
         this.aclsUpdateCommandOptions = aclCommandOptions.getAclsUpdateCommandOptions();
 
-        this.tieringCommandOptions = new TieringCommandOptions();
+        this.tieringCommandOptions = new InterpretationTieringCommandOptions();
     }
 
 
@@ -124,22 +127,40 @@ public class ClinicalCommandOptions {
 
     }
 
-    @Parameters(commandNames = {TieringCommandOptions.TIERING_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
-    public class TieringCommandOptions {
-
-        public static final String TIERING_RUN_COMMAND = TieringInterpretationAnalysis.ID + "-run";
+    @Parameters(commandNames = {"interpretation-query"}, commandDescription = "Filter and fetch interpreted variants")
+    public class InterpretationQueryCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.DataModelOptions dataModelOptions = commonDataModelOptions;
+
+    }
+
+    @Parameters(commandNames = {"interpretation-actionable"}, commandDescription = "Fetch actionable variants for a given sample")
+    public class InterpretationActionableCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.DataModelOptions dataModelOptions = commonDataModelOptions;
+
+    }
+
+    @Parameters(commandNames = {"interpretation-aggregation-stats"}, commandDescription = "Compute aggregation stats over interpreted variants")
+    public class InterpretationAggregationStatsCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.DataModelOptions dataModelOptions = commonDataModelOptions;
+
+    }
+
+    @Parameters(commandNames = {InterpretationTieringCommandOptions.TIERING_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
+    public class InterpretationTieringCommandOptions extends BaseClinicalCommand {
+
+        public static final String TIERING_RUN_COMMAND = TieringInterpretationAnalysis.ID + "-run";
 
         @Parameter(names = {"-s", "--" + STUDY_PARAM_NAME}, description = "Study [[user@]project:]study.", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical Analysis ID", arity = 1)
-        public String clinicalAnalysisId;
-
         @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", arity = 1)
-        public List<String> diseasePanelIds;
+        public String panel;
 
         @Parameter(names = {"--" + PENETRANCE_PARAM_NAME}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
         public ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
@@ -152,5 +173,26 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
         public boolean includeUntieredVariants;
+    }
+
+    @Parameters(commandNames = {InterpretationTeamCommandOptions.TEAM_RUN_COMMAND}, commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
+    public class InterpretationTeamCommandOptions extends BaseClinicalCommand {
+
+        public static final String TEAM_RUN_COMMAND = TeamInterpretationAnalysis.ID + "-run";
+
+    }
+
+    @Parameters(commandNames = {InterpretationCustomCommandOptions.CUSTOM_RUN_COMMAND}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
+    public class InterpretationCustomCommandOptions extends BaseClinicalCommand {
+
+        public static final String CUSTOM_RUN_COMMAND = ZettaInterpretationAnalysis.ID + "-run";
+
+    }
+
+    @Parameters(commandNames = {InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND}, commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
+    public class InterpretationCancerTieringCommandOptions extends BaseClinicalCommand {
+
+        public static final String CANCER_TIERING_RUN_COMMAND = CancerTieringInterpretationAnalysis.ID + "-run";
+
     }
 }

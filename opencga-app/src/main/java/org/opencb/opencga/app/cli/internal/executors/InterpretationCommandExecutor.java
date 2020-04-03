@@ -21,7 +21,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.clinical.custom.CustomInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.custom.CustomInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
@@ -63,7 +63,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
             case CancerTieringInterpretationAnalysis.ID + "-run":
                 cancerTiering();
                 break;
-            case CustomInterpretationAnalysis.ID + "-run":
+            case ZettaInterpretationAnalysis.ID + "-run":
                 custom();
                 break;
             default:
@@ -141,7 +141,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
 //        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
 //        tieringAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
 //        tieringAnalysis.setStudyId(studyId)
-//                .setClinicalAnalysisId(clinicalAnalysisId)
+//                .setClinicalAnalysis(clinicalAnalysisId)
 //                .setDiseasePanelIds(panelList)
 //                .setPenetrance(penetrance)
 //                .setConfig(config);
@@ -200,7 +200,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Execute custom interpretation analysis
-        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis();
+        ZettaInterpretationAnalysis customAnalysis = new ZettaInterpretationAnalysis();
         customAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
         customAnalysis.setStudyId(studyId)
                 .setClinicalAnalysisId(clinicalAnalysisId)

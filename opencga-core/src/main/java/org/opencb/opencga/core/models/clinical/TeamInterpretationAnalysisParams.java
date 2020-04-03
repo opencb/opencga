@@ -1,27 +1,27 @@
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
-public class TieringInterpretationAnalysisParams extends ToolParams {
+public class TeamInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "GEL tiering interpretation analysis params";
 
     private String clinicalAnalysis;
     private String panel;
-    private ClinicalProperty.Penetrance penetrance;
+    private String familySegregation;
+
     private int maxLowCoverage;
     private boolean includeLowCoverage;
 
-    public TieringInterpretationAnalysisParams() {
+    public TeamInterpretationAnalysisParams() {
     }
 
-    public TieringInterpretationAnalysisParams(String clinicalAnalysis, String panel, ClinicalProperty.Penetrance penetrance,
-                                               int maxLowCoverage, boolean includeLowCoverage) {
+    public TeamInterpretationAnalysisParams(String clinicalAnalysis, String panel, String familySegregation, int maxLowCoverage,
+                                            boolean includeLowCoverage) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.panel = panel;
-        this.penetrance = penetrance;
+        this.familySegregation = familySegregation;
         this.maxLowCoverage = maxLowCoverage;
         this.includeLowCoverage = includeLowCoverage;
     }
@@ -30,7 +30,7 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
         return clinicalAnalysis;
     }
 
-    public TieringInterpretationAnalysisParams setClinicalAnalysis(String clinicalAnalysis) {
+    public TeamInterpretationAnalysisParams setClinicalAnalysis(String clinicalAnalysis) {
         this.clinicalAnalysis = clinicalAnalysis;
         return this;
     }
@@ -39,17 +39,17 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
         return panel;
     }
 
-    public TieringInterpretationAnalysisParams setPanel(String panel) {
+    public TeamInterpretationAnalysisParams setPanel(String panel) {
         this.panel = panel;
         return this;
     }
 
-    public ClinicalProperty.Penetrance getPenetrance() {
-        return penetrance;
+    public String getFamilySegregation() {
+        return familySegregation;
     }
 
-    public TieringInterpretationAnalysisParams setPenetrance(ClinicalProperty.Penetrance penetrance) {
-        this.penetrance = penetrance;
+    public TeamInterpretationAnalysisParams setFamilySegregation(String familySegregation) {
+        this.familySegregation = familySegregation;
         return this;
     }
 
@@ -57,7 +57,7 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
         return maxLowCoverage;
     }
 
-    public TieringInterpretationAnalysisParams setMaxLowCoverage(int maxLowCoverage) {
+    public TeamInterpretationAnalysisParams setMaxLowCoverage(int maxLowCoverage) {
         this.maxLowCoverage = maxLowCoverage;
         return this;
     }
@@ -66,7 +66,7 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
         return includeLowCoverage;
     }
 
-    public TieringInterpretationAnalysisParams setIncludeLowCoverage(boolean includeLowCoverage) {
+    public TeamInterpretationAnalysisParams setIncludeLowCoverage(boolean includeLowCoverage) {
         this.includeLowCoverage = includeLowCoverage;
         return this;
     }

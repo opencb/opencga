@@ -35,6 +35,7 @@ import java.util.List;
 public class TeamInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "team";
+    public final static String DESCRIPTION = "Run TEAM interpretation analysis";
 
     private String studyId;
     private String clinicalAnalysisId;
