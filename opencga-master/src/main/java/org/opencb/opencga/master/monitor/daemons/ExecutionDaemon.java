@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.custom.CustomInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.cohort.CohortIndexTask;
@@ -211,7 +211,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID + "-run");
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID + "-run");
-            put(CustomInterpretationAnalysis.ID, "interpretation " + CustomInterpretationAnalysis.ID + "-run");
+            put(ZettaInterpretationAnalysis.ID, "interpretation " + ZettaInterpretationAnalysis.ID + "-run");
             put(CancerTieringInterpretationAnalysis.ID, "interpretation " + CancerTieringInterpretationAnalysis.ID + "-run");
         }};
     }

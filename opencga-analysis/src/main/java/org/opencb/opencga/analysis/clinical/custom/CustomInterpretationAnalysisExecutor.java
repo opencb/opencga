@@ -44,7 +44,7 @@ import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.SECOND
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
 
 @ToolExecutor(id = "opencga-local",
-        tool = CustomInterpretationAnalysis.ID,
+        tool = ZettaInterpretationAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
 public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {

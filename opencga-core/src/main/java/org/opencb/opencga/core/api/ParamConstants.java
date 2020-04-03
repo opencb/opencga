@@ -95,7 +95,8 @@ public class ParamConstants {
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
     public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
 
-    public static final String SAMPLE_ID_DESCRIPTION = "Sample id";
+    public static final String SAMPLE_PARAM = "sample";
+    public static final String SAMPLE_ID_DESCRIPTION = "Sample ID";
     public static final String SAMPLE_NAME_DESCRIPTION = "Sample name";
 
     // ---------------------------------------------

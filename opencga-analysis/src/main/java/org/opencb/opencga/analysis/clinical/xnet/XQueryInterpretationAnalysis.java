@@ -129,7 +129,7 @@ public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
         Interpretation interpretation = new Interpretation()
                 .setId(XQUERY_ANALYSIS_NAME + SEPARATOR + TimeUtils.getTimeMillis())
                 .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
-                .setClinicalAnalysisId(clinicalAnalysisId)
+                .setClinicalAnalysis(clinicalAnalysisId)
                 .setCreationDate(TimeUtils.getTime())
                 .setPanels(biodataDiseasePanels)
                 .setFilters(getFilters(familyFilter, geneFilter))

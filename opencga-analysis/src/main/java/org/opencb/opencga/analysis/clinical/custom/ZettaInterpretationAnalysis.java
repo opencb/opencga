@@ -34,10 +34,11 @@ import java.util.List;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_DISORDER;
 
-@Tool(id = CustomInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
-public class CustomInterpretationAnalysis extends InterpretationAnalysis {
+@Tool(id = ZettaInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
+public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "custom";
+    public final static String DESCRIPTION = "Run custom interpretation analysis";
 
     private String studyId;
     private String clinicalAnalysisId;
@@ -155,7 +156,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
         return studyId;
     }
 
-    public CustomInterpretationAnalysis setStudyId(String studyId) {
+    public ZettaInterpretationAnalysis setStudyId(String studyId) {
         this.studyId = studyId;
         return this;
     }
@@ -164,7 +165,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
         return clinicalAnalysisId;
     }
 
-    public CustomInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
+    public ZettaInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
@@ -173,7 +174,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
         return query;
     }
 
-    public CustomInterpretationAnalysis setQuery(Query query) {
+    public ZettaInterpretationAnalysis setQuery(Query query) {
         this.query = query;
         return this;
     }
@@ -182,7 +183,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
         return queryOptions;
     }
 
-    public CustomInterpretationAnalysis setQueryOptions(QueryOptions queryOptions) {
+    public ZettaInterpretationAnalysis setQueryOptions(QueryOptions queryOptions) {
         this.queryOptions = queryOptions;
         return this;
     }
@@ -191,7 +192,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
         return config;
     }
 
-    public CustomInterpretationAnalysis setConfig(CustomInterpretationConfiguration config) {
+    public ZettaInterpretationAnalysis setConfig(CustomInterpretationConfiguration config) {
         this.config = config;
         return this;
     }

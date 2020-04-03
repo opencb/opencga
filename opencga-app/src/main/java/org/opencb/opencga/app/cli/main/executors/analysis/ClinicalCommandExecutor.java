@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors.analysis;
 
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -15,7 +16,7 @@ import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisPara
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.TieringCommandOptions.TIERING_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
 
 public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
 
@@ -128,15 +129,35 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.memberId, updateParams, queryParams);
     }
 
+    private RestResponse<ReportedVariant> query() throws ClientException {
+        return null;
+    }
+
+    private RestResponse<ReportedVariant> actionable() throws ClientException {
+        return null;
+    }
+
     private RestResponse<Job> tiering() throws ClientException {
         return openCGAClient.getClinicalAnalysisClient().runInterpretationTiering(
-                new TieringInterpretationAnalysisParams(clinicalCommandOptions.tieringCommandOptions.clinicalAnalysisId,
-                        clinicalCommandOptions.tieringCommandOptions.diseasePanelIds,
+                new TieringInterpretationAnalysisParams(clinicalCommandOptions.tieringCommandOptions.clinical,
+                        clinicalCommandOptions.tieringCommandOptions.panel,
                         clinicalCommandOptions.tieringCommandOptions.penetrance,
                         clinicalCommandOptions.tieringCommandOptions.maxLowCoverage,
                         clinicalCommandOptions.tieringCommandOptions.includeLowCoverage),
                 getParams(clinicalCommandOptions.tieringCommandOptions.studyId)
         );
+    }
+
+    private RestResponse<Job> team() throws ClientException {
+        return null;
+    }
+
+    private RestResponse<Job> custom() throws ClientException {
+        return null;
+    }
+
+    private RestResponse<Job> cancerTiering() throws ClientException {
+        return null;
     }
 
     private ObjectMap getParams(String study) {
