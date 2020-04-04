@@ -68,8 +68,8 @@ public class ClinicalWebService extends AnalysisWebService {
     private final InterpretationManager catalogInterpretationManager;
     private final ClinicalInterpretationManager clinicalInterpretationManager;
 
-    public ClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                              @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public ClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
         clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
@@ -79,16 +79,16 @@ public class ClinicalWebService extends AnalysisWebService {
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
 
-    public ClinicalWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                              @Context HttpHeaders httpHeaders) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest, httpHeaders);
-
-        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
-                Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt"),
-                Paths.get(opencgaHome + "/analysis/resources/"));
-        catalogInterpretationManager = catalogManager.getInterpretationManager();
-        clinicalManager = catalogManager.getClinicalAnalysisManager();
-    }
+//    public ClinicalWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+//                              @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+//        super(version, uriInfo, httpServletRequest, httpHeaders);
+//
+//        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
+//                Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt"),
+//                Paths.get(opencgaHome + "/analysis/resources/"));
+//        catalogInterpretationManager = catalogManager.getInterpretationManager();
+//        clinicalManager = catalogManager.getClinicalAnalysisManager();
+//    }
 
     @POST
     @Path("/create")
@@ -152,10 +152,8 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = "Update clinical analysis attributes", response = ClinicalAnalysis.class)
     public Response update(
             @ApiParam(value = "Comma separated list of clinical analysis ids") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
-            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalUpdateParams params) {
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true) ClinicalUpdateParams params) {
         try {
             if (params != null && params.getInterpretations() != null) {
                 Map<String, Object> actionMap = new HashMap<>();
@@ -182,34 +180,7 @@ public class ClinicalWebService extends AnalysisWebService {
         }
     }
 
-    @POST
-    @Path("/{clinicalAnalysis}/interpretations/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Add or remove Interpretations to/from a Clinical Analysis", response = ClinicalAnalysis.class)
-    public Response interpretationUpdate(
-            @ApiParam(value = "Clinical analysis ID") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
-            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
-                    InterpretationCreateParams params) {
-        try {
-            if (interpretationAction == null) {
-                interpretationAction = ParamUtils.BasicUpdateAction.ADD;
-            }
 
-            if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
-                org.opencb.opencga.core.models.clinical.Interpretation interpretation = params.toClinicalInterpretation();
-                interpretation.setClinicalAnalysisId(clinicalAnalysisStr);
-                return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, token));
-            } else {
-                // TODO: Implement delete interpretation
-                return createErrorResponse(new NotImplementedException("Delete still not supported"));
-            }
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
 
     @GET
     @Path("/{clinicalAnalyses}/info")
@@ -318,12 +289,25 @@ public class ClinicalWebService extends AnalysisWebService {
         }
     }
 
-    /*
-    
-    /interpretation    
-    
-     */
+    @POST
+    @Path("/index")
+    @ApiOperation(value = "Index clinical analysis interpretations in the clinical variant database", response = Map.class)
+    public Response index(@ApiParam(value = "Comma separated list of clinical analysis IDs to be indexed in the clinical variant database")
+                          @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+                          @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
+//        try {
+//            clinicalInterpretationManager.index(study, sessionId);
+//            return Response.ok().build();
+//        } catch (IOException | ClinicalVariantException | CatalogException e) {
+//            return createErrorResponse(e);
+//        }
+        return createErrorResponse(new NotImplementedException("Operation not yet implemented"));
+    }
 
+
+    /*
+     * INTERPRETATION METHODS
+     */
 
 //    @POST
 //    @Path("/interpretation/create")
@@ -341,6 +325,35 @@ public class ClinicalWebService extends AnalysisWebService {
 //            return createErrorResponse(e);
 //        }
 //    }
+
+    @POST
+    @Path("/{clinicalAnalysis}/interpretations/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Add or remove Interpretations to/from a Clinical Analysis", response = ClinicalAnalysis.class)
+    public Response interpretationUpdate(
+            @ApiParam(value = "Clinical analysis ID") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
+            @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
+            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
+                    InterpretationCreateParams params) {
+        try {
+            if (interpretationAction == null) {
+                interpretationAction = ParamUtils.BasicUpdateAction.ADD;
+            }
+
+            if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
+                org.opencb.opencga.core.models.clinical.Interpretation interpretation = params.toClinicalInterpretation();
+                interpretation.setClinicalAnalysisId(clinicalAnalysisStr);
+                return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, token));
+            } else {
+                // TODO: Implement delete interpretation
+                return createErrorResponse(new NotImplementedException("Delete still not supported"));
+            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @POST
     @Path("/{clinicalAnalysis}/interpretations/{interpretation}/update")
@@ -366,7 +379,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @Path("/{clinicalAnalysis}/interpretations/{interpretation}/comments/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update comments of an Interpretation",
-            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
+            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class, hidden = true)
     public Response commentsUpdate(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis id") @PathParam("clinicalAnalysis") String clinicalId,
@@ -392,7 +405,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @Path("/{clinicalAnalysis}/interpretations/{interpretation}/primaryFindings/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update reported variants of an interpretation",
-            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
+            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class, hidden = true)
     public Response reportedVariantUpdate(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis id") @PathParam("clinicalAnalysis") String clinicalId,
@@ -412,150 +425,9 @@ public class ClinicalWebService extends AnalysisWebService {
             return createErrorResponse(e);
         }
     }
-
+    
     @GET
-    @Path("/interpretation/index")
-    @ApiOperation(value = "Index clinical analysis interpretations in the clinical variant database", response = Map.class)
-    public Response index(@ApiParam(value = "Comma separated list of interpretation IDs to be indexed in the clinical variant database") @QueryParam(value = "interpretationId") String interpretationId,
-                          @ApiParam(value = "Comma separated list of clinical analysis IDs to be indexed in the clinical variant database") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                          @ApiParam(value = "Reset the clinical variant database and import the specified interpretations") @QueryParam("false") boolean reset,
-                          @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
-//        try {
-//            clinicalInterpretationManager.index(study, sessionId);
-//            return Response.ok().build();
-//        } catch (IOException | ClinicalVariantException | CatalogException e) {
-//            return createErrorResponse(e);
-//        }
-        return createErrorResponse(new NotImplementedException("Operation not yet implemented"));
-    }
-
-    @GET
-    @Path("/interpretation/query")
-    @ApiOperation(value = "Query for reported variants", response = Map.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "approximateCount", value = "Get an approximate count, instead of an exact total count. Reduces execution time", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "approximateCountSamplingSize", value = "Sampling size to get the approximate count. "
-                    + "Larger values increase accuracy but also increase execution time", dataType = "integer", paramType = "query"),
-
-            // Variant filters
-            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reference", value = REFERENCE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
-
-            // Study filters
-            @ApiImplicitParam(name = ParamConstants.PROJECT_PARAM, value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "fileData", value = FILE_DATA_DESCR, dataType = "string", paramType = "query"),
-
-            @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "sampleData", value = SAMPLE_DATA_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "sampleMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "sampleLimit", value = SAMPLE_LIMIT_DESCR, dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "sampleSkip", value = SAMPLE_SKIP_DESCR, dataType = "integer", paramType = "query"),
-
-            @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "cohortStatsRef", value = STATS_REF_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "cohortStatsAlt", value = STATS_ALT_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "cohortStatsMaf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "cohortStatsMgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "cohortStatsPass", value = STATS_PASS_FREQ_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "score", value = SCORE_DESCR, dataType = "string", paramType = "query"),
-
-            @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "includeSample", value = INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "includeSampleData", value = INCLUDE_SAMPLE_DATA_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "includeGenotype", value = INCLUDE_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "includeSampleId", value = INCLUDE_SAMPLE_ID_DESCR, dataType = "string", paramType = "query"),
-
-            // Annotation filters
-            @ApiImplicitParam(name = "annotationExists", value = ANNOT_EXISTS_DESCR, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "xref", value = ANNOT_XREF_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "proteinSubstitution", value = ANNOT_PROTEIN_SUBSTITUTION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "conservation", value = ANNOT_CONSERVATION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "proteinKeyword", value = ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "drug", value = ANNOT_DRUG_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "functionalScore", value = ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
-
-            // WARN: Only available in Solr
-            @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
-
-            // Clinical analysis
-            @ApiImplicitParam(name = "clinicalAnalysisId", value = CA_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "clinicalAnalysisName", value = CA_NAME_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "clinicalAnalysisDescr", value = CA_DESCRIPTION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "clinicalAnalysisFiles", value = CA_FILE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "clinicalAnalysisProbandId", value = CA_PROBAND_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "clinicalAnalysisProbandDisorders", value = CA_PROBAND_DISORDERS_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "clinicalAnalysisProbandPhenotypes", value = CA_PROBAND_PHENOTYPES_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "clinicalAnalysisFamilyId", value = CA_FAMILY_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "clinicalAnalysisFamMemberIds", value = CA_FAMILY_MEMBER_IDS_DESCR, dataType = "string", paramType = "query"),
-
-            // Interpretation
-            @ApiImplicitParam(name = "interpretationId", value = INT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "interpretationSoftwareName", value = INT_SOFTWARE_NAME_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "interpretationSoftwareVersion", value = INT_SOFTWARE_VERSION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "interpretationAnalystName", value = INT_ANALYST_NAME_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "interpretationPanels", value = INT_PANELS_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "interpretationDescription", value = INT_DESCRIPTION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "interpretationDependencies", value = INT_DEPENDENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "interpretationFilters", value = INT_FILTERS_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "interpretationComments", value = INT_COMMENTS_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "interpretationCreationDate", value = INT_CREATION_DATE_DESCR, dataType = "string", paramType = "query"),
-
-            // Reported variant
-            @ApiImplicitParam(name = "reportedVariantDeNovoQualityScore", value = RV_DE_NOVO_QUALITY_SCORE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedVariantComments", value = RV_COMMENTS_DESCR, dataType = "string", paramType = "query"),
-
-            // Reported event
-            @ApiImplicitParam(name = "reportedEventPhenotypeNames", value = RE_PHENOTYPE_NAMES_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventConsequenceTypeIds", value = RE_CONSEQUENCE_TYPE_IDS_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventXrefs", value = RE_XREFS_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventPanelIds", value = RE_PANEL_IDS_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventAcmg", value = RE_ACMG_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventClinicalSignificance", value = RE_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventDrugResponse", value = RE_DRUG_RESPONSE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventTraitAssociation", value = RE_TRAIT_ASSOCIATION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventFunctionalEffect", value = RE_FUNCTIONAL_EFFECT_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventTumorigenesis", value = RE_TUMORIGENESIS_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventOtherClassification", value = RE_OTHER_CLASSIFICATION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reportedEventRolesInCancer", value = RE_ROLES_IN_CANCER_DESCR, dataType = "string", paramType = "query")
-    })
-    public Response query(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
-        return Response.ok().build();
-    }
-
-    @GET
-    @Path("/interpretation/stats")
+    @Path("/interpretation/search")
     @ApiOperation(value = "Clinical interpretation analysis", response = Map.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
@@ -629,26 +501,20 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "drug", value = ANNOT_DRUG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "functionalScore", value = ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
-
-            // WARN: Only available in Solr
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
-
-            // Facet fields
-            @ApiImplicitParam(name = "field", value = "Facet field for categorical fields", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "fieldRange", value = "Facet field range for continuous fields", dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
     })
-    public Response stats(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                          @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                          @ApiParam(value = "Disease (HPO term)") @QueryParam("disease") String disease,
-                          @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId,
-                          @ApiParam(value = "Comma separated list of subject IDs") @QueryParam("subjectIds") List<String> subjectIds,
-                          @ApiParam(value = "Clinical analysis type, e.g. DUO, TRIO, ...") @QueryParam("type") String type,
-                          @ApiParam(value = "Panel ID") @QueryParam("panelId") String panelId,
-                          @ApiParam(value = "Panel version") @QueryParam("panelVersion") String panelVersion,
-                          @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") Boolean save,
-                          @ApiParam(value = "ID of the stored interpretation") @QueryParam("interpretationId") String interpretationId,
-                          @ApiParam(value = "Name of the stored interpretation") @QueryParam("interpretationName") String interpretationName) {
+    public Response aggregationStats(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+                                     @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+                                     @ApiParam(value = "Disease (HPO term)") @QueryParam("disease") String disease,
+                                     @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId,
+                                     @ApiParam(value = "Comma separated list of subject IDs") @QueryParam("subjectIds") List<String> subjectIds,
+                                     @ApiParam(value = "Clinical analysis type, e.g. DUO, TRIO, ...") @QueryParam("type") String type,
+                                     @ApiParam(value = "Panel ID") @QueryParam("panelId") String panelId,
+                                     @ApiParam(value = "Panel version") @QueryParam("panelVersion") String panelVersion,
+                                     @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") Boolean save,
+                                     @ApiParam(value = "ID of the stored interpretation") @QueryParam("interpretationId") String interpretationId,
+                                     @ApiParam(value = "Name of the stored interpretation") @QueryParam("interpretationName") String interpretationName) {
         return Response.ok().build();
     }
 
@@ -749,7 +615,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = "Fetch actionable clinical variants", response = ReportedVariant.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = ParamConstants.STUDY_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = ParamConstants.SAMPLE_PARAM, value = ParamConstants.SAMPLE_ID_DESCRIPTION, dataType = "sring", paramType = "query"),
+            @ApiImplicitParam(name = ParamConstants.SAMPLE_PARAM, value = ParamConstants.SAMPLE_ID_DESCRIPTION, dataType = "string", paramType = "query"),
     })
     public Response variantActionable() {
         return Response.ok().build();
@@ -826,147 +692,5 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = CancerTieringInterpretationAnalysisParams.DESCRIPTION) CancerTieringInterpretationAnalysisParams params) {
         return submitJob(CancerTieringInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
-    }
-
-
-
-
-    //    @ApiImplicitParams({
-//            // Interpretation filters
-//            @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
-//            @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
-//    })
-//    public Response team(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId,
-//            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-//            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
-//            @ApiParam(value= VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR) @QueryParam("familySegregation") String segregation) {
-//        try {
-//            // Get analysis params and config from query
-//            Map<String, Object> params = new HashMap<>();
-//
-//            params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
-//            params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
-//            params.put(InterpretationAnalysis.PANELS_PARAM_NAME, panelIds);
-//            params.put(InterpretationAnalysis.FAMILY_SEGREGATION_PARAM_NAME, segregation);
-//
-//            setConfigParams(params, uriInfo.getQueryParameters());
-//
-//            // Submit job
-//            OpenCGAResult<Job> result = jobManager.submit(studyId, TeamInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
-//            return createAnalysisOkResponse(result);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-//
-
-
-//    @ApiOperation(value = "GEL Tiering interpretation analysis", response = Job.class)
-//    @ApiImplicitParams({
-//            // Interpretation filters
-//            @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
-//            @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
-//    })
-//    public Response tiering(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId,
-//            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-//            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
-//            @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance) {
-//        try {
-//            // Get analysis params and config from query
-//            Map<String, Object> params = new HashMap<>();
-//
-//            params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
-//            params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
-//            params.put(InterpretationAnalysis.PANELS_PARAM_NAME, panelIds);
-//            params.put(InterpretationAnalysis.PENETRANCE_PARAM_NAME, penetrance.toString());
-//
-//            setConfigParams(params, uriInfo.getQueryParameters());
-//
-//            // Submit job
-//            OpenCGAResult<Job> result = jobManager.submit(studyId, TieringInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
-//
-//            return createAnalysisOkResponse(result);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-
-//    @POST
-//    @Path("/interpretation/custom/run")
-//    @ApiOperation(value = "Interpretation custom analysis", response = Job.class)
-//    @ApiImplicitParams({
-//    })
-//    public Response customAnalysis(
-//            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-//                    String studyId) {
-//        try {
-//            // Get analysis params and config from query
-//            Map<String, Object> params = new HashMap<>();
-//
-//            query.keySet().forEach(k -> params.put(k, query.getString(k)));
-//
-//            params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
-//            params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
-//
-//            setConfigParams(params, uriInfo.getQueryParameters());
-//
-//            // Submit job
-//            OpenCGAResult<Job> result = jobManager.submit(studyId, ZettaInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
-//
-//            return createAnalysisOkResponse(result);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-//
-//    @POST
-//    @Path("/interpretation/cancerTiering/run")
-//    @ApiOperation(value = "Cancer Tiering interpretation analysis", response = Job.class)
-//    @ApiImplicitParams({
-//            // Interpretation filters
-//            @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
-//            @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
-//    })
-//    public Response cancerTiering(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId,
-//            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-//            @ApiParam(value = "Comma separated list of variant IDs to discard") @QueryParam("panelIds") String variantIdsToDiscard) {
-//        try {
-//            // Get analysis params and config from query
-//            Map<String, Object> params = new HashMap<>();
-//
-//            params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
-//            params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
-//            params.put(InterpretationAnalysis.VARIANTS_TO_DISCARD_PARAM_NAME, variantIdsToDiscard);
-//
-//            setConfigParams(params, uriInfo.getQueryParameters());
-//
-//            // Submit job
-//            OpenCGAResult<Job> result = jobManager.submit(studyId, CancerTieringInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params,
-//                    token);
-//
-//            return createAnalysisOkResponse(result);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-
-    //-------------------------------------------------------------------------
-    // P R I V A T E     M E T H O D S
-    //-------------------------------------------------------------------------
-
-    private void setConfigParams(Map<String, Object> params, MultivaluedMap<String, String> queryParameters) {
-        if (queryParameters.containsKey(MAX_LOW_COVERAGE_PARAM_NAME)) {
-            params.put(MAX_LOW_COVERAGE_PARAM_NAME, queryParameters.getFirst(MAX_LOW_COVERAGE_PARAM_NAME));
-        }
-        if (queryParameters.containsKey(INCLUDE_LOW_COVERAGE_PARAM_NAME)) {
-            params.put(INCLUDE_LOW_COVERAGE_PARAM_NAME, queryParameters.getFirst(INCLUDE_LOW_COVERAGE_PARAM_NAME));
-        }
-        if (queryParameters.containsKey(INCLUDE_UNTIERED_VARIANTS_PARAM_NAME)) {
-            params.put(INCLUDE_UNTIERED_VARIANTS_PARAM_NAME, queryParameters.getFirst(INCLUDE_UNTIERED_VARIANTS_PARAM_NAME));
-        }
     }
 }
