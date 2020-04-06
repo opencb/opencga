@@ -75,6 +75,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -91,6 +92,7 @@ import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -877,9 +879,18 @@ public class VariantStorageManager extends StorageManager {
         String userId = catalogManager.getUserManager().getUserId(token);
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
         if (!returnedFields.contains(VariantField.STUDIES_SAMPLES) && !returnedFields.contains(VariantField.STUDIES_FILES)) {
-            List<String> studies = mm.getStudyNames();
-            // Check permissions on each study
-            checkStudyPermissions(studies, userId, token);
+            if (isValidParam(query, STUDY)) {
+                ParsedQuery<String> studies = VariantQueryUtils.splitValue(query, STUDY);
+                studies.getValues().replaceAll(VariantQueryUtils::removeNegation);
+                checkStudyPermissions(studies.getValues(), userId, token);
+            } else {
+                // Check permissions on each study
+                List<String> studies = mm.getStudyNames();
+                List<String> validStudies = checkStudyPermissionsAny(studies, userId, token);
+                if (validStudies.size() != studies.size()) {
+                    query.put(STUDY.key(), validStudies);
+                }
+            }
             return Collections.emptyMap();
         }
 
@@ -911,7 +922,15 @@ public class VariantStorageManager extends StorageManager {
                     .stream()
                     .map(mm::getStudyName)
                     .collect(Collectors.toList());
-            checkStudyPermissions(includeStudies, userId, token);
+            if (VariantQueryProjectionParser.isIncludeStudiesDefined(query)) {
+                checkStudyPermissions(includeStudies, userId, token);
+            } else {
+                List<String> validStudies = checkStudyPermissionsAny(includeStudies, userId, token);
+                if (validStudies.size() != includeStudies.size()) {
+                    query.put(STUDY.key(), validStudies);
+                }
+                includeStudies = validStudies;
+            }
 
             if (!returnedFields.contains(VariantField.STUDIES_SAMPLES)) {
                 for (String returnedStudy : includeStudies) {
@@ -950,6 +969,24 @@ public class VariantStorageManager extends StorageManager {
             }
         }
         return samplesMap;
+    }
+
+    private List<String> checkStudyPermissionsAny(Collection<String> studies, String userId, String token) throws CatalogException {
+        CatalogException exception = null;
+        List<String> validStudies = new ArrayList<>();
+        for (String study : studies) {
+            try {
+                checkStudyPermissions(study, userId, token);
+                validStudies.add(study);
+            } catch (CatalogException e) {
+                exception = e;
+            }
+        }
+        if (!validStudies.isEmpty() || exception == null) {
+            return validStudies;
+        } else {
+            throw exception;
+        }
     }
 
     private void checkStudyPermissions(Collection<String> studies, String userId, String token) throws CatalogException {

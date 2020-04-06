@@ -840,7 +840,9 @@ public class FileManager extends AnnotationSetManager<File> {
             validateNewFile(study, file, token, overwrite);
 
             File overwrittenFile = null;
-            Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), file.getPath());
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath());
             OpenCGAResult<File> fileDataResult = fileDBAdaptor.get(query, QueryOptions.empty());
             if (fileDataResult.getNumResults() > 0) {
                 if (overwrite) {

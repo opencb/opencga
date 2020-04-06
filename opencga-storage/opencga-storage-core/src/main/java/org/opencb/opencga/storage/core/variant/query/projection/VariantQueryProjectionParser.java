@@ -156,6 +156,13 @@ public class VariantQueryProjectionParser {
         }
     }
 
+    public static boolean isIncludeStudiesDefined(Query query) {
+        if (VariantQueryUtils.isValidParam(query, INCLUDE_STUDY) || VariantQueryUtils.isValidParam(query, STUDY)) {
+            return true;
+        }
+        return false;
+    }
+
     public static List<Integer> getIncludeStudies(Query query, QueryOptions options, VariantStorageMetadataManager metadataManager) {
         return getIncludeStudies(query, options, metadataManager, VariantField.getIncludeFields(options));
     }
