@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.commons.OntologyTerm;
+import org.opencb.biodata.models.commons.OntologyTermAnnotation;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.commons.datastore.core.Event;
@@ -548,7 +548,7 @@ public class PanelManager extends ResourceManager<Panel> {
         String ensemblGeneId = "";
         List<Xref> xrefs = new ArrayList<>();
         List<String> publications = new ArrayList<>();
-        List<OntologyTerm> phenotypes = new ArrayList<>();
+        List<OntologyTermAnnotation> phenotypes = new ArrayList<>();
         List<Coordinate> coordinates = new ArrayList<>();
 
         Map<String, Object> geneData = (Map) panelAppCommonMap.get("gene_data");
@@ -606,7 +606,7 @@ public class PanelManager extends ResourceManager<Panel> {
                     }
                 }
 
-                phenotypes.add(new OntologyTerm(id, phenotype, source, Collections.emptyMap()));
+                phenotypes.add(new OntologyTermAnnotation(id, phenotype, source, Collections.emptyMap()));
             }
         }
 

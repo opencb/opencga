@@ -99,7 +99,7 @@ public class CellBaseUtils {
                                 || geneStr.equals(aGene.getId())
                                 || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getName()))
                                 || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getId()))
-                                || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getProteinID()))) {
+                                || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getProteinId()))) {
 //                            if (gene != null) {
 //                                // More than one gene found!
 //                                // Leave gene empty, so it is marked as "not found"
