@@ -648,7 +648,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
      * @return The panel
      * @throws CatalogException if the panel does not exist, or the user does not have permissions to see it.
      */
-    protected Panel getPanel(String studyId, String panelId, String sessionId) throws CatalogException {
+    public Panel getPanel(String studyId, String panelId, String sessionId) throws CatalogException {
         Panel panel = null;
         if (StringUtils.isNotEmpty(studyId)) {
             try {

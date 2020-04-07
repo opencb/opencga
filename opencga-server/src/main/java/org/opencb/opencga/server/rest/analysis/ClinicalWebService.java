@@ -20,7 +20,9 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
@@ -32,6 +34,7 @@ import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysi
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -43,6 +46,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import javax.servlet.http.HttpServletRequest;
@@ -56,6 +60,7 @@ import java.util.Map;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
+import static org.opencb.opencga.server.rest.analysis.VariantWebService.getVariantQuery;
 import static org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -425,7 +430,7 @@ public class ClinicalWebService extends AnalysisWebService {
             return createErrorResponse(e);
         }
     }
-    
+
     @GET
     @Path("/interpretation/search")
     @ApiOperation(value = "Clinical interpretation analysis", response = Map.class)
@@ -528,6 +533,13 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = "Fetch clinical variants", response = ReportedVariant.class)
     @ApiImplicitParams({
 
+            // Query options
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
+
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -536,7 +548,6 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
 
             // Study filters
-            @ApiImplicitParam(name = ParamConstants.PROJECT_PARAM, value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
@@ -544,11 +555,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "fileData", value = FILE_DATA_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sampleData", value = SAMPLE_DATA_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "sampleMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "cohortStatsRef", value = STATS_REF_DESCR, dataType = "string", paramType = "query"),
@@ -561,7 +569,6 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "score", value = SCORE_DESCR, dataType = "string", paramType = "query"),
 
             // Annotation filters
-            @ApiImplicitParam(name = "annotationExists", value = ANNOT_EXISTS_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "xref", value = ANNOT_XREF_DESCR, dataType = "string", paramType = "query"),
@@ -586,56 +593,32 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
     })
     public Response variantQuery() {
-        return Response.ok().build();
-//        // Get all query options
-//        QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-//
-//        // Create reported variant creator
-//        String assembly = clinicalInterpretationManager.getAssembly(studyId, token);
-//        DefaultReportedVariantCreator reportedVariantCreator = clinicalInterpretationManager.createReportedVariantCreator(query,
-//                assembly, true, token);
-//
-//        // Retrieve primary findings
-//        List<ReportedVariant> primaryFindings = clinicalInterpretationManager.getPrimaryFindings(query, queryOptions,
-//                reportedVariantCreator, token);
-//
-//        System.out.println("Number of primary findings = " + primaryFindings.size());
-//        for (ReportedVariant reportedVariant : primaryFindings) {
-//            System.out.println(reportedVariant.getId());
-//        }
-//
-//        return createAnalysisOkResponse(primaryFindings);
-//    } catch (Exception e) {
-//        return createErrorResponse(e);
-//    }
+        // Get all query options
+        QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+        Query query = getVariantQuery(queryOptions);
+
+        // Get clinical variants
+        try {
+            List<ReportedVariant> reportedVariants = clinicalInterpretationManager.get(query, queryOptions, token);
+            return createAnalysisOkResponse(reportedVariants);
+        } catch (CatalogException | IOException | StorageEngineException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
     @Path("/variant/actionable")
     @ApiOperation(value = "Fetch actionable clinical variants", response = ReportedVariant.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = ParamConstants.STUDY_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = ParamConstants.SAMPLE_PARAM, value = ParamConstants.SAMPLE_ID_DESCRIPTION, dataType = "string", paramType = "query"),
-    })
-    public Response variantActionable() {
-        return Response.ok().build();
-//                    try {
-//            // Get all query options
-//            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-//
-//            // Create reported variant creator
-//            String assembly = clinicalInterpretationManager.getAssembly(studyId, token);
-//            DefaultReportedVariantCreator reportedVariantCreator = clinicalInterpretationManager.createReportedVariantCreator(query,
-//                    assembly, true, token);
-//
-//            // Retrieve secondary findings
-//            List<ReportedVariant> secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(studyId, sampleId,
-//                    reportedVariantCreator, token);
-//
-//            return createAnalysisOkResponse(secondaryFindings);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
+    public Response variantActionable(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PARAM) String sample) {
+        try {
+
+            List<ReportedVariant> reportedVariants = clinicalInterpretationManager.getActionableVariants(study, sample, token);
+            return createAnalysisOkResponse(reportedVariants);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     //-------------------------------------------------------------------------

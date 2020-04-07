@@ -25,6 +25,7 @@ import org.opencb.biodata.models.clinical.interpretation.exceptions.Interpretati
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
@@ -32,6 +33,8 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -39,6 +42,7 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -78,9 +82,12 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
+import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_SAMPLE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 
 public class ClinicalInterpretationManager extends StorageManager {
 
@@ -98,6 +105,8 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     private RoleInCancerManager roleInCancerManager;
     private ActionableVariantManager actionableVariantManager;
+
+    private VariantCatalogQueryUtils catalogQueryUtils;
 
     private static Query defaultDeNovoQuery;
     private static Query defaultCompoundHeterozigousQuery;
@@ -139,6 +148,8 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         this.roleInCancerManager = new RoleInCancerManager(roleInCancerPath);
         this.actionableVariantManager = new ActionableVariantManager(actionableVariantPath);
+
+        this.catalogQueryUtils = new VariantCatalogQueryUtils(catalogManager);
 
 //        this.init();
     }
@@ -213,6 +224,219 @@ public class ClinicalInterpretationManager extends StorageManager {
         checkInterpretationPermissions(study, interpretationId, token);
 
         clinicalVariantEngine.addReportedVariantComment(interpretationId, variantId, comment, "");
+    }
+
+    /*--------------------------------------------------------------------------*/
+    /*  Get clinical variants                                                   */
+    /*--------------------------------------------------------------------------*/
+
+    public List<ReportedVariant> get(Query query, QueryOptions queryOptions, String token)
+            throws CatalogException, IOException, StorageEngineException {
+
+        List<Variant> variants = variantStorageManager.get(query, queryOptions, token).getResults();
+        if (CollectionUtils.isEmpty(variants)) {
+            return Collections.emptyList();
+        }
+
+        // Get study from query
+        String studyId = query.getString(STUDY.key());
+
+        // Get assembly
+        String assembly = getAssembly(studyId, token);
+
+        // Prepare map<gene name, set of panel names>
+        Map<String, Set<String>> genePanelMap = new HashMap<>();
+
+        if (isValidParam(query, PANEL)) {
+            List<String> panels = query.getAsStringList(PANEL.key());
+            for (String panelId : panels) {
+                Panel panel = catalogQueryUtils.getPanel(studyId, panelId, token);
+                for (DiseasePanel.GenePanel genePanel : panel.getGenes()) {
+                    if (!genePanelMap.containsKey(genePanel.getName())) {
+                        genePanelMap.put(genePanel.getName(), new HashSet<>());
+                    }
+                    genePanelMap.get(genePanel.getName()).add(panelId);
+                }
+            }
+        }
+
+        Map<String, ClinicalProperty.RoleInCancer> roleInCancer = roleInCancerManager.getRoleInCancer();
+        Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
+
+        List<ReportedVariant> clinicalVariants = new ArrayList<>();
+        for (Variant variant : variants) {
+            clinicalVariants.add(createClinicalVariant(variant, genePanelMap, roleInCancer, actionableVariants));
+        }
+        return clinicalVariants;
+    }
+
+    /*--------------------------------------------------------------------------*/
+    /*  Get actionable variants                                                 */
+    /*--------------------------------------------------------------------------*/
+
+    public List<ReportedVariant> getActionableVariants(String studyId, String sampleId, String token)
+            throws CatalogException, IOException, StorageEngineException {
+
+        List<Variant> variants = new ArrayList<>();
+
+        // Prepare query object
+        Query query = new Query();
+        query.put(STUDY.key(), studyId);
+        query.put(VariantQueryParam.SAMPLE.key(), sampleId);
+
+        // Get the correct actionable variants for the assembly
+        String assembly = getAssembly(studyId, token);
+        Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
+        if (actionableVariants != null) {
+            Iterator<String> iterator = actionableVariants.keySet().iterator();
+            List<String> variantIds = new ArrayList<>();
+            while (iterator.hasNext()) {
+                String id = iterator.next();
+                variantIds.add(id);
+                if (variantIds.size() >= 1000) {
+                    query.put(VariantQueryParam.ID.key(), variantIds);
+                    VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), token);
+                    variants.addAll(result.getResults());
+                    variantIds.clear();
+                }
+            }
+
+            if (variantIds.size() > 0) {
+                query.put(VariantQueryParam.ID.key(), variantIds);
+                VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), token);
+                variants.addAll(result.getResults());
+            }
+        }
+
+        List<ReportedVariant> clinicalVariants = new ArrayList<>();
+        for (Variant variant : variants) {
+            clinicalVariants.add(createClinicalVariant(variant, null, roleInCancerManager.getRoleInCancer(), actionableVariants));
+        }
+        return clinicalVariants;
+    }
+
+    /*--------------------------------------------------------------------------*/
+
+    private ReportedVariant createClinicalVariant(Variant variant, Map<String, Set<String>> genePanelMap,
+                                                  Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
+                                                  Map<String, List<String>> actionableVariants) {
+        ReportedVariant reportedVariant = new ReportedVariant(variant.getImpl());
+
+        if (variant.getAnnotation() ==  null) {
+            return reportedVariant;
+        }
+
+        if (CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+
+            List<String> panelIds;
+            GenomicFeature gFeature;
+            List<ReportedEvent> evidences = new ArrayList<>();
+
+            for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
+                gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(), null);
+                panelIds = null;
+                if (genePanelMap.containsKey(ct.getEnsemblGeneId())) {
+                    panelIds = new ArrayList<>(genePanelMap.get(ct.getEnsemblGeneId()));
+                } else if (genePanelMap.containsKey(ct.getGeneName())) {
+                    panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneName()));
+                }
+
+                if (CollectionUtils.isNotEmpty(panelIds)) {
+                    for (String panelId : panelIds) {
+                        evidences.add(createEvidence(ct.getSequenceOntologyTerms(), gFeature, panelId, null, null, null, variant,
+                                roleInCancer, actionableVariants));
+                    }
+                } else {
+                    evidences.add(createEvidence(ct.getSequenceOntologyTerms(), gFeature, null, null, null, null, variant, roleInCancer,
+                            actionableVariants));
+                }
+            }
+            reportedVariant.setEvidences(evidences);
+        }
+
+        return reportedVariant;
+    }
+
+    /*--------------------------------------------------------------------------*/
+
+    protected ReportedEvent createEvidence(List<SequenceOntologyTerm> soTerms, GenomicFeature genomicFeature, String panelId,
+                                           ClinicalProperty.ModeOfInheritance moi, ClinicalProperty.Penetrance penetrance, String tier,
+                                           Variant variant, Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
+                                           Map<String, List<String>> actionableVariants) {
+        ReportedEvent reportedEvent = new ReportedEvent().setId("OPENCB-" + UUID.randomUUID());
+
+        // Consequence types
+        if (CollectionUtils.isNotEmpty(soTerms)) {
+            // Set consequence type
+            reportedEvent.setConsequenceTypes(soTerms);
+        }
+
+        // Genomic feature
+        if (genomicFeature != null) {
+            reportedEvent.setGenomicFeature(genomicFeature);
+        }
+
+        // Panel ID
+        if (panelId != null) {
+            reportedEvent.setPanelId(panelId);
+        }
+
+        // Mode of inheritance
+        if (moi != null) {
+            reportedEvent.setModeOfInheritance(moi);
+        }
+
+        // Penetrance
+        if (penetrance != null) {
+            reportedEvent.setPenetrance(penetrance);
+        }
+
+        // Variant classification:
+        reportedEvent.setClassification(new VariantClassification());
+
+        // Variant classification: ACMG
+        List<String> acmgs = calculateAcmgClassification(variant, moi);
+        reportedEvent.getClassification().setAcmg(acmgs);
+
+        // Variant classification: clinical significance
+        reportedEvent.getClassification().setClinicalSignificance(computeClinicalSignificance(acmgs));
+
+        // Role in cancer
+        if (variant.getAnnotation() != null && roleInCancer != null) {
+            if (MapUtils.isNotEmpty(roleInCancer) && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
+                    if (StringUtils.isNotEmpty(ct.getGeneName()) && roleInCancer.containsKey(ct.getGeneName())) {
+                        reportedEvent.setRoleInCancer(roleInCancer.get(ct.getGeneName()));
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Actionable management
+        if (MapUtils.isNotEmpty(actionableVariants) & actionableVariants.containsKey(variant.getId())) {
+            reportedEvent.setActionable(true);
+
+            // Set tier 3 only if it is null or untiered
+            if (tier == null || UNTIERED.equals(tier)) {
+                reportedEvent.getClassification().setTier(TIER_3);
+            } else {
+                reportedEvent.getClassification().setTier(tier);
+            }
+
+            // Add 'actionable' phenotypes
+            if (CollectionUtils.isNotEmpty(actionableVariants.get(variant.getId()))) {
+                List<Phenotype> phenotypes = new ArrayList<>();
+                for (String phenotypeId : actionableVariants.get(variant.getId())) {
+                    phenotypes.add(new Phenotype(phenotypeId, phenotypeId, ""));
+                }
+                if (CollectionUtils.isNotEmpty(phenotypes)) {
+                    reportedEvent.setPhenotypes(phenotypes);
+                }
+            }
+        }
+
+        return reportedEvent;
     }
 
     /*--------------------------------------------------------------------------*/
