@@ -425,7 +425,7 @@ public class JobManager extends ResourceManager<Job> {
         job.setTags(jobTags);
 
         try {
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTION);
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTE_JOBS);
 
             // Check params
             ParamUtils.checkObj(params, "params");

@@ -826,7 +826,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTION.name(), AclParams.Action.SET, "view-only"), token);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), AclParams.Action.SET, "view-only"), token);
 
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);
