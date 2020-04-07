@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclParams;
@@ -42,6 +43,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
  * Created on 16/12/16.
@@ -271,6 +274,89 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         thrown.expectMessage("Permission denied");
         thrown.expect(CatalogAuthorizationException.class);
         variantManager.get(query, new QueryOptions(), null);
+    }
+
+    @Test
+    public void testQueryAnonymousOneStudyPermissions() throws Exception {
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("*")), sessionId);
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+                new StudyAclParams()
+                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name())
+                        .setAction(AclParams.Action.ADD), sessionId);
+
+        File file = create(studyId2, getResourceUri("variant-test-file.vcf.gz"));
+        indexFile(file, new QueryOptions(), outputId2);
+
+        Query query = new Query();
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES.name()), null);
+        Assert.assertNotEquals(0, result.getNumResults());
+        for (Variant variant : result.getResults()) {
+            Assert.assertEquals(0, variant.getStudies().size());
+        }
+
+        result = variantManager.get(query, new QueryOptions(), null);
+        Assert.assertNotEquals(0, result.getNumResults());
+        for (Variant variant : result.getResults()) {
+            Assert.assertEquals(1, variant.getStudies().size());
+        }
+    }
+
+    @Test
+    public void testQueryAnonymousOneStudyPermissionsIncludeBoth() throws Exception {
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("*")), sessionId);
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+                new StudyAclParams()
+                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name())
+                        .setAction(AclParams.Action.ADD), sessionId);
+
+        File file = create(studyId2, getResourceUri("variant-test-file.vcf.gz"));
+        indexFile(file, new QueryOptions(), outputId2);
+
+        DataResult<Variant> result = variantManager.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES.name()), null);
+        Assert.assertNotEquals(0, result.getNumResults());
+        for (Variant variant : result.getResults()) {
+            Assert.assertEquals(0, variant.getStudies().size());
+        }
+
+        thrown.expectMessage("cannot view study");
+        thrown.expect(CatalogAuthorizationException.class);
+        variantManager.get(new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId + "," + studyId2), new QueryOptions(), null);
+    }
+
+    @Test
+    public void testQueryAnonymousTwoStudiesPermissions() throws Exception {
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("*")), sessionId);
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+                new StudyAclParams()
+                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name())
+                        .setAction(AclParams.Action.ADD), sessionId);
+
+        File file = create(studyId2, getResourceUri("variant-test-file.vcf.gz"));
+        indexFile(file, new QueryOptions(), outputId2);
+
+
+        catalogManager.getStudyManager().updateGroup(studyId2, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("*")), sessionId);
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyId2), "*",
+                new StudyAclParams()
+                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name())
+                        .setAction(AclParams.Action.ADD), sessionId);
+
+        Query query = new Query();
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES.name()), null);
+        Assert.assertNotEquals(0, result.getNumResults());
+        for (Variant variant : result.getResults()) {
+            Assert.assertEquals(0, variant.getStudies().size());
+        }
+
+        result = variantManager.get(query, new QueryOptions(), null);
+        Assert.assertNotEquals(0, result.getNumResults());
+        for (Variant variant : result.getResults()) {
+            Assert.assertEquals(2, variant.getStudies().size());
+        }
     }
 
 }

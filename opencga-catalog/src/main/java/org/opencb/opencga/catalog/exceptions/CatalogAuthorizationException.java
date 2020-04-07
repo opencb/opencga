@@ -57,7 +57,7 @@ public class CatalogAuthorizationException extends CatalogException {
         return new CatalogAuthorizationException("Permission denied. "
                 + (userId == null || userId.isEmpty() ? "" : "User '" + userId + "'")
                 + " cannot " + permission + " "
-                + resource + " { id: " + id + (name == null || name.isEmpty() ? "" : ", name: \"" + name + "\"") + " }");
+                + resource + " { uid: " + id + (name == null || name.isEmpty() ? "" : ", name: \"" + name + "\"") + " }");
     }
 
     public static CatalogAuthorizationException deny(String userId, String permission, String resource, String id, String name) {
