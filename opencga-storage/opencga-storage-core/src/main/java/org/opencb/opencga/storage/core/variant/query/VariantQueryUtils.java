@@ -345,7 +345,11 @@ public final class VariantQueryUtils {
     }
 
     public static String removeNegation(String value) {
-        return value.substring(NOT.length());
+        if (isNegated(value)) {
+            return value.substring(NOT.length());
+        } else {
+            return value;
+        }
     }
 
     public static boolean isNoneOrAll(String value) {
@@ -967,12 +971,13 @@ public final class VariantQueryUtils {
     public static List<String> splitValue(String value, QueryOperation operation) {
         List<String> list;
         if (value == null || value.isEmpty()) {
-            list = Collections.emptyList();
+            list = new ArrayList<>();
         } else if (operation == null) {
+            list = new ArrayList<>(1);
             if (value.charAt(0) == QUOTE_CHAR && value.charAt(value.length() - 1) == QUOTE_CHAR) {
-                list = Collections.singletonList(value.substring(1, value.length() - 1));
+                list.add(value.substring(1, value.length() - 1));
             } else {
-                list = Collections.singletonList(value);
+                list.add(value);
             }
         } else if (operation == QueryOperation.AND) {
             list = splitQuotes(value, AND_CHAR);

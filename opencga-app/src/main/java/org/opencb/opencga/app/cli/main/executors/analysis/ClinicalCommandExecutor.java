@@ -144,7 +144,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         clinicalCommandOptions.tieringCommandOptions.penetrance,
                         clinicalCommandOptions.tieringCommandOptions.maxLowCoverage,
                         clinicalCommandOptions.tieringCommandOptions.includeLowCoverage),
-                getParams(clinicalCommandOptions.tieringCommandOptions.studyId)
+                getParams(clinicalCommandOptions.tieringCommandOptions.study)
         );
     }
 

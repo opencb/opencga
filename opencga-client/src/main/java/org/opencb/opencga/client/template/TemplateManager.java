@@ -547,7 +547,7 @@ public class TemplateManager {
         if (status.equals(Enums.ExecutionStatus.ABORTED) || status.equals(Enums.ExecutionStatus.ERROR)) {
             throw new ClientException("Error submitting job " + job.getTool().getId() + " " + job.getId());
         }
-        return job.getId();
+        return job.getUuid();
     }
 
 }

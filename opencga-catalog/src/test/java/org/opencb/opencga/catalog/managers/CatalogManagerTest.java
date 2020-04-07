@@ -694,12 +694,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
      */
 
     @Test
-    public void testCreateJob() throws CatalogException, IOException {
+    public void testCreateJob() throws CatalogException {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
         String studyId = catalogManager.getStudyManager().get(query, null, token).first().getId();
-
-        File outDir = catalogManager.getFileManager().createFolder(studyId, Paths.get("jobs", "myJob").toString(),
-                true, null, QueryOptions.empty(), token).first();
 
         catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), token);
         catalogManager.getJobManager().submit(studyId, "command-subcommand2", null, Collections.emptyMap(), token);
@@ -722,6 +719,19 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         catalogManager.getJobManager().create(studyId, new Job().setId("job5").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING))),
                 QueryOptions.empty(), token);
+    }
+
+    @Test
+    public void submitJobWithDependenciesFromDifferentStudies() throws CatalogException {
+        Job first = catalogManager.getJobManager().submit(studyFqn, "command-subcommand", null, Collections.emptyMap(), token).first();
+        Job second = catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
+                Collections.singletonList(first.getUuid()), null, token).first();
+        assertEquals(first.getId(), second.getDependsOn().get(0).getId());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
+                Collections.singletonList(first.getId()), null, token);
     }
 
     @Test
@@ -826,7 +836,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTION.name(), AclParams.Action.SET, "view-only"), token);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), AclParams.Action.SET, "view-only"), token);
 
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);

@@ -91,7 +91,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
                 FileAclEntry.FilePermissions.DELETE_ANNOTATIONS.name(), FILE),
 
         // JOBS
-        EXECUTION(Collections.emptyList()),
+        EXECUTE_JOBS(Collections.emptyList()),
         VIEW_JOBS(Collections.emptyList(), JobAclEntry.JobPermissions.VIEW.name(), JOB),
         WRITE_JOBS(Collections.singletonList(VIEW_JOBS), JobAclEntry.JobPermissions.UPDATE.name(), JOB),
         DELETE_JOBS(Arrays.asList(VIEW_JOBS, WRITE_JOBS), JobAclEntry.JobPermissions.DELETE.name(), JOB),

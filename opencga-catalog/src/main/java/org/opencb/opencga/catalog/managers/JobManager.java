@@ -133,7 +133,6 @@ public class JobManager extends ResourceManager<Job> {
 
         QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
         Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         Function<Job, String> jobStringFunction = Job::getId;
         JobDBAdaptor.QueryParams idQueryParam = null;
@@ -155,13 +154,28 @@ public class JobManager extends ResourceManager<Job> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
+        if (studyUid <= 0) {
+            if (!idQueryParam.equals(JobDBAdaptor.QueryParams.UUID)) {
+                // studyUid is mandatory except for uuids
+                throw new CatalogException("Missing mandatory study");
+            }
+
+            // If studyUid has not been provided, we will look for
+            OpenCGAResult<Job> jobDataResult = jobDBAdaptor.get(queryCopy, options);
+            for (Job job : jobDataResult.getResults()) {
+                // Check view permissions
+                authorizationManager.checkJobPermission(job.getStudyUid(), job.getUid(), user, JobAclEntry.JobPermissions.VIEW);
+            }
+            return keepOriginalOrder(uniqueList, jobStringFunction, jobDataResult, ignoreException, false);
+        }
+
+        queryCopy.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         OpenCGAResult<Job> jobDataResult = jobDBAdaptor.get(studyUid, queryCopy, options, user);
         if (ignoreException || jobDataResult.getNumResults() == uniqueList.size()) {
             return keepOriginalOrder(uniqueList, jobStringFunction, jobDataResult, ignoreException, false);
         }
         // Query without adding the user check
         OpenCGAResult<Job> resultsNoCheck = jobDBAdaptor.get(queryCopy, queryOptions);
-
         if (resultsNoCheck.getNumResults() == jobDataResult.getNumResults()) {
             throw CatalogException.notFound("jobs", getMissingFields(uniqueList, jobDataResult.getResults(), jobStringFunction));
         } else {
@@ -324,10 +338,18 @@ public class JobManager extends ResourceManager<Job> {
         job.getInternal().setEvents(ParamUtils.defaultObject(job.getInternal().getEvents(), new LinkedList<>()));
 
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
+            boolean uuidProvided = job.getDependsOn().stream().map(Job::getId).anyMatch(UuidUtils::isOpenCgaUuid);
+
             try {
-                InternalGetDataResult<Job> dependsOnResult = internalGet(study.getUid(),
-                        job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()), null, INCLUDE_JOB_IDS, job.getUserId(),
-                        false);
+                // If uuid is provided, we will remove the study uid from the query so it can be searched across any study
+                InternalGetDataResult<Job> dependsOnResult;
+                if (uuidProvided) {
+                    dependsOnResult = internalGet(0, job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()), null,
+                            INCLUDE_JOB_IDS, job.getUserId(), false);
+                } else {
+                    dependsOnResult = internalGet(study.getUid(), job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()),
+                            null, INCLUDE_JOB_IDS, job.getUserId(), false);
+                }
                 job.setDependsOn(dependsOnResult.getResults());
             } catch (CatalogException e) {
                 throw new CatalogException("Unable to find the jobs this job depends on. " + e.getMessage(), e);
@@ -425,7 +447,7 @@ public class JobManager extends ResourceManager<Job> {
         job.setTags(jobTags);
 
         try {
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTION);
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTE_JOBS);
 
             // Check params
             ParamUtils.checkObj(params, "params");

@@ -372,7 +372,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             String transformedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                     inputFile.getInternal().getIndex().getTransformedFile().getId()), new QueryOptions(), sessionId).first().getId();
 
-            File transformedFile = catalogManager.getFileManager().get(studyFqn, transformedFileId, new QueryOptions(), sessionId).first();
+            File transformedFile = catalogManager.getFileManager().get(studyId, transformedFileId, new QueryOptions(), sessionId).first();
 
             List<FileRelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
                     .filter(relatedFile -> relatedFile.getRelation().equals(FileRelatedFile.Relation.PRODUCED_FROM))
