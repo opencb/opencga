@@ -31,20 +31,20 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String includeStudy;
     private String includeSample;
     private String includeFile;
-    private String includeFormat;
+    private String includeSampleData;
     private String includeSampleId;
     private String includeGenotype;
 
     private String file;
     private String qual;
     private String filter;
-    private String info;
+    private String fileData;
 
     private String genotype;
     private String sample;
     private Integer sampleLimit;
     private Integer sampleSkip;
-    private String format;
+    private String sampleData;
     private String sampleAnnotation;
 
     private String family;
@@ -156,12 +156,12 @@ public class VariantQueryParams extends BasicVariantQueryParams {
         return this;
     }
 
-    public String getIncludeFormat() {
-        return includeFormat;
+    public String getIncludeSampleData() {
+        return includeSampleData;
     }
 
-    public VariantQueryParams setIncludeFormat(String includeFormat) {
-        this.includeFormat = includeFormat;
+    public VariantQueryParams setIncludeSampleData(String includeSampleData) {
+        this.includeSampleData = includeSampleData;
         return this;
     }
 
@@ -210,12 +210,12 @@ public class VariantQueryParams extends BasicVariantQueryParams {
         return this;
     }
 
-    public String getInfo() {
-        return info;
+    public String getFileData() {
+        return fileData;
     }
 
-    public VariantQueryParams setInfo(String info) {
-        this.info = info;
+    public VariantQueryParams setFileData(String fileData) {
+        this.fileData = fileData;
         return this;
     }
 
@@ -255,12 +255,12 @@ public class VariantQueryParams extends BasicVariantQueryParams {
         return this;
     }
 
-    public String getFormat() {
-        return format;
+    public String getSampleData() {
+        return sampleData;
     }
 
-    public VariantQueryParams setFormat(String format) {
-        this.format = format;
+    public VariantQueryParams setSampleData(String sampleData) {
+        this.sampleData = sampleData;
         return this;
     }
 
