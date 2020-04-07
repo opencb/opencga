@@ -13,8 +13,6 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.core.models.common.Enums;
 
-import java.util.List;
-
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
@@ -155,9 +153,6 @@ public class ClinicalCommandOptions {
     public class InterpretationTieringCommandOptions extends BaseClinicalCommand {
 
         public static final String TIERING_RUN_COMMAND = TieringInterpretationAnalysis.ID + "-run";
-
-        @Parameter(names = {"-s", "--" + STUDY_PARAM_NAME}, description = "Study [[user@]project:]study.", required = true, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", arity = 1)
         public String panel;
