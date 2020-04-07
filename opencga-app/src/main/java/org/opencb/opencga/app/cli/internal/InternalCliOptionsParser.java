@@ -186,9 +186,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
         clinicalCommandOptions = new ClinicalCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("clinical", clinicalCommandOptions);
-        JCommander interpretationSubCommands = jCommander.getCommands().get("interpretation");
-//        interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
-        interpretationSubCommands.addCommand("tiering", clinicalCommandOptions.tieringCommandOptions);
+        JCommander clinicalSubCommands = jCommander.getCommands().get("clinical");
+//        clinicalSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
+        clinicalSubCommands.addCommand("tiering", clinicalCommandOptions.tieringCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
@@ -251,7 +251,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         public boolean help;
 
         public JCommander getSubCommand() {
-            return jCommander.getCommands().get(getCommand()).getCommands().get(getSubCommand());
+            return jCommander.getCommands().get(getCommand()).getCommands().get(getParsedSubCommand());
         }
 
         public String getParsedSubCommand() {
