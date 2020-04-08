@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConver
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
+import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -343,12 +344,14 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private void addFileEntry(StudyMetadata studyMetadata, Variant variant, StudyEntry studyEntry, String fileIdStr,
                               PhoenixArray fileColumn, Map<String, List<String>> alternateFileMap) {
         int fileId = Integer.parseInt(fileIdStr);
-        String alternate = normalizeNonRefAlternateCoordinate(variant, (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX)));
+        String alternateRaw = (String) (fileColumn.getElement(FILE_SEC_ALTS_IDX));
+        String alternate = normalizeNonRefAlternateCoordinate(variant, alternateRaw);
         String fileName = getFileName(studyMetadata.getId(), fileId);
 
         // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
         alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
         String call = (String) (fileColumn.getElement(FILE_CALL_IDX));
+
         if (configuration.getProjection() != null
                 && !configuration.getProjection().getStudy(studyMetadata.getId()).getFiles().contains(fileId)) {
             // TODO: Should we return the original CALL?
@@ -360,11 +363,21 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
         List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
         HashMap<String, String> attributes = convertFileAttributes(fileColumn, fixedAttributes);
-        // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
         OriginalCall originalCall = null;
+        VariantOverlappingStatus overlappingStatus =
+                VariantOverlappingStatus.valueFromShortString((String) (fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX)));
         if (call != null && !call.isEmpty()) {
             int i = call.lastIndexOf(':');
             originalCall = new OriginalCall(call.substring(0, i), Integer.valueOf(call.substring(i + 1)));
+        } else if (overlappingStatus.equals(VariantOverlappingStatus.MULTI)) {
+            attributes.put(StudyEntry.FILTER, "SiteConflict");
+            AlternateCoordinate alternateCoordinate = getAlternateCoordinate(alternateRaw);
+            originalCall = new OriginalCall(new Variant(
+                    alternateCoordinate.getChromosome(),
+                    alternateCoordinate.getStart(),
+                    alternateCoordinate.getEnd(),
+                    alternateCoordinate.getReference(),
+                    alternateCoordinate.getAlternate()).toString(), 0);
         }
         studyEntry.getFiles().add(new FileEntry(fileName, originalCall, attributes));
     }

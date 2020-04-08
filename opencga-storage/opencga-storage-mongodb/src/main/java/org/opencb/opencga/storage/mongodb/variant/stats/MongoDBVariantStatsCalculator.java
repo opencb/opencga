@@ -168,6 +168,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
 
             VariantStatsCalculator.calculateFilterFreq(stats, numFilterFiles);
             stats.setQualityAvg(((float) (qualitySum / numQualFiles)));
+            stats.setQualityValuesCount(numQualFiles);
             statsWrapper.getCohortStats().add(stats);
         }
 

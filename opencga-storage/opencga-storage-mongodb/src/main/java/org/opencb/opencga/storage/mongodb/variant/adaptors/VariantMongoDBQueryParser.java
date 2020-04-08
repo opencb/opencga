@@ -1076,8 +1076,9 @@ public class VariantMongoDBQueryParser {
             if (query.get("numgt") != null && !query.getString("numgt").isEmpty()) {
                 for (String numgt : query.getAsStringList("numgt")) {
                     String[] split = numgt.split(":");
-                    addCompQueryFilter(
-                            DocumentToVariantConverter.STATS_FIELD + '.' + DocumentToVariantStatsConverter.NUMGT_FIELD + '.' + split[0],
+                    addCompQueryFilter(DocumentToVariantConverter.STATS_FIELD + '.'
+                                    + DocumentToVariantStatsConverter.GENOTYPE_COUNT_FIELD + '.'
+                                    + split[0],
                             split[1], builder, false);
                 }
             }
