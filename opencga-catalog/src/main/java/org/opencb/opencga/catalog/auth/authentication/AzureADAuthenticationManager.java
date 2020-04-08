@@ -121,8 +121,11 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
         this.jwtManager = new JwtManager(SignatureAlgorithm.RS256.getValue());
 
-        this.publicKeyMap = new HashMap<>();
-
+        try {
+            this.publicKeyMap = fetchJWTKeys();
+        } catch (CertificateException | IOException e) {
+            throw new CatalogAuthenticationException("Could not fetch public keys: " + e.getMessage(), e);
+        }
 
         // Disable Azure loggers
         Logger.getLogger(AuthenticationContext.class).setLevel(Level.OFF);
@@ -143,6 +146,46 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
         return OIDCProviderMetadata.parse(providerInfo);
     }
 
+    public void renewJWTKeys() throws CatalogAuthenticationException {
+        try {
+            this.publicKeyMap = fetchJWTKeys();
+        } catch (CertificateException | IOException e) {
+            throw new CatalogAuthenticationException("Could not fetch public keys: " + e.getMessage(), e);
+        }
+    }
+
+    private Map<String, PublicKey> fetchJWTKeys() throws CertificateException, IOException {
+        logger.info("Fetching Azure AD JWT public keys");
+        Map<String, PublicKey> keyMap = new HashMap<>();
+
+        // We look for the new public keys in the url
+        URL providerConfigurationURL = this.oidcProviderMetadata.getJWKSetURI().toURL();
+        InputStream stream = providerConfigurationURL.openStream();
+
+        // Read all data from URL
+        String providerInfo;
+        try (java.util.Scanner s = new java.util.Scanner(stream)) {
+            providerInfo = s.useDelimiter("\\A").hasNext() ? s.next() : "";
+        }
+
+        ObjectMap map = new ObjectMap(providerInfo);
+        List keys = map.getAsList("keys");
+        for (Object keyObject : keys) {
+            Map<String, Object> currentKey = (Map<String, Object>) keyObject;
+            String x5c = ((List<String>) currentKey.get("x5c")).get(0);
+            String currentKid = String.valueOf(currentKey.get("kid"));
+
+            InputStream in = new ByteArrayInputStream(java.util.Base64.getDecoder().decode(x5c));
+            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
+
+            // And store the new keys in the map
+            keyMap.put(currentKid, cert.getPublicKey());
+        }
+
+        return keyMap;
+    }
+
     private PublicKey getPublicKey(String token) throws CatalogAuthenticationException {
         String kid;
 
@@ -150,44 +193,16 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             Header header = JWTParser.parse(token).getHeader();
             kid = String.valueOf(header.toJSONObject().get("kid"));
 
+            // We renew the keys just in case new ones have been rolled out
             if (!this.publicKeyMap.containsKey(kid)) {
-                this.publicKeyMap.clear();
-
-                logger.info("Public key not stored. Retrieving new set of public keys");
-
-                // We look for the new public keys in the url
-                URL providerConfigurationURL = this.oidcProviderMetadata.getJWKSetURI().toURL();
-                InputStream stream = providerConfigurationURL.openStream();
-
-                // Read all data from URL
-                String providerInfo;
-                try (java.util.Scanner s = new java.util.Scanner(stream)) {
-                    providerInfo = s.useDelimiter("\\A").hasNext() ? s.next() : "";
-                }
-
-                ObjectMap map = new ObjectMap(providerInfo);
-                List keys = map.getAsList("keys");
-                for (Object keyObject : keys) {
-                    Map<String, Object> currentKey = (Map<String, Object>) keyObject;
-                    String x5c = ((List<String>) currentKey.get("x5c")).get(0);
-                    String currentKid = String.valueOf(currentKey.get("kid"));
-
-                    InputStream in = new ByteArrayInputStream(java.util.Base64.getDecoder().decode(x5c));
-                    CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-                    X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
-
-                    // And store the new keys in the map
-                    this.publicKeyMap.put(currentKid, cert.getPublicKey());
-                }
-
-                logger.info("Found {} new public keys available", this.publicKeyMap.size());
+                renewJWTKeys();
             }
 
             if (!this.publicKeyMap.containsKey(kid)) {
                 throw new CatalogAuthenticationException("Could not find public key for the token");
             }
-        } catch (CertificateException | java.text.ParseException | IOException e) {
-            throw new CatalogAuthenticationException("Could not get public key\n" + e.getMessage(), e);
+        } catch (java.text.ParseException e) {
+            throw new CatalogAuthenticationException("Could not parse JWT token: " + e.getMessage(), e);
         }
 
         return this.publicKeyMap.get(kid);
@@ -205,6 +220,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             Future<AuthenticationResult> future = context.acquireToken(authClientId, authClientId, username, password, null);
             result = future.get();
         } catch (Exception e) {
+            logger.error(e.getMessage());
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         } finally {
             service.shutdown();
