@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.converters.stats;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.hadoop.hbase.client.Put;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.Converter;

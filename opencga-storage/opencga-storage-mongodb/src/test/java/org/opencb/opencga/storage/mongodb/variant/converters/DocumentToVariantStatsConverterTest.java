@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 

@@ -21,7 +21,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.alignment.Alignment;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;

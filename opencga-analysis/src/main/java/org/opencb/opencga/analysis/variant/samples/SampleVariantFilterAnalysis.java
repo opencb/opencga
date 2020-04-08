@@ -17,7 +17,7 @@
 package org.opencb.opencga.analysis.variant.samples;
 
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;

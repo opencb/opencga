@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.family;
 
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 
 import java.util.Collection;

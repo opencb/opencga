@@ -525,8 +525,8 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
             String gt = gtSplit.get(0);
             String ft = ftSplit.get(0);
 
-            org.opencb.biodata.models.feature.Genotype genotype =
-                    new org.opencb.biodata.models.feature.Genotype(gt, refAllele, allelesArray.subList(1, allelesArray.size()));
+            org.opencb.biodata.models.variant.Genotype genotype =
+                    new org.opencb.biodata.models.variant.Genotype(gt, refAllele, allelesArray.subList(1, allelesArray.size()));
             List<Allele> alleles = new ArrayList<>();
             for (int gtIdx : genotype.getAllelesIdx()) {
                 if (gtIdx < allelesArray.size() && gtIdx >= 0 && !nocallAlleles.contains(gtIdx)) { // .. AND NOT a nocall allele
