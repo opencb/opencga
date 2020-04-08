@@ -15,8 +15,9 @@ VERSION=$2
 OPENCGA_BUILD_DIR="$OPENCGA_HOME/build/"
 SOLR_DIR="$OPENCGA_BUILD_DIR/misc/solr"
 
-# Change version in INSTALL.md file
+# Change version in INSTALL.md and install.sh
 sed -i s/VERSION/$VERSION/g $SOLR_DIR/INSTALL.md
+sed -i s/REPLACEME_VERSION/$VERSION/g $SOLR_DIR/install.sh
 
 # Iterate over the different config sets
 for name in variant file sample individual family cohort job; do

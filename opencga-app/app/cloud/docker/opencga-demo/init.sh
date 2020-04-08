@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# ------------ Start MongoDB ----------------
 mongod --dbpath /data/opencga/mongodb --replSet rs0  &
 status=$?
 if [ $status -ne 0 ]; then
@@ -11,14 +12,22 @@ sleep 10
 mongo /opt/scripts/mongo-cluster-init.js
 sleep 20
 
-/opt/solr-*/bin/solr start -force &
+# ------------ Start SOLR ------------------
+cat >> /opt/solr/bin/solr.in.sh << EOF
+# OpenCGA
+SOLR_DATA_HOME=/data/opencga/solr
+EOF
+
+/opt/solr/bin/solr start -cloud -force
 status=$?
 if [ $status -ne 0 ]; then
   echo "Failed to start Solr: $status"
   exit $status
 fi
 
+/opt/solr/bin/solr status
 sleep 2
+/opt/opencga/misc/solr/install.sh
 
 CONTAINER_ALREADY_STARTED="CONTAINER_ALREADY_STARTED"
 if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
@@ -35,6 +44,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
     export INIT_HADOOP_SSH_DNS=""
     export INIT_HADOOP_SSH_USER=""
     export INIT_HADOOP_SSH_PASS=""
+    export INIT_MAX_CONCURRENT_JOBS="1"
     python3 /opt/opencga/init/override_yaml.py --save
 
     echo "-- Installing Catalog --"

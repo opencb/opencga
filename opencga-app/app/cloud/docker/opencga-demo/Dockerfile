@@ -5,17 +5,16 @@ FROM $ORG/opencga-init:$TAG
 
 ARG SOLR_VERSION="8.4.0"
 
-# install mongodb, Solr, update config file
+# install mongodb, Solr
 RUN apk update && \
     apk upgrade && \
     apk add --no-cache bash && \
     apk add --no-cache mongodb && \ 
     cd /opt/ && \
     wget http://archive.apache.org/dist/lucene/solr/${SOLR_VERSION}/solr-${SOLR_VERSION}.tgz && \ 
-    tar -zxvf solr-${SOLR_VERSION}.tgz && \
+    tar -zxf solr-${SOLR_VERSION}.tgz && \
     rm -r solr-${SOLR_VERSION}.tgz && \
-    cp /opt/opencga/misc/solr/opencga-variant-configset-* /opt/solr-*/server/solr/configsets/ -a && \
-    sed -i 's/<dataDir>\${solr.data.dir:}<\/dataDir>/<dataDir>\/data\/opencga\/solr\/\${solr.core.name}<\/dataDir>/g' /opt/solr-${SOLR_VERSION}/server/solr/configsets/opencga-variant-configset*/conf/solrconfig.xml
+    ln -s solr-* solr
 
 VOLUME ["/data/opencga/mongodb", "/data/opencga/solr", "/opt/opencga/variants", "/opt/opencga/sessions"]
 EXPOSE 27017 28017
