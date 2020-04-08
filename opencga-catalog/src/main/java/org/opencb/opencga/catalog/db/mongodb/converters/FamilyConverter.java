@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.core.models.family.Family;

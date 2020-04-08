@@ -24,7 +24,7 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.clinical.pedigree.PedigreeManager;
-import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;

@@ -17,7 +17,7 @@
 package org.opencb.opencga.core.models.file;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.commons.Software;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;

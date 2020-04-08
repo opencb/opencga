@@ -18,8 +18,8 @@ package org.opencb.opencga.core.models.panel;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.List;

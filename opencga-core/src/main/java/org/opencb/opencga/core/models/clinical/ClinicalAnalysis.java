@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;

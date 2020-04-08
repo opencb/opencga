@@ -17,8 +17,8 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
