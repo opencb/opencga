@@ -18,8 +18,8 @@
 package org.opencb.opencga.core.models.family;
 
 import org.apache.commons.lang3.ObjectUtils;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;

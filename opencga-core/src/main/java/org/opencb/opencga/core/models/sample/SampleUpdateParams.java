@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.sample;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;

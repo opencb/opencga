@@ -23,7 +23,7 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;

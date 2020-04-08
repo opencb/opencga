@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;

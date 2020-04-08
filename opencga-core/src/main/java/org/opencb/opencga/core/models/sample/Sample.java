@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.sample;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;

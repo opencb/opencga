@@ -19,7 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.commons.Software;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.commons.datastore.core.*;

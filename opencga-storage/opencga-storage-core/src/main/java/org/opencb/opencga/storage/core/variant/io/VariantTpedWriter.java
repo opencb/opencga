@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.variant.io;
 
 import org.mortbay.io.RuntimeIOException;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.io.DataWriter;

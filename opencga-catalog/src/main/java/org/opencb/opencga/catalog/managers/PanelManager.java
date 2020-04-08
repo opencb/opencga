@@ -18,9 +18,9 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.commons.OntologyTermAnnotation;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;

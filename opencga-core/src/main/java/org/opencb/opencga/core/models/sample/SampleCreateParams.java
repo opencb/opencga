@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.sample;
 
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 

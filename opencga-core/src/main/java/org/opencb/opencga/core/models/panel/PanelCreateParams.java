@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models.panel;
 
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.models.common.Status;
 
 import java.util.List;

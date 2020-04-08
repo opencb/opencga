@@ -16,12 +16,7 @@
 
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.commons.Analyst;
-import org.opencb.biodata.models.commons.Software;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 
 import java.util.List;

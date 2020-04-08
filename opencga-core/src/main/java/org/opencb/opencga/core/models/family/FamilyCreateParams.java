@@ -17,8 +17,8 @@
 package org.opencb.opencga.core.models.family;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.individual.Individual;
