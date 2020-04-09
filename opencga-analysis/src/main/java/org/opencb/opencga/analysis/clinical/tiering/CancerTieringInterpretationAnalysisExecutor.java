@@ -50,7 +50,9 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.biodata.formats.variant.clinvar.v24jaxb.ReviewStatusType.*;
+import static org.opencb.biodata.formats.variant.clinvar.v59jaxb.ReviewStatusType.CRITERIA_PROVIDED_MULTIPLE_SUBMITTERS_NO_CONFLICTS;
+import static org.opencb.biodata.formats.variant.clinvar.v59jaxb.ReviewStatusType.PRACTICE_GUIDELINE;
+import static org.opencb.biodata.formats.variant.clinvar.v59jaxb.ReviewStatusType.REVIEWED_BY_EXPERT_PANEL;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL;
 
