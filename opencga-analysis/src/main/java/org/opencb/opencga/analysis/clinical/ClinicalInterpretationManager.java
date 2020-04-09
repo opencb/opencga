@@ -230,8 +230,9 @@ public class ClinicalInterpretationManager extends StorageManager {
     public List<ReportedVariant> get(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
 
-        List<Variant> variants = variantStorageManager.get(query, queryOptions, token).getResults();
-        if (CollectionUtils.isEmpty(variants)) {
+        VariantDBIterator iterator = variantStorageManager.iterator(query, queryOptions, token);
+
+        if (!iterator.hasNext()) {
             return Collections.emptyList();
         }
 
@@ -261,9 +262,11 @@ public class ClinicalInterpretationManager extends StorageManager {
         Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
 
         List<ReportedVariant> clinicalVariants = new ArrayList<>();
-        for (Variant variant : variants) {
+        while (iterator.hasNext()) {
+            Variant variant  = iterator.next();
             clinicalVariants.add(createClinicalVariant(variant, genePanelMap, roleInCancer, actionableVariants));
         }
+
         return clinicalVariants;
     }
 
@@ -340,11 +343,11 @@ public class ClinicalInterpretationManager extends StorageManager {
 
                 if (CollectionUtils.isNotEmpty(panelIds)) {
                     for (String panelId : panelIds) {
-                        evidences.add(createEvidence(ct.getSequenceOntologyTerms(), gFeature, panelId, null, null, null, variant,
-                                roleInCancer, actionableVariants));
+                        evidences.add(createEvidence(ct.getSequenceOntologyTerms(), gFeature, panelId, null, null, variant, roleInCancer,
+                                actionableVariants));
                     }
                 } else {
-                    evidences.add(createEvidence(ct.getSequenceOntologyTerms(), gFeature, null, null, null, null, variant, roleInCancer,
+                    evidences.add(createEvidence(ct.getSequenceOntologyTerms(), gFeature, null, null, null, variant, roleInCancer,
                             actionableVariants));
                 }
             }
@@ -357,9 +360,10 @@ public class ClinicalInterpretationManager extends StorageManager {
     /*--------------------------------------------------------------------------*/
 
     protected ReportedEvent createEvidence(List<SequenceOntologyTerm> soTerms, GenomicFeature genomicFeature, String panelId,
-                                           ClinicalProperty.ModeOfInheritance moi, ClinicalProperty.Penetrance penetrance, String tier,
+                                           ClinicalProperty.ModeOfInheritance moi, ClinicalProperty.Penetrance penetrance,
                                            Variant variant, Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
                                            Map<String, List<String>> actionableVariants) {
+
         ReportedEvent reportedEvent = new ReportedEvent().setId("OPENCB-" + UUID.randomUUID());
 
         // Consequence types
@@ -373,9 +377,28 @@ public class ClinicalInterpretationManager extends StorageManager {
             reportedEvent.setGenomicFeature(genomicFeature);
         }
 
-        // Panel ID
-        if (panelId != null) {
+        // Panel ID and compute tier based on SO terms
+        String tier = null;
+        if (StringUtils.isNotEmpty(panelId)) {
             reportedEvent.setPanelId(panelId);
+
+            if (CollectionUtils.isNotEmpty(soTerms)) {
+                boolean tier1 = false;
+                boolean tier2 = false;
+                for (SequenceOntologyTerm soTerm : soTerms) {
+                    if (VariantClassification.LOF.contains(soTerm.getName())) {
+                        tier1 = true;
+                        break;
+                    } else if ("missense_variant".equals(soTerm.getName())) {
+                        tier2 = true;
+                    }
+                }
+                if (tier1) {
+                    tier = TIER_1;
+                } else if (tier2) {
+                    tier = TIER_2;
+                }
+            }
         }
 
         // Mode of inheritance
@@ -410,8 +433,9 @@ public class ClinicalInterpretationManager extends StorageManager {
             }
         }
 
-        // Actionable management
-        if (MapUtils.isNotEmpty(actionableVariants) & actionableVariants.containsKey(variant.getId())) {
+
+        // Set tier and actionable if necessary
+        if (MapUtils.isNotEmpty(actionableVariants) && actionableVariants.containsKey(variant.getId())) {
             reportedEvent.setActionable(true);
 
             // Set tier 3 only if it is null or untiered
@@ -431,6 +455,8 @@ public class ClinicalInterpretationManager extends StorageManager {
                     reportedEvent.setPhenotypes(phenotypes);
                 }
             }
+        } else {
+            reportedEvent.getClassification().setTier(tier);
         }
 
         return reportedEvent;

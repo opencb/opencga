@@ -82,6 +82,9 @@ public class ActionableVariantManager {
      * @throws IOException If file is not found
      */
     private Map<String, List<String>> loadActionableVariants(File file) throws IOException {
+
+//        System.out.println("ActionableVariantManager: path = " + file.toString());
+
         Map<String, List<String>> actionableVariants = new HashMap<>();
 
         if (file != null && file.exists()) {
@@ -94,12 +97,20 @@ public class ActionableVariantManager {
                 String[] split = line.split("\t");
                 if (split.length > 4) {
                     List<String> phenotypes = new ArrayList<>();
-                    if (split.length > 8 && StringUtils.isNotEmpty(split[8])) {
-                        phenotypes.addAll(Arrays.asList(split[8].split(";")));
+                    if (split.length > 5 && StringUtils.isNotEmpty(split[5])) {
+                        phenotypes.addAll(Arrays.asList(split[5].split(";")));
                     }
                     try {
-                        Variant variant = new VariantBuilder(split[0], Integer.parseInt(split[1]), Integer.parseInt(split[2]), split[3],
-                                split[4]).build();
+                        String ref = split[3];
+                        if (ref.equals("-") || ref.equals("na")) {
+                            ref = ".";
+                        }
+                        String alt = split[4];
+                        if (alt.equals("-") || alt.equals("na")) {
+                            alt = ".";
+                        }
+                        Variant variant = new VariantBuilder(split[0], Integer.parseInt(split[1]), Integer.parseInt(split[2]), ref, alt)
+                                .build();
                         actionableVariants.put(variant.toString(), phenotypes);
                     } catch (NumberFormatException e) {
                         // Skip this variant
@@ -111,6 +122,8 @@ public class ActionableVariantManager {
                 }
             }
         }
+
+//        System.out.println("ActionableVariantManager: size = " + actionableVariants.size());
 
         return actionableVariants;
     }

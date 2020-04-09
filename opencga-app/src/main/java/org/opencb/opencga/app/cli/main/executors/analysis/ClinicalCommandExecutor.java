@@ -16,6 +16,8 @@ import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisPara
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.VariantActionableCommandOptions.VARIANT_ACTIONABLE_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.VariantQueryCommandOptions.VARIANT_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
 
 public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
@@ -45,6 +47,14 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "acl-update":
                 queryResponse = updateAcl();
+                break;
+
+            case VARIANT_QUERY_COMMAND:
+                queryResponse = query();
+                break;
+
+            case VARIANT_ACTIONABLE_COMMAND:
+                queryResponse = actionable();
                 break;
 
             case TIERING_RUN_COMMAND:
@@ -129,13 +139,87 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.memberId, updateParams, queryParams);
     }
 
+    //-------------------------------------------------------------------------
+    // Clinical variant
+    //-------------------------------------------------------------------------
+
     private RestResponse<ReportedVariant> query() throws ClientException {
-        return null;
+        ClinicalCommandOptions.VariantQueryCommandOptions commandOptions = clinicalCommandOptions.variantQueryCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+
+        // Query options
+        queryParams.putIfNotNull(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
+        queryParams.putIfNotNull(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.include);
+        queryParams.putIfNotNull(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
+        queryParams.putIfNotNull(QueryOptions.SKIP, commandOptions.numericOptions.skip);
+        queryParams.putIfNotNull(QueryOptions.COUNT, commandOptions.numericOptions.count);
+
+        // Variant filters
+        queryParams.putIfNotNull("id", commandOptions.basicQueryOptions.id);
+        queryParams.putIfNotNull("region", commandOptions.basicQueryOptions.region);
+        queryParams.putIfNotNull("type", commandOptions.basicQueryOptions.type);
+
+        // Study filters
+        queryParams.putIfNotNull(ParamConstants.STUDY_PARAM, commandOptions.study);
+        queryParams.putIfNotNull("file", commandOptions.file);
+        queryParams.putIfNotNull("filter", commandOptions.filter);
+        queryParams.putIfNotNull("qual", commandOptions.qual);
+        queryParams.putIfNotNull("fileData", commandOptions.fileData);
+
+        queryParams.putIfNotNull("sample", commandOptions.samples);
+        queryParams.putIfNotNull("sampleData", commandOptions.sampleData);
+        queryParams.putIfNotNull("sampleAnnotation", commandOptions.sampleAnnotation);
+
+        queryParams.putIfNotNull("cohort", commandOptions.cohort);
+        queryParams.putIfNotNull("cohortStatsRef", commandOptions.basicQueryOptions.rf);
+        queryParams.putIfNotNull("cohortStatsAlt", commandOptions.basicQueryOptions.af);
+        queryParams.putIfNotNull("cohortStatsMaf", commandOptions.basicQueryOptions.maf);
+        queryParams.putIfNotNull("cohortStatsMgf", commandOptions.mgf);
+        queryParams.putIfNotNull("cohortStatsPass", commandOptions.cohortStatsPass);
+        queryParams.putIfNotNull("missingAlleles", commandOptions.missingAlleleCount);
+        queryParams.putIfNotNull("missingGenotypes", commandOptions.missingGenotypeCount);
+        queryParams.putIfNotNull("score", commandOptions.score);
+
+        // Annotation filters
+        queryParams.putIfNotNull("gene", commandOptions.basicQueryOptions.gene);
+        queryParams.putIfNotNull("ct", commandOptions.basicQueryOptions.consequenceType);
+        queryParams.putIfNotNull("xref", commandOptions.xref);
+        queryParams.putIfNotNull("biotype", commandOptions.geneBiotype);
+        queryParams.putIfNotNull("proteinSubstitution", commandOptions.basicQueryOptions.proteinSubstitution);
+        queryParams.putIfNotNull("conservation", commandOptions.basicQueryOptions.conservation);
+        queryParams.putIfNotNull("populationFrequencyAlt", commandOptions.basicQueryOptions.populationFreqAlt);
+        queryParams.putIfNotNull("populationFrequencyRef", commandOptions.populationFreqRef);
+        queryParams.putIfNotNull("populationFrequencyMaf", commandOptions.populationFreqMaf);
+        queryParams.putIfNotNull("transcriptFlag", commandOptions.flags);
+        queryParams.putIfNotNull("geneTraitId", commandOptions.geneTraitId);
+        queryParams.putIfNotNull("go", commandOptions.go);
+        queryParams.putIfNotNull("expression", commandOptions.expression);
+        queryParams.putIfNotNull("proteinKeyword", commandOptions.proteinKeywords);
+        queryParams.putIfNotNull("drug", commandOptions.drugs);
+        queryParams.putIfNotNull("functionalScore", commandOptions.basicQueryOptions.functionalScore);
+        queryParams.putIfNotNull("clinicalSignificance", commandOptions.clinicalSignificance);
+        queryParams.putIfNotNull("customAnnotation", commandOptions.annotations);
+
+        queryParams.putIfNotNull("panel", commandOptions.panel);
+
+        queryParams.putIfNotNull("trait", commandOptions.trait);
+
+        return openCGAClient.getClinicalAnalysisClient().queryVariant(queryParams);
     }
 
     private RestResponse<ReportedVariant> actionable() throws ClientException {
-        return null;
+        ObjectMap queryParams = new ObjectMap();
+
+        queryParams.putIfNotNull(ParamConstants.STUDY_PARAM, clinicalCommandOptions.variantActionableCommandOptions.study);
+        queryParams.putIfNotNull(ParamConstants.SAMPLE_PARAM, clinicalCommandOptions.variantActionableCommandOptions.sample);
+
+        return openCGAClient.getClinicalAnalysisClient().actionableVariant(queryParams);
     }
+
+    //-------------------------------------------------------------------------
+    // Interpretation
+    //-------------------------------------------------------------------------
 
     private RestResponse<Job> tiering() throws ClientException {
         return openCGAClient.getClinicalAnalysisClient().runInterpretationTiering(
