@@ -66,7 +66,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
         userId = "user1";
         catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", userId, "", -1L, Account.Type.FULL, QueryOptions.empty());
-        sessionId = catalogManager.getUserManager().login(userId, userId);
+        sessionId = catalogManager.getUserManager().login(userId, userId).getToken();
         Project project = catalogManager.getProjectManager().create("default", "def", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).getResult().get(0);
         Study study = catalogManager.getStudyManager().create(String.valueOf(project.getId()), "default", "def", Study.Type.FAMILY, null,

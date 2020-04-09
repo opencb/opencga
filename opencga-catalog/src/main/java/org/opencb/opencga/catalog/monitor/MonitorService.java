@@ -71,7 +71,7 @@ public class MonitorService {
 
         try {
             this.catalogManager = new CatalogManager(this.configuration);
-            String expiringToken = this.catalogManager.getUserManager().login("admin", password);
+            String expiringToken = this.catalogManager.getUserManager().login("admin", password).getToken();
             String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
 
             executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken,

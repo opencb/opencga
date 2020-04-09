@@ -72,7 +72,7 @@ public class FileMetadataReaderTest {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
         project = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
         study = catalogManager.getStudyManager().create(String.valueOf(project.getId()), "Phase 1", "phase1", Study.Type.TRIO, null,

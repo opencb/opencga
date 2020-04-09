@@ -101,7 +101,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         CatalogDemo.createDemoDatabase(configuration, catalogCommandOptions.demoCatalogCommandOptions.force);
         CatalogManager catalogManager = new CatalogManager(configuration);
-        sessionId = catalogManager.getUserManager().login("user1", "user1_pass");
+        sessionId = catalogManager.getUserManager().login("user1", "user1_pass").getToken();
         AnalysisDemo.insertPedigreeFile(catalogManager, configuration.getCatalog().getOffset() + 6L, Paths.get(this.appHome)
                         .resolve("examples/20130606_g1k.ped"), sessionId);
     }
@@ -111,7 +111,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         validateConfiguration(commandOptions, commandOptions.commonOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword()).getToken();
 
         if (StringUtils.isNotEmpty(commandOptions.project)) {
             catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir, token);
@@ -126,7 +126,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         validateConfiguration(commandOptions, commandOptions.commonOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword()).getToken();
 
         catalogManager.getProjectManager().importReleases(commandOptions.owner, commandOptions.directory, token);
     }
@@ -196,7 +196,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         logger.info("\nChecking and installing non-existing indexes in {} in {}\n",
                 catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());
-        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword()).getToken();
 
         catalogManager.installIndexes(token);
     }

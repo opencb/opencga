@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.AuthenticationResponse;
 import org.opencb.opencga.core.models.User;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +68,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String authenticate(String username, String password) throws CatalogAuthenticationException {
+    public AuthenticationResponse authenticate(String username, String password) throws CatalogAuthenticationException {
         Map<String, Object> claims = new HashMap<>();
 
         try {
@@ -94,7 +95,15 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
-        return jwtManager.createJWTToken(username, claims, expiration);
+        return new AuthenticationResponse(jwtManager.createJWTToken(username, claims, expiration));
+    }
+
+    @Override
+    public AuthenticationResponse refreshToken(String username, String token) throws CatalogAuthenticationException {
+        if (!username.equals(getUserId(token))) {
+            throw new CatalogAuthenticationException("Cannot refresh token. The token received does not correspond to " + username);
+        }
+        return new AuthenticationResponse(createToken(username));
     }
 
     @Override

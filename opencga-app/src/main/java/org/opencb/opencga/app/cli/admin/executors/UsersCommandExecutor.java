@@ -79,7 +79,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 executor.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String sessionId = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+            String sessionId = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword()).getToken();
 
             if (executor.syncAll) {
                 catalogManager.getUserManager().syncAllUsersOfExternalGroup(executor.study, executor.authOrigin, sessionId);
@@ -105,7 +105,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
                 executor.commonOptions.adminPassword);
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().login("admin", executor.commonOptions.adminPassword);
+            String token = catalogManager.getUserManager().login("admin", executor.commonOptions.adminPassword).getToken();
 
             if (StringUtils.isEmpty(executor.resourceType)) {
                 logger.error("Missing resource type");

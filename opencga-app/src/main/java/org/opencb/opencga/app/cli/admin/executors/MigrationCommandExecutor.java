@@ -56,7 +56,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             setCatalogDatabaseCredentials(options, options.commonOptions);
 
             try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-                String sessionId = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
+                String sessionId = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword).getToken();
 
                 // Catalog
                 String basePath = appHome + "/migration/v1.3.0/";

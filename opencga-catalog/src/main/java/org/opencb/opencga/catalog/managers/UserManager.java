@@ -236,7 +236,8 @@ public class UserManager extends AbstractManager {
      */
     public QueryResult<User> create(String id, String name, String email, String password, String organization, Long quota,
                                     Account.Type type, QueryOptions options) throws CatalogException {
-        String token = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", configuration.getAdmin().getPassword());
+        String token = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", configuration.getAdmin().getPassword())
+                .getToken();
 
         User user = new User(id, name, email, password, organization, User.UserStatus.READY)
                 .setAccount(new Account(type, "", "", null))
@@ -576,18 +577,18 @@ public class UserManager extends AbstractManager {
         return authenticationManagerMap.get(authOrigin).resetPassword(userId);
     }
 
-    public String login(String username, String password) throws CatalogException {
+    public AuthenticationResponse login(String username, String password) throws CatalogException {
         ParamUtils.checkParameter(username, "userId");
         ParamUtils.checkParameter(password, "password");
 
         String authId = null;
-        String token = null;
+        AuthenticationResponse response = null;
 
         // We attempt to login the user with the different authentication managers
         for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
             AuthenticationManager authenticationManager = entry.getValue();
             try {
-                token = authenticationManager.authenticate(username, password);
+                response = authenticationManager.authenticate(username, password);
                 authId = entry.getKey();
                 break;
             } catch (CatalogAuthenticationException e) {
@@ -595,13 +596,13 @@ public class UserManager extends AbstractManager {
             }
         }
 
-        if (token == null) {
+        if (response == null) {
             // TODO: We should raise better exceptions. It could fail for other reasons.
             auditManager.recordLogin(username, false);
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
-        String userId = authenticationManagerMap.get(authId).getUserId(token);
+        String userId = authenticationManagerMap.get(authId).getUserId(response.getToken());
         if (!INTERNAL_AUTHORIZATION.equals(authId)) {
             // External authorization
             try {
@@ -614,7 +615,7 @@ public class UserManager extends AbstractManager {
             }
 
             try {
-                List<String> remoteGroups = authenticationManagerMap.get(authId).getRemoteGroups(token);
+                List<String> remoteGroups = authenticationManagerMap.get(authId).getRemoteGroups(response.getToken());
 
                 // Resync synced groups of user in OpenCGA
                 studyDBAdaptor.resyncUserWithSyncedGroups(userId, remoteGroups, authId);
@@ -624,7 +625,7 @@ public class UserManager extends AbstractManager {
         }
 
         auditManager.recordLogin(userId, true);
-        return token;
+        return response;
     }
 
     /**
@@ -635,11 +636,23 @@ public class UserManager extends AbstractManager {
      * @return a new token with the default expiration updated.
      * @throws CatalogException if the token does not correspond to the user or the token is expired.
      */
-    public String refreshToken(String userId, String token) throws CatalogException {
-        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
-            throw new CatalogException("Cannot refresh token. The token received does not correspond to " + userId);
+    public AuthenticationResponse refreshToken(String userId, String token) throws CatalogException {
+        AuthenticationResponse response = null;
+        // We attempt to renew the token with the different authentication managers
+        for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+            AuthenticationManager authenticationManager = entry.getValue();
+            try {
+                response = authenticationManager.refreshToken(userId, token);
+                break;
+            } catch (CatalogAuthenticationException e) {
+                logger.debug("Could not refresh token with '{}' provider for user '{}': {}", entry.getKey(), userId, e.getMessage(), e);
+            }
         }
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId);
+
+        if (response == null) {
+            throw new CatalogAuthenticationException("Could not refresh token");
+        }
+        return response;
     }
 
     /**

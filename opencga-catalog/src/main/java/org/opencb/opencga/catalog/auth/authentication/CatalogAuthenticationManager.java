@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.config.Email;
+import org.opencb.opencga.core.models.AuthenticationResponse;
 import org.opencb.opencga.core.models.User;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +79,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String authenticate(String username, String password) throws CatalogAuthenticationException {
+    public AuthenticationResponse authenticate(String username, String password) throws CatalogAuthenticationException {
         String cypherPassword;
         try {
             cypherPassword = cypherPassword(password);
@@ -104,10 +105,18 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
             }
         }
         if (storedPassword.equals(cypherPassword) || validSessionId) {
-            return jwtManager.createJWTToken(username, expiration);
+            return new AuthenticationResponse(jwtManager.createJWTToken(username, expiration));
         } else {
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
+    }
+
+    @Override
+    public AuthenticationResponse refreshToken(String username, String token) throws CatalogAuthenticationException {
+        if (!username.equals(getUserId(token))) {
+            throw new CatalogAuthenticationException("Cannot refresh token. The token received does not correspond to " + username);
+        }
+        return new AuthenticationResponse(createToken(username));
     }
 
     @Override

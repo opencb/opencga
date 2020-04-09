@@ -76,9 +76,9 @@ public class CatalogSampleManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.FULL, null);
 
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
 
         project1 = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
@@ -929,7 +929,7 @@ public class CatalogSampleManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateGroup(String.valueOf(studyId), "@members", new GroupParams("dummy",
                 GroupParams.Action.ADD), sessionIdUser);
 
-        String token = catalogManager.getUserManager().login("dummy", "dummy");
+        String token = catalogManager.getUserManager().login("dummy", "dummy").getToken();
         QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(), token);
         assertEquals(1, queryResult.getNumResults());
 

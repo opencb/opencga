@@ -43,7 +43,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
         long projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();

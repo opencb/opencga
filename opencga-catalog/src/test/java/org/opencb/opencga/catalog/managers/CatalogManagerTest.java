@@ -116,9 +116,9 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.FULL, null);
 
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
 
         project1 = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
@@ -255,7 +255,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        String token = catalogManager.getUserManager().login("admin", "admin");
+        String token = catalogManager.getUserManager().login("admin", "admin").getToken();
         assertEquals("admin" ,catalogManager.getUserManager().getUserId(token));
     }
 
@@ -354,7 +354,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     private String getAdminToken() throws CatalogException, IOException {
-        return catalogManager.getUserManager().login("admin", "admin");
+        return catalogManager.getUserManager().login("admin", "admin").getToken();
     }
 
     @Ignore
@@ -375,7 +375,7 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getStudyManager().createGroup(Long.toString(studyId), group, sessionIdUser);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(Long.toString(studyId)), "@ldap", new Study.StudyAclParams("",
                 AclParams.Action.SET, "view_only"), sessionIdUser);
-        String token = catalogManager.getUserManager().login("user", "password");
+        String token = catalogManager.getUserManager().login("user", "password").getToken();
 
         assertEquals(9, catalogManager.getSampleManager().count(String.valueOf(studyId), new Query(), token).getNumTotalResults());
 
@@ -389,7 +389,7 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void syncUsers() throws CatalogException {
         // Action only for admins
-        String token = catalogManager.getUserManager().login("admin", "admin");
+        String token = catalogManager.getUserManager().login("admin", "admin").getToken();
 
         catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", "bio", "bio", String.valueOf(studyId), true, token);
         QueryResult<Group> bio = catalogManager.getStudyManager().getGroup(String.valueOf(studyId), "bio", sessionIdUser);
@@ -443,7 +443,7 @@ public class CatalogManagerTest extends GenericTest {
                 new Study.StudyAclParams("", AclParams.Action.SET, "view_only"), sessionIdUser);
         assertEquals("@group_cancer_some_thing_else", permissions.get(0).first().getMember());
 
-        String token = catalogManager.getUserManager().login("test", "test");
+        String token = catalogManager.getUserManager().login("test", "test").getToken();
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get("user@1000G:phase1", QueryOptions.empty(), token);
         assertEquals(1, studyQueryResult.getNumResults());
     }

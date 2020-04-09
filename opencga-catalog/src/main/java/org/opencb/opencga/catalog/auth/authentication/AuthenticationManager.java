@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.models.AuthenticationResponse;
 import org.opencb.opencga.core.models.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,17 +57,18 @@ public abstract class AuthenticationManager {
      * @throws CatalogAuthenticationException CatalogAuthenticationException if any of the credentials are wrong or the access is denied
      * for any other reason.
      */
-    public abstract String authenticate(String username, String password) throws CatalogAuthenticationException;
+    public abstract AuthenticationResponse authenticate(String username, String password) throws CatalogAuthenticationException;
 
+    public abstract AuthenticationResponse refreshToken(String username, String token) throws CatalogAuthenticationException;
 
     /**
      * Obtains the userId corresponding to the token.
      *
      * @param token token that have been assigned to a user.
      * @return the user id corresponding to the token given.
-     * @throws CatalogException when the token does not correspond to any user or the token has expired.
+     * @throws CatalogAuthenticationException when the token does not correspond to any user or the token has expired.
      */
-    public String getUserId(String token) throws CatalogException {
+    public String getUserId(String token) throws CatalogAuthenticationException {
         if (StringUtils.isEmpty(token) || "null".equalsIgnoreCase(token)) {
             return "*";
         }

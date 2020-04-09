@@ -26,10 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.Account;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -97,32 +94,52 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Get identified and gain access to the system",
             notes = "Login method is implemented using JSON Web Tokens that use the standard RFC 7519. The provided tokens are not " +
                     "stored by OpenCGA so there is not a logout method anymore. Tokens are provided with an expiration time that, once " +
-                    "finished, will no longer be valid.\nIf password is provided it will attempt to login the user. If no password is " +
-                    "provided and a valid token is given, a new token will be provided extending the expiration time.")
+                    "finished, will no longer be valid.\nIf password is provided it will attempt to login the user. If refreshToken is " +
+                    "provided, a new token will be provided extending the expiration time.")
     public Response loginPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                              @ApiParam(value = "JSON containing the parameter 'password'") Map<String, String> map) {
+                              @ApiParam(value = "JSON containing the 'password' or the 'refreshToken") AuthenticationParams params) {
         try {
-            String token;
-            if (map.containsKey("password")) {
-                String password = map.get("password");
-                token = catalogManager.getUserManager().login(userId, password);
-            } else if (StringUtils.isNotEmpty(sessionId)) {
-                token = catalogManager.getUserManager().refreshToken(userId, sessionId);
+            AuthenticationResponse response;
+            if (StringUtils.isNotEmpty(params.getPassword())) {
+                response = catalogManager.getUserManager().login(userId, params.getPassword());
+            } else if (StringUtils.isNotEmpty(params.getRefreshToken())) {
+                response = catalogManager.getUserManager().refreshToken(userId, params.getRefreshToken());
             } else {
                 throw new Exception("Neither a password nor a token was provided.");
             }
 
-            ObjectMap sessionMap = new ObjectMap()
-                    .append("sessionId", token)
-                    .append("id", token)
-                    .append("token", token);
-
-            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", 0, 1, 1,
-                    "'sessionId' and 'id' deprecated", "", Arrays.asList(sessionMap));
+            QueryResult<AuthenticationResponse> login = new QueryResult<>("You successfully logged in", 0, 1, 1,
+                    "'sessionId' and 'id' deprecated", "", Collections.singletonList(response));
 
             return createOkResponse(login);
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    public static class AuthenticationParams {
+        private String password;
+        private String refreshToken;
+
+        public AuthenticationParams() {
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public AuthenticationParams setPassword(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public String getRefreshToken() {
+            return refreshToken;
+        }
+
+        public AuthenticationParams setRefreshToken(String refreshToken) {
+            this.refreshToken = refreshToken;
+            return this;
         }
     }
 

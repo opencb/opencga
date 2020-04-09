@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.AuthenticationResponse;
 import org.opencb.opencga.core.models.User;
 
 import java.io.ByteArrayInputStream;
@@ -155,7 +156,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     }
 
     private Map<String, PublicKey> fetchJWTKeys() throws CertificateException, IOException {
-        logger.info("Fetching Azure AD JWT public keys");
+//        logger.info("Fetching Azure AD JWT public keys");
         Map<String, PublicKey> keyMap = new HashMap<>();
 
         // We look for the new public keys in the url
@@ -210,7 +211,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
 
     @Override
-    public String authenticate(String username, String password) throws CatalogAuthenticationException {
+    public AuthenticationResponse authenticate(String username, String password) throws CatalogAuthenticationException {
         AuthenticationContext context;
         AuthenticationResult result;
         ExecutorService service = null;
@@ -231,7 +232,35 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
         }
 
         if (jwtManager.passFilters(result.getAccessToken(), this.filters, getPublicKey(result.getAccessToken()))) {
-            return result.getAccessToken();
+            return new AuthenticationResponse(result.getAccessToken(), result.getRefreshToken());
+        } else {
+            throw CatalogAuthenticationException.userNotAllowed();
+        }
+    }
+
+    @Override
+    public AuthenticationResponse refreshToken(String username, String token) throws CatalogAuthenticationException {
+        AuthenticationContext context;
+        AuthenticationResult result;
+        ExecutorService service = null;
+        try {
+            service = Executors.newFixedThreadPool(1);
+            context = new AuthenticationContext(String.valueOf(this.oidcProviderMetadata.getAuthorizationEndpointURI()), false, service);
+            Future<AuthenticationResult> future = context.acquireTokenByRefreshToken(token, authClientId, null);
+            result = future.get();
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            throw CatalogAuthenticationException.incorrectUserOrPassword();
+        } finally {
+            service.shutdown();
+        }
+
+        if (result == null) {
+            throw CatalogAuthenticationException.incorrectUserOrPassword();
+        }
+
+        if (jwtManager.passFilters(result.getAccessToken(), this.filters, getPublicKey(result.getAccessToken()))) {
+            return new AuthenticationResponse(result.getAccessToken(), result.getRefreshToken());
         } else {
             throw CatalogAuthenticationException.userNotAllowed();
         }
@@ -349,7 +378,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String getUserId(String token) throws CatalogException {
+    public String getUserId(String token) throws CatalogAuthenticationException {
         return (String) jwtManager.getClaim(token, "oid", getPublicKey(token));
     }
 
