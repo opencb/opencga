@@ -38,7 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readReportedVariants;
+import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readClinicalVariants;
 
 public abstract class InterpretationAnalysis extends OpenCgaTool {
 
@@ -83,9 +83,9 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
                     diseasePanels, studyId, token));
         }
 
-        List<ReportedVariant> primaryFindings = readReportedVariants(Paths.get(getOutDir().toString() + "/"
+        List<ClinicalVariant> primaryFindings = readClinicalVariants(Paths.get(getOutDir().toString() + "/"
                 + PRIMARY_FINDINGS_FILENAME));
-        List<ReportedVariant> secondaryFindings = readReportedVariants(Paths.get(getOutDir().toString() + "/"
+        List<ClinicalVariant> secondaryFindings = readClinicalVariants(Paths.get(getOutDir().toString() + "/"
                 + SECONDARY_FINDINGS_FILENAME));
 
         Interpretation interpretation = new Interpretation()

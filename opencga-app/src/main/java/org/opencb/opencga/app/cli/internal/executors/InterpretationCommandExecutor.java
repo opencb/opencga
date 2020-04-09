@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.custom.CustomInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
@@ -179,7 +179,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
     }
 
     private void custom() throws Exception {
-        InterpretationCommandOptions.CustomCommandOptions options = interpretationCommandOptions.customCommandOptions;
+        InterpretationCommandOptions.ZettaInterpretationCommandOptions options = interpretationCommandOptions.zettaInterpretationCommandOptions;
 
         // Prepare analysis parameters and config
         String token = options.commonOptions.token;
@@ -191,7 +191,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         Query query = VariantQueryCommandUtils.parseQuery(options.variantQueryCommandOptions, studyIds, clientConfiguration);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(options.variantQueryCommandOptions);
 
-        CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
+        ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
         config.setIncludeLowCoverage(options.includeLowCoverage);
         config.setMaxLowCoverage(options.maxLowCoverage);
         config.setSkipUntieredVariants(!options.includeUntieredVariants);

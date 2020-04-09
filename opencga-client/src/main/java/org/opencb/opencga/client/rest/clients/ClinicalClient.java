@@ -16,22 +16,13 @@
 
 package org.opencb.opencga.client.rest.clients;
 
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
-import org.opencb.opencga.core.models.clinical.CancerTieringInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
-import org.opencb.opencga.core.models.clinical.ClinicalUpdateParams;
-import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
-import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
-import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -319,9 +310,9 @@ public class ClinicalClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ReportedVariant> actionableVariant(ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalVariant> actionableVariant(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis/clinical", null, "variant", null, "actionable", params, GET, ReportedVariant.class);
+        return execute("analysis/clinical", null, "variant", null, "actionable", params, GET, ClinicalVariant.class);
     }
 
     /**
@@ -387,9 +378,9 @@ public class ClinicalClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ReportedVariant> queryVariant(ObjectMap params) throws ClientException {
+    public RestResponse<ClinicalVariant> queryVariant(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis/clinical", null, "variant", null, "query", params, GET, ReportedVariant.class);
+        return execute("analysis/clinical", null, "variant", null, "query", params, GET, ClinicalVariant.class);
     }
 
     /**

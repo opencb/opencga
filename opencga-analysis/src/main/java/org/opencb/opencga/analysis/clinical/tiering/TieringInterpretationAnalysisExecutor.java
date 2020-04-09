@@ -18,29 +18,29 @@ package org.opencb.opencga.analysis.clinical.tiering;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;
+import org.opencb.biodata.tools.clinical.TieringClinicalVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysisExecutor;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
-import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -215,10 +215,10 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         }
 
         // Primary findings,
-        TieringReportedVariantCreator creator;
-        List<ReportedVariant> primaryFindings;
+        TieringClinicalVariantCreator creator;
+        List<ClinicalVariant> primaryFindings;
         try {
-            creator = new TieringReportedVariantCreator(diseasePanels,
+            creator = new TieringClinicalVariantCreator(diseasePanels,
                     clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
                     clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly),
                     clinicalAnalysis.getDisorder(), null, penetrance, assembly);
@@ -229,17 +229,17 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
 
         // Add compound heterozyous variants
         try {
-            primaryFindings.addAll(ClinicalUtils.getCompoundHeterozygousReportedVariants(chVariantMap, creator));
+            primaryFindings.addAll(ClinicalUtils.getCompoundHeterozygousClinicalVariants(chVariantMap, creator));
         } catch (InterpretationAnalysisException e) {
             throw new ToolException("Error retrieving compound heterozygous variants", e);
         }
-        primaryFindings = creator.mergeReportedVariants(primaryFindings);
+        primaryFindings = creator.mergeClinicalVariants(primaryFindings);
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(getOutDir() + "/primary-findings.json"));
+        ClinicalUtils.writeClinicalVariants(primaryFindings, Paths.get(getOutDir() + "/primary-findings.json"));
 
         // Secondary findings, if clinical consent is TRUE
-        List<ReportedVariant> secondaryFindings = null;
+        List<ClinicalVariant> secondaryFindings = null;
         try {
             secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis,
                     new ArrayList<>(sampleMap.keySet()), studyId, creator, sessionId);
@@ -248,7 +248,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(secondaryFindings, Paths.get(getOutDir() + "/secondary-findings.json"));
+        ClinicalUtils.writeClinicalVariants(secondaryFindings, Paths.get(getOutDir() + "/secondary-findings.json"));
     }
 
     private <T> Callable<T> getNamedThread(String name, Callable<T> c) {

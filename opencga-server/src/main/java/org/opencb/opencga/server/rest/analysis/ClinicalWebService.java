@@ -19,8 +19,8 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -288,20 +288,20 @@ public class ClinicalWebService extends AnalysisWebService {
         }
     }
 
-    @POST
-    @Path("/index")
-    @ApiOperation(value = "Index clinical analysis interpretations in the clinical variant database", response = Map.class)
-    public Response index(@ApiParam(value = "Comma separated list of clinical analysis IDs to be indexed in the clinical variant database")
-                          @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                          @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
+//    @POST
+//    @Path("/index")
+//    @ApiOperation(value = "Index clinical analysis interpretations in the clinical variant database", response = Map.class)
+//    public Response index(@ApiParam(value = "Comma separated list of clinical analysis IDs to be indexed in the clinical variant database")
+//                          @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+//                          @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
 //        try {
 //            clinicalInterpretationManager.index(study, sessionId);
 //            return Response.ok().build();
 //        } catch (IOException | ClinicalVariantException | CatalogException e) {
 //            return createErrorResponse(e);
 //        }
-        return createErrorResponse(new NotImplementedException("Operation not yet implemented"));
-    }
+//        return createErrorResponse(new NotImplementedException("Operation not yet implemented"));
+//    }
 
 
     /*
@@ -392,31 +392,6 @@ public class ClinicalWebService extends AnalysisWebService {
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), action.name());
-            queryOptions.put(Constants.ACTIONS, actionMap);
-
-            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, updateParams, queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/primaryFindings/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update reported variants of an interpretation",
-            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class, hidden = true)
-    public Response reportedVariantUpdate(
-            @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Clinical analysis id") @PathParam("clinicalAnalysis") String clinicalId,
-            @ApiParam(value = "Interpretation id") @PathParam("interpretation") String interpretationId,
-            @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
-            @ApiParam(name = "params", value = "JSON containing a list of reported variants", required = true)
-                    List<ReportedVariant> reportedVariants) {
-        try {
-            InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setPrimaryFindings(reportedVariants);
-
-            Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(InterpretationDBAdaptor.QueryParams.REPORTED_VARIANTS.key(), action.name());
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, updateParams, queryOptions, token));
@@ -524,7 +499,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @GET
     @Path("/variant/query")
-    @ApiOperation(value = "Fetch clinical variants", response = ReportedVariant.class)
+    @ApiOperation(value = "Fetch clinical variants", response = ClinicalVariant.class)
     @ApiImplicitParams({
 
             // Query options
@@ -591,8 +566,8 @@ public class ClinicalWebService extends AnalysisWebService {
 
         // Get clinical variants
         try {
-            List<ReportedVariant> reportedVariants = clinicalInterpretationManager.get(query, queryOptions, token);
-            return createAnalysisOkResponse(reportedVariants);
+            List<ClinicalVariant> clinicalVariants = clinicalInterpretationManager.get(query, queryOptions, token);
+            return createAnalysisOkResponse(clinicalVariants);
         } catch (CatalogException | IOException | StorageEngineException e) {
             return createErrorResponse(e);
         }
@@ -600,14 +575,14 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @GET
     @Path("/variant/actionable")
-    @ApiOperation(value = "Fetch actionable clinical variants", response = ReportedVariant.class)
+    @ApiOperation(value = "Fetch actionable clinical variants", response = ClinicalVariant.class)
     public Response variantActionable(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PARAM) String sample) {
         try {
 
-            List<ReportedVariant> reportedVariants = clinicalInterpretationManager.getActionableVariants(study, sample, token);
-            return createAnalysisOkResponse(reportedVariants);
+            List<ClinicalVariant> clinicalVariants = clinicalInterpretationManager.getActionableVariants(study, sample, token);
+            return createAnalysisOkResponse(clinicalVariants);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

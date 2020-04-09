@@ -19,9 +19,9 @@ package org.opencb.opencga.analysis.clinical.tiering;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinVar;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
@@ -29,13 +29,11 @@ import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysisExecutor;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
-import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -43,6 +41,8 @@ import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -50,9 +50,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.biodata.formats.variant.clinvar.v59jaxb.ReviewStatusType.CRITERIA_PROVIDED_MULTIPLE_SUBMITTERS_NO_CONFLICTS;
-import static org.opencb.biodata.formats.variant.clinvar.v59jaxb.ReviewStatusType.PRACTICE_GUIDELINE;
-import static org.opencb.biodata.formats.variant.clinvar.v59jaxb.ReviewStatusType.REVIEWED_BY_EXPERT_PANEL;
+import static org.opencb.biodata.formats.variant.clinvar.v59jaxb.ReviewStatusType.*;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL;
 
@@ -78,14 +76,14 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
     private static final String CHILDHOOD_PANEL_NAME = "Childhood solid tumours cancer susceptibility";
     private static final String HAEMONC_PANEL_NAME = "Haematological malignancies cancer susceptibility";
 
-    private static final Set<String> somaticSOTerms = new HashSet<>(Arrays.asList("SO:0001893","SO:0001574","SO:0001575","SO:0001587","SO:0001589",
-            "SO:0001578", "SO:0001582","SO:0002012","SO:0001889","SO:0001821","SO:0001822","SO:0001583","SO:0001630","SO:0001650",
-            "SO:0001626"));
+    private static final Set<String> somaticSOTerms = new HashSet<>(Arrays.asList("SO:0001893","SO:0001574","SO:0001575","SO:0001587",
+            "SO:0001589", "SO:0001578", "SO:0001582","SO:0002012","SO:0001889","SO:0001821","SO:0001822","SO:0001583","SO:0001630",
+            "SO:0001650", "SO:0001626"));
 
     private static final String CONSEQUENCE_RNA = "SO:0001792";
 
-    private static final Set<String> lofSOTerms = new HashSet<>(Arrays.asList("SO:0001893","SO:0001574","SO:0001575","SO:0001587","SO:0001589",
-            "SO:0001578", "SO:0001582","SO:0002012"));
+    private static final Set<String> lofSOTerms = new HashSet<>(Arrays.asList("SO:0001893","SO:0001574","SO:0001575","SO:0001587",
+            "SO:0001589", "SO:0001578", "SO:0001582","SO:0002012"));
 
     private static final List<String> pertinentFindingRNA = new ArrayList(Arrays.asList("ENSG00000269900", "ENSG00000270141"));
 
@@ -123,25 +121,25 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
             throw new ToolException("Missing disorder for clinical analysis " + clinicalAnalysisId);
         }
 
-        // Primary findings consist of reported somatic and germline variants
-        List<ReportedVariant> primaryFindings = new ArrayList<>();
+        // Primary findings consist of somatic and germline variants
+        List<ClinicalVariant> primaryFindings = new ArrayList<>();
 
-        // Get somatic sample and then its reported variant
+        // Get somatic sample and then its clinical variant
         List<Sample> somaticSamples = getSomaticSamples(clinicalAnalysis.getProband());
         if (CollectionUtils.isNotEmpty(somaticSamples)) {
             if (somaticSamples.size() != 1) {
                 throw new ToolException("Found multiple somatic samples (" + somaticSamples.size() + "), only one is permitted.");
             }
-            List<ReportedVariant> reportedSomaticVariants = null;
+            List<ClinicalVariant> somaticVariants = null;
             try {
-                reportedSomaticVariants = getReportedSomaticVariants(somaticSamples);
+                somaticVariants = getSomaticVariants(somaticSamples);
             } catch (CatalogException | IOException | StorageEngineException e) {
                 throw new ToolException("Error retrieving somatic variants", e);
             }
-            primaryFindings.addAll(reportedSomaticVariants);
+            primaryFindings.addAll(somaticVariants);
         }
 
-        // Get germline sample and then its reported variant
+        // Get germline sample and then its clinical variant
         List<Sample> germlineSamples = getGermlineSamples(clinicalAnalysis.getProband());
         if (CollectionUtils.isNotEmpty(somaticSamples)) {
             if (somaticSamples.size() != 1) {
@@ -157,18 +155,18 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                     phenotypes.add(evidence.getName());
                 }
             }
-            List<ReportedVariant> reportedGermlineVariants = null;
+            List<ClinicalVariant> germlineVariants = null;
             try {
-                reportedGermlineVariants = getReportedGermlineVariants(clinicalAnalysis.getProband(), germlineSamples,
+                germlineVariants = getGermlineVariants(clinicalAnalysis.getProband(), germlineSamples,
                         phenotypes);
             } catch (CatalogException | IOException | StorageEngineException e) {
                 throw new ToolException("Error retrieving germline variants", e);
             }
-            primaryFindings.addAll(reportedGermlineVariants);
+            primaryFindings.addAll(germlineVariants);
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(getOutDir() + "/primary-findings.json"));
+        ClinicalUtils.writeClinicalVariants(primaryFindings, Paths.get(getOutDir() + "/primary-findings.json"));
     }
 
     //-------------------------------------------------------------------------
@@ -203,9 +201,9 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         return samples;
     }
 
-    private List<ReportedVariant> getReportedSomaticVariants(List<Sample> somaticSamples)
+    private List<ClinicalVariant> getSomaticVariants(List<Sample> somaticSamples)
             throws CatalogException, IOException, StorageEngineException {
-        List<ReportedVariant> reportedVariants = new ArrayList<>();
+        List<ClinicalVariant> clinicalVariants = new ArrayList<>();
 
         Query query = new Query();
         query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
@@ -233,42 +231,42 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                     .getRoleInCancer();
             for (Variant variant : variantVariantQueryResult.getResults()) {
                 if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
-                    List<ReportedEvent> reportedEvents = new ArrayList<>();
+                    List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         List<SequenceOntologyTerm> somaticSOTerms = getSomaticSequenceOntologyTerms(ct);
                         if (roleInCancer.containsKey(ct.getEnsemblGeneId()) || roleInCancer.containsKey(ct.getGeneName())) {
-                            // Create reported event with TIER 2
-                            ReportedEvent reportedEvent = new ReportedEvent();
+                            // Create clinical variant evidence with TIER 2
+                            ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
 
-                            reportedEvent.setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), "GENE",
+                            clinicalVariantEvidence.setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), "GENE",
                                     ct.getEnsemblTranscriptId(), ct.getGeneName(), null));
-                            reportedEvent.setConsequenceTypes(somaticSOTerms);
+                            clinicalVariantEvidence.setConsequenceTypes(somaticSOTerms);
                             VariantClassification classification = new VariantClassification();
                             classification.setTier(TIER_2);
                             List<String> acmg = calculateAcmgClassification(variant);
                             classification.setAcmg(acmg);
                             classification.setClinicalSignificance(computeClinicalSignificance(acmg));
-                            reportedEvent.setClassification(classification);
+                            clinicalVariantEvidence.setClassification(classification);
 
-                            reportedEvents.add(reportedEvent);
+                            clinicalVariantEvidences.add(clinicalVariantEvidence);
                         }
                     }
-                    if (CollectionUtils.isNotEmpty(reportedEvents)) {
-                        ReportedVariant reportedVariant = new ReportedVariant(variant.getImpl());
-                        reportedVariant.setEvidences(reportedEvents);
+                    if (CollectionUtils.isNotEmpty(clinicalVariantEvidences)) {
+                        ClinicalVariant clinicalVariant = new ClinicalVariant(variant.getImpl());
+                        clinicalVariant.setEvidences(clinicalVariantEvidences);
                     }
                 }
             }
         }
 
-        // TODO: Mark reported variant as somatic
-        return reportedVariants;
+        // TODO: Mark clinical variant as somatic
+        return clinicalVariants;
     }
 
-    private List<ReportedVariant> getReportedGermlineVariants(Individual proband, List<Sample> germlineSamples, List<String> phenotypes)
+    private List<ClinicalVariant> getGermlineVariants(Individual proband, List<Sample> germlineSamples, List<String> phenotypes)
             throws CatalogException, IOException, StorageEngineException {
         Set<DiseasePanel> diseasePanelSet = new HashSet<>();
-        List<ReportedVariant> reportedVariants = new ArrayList<>();
+        List<ClinicalVariant> clinicalVariants = new ArrayList<>();
 
         // Germline tiering: TIER 1
 
@@ -305,10 +303,10 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         //    2) or its allelic depth (AD) is 1,0
         List<Variant> variants = filterVariants(variantVariantQueryResult.getResults(), germlineSamples);
 
-        // Create reported variants if necessary
-        Set<String> reportedVariantIdSet = new HashSet<>();
+        // Create clinical variants if necessary
+        Set<String> clinicalVariantIdSet = new HashSet<>();
         for (Variant variant : variants) {
-            List<ReportedEvent> reportedEvents = new ArrayList<>();
+            List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
             List<ClinVar> clinVars = getClinVars(variant);
 
             List<DiseasePanel> varDiseasePanels = getDiseasePanels(variant, panels);
@@ -322,13 +320,13 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                                     List<SequenceOntologyTerm> lofSOTerms = getLoFSequenceOntologyTerms(consequenceType);
                                     if (CollectionUtils.isNotEmpty(lofSOTerms)) {
                                         if (CollectionUtils.isEmpty(clinVars) || !isBenign(clinVars)) {
-                                            reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, lofSOTerms,
-                                                    computeBiallelicTiering(panelGene, variant), consequenceType, variant));
+                                            clinicalVariantEvidences.add(createClinicalVariantEvidence(varDiseasePanel, panelGene,
+                                                    lofSOTerms, computeBiallelicTiering(panelGene, variant), consequenceType, variant));
                                         }
                                     } else {
                                         if (CollectionUtils.isNotEmpty(clinVars) && isPathogenic(clinVars)) {
-                                            reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, lofSOTerms,
-                                                    computeBiallelicTiering(panelGene, variant), consequenceType, variant));
+                                            clinicalVariantEvidences.add(createClinicalVariantEvidence(varDiseasePanel, panelGene,
+                                                    lofSOTerms, computeBiallelicTiering(panelGene, variant), consequenceType, variant));
                                         }
                                     }
                                 }
@@ -336,7 +334,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                                 if (CollectionUtils.isNotEmpty(clinVars) && isPathogenic(clinVars)) {
                                     for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
                                         List<SequenceOntologyTerm> lofSOTerms = getLoFSequenceOntologyTerms(consequenceType);
-                                        reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, lofSOTerms,
+                                        clinicalVariantEvidences.add(createClinicalVariantEvidence(varDiseasePanel, panelGene, lofSOTerms,
                                                 computeBiallelicTiering(panelGene, variant), consequenceType, variant));
                                     }
                                 }
@@ -345,12 +343,12 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                     }
                 }
             }
-            if (CollectionUtils.isNotEmpty(reportedEvents)) {
-                ReportedVariant reportedVariant = new ReportedVariant(variant.getImpl());
-                reportedVariant.setEvidences(reportedEvents);
+            if (CollectionUtils.isNotEmpty(clinicalVariantEvidences)) {
+                ClinicalVariant clinicalVariant = new ClinicalVariant(variant.getImpl());
+                clinicalVariant.setEvidences(clinicalVariantEvidences);
 
                 // We must save these variants to discard them in the next processing step (germline tiering TIER 3)
-                reportedVariantIdSet.add(variant.getId());
+                clinicalVariantIdSet.add(variant.getId());
             }
         }
 
@@ -375,11 +373,11 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
 
         for (Variant variant : variants) {
             // Discard variant already reported
-            if (reportedVariantIdSet.contains(variant.getId())) {
+            if (clinicalVariantIdSet.contains(variant.getId())) {
                 continue;
             }
 
-            List<ReportedEvent> reportedEvents = new ArrayList<>();
+            List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
             List<ClinVar> clinVars = getClinVars(variant);
 
             List<DiseasePanel> varDiseasePanels = getDiseasePanels(variant, panels);
@@ -403,14 +401,14 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                                     if (CollectionUtils.isNotEmpty(soTerms)) {
                                         if (CollectionUtils.isEmpty(clinVars) || !isBenign(clinVars)) {
                                             if ("BIALLELIC".equals(panelGene.getModeOfInheritance())) {
-                                                reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, soTerms, TIER_3,
-                                                        consequenceType, variant));
+                                                clinicalVariantEvidences.add(createClinicalVariantEvidence(varDiseasePanel, panelGene,
+                                                        soTerms, TIER_3, consequenceType, variant));
                                             } else {
                                                 if (CollectionUtils.isNotEmpty(variant.getStudies())) {
                                                     VariantStats stats = variant.getStudies().get(0).getStats("ALL");
                                                     if (stats != null && stats.getMaf() < 0.005f) {
-                                                        reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, soTerms, TIER_3,
-                                                                consequenceType, variant));
+                                                        clinicalVariantEvidences.add(createClinicalVariantEvidence(varDiseasePanel,
+                                                                panelGene, soTerms, TIER_3, consequenceType, variant));
                                                     }
                                                 }
                                             }
@@ -423,31 +421,31 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                 }
             }
 
-            if (CollectionUtils.isNotEmpty(reportedEvents)) {
-                ReportedVariant reportedVariant = new ReportedVariant(variant.getImpl());
-                reportedVariant.setEvidences(reportedEvents);
+            if (CollectionUtils.isNotEmpty(clinicalVariantEvidences)) {
+                ClinicalVariant clinicalVariant = new ClinicalVariant(variant.getImpl());
+                clinicalVariant.setEvidences(clinicalVariantEvidences);
             }
         }
 
-        return reportedVariants;
+        return clinicalVariants;
     }
 
-    private ReportedEvent createrReportEvent(DiseasePanel diseasePanel, DiseasePanel.GenePanel panelGene,
-                                             List<SequenceOntologyTerm> soTerms, String tier, ConsequenceType consequenceType,
-                                             Variant variant) {
-        ReportedEvent reportedEvent = new ReportedEvent();
+    private ClinicalVariantEvidence createClinicalVariantEvidence(DiseasePanel diseasePanel, DiseasePanel.GenePanel panelGene,
+                                                                  List<SequenceOntologyTerm> soTerms, String tier, ConsequenceType ct,
+                                                                  Variant variant) {
+        ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
 
-        reportedEvent.setPanelId(diseasePanel.getId());
-        reportedEvent.setGenomicFeature(new GenomicFeature(consequenceType.getEnsemblGeneId(), "GENE",
-                consequenceType.getEnsemblTranscriptId(), consequenceType.getGeneName(), panelGene.getXrefs()));
-        reportedEvent.setConsequenceTypes(soTerms);
+        clinicalVariantEvidence.setPanelId(diseasePanel.getId());
+        clinicalVariantEvidence.setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), "GENE",
+                ct.getEnsemblTranscriptId(), ct.getGeneName(), panelGene.getXrefs()));
+        clinicalVariantEvidence.setConsequenceTypes(soTerms);
         VariantClassification classification = new VariantClassification();
         classification.setTier(tier);
         classification.setAcmg(calculateAcmgClassification(variant));
         classification.setClinicalSignificance(computeClinicalSignificance(classification.getAcmg()));
-        reportedEvent.setClassification(classification);
+        clinicalVariantEvidence.setClassification(classification);
 
-        return reportedEvent;
+        return clinicalVariantEvidence;
     }
 
     private String computeBiallelicTiering(DiseasePanel.GenePanel panelGene, Variant variant) {

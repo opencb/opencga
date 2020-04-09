@@ -1,6 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors.analysis;
 
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -16,9 +16,9 @@ import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisPara
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.VariantActionableCommandOptions.VARIANT_ACTIONABLE_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.VariantQueryCommandOptions.VARIANT_QUERY_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
 
 public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
 
@@ -143,7 +143,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     // Clinical variant
     //-------------------------------------------------------------------------
 
-    private RestResponse<ReportedVariant> query() throws ClientException {
+    private RestResponse<ClinicalVariant> query() throws ClientException {
         ClinicalCommandOptions.VariantQueryCommandOptions commandOptions = clinicalCommandOptions.variantQueryCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
@@ -208,7 +208,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().queryVariant(queryParams);
     }
 
-    private RestResponse<ReportedVariant> actionable() throws ClientException {
+    private RestResponse<ClinicalVariant> actionable() throws ClientException {
         ObjectMap queryParams = new ObjectMap();
 
         queryParams.putIfNotNull(ParamConstants.STUDY_PARAM, clinicalCommandOptions.variantActionableCommandOptions.study);

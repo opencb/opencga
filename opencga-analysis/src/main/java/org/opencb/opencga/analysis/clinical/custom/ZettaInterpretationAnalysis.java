@@ -44,7 +44,7 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
     private String clinicalAnalysisId;
     private Query query;
     private QueryOptions queryOptions;
-    private CustomInterpretationConfiguration config;
+    private ZettaInterpretationConfiguration config;
 
     private ClinicalAnalysis clinicalAnalysis;
     private List<DiseasePanel> diseasePanels;
@@ -141,7 +141,7 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
     @Override
     protected void run() throws ToolException {
         step(() -> {
-            getToolExecutor(CustomInterpretationAnalysisExecutor.class)
+            getToolExecutor(ZettaInterpretationAnalysisExecutor.class)
                     .setClinicalAnalysisId(clinicalAnalysisId)
                     .setQuery(query)
                     .setQueryOptions(queryOptions)
@@ -188,11 +188,11 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
         return this;
     }
 
-    public CustomInterpretationConfiguration getConfig() {
+    public ZettaInterpretationConfiguration getConfig() {
         return config;
     }
 
-    public ZettaInterpretationAnalysis setConfig(CustomInterpretationConfiguration config) {
+    public ZettaInterpretationAnalysis setConfig(ZettaInterpretationConfiguration config) {
         this.config = config;
         return this;
     }

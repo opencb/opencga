@@ -49,7 +49,7 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         ANALYST("analyst", TEXT_ARRAY, ""),
         DEPENDENCIES("dependencies", TEXT_ARRAY, ""),
         FILTERS("filters", TEXT_ARRAY, ""),
-        REPORTED_VARIANTS("reportedVariants", TEXT_ARRAY, ""),
+        REPORTED_VARIANTS("clinicalVariants", TEXT_ARRAY, ""),
         REPORTED_LOW_COVERAGE("reportedLowCoverages", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
 

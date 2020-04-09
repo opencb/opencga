@@ -24,7 +24,7 @@ import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.custom.CustomInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
@@ -115,7 +115,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
         Query query = new Query();
         query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
-        CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
+        ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
         ZettaInterpretationAnalysis customAnalysis = new ZettaInterpretationAnalysis();
         customAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
         customAnalysis.setStudyId(clinicalTest.studyFqn)
@@ -150,7 +150,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
 //        query.put(VariantQueryParam.SAMPLE.key(), samples);
         query.put(VariantQueryParam.SAMPLE.key(), "s3");
 
-        CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
+        ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
         ZettaInterpretationAnalysis customAnalysis = new ZettaInterpretationAnalysis();
         customAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
         customAnalysis.setStudyId(clinicalTest.studyFqn)

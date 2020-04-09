@@ -14,7 +14,6 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL_DESC;
@@ -302,8 +301,8 @@ public class ClinicalCommandOptions {
 
     }
 
-    @Parameters(commandNames = {InterpretationCustomCommandOptions.CUSTOM_RUN_COMMAND}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
-    public class InterpretationCustomCommandOptions extends BaseClinicalCommand {
+    @Parameters(commandNames = {InterpretationZettaCommandOptions.CUSTOM_RUN_COMMAND}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
+    public class InterpretationZettaCommandOptions extends BaseClinicalCommand {
 
         public static final String CUSTOM_RUN_COMMAND = ZettaInterpretationAnalysis.ID + "-run";
 

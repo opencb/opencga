@@ -19,22 +19,22 @@ package org.opencb.opencga.analysis.clinical.team;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
+import org.opencb.biodata.tools.clinical.TeamClinicalVariantCreator;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysisExecutor;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
-import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -96,19 +96,19 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
         // Get sample names and update proband information (to be able to navigate to the parents and their samples easily)
         List<String> sampleList = ClinicalUtils.getSampleNames(clinicalAnalysis, proband);
 
-        // Reported variant creator
-        TeamReportedVariantCreator creator;
+        // Clinical variant creator
+        TeamClinicalVariantCreator creator;
 
         try {
-            creator = new TeamReportedVariantCreator(biodataDiseasePanels,
+            creator = new TeamClinicalVariantCreator(biodataDiseasePanels,
                     clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
                     clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly),
                     clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
         } catch (IOException e) {
-            throw new ToolException("Error creating Team reported variant creator", e);
+            throw new ToolException("Error creating Team clinical variant creator", e);
         }
 
-        List<ReportedVariant> primaryFindings;
+        List<ClinicalVariant> primaryFindings;
 
         // Step 1 - diagnostic variants
         // Get diagnostic variants from panels
@@ -128,7 +128,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
         query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleList, ","));
 
         try {
-            primaryFindings = getReportedVariants(query, queryOptions, creator);
+            primaryFindings = getClinicalVariants(query, queryOptions, creator);
         } catch (InterpretationAnalysisException | CatalogException | IOException | StorageEngineException e) {
             throw new ToolException("Error retrieving primary findings variants", e);
         }
@@ -169,7 +169,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
             query.put(VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key(), "scaled_cadd>15");
 
             try {
-                primaryFindings = getReportedVariants(query, queryOptions, creator);
+                primaryFindings = getClinicalVariants(query, queryOptions, creator);
             } catch (InterpretationAnalysisException | CatalogException | IOException | StorageEngineException e) {
                 throw new ToolException("Error retrieving primary findings variants", e);
             }
@@ -181,7 +181,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
                 query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.05" + VariantQueryUtils.AND + "polyphen>0.91");
 
                 try {
-                    primaryFindings = getReportedVariants(query, queryOptions, creator);
+                    primaryFindings = getClinicalVariants(query, queryOptions, creator);
                 } catch (InterpretationAnalysisException | CatalogException | IOException | StorageEngineException e) {
                     throw new ToolException("Error retrieving primary findings variants", e);
                 }
@@ -189,10 +189,10 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(getOutDir() + "/" + PRIMARY_FINDINGS_FILENAME));
+        ClinicalUtils.writeClinicalVariants(primaryFindings, Paths.get(getOutDir() + "/" + PRIMARY_FINDINGS_FILENAME));
 
         // Step 3: secondary findings, if clinical consent is TRUE
-        List<ReportedVariant> secondaryFindings;
+        List<ClinicalVariant> secondaryFindings;
         try {
             secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis, sampleList, studyId,
                     creator, sessionId);
@@ -201,27 +201,27 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(secondaryFindings, Paths.get(getOutDir() + "/" + SECONDARY_FINDINGS_FILENAME));
+        ClinicalUtils.writeClinicalVariants(secondaryFindings, Paths.get(getOutDir() + "/" + SECONDARY_FINDINGS_FILENAME));
     }
 
-    private List<ReportedVariant> getReportedVariants(Query query, QueryOptions queryOptions, TeamReportedVariantCreator creator)
+    private List<ClinicalVariant> getClinicalVariants(Query query, QueryOptions queryOptions, TeamClinicalVariantCreator creator)
             throws InterpretationAnalysisException, CatalogException, IOException, StorageEngineException, ToolException {
-        List<ReportedVariant> reportedVariants;
+        List<ClinicalVariant> clinicalVariants;
         if (moi != null && (moi == DE_NOVO || moi == COMPOUND_HETEROZYGOUS)) {
             if (moi == DE_NOVO) {
                 List<Variant> deNovoVariants = clinicalInterpretationManager.getDeNovoVariants(clinicalAnalysisId, studyId, query,
                         QueryOptions.empty(), sessionId);
-                reportedVariants = creator.create(deNovoVariants);
+                clinicalVariants = creator.create(deNovoVariants);
             } else {
                 Map<String, List<Variant>> chVariants = clinicalInterpretationManager.getCompoundHeterozigousVariants(clinicalAnalysisId,
                         studyId, query, QueryOptions.empty(), sessionId);
-                reportedVariants = ClinicalUtils.getCompoundHeterozygousReportedVariants(chVariants, creator);
+                clinicalVariants = ClinicalUtils.getCompoundHeterozygousClinicalVariants(chVariants, creator);
             }
         } else {
-            reportedVariants = creator.create(clinicalInterpretationManager.getVariantStorageManager().get(query, queryOptions, sessionId)
+            clinicalVariants = creator.create(clinicalInterpretationManager.getVariantStorageManager().get(query, queryOptions, sessionId)
                     .getResults());
         }
-        return reportedVariants;
+        return clinicalVariants;
     }
 
     public String getClinicalAnalysisId() {

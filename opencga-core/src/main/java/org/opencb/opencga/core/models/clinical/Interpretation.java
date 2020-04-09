@@ -45,7 +45,7 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
 
     public Interpretation(String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
                           Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
-                          List<ReportedVariant> primaryFindinds, List<ReportedVariant> secondaryFindings,
+                          List<ClinicalVariant> primaryFindinds, List<ClinicalVariant> secondaryFindings,
                           List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
         super(id, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
                 reportedLowCoverages, comments, InterpretationStatus.NOT_REVIEWED, creationDate, 1, attributes);
@@ -53,7 +53,7 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
 
     public Interpretation(String uuid, String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
                           Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
-                          List<ReportedVariant> primaryFindinds, List<ReportedVariant> secondaryFindings,
+                          List<ClinicalVariant> primaryFindinds, List<ClinicalVariant> secondaryFindings,
                           List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes,
                           InterpretationInternal internal) {
         super(id, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
@@ -170,13 +170,13 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     }
 
     @Override
-    public Interpretation setPrimaryFindings(List<ReportedVariant> primaryFindings) {
+    public Interpretation setPrimaryFindings(List<ClinicalVariant> primaryFindings) {
         super.setPrimaryFindings(primaryFindings);
         return this;
     }
 
     @Override
-    public Interpretation setSecondaryFindings(List<ReportedVariant> secondaryFindings) {
+    public Interpretation setSecondaryFindings(List<ClinicalVariant> secondaryFindings) {
         super.setSecondaryFindings(secondaryFindings);
         return this;
     }

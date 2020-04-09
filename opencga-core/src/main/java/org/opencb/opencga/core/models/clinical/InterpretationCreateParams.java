@@ -36,8 +36,8 @@ public class InterpretationCreateParams {
     private List<Software> dependencies;
     private Map<String, Object> filters;
     private String creationDate;
-    private List<ReportedVariant> primaryFindings;
-    private List<ReportedVariant> secondaryFindings;
+    private List<ClinicalVariant> primaryFindings;
+    private List<ClinicalVariant> secondaryFindings;
     private List<ReportedLowCoverage> reportedLowCoverages;
     private List<Comment> comments;
     private Map<String, Object> attributes;
@@ -47,7 +47,7 @@ public class InterpretationCreateParams {
 
     public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels,
                                       Software software, Analyst analyst, List<Software> dependencies, Map<String, Object> filters,
-                                      String creationDate, List<ReportedVariant> primaryFindings, List<ReportedVariant> secondaryFindings,
+                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
                                       List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments,
                                       Map<String, Object> attributes) {
         this.id = id;
@@ -185,20 +185,20 @@ public class InterpretationCreateParams {
         return this;
     }
 
-    public List<ReportedVariant> getPrimaryFindings() {
+    public List<ClinicalVariant> getPrimaryFindings() {
         return primaryFindings;
     }
 
-    public InterpretationCreateParams setPrimaryFindings(List<ReportedVariant> primaryFindings) {
+    public InterpretationCreateParams setPrimaryFindings(List<ClinicalVariant> primaryFindings) {
         this.primaryFindings = primaryFindings;
         return this;
     }
 
-    public List<ReportedVariant> getSecondaryFindings() {
+    public List<ClinicalVariant> getSecondaryFindings() {
         return secondaryFindings;
     }
 
-    public InterpretationCreateParams setSecondaryFindings(List<ReportedVariant> secondaryFindings) {
+    public InterpretationCreateParams setSecondaryFindings(List<ClinicalVariant> secondaryFindings) {
         this.secondaryFindings = secondaryFindings;
         return this;
     }
