@@ -131,8 +131,8 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
     protected VariantStats convert(VariantProto.VariantStats protoStats) {
         VariantStats stats = new VariantStats();
 
-        stats.setSamplesCount(protoStats.getSamplesCount());
-        stats.setFilesCount(protoStats.getFilesCount());
+        stats.setSampleCount(protoStats.getSampleCount());
+        stats.setFileCount(protoStats.getFileCount());
         stats.setMgf(protoStats.getMgf());
         if (!protoStats.getMgfGenotype().isEmpty()) {
             stats.setMgfGenotype(protoStats.getMgfGenotype());
@@ -158,7 +158,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
         stats.setMissingAlleleCount(protoStats.getMissingAlleleCount());
         stats.setMissingGenotypeCount(protoStats.getMissingGenotypeCount());
         stats.setQualityAvg(protoStats.getQualityAvg());
-        stats.setQualityValuesCount(protoStats.getQualityValuesCount());
+        stats.setQualityCount(protoStats.getQualityCount());
 
         stats.setGenotypeCount(protoStats.getGenotypeCountMap());
         stats.setGenotypeFreq(protoStats.getGenotypeFreqMap());

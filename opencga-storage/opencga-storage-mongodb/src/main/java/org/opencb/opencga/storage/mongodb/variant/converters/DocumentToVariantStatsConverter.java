@@ -132,7 +132,7 @@ public class DocumentToVariantStatsConverter {
         } else {
             genotypesFreq = Collections.emptyMap();
         }
-        stats.setSamplesCount(samplesCount);
+        stats.setSampleCount(samplesCount);
         stats.setGenotypeFreq(genotypesFreq);
 
         Object alleleFreq = object.get(ALT_FREQ_FIELD);
@@ -186,7 +186,7 @@ public class DocumentToVariantStatsConverter {
             for (Map.Entry<String, Object> entry : object.get(FILTER_FREQ_FIELD, Document.class).entrySet()) {
                 stats.getFilterFreq().put(entry.getKey(), ((Number)entry.getValue()).floatValue());
             }
-            stats.setFilesCount(object.getInteger(FILES_NUMBER_FIELD));
+            stats.setFileCount(object.getInteger(FILES_NUMBER_FIELD));
             if (stats.getFilterFreq().size() == 1) {
                 Float freq = stats.getFilterFreq().get(VCFConstants.PASSES_FILTERS_v4);
                 if (freq != null && freq == 0) {
@@ -196,7 +196,7 @@ public class DocumentToVariantStatsConverter {
         }
         if (object.containsKey(QUAL_AVG_FIELD)) {
             stats.setQualityAvg(object.getDouble(QUAL_AVG_FIELD).floatValue());
-            stats.setQualityValuesCount(object.getInteger(QUAL_VALUES_COUNT_FIELD));
+            stats.setQualityCount(object.getInteger(QUAL_VALUES_COUNT_FIELD));
         }
 
 
@@ -226,9 +226,9 @@ public class DocumentToVariantStatsConverter {
         mongoStats.append(FILTER_COUNT_FIELD, vs.getFilterCount());
         vs.getFilterFreq().putIfAbsent(VCFConstants.PASSES_FILTERS_v4, 0F);
         mongoStats.append(FILTER_FREQ_FIELD, vs.getFilterFreq());
-        mongoStats.append(FILES_NUMBER_FIELD, vs.getFilesCount());
+        mongoStats.append(FILES_NUMBER_FIELD, vs.getFileCount());
         mongoStats.append(QUAL_AVG_FIELD, vs.getQualityAvg());
-        mongoStats.append(QUAL_VALUES_COUNT_FIELD, vs.getQualityValuesCount());
+        mongoStats.append(QUAL_VALUES_COUNT_FIELD, vs.getQualityCount());
 
         // Genotype counts
         Document genotypes = new Document();
@@ -238,7 +238,7 @@ public class DocumentToVariantStatsConverter {
         }
         mongoStats.append(GENOTYPE_COUNT_FIELD, genotypes);
         mongoStats.append(ALLELE_NUMBER_FIELD, vs.getAlleleCount());
-        mongoStats.append(SAMPLES_COUNT_FIELD, vs.getSamplesCount());
+        mongoStats.append(SAMPLES_COUNT_FIELD, vs.getSampleCount());
         return mongoStats;
     }
 

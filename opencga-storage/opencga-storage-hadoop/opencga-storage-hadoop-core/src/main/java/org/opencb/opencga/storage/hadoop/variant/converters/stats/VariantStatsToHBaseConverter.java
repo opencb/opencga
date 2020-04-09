@@ -79,8 +79,8 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
             add(put, passFreqColumn, stats.getFilterFreq().getOrDefault(VCFConstants.PASSES_FILTERS_v4, 0F));
 
             VariantProto.VariantStats.Builder builder = VariantProto.VariantStats.newBuilder()
-                    .setSamplesCount(stats.getSamplesCount())
-                    .setFilesCount(stats.getFilesCount())
+                    .setSampleCount(stats.getSampleCount())
+                    .setFileCount(stats.getFileCount())
                     .setAltAlleleFreq(stats.getAltAlleleFreq())
                     .setAltAlleleCount(stats.getAltAlleleCount())
                     .setRefAlleleFreq(stats.getRefAlleleFreq())
@@ -123,7 +123,7 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
             }
 
             if (stats.getQualityAvg() != null) {
-                builder.setQualityValuesCount(stats.getQualityValuesCount());
+                builder.setQualityCount(stats.getQualityCount());
                 builder.setQualityAvg(stats.getQualityAvg());
             }
 

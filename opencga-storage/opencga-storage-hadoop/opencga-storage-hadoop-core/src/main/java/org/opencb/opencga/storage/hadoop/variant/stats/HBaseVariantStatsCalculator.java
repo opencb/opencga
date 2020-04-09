@@ -79,7 +79,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         VariantStats stats = VariantStatsCalculator.calculate(variant, partial.gtCountMap, statsMultiAllelic);
         VariantStatsCalculator.calculateFilterFreq(stats, partial.numFileFilterWithVariant, partial.filterCount);
         stats.setQualityAvg(((float) (partial.qualitySum / partial.numFileQualWithVariant)));
-        stats.setQualityValuesCount(partial.numFileQualWithVariant);
+        stats.setQualityCount(partial.numFileQualWithVariant);
         return stats;
     }
 

@@ -263,7 +263,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
                     }
                     VariantStatsCalculator.calculateFilterFreq(stats, numFiles);
                     stats.setQualityAvg(((float) (qualSum / numQualFiles)));
-                    stats.setQualityValuesCount(numQualFiles);
+                    stats.setQualityCount(numQualFiles);
 
                     stats.getGenotypeCount().entrySet().removeIf(e -> e.getValue() == 0);
                     stats.getGenotypeFreq().entrySet().removeIf(e -> e.getValue() == 0);
