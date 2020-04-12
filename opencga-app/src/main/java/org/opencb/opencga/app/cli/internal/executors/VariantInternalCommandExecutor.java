@@ -194,11 +194,13 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case GWAS_RUN_COMMAND:
                 gwas();
+                break;
             case KNOCKOUT_RUN_COMMAND:
                 knockout();
                 break;
             case VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND:
                 sampleEligibility();
+                break;
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 mutationalSignature();
                 break;
