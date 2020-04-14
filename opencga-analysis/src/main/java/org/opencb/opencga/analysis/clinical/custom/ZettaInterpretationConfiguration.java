@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.clinical;
+package org.opencb.opencga.analysis.clinical.custom;
 
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysisConfiguration;
 
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-
-import java.util.Iterator;
-
-public interface ReportedVariantIterator extends Iterator<ReportedVariant>, AutoCloseable {
+public class ZettaInterpretationConfiguration extends InterpretationAnalysisConfiguration {
 }

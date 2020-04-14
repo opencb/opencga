@@ -18,8 +18,8 @@ package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ReportedEvent;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -84,19 +84,20 @@ public class ClinicalAnalysisUtilsTest {
         return clinicalTest;
     }
 
-    public static void displayReportedVariants(List<ReportedVariant> reportedVariants, String msg) {
+    public static void displayClinicalVariants(List<ClinicalVariant> clinicalVariants, String msg) {
         System.out.println(msg);
-        if (CollectionUtils.isNotEmpty(reportedVariants)) {
-            System.out.println("\tNum. reported variants = " + reportedVariants.size());
-            for (ReportedVariant variant : reportedVariants) {
-                System.out.println("\t\tReported variant = " + variant.toStringSimple());
-                System.out.println("\t\t\t\tNum. reported events = " + variant.getEvidences().size());
-                for (ReportedEvent reportedEvent : variant.getEvidences()) {
-                    System.out.print("\t\t\t\t\t(Tier, CT) = (" + reportedEvent.getClassification().getTier() + ", ");
-                    if (CollectionUtils.isEmpty(reportedEvent.getConsequenceTypes())) {
+        if (CollectionUtils.isNotEmpty(clinicalVariants)) {
+            System.out.println("\tNum. clinical variants = " + clinicalVariants.size());
+            for (ClinicalVariant variant : clinicalVariants) {
+                System.out.println("\t\tclinical variant = " + variant.toStringSimple());
+                System.out.println("\t\t\t\tNum. clinical variant evidences = " + variant.getEvidences().size());
+                for (ClinicalVariantEvidence clinicalVariantEvidence : variant.getEvidences()) {
+                    System.out.print("\t\t\t\t\t(Tier, CT) = (" + clinicalVariantEvidence.getClassification().getTier() + ", ");
+                    if (CollectionUtils.isEmpty(clinicalVariantEvidence.getConsequenceTypes())) {
                         System.out.print("EMPTY");
                     } else {
-                        System.out.print(reportedEvent.getConsequenceTypes().stream().map(SequenceOntologyTerm::getName).collect(Collectors.joining(",")));
+                        System.out.print(clinicalVariantEvidence.getConsequenceTypes().stream().map(SequenceOntologyTerm::getName)
+                                .collect(Collectors.joining(",")));
                     }
                     System.out.println(")");
                 }

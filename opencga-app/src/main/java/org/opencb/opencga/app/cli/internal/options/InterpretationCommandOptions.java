@@ -34,7 +34,7 @@ public class InterpretationCommandOptions {
     public TeamCommandOptions teamCommandOptions;
 //    public ClinicalCommandOptions.TieringCommandOptions tieringCommandOptions;
     public CancerTieringCommandOptions cancerTieringCommandOptions;
-    public CustomCommandOptions customCommandOptions;
+    public ZettaInterpretationCommandOptions zettaInterpretationCommandOptions;
 
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
     public VariantCommandOptions.VariantQueryCommandOptions variantQueryOptions;
@@ -50,7 +50,7 @@ public class InterpretationCommandOptions {
         this.teamCommandOptions = new TeamCommandOptions();
 //        this.tieringCommandOptions = new ClinicalCommandOptions.TieringCommandOptions();
         this.cancerTieringCommandOptions = new CancerTieringCommandOptions();
-        this.customCommandOptions = new CustomCommandOptions();
+        this.zettaInterpretationCommandOptions = new ZettaInterpretationCommandOptions();
     }
 
     @Parameters(commandNames = {TeamInterpretationAnalysis.ID}, commandDescription = "Team interpretation analysis")
@@ -109,8 +109,8 @@ public class InterpretationCommandOptions {
         public String outDir;
     }
 
-    @Parameters(commandNames = {ZettaInterpretationAnalysis.ID}, commandDescription = "Custom interpretation analysis")
-    public class CustomCommandOptions {
+    @Parameters(commandNames = {ZettaInterpretationAnalysis.ID}, commandDescription = "Zetta interpretation analysis")
+    public class ZettaInterpretationCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;

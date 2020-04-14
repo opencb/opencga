@@ -17,20 +17,20 @@
 package org.opencb.opencga.analysis.clinical.custom;
 
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
+import org.opencb.biodata.tools.clinical.DefaultClinicalVariantCreator;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysisExecutor;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
-import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -47,21 +47,21 @@ import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUti
         tool = ZettaInterpretationAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
-public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {
+public class ZettaInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {
 
 
     private String clinicalAnalysisId;
     private Query query;
     private QueryOptions queryOptions;
-    private CustomInterpretationConfiguration config;
+    private ZettaInterpretationConfiguration config;
 
     private String sessionId;
     private ClinicalInterpretationManager clinicalInterpretationManager;
 
     private String studyId;
-    private DefaultReportedVariantCreator reportedVariantCreator;
+    private DefaultClinicalVariantCreator clinicalVariantCreator;
 
-    public CustomInterpretationAnalysisExecutor() {
+    public ZettaInterpretationAnalysisExecutor() {
     }
 
     @Override
@@ -70,7 +70,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor im
         clinicalInterpretationManager = getClinicalInterpretationManager();
 
         List<Variant> variants;
-        List<ReportedVariant> reportedVariants;
+        List<ClinicalVariant> clinicalVariants;
 
         studyId = query.getString(VariantQueryParam.STUDY.key());
 
@@ -80,7 +80,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor im
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
-        reportedVariantCreator = clinicalInterpretationManager.createReportedVariantCreator(query,
+        clinicalVariantCreator = clinicalInterpretationManager.createClinicalVariantCreator(query,
                 assembly, queryOptions.getBoolean(ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM), sessionId);
 
         ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.UNKNOWN;
@@ -91,19 +91,19 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor im
             switch (moi) {
                 case DE_NOVO:
                     variants = clinicalInterpretationManager.getDeNovoVariants(clinicalAnalysisId, studyId, query, queryOptions, sessionId);
-                    reportedVariants = reportedVariantCreator.create(variants);
+                    clinicalVariants = clinicalVariantCreator.create(variants);
                     break;
                 case COMPOUND_HETEROZYGOUS:
                     Map<String, List<Variant>> chVariants;
                     chVariants = clinicalInterpretationManager.getCompoundHeterozigousVariants(clinicalAnalysisId, studyId, query,
                             queryOptions, sessionId);
-                    reportedVariants = ClinicalUtils.getCompoundHeterozygousReportedVariants(chVariants, reportedVariantCreator);
+                    clinicalVariants = ClinicalUtils.getCompoundHeterozygousClinicalVariants(chVariants, clinicalVariantCreator);
                     break;
                 default:
                     VariantQueryResult<Variant> variantQueryResult = clinicalInterpretationManager.getVariantStorageManager()
                             .get(query, queryOptions, sessionId);
                     variants = variantQueryResult.getResults();
-                    reportedVariants = reportedVariantCreator.create(variants);
+                    clinicalVariants = clinicalVariantCreator.create(variants);
                     break;
             }
         } catch (CatalogException | StorageEngineException | IOException | InterpretationAnalysisException e) {
@@ -111,7 +111,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor im
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(getOutDir() + "/" + PRIMARY_FINDINGS_FILENAME));
+        ClinicalUtils.writeClinicalVariants(clinicalVariants, Paths.get(getOutDir() + "/" + PRIMARY_FINDINGS_FILENAME));
 
         // Get secondary findings
         try {
@@ -120,17 +120,17 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor im
         } catch (CatalogException | IOException | StorageEngineException e) {
             throw new ToolException("Error retrieving secondary findings variants", e);
         }
-        reportedVariants = reportedVariantCreator.create(variants);
+        clinicalVariants = clinicalVariantCreator.create(variants);
 
         // Write secondary findings
-        ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(getOutDir() + "/" + SECONDARY_FINDINGS_FILENAME));
+        ClinicalUtils.writeClinicalVariants(clinicalVariants, Paths.get(getOutDir() + "/" + SECONDARY_FINDINGS_FILENAME));
     }
 
     public String getClinicalAnalysisId() {
         return clinicalAnalysisId;
     }
 
-    public CustomInterpretationAnalysisExecutor setClinicalAnalysisId(String clinicalAnalysisId) {
+    public ZettaInterpretationAnalysisExecutor setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
@@ -139,7 +139,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor im
         return query;
     }
 
-    public CustomInterpretationAnalysisExecutor setQuery(Query query) {
+    public ZettaInterpretationAnalysisExecutor setQuery(Query query) {
         this.query = query;
         return this;
     }
@@ -148,16 +148,16 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor im
         return queryOptions;
     }
 
-    public CustomInterpretationAnalysisExecutor setQueryOptions(QueryOptions queryOptions) {
+    public ZettaInterpretationAnalysisExecutor setQueryOptions(QueryOptions queryOptions) {
         this.queryOptions = queryOptions;
         return this;
     }
 
-    public CustomInterpretationConfiguration getConfig() {
+    public ZettaInterpretationConfiguration getConfig() {
         return config;
     }
 
-    public CustomInterpretationAnalysisExecutor setConfig(CustomInterpretationConfiguration config) {
+    public ZettaInterpretationAnalysisExecutor setConfig(ZettaInterpretationConfiguration config) {
         this.config = config;
         return this;
     }

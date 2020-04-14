@@ -44,6 +44,9 @@ public class RoleInCancerManager {
     }
 
     private Map<String, ClinicalProperty.RoleInCancer> loadRoleInCancer() throws IOException {
+
+//        System.out.println("RoleInCancer: path = " + path.toString());
+
         try {
             FileUtils.checkFile(path);
         } catch (Exception e) {
@@ -88,6 +91,8 @@ public class RoleInCancerManager {
                 }
             }
         }
+
+//        System.out.println("RoleInCancer: size = " + roleInCancer.size());
 
         return roleInCancer;
     }

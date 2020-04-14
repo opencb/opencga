@@ -106,16 +106,16 @@ public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
         long dbTime = dbWatcher.getTime();
 
         // Create reported variants and events
-        List<ReportedVariant> primaryFindings = null;
-        List<ReportedVariant> secondaryFindings = null;
+        List<ClinicalVariant> primaryFindings = null;
+        List<ClinicalVariant> secondaryFindings = null;
 
         if (CollectionUtils.isNotEmpty(variantContainer.getComplexVariantList())) {
-            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
+            TeamClinicalVariantCreator creator = new TeamClinicalVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
                     clinicalAnalysis.getDisorder(), null, null);
             primaryFindings = creator.create(variantContainer.getComplexVariantList());
         }
         if (CollectionUtils.isNotEmpty(variantContainer.getReactionVariantList())) {
-            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
+            TeamClinicalVariantCreator creator = new TeamClinicalVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
                     clinicalAnalysis.getDisorder(), null, null);
             primaryFindings.addAll(creator.create(variantContainer.getReactionVariantList()));
         }
