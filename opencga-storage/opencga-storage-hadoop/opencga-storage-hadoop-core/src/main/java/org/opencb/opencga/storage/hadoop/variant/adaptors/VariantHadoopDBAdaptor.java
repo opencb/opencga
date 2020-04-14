@@ -524,7 +524,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult getFrequency(Query query, Region region, int regionIntervalSize) {
+    public DataResult getFrequency(ParsedVariantQuery query, Region region, int regionIntervalSize) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException();
     }

@@ -37,8 +37,12 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
@@ -78,11 +82,16 @@ public class VariantMongoDBQueryParser {
 
     }
 
-    protected Document parseQuery(final Query originalQuery) {
+    @Deprecated
+    protected Document parseQuery(Query query) {
+        return parseQuery(new VariantQueryParser(null, metadataManager).parseQuery(query, null, true));
+    }
+
+    protected Document parseQuery(ParsedVariantQuery parsedVariantQuery) {
         QueryBuilder builder = new QueryBuilder();
-        if (originalQuery != null) {
+        if (parsedVariantQuery != null) {
             // Copy given query. It may be modified
-            Query query = new Query(originalQuery);
+            Query query = new Query(parsedVariantQuery.getInputQuery());
             boolean nonGeneRegionFilter = false;
             /* VARIANT PARAMS */
 
@@ -185,10 +194,10 @@ public class VariantMongoDBQueryParser {
 
             /* STUDIES */
             QueryBuilder studyQueryBuilder = new QueryBuilder();
-            final StudyMetadata defaultStudy = parseStudyQueryParams(query, studyQueryBuilder);
+            parseStudyQueryParams(parsedVariantQuery, query, studyQueryBuilder);
 
             /* STATS PARAMS */
-            parseStatsQueryParams(query, studyQueryBuilder, defaultStudy);
+            parseStatsQueryParams(parsedVariantQuery, query, studyQueryBuilder);
             if (builder.get().keySet().isEmpty()) {
                 builder = studyQueryBuilder;
             } else {
@@ -200,7 +209,9 @@ public class VariantMongoDBQueryParser {
         Document mongoQuery = new Document(builder.get().toMap());
         if (logger.isDebugEnabled()) {
             logger.debug("----------------------");
-            logger.debug("Query         = {}", VariantQueryUtils.printQuery(originalQuery));
+            logger.debug("Query         = {}", VariantQueryUtils.printQuery(parsedVariantQuery == null
+                    ? null
+                    : parsedVariantQuery.getInputQuery()));
             logger.debug("MongoDB Query = {}", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         }
         return mongoQuery;
@@ -498,13 +509,13 @@ public class VariantMongoDBQueryParser {
         }
     }
 
-    private StudyMetadata parseStudyQueryParams(Query query, QueryBuilder builder) {
+    private void parseStudyQueryParams(ParsedVariantQuery parsedVariantQuery, Query query, QueryBuilder builder) {
 
         if (query != null) {
             Map<String, Integer> studies = metadataManager.getStudies(null);
 
             String studyQueryPrefix = DocumentToVariantConverter.STUDIES_FIELD + '.';
-            final StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
+            final StudyMetadata defaultStudy = parsedVariantQuery.getStudyQuery().getDefaultStudy();
 
             if (isValidParam(query, STUDY)) {
                 String value = query.getString(STUDY.key());
@@ -650,48 +661,11 @@ public class VariantMongoDBQueryParser {
                 throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DATA, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
             }
 
-            Map<Object, List<String>> genotypesFilter = new HashMap<>();
-            QueryOperation gtQueryOperation = null;
-            if (isValidParam(query, GENOTYPE)) {
-                String sampleGenotypes = query.getString(GENOTYPE.key());
-                gtQueryOperation = parseGenotypeFilter(sampleGenotypes, genotypesFilter);
-            } else if (isValidParam(query, SAMPLE)) {
-                String samples = query.getString(SAMPLE.key());
-
-                List<String> genotypes;
-                if (defaultStudy != null) {
-                    genotypes = defaultStudy.getAttributes().getAsStringList(LOADED_GENOTYPES.key()).stream()
-                            .filter(gt -> DocumentToSamplesConverter.genotypeToDataModelType(gt).contains("1"))
-                            .collect(Collectors.toList());
-                } else {
-                    genotypes = Arrays.asList(
-                            "1",
-                            "0/1", "0|1", "1|0",
-                            "1/1", "1|1",
-                            "1/2", "1|2", "2|1"
-                    );
-                }
-                QueryOperation sampleQueryOperation = VariantQueryUtils.checkOperator(samples);
-                if (gtQueryOperation != null && sampleQueryOperation != null && !gtQueryOperation.equals(sampleQueryOperation)) {
-                    throw VariantQueryException.incompatibleSampleAndGenotypeOperators();
-                }
-                if (gtQueryOperation == null) {
-                    gtQueryOperation = sampleQueryOperation;
-                }
-
-                for (String sample : VariantQueryUtils.splitValue(samples, gtQueryOperation)) {
-                    if (isNegated(sample)) {
-                        throw VariantQueryException.malformedParam(SAMPLE, samples, "Unsupported negated samples");
-                    }
-                    int sampleId = metadataManager.getSampleId(defaultStudy.getId(), sample, true);
-                    genotypesFilter.put(sampleId, genotypes);
-                }
-            }
-
             // Only will contain values if the genotypesOperator is AND
             Set<List<Integer>> fileIdGroupsFromSamples = Collections.emptySet();
             Set<Integer> fileIdsFromSamples = Collections.emptySet();
-            if (!genotypesFilter.isEmpty()) {
+            ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypesQuery = parsedVariantQuery.getStudyQuery().getGenotypes();
+            if (genotypesQuery != null) {
                 fileIdGroupsFromSamples = new HashSet<>();
                 fileIdsFromSamples = new HashSet<>();
 
@@ -712,19 +686,19 @@ public class VariantMongoDBQueryParser {
                             GenotypeClass.UNKNOWN_GENOTYPE);
                 }
 
-                List<DBObject> genotypeQueries = new ArrayList<>(genotypesFilter.size());
+                List<DBObject> genotypeQueries = new ArrayList<>(genotypesQuery.getValues().size());
 
-                for (Map.Entry<Object, List<String>> entry : genotypesFilter.entrySet()) {
-                    Object sample = entry.getKey();
-                    List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes, defaultGenotypes);
+                for (KeyOpValue<SampleMetadata, List<String>> sampleGenotypeFilter : genotypesQuery.getValues()) {
+                    SampleMetadata sample = sampleGenotypeFilter.getKey();
+                    List<String> genotypes = sampleGenotypeFilter.getValue();
 
                     // If empty, should find none. Add non-existing genotype
                     // TODO: Fast empty result
-                    if (!entry.getValue().isEmpty() && genotypes.isEmpty()) {
+                    if (genotypes.isEmpty()) {
                         genotypes.add(GenotypeClass.NONE_GT_VALUE);
                     }
 
-                    int sampleId = metadataManager.getSampleId(defaultStudy.getId(), sample, true);
+                    int sampleId = sample.getId();
 
                     // We can not filter sample by file if one of the requested genotypes is the unknown genotype
                     boolean canFilterSampleByFile = !genotypes.contains(GenotypeClass.UNKNOWN_GENOTYPE);
@@ -763,7 +737,7 @@ public class VariantMongoDBQueryParser {
                                 negatedFileBuilder.notIn(fileIdsFromSample);
                             }
                             genotypesBuilder.or(negatedFileBuilder.get());
-                        } else if (gtQueryOperation == QueryOperation.OR) {
+                        } else if (genotypesQuery.getOperation() == QueryOperation.OR) {
                             genotypesBuilder.and(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
                                     + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD);
                             if (fileIdsFromSample.size() == 1) {
@@ -830,7 +804,7 @@ public class VariantMongoDBQueryParser {
                     genotypeQueries.add(genotypesBuilder.get());
                 }
 
-                if (gtQueryOperation == QueryOperation.OR) {
+                if (genotypesQuery.getOperation() == QueryOperation.OR) {
                     builder.or(genotypeQueries.toArray(new DBObject[genotypeQueries.size()])).get();
                 } else {
                     builder.and(genotypeQueries.toArray(new DBObject[genotypeQueries.size()]));
@@ -841,13 +815,13 @@ public class VariantMongoDBQueryParser {
             if (fileNames.isEmpty()) {
                 // If there is no valid files filter, add files filter to speed up this query
                 if (!fileIdGroupsFromSamples.isEmpty()) {
-                    if ((gtQueryOperation != QueryOperation.AND || fileIdGroupsFromSamples.size() == 1)
+                    if ((genotypesQuery.getOperation() != QueryOperation.AND || fileIdGroupsFromSamples.size() == 1)
                             && fileIdsFromSamples.containsAll(metadataManager.getIndexedFiles(defaultStudy.getId()))) {
                         // Do not add files filter if operator is OR and must select all the files.
                         // i.e. ANY file among ALL indexed files
                         logger.debug("Skip filter by all files");
                     } else {
-                        addFileGroupsFilter(builder, studyQueryPrefix, gtQueryOperation, fileIdGroupsFromSamples, null);
+                        addFileGroupsFilter(builder, studyQueryPrefix, genotypesQuery.getOperation(), fileIdGroupsFromSamples, null);
                     }
                 }
             } else {
@@ -907,9 +881,6 @@ public class VariantMongoDBQueryParser {
                 }
             }
 
-            return defaultStudy;
-        } else {
-            return null;
         }
     }
 
@@ -1000,8 +971,10 @@ public class VariantMongoDBQueryParser {
         return regexList;
     }
 
-    private void parseStatsQueryParams(Query query, QueryBuilder builder, StudyMetadata defaultStudy) {
+    private void parseStatsQueryParams(ParsedVariantQuery parsedVariantQuery, Query query, QueryBuilder builder) {
         if (query != null) {
+            StudyMetadata defaultStudy = parsedVariantQuery.getStudyQuery().getDefaultStudy();
+
             if (query.get(COHORT.key()) != null && !query.getString(COHORT.key()).isEmpty()) {
                 addQueryFilter(DocumentToVariantConverter.STATS_FIELD
                                 + '.' + DocumentToVariantStatsConverter.COHORT_ID,

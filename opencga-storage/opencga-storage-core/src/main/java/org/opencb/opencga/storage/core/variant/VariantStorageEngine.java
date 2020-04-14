@@ -1053,7 +1053,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public DataResult getFrequency(Query query, Region region, int regionIntervalSize) throws StorageEngineException {
-        return getDBAdaptor().getFrequency(query, region, regionIntervalSize);
+        return getDBAdaptor().getFrequency(getVariantQueryParser().parseQuery(query, new QueryOptions(VariantField.SUMMARY, true)),
+                region, regionIntervalSize);
     }
 
     public DataResult groupBy(Query query, String field, QueryOptions options) throws StorageEngineException {

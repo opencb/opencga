@@ -54,7 +54,7 @@ import java.util.*;
 import java.util.function.Predicate;
 
 import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.PROTEIN_CODING;
-import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.COMPOUND_HETEROZYGOUS;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SegregationMode.COMPOUND_HETEROZYGOUS;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.ALL;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.IS;
 

@@ -154,7 +154,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param regionIntervalSize Size of the interval window, by default it is adjusted to return 200 chunks
      * @return Frequencies of queried variants
      */
-    DataResult getFrequency(Query query, Region region, int regionIntervalSize);
+    DataResult getFrequency(ParsedVariantQuery query, Region region, int regionIntervalSize);
 
     /**
      * This method ranks different entities with the most or the least number of variants. These entities

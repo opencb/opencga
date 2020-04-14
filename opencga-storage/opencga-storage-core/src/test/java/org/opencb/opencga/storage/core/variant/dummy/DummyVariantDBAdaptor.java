@@ -154,7 +154,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult getFrequency(Query query, Region region, int regionIntervalSize) {
+    public DataResult getFrequency(ParsedVariantQuery query, Region region, int regionIntervalSize) {
         return null;
     }
 

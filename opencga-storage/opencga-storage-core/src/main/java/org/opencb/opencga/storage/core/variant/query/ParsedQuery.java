@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.query;
 
 import org.opencb.commons.datastore.core.QueryParam;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 public class ParsedQuery<T> {
@@ -20,6 +21,7 @@ public class ParsedQuery<T> {
         return param;
     }
 
+    @Nullable
     public VariantQueryUtils.QueryOperation getOperation() {
         return operation;
     }

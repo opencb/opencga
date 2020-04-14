@@ -746,6 +746,24 @@ public final class VariantQueryUtils {
      * Parse the genotype filter.
      *
      * @param sampleGenotypes Genotypes filter value
+     * @return QueryOperation between samples
+     */
+    public static ParsedQuery<KeyOpValue<String, List<String>>> parseGenotypeFilter(String sampleGenotypes) {
+        Map<Object, List<String>> map = new HashMap<>();
+        QueryOperation op = VariantQueryUtils.parseGenotypeFilter(sampleGenotypes, map);
+
+        List<KeyOpValue<String, List<String>>> values = new ArrayList<>();
+        for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
+            values.add(new KeyOpValue<>(entry.getKey().toString(), "=", entry.getValue()));
+        }
+
+        return new ParsedQuery<>(GENOTYPE, op, values);
+    }
+
+    /**
+     * Parse the genotype filter.
+     *
+     * @param sampleGenotypes Genotypes filter value
      * @param map             Initialized map to be filled with the sample to list of genotypes
      * @return QueryOperation between samples
      */
@@ -1046,6 +1064,9 @@ public final class VariantQueryUtils {
 
 
     public static void convertExpressionToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {
+        if (cellBaseUtils == null) {
+            return;
+        }
         if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
             String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
             // Check if comma separated of semi colon separated (AND or OR)
@@ -1066,6 +1087,9 @@ public final class VariantQueryUtils {
     }
 
     public static void convertGoToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {
+        if (cellBaseUtils == null) {
+            return;
+        }
         if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
             String value = query.getString(VariantQueryParam.ANNOT_GO.key());
             // Check if comma separated of semi colon separated (AND or OR)

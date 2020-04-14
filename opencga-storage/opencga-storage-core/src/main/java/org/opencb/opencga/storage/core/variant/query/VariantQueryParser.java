@@ -309,11 +309,73 @@ public class VariantQueryParser {
 
         QueryOperation genotypeOperator = null;
         VariantQueryParam genotypeParam = null;
+
+        List<QueryParam> sampleParamsList = new LinkedList<>();
+
         if (isValidParam(query, SAMPLE)) {
-            if (isValidParam(query, GENOTYPE)) {
-                throw VariantQueryException.malformedParam(SAMPLE, query.getString(SAMPLE.key()),
-                        "Can not be used along with filter \"" + GENOTYPE.key() + '"');
+            sampleParamsList.add(SAMPLE);
+        }
+        if (isValidParam(query, GENOTYPE)) {
+            sampleParamsList.add(GENOTYPE);
+        }
+        if (isValidParam(query, SAMPLE_DE_NOVO)) {
+            sampleParamsList.add(SAMPLE_DE_NOVO);
+        }
+        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+            sampleParamsList.add(SAMPLE_MENDELIAN_ERROR);
+        }
+        if (isValidParam(query, SAMPLE_COMPOUND_HETEROZYGOUS)) {
+            sampleParamsList.add(SAMPLE_COMPOUND_HETEROZYGOUS);
+        }
+        if (sampleParamsList.size() > 1) {
+            throw VariantQueryException.unsupportedParamsCombination(sampleParamsList);
+        }
+
+        if (isValidParam(query, SAMPLE)) {
+            String sampleValue = query.getString(SAMPLE.key());
+            if (sampleValue.contains(IS)) {
+                QueryParam newSampleParam;
+                String expectedValue = null;
+
+                if (sampleValue.toLowerCase().contains(IS + "denovo")) {
+                    newSampleParam = SAMPLE_DE_NOVO;
+                    expectedValue = "denovo";
+                } else if (sampleValue.toLowerCase().contains(IS + "mendelianerror")) {
+                    newSampleParam = SAMPLE_MENDELIAN_ERROR;
+                    expectedValue = "mendelianerror";
+                } else if (sampleValue.toLowerCase().contains(IS + "compoundheterozygous")) {
+                    newSampleParam = SAMPLE_COMPOUND_HETEROZYGOUS;
+                    expectedValue = "compoundheterozygous";
+                } else {
+                    newSampleParam = GENOTYPE;
+                    query.remove(SAMPLE.key());
+                    query.put(newSampleParam.key(), sampleValue);
+                }
+
+                if (newSampleParam != GENOTYPE) {
+                    ParsedQuery<String> parsedQuery = splitValue(query, SAMPLE);
+                    if (QueryOperation.AND.equals(parsedQuery.getOperation())) {
+                        throw VariantQueryException.malformedParam(SAMPLE, sampleValue, "Unsupported AND operator");
+                    }
+                    List<String> samples = new ArrayList<>(parsedQuery.getValues().size());
+                    for (String value : parsedQuery.getValues()) {
+                        if (!value.contains(IS)) {
+                            throw VariantQueryException.malformedParam(SAMPLE, value);
+                        }
+                        String[] split = value.split(IS, 2);
+                        if (!split[1].equalsIgnoreCase(expectedValue)) {
+                            throw VariantQueryException.malformedParam(SAMPLE, sampleValue,
+                                    "Unable to mix " + expectedValue + " and " + split[1] + " filters.");
+                        }
+                        samples.add(split[0]);
+                    }
+                    query.remove(SAMPLE.key());
+                    query.put(newSampleParam.key(), samples);
+                }
             }
+        }
+
+        if (isValidParam(query, SAMPLE)) {
             genotypeParam = SAMPLE;
 
             if (defaultStudy == null) {
@@ -350,7 +412,9 @@ public class VariantQueryParser {
             }
             query.remove(SAMPLE.key());
             query.put(GENOTYPE.key(), sb.toString());
-        } else if (isValidParam(query, GENOTYPE)) {
+        }
+
+        if (isValidParam(query, GENOTYPE)) {
             genotypeParam = GENOTYPE;
 
             List<String> loadedGenotypes = defaultStudy.getAttributes().getAsStringList(LOADED_GENOTYPES.key());

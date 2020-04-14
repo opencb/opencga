@@ -185,20 +185,24 @@ public class VariantQueryUtilsTest extends GenericTest {
         assertEquals(VariantQueryUtils.QueryOperation.AND, parseGenotypeFilter("study:sample:1/1,2/2;sample2:0/0,2/2;sample3:0/0;study1:sample4:0/0,2/2", map));
         assertEquals(expected, map);
 
-        map = new HashMap<>();
+        map.clear();
         // Check ends with operator
         assertEquals(VariantQueryUtils.QueryOperation.AND, parseGenotypeFilter("study:sample:1/1,2/2;sample2:0/0,2/2;sample3:0/0;study1:sample4:0/0,2/2;", map));
         assertEquals(expected, map);
 
-        map = new HashMap<>();
+        map.clear();
         assertEquals(VariantQueryUtils.QueryOperation.OR, parseGenotypeFilter("study:sample:1/1,2/2,sample2:0/0,2/2,sample3:0/0,study1:sample4:0/0,2/2", map));
         assertEquals(expected, map);
 
         expected.put("sample3", Arrays.asList("!0/0"));
-        map = new HashMap<>();
+        map.clear();
         assertEquals(VariantQueryUtils.QueryOperation.OR, parseGenotypeFilter("study:sample:1/1,2/2,sample2:0/0,2/2,sample3:!0/0,study1:sample4:0/0,2/2", map));
         assertEquals(expected, map);
+    }
 
+    @Test
+    public void testParseGenotypeFilterFail() throws Exception {
+        HashMap<Object, List<String>> map = new HashMap<>();
         thrown.expect(VariantQueryException.class);
         parseGenotypeFilter("sample:1/1,2/2,sample2:0/0,2/2;sample3:0/0,2/2", map);
     }

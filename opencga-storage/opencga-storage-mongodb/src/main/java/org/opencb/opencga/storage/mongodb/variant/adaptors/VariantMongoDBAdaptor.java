@@ -628,7 +628,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private VariantDBIterator iteratorFinal(final ParsedVariantQuery variantQuery, final QueryOptions options) {
         VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
-        Document mongoQuery = queryParser.parseQuery(variantQuery.getQuery());
+        Document mongoQuery = queryParser.parseQuery(variantQuery);
         Document projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
         DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
@@ -670,7 +670,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult getFrequency(Query query, Region region, int regionIntervalSize) {
+    public DataResult getFrequency(ParsedVariantQuery query, Region region, int regionIntervalSize) {
         // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }},
         //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]},
         // 20000] } ] },
