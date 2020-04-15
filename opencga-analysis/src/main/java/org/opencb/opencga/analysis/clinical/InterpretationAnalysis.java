@@ -47,9 +47,9 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     public static String SECONDARY_FINDINGS_FILENAME = "secondary-findings.json";
     public static String INTERPRETATION_FILENAME = "interpretation.json";
 
-    public final static String STUDY_PARAM_NAME = "study-id";
-    public final static String CLINICAL_ANALYISIS_PARAM_NAME = "clinical-analysis-id";
-    public static final String PANELS_PARAM_NAME = "panel-ids";
+    public final static String STUDY_PARAM_NAME = "study";
+    public final static String CLINICAL_ANALYISIS_PARAM_NAME = "clinical-analysis";
+    public static final String PANELS_PARAM_NAME = "panels";
     public static final String FAMILY_SEGREGATION_PARAM_NAME = "family-segregation";
     public static final String PENETRANCE_PARAM_NAME = "penetrance";
     public final static String VARIANTS_TO_DISCARD_PARAM_NAME = "variant-ids-to-discard";
@@ -89,7 +89,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
                 + SECONDARY_FINDINGS_FILENAME));
 
         Interpretation interpretation = new Interpretation()
-                .setId(getId() + "__" + TimeUtils.getTimeMillis())
+                .setId(getId() + "." + TimeUtils.getTimeMillis())
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(secondaryFindings)
                 .setLowCoverageRegions(reportedLowCoverages)

@@ -15,6 +15,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 
+import java.util.List;
+
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL_DESC;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC;
@@ -64,16 +66,6 @@ public class ClinicalCommandOptions {
         this.tieringCommandOptions = new InterpretationTieringCommandOptions();
     }
 
-
-    public class BaseClinicalCommand extends GeneralCliOptions.StudyOption {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--clinical"}, description = "Clinical analysis id", required = true, arity = 1)
-        public String clinical;
-
-    }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search clinical analysis")
     public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
@@ -129,10 +121,16 @@ public class ClinicalCommandOptions {
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get clinical analysis information")
-    public class InfoCommandOptions extends BaseClinicalCommand {
+    public class InfoCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        public String clinicalAnalysis;
 
     }
 
@@ -274,12 +272,18 @@ public class ClinicalCommandOptions {
 
 
     @Parameters(commandNames = {InterpretationTieringCommandOptions.TIERING_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
-    public class InterpretationTieringCommandOptions extends BaseClinicalCommand {
+    public class InterpretationTieringCommandOptions extends GeneralCliOptions.StudyOption {
 
         public static final String TIERING_RUN_COMMAND = TieringInterpretationAnalysis.ID + "-run";
 
-        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", arity = 1)
-        public String panel;
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        public String clinicalAnalysis;
+
+        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity = 1)
+        public List<String> panels;
 
         @Parameter(names = {"--" + PENETRANCE_PARAM_NAME}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
         public ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
@@ -290,28 +294,43 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
         public int maxLowCoverage;
 
-        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
-        public boolean includeUntieredVariants;
+//        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
+//        public boolean includeUntieredVariants;
     }
 
     @Parameters(commandNames = {InterpretationTeamCommandOptions.TEAM_RUN_COMMAND}, commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
-    public class InterpretationTeamCommandOptions extends BaseClinicalCommand {
+    public class InterpretationTeamCommandOptions {
 
         public static final String TEAM_RUN_COMMAND = TeamInterpretationAnalysis.ID + "-run";
 
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        public String clinicalAnalysis;
     }
 
-    @Parameters(commandNames = {InterpretationZettaCommandOptions.CUSTOM_RUN_COMMAND}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
-    public class InterpretationZettaCommandOptions extends BaseClinicalCommand {
+    @Parameters(commandNames = {InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
+    public class InterpretationZettaCommandOptions {
 
-        public static final String CUSTOM_RUN_COMMAND = ZettaInterpretationAnalysis.ID + "-run";
+        public static final String ZETTA_RUN_COMMAND = ZettaInterpretationAnalysis.ID + "-run";
 
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        public String clinicalAnalysis;
     }
 
     @Parameters(commandNames = {InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND}, commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
-    public class InterpretationCancerTieringCommandOptions extends BaseClinicalCommand {
+    public class InterpretationCancerTieringCommandOptions {
 
         public static final String CANCER_TIERING_RUN_COMMAND = CancerTieringInterpretationAnalysis.ID + "-run";
 
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        public String clinicalAnalysis;
     }
 }

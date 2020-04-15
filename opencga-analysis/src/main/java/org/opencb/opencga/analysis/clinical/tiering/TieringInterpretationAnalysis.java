@@ -85,6 +85,7 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
     @Override
     protected void run() throws ToolException {
         step(() -> {
+//            new TieringInterpretationAnalysisExecutor()
             getToolExecutor(TieringInterpretationAnalysisExecutor.class)
                     .setStudyId(studyId)
                     .setClinicalAnalysisId(clinicalAnalysisId)

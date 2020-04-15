@@ -9,7 +9,7 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "GEL tiering interpretation analysis params";
 
     private String clinicalAnalysis;
-    private String panel;
+    private List<String> panels;
     private ClinicalProperty.Penetrance penetrance;
     private int maxLowCoverage;
     private boolean includeLowCoverage;
@@ -17,10 +17,10 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
     public TieringInterpretationAnalysisParams() {
     }
 
-    public TieringInterpretationAnalysisParams(String clinicalAnalysis, String panel, ClinicalProperty.Penetrance penetrance,
+    public TieringInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, ClinicalProperty.Penetrance penetrance,
                                                int maxLowCoverage, boolean includeLowCoverage) {
         this.clinicalAnalysis = clinicalAnalysis;
-        this.panel = panel;
+        this.panels = panels;
         this.penetrance = penetrance;
         this.maxLowCoverage = maxLowCoverage;
         this.includeLowCoverage = includeLowCoverage;
@@ -35,12 +35,12 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getPanel() {
-        return panel;
+    public List<String> getPanels() {
+        return panels;
     }
 
-    public TieringInterpretationAnalysisParams setPanel(String panel) {
-        this.panel = panel;
+    public TieringInterpretationAnalysisParams setPanels(List<String> panels) {
+        this.panels = panels;
         return this;
     }
 

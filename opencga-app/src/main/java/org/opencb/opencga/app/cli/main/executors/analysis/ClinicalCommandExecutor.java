@@ -122,7 +122,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
-        return openCGAClient.getClinicalAnalysisClient().info(commandOptions.clinical, params);
+        return openCGAClient.getClinicalAnalysisClient().info(commandOptions.clinicalAnalysis, params);
     }
 
     private RestResponse<ObjectMap> updateAcl() throws ClientException, CatalogException {
@@ -223,8 +223,8 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
 
     private RestResponse<Job> tiering() throws ClientException {
         return openCGAClient.getClinicalAnalysisClient().runInterpretationTiering(
-                new TieringInterpretationAnalysisParams(clinicalCommandOptions.tieringCommandOptions.clinical,
-                        clinicalCommandOptions.tieringCommandOptions.panel,
+                new TieringInterpretationAnalysisParams(clinicalCommandOptions.tieringCommandOptions.clinicalAnalysis,
+                        clinicalCommandOptions.tieringCommandOptions.panels,
                         clinicalCommandOptions.tieringCommandOptions.penetrance,
                         clinicalCommandOptions.tieringCommandOptions.maxLowCoverage,
                         clinicalCommandOptions.tieringCommandOptions.includeLowCoverage),

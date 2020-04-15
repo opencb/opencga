@@ -71,7 +71,7 @@ public class GeneralCliOptions {
                 + "storage-configuration.yml and client-configuration.yml files.")
         public String conf;
 
-        @Parameter(names = {"--token"}, description = "Token session id", arity = 1)
+        @Parameter(names = {"--token"}, description = "Token session ID", arity = 1)
         public String token;
 
         @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0)
