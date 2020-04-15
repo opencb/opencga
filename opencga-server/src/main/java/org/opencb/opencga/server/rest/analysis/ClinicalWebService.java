@@ -240,12 +240,7 @@ public class ClinicalWebService extends AnalysisWebService {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
 
-            DataResult<ClinicalAnalysis> queryResult;
-            if (count) {
-                queryResult = clinicalManager.count(studyStr, query, token);
-            } else {
-                queryResult = clinicalManager.search(studyStr, query, queryOptions, token);
-            }
+            DataResult<ClinicalAnalysis> queryResult = clinicalManager.search(studyStr, query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
