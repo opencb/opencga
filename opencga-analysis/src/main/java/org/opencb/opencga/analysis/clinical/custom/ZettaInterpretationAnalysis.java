@@ -37,8 +37,8 @@ import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUti
 @Tool(id = ZettaInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
 
-    public final static String ID = "custom";
-    public final static String DESCRIPTION = "Run custom interpretation analysis";
+    public final static String ID = "interpretation-zetta";
+    public final static String DESCRIPTION = "Run Zetta interpretation analysis";
 
     private String studyId;
     private String clinicalAnalysisId;

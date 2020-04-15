@@ -20,11 +20,16 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfiguration;
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 
 import java.nio.file.Path;
@@ -32,6 +37,7 @@ import java.nio.file.Paths;
 
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
 
 /**
  * Created on 01/04/20
@@ -61,6 +67,10 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
 
             case TEAM_RUN_COMMAND:
                 team();
+                break;
+
+            case ZETTA_RUN_COMMAND:
+                zetta();
                 break;
 
             default:
@@ -143,5 +153,79 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 .setMoi(moi)
                 .setConfig(config);
         teamAnalysis.start();
+    }
+
+    private void zetta() throws ToolException {
+        ClinicalCommandOptions.ZettaCommandOptions cliOptions = clinicalCommandOptions.zettaCommandOptions;
+
+        Query query = new Query();
+
+        // Variant filters
+        query.putIfNotNull("id", cliOptions.basicQueryOptions.id);
+        query.putIfNotNull("region", cliOptions.basicQueryOptions.region);
+        query.putIfNotNull("type", cliOptions.basicQueryOptions.type);
+
+        // Study filters
+        query.putIfNotNull(ParamConstants.STUDY_PARAM, cliOptions.study);
+        query.putIfNotNull("file", cliOptions.file);
+        query.putIfNotNull("filter", cliOptions.filter);
+        query.putIfNotNull("qual", cliOptions.qual);
+        query.putIfNotNull("fileData", cliOptions.fileData);
+
+        query.putIfNotNull("sample", cliOptions.samples);
+        query.putIfNotNull("sampleData", cliOptions.sampleData);
+        query.putIfNotNull("sampleAnnotation", cliOptions.sampleAnnotation);
+
+        query.putIfNotNull("cohort", cliOptions.cohort);
+        query.putIfNotNull("cohortStatsRef", cliOptions.basicQueryOptions.rf);
+        query.putIfNotNull("cohortStatsAlt", cliOptions.basicQueryOptions.af);
+        query.putIfNotNull("cohortStatsMaf", cliOptions.basicQueryOptions.maf);
+        query.putIfNotNull("cohortStatsMgf", cliOptions.mgf);
+        query.putIfNotNull("cohortStatsPass", cliOptions.cohortStatsPass);
+        query.putIfNotNull("missingAlleles", cliOptions.missingAlleleCount);
+        query.putIfNotNull("missingGenotypes", cliOptions.missingGenotypeCount);
+        query.putIfNotNull("score", cliOptions.score);
+
+        // Annotation filters
+        query.putIfNotNull("gene", cliOptions.basicQueryOptions.gene);
+        query.putIfNotNull("ct", cliOptions.basicQueryOptions.consequenceType);
+        query.putIfNotNull("xref", cliOptions.xref);
+        query.putIfNotNull("biotype", cliOptions.geneBiotype);
+        query.putIfNotNull("proteinSubstitution", cliOptions.basicQueryOptions.proteinSubstitution);
+        query.putIfNotNull("conservation", cliOptions.basicQueryOptions.conservation);
+        query.putIfNotNull("populationFrequencyAlt", cliOptions.basicQueryOptions.populationFreqAlt);
+        query.putIfNotNull("populationFrequencyRef", cliOptions.populationFreqRef);
+        query.putIfNotNull("populationFrequencyMaf", cliOptions.populationFreqMaf);
+        query.putIfNotNull("transcriptFlag", cliOptions.flags);
+        query.putIfNotNull("geneTraitId", cliOptions.geneTraitId);
+        query.putIfNotNull("go", cliOptions.go);
+        query.putIfNotNull("expression", cliOptions.expression);
+        query.putIfNotNull("proteinKeyword", cliOptions.proteinKeywords);
+        query.putIfNotNull("drug", cliOptions.drugs);
+        query.putIfNotNull("functionalScore", cliOptions.basicQueryOptions.functionalScore);
+        query.putIfNotNull("clinicalSignificance", cliOptions.clinicalSignificance);
+        query.putIfNotNull("customAnnotation", cliOptions.annotations);
+
+        query.putIfNotNull("panel", cliOptions.panel);
+
+        query.putIfNotNull("trait", cliOptions.trait);
+
+        ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
+        config.setIncludeLowCoverage(cliOptions.includeLowCoverage);
+        config.setMaxLowCoverage(cliOptions.maxLowCoverage);
+//        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
+
+        Path outDir = Paths.get(cliOptions.outdir);
+        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
+
+        // Execute tiering analysis
+        ZettaInterpretationAnalysis zettaAnalysis = new ZettaInterpretationAnalysis();
+        zettaAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
+        zettaAnalysis.setStudyId(cliOptions.study)
+                .setClinicalAnalysisId(cliOptions.clinicalAnalysis)
+                .setQuery(query)
+                .setQueryOptions(QueryOptions.empty())
+                .setConfig(config);
+        zettaAnalysis.start();
     }
 }
