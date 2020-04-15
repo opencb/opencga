@@ -1351,7 +1351,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("dummy")), token);
 
-        String token = catalogManager.getUserManager().login("dummy", "dummy");
+        String token = catalogManager.getUserManager().login("dummy", "dummy").getToken();
         DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(), token);
         assertEquals(1, queryResult.getNumResults());
 

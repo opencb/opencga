@@ -61,12 +61,12 @@ public class PanelManagerTest extends GenericTest {
         catalogManager = catalogManagerResource.getCatalogManager();
         panelManager = catalogManager.getPanelManager();
         setUpCatalogManager(catalogManager);
-        adminToken = catalogManager.getUserManager().loginAsAdmin("admin");
+        adminToken = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
     }
 
     private void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
@@ -76,7 +76,7 @@ public class PanelManagerTest extends GenericTest {
     @Test
     @Ignore
     public void importFromPanelAppTest() throws CatalogException {
-        String token = catalogManager.getUserManager().loginAsAdmin("admin");
+        String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
         panelManager.importPanelApp(token, false);
         assertEquals(221, panelManager.count(PanelManager.INSTALLATION_PANELS, new Query(), token).getNumTotalResults());
     }

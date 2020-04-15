@@ -63,7 +63,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         configuration.getAdmin().setAlgorithm("HS256");
         catalogManager = new CatalogManager(configuration);
         if (catalogManager.existsCatalogDB()) {
-            String token = catalogManager.getUserManager().loginAsAdmin("admin");
+            String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
             catalogManager.deleteCatalogDB(token);
         }
         catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
@@ -75,7 +75,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
         userId = "user1";
         catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", userId, "", -1L, Account.AccountType.FULL, null);
-        sessionId = catalogManager.getUserManager().login(userId, userId);
+        sessionId = catalogManager.getUserManager().login(userId, userId).getToken();
         Project project = catalogManager.getProjectManager().create("def", "default", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).getResults().get(0);
         Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", "", null, null, null, null, null, sessionId).getResults().get(0);

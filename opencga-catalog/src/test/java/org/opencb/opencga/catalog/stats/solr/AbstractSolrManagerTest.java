@@ -85,11 +85,11 @@ public class AbstractSolrManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
         catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
 
-        sessionIdOwner = catalogManager.getUserManager().login("owner", PASSWORD);
-        sessionIdAdmin = catalogManager.getUserManager().login("admin1", PASSWORD);
-        sessionIdUser = catalogManager.getUserManager().login("user1", PASSWORD);
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
+        sessionIdOwner = catalogManager.getUserManager().login("owner", PASSWORD).getToken();
+        sessionIdAdmin = catalogManager.getUserManager().login("admin1", PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login("user1", PASSWORD).getToken();
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
 
         Project project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdOwner).first();

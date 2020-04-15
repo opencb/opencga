@@ -75,7 +75,7 @@ public class FamilyManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
@@ -135,7 +135,7 @@ public class FamilyManagerTest extends GenericTest {
         createDummyFamily("Martinez-Martinez", true);
 
         catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
-        String token = catalogManager.getUserManager().login("user2", PASSWORD);
+        String token = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
 
         try {
             familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);

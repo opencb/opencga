@@ -29,10 +29,7 @@ import org.opencb.opencga.client.template.TemplateManager;
 import org.opencb.opencga.client.template.config.TemplateConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.PasswordChangeParams;
-import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.user.UserCreateParams;
-import org.opencb.opencga.core.models.user.UserUpdateParams;
+import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -105,8 +102,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         String password = usersCommandOptions.loginCommandOptions.password;
 
         if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
-            String sessionId = openCGAClient.login(user, password);
-            if (StringUtils.isNotEmpty(sessionId)) {
+            AuthenticationResponse response = openCGAClient.login(user, password);
+            if (response != null) {
                 List<String> studies = new ArrayList<>();
 
                 RestResponse<Project> projects = openCGAClient.getProjectClient().search(
@@ -122,8 +119,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                     }
                 }
                 // write CLI session file
-                saveCliSessionFile(user, sessionId, studies);
-                System.out.println("You have been logged in correctly. This is your new token " + sessionId);
+                saveCliSessionFile(user, response.getToken(), response.getRefreshToken(), studies);
+                System.out.println("You have been logged in correctly. This is your new token " + response.getToken());
             }
         } else {
             String sessionId = usersCommandOptions.commonCommandOptions.token;

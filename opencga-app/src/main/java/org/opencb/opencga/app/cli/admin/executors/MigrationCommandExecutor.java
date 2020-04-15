@@ -84,7 +84,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             setCatalogDatabaseCredentials(options, options.commonOptions);
 
             try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-                String sessionId = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
+                String sessionId = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
                 // Catalog
                 String basePath = appHome + "/misc/migration/v1.3.0/";
@@ -155,7 +155,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // We get a non-expiring token
-            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
             String nonExpiringToken = catalogManager.getUserManager().getAdminNonExpiringToken(token);
 
             // Catalog
@@ -202,7 +202,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             logger.info("Starting Catalog migration for 2.0.0");
             runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v1.4.2_to_v.2.0.0.js");
 
-            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
             // Create default project and study for administrator #1491
             catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
