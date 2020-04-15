@@ -56,6 +56,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
@@ -191,7 +192,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 //        clinicalSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
         clinicalSubCommands.addCommand(TIERING_RUN_COMMAND, clinicalCommandOptions.tieringCommandOptions);
 //        clinicalSubCommands.addCommand(ZETTA_RUN_COMMAND, clinicalCommandOptions.zettaCommandOptions);
-//        clinicalSubCommands.addCommand(TEAM_RUN_COMMAND, clinicalCommandOptions.teamCommandOptions);
+        clinicalSubCommands.addCommand(TEAM_RUN_COMMAND, clinicalCommandOptions.teamCommandOptions);
 //        clinicalSubCommands.addCommand(CANCER_TIERING_RUN_COMMAND, clinicalCommandOptions.cancerTieringCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);

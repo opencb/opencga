@@ -17,8 +17,11 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfiguration;
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
@@ -26,8 +29,8 @@ import org.opencb.opencga.core.exceptions.ToolException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
 
 /**
@@ -51,9 +54,15 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(clinicalCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
+
             case TIERING_RUN_COMMAND:
                 tiering();
                 break;
+
+            case TEAM_RUN_COMMAND:
+                team();
+                break;
+
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -97,5 +106,42 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 .setPenetrance(penetrance)
                 .setConfig(config);
         tieringAnalysis.start();
+    }
+
+    private void team() throws Exception {
+        ClinicalCommandOptions.TeamCommandOptions cliOptions = clinicalCommandOptions.teamCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        // Prepare analysis parameters and config
+        String token = cliOptions.commonOptions.token;
+
+        if (CollectionUtils.isEmpty(cliOptions.panels)) {
+            throw new ToolException("Missing disease panel IDs");
+        }
+
+        ClinicalProperty.ModeOfInheritance moi = null;
+        if (StringUtils.isNotEmpty(cliOptions.familySeggregation)) {
+            moi = ClinicalProperty.ModeOfInheritance.valueOf(cliOptions.familySeggregation);
+        }
+//        List<String> panelList = Arrays.asList(StringUtils.split(options.panelIds, ","));
+
+        TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
+        config.setIncludeLowCoverage(cliOptions.includeLowCoverage);
+        config.setMaxLowCoverage(cliOptions.maxLowCoverage);
+//        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
+
+        Path outDir = Paths.get(cliOptions.outdir);
+        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
+
+        // Execute tiering analysis
+        TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis();
+        teamAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
+        teamAnalysis.setStudyId(cliOptions.study)
+                .setClinicalAnalysisId(cliOptions.clinicalAnalysis)
+                .setDiseasePanelIds(cliOptions.panels)
+                .setMoi(moi)
+                .setConfig(config);
+        teamAnalysis.start();
     }
 }

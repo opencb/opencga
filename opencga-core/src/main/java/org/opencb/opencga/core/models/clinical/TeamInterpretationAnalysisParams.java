@@ -8,7 +8,7 @@ public class TeamInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "GEL tiering interpretation analysis params";
 
     private String clinicalAnalysis;
-    private String panel;
+    private List<String> panels;
     private String familySegregation;
 
     private int maxLowCoverage;
@@ -17,10 +17,10 @@ public class TeamInterpretationAnalysisParams extends ToolParams {
     public TeamInterpretationAnalysisParams() {
     }
 
-    public TeamInterpretationAnalysisParams(String clinicalAnalysis, String panel, String familySegregation, int maxLowCoverage,
+    public TeamInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, String familySegregation, int maxLowCoverage,
                                             boolean includeLowCoverage) {
         this.clinicalAnalysis = clinicalAnalysis;
-        this.panel = panel;
+        this.panels = panels;
         this.familySegregation = familySegregation;
         this.maxLowCoverage = maxLowCoverage;
         this.includeLowCoverage = includeLowCoverage;
@@ -35,12 +35,12 @@ public class TeamInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getPanel() {
-        return panel;
+    public List<String> getPanels() {
+        return panels;
     }
 
-    public TeamInterpretationAnalysisParams setPanel(String panel) {
-        this.panel = panel;
+    public TeamInterpretationAnalysisParams setPanels(List<String> panels) {
+        this.panels = panels;
         return this;
     }
 

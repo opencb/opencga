@@ -35,6 +35,7 @@ public class ClinicalCommandOptions {
     public VariantActionableCommandOptions variantActionableCommandOptions;
 
     public InterpretationTieringCommandOptions tieringCommandOptions;
+    public InterpretationTeamCommandOptions teamCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -64,6 +65,7 @@ public class ClinicalCommandOptions {
         this.variantActionableCommandOptions = new VariantActionableCommandOptions();
 
         this.tieringCommandOptions = new InterpretationTieringCommandOptions();
+        this.teamCommandOptions = new InterpretationTeamCommandOptions();
     }
 
 
@@ -299,7 +301,7 @@ public class ClinicalCommandOptions {
     }
 
     @Parameters(commandNames = {InterpretationTeamCommandOptions.TEAM_RUN_COMMAND}, commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
-    public class InterpretationTeamCommandOptions {
+    public class InterpretationTeamCommandOptions extends GeneralCliOptions.StudyOption {
 
         public static final String TEAM_RUN_COMMAND = TeamInterpretationAnalysis.ID + "-run";
 
@@ -308,6 +310,21 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
+
+        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity = 1)
+        public List<String> panels;
+
+        @Parameter(names = {"--" + FAMILY_SEGREGATION_PARAM_NAME}, description = "Family segregation", arity = 1)
+        public String familySeggregation;
+
+        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
+        public boolean includeLowCoverage;
+
+        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
+        public int maxLowCoverage;
+
+//        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
+//        public boolean includeUntieredVariants;
     }
 
     @Parameters(commandNames = {InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)

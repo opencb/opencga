@@ -12,10 +12,12 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
+import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.VariantActionableCommandOptions.VARIANT_ACTIONABLE_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.VariantQueryCommandOptions.VARIANT_QUERY_COMMAND;
@@ -61,6 +63,9 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = tiering();
                 break;
 
+            case TEAM_RUN_COMMAND:
+                queryResponse = team();
+                break;
 
             default:
                 logger.error("Subcommand not valid");
@@ -233,7 +238,14 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> team() throws ClientException {
-        return null;
+        return openCGAClient.getClinicalAnalysisClient().runInterpretationTeam(
+                new TeamInterpretationAnalysisParams(clinicalCommandOptions.teamCommandOptions.clinicalAnalysis,
+                        clinicalCommandOptions.teamCommandOptions.panels,
+                        clinicalCommandOptions.teamCommandOptions.familySeggregation,
+                        clinicalCommandOptions.teamCommandOptions.maxLowCoverage,
+                        clinicalCommandOptions.teamCommandOptions.includeLowCoverage),
+                getParams(clinicalCommandOptions.teamCommandOptions.study)
+        );
     }
 
     private RestResponse<Job> custom() throws ClientException {

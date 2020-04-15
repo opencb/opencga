@@ -14,13 +14,14 @@ import org.opencb.opencga.core.models.common.Enums;
 import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
 public class ClinicalCommandOptions {
 
     public TieringCommandOptions tieringCommandOptions;
 //    public ZettaCommandOptions zettaCommandOptions;
-//    public TeamCommandOptions teamCommandOptions;
+    public TeamCommandOptions teamCommandOptions;
 //    public CancerTieringCommandOptions cancerTieringCommandOptions;
 
     public JCommander jCommander;
@@ -37,8 +38,8 @@ public class ClinicalCommandOptions {
         this.commonJobOptions = new GeneralCliOptions.JobOptions();
 
         this.tieringCommandOptions = new TieringCommandOptions();
+        this.teamCommandOptions = new TeamCommandOptions();
     }
-
 
     @Parameters(commandNames = {InterpretationTieringCommandOptions.TIERING_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
     public class TieringCommandOptions extends GeneralCliOptions.StudyOption {
@@ -61,28 +62,34 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
         public int maxLowCoverage;
 
-        //
-//        @ParametersDelegate
-//        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-//
-//        @Parameter(names = {"-s", "--" + STUDY_PARAM_NAME}, description = "Study [[user@]project:]study.", required = true, arity = 1)
-//        public String studyId;
-//
-//        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical Analysis ID", arity = 1)
-//        public String clinicalAnalysisId;
-//
-//        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", arity = 1)
-//        public List<String> diseasePanelIds;
-//
-//        @Parameter(names = {"--" + PENETRANCE_PARAM_NAME}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
-//        public ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
-//
-//        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
-//        public boolean includeLowCoverage;
-//
-//        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
-//        public int maxLowCoverage;
-//
+////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
+////        public boolean includeUntieredVariants;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {TEAM_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
+    public class TeamCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        public String clinicalAnalysis;
+
+        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity = 1)
+        public List<String> panels;
+
+        @Parameter(names = {"--" + FAMILY_SEGREGATION_PARAM_NAME}, description = "Family segregation", arity = 1)
+        public String familySeggregation;
+
+        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
+        public boolean includeLowCoverage;
+
+        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
+        public int maxLowCoverage;
+
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
 
