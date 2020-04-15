@@ -24,8 +24,6 @@ import java.util.Map;
 
 public class Interpretation extends org.opencb.biodata.models.clinical.interpretation.Interpretation implements IPrivateStudyUid {
 
-    private String uuid;
-
     // Private fields
     private long studyUid;
     private long uid;
@@ -47,7 +45,7 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
                           Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
                           List<ClinicalVariant> primaryFindinds, List<ClinicalVariant> secondaryFindings,
                           List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
-        super(id, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
+        super(id, "", description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
                 reportedLowCoverages, comments, InterpretationStatus.NOT_REVIEWED, creationDate, 1, attributes);
     }
 
@@ -56,9 +54,8 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
                           List<ClinicalVariant> primaryFindinds, List<ClinicalVariant> secondaryFindings,
                           List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes,
                           InterpretationInternal internal) {
-        super(id, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
-                reportedLowCoverages, comments, InterpretationStatus.NOT_REVIEWED, creationDate, 1, attributes);
-        this.uuid = uuid;
+        super(id, uuid, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds,
+                secondaryFindings, reportedLowCoverages, comments, InterpretationStatus.NOT_REVIEWED, creationDate, 1, attributes);
         this.internal = internal;
     }
 
@@ -66,7 +63,7 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     public String toString() {
         final StringBuilder sb = new StringBuilder("Interpretation{");
         sb.append("id='").append(this.getId()).append('\'');
-        sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", uuid='").append(this.getUuid()).append('\'');
         sb.append(", description='").append(this.getDescription()).append('\'');
         sb.append(", clinicalAnalysisId='").append(this.getClinicalAnalysisId()).append('\'');
         sb.append(", software=").append(this.getSoftware()).append('\'');
@@ -85,15 +82,6 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         sb.append(", internal=").append(internal);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getUuid() {
-        return uuid;
-    }
-
-    public Interpretation setUuid(String uuid) {
-        this.uuid = uuid;
-        return this;
     }
 
     @Override
