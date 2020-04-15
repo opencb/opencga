@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.tools.Converter;
+import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
