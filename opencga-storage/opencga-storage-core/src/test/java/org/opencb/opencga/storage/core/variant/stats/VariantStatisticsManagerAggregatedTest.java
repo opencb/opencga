@@ -39,8 +39,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by hpccoll1 on 01/06/15.
@@ -121,8 +120,9 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
                                 CohortMetadata::isStatsReady),
                         CohortMetadata.class));
         for (Variant variant : dbAdaptor) {
-            for (StudyEntry sourceEntry : variant.getStudies()) {
-                Map<String, VariantStats> cohortStats = sourceEntry.getStats()
+            for (StudyEntry study : variant.getStudies()) {
+                assertNotNull(study.getFiles().get(0));
+                Map<String, VariantStats> cohortStats = study.getStats()
                         .stream()
                         .collect(Collectors.toMap(VariantStats::getCohortId, i -> i));
                 String calculatedCohorts = cohortStats.keySet().toString();

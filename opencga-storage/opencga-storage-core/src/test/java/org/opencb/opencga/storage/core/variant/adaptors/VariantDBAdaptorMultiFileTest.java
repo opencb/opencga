@@ -168,7 +168,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         for (Variant variant : query(new Query(INCLUDE_SAMPLE_ID.key(), true), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
 
             for (StudyEntry study : variant.getStudies()) {
-                assertEquals(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF"), study.getSampleDataKeys());
+                assertEquals(new HashSet<>(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF")), new HashSet<>(study.getSampleDataKeys()));
                 List<String> sampleIds = study.getSamples()
                         .stream()
                         .map(SampleEntry::getSampleId)
@@ -204,7 +204,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
 
             for (StudyEntry study : variant.getStudies()) {
-                assertEquals(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF"), study.getSampleDataKeys());
+                assertEquals(new HashSet<>(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF")), new HashSet<>(study.getSampleDataKeys()));
                 List<String> sampleIds = study.getSamples()
                         .stream()
                         .map(SampleEntry::getSampleId)
@@ -214,6 +214,27 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 for (SampleEntry sampleEntry : study.getSamples()) {
                     assertNull(sampleEntry.getFileIndex());
                 }
+            }
+        }
+    }
+
+    @Test
+    public void testExcludeSamples() throws Exception {
+        for (Variant variant : query(new Query(), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES).append(QueryOptions.LIMIT, 10)).getResults()) {
+            for (StudyEntry study : variant.getStudies()) {
+                assertEquals(0, study.getSamples().size());
+                assertNotEquals(0, study.getFiles().size());
+            }
+        }
+    }
+
+    @Test
+    public void testIncludeSamplesNone() throws Exception {
+        for (Variant variant : query(new Query()
+                .append(INCLUDE_SAMPLE.key(), NONE), new QueryOptions(QueryOptions.LIMIT, 10)).getResults()) {
+            for (StudyEntry study : variant.getStudies()) {
+                assertEquals(0, study.getSamples().size());
+                assertNotEquals(0, study.getFiles().size());
             }
         }
     }

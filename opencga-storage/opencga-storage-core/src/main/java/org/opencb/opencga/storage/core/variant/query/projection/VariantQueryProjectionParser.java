@@ -248,7 +248,6 @@ public class VariantQueryProjectionParser {
      * Null for undefined returned files. If null, return ALL files.
      * Return NONE if empty list
      *
-     * @param includeSamples
      * @param query                     Query with the QueryParams
      * @param studyIds                  Returned studies
      * @param fields                    Returned fields
@@ -257,7 +256,10 @@ public class VariantQueryProjectionParser {
     private static Map<Integer, List<Integer>> getIncludeFiles(Query query, Collection<Integer> studyIds, Set<VariantField> fields,
                                                                VariantStorageMetadataManager metadataManager,
                                                                Map<Integer, List<Integer>> includeSamples) {
-
+        // Ignore includeSamples map if totally empty
+        if (includeSamples.values().stream().allMatch(Collection::isEmpty)) {
+            includeSamples = null;
+        }
         List<String> includeSamplesList = includeSamples == null ? getIncludeSamplesList(query) : null;
         List<String> includeFilesList = getIncludeFilesList(query, fields);
         boolean returnAllFiles = VariantQueryUtils.ALL.equals(query.getString(INCLUDE_FILE.key()));
