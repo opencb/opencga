@@ -161,7 +161,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 //        policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, null).first();
-        sessionId = catalogManager.getUserManager().login(userId, "user");
+        sessionId = catalogManager.getUserManager().login(userId, "user").getToken();
         projectAlias = "p1";
         projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).first().getId();

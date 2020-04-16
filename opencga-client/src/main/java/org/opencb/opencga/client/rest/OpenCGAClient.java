@@ -20,10 +20,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.clients.*;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -40,6 +40,7 @@ public class OpenCGAClient {
 
     private String userId;
     private String token;
+    private String refreshToken;
     private final ClientConfiguration clientConfiguration;
 
     private final Map<String, AbstractParentClient> clients;
@@ -54,17 +55,18 @@ public class OpenCGAClient {
         login(user, password);
     }
 
-    public OpenCGAClient(String token, ClientConfiguration clientConfiguration) {
+    public OpenCGAClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration) {
         this.clients = new HashMap<>(20);
         this.clientConfiguration = clientConfiguration;
 
-        init(token);
+        init(authenticationTokens);
     }
 
-    private void init(String token) {
-        if (StringUtils.isNotEmpty(token)) {
-            this.userId = getUserFromToken(token);
-            setToken(token);
+    private void init(AuthenticationResponse tokens) {
+        if (tokens != null) {
+            this.userId = getUserFromToken(tokens.getToken());
+            setToken(tokens.getToken());
+            setRefreshToken(tokens.getRefreshToken());
         }
     }
 
@@ -155,33 +157,35 @@ public class OpenCGAClient {
      *
      * @param user userId.
      * @param password Password.
-     * @return the token of the user logged in. Null if the user or password is incorrect.
+     * @return AuthenticationResponse object.
      * @throws ClientException when it is not possible logging in.
      */
-    public String login(String user, String password) throws ClientException {
-        RestResponse<ObjectMap> login = getUserClient().login(user, new LoginParams().setPassword(password), null);
+    public AuthenticationResponse login(String user, String password) throws ClientException {
+        RestResponse<AuthenticationResponse> login = getUserClient().login(new LoginParams(user, password), null);
         updateTokenFromClients(login);
         setUserId(user);
-        return login.firstResult().getString("token");
+        return login.firstResult();
     }
 
     /**
      * Refresh the user token.
      *
-     * @return the new token of the user. Null if the current session id is no longer valid.
+     * @return the new AuthenticationResponse object.
      * @throws ClientException when it is not possible refreshing.
      */
-    public String refresh() throws ClientException {
-        RestResponse<ObjectMap> refresh = getUserClient().login(userId, new LoginParams(), null);
+    public AuthenticationResponse refresh() throws ClientException {
+        if (StringUtils.isEmpty(refreshToken)) {
+            throw new ClientException("Could not refresh token. 'refreshToken' not available.");
+        }
+        RestResponse<AuthenticationResponse> refresh = getUserClient().login(new LoginParams(refreshToken), null);
         updateTokenFromClients(refresh);
-        return refresh.firstResult().getString("token");
+        return refresh.firstResult();
     }
 
-    public void updateTokenFromClients(RestResponse<ObjectMap> loginResponse) throws ClientException {
-        String token = "";
+    public void updateTokenFromClients(RestResponse<AuthenticationResponse> loginResponse) throws ClientException {
         if (loginResponse.allResultsSize() == 1) {
-            token = loginResponse.firstResult().getString("token");
-            setToken(token);
+            setToken(loginResponse.firstResult().getToken());
+            setRefreshToken(loginResponse.firstResult().getRefreshToken());
         } else {
             for (Event event : loginResponse.getEvents()) {
                 if (event.getType() == Event.Type.ERROR) {
@@ -213,6 +217,15 @@ public class OpenCGAClient {
                 .forEach(abstractParentClient -> {
                     abstractParentClient.setToken(this.token);
                 });
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public OpenCGAClient setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+        return this;
     }
 
     public OpenCGAClient setThrowExceptionOnError(boolean throwExceptionOnError) {

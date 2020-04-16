@@ -225,14 +225,14 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
 
     @Override
-    public String authenticate(String username, String password) throws CatalogAuthenticationException {
+    public AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException {
         AuthenticationContext context;
         AuthenticationResult result;
         ExecutorService service = null;
         try {
             service = Executors.newFixedThreadPool(1);
             context = new AuthenticationContext(String.valueOf(this.oidcProviderMetadata.getAuthorizationEndpointURI()), false, service);
-            Future<AuthenticationResult> future = context.acquireToken(authClientId, authClientId, username, password, null);
+            Future<AuthenticationResult> future = context.acquireToken(authClientId, authClientId, userId, password, null);
             result = future.get();
         } catch (Exception e) {
             logger.error(e.getMessage());
@@ -246,7 +246,35 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
         }
 
         if (jwtManager.passFilters(result.getAccessToken(), this.filters, getPublicKey(result.getAccessToken()))) {
-            return result.getAccessToken();
+            return new AuthenticationResponse(result.getAccessToken(), result.getRefreshToken());
+        } else {
+            throw CatalogAuthenticationException.userNotAllowed();
+        }
+    }
+
+    @Override
+    public AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException {
+        AuthenticationContext context;
+        AuthenticationResult result;
+        ExecutorService service = null;
+        try {
+            service = Executors.newFixedThreadPool(1);
+            context = new AuthenticationContext(String.valueOf(this.oidcProviderMetadata.getAuthorizationEndpointURI()), false, service);
+            Future<AuthenticationResult> future = context.acquireTokenByRefreshToken(refreshToken, authClientId, null);
+            result = future.get();
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            throw CatalogAuthenticationException.incorrectUserOrPassword();
+        } finally {
+            service.shutdown();
+        }
+
+        if (result == null) {
+            throw CatalogAuthenticationException.incorrectUserOrPassword();
+        }
+
+        if (jwtManager.passFilters(result.getAccessToken(), this.filters, getPublicKey(result.getAccessToken()))) {
+            return new AuthenticationResponse(result.getAccessToken(), result.getRefreshToken());
         } else {
             throw CatalogAuthenticationException.userNotAllowed();
         }
@@ -363,7 +391,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String getUserId(String token) throws CatalogException {
+    public String getUserId(String token) throws CatalogAuthenticationException {
         return (String) jwtManager.getClaim(token, "oid", getPublicKey(token));
     }
 

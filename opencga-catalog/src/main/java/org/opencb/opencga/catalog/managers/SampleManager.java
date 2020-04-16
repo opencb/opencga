@@ -257,8 +257,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        return sampleDBAdaptor.iterator(study.getUid(), query, options, userId);
+        Query finalQuery = new Query(query);
+        fixQueryObject(study, finalQuery, userId);
+        // Fix query if it contains any annotation
+        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
+        finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return sampleDBAdaptor.iterator(study.getUid(), finalQuery, options, userId);
     }
 
     @Override

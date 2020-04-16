@@ -365,9 +365,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        query.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return individualDBAdaptor.iterator(study.getUid(), query, options, userId);
+        Query finalQuery = new Query(query);
+        fixQuery(study, finalQuery, userId);
+        // Fix query if it contains any annotation
+        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
+        finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return individualDBAdaptor.iterator(study.getUid(), finalQuery, options, userId);
     }
 
     @Override

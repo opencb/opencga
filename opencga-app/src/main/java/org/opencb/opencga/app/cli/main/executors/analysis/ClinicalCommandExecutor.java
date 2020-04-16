@@ -10,13 +10,14 @@ import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
-import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.VariantActionableCommandOptions.VARIANT_ACTIONABLE_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.VariantQueryCommandOptions.VARIANT_QUERY_COMMAND;
 
@@ -61,6 +62,17 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = tiering();
                 break;
 
+            case TEAM_RUN_COMMAND:
+                queryResponse = team();
+                break;
+
+            case ZETTA_RUN_COMMAND:
+                queryResponse = zetta();
+                break;
+
+            case CANCER_TIERING_RUN_COMMAND:
+                queryResponse = cancerTiering();
+                break;
 
             default:
                 logger.error("Subcommand not valid");
@@ -122,7 +134,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ClinicalAnalysisDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
-        return openCGAClient.getClinicalAnalysisClient().info(commandOptions.clinical, params);
+        return openCGAClient.getClinicalAnalysisClient().info(commandOptions.clinicalAnalysis, params);
     }
 
     private RestResponse<ObjectMap> updateAcl() throws ClientException, CatalogException {
@@ -223,8 +235,8 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
 
     private RestResponse<Job> tiering() throws ClientException {
         return openCGAClient.getClinicalAnalysisClient().runInterpretationTiering(
-                new TieringInterpretationAnalysisParams(clinicalCommandOptions.tieringCommandOptions.clinical,
-                        clinicalCommandOptions.tieringCommandOptions.panel,
+                new TieringInterpretationAnalysisParams(clinicalCommandOptions.tieringCommandOptions.clinicalAnalysis,
+                        clinicalCommandOptions.tieringCommandOptions.panels,
                         clinicalCommandOptions.tieringCommandOptions.penetrance,
                         clinicalCommandOptions.tieringCommandOptions.maxLowCoverage,
                         clinicalCommandOptions.tieringCommandOptions.includeLowCoverage),
@@ -233,15 +245,77 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> team() throws ClientException {
-        return null;
+        return openCGAClient.getClinicalAnalysisClient().runInterpretationTeam(
+                new TeamInterpretationAnalysisParams(clinicalCommandOptions.teamCommandOptions.clinicalAnalysis,
+                        clinicalCommandOptions.teamCommandOptions.panels,
+                        clinicalCommandOptions.teamCommandOptions.familySeggregation,
+                        clinicalCommandOptions.teamCommandOptions.maxLowCoverage,
+                        clinicalCommandOptions.teamCommandOptions.includeLowCoverage),
+                getParams(clinicalCommandOptions.teamCommandOptions.study)
+        );
     }
 
-    private RestResponse<Job> custom() throws ClientException {
-        return null;
+    private RestResponse<Job> zetta() throws ClientException {
+        ClinicalCommandOptions.InterpretationZettaCommandOptions cliOptions = clinicalCommandOptions.zettaCommandOptions;
+
+        return openCGAClient.getClinicalAnalysisClient().runInterpretationZetta(
+                new ZettaInterpretationAnalysisParams()
+                        .setClinicalAnalysis(cliOptions.clinicalAnalysis)
+                        .setId(cliOptions.basicQueryOptions.id)
+                        .setRegion(cliOptions.basicQueryOptions.region)
+                        .setType(cliOptions.basicQueryOptions.type)
+                        .setStudy(cliOptions.study)
+                        .setFile(cliOptions.file)
+                        .setFilter(cliOptions.filter)
+                        .setQual(cliOptions.qual)
+                        .setFileData(cliOptions.fileData)
+                        .setSample(cliOptions.samples)
+                        .setSampleData(cliOptions.sampleData)
+                        .setSampleAnnotation(cliOptions.sampleAnnotation)
+                        .setCohort(cliOptions.cohort)
+                        .setCohortStatsRef(cliOptions.basicQueryOptions.rf)
+                        .setCohortStatsAlt(cliOptions.basicQueryOptions.af)
+                        .setCohortStatsMaf(cliOptions.basicQueryOptions.maf)
+                        .setCohortStatsMgf(cliOptions.mgf)
+                        .setCohortStatsPass(cliOptions.cohortStatsPass)
+                        .setMissingAlleles(cliOptions.missingAlleleCount)
+                        .setMissingGenotypes(cliOptions.missingGenotypeCount)
+                        .setScore(cliOptions.score)
+                        .setGene(cliOptions.basicQueryOptions.gene)
+                        .setCt(cliOptions.basicQueryOptions.consequenceType)
+                        .setXref(cliOptions.xref)
+                        .setBiotype(cliOptions.geneBiotype)
+                        .setProteinSubstitution(cliOptions.basicQueryOptions.proteinSubstitution)
+                        .setConservation(cliOptions.basicQueryOptions.conservation)
+                        .setPopulationFrequencyAlt(cliOptions.basicQueryOptions.populationFreqAlt)
+                        .setPopulationFrequencyRef(cliOptions.populationFreqRef)
+                        .setPopulationFrequencyMaf(cliOptions.populationFreqMaf)
+                        .setTranscriptFlag(cliOptions.flags)
+                        .setGeneTraitId(cliOptions.geneTraitId)
+                        .setGo(cliOptions.go)
+                        .setExpression(cliOptions.expression)
+                        .setProteinKeyword(cliOptions.proteinKeywords)
+                        .setDrug(cliOptions.drugs)
+                        .setFunctionalScore(cliOptions.basicQueryOptions.functionalScore)
+                        .setClinicalSignificance(cliOptions.clinicalSignificance)
+                        .setCustomAnnotation(cliOptions.annotations)
+                        .setPanel(cliOptions.panel)
+                        .setTrait(cliOptions.trait)
+                        .setMaxLowCoverage(cliOptions.maxLowCoverage)
+                        .setIncludeLowCoverage(cliOptions.includeLowCoverage),
+                getParams(clinicalCommandOptions.teamCommandOptions.study)
+        );
     }
 
     private RestResponse<Job> cancerTiering() throws ClientException {
-        return null;
+        ClinicalCommandOptions.InterpretationCancerTieringCommandOptions cliOptions = clinicalCommandOptions.cancerTieringCommandOptions;
+
+        return openCGAClient.getClinicalAnalysisClient().runInterpretationCancerTiering(
+                new CancerTieringInterpretationAnalysisParams()
+                        .setClinicalAnalysis(cliOptions.clinicalAnalysis)
+                        .setDiscardedVariants(cliOptions.discardedVariants),
+                getParams(clinicalCommandOptions.cancerTieringCommandOptions.study)
+        );
     }
 
     private ObjectMap getParams(String study) {

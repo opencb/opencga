@@ -39,7 +39,6 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
@@ -57,7 +56,6 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.naming.NamingException;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -82,7 +80,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        String token = catalogManager.getUserManager().loginAsAdmin("admin");
+        String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
         assertEquals("opencga" ,catalogManager.getUserManager().getUserId(token));
     }
 
@@ -170,7 +168,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     private String getAdminToken() throws CatalogException, IOException {
-        return catalogManager.getUserManager().loginAsAdmin("admin");
+        return catalogManager.getUserManager().loginAsAdmin("admin").getToken();
     }
 
     @Ignore
@@ -190,7 +188,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().createGroup(studyFqn, group, token);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new StudyAclParams("", AclParams.Action.SET,
                 "view_only"), token);
-        String token = catalogManager.getUserManager().login("user", "password");
+        String token = catalogManager.getUserManager().login("user", "password").getToken();
 
         assertEquals(9, catalogManager.getSampleManager().count(studyFqn, new Query(), token).getNumTotalResults());
 
@@ -205,7 +203,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void syncUsers() throws CatalogException {
         // Action only for admins
-        String token = catalogManager.getUserManager().loginAsAdmin("admin");
+        String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
 
         catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", "bio", "bio", studyFqn, true, token);
         DataResult<Group> bio = catalogManager.getStudyManager().getGroup(studyFqn, "bio", this.token);
@@ -260,7 +258,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new StudyAclParams("", AclParams.Action.SET, "view_only"), token);
         assertTrue(permissions.first().containsKey("@group_cancer_some_thing_else"));
 
-        String token = catalogManager.getUserManager().login("test", "test");
+        String token = catalogManager.getUserManager().login("test", "test").getToken();
         DataResult<Study> studyDataResult = catalogManager.getStudyManager().get("user@1000G:phase1", QueryOptions.empty(), token);
         assertEquals(1, studyDataResult.getNumResults());
         assertTrue(studyDataResult.first().getAttributes().isEmpty());

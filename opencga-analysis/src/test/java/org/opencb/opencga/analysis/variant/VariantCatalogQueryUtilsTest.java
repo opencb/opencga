@@ -91,7 +91,7 @@ public class VariantCatalogQueryUtilsTest {
 
         User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.AccountType.FULL, null).first();
 
-        sessionId = catalog.getUserManager().login("user", "1234");
+        sessionId = catalog.getUserManager().login("user", "1234").getToken();
         catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", "GRCh38", null, sessionId);
         catalog.getStudyManager().create("p1", "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
         catalog.getStudyManager().create("p1", "s2", "s2", "s2", null, null, null, null, null, null, sessionId);

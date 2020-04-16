@@ -57,7 +57,7 @@ public class MetaCommandExecutor extends AdminCommandExecutor {
                 executor.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().loginAsAdmin(executor.commonOptions.adminPassword);
+            String token = catalogManager.getUserManager().loginAsAdmin(executor.commonOptions.adminPassword).getToken();
 
             ObjectMap params = new ObjectMap();
             params.putIfNotEmpty(MetaDBAdaptor.SECRET_KEY, executor.updateSecretKey);

@@ -2,20 +2,19 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
+import java.util.List;
+
 public class ZettaInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Zetta interpretation analysis params";
 
     private String clinicalAnalysis;
 
     // Variant filters
-    private String id;
+    private List<String> id;
     private String region;
     private String type;
-    private String reference;
-    private String alternate;
 
     // Study filters
-    private String project;
     private String study;
     private String file;
     private String filter;
@@ -70,8 +69,8 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
     public ZettaInterpretationAnalysisParams() {
     }
 
-    public ZettaInterpretationAnalysisParams(String clinicalAnalysis, String id, String region, String type, String reference,
-                                             String alternate, String project, String study, String file, String filter, String qual,
+    public ZettaInterpretationAnalysisParams(String clinicalAnalysis, List<String> id, String region, String type,
+                                             String study, String file, String filter, String qual,
                                              String fileData, String sample, String genotype, String sampleData, String sampleAnnotation,
                                              String sampleMetadata, String unknownGenotype, String cohort, String cohortStatsRef,
                                              String cohortStatsAlt, String cohortStatsMaf, String cohortStatsMgf, String cohortStatsPass,
@@ -86,9 +85,6 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         this.id = id;
         this.region = region;
         this.type = type;
-        this.reference = reference;
-        this.alternate = alternate;
-        this.project = project;
         this.study = study;
         this.file = file;
         this.filter = filter;
@@ -143,11 +139,11 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getId() {
+    public List<String> getId() {
         return id;
     }
 
-    public ZettaInterpretationAnalysisParams setId(String id) {
+    public ZettaInterpretationAnalysisParams setId(List<String> id) {
         this.id = id;
         return this;
     }
@@ -167,33 +163,6 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
 
     public ZettaInterpretationAnalysisParams setType(String type) {
         this.type = type;
-        return this;
-    }
-
-    public String getReference() {
-        return reference;
-    }
-
-    public ZettaInterpretationAnalysisParams setReference(String reference) {
-        this.reference = reference;
-        return this;
-    }
-
-    public String getAlternate() {
-        return alternate;
-    }
-
-    public ZettaInterpretationAnalysisParams setAlternate(String alternate) {
-        this.alternate = alternate;
-        return this;
-    }
-
-    public String getProject() {
-        return project;
-    }
-
-    public ZettaInterpretationAnalysisParams setProject(String project) {
-        this.project = project;
         return this;
     }
 

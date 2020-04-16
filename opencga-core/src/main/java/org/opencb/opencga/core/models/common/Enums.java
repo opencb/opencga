@@ -121,6 +121,7 @@ public final class Enums {
         CHANGE_PERMISSION,
 
         LOGIN,
+        REFRESH_TOKEN,
         CHANGE_USER_PASSWORD,
         RESET_USER_PASSWORD,
         CHANGE_USER_CONFIG,

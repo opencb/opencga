@@ -90,9 +90,6 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
         }
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
-        // Disease panels management
-        List<DiseasePanel> biodataDiseasePanels = null;
-
         // Get sample names and update proband information (to be able to navigate to the parents and their samples easily)
         List<String> sampleList = ClinicalUtils.getSampleNames(clinicalAnalysis, proband);
 
@@ -100,7 +97,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
         TeamClinicalVariantCreator creator;
 
         try {
-            creator = new TeamClinicalVariantCreator(biodataDiseasePanels,
+            creator = new TeamClinicalVariantCreator(diseasePanels,
                     clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
                     clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly),
                     clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
