@@ -27,9 +27,17 @@ public class VariantIndexParams extends ToolParams {
     }
 
     public VariantIndexParams(String file,
-                              boolean resume, String outdir, boolean transform, boolean gvcf,
-                              boolean load, String loadSplitData, boolean skipSampleIndex, boolean skipPostLoadCheck,
-                              boolean excludeGenotype, String includeExtraFields, String merge,
+                              boolean resume, String outdir,
+                              boolean transform,
+                              boolean gvcf,
+                              boolean normalizationSkip, String referenceGenome,
+                              boolean family,
+                              boolean load, String loadSplitFile, boolean loadMultiFile,
+                              String loadSampleIndex,
+                              String loadArchive,
+                              String loadHomRef,
+                              String postLoadCheck,
+                              boolean excludeGenotype, String includeSampleData, String merge,
                               boolean calculateStats, Aggregation aggregated, String aggregationMappingFile, boolean annotate,
                               String annotator, boolean overwriteAnnotations, boolean indexSearch) {
         this.file = file;
@@ -37,12 +45,18 @@ public class VariantIndexParams extends ToolParams {
         this.outdir = outdir;
         this.transform = transform;
         this.gvcf = gvcf;
+        this.normalizationSkip = normalizationSkip;
+        this.referenceGenome = referenceGenome;
+        this.family = family;
         this.load = load;
-        this.loadSplitData = loadSplitData;
-        this.skipSampleIndex = skipSampleIndex;
-        this.skipPostLoadCheck = skipPostLoadCheck;
+        this.loadSplitFile = loadSplitFile;
+        this.loadMultiFile = loadMultiFile;
+        this.loadSampleIndex = loadSampleIndex;
+        this.loadArchive = loadArchive;
+        this.loadHomRef = loadHomRef;
+        this.postLoadCheck = postLoadCheck;
         this.excludeGenotype = excludeGenotype;
-        this.includeExtraFields = includeExtraFields;
+        this.includeSampleData = includeSampleData;
         this.merge = merge;
         this.calculateStats = calculateStats;
         this.aggregated = aggregated;
@@ -60,12 +74,20 @@ public class VariantIndexParams extends ToolParams {
     private boolean transform;
     private boolean gvcf;
 
+    private boolean normalizationSkip;
+    private String referenceGenome;
+
+    private boolean family;
+
     private boolean load;
-    private String loadSplitData;
-    private boolean skipSampleIndex;
-    private boolean skipPostLoadCheck;
+    private String loadSplitFile;
+    private boolean loadMultiFile;
+    private String loadSampleIndex;
+    private String loadArchive;
+    private String loadHomRef;
+    private String postLoadCheck;
     private boolean excludeGenotype;
-    private String includeExtraFields = ParamConstants.ALL;
+    private String includeSampleData = ParamConstants.ALL;
     private String merge;
 
     private boolean calculateStats;
@@ -123,6 +145,33 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
+    public boolean getNormalizationSkip() {
+        return normalizationSkip;
+    }
+
+    public VariantIndexParams setNormalizationSkip(boolean normalizationSkip) {
+        this.normalizationSkip = normalizationSkip;
+        return this;
+    }
+
+    public String getReferenceGenome() {
+        return referenceGenome;
+    }
+
+    public VariantIndexParams setReferenceGenome(String referenceGenome) {
+        this.referenceGenome = referenceGenome;
+        return this;
+    }
+
+    public boolean isFamily() {
+        return family;
+    }
+
+    public VariantIndexParams setFamily(boolean family) {
+        this.family = family;
+        return this;
+    }
+
     public boolean isLoad() {
         return load;
     }
@@ -132,30 +181,57 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
-    public String getLoadSplitData() {
-        return loadSplitData;
+    public String getLoadSplitFile() {
+        return loadSplitFile;
     }
 
-    public VariantIndexParams setLoadSplitData(String loadSplitData) {
-        this.loadSplitData = loadSplitData;
+    public VariantIndexParams setLoadSplitFile(String loadSplitFile) {
+        this.loadSplitFile = loadSplitFile;
         return this;
     }
 
-    public boolean isSkipSampleIndex() {
-        return skipSampleIndex;
+    public boolean isLoadMultiFile() {
+        return loadMultiFile;
     }
 
-    public VariantIndexParams setSkipSampleIndex(boolean skipSampleIndex) {
-        this.skipSampleIndex = skipSampleIndex;
+    public VariantIndexParams setLoadMultiFile(boolean loadMultiFile) {
+        this.loadMultiFile = loadMultiFile;
         return this;
     }
 
-    public boolean isSkipPostLoadCheck() {
-        return skipPostLoadCheck;
+    public String getLoadSampleIndex() {
+        return loadSampleIndex;
     }
 
-    public VariantIndexParams setSkipPostLoadCheck(boolean skipPostLoadCheck) {
-        this.skipPostLoadCheck = skipPostLoadCheck;
+    public VariantIndexParams setLoadSampleIndex(String loadSampleIndex) {
+        this.loadSampleIndex = loadSampleIndex;
+        return this;
+    }
+
+    public String getLoadArchive() {
+        return loadArchive;
+    }
+
+    public VariantIndexParams setLoadArchive(String loadArchive) {
+        this.loadArchive = loadArchive;
+        return this;
+    }
+
+    public String getLoadHomRef() {
+        return loadHomRef;
+    }
+
+    public VariantIndexParams setLoadHomRef(String loadHomRef) {
+        this.loadHomRef = loadHomRef;
+        return this;
+    }
+
+    public String getPostLoadCheck() {
+        return postLoadCheck;
+    }
+
+    public VariantIndexParams setPostLoadCheck(String postLoadCheck) {
+        this.postLoadCheck = postLoadCheck;
         return this;
     }
 
@@ -168,12 +244,12 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
-    public String getIncludeExtraFields() {
-        return includeExtraFields;
+    public String getIncludeSampleData() {
+        return includeSampleData;
     }
 
-    public VariantIndexParams setIncludeExtraFields(String includeExtraFields) {
-        this.includeExtraFields = includeExtraFields;
+    public VariantIndexParams setIncludeSampleData(String includeSampleData) {
+        this.includeSampleData = includeSampleData;
         return this;
     }
 
@@ -258,10 +334,10 @@ public class VariantIndexParams extends ToolParams {
         sb.append(", transform=").append(transform);
         sb.append(", gvcf=").append(gvcf);
         sb.append(", load=").append(load);
-        sb.append(", loadSplitData=").append(loadSplitData);
-        sb.append(", skipPostLoadCheck=").append(skipPostLoadCheck);
+        sb.append(", loadSplitData=").append(loadSplitFile);
+        sb.append(", skipPostLoadCheck=").append(postLoadCheck);
         sb.append(", excludeGenotype=").append(excludeGenotype);
-        sb.append(", includeExtraFields='").append(includeExtraFields).append('\'');
+        sb.append(", includeExtraFields='").append(includeSampleData).append('\'');
         sb.append(", merge='").append(merge).append('\'');
         sb.append(", calculateStats=").append(calculateStats);
         sb.append(", aggregated=").append(aggregated);

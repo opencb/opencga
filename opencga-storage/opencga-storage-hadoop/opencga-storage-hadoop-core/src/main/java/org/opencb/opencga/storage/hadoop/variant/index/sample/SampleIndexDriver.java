@@ -389,7 +389,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 }
             }
             for (int sampleId : context.getConfiguration().getInts(MULTI_FILE_SAMPLES)) {
-                samples.get(sampleId).setSplitData(VariantStorageEngine.LoadSplitData.MULTI);
+                samples.get(sampleId).setSplitData(VariantStorageEngine.SplitData.MULTI);
             }
         }
 

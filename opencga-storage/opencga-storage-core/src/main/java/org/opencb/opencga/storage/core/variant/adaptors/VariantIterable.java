@@ -38,6 +38,21 @@ import java.util.stream.StreamSupport;
  */
 public interface VariantIterable extends Iterable<Variant> {
 
+    /**
+     * Allows this code:
+     *
+     * for (Variant variant : engine.iterable(query, options)) {
+     *     ...
+     * }
+     *
+     * @param query Query
+     * @param options QueryOptions
+     * @return Iterable
+     */
+    default Iterable<Variant> iterable(Query query, QueryOptions options) {
+        return () -> iterator(query, options);
+    }
+
     @Override
     default VariantDBIterator iterator() {
         return iterator(new Query(), new QueryOptions());

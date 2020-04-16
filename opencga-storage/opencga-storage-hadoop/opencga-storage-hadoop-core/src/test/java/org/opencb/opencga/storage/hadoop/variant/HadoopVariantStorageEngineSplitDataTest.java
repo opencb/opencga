@@ -78,7 +78,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         }
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.CHROMOSOME);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_FILE.key(), VariantStorageEngine.SplitData.CHROMOSOME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr21.variant-test-file.vcf.gz")),
                 outputUri, true, true, true);
 
@@ -98,7 +98,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.CHROMOSOME);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_FILE.key(), VariantStorageEngine.SplitData.CHROMOSOME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")),
                 outputUri, true, true, true);
 
@@ -131,7 +131,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
                 outDir, true, true, true);
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), null);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_FILE.key(), null);
 
         StorageEngineException expected = StorageEngineException.alreadyLoadedSamples("chr21.variant-test-file.vcf.gz", SAMPLES);
 //        thrown.expectMessage(expected.getMessage());
@@ -145,7 +145,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
     public void testDuplicatedVariantsFail() throws Exception {
         URI outDir = newOutputUri();
 
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.REGION);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_FILE.key(), VariantStorageEngine.SplitData.REGION);
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr20.variant-test-file.vcf.gz")),
                 outDir, true, true, true);
@@ -168,7 +168,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
     public void testDuplicatedVariantsAccepted() throws Exception {
         URI outDir = newOutputUri();
 
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.MULTI);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_FILE.key(), VariantStorageEngine.SplitData.MULTI);
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")),
                 outDir, true, true, true);
@@ -233,7 +233,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 //            assertEquals(TaskMetadata.Status.READY, SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata));
 //        }
 
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.REGION);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_FILE.key(), VariantStorageEngine.SplitData.REGION);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")),
                 outputUri, true, true, true);
 
@@ -245,7 +245,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata));
         }
 
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), null);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_FILE.key(), null);
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")),
                 outputUri, true, true, true);
@@ -274,14 +274,14 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
         int studyId_actual = mm.getStudyId(STUDY_NAME + "_split");
 
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.REGION);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_FILE.key(), VariantStorageEngine.SplitData.REGION);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")),
                 outputUri, true, true, true);
 
         variantStorageEngine.removeFiles(STUDY_NAME + "_split", Collections.singletonList("chr22_1-2.variant-test-file.vcf.gz"));
 
 
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), null);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_FILE.key(), null);
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")),
                 outDir, true, true, true);
@@ -309,7 +309,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
 
         params.append(VariantStorageOptions.STUDY.key(), "multi");
-        params.append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.MULTI);
+        params.append(VariantStorageOptions.LOAD_SPLIT_FILE.key(), VariantStorageEngine.SplitData.MULTI);
         runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         runETL(getVariantStorageEngine(), getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
 

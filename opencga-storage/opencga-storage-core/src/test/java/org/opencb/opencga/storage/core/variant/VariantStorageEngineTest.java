@@ -92,6 +92,54 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void skipNormalization() throws Exception {
+        clearDB(DB_NAME);
+        StudyMetadata studyMetadata = newStudyMetadata();
+        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata,
+                new ObjectMap(VariantStorageOptions.NORMALIZATION_SKIP.key(), true));
+
+        VariantFileMetadata fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(etlResult.getTransformResult());
+        assertEquals(1, metadataManager.getIndexedFiles(studyMetadata.getId()).size());
+        checkTransformedVariants(etlResult.getTransformResult(), studyMetadata);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, true, false, true, getExpectedNumLoadedVariants(fileMetadata));
+        int indels = 0;
+        for (Variant variant : variantStorageEngine.iterable(new Query(VariantQueryParam.TYPE.key(), "indel"), new QueryOptions())) {
+            assertNotEquals("", variant.getReference());
+            assertNotEquals("", variant.getAlternate());
+            indels++;
+        }
+        assertNotEquals(0, indels);
+    }
+
+    @Test
+    public void leftAlign() throws Exception {
+        clearDB(DB_NAME);
+        StudyMetadata studyMetadata = newStudyMetadata();
+        getResourceUri("reference/homo_sapiens_grch38_small.fa.gz");
+        getResourceUri("reference/homo_sapiens_grch38_small.fa.gz.gzi");
+        getResourceUri("reference/homo_sapiens_grch38_small.fa.gz.fai");
+        StoragePipelineResult etlResult = runDefaultETL(getResourceUri("reference/unaligned.vcf"), variantStorageEngine, studyMetadata,
+                new ObjectMap(VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), getResourceUri("reference/homo_sapiens_grch38_small.fa.gz").getPath())
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                        .append(VariantStorageOptions.ANNOTATE.key(), false)
+        );
+
+        assertEquals(1, metadataManager.getIndexedFiles(studyMetadata.getId()).size());
+        checkTransformedVariants(etlResult.getTransformResult(), studyMetadata);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, true, false, true, 5);
+
+        for (Variant variant : variantStorageEngine) {
+            String aligned = variant.getStudies().get(0).getFile(0).getData().get("ALIGNED");
+            if (aligned != null) {
+                assertEquals(aligned, variant.toString());
+            } else {
+                assertEquals("1", variant.getChromosome());
+            }
+        }
+
+    }
+
+    @Test
     public void avroBasicIndex() throws Exception {
         clearDB(DB_NAME);
         StudyMetadata studyMetadata = newStudyMetadata();
@@ -401,7 +449,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         variantStorageEngine.getOptions()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
-                .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.CHROMOSOME);
+                .append(VariantStorageOptions.LOAD_SPLIT_FILE.key(), VariantStorageEngine.SplitData.CHROMOSOME);
 
         List<StoragePipelineResult> results = variantStorageEngine.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
 
@@ -437,7 +485,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
 //        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageManager,
                 studyMetadata, options
-                        .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.CHROMOSOME));
+                        .append(VariantStorageOptions.LOAD_SPLIT_FILE.key(), VariantStorageEngine.SplitData.CHROMOSOME));
         int fileIdChr22 = metadataManager.getFileId(studyMetadata.getId(), "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
         assertTrue(metadataManager.getIndexedFiles(studyMetadata.getId()).contains(fileIdChr22));
@@ -494,7 +542,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         thrown.expect(exception.getClass());
         thrown.expectMessage(exception.getMessage());
         runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
-                studyMetadata, options.append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.CHROMOSOME));
+                studyMetadata, options.append(VariantStorageOptions.LOAD_SPLIT_FILE.key(), VariantStorageEngine.SplitData.CHROMOSOME));
     }
 
     /**
@@ -698,10 +746,9 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         long start = System.currentTimeMillis();
         int numVariants = 0;
         String expectedStudyId = studyMetadata.getName();
-        DataResult<Long> count = dbAdaptor.count(new Query());
-        assertEquals(1, count.getNumResults());
+        DataResult<Long> count = dbAdaptor.count();
         if (expectedNumVariants >= 0) {
-            assertEquals(expectedNumVariants, count.first().intValue());
+            assertEquals(expectedNumVariants, count.getNumMatches());
         }
 //        for (Integer fileId : metadataManager.getIndexedFiles(studyMetadata.getId())) {
 //            assertTrue(studyMetadata.getHeaders().containsKey(fileId));
@@ -740,12 +787,15 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                     try {
                         VariantStats variantStats = entry.getValue().getStats(cohort.getName());
                         assertNotNull(variantStats);
-                        assertEquals(variant + " has incorrect stats for cohort \"" + cohort.getName() + "\":"+cohort.getId(),
+                        assertEquals(variant + " has incorrect stats for cohort \"" + cohort.getName() + "\":" + cohort.getId(),
                                 cohort.getSamples().size(),
                                 variantStats.getGenotypeCount().values()
                                         .stream()
                                         .mapToInt(Integer::intValue)
-                                        .sum());
+                                        .sum() + variantStats.getMissingGenotypeCount());
+                        assertEquals(variant + " has incorrect stats for cohort \"" + cohort.getName() + "\":" + cohort.getId(),
+                                cohort.getSamples().size(),
+                                variantStats.getSampleCount() + variantStats.getMissingGenotypeCount());
                     } catch (AssertionError error) {
                         System.out.println(variant + " = " + variant.toJson());
                         throw error;

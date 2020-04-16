@@ -21,9 +21,9 @@ import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -100,9 +100,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
         public boolean excludeGenotype;
 
-        @Parameter(names = {"--include-extra-fields"}, description = "Index including other FORMAT fields." +
-                " Use \"" + VariantQueryUtils.ALL + "\", \"" + VariantQueryUtils.NONE + "\", or CSV with the fields to load.")
-        public String includeExtraFields = VariantQueryUtils.ALL;
+        @Parameter(names = {"--include-sample-data"}, description = "Index including other sample data fields (i.e. FORMAT fields)."
+                + " Use \"" + VariantQueryUtils.ALL + "\", \"" + VariantQueryUtils.NONE + "\", or CSV with the fields to load.")
+        public String includeSampleData = VariantQueryUtils.ALL;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public Aggregation aggregated = Aggregation.NONE;
@@ -110,7 +110,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;
 
-        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
+        @Parameter(names = {"--gvcf"}, description = "Hint to indicate that the input file is in gVCF format.")
         public boolean gvcf;
 
 //        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
@@ -134,14 +134,35 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
         public boolean resume;
 
-        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files by CHROMOSOME, REGION or TYPE")
-        public String loadSplitData;
+        @Parameter(names = {"--family"}, description = "Indicate that the files to be loaded are part of a family. "
+                + "This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards")
+        public boolean family;
 
-        @Parameter(names = {"--skip-sample-index"}, description = "Do not build sample index while loading", arity = 0)
-        public boolean skipSampleIndex;
+        @Parameter(names = {"--load-split-file"}, description = "Indicate that the variants from a group of samples is split in multiple files, either by CHROMOSOME or by REGION. In either case, variants from different files must not overlap.")
+        public String loadSplitFile;
 
-        @Parameter(names = {"--skip-post-load-check"}, description = "Do not execute post load checks over the database")
-        public boolean skipPostLoadCheck;
+        @Parameter(names = {"--load-multi-file"}, description = "Indicate the presence of multiple files for the same sample. Each file could be the result of a different vcf-caller or experiment over the same sample.", arity = 0)
+        public boolean loadMultiFile;
+
+        @Parameter(names = {"--load-sample-index"}, description = "Build sample index while loading. (yes, no, auto)", arity = 0)
+        public String loadSampleIndex = "auto";
+
+        @Parameter(names = {"--load-archive"}, description = "Load archive data. (yes, no, auto)", arity = 0)
+        public String loadArchive = "auto";
+
+        @Parameter(names = {"--load-hom-ref"}, description = "Load HOM_REF genotypes. (yes, no, auto)", arity = 0)
+        public String loadHomRef = "auto";
+
+        @Parameter(names = {"--post-load-check"}, description = "Execute post load checks over the database. (yes, no, auto)")
+        public String postLoadCheck = "auto";
+
+        @Parameter(names = {"--normalization-skip"}, description = "Do not execute the normalization process. "
+                + "WARN: INDELs will be stored with the context base")
+        public boolean normalizationSkip;
+
+        @Parameter(names = {"--reference-genome"}, description = "Reference genome in FASTA format used during the normalization step "
+                + "for a complete left alignment")
+        public String referenceGenome;
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -262,7 +283,7 @@ public class StorageVariantCommandOptions {
     }
 
     /**
-     * @see org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils#parseGenericVariantQuery
+     * @see org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils#parseBasicVariantQuery
      */
     public static class GenericVariantQueryOptions extends BasicVariantQueryOptions {
 

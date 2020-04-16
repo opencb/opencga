@@ -77,7 +77,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private final MetadataCache<Integer, String> sampleNameCache;
     private final MetadataCache<Integer, Boolean> sampleIdIndexedCache;
     private final MetadataCache<Integer, LinkedHashSet<Integer>> sampleIdsFromFileIdCache;
-    private final MetadataCache<Integer, VariantStorageEngine.LoadSplitData> splitDataCache;
+    private final MetadataCache<Integer, VariantStorageEngine.SplitData> splitDataCache;
 
     private final MetadataCache<String, Integer> fileIdCache;
     private final MetadataCache<Integer, String> fileNameCache;
@@ -1274,7 +1274,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptyList());
     }
 
-    public VariantStorageEngine.LoadSplitData getLoadSplitData(int studyId, int sampleId) {
+    public VariantStorageEngine.SplitData getLoadSplitData(int studyId, int sampleId) {
         return splitDataCache.get(studyId, sampleId);
     }
 

@@ -20,7 +20,7 @@ public class StudyEntrySingleFileToHBaseConverter extends StudyEntryToHBaseConve
 
         metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
             int sampleId = sampleMetadata.getId();
-            if (VariantStorageEngine.LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
+            if (VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
                 if (sampleMetadata.getFiles().indexOf(fileId) == 0) {
                     sampleToColumn.put(sampleId, VariantPhoenixHelper.buildSampleColumnKey(studyMetadata.getId(), sampleId));
                 } else {

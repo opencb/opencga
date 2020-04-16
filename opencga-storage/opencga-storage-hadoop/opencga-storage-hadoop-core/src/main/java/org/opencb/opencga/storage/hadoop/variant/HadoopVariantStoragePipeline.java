@@ -31,6 +31,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
@@ -65,11 +66,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERGE_MODE;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_SLICE_BUFFER_SIZE;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_TABLE_SKIP;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.VARIANT_TABLE_LOAD_REFERENCE;
 
 /**
  * Created by mh719 on 13/05/2016.
@@ -173,9 +174,8 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     public URI preLoad(URI input, URI output) throws StorageEngineException {
         super.preLoad(input, output);
 
-        boolean skipArchiveTable = getOptions().getBoolean(ARCHIVE_TABLE_SKIP.key(), ARCHIVE_TABLE_SKIP.defaultValue());
         try {
-            if (skipArchiveTable) {
+            if (YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()) == YesNoAuto.NO) {
                 logger.info("Skip archive table");
             } else {
                 ArchiveTableHelper.createArchiveTableIfNeeded(getOptions(), getArchiveTable(), dbAdaptor.getConnection());
@@ -196,6 +196,20 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     @Override
     protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
         super.securePreLoad(studyMetadata, fileMetadata);
+
+        if (fileMetadata.getSampleIds().isEmpty()) {
+            YesNoAuto loadArchive = YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key());
+            if (loadArchive == YesNoAuto.AUTO) {
+                logger.info("Loading aggregated file with no samples. Skip Archive Table.");
+                getOptions().put(LOAD_ARCHIVE.key(), YesNoAuto.NO);
+            }
+        }
+
+        YesNoAuto loadHomRef = YesNoAuto.parse(getOptions(), LOAD_HOM_REF.key());
+        if (loadHomRef != YesNoAuto.AUTO) {
+            // If auto, use configuration value.
+            getOptions().put(VARIANT_TABLE_LOAD_REFERENCE.key(), loadHomRef.booleanValue());
+        }
 
         MergeMode mergeMode;
         if (!studyMetadata.getAttributes().containsKey(VariantStorageOptions.MERGE_MODE.key())) {
@@ -322,7 +336,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 }
                 for (Integer sampleId : newSamples) {
                     SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-                    if (LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
+                    if (SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
                         // If multi file load, register all secondary sample columns
                         for (Integer fileId : sampleMetadata.getFiles().subList(1, sampleMetadata.getFiles().size())) {
                             multiFileSampleColumns.add(VariantPhoenixHelper.getSampleColumn(studyId, sampleId, fileId));

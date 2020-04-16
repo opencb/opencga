@@ -16,8 +16,12 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.file.File;
@@ -25,6 +29,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by pfurio on 23/08/16.
@@ -81,4 +88,17 @@ public abstract class OperationManager {
         return format.equals(File.Format.VCF) || format.equals(File.Format.GVCF) || format.equals(File.Format.BCF);
     }
 
+    protected void toFileSystemPath(String studyFqn, ObjectMap params, String key, String token) throws CatalogException {
+        String file = params.getString(key);
+        if (StringUtils.isNotEmpty(file)) {
+            Path filePath = getFileSystemPath(studyFqn, file, token);
+            params.put(key, filePath.toString());
+        }
+    }
+
+    protected Path getFileSystemPath(String studyFqn, String fileId, String token) throws CatalogException {
+        File file = catalogManager.getFileManager().get(studyFqn, fileId,
+                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key()), token).first();
+        return Paths.get(file.getUri()).toAbsolutePath();
+    }
 }

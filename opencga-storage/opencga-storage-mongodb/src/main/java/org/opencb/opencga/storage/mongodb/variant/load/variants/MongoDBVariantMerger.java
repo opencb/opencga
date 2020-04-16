@@ -140,7 +140,7 @@ import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVaria
  *
  * So, in case of no filling gaps (i.e. default-chromosome is ?/?) none of this scenarios applies.
  * The only problem may be to load overlapping data, which may corrupt the database.
- * @see VariantStorageOptions#LOAD_SPLIT_DATA
+ * @see VariantStorageOptions#LOAD_SPLIT_FILE
  *
  * The data can came split by chromosomes and/or by batches of samples. For the
  * next tables, columns are batches of samples, and the rows are different regions,

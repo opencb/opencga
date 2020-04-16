@@ -126,6 +126,27 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = metadataManager.getStudyId(study);
+        for (int i = 0; i < trios.size(); i += 3) {
+            Integer father = metadataManager.getSampleId(studyId, trios.get(i));
+            Integer mother = metadataManager.getSampleId(studyId, trios.get(i + 1));
+            Integer child = metadataManager.getSampleId(studyId, trios.get(i + 2));
+            metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
+                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
+                if (father != null && father > 0) {
+                    sampleMetadata.setFather(father);
+                }
+                if (mother != null && mother > 0) {
+                    sampleMetadata.setMother(mother);
+                }
+                return sampleMetadata;
+            });
+        }
+    }
+
+    @Override
     public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();

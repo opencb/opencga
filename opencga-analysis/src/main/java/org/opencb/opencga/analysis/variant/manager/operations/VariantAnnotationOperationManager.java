@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -59,7 +60,8 @@ public class VariantAnnotationOperationManager extends OperationManager {
 
     public void annotate(String projectStr, List<String> studies, String region, String outputFileName, Path outdir, ObjectMap params,
                          String token, boolean overwriteAnnotations) throws Exception {
-        annotate(projectStr, studies, null, region, overwriteAnnotations, outputFileName, outdir, params, token);
+        String loadFileStr = params.getString(VariantAnnotationManager.LOAD_FILE);
+        annotate(projectStr, studies, loadFileStr, region, overwriteAnnotations, outputFileName, outdir, params, token);
     }
 
     private void annotate(String projectStr, List<String> studies, String loadFileStr, String region, boolean overwriteAnnotations,

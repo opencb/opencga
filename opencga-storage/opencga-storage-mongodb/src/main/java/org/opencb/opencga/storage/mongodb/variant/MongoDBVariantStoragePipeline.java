@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
@@ -168,8 +169,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             studyMetadata.getAttributes().put(DEFAULT_GENOTYPE.key(), defaultGenotype);
         }
 
-        VariantStorageEngine.LoadSplitData loadSplitData = VariantStorageEngine.LoadSplitData.from(options);
-        boolean newSampleBatch = checkCanLoadSampleBatch(getMetadataManager(), studyMetadata, fileId, loadSplitData != null);
+        VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(options);
+        boolean newSampleBatch = checkCanLoadSampleBatch(getMetadataManager(), studyMetadata, fileId, splitData != null);
 
         if (newSampleBatch) {
             logger.info("New sample batch!!!");
@@ -728,7 +729,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     protected void checkLoadedVariants(int fileId, StudyMetadata studyMetadata) throws
             StorageEngineException {
 
-        if (getOptions().getBoolean(POST_LOAD_CHECK_SKIP.key(), POST_LOAD_CHECK_SKIP.defaultValue())) {
+        if (YesNoAuto.parse(getOptions(), POST_LOAD_CHECK.key()) == YesNoAuto.NO) {
             logger.warn("Skip check loaded variants");
             return;
         }

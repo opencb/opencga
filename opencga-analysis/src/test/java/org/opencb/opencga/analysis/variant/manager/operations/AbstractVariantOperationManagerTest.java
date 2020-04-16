@@ -258,12 +258,8 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
         // Default cohort should not be modified
-        try {
-            assertEquals(defaultCohort, getDefaultCohort(studyId));
-        } catch (AssertionError e) {
-            defaultCohort.equals(getDefaultCohort(studyId));
-            throw e;
-        }
+        assertEquals(String.valueOf(defaultCohort), String.valueOf(getDefaultCohort(studyId)));
+
 
         //Get transformed file
         Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), outputId)

@@ -877,10 +877,24 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public List<List<String>> getTriosFromFamily(
             String studyFqn, Family family, VariantStorageMetadataManager metadataManager, boolean skipIncompleteFamily, String sessionId)
             throws StorageEngineException, CatalogException {
+        List<List<String>> trios = getTrios(studyFqn, metadataManager, family.getMembers(), sessionId);
+        if (trios.size() == 0) {
+            if (skipIncompleteFamily) {
+                logger.debug("Skip family '" + family.getId() + "'. ");
+            } else {
+                throw new StorageEngineException("Can not calculate mendelian errors on family '" + family.getId() + "'");
+            }
+        }
+        return trios;
+    }
+
+    public List<List<String>> getTrios(
+            String studyFqn, VariantStorageMetadataManager metadataManager, List<Individual> membersList, String sessionId)
+            throws CatalogException {
         int studyId = metadataManager.getStudyId(studyFqn);
+        Map<Long, Individual> membersMap = membersList.stream().collect(Collectors.toMap(Individual::getUid, i -> i));
         List<List<String>> trios = new LinkedList<>();
-        Map<Long, Individual> members = family.getMembers().stream().collect(Collectors.toMap(Individual::getUid, i -> i));
-        for (Individual individual : family.getMembers()) {
+        for (Individual individual : membersList) {
             String fatherSample = null;
             String motherSample = null;
             String childSample = null;
@@ -897,8 +911,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                 }
             }
-            if (individual.getFather() != null && members.containsKey(individual.getFather().getUid())) {
-                Individual father = members.get(individual.getFather().getUid());
+            if (individual.getFather() != null && membersMap.containsKey(individual.getFather().getUid())) {
+                Individual father = membersMap.get(individual.getFather().getUid());
                 if (CollectionUtils.isNotEmpty(father.getSamples())) {
                     for (Sample sample : father.getSamples()) {
                         sample = catalogManager.getSampleManager().search(studyFqn,
@@ -912,8 +926,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                 }
             }
-            if (individual.getMother() != null && members.containsKey(individual.getMother().getUid())) {
-                Individual mother = members.get(individual.getMother().getUid());
+            if (individual.getMother() != null && membersMap.containsKey(individual.getMother().getUid())) {
+                Individual mother = membersMap.get(individual.getMother().getUid());
                 if (CollectionUtils.isNotEmpty(mother.getSamples())) {
                     for (Sample sample : mother.getSamples()) {
                         sample = catalogManager.getSampleManager().search(studyFqn,
@@ -934,13 +948,6 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         fatherSample == null ? "-" : fatherSample,
                         motherSample == null ? "-" : motherSample,
                         childSample));
-            }
-        }
-        if (trios.size() == 0) {
-            if (skipIncompleteFamily) {
-                logger.debug("Skip family '" + family.getId() + "'. ");
-            } else {
-                throw new StorageEngineException("Can not calculate mendelian errors on family '" + family.getId() + "'");
             }
         }
         return trios;
