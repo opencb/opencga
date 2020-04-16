@@ -97,7 +97,7 @@ public class InterpretationCommandOptions {
         @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical Analysis ID", arity = 1)
         public String clinicalAnalysisId;
 
-        @Parameter(names = {"--" + VARIANTS_TO_DISCARD_PARAM_NAME}, description = "Comma separated list of variant IDs to discard",
+        @Parameter(names = {"--" + DISCARDED_VARIANTS_PARAM_NAME}, description = "Comma separated list of variant IDs to discard",
                 arity = 1)
         public String variantIdsToDiscard;
 
@@ -125,7 +125,7 @@ public class InterpretationCommandOptions {
         @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical Analysis ID", arity = 1)
         public String clinicalAnalysisId;
 
-        @Parameter(names = {"--" + VARIANTS_TO_DISCARD_PARAM_NAME}, description = "Comma separated list of variant IDs to discard",
+        @Parameter(names = {"--" + DISCARDED_VARIANTS_PARAM_NAME}, description = "Comma separated list of variant IDs to discard",
                 arity = 1)
         public String variantIdsToDiscard;
 

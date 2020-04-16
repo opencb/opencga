@@ -14,6 +14,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
@@ -67,6 +68,10 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
 
             case ZETTA_RUN_COMMAND:
                 queryResponse = zetta();
+                break;
+
+            case CANCER_TIERING_RUN_COMMAND:
+                queryResponse = cancerTiering();
                 break;
 
             default:
@@ -302,12 +307,15 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         );
     }
 
-    private RestResponse<Job> custom() throws ClientException {
-        return null;
-    }
-
     private RestResponse<Job> cancerTiering() throws ClientException {
-        return null;
+        ClinicalCommandOptions.InterpretationCancerTieringCommandOptions cliOptions = clinicalCommandOptions.cancerTieringCommandOptions;
+
+        return openCGAClient.getClinicalAnalysisClient().runInterpretationCancerTiering(
+                new CancerTieringInterpretationAnalysisParams()
+                        .setClinicalAnalysis(cliOptions.clinicalAnalysis)
+                        .setDiscardedVariants(cliOptions.discardedVariants),
+                getParams(clinicalCommandOptions.cancerTieringCommandOptions.study)
+        );
     }
 
     private ObjectMap getParams(String study) {

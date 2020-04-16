@@ -34,7 +34,7 @@ import java.util.List;
 public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "interpretation-tiering";
-    public static final String DESCRIPTION = "Run GEL tiering interpretation analysis";
+    public static final String DESCRIPTION = "Run tiering interpretation analysis";
 
     private String studyId;
     private String clinicalAnalysisId;

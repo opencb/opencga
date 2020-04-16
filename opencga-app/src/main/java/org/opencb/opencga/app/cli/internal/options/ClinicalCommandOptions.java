@@ -6,12 +6,11 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions;
-import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.BasicVariantQueryOptions;
 
 import java.util.List;
@@ -19,6 +18,7 @@ import java.util.List;
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL_DESC;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -31,7 +31,7 @@ public class ClinicalCommandOptions {
     public TieringCommandOptions tieringCommandOptions;
     public TeamCommandOptions teamCommandOptions;
     public ZettaCommandOptions zettaCommandOptions;
-//    public CancerTieringCommandOptions cancerTieringCommandOptions;
+    public CancerTieringCommandOptions cancerTieringCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -49,6 +49,7 @@ public class ClinicalCommandOptions {
         this.tieringCommandOptions = new TieringCommandOptions();
         this.teamCommandOptions = new TeamCommandOptions();
         this.zettaCommandOptions = new ZettaCommandOptions();
+        this.cancerTieringCommandOptions = new CancerTieringCommandOptions();
     }
 
     @Parameters(commandNames = {InterpretationTieringCommandOptions.TIERING_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
@@ -57,7 +58,7 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
 
         @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity = 1)
@@ -79,13 +80,13 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {TEAM_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {TEAM_RUN_COMMAND}, commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
     public class TeamCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
 
         @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity = 1)
@@ -113,7 +114,7 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
 
         @ParametersDelegate
@@ -212,6 +213,22 @@ public class ClinicalCommandOptions {
 
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {CANCER_TIERING_RUN_COMMAND}, commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
+    public class CancerTieringCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
+        public String clinicalAnalysis;
+
+        @Parameter(names = {"--" + DISCARDED_VARIANTS_PARAM_NAME}, description = "Comma separated list of variant IDs to discard", arity = 1)
+        public List<String> discardedVariants;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
         public String outdir;

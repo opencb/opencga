@@ -37,6 +37,7 @@ public class ClinicalCommandOptions {
     public InterpretationTieringCommandOptions tieringCommandOptions;
     public InterpretationTeamCommandOptions teamCommandOptions;
     public InterpretationZettaCommandOptions zettaCommandOptions;
+    public InterpretationCancerTieringCommandOptions cancerTieringCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -68,6 +69,7 @@ public class ClinicalCommandOptions {
         this.tieringCommandOptions = new InterpretationTieringCommandOptions();
         this.teamCommandOptions = new InterpretationTeamCommandOptions();
         this.zettaCommandOptions = new InterpretationZettaCommandOptions();
+        this.cancerTieringCommandOptions = new InterpretationCancerTieringCommandOptions();
     }
 
 
@@ -277,7 +279,7 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
 
         @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity = 1)
@@ -304,7 +306,7 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
 
         @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity = 1)
@@ -334,7 +336,7 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public StorageVariantCommandOptions.BasicVariantQueryOptions basicQueryOptions = new StorageVariantCommandOptions.BasicVariantQueryOptions();
 
-        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
 
         @Parameter(names = {"--sample"}, description = SAMPLE_DESCR)
@@ -411,9 +413,6 @@ public class ClinicalCommandOptions {
         public String annotations;
 
         @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
-        void setXref(String xref) {
-            this.xref = this.xref == null ? xref : this.xref + ',' + xref;
-        }
         public String xref;
 
         @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
@@ -433,14 +432,17 @@ public class ClinicalCommandOptions {
     }
 
     @Parameters(commandNames = {InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND}, commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
-    public class InterpretationCancerTieringCommandOptions {
+    public class InterpretationCancerTieringCommandOptions extends GeneralCliOptions.StudyOption {
 
         public static final String CANCER_TIERING_RUN_COMMAND = CancerTieringInterpretationAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
+
+        @Parameter(names = {"--" + DISCARDED_VARIANTS_PARAM_NAME}, description = "Comma separated list of variant IDs to discard", arity = 1)
+        public List<String> discardedVariants;
     }
 }

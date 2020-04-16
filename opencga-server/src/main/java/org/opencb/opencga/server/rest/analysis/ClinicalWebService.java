@@ -180,7 +180,6 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
 
-
     @GET
     @Path("/{clinicalAnalyses}/info")
     @ApiOperation(value = "Clinical analysis info", response = ClinicalAnalysis.class)
@@ -196,7 +195,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("clinicalAnalyses");
+            query.remove("clinicalAnalysis");
 
             List<String> analysisList = getIdList(clinicalAnalysisStr);
             DataResult<ClinicalAnalysis> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, true, token);

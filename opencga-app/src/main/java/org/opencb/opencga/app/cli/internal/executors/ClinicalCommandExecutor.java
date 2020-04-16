@@ -26,6 +26,8 @@ import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfiguration;
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
@@ -35,6 +37,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
@@ -71,6 +74,10 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
 
             case ZETTA_RUN_COMMAND:
                 zetta();
+                break;
+
+            case CANCER_TIERING_RUN_COMMAND:
+                cancerTiering();
                 break;
 
             default:
@@ -227,5 +234,31 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 .setQueryOptions(QueryOptions.empty())
                 .setConfig(config);
         zettaAnalysis.start();
+    }
+
+    private void cancerTiering() throws Exception {
+        ClinicalCommandOptions.CancerTieringCommandOptions cliOptions = clinicalCommandOptions.cancerTieringCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        // Prepare analysis parameters and config
+        String token = cliOptions.commonOptions.token;
+
+        CancerTieringInterpretationConfiguration config = new CancerTieringInterpretationConfiguration();
+//        config.setIncludeLowCoverage(cliOptions.includeLowCoverage);
+//        config.setMaxLowCoverage(cliOptions.maxLowCoverage);
+//        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
+
+        Path outDir = Paths.get(cliOptions.outdir);
+        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
+
+        // Execute cancer tiering analysis
+        CancerTieringInterpretationAnalysis cancerTieringAnalysis = new CancerTieringInterpretationAnalysis();
+        cancerTieringAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
+        cancerTieringAnalysis.setStudyId(cliOptions.study)
+                .setClinicalAnalysisId(cliOptions.clinicalAnalysis)
+                .setVariantIdsToDiscard(cliOptions.discardedVariants)
+                .setConfig(config);
+        cancerTieringAnalysis.start();
     }
 }

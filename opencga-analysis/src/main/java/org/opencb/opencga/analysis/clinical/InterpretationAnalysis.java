@@ -52,7 +52,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     public static final String PANELS_PARAM_NAME = "panels";
     public static final String FAMILY_SEGREGATION_PARAM_NAME = "family-segregation";
     public static final String PENETRANCE_PARAM_NAME = "penetrance";
-    public final static String VARIANTS_TO_DISCARD_PARAM_NAME = "variant-ids-to-discard";
+    public final static String DISCARDED_VARIANTS_PARAM_NAME = "discarded-variants";
 
     public final static String MAX_LOW_COVERAGE_PARAM_NAME = "max-low-coverage";
     public final static String INCLUDE_LOW_COVERAGE_PARAM_NAME = "include-low-coverage";

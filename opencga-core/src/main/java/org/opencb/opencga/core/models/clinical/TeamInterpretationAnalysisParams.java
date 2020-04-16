@@ -5,7 +5,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.util.List;
 
 public class TeamInterpretationAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "GEL tiering interpretation analysis params";
+    public static final String DESCRIPTION = "TEAM interpretation analysis params";
 
     private String clinicalAnalysis;
     private List<String> panels;
