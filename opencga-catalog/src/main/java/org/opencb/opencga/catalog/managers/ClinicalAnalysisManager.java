@@ -185,6 +185,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
+        fixQueryObject(study, query, userId);
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return clinicalDBAdaptor.iterator(study.getUid(), query, options, userId);

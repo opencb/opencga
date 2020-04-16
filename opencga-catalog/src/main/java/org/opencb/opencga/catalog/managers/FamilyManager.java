@@ -184,16 +184,22 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public DBIterator<Family> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(sessionId, "sessionId");
+    public DBIterator<Family> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        ParamUtils.checkObj(token, "sessionId");
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(sessionId);
+        String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return familyDBAdaptor.iterator(study.getUid(), query, options, userId);
+        Query finalQuery = new Query(query);
+        fixQueryObject(study, finalQuery, token);
+        // Fix query if it contains any annotation
+        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
+        finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return familyDBAdaptor.iterator(study.getUid(), finalQuery, options, userId);
     }
 
     @Override

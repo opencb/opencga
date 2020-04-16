@@ -289,10 +289,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         String userId = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        fixQueryObject(study, query, userId);
+        // Fix query if it contains any annotation
+        Query finalQuery = new Query(query);
+        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
+        fixQueryObject(study, finalQuery, userId);
+        finalQuery.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        Query myQuery = new Query(query).append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        return cohortDBAdaptor.iterator(study.getUid(), myQuery, options, userId);
+        return cohortDBAdaptor.iterator(study.getUid(), finalQuery, options, userId);
     }
 
     @Override
@@ -314,7 +318,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
             AnnotationUtils.fixQueryOptionAnnotation(options);
             fixQueryObject(study, query, userId);
-
             query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             OpenCGAResult<Cohort> queryResult = cohortDBAdaptor.get(study.getUid(), query, options, userId);
