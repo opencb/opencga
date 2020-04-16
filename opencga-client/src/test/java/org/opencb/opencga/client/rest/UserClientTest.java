@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.clients.UserClient;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;
 import org.opencb.opencga.core.models.user.User;
@@ -52,8 +53,8 @@ public class UserClientTest extends WorkEnvironmentTest {
 
     @Test
     public void login() throws ClientException {
-        String sessionId = openCGAClient.login("user1", "user1_pass");
-        assertEquals(sessionId, openCGAClient.getToken());
+        AuthenticationResponse response = openCGAClient.login("user1", "user1_pass");
+        assertEquals(response.getToken(), openCGAClient.getToken());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Bad user or password");
@@ -62,7 +63,7 @@ public class UserClientTest extends WorkEnvironmentTest {
 
     @Test
     public void logout() throws ClientException {
-        System.out.println("token = " + userClient.login("user1", new LoginParams().setPassword("user1_pass"), null).first().first().getString("token"));
+        System.out.println("token = " + userClient.login(new LoginParams("user1", "user1_pass"), null).firstResult().getToken());
         assertNotNull(openCGAClient.getToken());
         openCGAClient.logout();
         assertEquals(null, openCGAClient.getToken());
@@ -101,8 +102,8 @@ public class UserClientTest extends WorkEnvironmentTest {
     public void changePassword() throws Exception {
         userClient.password("user1", new PasswordChangeParams().setPassword("user1_pass").setNewPassword("user1_newPass"));
         String lastSessionId = openCGAClient.getToken();
-        String newSessionId = openCGAClient.login(openCGAClient.getUserId(), "user1_newPass");
-        assertNotEquals(lastSessionId, newSessionId);
+        AuthenticationResponse response = openCGAClient.login(openCGAClient.getUserId(), "user1_newPass");
+        assertNotEquals(lastSessionId, response.getToken());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Bad user or password");

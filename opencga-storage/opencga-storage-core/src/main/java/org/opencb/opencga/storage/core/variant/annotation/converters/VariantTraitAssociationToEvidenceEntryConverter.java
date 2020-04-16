@@ -4,7 +4,7 @@ package org.opencb.opencga.storage.core.variant.annotation.converters;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.biodata.tools.Converter;
+import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.catalog.utils;
 
-import io.jsonwebtoken.impl.Base64UrlCodec;
-
 import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.Random;
 import java.util.UUID;
@@ -72,24 +69,16 @@ public class UuidUtils {
         long mostSignificantBits = getMostSignificantBits(date, entity);
         long leastSignificantBits = getLeastSignificantBits();
 
-//        UUID uuid = new UUID(mostSignificantBits, leastSignificantBits);
-        ByteBuffer byteBuffer = ByteBuffer.allocate(Long.BYTES * 2);
-        byteBuffer.putLong(mostSignificantBits);
-        byteBuffer.putLong(leastSignificantBits);
-        return Base64UrlCodec.BASE64URL.encode(byteBuffer.array());
+        String s = new UUID(mostSignificantBits, leastSignificantBits).toString();
+        isOpenCgaUuid(s);
+
+        return new UUID(mostSignificantBits, leastSignificantBits).toString();
     }
 
     public static boolean isOpenCgaUuid(String token) {
-        if (token.length() == 22) {
-            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
-            buffer.put(Base64UrlCodec.BASE64URL.decode(token));
-            buffer.flip(); //need flip
+        if (token.length() == 36) {
             try {
-                long mostSignificantBits = buffer.getLong();
-                long leastSignificantBits = buffer.getLong();
-
-                String uuid = new UUID(mostSignificantBits, leastSignificantBits).toString();
-                Matcher matcher = UUID_PATTERN.matcher(uuid);
+                Matcher matcher = UUID_PATTERN.matcher(token);
                 return matcher.find();
             } catch (BufferUnderflowException e) {
                 return false;

@@ -66,13 +66,13 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String authenticate(String username, String password) throws CatalogAuthenticationException {
+    public AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException {
         Map<String, Object> claims = new HashMap<>();
 
         try {
-            List<Attributes> userInfoFromLDAP = LDAPUtils.getUserInfoFromLDAP(host, Arrays.asList(username), usersSearch);
+            List<Attributes> userInfoFromLDAP = LDAPUtils.getUserInfoFromLDAP(host, Arrays.asList(userId), usersSearch);
             if (userInfoFromLDAP == null || userInfoFromLDAP.isEmpty()) {
-                throw new CatalogAuthenticationException("The user id " + username + " could not be found in LDAP.");
+                throw new CatalogAuthenticationException("The user id " + userId + " could not be found in LDAP.");
             }
 
             String rdn = LDAPUtils.getRDN(userInfoFromLDAP.get(0));
@@ -93,7 +93,17 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
-        return jwtManager.createJWTToken(username, claims, expiration);
+        return new AuthenticationResponse(jwtManager.createJWTToken(userId, claims, expiration));
+    }
+
+    @Override
+    public AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException {
+        String userId = getUserId(refreshToken);
+        if (!"*".equals(userId)) {
+            return new AuthenticationResponse(createToken(userId));
+        } else {
+            throw new CatalogAuthenticationException("Cannot refresh token for '*'");
+        }
     }
 
     @Override

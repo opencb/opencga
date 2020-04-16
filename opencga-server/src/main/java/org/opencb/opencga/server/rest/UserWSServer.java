@@ -95,6 +95,7 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @POST
     @Path("/{user}/login")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -103,24 +104,61 @@ public class UserWSServer extends OpenCGAWSServer {
                     "stored by OpenCGA so there is not a logout method anymore. Tokens are provided with an expiration time that, once " +
                     "finished, will no longer be valid.\nIf password is provided it will attempt to login the user. If no password is " +
                     "provided and a valid token is given, a new token will be provided extending the expiration time.",
-            response = Map.class)
-    public Response loginPost(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-                              @ApiParam(value = "JSON containing the parameter 'password'") LoginParams login) {
+            response = AuthenticationResponse.class, hidden = true)
+    public Response deprecatedLogin(
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
+            @ApiParam(value = "JSON containing the parameter 'password'") LoginParams login) {
         try {
             if (login == null) {
                 login = new LoginParams();
             }
-            String token;
+            AuthenticationResponse authenticationResponse;
             if (StringUtils.isNotEmpty(login.getPassword())) {
-                token = catalogManager.getUserManager().login(userId, login.getPassword());
+                authenticationResponse = catalogManager.getUserManager().login(userId, login.getPassword());
             } else if (StringUtils.isNotEmpty(this.token)) {
-                token = catalogManager.getUserManager().refreshToken(userId, this.token);
+                authenticationResponse = catalogManager.getUserManager().refreshToken(this.token);
             } else {
                 throw new Exception("Neither a password nor a token was provided.");
             }
 
-            ObjectMap sessionMap = new ObjectMap("token", token);
-            OpenCGAResult<ObjectMap> response = new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(sessionMap), 1);
+            OpenCGAResult<AuthenticationResponse> response = new OpenCGAResult<>(0, Collections.emptyList(), 1,
+                    Collections.singletonList(authenticationResponse), 1);
+
+            return createOkResponse(response);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/login")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Get identified and gain access to the system",
+            notes = "If user and password are provided it will attempt to authenticate the user. If user and password are not provided and "
+                    + " a valid refresh token is provided, it will generate a new access token.", response = AuthenticationResponse.class)
+    public Response login(
+            @ApiParam(value = "JSON containing the authentication parameters") LoginParams login) {
+        try {
+            if (login == null) {
+                login = new LoginParams();
+            }
+            AuthenticationResponse authenticationResponse;
+            if (StringUtils.isNotEmpty(login.getPassword()) && StringUtils.isNotEmpty(login.getUser())) {
+                if (StringUtils.isNotEmpty(login.getRefreshToken())) {
+                    throw new Exception("Only 'user' and 'password' fields or 'refreshToken' field are allowed at the same time");
+                }
+                authenticationResponse = catalogManager.getUserManager().login(login.getUser(), login.getPassword());
+            } else if (StringUtils.isNotEmpty(login.getRefreshToken())) {
+                if (StringUtils.isNotEmpty(login.getPassword()) || StringUtils.isNotEmpty(login.getUser())) {
+                    throw new Exception("Only 'user' and 'password' fields or 'refreshToken' field are allowed at the same time");
+                }
+                authenticationResponse = catalogManager.getUserManager().refreshToken(login.getRefreshToken());
+            } else {
+                throw new Exception("Neither 'user' and 'password' for login nor 'refreshToken' for refreshing token were provided.");
+            }
+
+            OpenCGAResult<AuthenticationResponse> response = new OpenCGAResult<>(0, Collections.emptyList(), 1,
+                    Collections.singletonList(authenticationResponse), 1);
 
             return createOkResponse(response);
         } catch (Exception e) {

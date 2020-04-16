@@ -18,21 +18,45 @@ package org.opencb.opencga.core.models.user;
 
 public class LoginParams {
 
+    private String user;
     private String password;
+    private String refreshToken;
 
     public LoginParams() {
     }
 
-    public LoginParams(String password) {
+    public LoginParams(String user, String password) {
+        this.user = user;
         this.password = password;
+    }
+
+    public LoginParams(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public LoginParams(String user, String password, String refreshToken) {
+        this.user = user;
+        this.password = password;
+        this.refreshToken = refreshToken;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LoginParams{");
-        sb.append("password='").append("********").append('\'');
+        sb.append("user='").append(user).append('\'');
+        sb.append(", password='").append(password).append('\'');
+        sb.append(", refreshToken='").append(refreshToken).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public LoginParams setUser(String user) {
+        this.user = user;
+        return this;
     }
 
     public String getPassword() {
@@ -41,6 +65,15 @@ public class LoginParams {
 
     public LoginParams setPassword(String password) {
         this.password = password;
+        return this;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public LoginParams setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
         return this;
     }
 }

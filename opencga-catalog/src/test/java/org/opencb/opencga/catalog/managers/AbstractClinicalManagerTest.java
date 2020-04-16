@@ -67,7 +67,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
 
-        token = catalogManager.getUserManager().login("user", PASSWORD);
+        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
         catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
                 new QueryOptions(), token);

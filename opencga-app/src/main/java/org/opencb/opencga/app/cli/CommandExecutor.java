@@ -225,7 +225,7 @@ public abstract class CommandExecutor {
 
         // We load configuration file either from app home folder or from the JAR
         Path path = Paths.get(this.conf).resolve("configuration.yml");
-        if (path != null && Files.exists(path)) {
+        if (Files.exists(path)) {
             privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
             this.configuration = Configuration.load(new FileInputStream(path.toFile()));
         } else {
@@ -244,7 +244,7 @@ public abstract class CommandExecutor {
     public void loadClientConfiguration() throws IOException {
         // We load configuration file either from app home folder or from the JAR
         Path path = Paths.get(this.conf).resolve("client-configuration.yml");
-        if (path != null && Files.exists(path)) {
+        if (Files.exists(path)) {
             privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
             this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
         } else {
@@ -264,7 +264,7 @@ public abstract class CommandExecutor {
 
         // We load configuration file either from app home folder or from the JAR
         Path path = Paths.get(this.conf).resolve("storage-configuration.yml");
-        if (path != null && Files.exists(path)) {
+        if (Files.exists(path)) {
             privateLogger.debug("Loading storage configuration from '{}'", path.toAbsolutePath());
             this.storageConfiguration = StorageConfiguration.load(new FileInputStream(path.toFile()));
         } else {
@@ -287,7 +287,7 @@ public abstract class CommandExecutor {
         }
     }
 
-    protected void saveCliSessionFile(String user, String session, List<String> studies) throws IOException {
+    protected void saveCliSessionFile(String user, String token, String refreshToken, List<String> studies) throws IOException {
         // Check the home folder exists
         if (!Files.exists(Paths.get(System.getProperty("user.home")))) {
             System.out.println("WARNING: Could not store token. User home folder '" + System.getProperty("user.home")
@@ -301,11 +301,11 @@ public abstract class CommandExecutor {
             Files.createDirectory(sessionPath);
         }
         sessionPath = sessionPath.resolve(SESSION_FILENAME);
-        CliSession cliSession = new CliSession(clientConfiguration.getRest().getHost(), user, session, studies);
+        CliSession cliSession = new CliSession(clientConfiguration.getRest().getHost(), user, token, refreshToken, studies);
 
         // we remove the part where the token signature is to avoid key verification
-        int i = session.lastIndexOf('.');
-        String withoutSignature = session.substring(0, i+1);
+        int i = token.lastIndexOf('.');
+        String withoutSignature = token.substring(0, i+1);
         Date expiration = Jwts.parser().parseClaimsJwt(withoutSignature).getBody().getExpiration();
 
         cliSession.setExpirationTime(TimeUtils.getTime(expiration));

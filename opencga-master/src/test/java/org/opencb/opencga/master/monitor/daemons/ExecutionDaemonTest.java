@@ -70,7 +70,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void setUp() throws IOException, CatalogException {
         super.setUp();
 
-        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin("admin");
+        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin("admin").getToken();
         String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
         catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().setMaxConcurrentJobs(1);
 

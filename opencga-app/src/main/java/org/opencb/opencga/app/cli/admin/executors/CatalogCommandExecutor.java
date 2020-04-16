@@ -93,7 +93,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         validateConfiguration(commandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword);
+        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
 
         if (StringUtils.isNotEmpty(commandOptions.project)) {
             catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir, token);
@@ -108,7 +108,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         validateConfiguration(commandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword);
+        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
 
         catalogManager.getProjectManager().importReleases(commandOptions.owner, commandOptions.directory, token);
     }
@@ -134,7 +134,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             if (commandOptions.force) {
                 // The password of the old db should match the one to be used in the new installation. Otherwise, they can obtain the same
                 // results calling first to "catalog delete" and then "catalog install"
-                String token = catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword);
+                String token = catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword).getToken();
                 catalogManager.deleteCatalogDB(token);
             } else {
                 throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
@@ -173,7 +173,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager()
-                .loginAsAdmin(catalogCommandOptions.deleteCatalogCommandOptions.commonOptions.adminPassword);
+                .loginAsAdmin(catalogCommandOptions.deleteCatalogCommandOptions.commonOptions.adminPassword).getToken();
 
         if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
@@ -188,7 +188,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager()
-                .loginAsAdmin(catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword);
+                .loginAsAdmin(catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword).getToken();
 
         if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
@@ -205,7 +205,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager()
-                .loginAsAdmin(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword);
+                .loginAsAdmin(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword).getToken();
 
         if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
             // Server crated and started
@@ -233,7 +233,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager()
-                    .loginAsAdmin(catalogCommandOptions.panelCatalogCommandOptions.commonOptions.adminPassword);
+                    .loginAsAdmin(catalogCommandOptions.panelCatalogCommandOptions.commonOptions.adminPassword).getToken();
 
             if (catalogCommandOptions.panelCatalogCommandOptions.panelAppImport) {
                 catalogManager.getPanelManager().importPanelApp(token, catalogCommandOptions.panelCatalogCommandOptions.overwrite);

@@ -19,9 +19,7 @@ package org.opencb.opencga.app.cli;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by imedina on 13/07/15.
@@ -32,27 +30,27 @@ public class CliSession {
     private String version;
     private String user;
     private String token;
+    private String refreshToken;
     private String login;
     private String expirationTime;
-    @Deprecated
-    private Map<String, List<String>> projectsAndStudies;
     private List<String> studies;
 
     public CliSession() {
     }
 
-    public CliSession(String host, String user, String token) {
-        this(host, user, token, TimeUtils.getTime(), Collections.emptyList());
+    public CliSession(String host, String user, String token, String refreshToken) {
+        this(host, user, token, refreshToken, TimeUtils.getTime(), Collections.emptyList());
     }
 
-    public CliSession(String host, String user, String token, List<String> studies) {
-        this(host, user, token, TimeUtils.getTime(), studies);
+    public CliSession(String host, String user, String token, String refreshToken, List<String> studies) {
+        this(host, user, token, refreshToken, TimeUtils.getTime(), studies);
     }
 
-    public CliSession(String host, String user, String token, String login, List<String> studies) {
+    public CliSession(String host, String user, String token, String refreshToken, String login, List<String> studies) {
         this.host = host;
         this.user = user;
         this.token = token;
+        this.refreshToken = refreshToken;
         this.login = login;
         this.studies = studies;
         this.version = "v2";
@@ -65,9 +63,9 @@ public class CliSession {
         sb.append(", version='").append(version).append('\'');
         sb.append(", user='").append(user).append('\'');
         sb.append(", token='").append(token).append('\'');
+        sb.append(", refreshToken='").append(refreshToken).append('\'');
         sb.append(", login='").append(login).append('\'');
         sb.append(", expirationTime='").append(expirationTime).append('\'');
-        sb.append(", projectsAndStudies=").append(projectsAndStudies);
         sb.append(", studies=").append(studies);
         sb.append('}');
         return sb.toString();
@@ -109,6 +107,15 @@ public class CliSession {
         return this;
     }
 
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public CliSession setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+        return this;
+    }
+
     public String getLogin() {
         return login;
     }
@@ -124,17 +131,6 @@ public class CliSession {
 
     public CliSession setExpirationTime(String expirationTime) {
         this.expirationTime = expirationTime;
-        return this;
-    }
-
-    @Deprecated
-    public Map<String, List<String>> getProjectsAndStudies() {
-        return projectsAndStudies;
-    }
-
-    @Deprecated
-    public CliSession setProjectsAndStudies(Map<String, List<String>> projectsAndStudies) {
-        this.projectsAndStudies = projectsAndStudies;
         return this;
     }
 

@@ -179,7 +179,7 @@ public class CatalogManager implements AutoCloseable {
                 .setOrganization(organization);
         userManager.create(user, password, null);
 
-        String token = userManager.login(OPENCGA, password);
+        String token = userManager.login(OPENCGA, password).getToken();
         projectManager.create("admin", "admin", "Default project", "", "", "", null, token);
         studyManager.create("admin", "admin", "admin", "admin", "Default study", null, null, null, Collections.emptyMap(),
                 null, token);
