@@ -87,29 +87,13 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
 
     private static final List<String> pertinentFindingRNA = new ArrayList(Arrays.asList("ENSG00000269900", "ENSG00000270141"));
 
-//    public void setup(String clinicalAnalysisId, String studyId, List<String> variandIdsToDiscard, Path outDir, ObjectMap executorParams,
-//                      CancerTieringInterpretationConfiguration config) throws AnalysisException {
-//        super.setup(executorParams, outDir);
-//        this.clinicalAnalysisId = clinicalAnalysisId;
-//        this.studyId = studyId;
-//        this.variantIdsToDiscard = variandIdsToDiscard;
-//        this.config = config;
-//
-//        // Sanity check
-//        sessionId = executorParams.getString(SESSION_ID, "");
-//        if (StringUtils.isEmpty(sessionId)) {
-//            throw new AnalysisException("Missing executor parameter: " + SESSION_ID);
-//        }
-//        clinicalInterpretationManager = (ClinicalInterpretationManager) executorParams.getOrDefault(CLINICAL_INTERPRETATION_MANAGER, null);
-//        if (clinicalInterpretationManager == null) {
-//            throw new AnalysisException("Missing executor parameter: " + CLINICAL_INTERPRETATION_MANAGER);
-//        }
-//    }
-
     @Override
     public void run() throws ToolException {
+        sessionId = getToken();
+        clinicalInterpretationManager = getClinicalInterpretationManager();
+
         // Get clinical analysis
-        ClinicalAnalysis clinicalAnalysis = null;
+        ClinicalAnalysis clinicalAnalysis;
         try {
             clinicalAnalysis = clinicalInterpretationManager.getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         } catch (CatalogException e) {

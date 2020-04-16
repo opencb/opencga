@@ -54,12 +54,10 @@ import java.util.stream.Collectors;
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.*;
 
 @ToolExecutor(id = "opencga-local",
-        tool = TieringInterpretationAnalysisExecutor.ID,
+        tool = TieringInterpretationAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
 public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {
-
-    public final static String ID = "tiering-interpretation";
 
     private String studyId;
     private String clinicalAnalysisId;

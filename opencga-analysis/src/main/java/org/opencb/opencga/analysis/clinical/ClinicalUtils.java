@@ -269,7 +269,7 @@ public class ClinicalUtils {
 
     public static List<ClinicalVariant> readClinicalVariants(Path path) throws ToolException {
         List<ClinicalVariant> clinicalVariants = new ArrayList<>();
-        if (path != null || path.toFile().exists()) {
+        if (path != null && path.toFile().exists()) {
             try {
                 ObjectReader objReader = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalVariant.class);
                 LineIterator lineIterator = FileUtils.lineIterator(path.toFile());
