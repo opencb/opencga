@@ -575,9 +575,8 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
-        query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
         fixQueryObject(study, query, userId);
+        query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return jobDBAdaptor.iterator(study.getUid(), query, options, userId);
     }

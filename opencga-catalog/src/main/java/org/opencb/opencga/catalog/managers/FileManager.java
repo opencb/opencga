@@ -1231,8 +1231,12 @@ public class FileManager extends AnnotationSetManager<File> {
         String userId = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        fixQueryObject(study, query, userId);
-        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        Query finalQuery = new Query(query);
+        // Fix query if it contains any annotation
+        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
+        fixQueryObject(study, finalQuery, userId);
+        finalQuery.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return fileDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
