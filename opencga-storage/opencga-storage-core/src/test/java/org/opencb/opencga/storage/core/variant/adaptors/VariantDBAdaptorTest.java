@@ -195,7 +195,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                         break;
                     }
                 }
-                assertEquals(count(new Query(ANNOTATION_EXISTS.key(), true)), count(new Query()));
+                assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).getNumMatches(), dbAdaptor.count().getNumMatches());
             }
         }
         allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
@@ -1900,7 +1900,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testGetAllVariants_samples_gt() {
         Query query = new Query(SAMPLE.key(), "NA19600").append(GENOTYPE.key(), "NA19685" + IS + homRef).append(INCLUDE_SAMPLE.key(), ALL);
         thrown.expect(VariantQueryException.class);
-        thrown.expectMessage("Can not be used along with filter \"genotype\"");
+        thrown.expectMessage("Unsupported combination of params \"genotype\", \"sample\".");
         queryResult = query(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, allOf(
                 withSampleData("NA19600", "GT", containsString("1")),
@@ -2182,7 +2182,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             queryResult = query(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
             assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
             for (Variant variant : queryResult.getResults()) {
-                assertThat(variant.getStudies().get(0).getStats(), not(is(Collections.emptyList())));
+                assertThat(variant.getStudies().get(0).getStats(), is(Collections.emptyList()));
             }
         }
 

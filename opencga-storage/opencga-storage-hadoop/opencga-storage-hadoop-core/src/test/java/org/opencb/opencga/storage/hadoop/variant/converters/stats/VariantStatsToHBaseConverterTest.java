@@ -99,6 +99,8 @@ public class VariantStatsToHBaseConverterTest {
         }
 
         assertNotNull(convert);
+        assertEquals("", convert.getCohortId());
+        convert.setCohortId("c1");
         assertEquals(expected, convert);
 
     }

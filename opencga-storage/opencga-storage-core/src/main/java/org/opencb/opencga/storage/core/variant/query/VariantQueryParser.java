@@ -598,6 +598,10 @@ public class VariantQueryParser {
                 // Discard GenotypeClass
                 continue;
             }
+            if (genotypeStr.equals(GenotypeClass.NA_GT_VALUE)) {
+                // Discard special genotypes
+                continue;
+            }
             Genotype genotype = new Genotype(genotypeStr);
             int[] allelesIdx = genotype.getAllelesIdx();
             boolean multiallelic = false;

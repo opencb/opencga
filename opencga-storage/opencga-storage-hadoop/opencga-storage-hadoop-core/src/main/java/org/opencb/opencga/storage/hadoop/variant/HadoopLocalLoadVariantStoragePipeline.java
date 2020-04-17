@@ -216,6 +216,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         } catch (Exception e) {
             // Mark file as ERROR
             getMetadataManager().setStatus(getStudyId(), taskId, TaskMetadata.Status.ERROR);
+            throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
         }

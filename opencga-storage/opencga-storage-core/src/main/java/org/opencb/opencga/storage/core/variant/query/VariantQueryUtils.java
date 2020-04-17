@@ -309,7 +309,7 @@ public final class VariantQueryUtils {
     }
 
     private static boolean transformVariantAnnotationField(String key, QueryOptions queryOptions) {
-        StringBuilder sb = new StringBuilder();
+        List<String> include = new ArrayList<>(10);
         final String annotation = VariantField.ANNOTATION.fieldName();
         for (String field : queryOptions.getAsStringList(key)) {
             String newField;
@@ -322,15 +322,13 @@ public final class VariantQueryUtils {
             if (VariantField.get(newField) == null) {
                 throw VariantQueryException.unknownVariantAnnotationField(key, field);
             }
-
-            sb.append(newField);
-            sb.append(',');
+            include.add(newField);
         }
-        if (sb.length() > 0) {
-            queryOptions.put(key, sb.toString());
-            return true;
-        } else {
+        if (include.isEmpty()) {
             return false;
+        } else {
+            queryOptions.put(key, include);
+            return true;
         }
     }
 

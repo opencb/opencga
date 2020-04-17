@@ -78,6 +78,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -460,13 +461,16 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     private VariantDBIterator archiveIterator(ParsedVariantQuery variantQuery, QueryOptions options) {
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
         Query query = variantQuery.getQuery();
-        String study = query.getString(STUDY.key());
+        return archiveIterator(query.getString(STUDY.key()), query.getString(FILE.key()), query, options);
+    }
+
+    public VariantDBIterator archiveIterator(String study, String file, Query query, QueryOptions options) {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         int studyId = studyMetadata.getId();
 
-        String file = query.getString(FILE.key());
         Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file, true);
         if (fileId == null) {
             throw VariantQueryException.fileNotFound(file, study);
@@ -493,17 +497,18 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getRefColumnName());
         }
         VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper);
-        scan.setMaxResultSize(options.getInt("limit"));
+        scan.setMaxResultSize(options.getInt(QueryOptions.LIMIT, -1));
         String tableName = getTableNameGenerator().getArchiveTableName(studyId);
 
-        logger.debug("Creating {} iterator", VariantHadoopArchiveDBIterator.class);
-        logger.debug("Table name = " + tableName);
-        logger.debug("StartRow = " + new String(scan.getStartRow()));
-        logger.debug("StopRow = " + new String(scan.getStopRow()));
-        logger.debug("MaxResultSize = " + scan.getMaxResultSize());
-        logger.debug("region = " + region);
-        logger.debug("Column name = " + fileId);
-        logger.debug("Chunk size = " + archiveHelper.getChunkSize());
+        logger.info("Creating {} iterator", VariantHadoopArchiveDBIterator.class);
+        logger.info("Table name = " + tableName);
+        logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()));
+        logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()));
+        logger.info("MaxResultSize = " + scan.getMaxResultSize());
+        logger.info("region = " + region);
+        logger.info("Column name = " + scan.getFamilyMap().getOrDefault(GenomeHelper.COLUMN_FAMILY_BYTES, Collections.emptyNavigableSet())
+                .stream().map(Bytes::toString).collect(Collectors.joining(",")));
+        logger.info("Chunk size = " + archiveHelper.getChunkSize());
 
         try (Table table = getConnection().getTable(TableName.valueOf(tableName))) {
             ResultScanner resScan = table.getScanner(scan);

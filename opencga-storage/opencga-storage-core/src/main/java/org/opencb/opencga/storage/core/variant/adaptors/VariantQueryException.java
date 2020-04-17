@@ -80,7 +80,7 @@ public class VariantQueryException extends IllegalArgumentException {
                 .stream()
                 .map(QueryParam::key)
                 .sorted()
-                .collect(Collectors.joining("\"", "\", \"", "\".")));
+                .collect(Collectors.joining("\", \"", "\"", "\".")));
     }
 
     public static VariantQueryException missingParam(QueryParam queryParam, String message) {
