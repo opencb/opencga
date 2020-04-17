@@ -36,9 +36,11 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
     public static final String COHORT = "cohort";
 
     private static final String NUM_SAMPLES = "numSamples";
+    private static final String NUM_FILES = "numFiles";
     private Query query;
     private QueryOptions queryOptions;
     private int numSamples;
+    private int numFiles;
 
     @Override
     protected Map<String, String> getParams() {
@@ -80,6 +82,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         numSamples = sampleIds.size();
 
         Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(getStudyId(), sampleIds);
+        numFiles = fileIds.size();
 
         query = new Query(VariantMapReduceUtil.getQueryFromConfig(getConf()))
                 .append(VariantQueryParam.STUDY.key(), getStudyId())
@@ -94,6 +97,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         super.setupJob(job, archiveTable, variantTable);
 
         job.getConfiguration().setInt(NUM_SAMPLES, numSamples);
+        job.getConfiguration().setInt(NUM_FILES, numSamples);
 
         return job;
     }
@@ -373,6 +377,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
 
             calculator.post();
 
+            stats.getValue().setFilesCount(getFiles(context.getConfiguration()).size());
 
             context.write(n, new Text(stats.getValue().toString()));
         }
