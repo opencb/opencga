@@ -193,6 +193,12 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("missingGenotypes", commandOptions.missingGenotypeCount);
         queryParams.putIfNotNull("score", commandOptions.score);
 
+        queryParams.putIfNotNull("family", commandOptions.family);
+        queryParams.putIfNotNull("familyMembers", commandOptions.familyMembers);
+        queryParams.putIfNotNull("familyDisorder", commandOptions.familyPhenotype);
+        queryParams.putIfNotNull("familyProband", commandOptions.familyProband);
+        queryParams.putIfNotNull("familySegregation", commandOptions.modeOfInheritance);
+
         // Annotation filters
         queryParams.putIfNotNull("gene", commandOptions.basicQueryOptions.gene);
         queryParams.putIfNotNull("ct", commandOptions.basicQueryOptions.consequenceType);
@@ -281,6 +287,11 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         .setMissingAlleles(cliOptions.missingAlleleCount)
                         .setMissingGenotypes(cliOptions.missingGenotypeCount)
                         .setScore(cliOptions.score)
+                        .setFamily(cliOptions.family)
+                        .setFamilyDisorder(cliOptions.familyPhenotype)
+                        .setFamilyMembers(cliOptions.familyMembers)
+                        .setFamilyProband(cliOptions.familyProband)
+                        .setFamilySegregation(cliOptions.modeOfInheritance)
                         .setGene(cliOptions.basicQueryOptions.gene)
                         .setCt(cliOptions.basicQueryOptions.consequenceType)
                         .setXref(cliOptions.xref)
