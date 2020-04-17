@@ -194,7 +194,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             if (VariantReaderUtils.isProto(fileName)) {
                 ProgressLogger progressLogger = new ProgressLogger("Loaded slices:");
                 if (fileMetadata.getStats() != null) {
-                    progressLogger.setApproximateTotalCount(fileMetadata.getStats().getNumVariants());
+                    progressLogger.setApproximateTotalCount(fileMetadata.getStats().getVariantCount());
                 }
 
                 loadFromProto(inputUri, table, helper, progressLogger);
@@ -202,7 +202,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 ProgressLogger progressLogger;
                 if (fileMetadata.getStats() != null) {
                     progressLogger = new ProgressLogger("Loaded variants for file \"" + fileName + "\" :",
-                            fileMetadata.getStats().getNumVariants());
+                            fileMetadata.getStats().getVariantCount());
                 } else {
                     progressLogger = new ProgressLogger("Loaded variants for file \"" + fileName + "\" :");
                 }
@@ -353,7 +353,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         logger.info("============================================================");
         int expectedCount = 0;
         for (VariantType variantType : TARGET_VARIANT_TYPE_SET) {
-            expectedCount += variantFileMetadata.getStats().getVariantTypeCounts().getOrDefault(variantType.toString(), 0);
+            expectedCount += variantFileMetadata.getStats().getTypeCount().getOrDefault(variantType.toString(), 0);
         }
         expectedCount -= duplicatedVariants;
         expectedCount -= skippedRefVariants;
@@ -369,7 +369,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             logger.info("There were " + skipped + " skipped variants");
             for (VariantType type : VariantType.values()) {
                 if (!TARGET_VARIANT_TYPE_SET.contains(type)) {
-                    Integer countByType = variantFileMetadata.getStats().getVariantTypeCounts().get(type.toString());
+                    Integer countByType = variantFileMetadata.getStats().getTypeCount().get(type.toString());
                     if (countByType != null && countByType > 0) {
                         logger.info("  * Of which " + countByType + " are " + type.toString() + " variants.");
                     }

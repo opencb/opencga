@@ -449,24 +449,24 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             calculator.post();
             SampleVariantStats stats = calculator.getSampleVariantStats().get(0);
 
-            stats.setMissingPositions(0);
+//            stats.setMissingPositions(0);
             try {
                 vsm.updateSampleMetadata(studyId, sampleId.get(), sampleMetadata -> {
                     stats.setId(sampleMetadata.getName());
                     if (sampleMetadata.getStats() == null) {
-                        stats.setMissingPositions(0); // Unknown. Unable to calculate using this MR
+//                        stats.setMissingPositions(0); // Unknown. Unable to calculate using this MR
                         sampleMetadata.setStats(stats);
                     } else {
-                        sampleMetadata.getStats().setNumVariants(stats.getNumVariants());
+                        sampleMetadata.getStats().setVariantCount(stats.getVariantCount());
                         sampleMetadata.getStats().setChromosomeCount(stats.getChromosomeCount());
                         sampleMetadata.getStats().setTypeCount(stats.getTypeCount());
                         sampleMetadata.getStats().setIndelLengthCount(stats.getIndelLengthCount());
                         sampleMetadata.getStats().setTiTvRatio(stats.getTiTvRatio());
 
                         sampleMetadata.getStats().setGenotypeCount(stats.getGenotypeCount());
-                        sampleMetadata.getStats().setNumPass(stats.getNumPass());
-                        sampleMetadata.getStats().setMeanQuality(stats.getMeanQuality());
-                        sampleMetadata.getStats().setStdDevQuality(stats.getStdDevQuality());
+                        sampleMetadata.getStats().setFilterCount(stats.getFilterCount());
+                        sampleMetadata.getStats().setQualityAvg(stats.getQualityAvg());
+                        sampleMetadata.getStats().setQualityStdDev(stats.getQualityStdDev());
                         sampleMetadata.getStats().setMendelianErrorCount(stats.getMendelianErrorCount());
                         sampleMetadata.getStats().setHeterozygosityRate(stats.getHeterozygosityRate());
 

@@ -23,8 +23,8 @@ import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
-import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -136,7 +136,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         long totalCount = dbAdaptor.count(new Query()).first();
 
         long count = TARGET_VARIANT_TYPE_SET.stream()
-                .mapToInt(type -> fileMetadata.getStats().getVariantTypeCount(type))
+                .mapToInt(type -> fileMetadata.getStats().getTypeCount().get(type.name()))
                 .sum();
 //        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
         assertEquals(count, totalCount);
@@ -193,15 +193,14 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                     variantCounts.compute(variant.getType().toString(), (s, integer) -> integer == null ? 1 : (integer + 1));
                 });
         System.out.println("End query from Archive table");
-        fileMetadata.getStats().getVariantTypeCounts().forEach((s, integer) -> assertEquals(integer, variantCounts.getOrDefault(s, 0)));
-        assertEquals(fileMetadata.getStats().getNumVariants(), numVariants[0]);
+        fileMetadata.getStats().getTypeCount().forEach((s, integer) -> assertEquals(integer, variantCounts.getOrDefault(s, 0)));
+        assertEquals(fileMetadata.getStats().getVariantCount().intValue(), numVariants[0]);
     }
 
     @Test
     public void checkVariantTable() throws IOException {
         System.out.println("Query from HBase : " + dbAdaptor.getVariantTable());
         HBaseManager hm = new HBaseManager(configuration.get());
-        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         int numVariants = hm.act(dbAdaptor.getVariantTable(), table -> {
             int num = 0;
             ResultScanner resultScanner = table.getScanner(GenomeHelper.COLUMN_FAMILY_BYTES);
@@ -214,9 +213,9 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
             return num;
         });
         System.out.println("End query from HBase : " + dbAdaptor.getVariantTable());
-        System.out.println(fileMetadata.getStats().getVariantTypeCounts());
+        System.out.println(fileMetadata.getStats().getTypeCount());
         long count = TARGET_VARIANT_TYPE_SET.stream()
-                .map(type -> fileMetadata.getStats().getVariantTypeCount(type))
+                .map(type -> fileMetadata.getStats().getTypeCount().get(type.name()))
                 .reduce((a, b) -> a + b).orElse(0).longValue();
 //        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
         assertEquals(count, numVariants);

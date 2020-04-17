@@ -46,7 +46,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -747,7 +746,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                                                        VariantFileMetadata fileMetadata) {
         int fileId = Integer.valueOf(fileMetadata.getId());
         Set<String> variants = getVariants(dbAdaptor, studyMetadata, fileId);
-        int expected = fileMetadata.getStats().getVariantTypeCounts().entrySet().stream()
+        int expected = fileMetadata.getStats().getTypeCount().entrySet().stream()
                 .filter(entry -> VARIANT_TYPES.contains(VariantType.valueOf(entry.getKey())))
                 .map(Map.Entry::getValue)
                 .reduce(Integer::sum)

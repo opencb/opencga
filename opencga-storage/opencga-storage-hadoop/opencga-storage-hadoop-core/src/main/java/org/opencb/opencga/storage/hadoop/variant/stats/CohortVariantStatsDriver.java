@@ -268,7 +268,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         }
 
         public ExposedVariantSetStatsCalculator setStats(VariantSetStats value) {
-            stats = new org.opencb.biodata.models.variant.stats.VariantSetStats(value);
+            stats = value;
             return this;
         }
     }
@@ -316,7 +316,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         protected void cleanup(Context context) throws IOException, InterruptedException {
             super.cleanup(context);
             CohortVariantStatsWritable cohortVariantStatsWritable = new CohortVariantStatsWritable(
-                    calculator.getStats().getImpl(),
+                    calculator.getStats(),
                     calculator.getTransitionsCount(),
                     calculator.getTransversionsCount(),
                     calculator.getQualCount(),

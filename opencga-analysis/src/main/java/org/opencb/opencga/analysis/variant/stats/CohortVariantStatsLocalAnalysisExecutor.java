@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.variant.stats;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.DataResult;
@@ -78,7 +78,7 @@ public class CohortVariantStatsLocalAnalysisExecutor extends CohortVariantStatsA
             throw new ToolExecutorException(e);
         }
 
-        writeStatsToFile(stats.getImpl());
+        writeStatsToFile(stats);
     }
 
 }

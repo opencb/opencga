@@ -181,7 +181,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
 
         SampleVariantStatsCalculator calculator = new SampleVariantStatsCalculator(pedigree, Arrays.asList(father, mother, child), sampleFileMap);
         List<SampleVariantStats> stats = calculator.compute(engine.iterator());
-        stats.forEach(s -> s.setMissingPositions(0)); // Clear this
+//        stats.forEach(s -> s.setMissingPositions(0)); // Clear this
         return stats;
     }
 
