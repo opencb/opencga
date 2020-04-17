@@ -126,6 +126,8 @@ var customStatus = {
     "date" :""
 };
 
+// Project map of uid -> uuid so we can easily update project uuids stored in study collection
+var projectMap = {};
 // Tickets #1528 #1529
 migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, doc) {
     // #1531
@@ -172,6 +174,9 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
             var project = doc.projects[i];
 
             project['uuid'] = generateOpenCGAUUID("PROJECT", project['_creationDate']);
+            // Store project map so we can update uuid from study collection
+            projectMap[project['uid']] = project['uuid'];
+
             project['internal'] = {
                 'status': project['status'],
                 'datastores': project['dataStores']
@@ -200,6 +205,7 @@ migrateCollection("study", {"internal": {"$exists": false}}, {}, function(bulk, 
 
     var set = {
         "uuid": generateOpenCGAUUID("STUDY", doc['_creationDate']),
+        "_project.uuid": projectMap[doc['_project']['uid']],
         "internal": {
             "status": doc['status']
         },
@@ -212,7 +218,7 @@ migrateCollection("study", {"internal": {"$exists": false}}, {}, function(bulk, 
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
 });
-FALTA VARIABLESETS
+
 // #1535
 migrateCollection("individual", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
     doc['status']['description'] = doc['status']['message'];
@@ -343,7 +349,7 @@ migrateCollection("interpretation", {"internal": {"$exists": false}}, {}, functi
 
 migrateCollection("panel", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
     var set = {
-        "uuid": generateOpenCGAUUID("INTERPRETATION", doc['_creationDate'])
+        "uuid": generateOpenCGAUUID("PANEL", doc['_creationDate'])
         }
     };
 
