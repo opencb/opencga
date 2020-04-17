@@ -18,8 +18,7 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
-import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL_DESC;
-import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
@@ -253,6 +252,21 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
 
+        @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
+        public String family;
+
+        @Parameter(names = {"--family-disorder"}, description = FAMILY_DISORDER_DESC, arity = 1)
+        public String familyPhenotype;
+
+        @Parameter(names = {"--family-segregation"}, description = FAMILY_SEGREGATION_DESCR, arity = 1)
+        public String modeOfInheritance;
+
+        @Parameter(names = {"--family-members"}, description = FAMILY_MEMBERS_DESC, arity = 1)
+        public String familyMembers;
+
+        @Parameter(names = {"--family-proband"}, description = FAMILY_PROBAND_DESC, arity = 1)
+        public String familyProband;
+
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
     }
@@ -420,6 +434,21 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
+
+        @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
+        public String family;
+
+        @Parameter(names = {"--family-disorder"}, description = FAMILY_DISORDER_DESC, arity = 1)
+        public String familyPhenotype;
+
+        @Parameter(names = {"--family-segregation"}, description = FAMILY_SEGREGATION_DESCR, arity = 1)
+        public String modeOfInheritance;
+
+        @Parameter(names = {"--family-members"}, description = FAMILY_MEMBERS_DESC, arity = 1)
+        public String familyMembers;
+
+        @Parameter(names = {"--family-proband"}, description = FAMILY_PROBAND_DESC, arity = 1)
+        public String familyProband;
 
         @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
         public boolean includeLowCoverage;

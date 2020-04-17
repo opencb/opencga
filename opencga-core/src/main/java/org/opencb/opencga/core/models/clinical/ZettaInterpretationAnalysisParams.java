@@ -22,7 +22,6 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
     private String fileData;
 
     private String sample;
-    private String genotype;
     private String sampleData;
     private String sampleAnnotation;
     private String sampleMetadata;
@@ -37,6 +36,12 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
     private String missingAlleles;
     private String missingGenotypes;
     private String score;
+
+    private String family;
+    private String familyDisorder;
+    private String familySegregation;
+    private String familyMembers;
+    private String familyProband;
 
     // Annotation filters
     private String annotationExists;
@@ -69,18 +74,18 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
     public ZettaInterpretationAnalysisParams() {
     }
 
-    public ZettaInterpretationAnalysisParams(String clinicalAnalysis, List<String> id, String region, String type,
-                                             String study, String file, String filter, String qual,
-                                             String fileData, String sample, String genotype, String sampleData, String sampleAnnotation,
-                                             String sampleMetadata, String unknownGenotype, String cohort, String cohortStatsRef,
-                                             String cohortStatsAlt, String cohortStatsMaf, String cohortStatsMgf, String cohortStatsPass,
-                                             String missingAlleles, String missingGenotypes, String score, String annotationExists,
-                                             String gene, String ct, String xref, String biotype, String proteinSubstitution,
-                                             String conservation, String populationFrequencyAlt, String populationFrequencyRef,
-                                             String populationFrequencyMaf, String transcriptFlag, String geneTraitId, String go,
-                                             String expression, String proteinKeyword, String drug, String functionalScore,
-                                             String clinicalSignificance, String customAnnotation, String panel, String trait,
-                                             int maxLowCoverage, boolean includeLowCoverage) {
+    public ZettaInterpretationAnalysisParams(String clinicalAnalysis, List<String> id, String region, String type, String study,
+                                             String file, String filter, String qual, String fileData, String sample, String sampleData,
+                                             String sampleAnnotation, String sampleMetadata, String unknownGenotype, String cohort,
+                                             String cohortStatsRef, String cohortStatsAlt, String cohortStatsMaf, String cohortStatsMgf,
+                                             String cohortStatsPass, String missingAlleles, String missingGenotypes, String score,
+                                             String family, String familyDisorder, String familySegregation, String familyMembers,
+                                             String familyProband, String annotationExists, String gene, String ct, String xref,
+                                             String biotype, String proteinSubstitution, String conservation, String populationFrequencyAlt,
+                                             String populationFrequencyRef, String populationFrequencyMaf, String transcriptFlag,
+                                             String geneTraitId, String go, String expression, String proteinKeyword, String drug,
+                                             String functionalScore, String clinicalSignificance, String customAnnotation, String panel,
+                                             String trait, int maxLowCoverage, boolean includeLowCoverage) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.id = id;
         this.region = region;
@@ -91,7 +96,6 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         this.qual = qual;
         this.fileData = fileData;
         this.sample = sample;
-        this.genotype = genotype;
         this.sampleData = sampleData;
         this.sampleAnnotation = sampleAnnotation;
         this.sampleMetadata = sampleMetadata;
@@ -105,6 +109,11 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         this.missingAlleles = missingAlleles;
         this.missingGenotypes = missingGenotypes;
         this.score = score;
+        this.family = family;
+        this.familyDisorder = familyDisorder;
+        this.familySegregation = familySegregation;
+        this.familyMembers = familyMembers;
+        this.familyProband = familyProband;
         this.annotationExists = annotationExists;
         this.gene = gene;
         this.ct = ct;
@@ -217,15 +226,6 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
 
     public ZettaInterpretationAnalysisParams setSample(String sample) {
         this.sample = sample;
-        return this;
-    }
-
-    public String getGenotype() {
-        return genotype;
-    }
-
-    public ZettaInterpretationAnalysisParams setGenotype(String genotype) {
-        this.genotype = genotype;
         return this;
     }
 
@@ -343,6 +343,51 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
 
     public ZettaInterpretationAnalysisParams setScore(String score) {
         this.score = score;
+        return this;
+    }
+
+    public String getFamily() {
+        return family;
+    }
+
+    public ZettaInterpretationAnalysisParams setFamily(String family) {
+        this.family = family;
+        return this;
+    }
+
+    public String getFamilyDisorder() {
+        return familyDisorder;
+    }
+
+    public ZettaInterpretationAnalysisParams setFamilyDisorder(String familyDisorder) {
+        this.familyDisorder = familyDisorder;
+        return this;
+    }
+
+    public String getFamilySegregation() {
+        return familySegregation;
+    }
+
+    public ZettaInterpretationAnalysisParams setFamilySegregation(String familySegregation) {
+        this.familySegregation = familySegregation;
+        return this;
+    }
+
+    public String getFamilyMembers() {
+        return familyMembers;
+    }
+
+    public ZettaInterpretationAnalysisParams setFamilyMembers(String familyMembers) {
+        this.familyMembers = familyMembers;
+        return this;
+    }
+
+    public String getFamilyProband() {
+        return familyProband;
+    }
+
+    public ZettaInterpretationAnalysisParams setFamilyProband(String familyProband) {
+        this.familyProband = familyProband;
         return this;
     }
 

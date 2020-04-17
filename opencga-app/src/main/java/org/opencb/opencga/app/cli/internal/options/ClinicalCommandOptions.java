@@ -16,8 +16,7 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
-import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL_DESC;
-import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
@@ -201,6 +200,21 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
+
+        @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
+        public String family;
+
+        @Parameter(names = {"--family-disorder"}, description = FAMILY_DISORDER_DESC, arity = 1)
+        public String familyPhenotype;
+
+        @Parameter(names = {"--family-segregation"}, description = FAMILY_SEGREGATION_DESCR, arity = 1)
+        public String modeOfInheritance;
+
+        @Parameter(names = {"--family-members"}, description = FAMILY_MEMBERS_DESC, arity = 1)
+        public String familyMembers;
+
+        @Parameter(names = {"--family-proband"}, description = FAMILY_PROBAND_DESC, arity = 1)
+        public String familyProband;
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
