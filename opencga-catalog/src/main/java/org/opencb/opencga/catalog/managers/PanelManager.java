@@ -18,9 +18,8 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -222,7 +221,7 @@ public class PanelManager extends ResourceManager<Panel> {
             panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
             panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
             panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
-            panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
+            panel.setDisorders(ParamUtils.defaultObject(panel.getDisorders(), Collections.emptyList()));
             panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
             panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
             panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
@@ -401,10 +400,12 @@ public class PanelManager extends ResourceManager<Panel> {
                         categories.add(new PanelCategory(String.valueOf(panelInfo.get("disease_group")), 1));
                         categories.add(new PanelCategory(String.valueOf(panelInfo.get("disease_sub_group")), 2));
 
-                        List<Phenotype> phenotypes = new ArrayList<>();
+                        List<OntologyTerm> disorders = new ArrayList<>();
                         for (String relevantDisorder : (List<String>) panelInfo.get("relevant_disorders")) {
                             if (StringUtils.isNotEmpty(relevantDisorder)) {
-                                phenotypes.add(new Phenotype(relevantDisorder, relevantDisorder, ""));
+                                disorders.add(new OntologyTerm(relevantDisorder, relevantDisorder, "", "", "", "",
+                                        Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                                        Collections.emptyList()));
                             }
                         }
 
@@ -510,7 +511,7 @@ public class PanelManager extends ResourceManager<Panel> {
                                 .replace(" ", "_") + "-PanelAppId-" + panelInfo.get("id"));
                         diseasePanel.setName(String.valueOf(panelInfo.get("name")));
                         diseasePanel.setCategories(categories);
-                        diseasePanel.setPhenotypes(phenotypes);
+                        diseasePanel.setDisorders(disorders);
                         diseasePanel.setGenes(genes);
                         diseasePanel.setStrs(strs);
                         diseasePanel.setRegions(regions);
@@ -548,7 +549,7 @@ public class PanelManager extends ResourceManager<Panel> {
         String ensemblGeneId = "";
         List<Xref> xrefs = new ArrayList<>();
         List<String> publications = new ArrayList<>();
-        List<OntologyTermAnnotation> phenotypes = new ArrayList<>();
+        List<OntologyTerm> phenotypes = new ArrayList<>();
         List<Coordinate> coordinates = new ArrayList<>();
 
         Map<String, Object> geneData = (Map) panelAppCommonMap.get("gene_data");
@@ -606,7 +607,8 @@ public class PanelManager extends ResourceManager<Panel> {
                     }
                 }
 
-                phenotypes.add(new OntologyTermAnnotation(id, phenotype, source, Collections.emptyMap()));
+                phenotypes.add(new OntologyTerm(id, phenotype, source, "", "", "", Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(), Collections.emptyList()));
             }
         }
 
@@ -623,13 +625,61 @@ public class PanelManager extends ResourceManager<Panel> {
 
         common.setId(ensemblGeneId);
         common.setXrefs(xrefs);
-        common.setModeOfInheritance(String.valueOf(panelAppCommonMap.get("mode_of_inheritance")));
+        common.setModeOfInheritance(getMoiFromGenePanel(String.valueOf(panelAppCommonMap.get("mode_of_inheritance"))));
         common.setPenetrance(penetrance);
-        common.setConfidence(String.valueOf(panelAppCommonMap.get("confidence_level")));
+        ClinicalProperty.Confidence confidence = ClinicalProperty.Confidence.LOW;
+        int confidenceLevel = Integer.valueOf(String.valueOf(panelAppCommonMap.get("confidence_level")));
+        if (confidenceLevel == 2) {
+            confidence = ClinicalProperty.Confidence.MEDIUM;
+        } else if (confidenceLevel == 3) {
+            confidence = ClinicalProperty.Confidence.HIGH;
+        }
+        common.setConfidence(confidence);
         common.setEvidences((List<String>) panelAppCommonMap.get("evidence"));
         common.setPublications(publications);
         common.setPhenotypes(phenotypes);
         common.setCoordinates(coordinates);
+    }
+
+    private ClinicalProperty.ModeOfInheritance getMoiFromGenePanel(String inputMoi) {
+        if (org.apache.commons.lang3.StringUtils.isEmpty(inputMoi)) {
+            return ClinicalProperty.ModeOfInheritance.UNKNOWN;
+        }
+
+        String moi = inputMoi.toUpperCase();
+
+        if (moi.startsWith("BIALLELIC")) {
+            return ClinicalProperty.ModeOfInheritance.AUTOSOMAL_RECESSIVE;
+        }
+        if (moi.startsWith("MONOALLELIC")) {
+            if (moi.contains("NOT")) {
+                return ClinicalProperty.ModeOfInheritance.MONOALLELIC_NOT_IMPRINTED;
+            } else if (moi.contains("MATERNALLY")) {
+                return ClinicalProperty.ModeOfInheritance.MONOALLELIC_MATERNALLY_IMPRINTED;
+            } else if (moi.contains("PATERNALLY")) {
+                return ClinicalProperty.ModeOfInheritance.MONOALLELIC_PATERNALLY_IMPRINTED;
+            } else {
+                return ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT;
+            }
+        }
+        if (moi.startsWith("BOTH")) {
+            if (moi.contains("SEVERE")) {
+                return ClinicalProperty.ModeOfInheritance.MONOALLELIC_AND_MORE_SEVERE_BIALLELIC;
+            } else if (moi.contains("")) {
+                return ClinicalProperty.ModeOfInheritance.MONOALLELIC_AND_BIALLELIC;
+            }
+        }
+        if (moi.startsWith("MITOCHONDRIAL")) {
+            return ClinicalProperty.ModeOfInheritance.MITOCHONDRIAL;
+        }
+        if (moi.startsWith("X-LINKED")) {
+            if (moi.contains("BIALLELIC")) {
+                return ClinicalProperty.ModeOfInheritance.X_LINKED_RECESSIVE;
+            } else {
+                return ClinicalProperty.ModeOfInheritance.X_LINKED_RECESSIVE;
+            }
+        }
+        return ClinicalProperty.ModeOfInheritance.UNKNOWN;
     }
 
     public OpenCGAResult<Panel> update(String studyId, Query query, PanelUpdateParams updateParams, QueryOptions options, String token)
@@ -1358,7 +1408,7 @@ public class PanelManager extends ResourceManager<Panel> {
             panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
             panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
             panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
-            panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
+            panel.setDisorders(ParamUtils.defaultObject(panel.getDisorders(), Collections.emptyList()));
             panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
             panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
             panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));

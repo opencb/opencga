@@ -196,8 +196,8 @@ public class PanelManagerTest extends GenericTest {
         assertEquals("chr1:1-1000", updatedPanel.getRegions().get(0).getCoordinates().get(0).getLocation());
         assertEquals(1, updatedPanel.getGenes().size());
         assertEquals("BRCA2", updatedPanel.getGenes().get(0).getId());
-        assertEquals(1, updatedPanel.getPhenotypes().size());
-        assertEquals("ontologyTerm", updatedPanel.getPhenotypes().get(0).getId());
+        assertEquals(1, updatedPanel.getDisorders().size());
+        assertEquals("ontologyTerm", updatedPanel.getDisorders().get(0).getId());
         assertEquals(1, updatedPanel.getVariants().size());
         assertEquals("variant1", updatedPanel.getVariants().get(0).getId());
     }
