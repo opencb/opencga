@@ -101,8 +101,8 @@ public class VariantIndexOperationTool extends OperationTool {
         params.put(VariantStorageOptions.NORMALIZATION_SKIP.key(), indexParams.getNormalizationSkip());
         params.put(VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), indexParams.getReferenceGenome());
         params.put(VariantStorageOptions.FAMILY.key(), indexParams.isFamily());
-        params.put(VariantStorageOptions.LOAD_SPLIT_FILE.key(), indexParams.getLoadSplitFile());
-        params.put(VariantStorageOptions.LOAD_MULTI_FILE.key(), indexParams.isLoadMultiFile());
+        params.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), indexParams.getLoadSplitData());
+        params.put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), indexParams.isLoadMultiFileData());
         params.put(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), indexParams.getLoadSampleIndex());
         params.put(VariantStorageOptions.LOAD_ARCHIVE.key(), indexParams.getLoadArchive());
         params.put(VariantStorageOptions.LOAD_HOM_REF.key(), indexParams.getLoadHomRef());

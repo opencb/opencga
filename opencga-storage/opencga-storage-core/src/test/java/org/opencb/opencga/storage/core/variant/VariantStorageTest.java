@@ -35,7 +35,7 @@ public interface VariantStorageTest extends AutoCloseable {
     default int getExpectedNumLoadedVariants(VariantFileMetadata fileMetadata) {
         int numRecords = fileMetadata.getStats().getVariantCount();
         return numRecords
-                - fileMetadata.getStats().getTypeCount().get(VariantType.SYMBOLIC.name())
-                - fileMetadata.getStats().getTypeCount().get(VariantType.NO_VARIATION.name());
+                - fileMetadata.getStats().getTypeCount().getOrDefault(VariantType.SYMBOLIC.name(), 0)
+                - fileMetadata.getStats().getTypeCount().getOrDefault(VariantType.NO_VARIATION.name(), 0);
     }
 }

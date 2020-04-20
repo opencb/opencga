@@ -138,11 +138,11 @@ public class StorageVariantCommandOptions {
                 + "This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards")
         public boolean family;
 
-        @Parameter(names = {"--load-split-file"}, description = "Indicate that the variants from a group of samples is split in multiple files, either by CHROMOSOME or by REGION. In either case, variants from different files must not overlap.")
-        public String loadSplitFile;
+        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a group of samples is split in multiple files, either by CHROMOSOME or by REGION. In either case, variants from different files must not overlap.")
+        public String loadSplitData;
 
-        @Parameter(names = {"--load-multi-file"}, description = "Indicate the presence of multiple files for the same sample. Each file could be the result of a different vcf-caller or experiment over the same sample.", arity = 0)
-        public boolean loadMultiFile;
+        @Parameter(names = {"--load-multi-file-data"}, description = "Indicate the presence of multiple files for the same sample. Each file could be the result of a different vcf-caller or experiment over the same sample.", arity = 0)
+        public boolean loadMultiFileData;
 
         @Parameter(names = {"--load-sample-index"}, description = "Build sample index while loading. (yes, no, auto)", arity = 0)
         public String loadSampleIndex = "auto";

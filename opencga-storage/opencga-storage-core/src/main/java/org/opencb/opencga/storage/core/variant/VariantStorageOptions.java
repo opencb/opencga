@@ -30,8 +30,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     LOAD_BATCH_SIZE("load.batchSize", 100),
     LOAD_THREADS("load.numThreads", 6),
-    LOAD_SPLIT_FILE("load.splitFile"),
-    LOAD_MULTI_FILE("load.multiFile", false),
+    LOAD_SPLIT_DATA("load.splitData"),
+    LOAD_MULTI_FILE_DATA("load.multiFileData", false),
     LOAD_SAMPLE_INDEX("load.sampleIndex", YesNoAuto.AUTO),
     LOAD_ARCHIVE("load.archive", YesNoAuto.AUTO),
     LOAD_HOM_REF("load.homRef", YesNoAuto.AUTO),

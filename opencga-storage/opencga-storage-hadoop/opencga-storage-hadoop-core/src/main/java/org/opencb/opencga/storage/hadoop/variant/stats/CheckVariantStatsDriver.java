@@ -151,7 +151,7 @@ public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
 
                     for (VariantType value : VariantType.values()) {
                         out.print("\t");
-                        out.print(stats.getTypeCount().get(value.name()));
+                        out.print(stats.getTypeCount().getOrDefault(value.name(), 0));
                     }
 
                     Map<String, Integer> chromosomeCounts = stats.getChromosomeCount().entrySet()

@@ -2271,7 +2271,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             VariantAnnotation annotation = variant.getAnnotation();
 
             expectedAnnotation.setXrefs(null);
-            expectedAnnotation.setId(null);
+//            expectedAnnotation.setId(null);
             assertEquals("\n" + expectedAnnotation + "\n" + annotation, expectedAnnotation, annotation);
         }
     }

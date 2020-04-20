@@ -32,7 +32,7 @@ public class VariantIndexParams extends ToolParams {
                               boolean gvcf,
                               boolean normalizationSkip, String referenceGenome,
                               boolean family,
-                              boolean load, String loadSplitFile, boolean loadMultiFile,
+                              boolean load, String loadSplitData, boolean loadMultiFileData,
                               String loadSampleIndex,
                               String loadArchive,
                               String loadHomRef,
@@ -49,8 +49,8 @@ public class VariantIndexParams extends ToolParams {
         this.referenceGenome = referenceGenome;
         this.family = family;
         this.load = load;
-        this.loadSplitFile = loadSplitFile;
-        this.loadMultiFile = loadMultiFile;
+        this.loadSplitData = loadSplitData;
+        this.loadMultiFileData = loadMultiFileData;
         this.loadSampleIndex = loadSampleIndex;
         this.loadArchive = loadArchive;
         this.loadHomRef = loadHomRef;
@@ -80,8 +80,8 @@ public class VariantIndexParams extends ToolParams {
     private boolean family;
 
     private boolean load;
-    private String loadSplitFile;
-    private boolean loadMultiFile;
+    private String loadSplitData;
+    private boolean loadMultiFileData;
     private String loadSampleIndex;
     private String loadArchive;
     private String loadHomRef;
@@ -181,21 +181,21 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
-    public String getLoadSplitFile() {
-        return loadSplitFile;
+    public String getLoadSplitData() {
+        return loadSplitData;
     }
 
-    public VariantIndexParams setLoadSplitFile(String loadSplitFile) {
-        this.loadSplitFile = loadSplitFile;
+    public VariantIndexParams setLoadSplitData(String loadSplitData) {
+        this.loadSplitData = loadSplitData;
         return this;
     }
 
-    public boolean isLoadMultiFile() {
-        return loadMultiFile;
+    public boolean isLoadMultiFileData() {
+        return loadMultiFileData;
     }
 
-    public VariantIndexParams setLoadMultiFile(boolean loadMultiFile) {
-        this.loadMultiFile = loadMultiFile;
+    public VariantIndexParams setLoadMultiFileData(boolean loadMultiFileData) {
+        this.loadMultiFileData = loadMultiFileData;
         return this;
     }
 
@@ -334,7 +334,7 @@ public class VariantIndexParams extends ToolParams {
         sb.append(", transform=").append(transform);
         sb.append(", gvcf=").append(gvcf);
         sb.append(", load=").append(load);
-        sb.append(", loadSplitData=").append(loadSplitFile);
+        sb.append(", loadSplitData=").append(loadSplitData);
         sb.append(", skipPostLoadCheck=").append(postLoadCheck);
         sb.append(", excludeGenotype=").append(excludeGenotype);
         sb.append(", includeExtraFields='").append(includeSampleData).append('\'');

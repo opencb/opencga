@@ -96,7 +96,7 @@ public class StorageEngineException extends Exception {
                 + "If the variants of the new file does not overlap with the already loaded variants, "
                 + "because they are from a different chromosome, region, or a different variant type, "
                 + "repeat the operation with the option ")
-                .append("-D").append(VariantStorageOptions.LOAD_SPLIT_FILE.key())
+                .append("-D").append(VariantStorageOptions.LOAD_SPLIT_DATA.key())
                 .append("=[")
                 .append(VariantStorageEngine.SplitData.CHROMOSOME).append(", ")
                 .append(VariantStorageEngine.SplitData.REGION).append("] . ")

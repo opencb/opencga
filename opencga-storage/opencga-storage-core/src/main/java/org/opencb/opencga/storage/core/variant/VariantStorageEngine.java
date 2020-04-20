@@ -138,8 +138,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         public static SplitData from(ObjectMap options) {
             Objects.requireNonNull(options);
-            String loadSplitDataStr = options.getString(LOAD_SPLIT_FILE.key());
-            boolean multiFile = options.getBoolean(LOAD_MULTI_FILE.key());
+            String loadSplitDataStr = options.getString(LOAD_SPLIT_DATA.key());
+            boolean multiFile = options.getBoolean(LOAD_MULTI_FILE_DATA.key());
             if (StringUtils.isNotEmpty(loadSplitDataStr) && multiFile) {
                 throw new IllegalArgumentException("Unable to mix loadSplitFile and loadMultiFile");
             }

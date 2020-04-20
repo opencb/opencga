@@ -744,7 +744,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     public Set<String> checkArchiveTableLoadedVariants(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor,
                                                        VariantFileMetadata fileMetadata) {
-        int fileId = Integer.valueOf(fileMetadata.getId());
+        int fileId = Integer.parseInt(fileMetadata.getId());
         Set<String> variants = getVariants(dbAdaptor, studyMetadata, fileId);
         int expected = fileMetadata.getStats().getTypeCount().entrySet().stream()
                 .filter(entry -> VARIANT_TYPES.contains(VariantType.valueOf(entry.getKey())))
