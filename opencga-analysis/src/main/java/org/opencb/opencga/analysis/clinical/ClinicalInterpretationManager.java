@@ -130,11 +130,6 @@ public class ClinicalInterpretationManager extends StorageManager {
     }
 
     public ClinicalInterpretationManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
-        this(catalogManager, storageEngineFactory, null, null);
-    }
-
-    public ClinicalInterpretationManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, Path roleInCancerPath,
-                                         Path actionableVariantPath) {
         super(catalogManager, storageEngineFactory);
 
         this.clinicalAnalysisManager = catalogManager.getClinicalAnalysisManager();
@@ -143,8 +138,8 @@ public class ClinicalInterpretationManager extends StorageManager {
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
 
-        this.roleInCancerManager = new RoleInCancerManager(roleInCancerPath);
-        this.actionableVariantManager = new ActionableVariantManager(actionableVariantPath);
+        this.roleInCancerManager = new RoleInCancerManager();
+        this.actionableVariantManager = new ActionableVariantManager();
 
         this.catalogQueryUtils = new VariantCatalogQueryUtils(catalogManager);
 

@@ -21,25 +21,26 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.commons.utils.URLUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ActionableVariantManager {
     // Folder where actionable variant files are located, multiple assemblies are supported, i.e.: one variant actionable file per assembly
     // File name format: actionableVariants_xxx.txt[.gz] where xxx = assembly in lower case
-    private Path path;
+    private final String ACTIONABLE_URL = "http://resources.opencb.org/opencb/opencga/analysis/resources/";
 
     // We keep a Map for each assembly with a Map of variant IDs with the phenotype list
     private static Map<String, Map<String, List<String>>> actionableVariants = null;
 
-    public ActionableVariantManager(Path path) {
-        this.path = path;
-    }
+    public ActionableVariantManager() {}
 
     public Map<String, List<String>> getActionableVariants(String assembly) throws IOException {
         // Lazy loading
@@ -58,20 +59,27 @@ public class ActionableVariantManager {
         // Load actionable variants for each assembly, if present
         // First, read all actionableVariants filenames, actionableVariants_xxx.txt[.gz] where xxx = assembly in lower case
         Map<String, Map<String, List<String>>> actionableVariantsByAssembly = new HashMap<>();
-        File folder = path.toFile();
-        File[] files = folder.listFiles();
-        if (files != null && ArrayUtils.isNotEmpty(files)) {
-            for (File file : files) {
-                if (file.isFile() && file.getName().startsWith("actionableVariants_")) {
-                    // Split by _ and .  to fetch assembly
-                    String[] split = file.getName().split("[_\\.]");
-                    if (split.length > 1) {
-                        String assembly = split[1].toLowerCase();
-                        actionableVariantsByAssembly.put(assembly, loadActionableVariants(file));
-                    }
-                }
+
+        String[] assemblies = new String[]{"grch37", "grch38"};
+        for (String assembly : assemblies) {
+            File actionableFile;
+            try {
+                // Donwload 'actionable variant' file
+                actionableFile = URLUtils.download(new URL(ACTIONABLE_URL + "actionableVariants_" + assembly + ".txt.gz"),
+                        Paths.get("/tmp"));
+
+            } catch (IOException e) {
+                continue;
             }
+
+            if (actionableFile != null) {
+                actionableVariantsByAssembly.put(assembly, loadActionableVariants(actionableFile));
+            }
+
+            // Delete
+            actionableFile.delete();
         }
+
         return actionableVariantsByAssembly;
     }
 

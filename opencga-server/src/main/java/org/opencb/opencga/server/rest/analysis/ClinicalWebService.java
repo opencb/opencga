@@ -71,9 +71,7 @@ public class ClinicalWebService extends AnalysisWebService {
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
-        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
-                Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt.gz"),
-                Paths.get(opencgaHome + "/analysis/resources/"));
+        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
