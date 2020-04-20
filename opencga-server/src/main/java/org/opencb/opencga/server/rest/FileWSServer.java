@@ -143,7 +143,7 @@ public class FileWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("files");
 
-            List<String> idList = getIdList(fileStr);
+            List<String> idList = getIdList(fileStr.replaceAll(":", "/"));
             DataResult<File> fileQueryResult = fileManager.get(studyStr, idList, new Query("deleted", deleted), queryOptions, true, token);
             return createOkResponse(fileQueryResult);
         } catch (Exception e) {

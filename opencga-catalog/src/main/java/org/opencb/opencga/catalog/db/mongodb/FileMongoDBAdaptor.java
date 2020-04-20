@@ -1073,6 +1073,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case TYPE:
                     case CHECKSUM:
                     case URI:
+                    case ID:
                     case PATH:
                     case MODIFICATION_DATE:
                     case DESCRIPTION:
