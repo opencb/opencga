@@ -65,7 +65,6 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     /////////////////////////
     // Archive table configuration
     /////////////////////////
-    ARCHIVE_TABLE_SKIP("storage.hadoop.archive.table.skip", false),
     ARCHIVE_TABLE_COMPRESSION("storage.hadoop.archive.table.compression", Compression.Algorithm.GZ.getName()),
     ARCHIVE_TABLE_PRESPLIT_SIZE("storage.hadoop.archive.table.preSplit.splitsPerBatch", 500),
 

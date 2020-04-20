@@ -25,7 +25,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -147,14 +147,14 @@ public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
                     out.print("\t");
                     out.print(next.getPath().substring(next.getPath().lastIndexOf("/") + 1));
                     out.print("\t");
-                    out.print(stats.getNumVariants());
+                    out.print(stats.getVariantCount());
 
                     for (VariantType value : VariantType.values()) {
                         out.print("\t");
-                        out.print(stats.getVariantTypeCount(value));
+                        out.print(stats.getTypeCount().getOrDefault(value.name(), 0));
                     }
 
-                    Map<String, Integer> chromosomeCounts = stats.getChromosomeCounts().entrySet()
+                    Map<String, Integer> chromosomeCounts = stats.getChromosomeCount().entrySet()
                             .stream()
                             .collect(Collectors.toMap(
                                     e -> Region.normalizeChromosome(e.getKey()), // Normalize chromosomes

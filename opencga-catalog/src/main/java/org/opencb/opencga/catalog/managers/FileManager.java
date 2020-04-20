@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.CollectionUtils;

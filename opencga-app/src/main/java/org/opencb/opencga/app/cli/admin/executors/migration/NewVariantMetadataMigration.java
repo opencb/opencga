@@ -12,7 +12,7 @@ import org.opencb.biodata.models.variant.avro.legacy.VariantGlobalStats;
 import org.opencb.biodata.models.variant.avro.legacy.VariantSource;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;

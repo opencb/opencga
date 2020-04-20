@@ -73,7 +73,9 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         assertThat(iterator.getCount(), gt(0));
 
         checkSampleData(engine, VARIANT_A);
-        checkSampleData(engine, RS);
+        // Do not test VARIANT_B and RS, as they expect to have SAMPLE_2
+//        checkSampleData(engine, VARIANT_B);
+//        checkSampleData(engine, RS);
     }
 
     @Test
@@ -222,7 +224,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
             case VARIANT_A:
                 assertEquals(STUDY_NAME, studyEntry.getStudyId());
                 assertEquals(Collections.singletonList("SAMPLE_1"),
-                        studyEntry.getSamples().stream().map(SampleEntry::getData).map(l -> l.get(l.size() - 2)).collect(Collectors.toList()));
+                        studyEntry.getSamples().stream().map(SampleEntry::getSampleId).collect(Collectors.toList()));
                 assertEquals(Collections.singleton("variant-test-somatic.vcf"),
                         studyEntry.getFiles().stream().map(FileEntry::getFileId).collect(Collectors.toSet()));
                 break;
@@ -231,7 +233,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
             case RS_VARIANT:
                 assertEquals(STUDY_NAME, studyEntry.getStudyId());
                 assertEquals(Arrays.asList("SAMPLE_1", "SAMPLE_2"),
-                        studyEntry.getSamples().stream().map(SampleEntry::getData).map(l -> l.get(l.size() - 2)).collect(Collectors.toList()));
+                        studyEntry.getSamples().stream().map(SampleEntry::getSampleId).collect(Collectors.toList()));
                 assertEquals(new HashSet<>(Arrays.asList("variant-test-somatic.vcf", "variant-test-somatic_2.vcf")),
                         studyEntry.getFiles().stream().map(FileEntry::getFileId).collect(Collectors.toSet()));
                 break;

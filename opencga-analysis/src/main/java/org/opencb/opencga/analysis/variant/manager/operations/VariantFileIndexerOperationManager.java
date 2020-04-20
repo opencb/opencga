@@ -19,24 +19,24 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
-import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.*;
-import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -152,6 +152,10 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
             createDefaultCohortIfNeeded(studyFqn, token);
         }
+
+        toFileSystemPath(studyFqn, params, VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), token);
+        toFileSystemPath(studyFqn, params, VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), token);
+
         variantStorageEngine.getOptions().putAll(params);
     }
 

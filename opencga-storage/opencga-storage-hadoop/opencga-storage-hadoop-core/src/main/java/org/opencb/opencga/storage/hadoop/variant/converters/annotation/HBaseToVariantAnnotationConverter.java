@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
@@ -129,6 +130,18 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         String[] excludedAnnotationFields = list.toArray(new String[list.size()]);
         objectMapper.setAnnotationIntrospector(
                 new JacksonAnnotationIntrospector() {
+
+                    @Override
+                    public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac) {
+                        JsonIgnoreProperties.Value propertyIgnorals = super.findPropertyIgnorals(ac);
+                        if (!ac.getRawType().equals(VariantAnnotation.class)) {
+                            // Not a VariantAnnotation class. Return propertiesToIgnore as is.
+                            return propertyIgnorals;
+                        }
+                        return JsonIgnoreProperties.Value.merge(propertyIgnorals,
+                                JsonIgnoreProperties.Value.forIgnoredProperties(excludedAnnotationFields));
+                    }
+
                     @Override
                     public String[] findPropertiesToIgnore(Annotated ac, boolean forSerialization) {
                         String[] propertiesToIgnore = super.findPropertiesToIgnore(ac, forSerialization);

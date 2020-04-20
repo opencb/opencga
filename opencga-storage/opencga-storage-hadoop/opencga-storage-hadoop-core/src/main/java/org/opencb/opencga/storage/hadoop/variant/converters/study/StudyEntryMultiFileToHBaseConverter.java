@@ -20,7 +20,7 @@ public class StudyEntryMultiFileToHBaseConverter extends StudyEntryToHBaseConver
 
         metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
             sampleToFileMap.putAll(sampleMetadata.getId(), sampleMetadata.getFiles());
-            if (VariantStorageEngine.LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
+            if (VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
                 throw new IllegalArgumentException("Error loading multiple files!");
             }
         });

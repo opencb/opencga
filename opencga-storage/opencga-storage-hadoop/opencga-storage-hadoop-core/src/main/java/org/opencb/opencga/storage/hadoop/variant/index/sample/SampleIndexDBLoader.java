@@ -9,7 +9,7 @@ import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine.LoadSplitData;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine.SplitData;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -44,7 +44,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     public SampleIndexDBLoader(SampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
                                String tableName, VariantStorageMetadataManager metadataManager,
                                int studyId, int fileId, List<Integer> sampleIds,
-                               LoadSplitData splitData, ObjectMap options) {
+                               SplitData splitData, ObjectMap options) {
         super(hBaseManager, tableName);
         this.studyId = studyId;
         this.sampleIds = sampleIds;

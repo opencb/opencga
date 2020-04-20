@@ -27,6 +27,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -48,6 +50,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     public DummyVariantStorageEngine(StorageConfiguration configuration) {
         super(configuration);
     }
+    private Logger logger = LoggerFactory.getLogger(DummyVariantStorageEngine.class);
 
     public static final String STORAGE_ENGINE_ID = "dummy";
 
@@ -67,6 +70,28 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
                 new DummyVariantStoragePipeline(getConfiguration(), STORAGE_ENGINE_ID, getDBAdaptor(), getIOManagerProvider());
         pipeline.init(getOptions());
         return pipeline;
+    }
+
+    @Override
+    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+        logger.info("Running family index!");
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = metadataManager.getStudyId(study);
+        for (int i = 0; i < trios.size(); i += 3) {
+            Integer father = metadataManager.getSampleId(studyId, trios.get(i));
+            Integer mother = metadataManager.getSampleId(studyId, trios.get(i + 1));
+            Integer child = metadataManager.getSampleId(studyId, trios.get(i + 2));
+            metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
+                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
+                if (father != null && father > 0) {
+                    sampleMetadata.setFather(father);
+                }
+                if (mother != null && mother > 0) {
+                    sampleMetadata.setMother(mother);
+                }
+                return sampleMetadata;
+            });
+        }
     }
 
     @Override

@@ -170,8 +170,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("index status");
-        catalogManager.getFileManager().delete(study.getFqn(),
-                new Query(FileDBAdaptor.QueryParams.PATH.key(), inputFile.getPath()) , null, sessionId);
+        catalogManager.getFileManager().unlink(study.getFqn(), inputFile.getId(), sessionId);
         }
 
     @Test

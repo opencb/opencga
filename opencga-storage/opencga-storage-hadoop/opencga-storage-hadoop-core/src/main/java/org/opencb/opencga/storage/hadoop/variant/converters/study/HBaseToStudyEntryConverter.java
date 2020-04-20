@@ -93,8 +93,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         this.statsConverter = statsConverter;
     }
 
-    public void configure(HBaseVariantConverterConfiguration configuration) {
+    public HBaseToStudyEntryConverter configure(HBaseVariantConverterConfiguration configuration) {
         this.configuration = configuration;
+        return this;
     }
 
     public HBaseVariantConverterConfiguration getConfiguration() {

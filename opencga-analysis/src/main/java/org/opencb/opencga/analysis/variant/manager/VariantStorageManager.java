@@ -40,6 +40,7 @@ import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -50,12 +51,14 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -239,7 +242,7 @@ public class VariantStorageManager extends StorageManager {
     public void annotationLoad(String projectStr, List<String> studies, String loadFile, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         String projectId = getProjectId(projectStr, studies, token);
-        secureOperation(VariantAnnotationIndexOperationTool.ID, projectId, params, token, engine -> {
+        secureOperation(VariantAnnotationIndexOperationTool.ID, projectId, studies, params, token, engine -> {
             new VariantAnnotationOperationManager(this, engine)
                     .annotationLoad(projectStr, getStudiesFqn(studies, token), params, loadFile, token);
             return null;
@@ -383,6 +386,22 @@ public class VariantStorageManager extends StorageManager {
                     trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, skipIncompleteFamilies, token));
                 }
             }
+
+            engine.familyIndex(study, trios, params);
+            return null;
+        });
+    }
+
+    public void familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
+            throws CatalogException, StorageEngineException {
+        secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
+
+            OpenCGAResult<Individual> individualResult = getCatalogManager().getIndividualManager()
+                    .search(study,
+                            new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samples),
+                            new QueryOptions(), token);
+
+            List<List<String>> trios = catalogUtils.getTrios(study, engine.getMetadataManager(), individualResult.getResults(), token);
 
             engine.familyIndex(study, trios, params);
             return null;

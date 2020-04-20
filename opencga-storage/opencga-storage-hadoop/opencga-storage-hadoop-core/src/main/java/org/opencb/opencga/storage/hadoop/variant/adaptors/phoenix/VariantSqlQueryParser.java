@@ -946,7 +946,7 @@ public class VariantSqlQueryParser {
                         genotype = removeNegation(genotype);
                     }
                     List<Integer> sampleFiles = new ArrayList<>();
-                    if (VariantStorageEngine.LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
+                    if (VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
                         if (fileIds.isEmpty()) {
                             sampleFiles.add(null); // First file does not have the fileID in the column name
                             List<Integer> fileIdsFromSampleId = sampleMetadata.getFiles();

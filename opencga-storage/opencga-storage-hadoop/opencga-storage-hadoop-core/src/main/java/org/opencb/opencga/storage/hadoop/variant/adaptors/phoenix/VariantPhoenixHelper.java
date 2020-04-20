@@ -829,12 +829,12 @@ public class VariantPhoenixHelper {
     }
 
     public static List<Column> getSampleColumns(int studyId, int sampleId, List<Integer> files, Collection<Integer> requiredFiles,
-                                                VariantStorageEngine.LoadSplitData splitData) {
+                                                VariantStorageEngine.SplitData splitData) {
         List<Column> columns = new ArrayList<>(1);
         if (requiredFiles == null || requiredFiles.contains(files.get(0))) {
             columns.add(getSampleColumn(studyId, sampleId));
         }
-        if (VariantStorageEngine.LoadSplitData.MULTI.equals(splitData)) {
+        if (VariantStorageEngine.SplitData.MULTI.equals(splitData)) {
             for (Integer file : files.subList(1, files.size())) {
                 if (requiredFiles == null || requiredFiles.contains(file)) {
                     columns.add(getSampleColumn(studyId, sampleId, file));

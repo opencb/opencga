@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.cohort;
 
+import java.util.Objects;
+
 public class CohortInternal {
 
     private CohortStatus status;
@@ -42,5 +44,18 @@ public class CohortInternal {
     public CohortInternal setStatus(CohortStatus status) {
         this.status = status;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CohortInternal that = (CohortInternal) o;
+        return Objects.equals(status, that.status);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(status);
     }
 }
