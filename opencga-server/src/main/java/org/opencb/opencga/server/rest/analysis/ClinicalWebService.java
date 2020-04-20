@@ -405,6 +405,13 @@ public class ClinicalWebService extends AnalysisWebService {
     })
     public Response aggregationStats(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                                      @ApiParam(value = "Interpretation ID") @QueryParam("id") String id,
+                                     @ApiParam(value = "Description") @QueryParam("description") String description,
+                                     @ApiParam(value = "Software") @QueryParam("software") String software,
+                                     @ApiParam(value = "Analyst") @QueryParam("analyst") String analyst,
+                                     @ApiParam(value = "Comments") @QueryParam("comment") String comments,
+                                     @ApiParam(value = "Status") @QueryParam("status") String status,
+                                     @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+                                     @ApiParam(value = "Version") @QueryParam("version") String version,
                                      @ApiParam(value = "List of panels") @QueryParam("panel") String panel) {
         return Response.ok().build();
     }
