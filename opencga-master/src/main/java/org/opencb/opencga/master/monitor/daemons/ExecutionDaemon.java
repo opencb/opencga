@@ -26,9 +26,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
@@ -80,10 +80,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileAclParams;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobInternal;
-import org.opencb.opencga.core.models.job.JobInternalWebhook;
-import org.opencb.opencga.core.models.job.JobStudyParam;
+import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -436,6 +433,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
+        updateParams.setTool(new ToolInfo(tool.id(), tool.description(), tool.scope(), tool.type(), tool.resource()));
+
         if (tool.scope() == Tool.Scope.PROJECT) {
             String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(":"));
             OpenCGAResult<Study> studyResult;
