@@ -500,7 +500,7 @@ public class ClinicalWebService extends AnalysisWebService {
         // Get clinical variants
         try {
             List<ClinicalVariant> clinicalVariants = clinicalInterpretationManager.get(query, queryOptions, token);
-            return createAnalysisOkResponse(clinicalVariants);
+            return createOkResponse(clinicalVariants);
         } catch (CatalogException | IOException | StorageEngineException e) {
             return createErrorResponse(e);
         }
@@ -515,7 +515,7 @@ public class ClinicalWebService extends AnalysisWebService {
         try {
 
             List<ClinicalVariant> clinicalVariants = clinicalInterpretationManager.getActionableVariants(study, sample, token);
-            return createAnalysisOkResponse(clinicalVariants);
+            return createOkResponse(clinicalVariants);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

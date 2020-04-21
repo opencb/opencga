@@ -506,15 +506,27 @@ public class OpenCGAWSServer {
         queryResponse.setParams(params);
 
         // Guarantee that the RestResponse object contains a list of results
-        List<OpenCGAResult<?>> list;
+        List<OpenCGAResult<?>> list = new ArrayList<>();
         if (obj instanceof List) {
-            list = (List) obj;
+            if (!((List) obj).isEmpty()) {
+                Object firstObject = ((List) obj).get(0);
+                if (firstObject instanceof OpenCGAResult) {
+                    list = (List) obj;
+                } else if (firstObject instanceof DataResult) {
+                    List<DataResult> results = (List) obj;
+                    // We will cast each of the DataResults to OpenCGAResult
+                    for (DataResult result : results) {
+                        list.add(new OpenCGAResult<>(result));
+                    }
+                } else {
+                    list = Collections.singletonList(new OpenCGAResult<>(0, Collections.emptyList(), 1, (List) obj, 1));
+                }
+            }
         } else {
-            list = new ArrayList<>();
             if (obj instanceof OpenCGAResult) {
                 list.add(((OpenCGAResult) obj));
             } else if (obj instanceof DataResult) {
-                list.add(new OpenCGAResult<>(((DataResult) obj)));
+                list.add(new OpenCGAResult<>((DataResult) obj));
             } else {
                 list.add(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
             }
@@ -538,26 +550,6 @@ public class OpenCGAWSServer {
             logger.error("Error parsing response object");
             return createErrorResponse("", "Error parsing response object:\n" + Arrays.toString(e.getStackTrace()));
         }
-    }
-
-    protected Response createAnalysisOkResponse(Object obj) {
-        Map<String, Object> queryResponseMap = new LinkedHashMap<>();
-        queryResponseMap.put("time", new Long(System.currentTimeMillis() - startTime).intValue());
-        queryResponseMap.put("apiVersion", apiVersion);
-        queryResponseMap.put("queryOptions", queryOptions);
-        queryResponseMap.put("response", Collections.singletonList(obj));
-
-        Response response;
-        try {
-            response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponseMap), MediaType.APPLICATION_JSON_TYPE));
-            logResponse(response.getStatusInfo());
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            logger.error("Error parsing queryResponse object");
-            return createErrorResponse("", "Error parsing RestResponse object:\n" + Arrays.toString(e.getStackTrace()));
-        }
-
-        return response;
     }
 
     //Response methods
