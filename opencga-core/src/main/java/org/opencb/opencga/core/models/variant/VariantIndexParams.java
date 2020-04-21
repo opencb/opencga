@@ -38,6 +38,7 @@ public class VariantIndexParams extends ToolParams {
                               String loadHomRef,
                               String postLoadCheck,
                               boolean excludeGenotype, String includeSampleData, String merge,
+                              String deduplicationPolicy,
                               boolean calculateStats, Aggregation aggregated, String aggregationMappingFile, boolean annotate,
                               String annotator, boolean overwriteAnnotations, boolean indexSearch) {
         this.file = file;
@@ -58,6 +59,7 @@ public class VariantIndexParams extends ToolParams {
         this.excludeGenotype = excludeGenotype;
         this.includeSampleData = includeSampleData;
         this.merge = merge;
+        this.deduplicationPolicy = deduplicationPolicy;
         this.calculateStats = calculateStats;
         this.aggregated = aggregated;
         this.aggregationMappingFile = aggregationMappingFile;
@@ -89,6 +91,7 @@ public class VariantIndexParams extends ToolParams {
     private boolean excludeGenotype;
     private String includeSampleData = ParamConstants.ALL;
     private String merge;
+    private String deduplicationPolicy;
 
     private boolean calculateStats;
     private Aggregation aggregated = Aggregation.NONE;
@@ -259,6 +262,15 @@ public class VariantIndexParams extends ToolParams {
 
     public VariantIndexParams setMerge(String merge) {
         this.merge = merge;
+        return this;
+    }
+
+    public String getDeduplicationPolicy() {
+        return deduplicationPolicy;
+    }
+
+    public VariantIndexParams setDeduplicationPolicy(String deduplicationPolicy) {
+        this.deduplicationPolicy = deduplicationPolicy;
         return this;
     }
 

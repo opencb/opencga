@@ -97,6 +97,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--merge"}, description = "Currently two levels of merge are supported: \"basic\" mode merge genotypes of the same variants while \"advanced\" merge multiallelic and overlapping variants.")
         public String merge;
 
+        @Parameter(names = {"--deduplication-policy"}, description = "Specify how duplicated variants should be handled. Available policies: \"discard\", \"maxQual\"")
+        public String deduplicationPolicy = "maxQual";
+
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
         public boolean excludeGenotype;
 
@@ -144,13 +147,13 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--load-multi-file-data"}, description = "Indicate the presence of multiple files for the same sample. Each file could be the result of a different vcf-caller or experiment over the same sample.", arity = 0)
         public boolean loadMultiFileData;
 
-        @Parameter(names = {"--load-sample-index"}, description = "Build sample index while loading. (yes, no, auto)", arity = 0)
+        @Parameter(names = {"--load-sample-index"}, description = "Build sample index while loading. (yes, no, auto)")
         public String loadSampleIndex = "auto";
 
-        @Parameter(names = {"--load-archive"}, description = "Load archive data. (yes, no, auto)", arity = 0)
+        @Parameter(names = {"--load-archive"}, description = "Load archive data. (yes, no, auto)")
         public String loadArchive = "auto";
 
-        @Parameter(names = {"--load-hom-ref"}, description = "Load HOM_REF genotypes. (yes, no, auto)", arity = 0)
+        @Parameter(names = {"--load-hom-ref"}, description = "Load HOM_REF genotypes. (yes, no, auto)")
         public String loadHomRef = "auto";
 
         @Parameter(names = {"--post-load-check"}, description = "Execute post load checks over the database. (yes, no, auto)")

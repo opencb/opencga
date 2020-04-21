@@ -56,9 +56,9 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
 import org.slf4j.Logger;
@@ -765,4 +765,5 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     public VariantStorageMetadataManager getMetadataManager() {
         return getDBAdaptor().getMetadataManager();
     }
+
 }

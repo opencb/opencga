@@ -108,7 +108,7 @@ public class VariantIndexOperationTool extends OperationTool {
         params.put(VariantStorageOptions.LOAD_HOM_REF.key(), indexParams.getLoadHomRef());
         params.put(VariantStorageOptions.POST_LOAD_CHECK.key(), indexParams.getPostLoadCheck());
         params.put(VariantStorageOptions.INDEX_SEARCH.key(), indexParams.isIndexSearch());
-        params.put(VariantStorageOptions.NORMALIZATION_SKIP.key(), indexParams.getNormalizationSkip());
+        params.put(VariantStorageOptions.DEDUPLICATION_POLICY.key(), indexParams.getDeduplicationPolicy());
     }
 
     @Override

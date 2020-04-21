@@ -63,7 +63,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    public URI load(URI input) throws IOException, StorageEngineException {
+    public URI load(URI input, URI outdir) throws IOException, StorageEngineException {
         logger.info("Loading file " + input);
         List<Integer> fileIds = Collections.singletonList(getFileId());
         if (getOptions().getInt(LOAD_SLEEP) > 0) {

@@ -65,11 +65,12 @@ public interface StoragePipeline extends AutoCloseable {
      * from configuration file.
      *
      * @param input The URI of the file to be loaded
+     * @param outdir The output directory
      * @return The loaded file
      * @throws IOException If any IO problem occurs
      * @throws StorageEngineException If any other problem occurs
      */
-    URI load(URI input) throws IOException, StorageEngineException;
+    URI load(URI input, URI outdir) throws IOException, StorageEngineException;
 
     URI postLoad(URI input, URI output) throws IOException, StorageEngineException;
 

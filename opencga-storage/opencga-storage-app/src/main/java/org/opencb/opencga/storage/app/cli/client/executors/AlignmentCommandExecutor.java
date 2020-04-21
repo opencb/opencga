@@ -167,7 +167,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
                 logger.info("-- PreLoad alignments -- {}", nextFileUri);
                 nextFileUri = storagePipeline.preLoad(nextFileUri, outdirUri);
                 logger.info("-- Load alignments -- {}", nextFileUri);
-                nextFileUri = storagePipeline.load(nextFileUri);
+                nextFileUri = storagePipeline.load(nextFileUri, outdirUri);
                 logger.info("-- PostLoad alignments -- {}", nextFileUri);
                 nextFileUri = storagePipeline.postLoad(nextFileUri, outdirUri);
             }

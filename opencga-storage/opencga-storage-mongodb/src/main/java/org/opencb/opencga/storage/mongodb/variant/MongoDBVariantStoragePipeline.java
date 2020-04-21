@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -45,7 +46,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
+import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
@@ -235,7 +236,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    public URI load(URI inputUri) throws IOException, StorageEngineException {
+    public URI load(URI inputUri, URI outdir) throws IOException, StorageEngineException {
 
 
 //        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), Options.INCLUDE_GENOTYPES.defaultValue());
@@ -251,13 +252,13 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         boolean directLoad = options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue());
         if (directLoad) {
-            directLoad(inputUri);
+            directLoad(inputUri, outdir);
         } else {
             boolean doMerge = options.getBoolean(MERGE.key(), false);
             boolean doStage = options.getBoolean(STAGE.key(), false);
 
             if (doStage) {
-                stage(inputUri);
+                stage(inputUri, outdir);
             }
 
             long skippedVariants = options.getLong("skippedVariants");
@@ -273,7 +274,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         return inputUri; //TODO: Return something like this: mongo://<host>/<dbName>/<collectionName>
     }
 
-    public void directLoad(URI inputUri) throws StorageEngineException {
+    public void directLoad(URI inputUri, URI outdirUri) throws StorageEngineException {
         int fileId = getFileId();
         int studyId = getStudyId();
         List<Integer> fileIds = Collections.singletonList(fileId);
@@ -290,8 +291,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         try {
             //Dedup task
-            VariantDeduplicationTask duplicatedVariantsDetector =
-                    new VariantDeduplicationTask(new DiscardDuplicatedVariantsResolver(fileId));
+
+            VariantDeduplicationTask duplicatedVariantsDetector = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
+                    .getTask(UriUtils.fileName(inputUri), outdirUri);
 
             //Remapping ids task
             org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
@@ -371,7 +373,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
     }
 
-    public void stage(URI input) throws StorageEngineException {
+    public void stage(URI input, URI outdir) throws StorageEngineException {
         final int fileId = getFileId();
 
         if (!options.getBoolean(STAGE.key(), false)) {
@@ -397,6 +399,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             //Reader
             VariantReader variantReader = variantReaderUtils.getVariantReader(input, metadata, stdin);
 
+            VariantDeduplicationTask duplicatedVariantsDetector = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
+                    .getTask(UriUtils.fileName(input), outdir);
+
             //Remapping ids task
             org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
 
@@ -415,10 +420,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setAbortOnFail(true).build();
             if (isStageParallelWrite(options)) {
                 logger.info("Multi thread stage load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
-                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converterTask).then(stageLoader), null, config);
+                ptr = new ParallelTaskRunner<>(variantReader.then(duplicatedVariantsDetector),
+                        remapIdsTask.then(converterTask).then(stageLoader), null, config);
             } else {
                 logger.info("Multi thread stage load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
-                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converterTask), stageLoader, config);
+                ptr = new ParallelTaskRunner<>(variantReader.then(duplicatedVariantsDetector),
+                        remapIdsTask.then(converterTask), stageLoader, config);
             }
 
             Thread hook = new Thread(() -> {
