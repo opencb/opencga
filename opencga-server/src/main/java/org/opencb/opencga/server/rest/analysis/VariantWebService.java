@@ -70,6 +70,7 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -193,6 +194,8 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "approximateCount", value = "Get an approximate count, instead of an exact total count. Reduces execution time", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "approximateCountSamplingSize", value = "Sampling size to get the approximate count. "
                     + "Larger values increase accuracy but also increase execution time", dataType = "integer", paramType = "query"),
+
+            @ApiImplicitParam(name = "savedFilter", value = SAVED_FILTER_DESCR, dataType = "string", paramType = "query"),
 
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
@@ -696,6 +699,8 @@ public class VariantWebService extends AnalysisWebService {
     @Path("/aggregationStats")
     @ApiOperation(value = "Calculate and fetch aggregation stats", response = QueryResponse.class)
     @ApiImplicitParams({
+            @ApiImplicitParam(name = "savedFilter", value = SAVED_FILTER_DESCR, dataType = "string", paramType = "query"),
+
             // Variant filters
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),

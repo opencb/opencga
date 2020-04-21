@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.app.cli.internal.executors;
 
-import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
@@ -33,9 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF;
@@ -68,9 +64,11 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
         addParam(query, VariantCatalogQueryUtils.PROJECT, queryVariantsOptions.project);
         addParam(query, VariantCatalogQueryUtils.FAMILY, queryVariantsOptions.family);
         addParam(query, VariantCatalogQueryUtils.FAMILY_DISORDER, queryVariantsOptions.familyPhenotype);
-        addParam(query, VariantCatalogQueryUtils.FAMILY_SEGREGATION, queryVariantsOptions.modeOfInheritance);
+        addParam(query, VariantCatalogQueryUtils.FAMILY_SEGREGATION, queryVariantsOptions.familySegregation);
         addParam(query, VariantCatalogQueryUtils.FAMILY_MEMBERS, queryVariantsOptions.familyMembers);
         addParam(query, VariantCatalogQueryUtils.FAMILY_PROBAND, queryVariantsOptions.familyProband);
+        addParam(query, VariantCatalogQueryUtils.PANEL, queryVariantsOptions.panel);
+        addParam(query, VariantCatalogQueryUtils.SAVED_FILTER, queryVariantsOptions.savedFilter);
 
         if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)
                 && clientConfiguration != null
