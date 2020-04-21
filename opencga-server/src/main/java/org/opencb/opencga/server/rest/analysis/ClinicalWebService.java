@@ -499,8 +499,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
         // Get clinical variants
         try {
-            List<ClinicalVariant> clinicalVariants = clinicalInterpretationManager.get(query, queryOptions, token);
-            return createAnalysisOkResponse(clinicalVariants);
+            return createOkResponse(clinicalInterpretationManager.get(query, queryOptions, token));
         } catch (CatalogException | IOException | StorageEngineException e) {
             return createErrorResponse(e);
         }
@@ -514,8 +513,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PARAM) String sample) {
         try {
 
-            List<ClinicalVariant> clinicalVariants = clinicalInterpretationManager.getActionableVariants(study, sample, token);
-            return createAnalysisOkResponse(clinicalVariants);
+            return createOkResponse(clinicalInterpretationManager.getActionableVariants(study, sample, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
