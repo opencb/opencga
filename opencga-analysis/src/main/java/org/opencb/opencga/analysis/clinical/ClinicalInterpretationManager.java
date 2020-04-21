@@ -34,6 +34,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
 import org.opencb.biodata.tools.clinical.DefaultClinicalVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -358,11 +359,11 @@ public class ClinicalInterpretationManager extends StorageManager {
 
                 if (CollectionUtils.isNotEmpty(panelIds)) {
                     for (String panelId : panelIds) {
-                        evidences.add(createEvidence(ct.getSequenceOntologyTerms(), gFeature, panelId, null, null, variant, roleInCancer,
-                                actionableVariants));
+                        evidences.add(createEvidence(variant.getId(), ct, gFeature, panelId, null, null, variant.getAnnotation(),
+                                roleInCancer, actionableVariants));
                     }
                 } else {
-                    evidences.add(createEvidence(ct.getSequenceOntologyTerms(), gFeature, null, null, null, variant, roleInCancer,
+                    evidences.add(createEvidence(variant.getId(), ct, gFeature, null, null, null, variant.getAnnotation(), roleInCancer,
                             actionableVariants));
                 }
             }
@@ -374,17 +375,18 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     /*--------------------------------------------------------------------------*/
 
-    protected ClinicalVariantEvidence createEvidence(List<SequenceOntologyTerm> soTerms, GenomicFeature genomicFeature, String panelId,
-                                                     ClinicalProperty.ModeOfInheritance moi, ClinicalProperty.Penetrance penetrance,
-                                                     Variant variant, Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
+    protected ClinicalVariantEvidence createEvidence(String variantId, ConsequenceType consequenceType, GenomicFeature genomicFeature,
+                                                     String panelId, ClinicalProperty.ModeOfInheritance moi,
+                                                     ClinicalProperty.Penetrance penetrance, VariantAnnotation annotation,
+                                                     Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
                                                      Map<String, List<String>> actionableVariants) {
 
         ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence().setId("OPENCB-" + UUID.randomUUID());
 
         // Consequence types
-        if (CollectionUtils.isNotEmpty(soTerms)) {
+        if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
             // Set consequence type
-            clinicalVariantEvidence.setConsequenceTypes(soTerms);
+            clinicalVariantEvidence.setConsequenceTypes(consequenceType.getSequenceOntologyTerms());
         }
 
         // Genomic feature
@@ -397,10 +399,10 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (StringUtils.isNotEmpty(panelId)) {
             clinicalVariantEvidence.setPanelId(panelId);
 
-            if (CollectionUtils.isNotEmpty(soTerms)) {
+            if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
                 boolean tier1 = false;
                 boolean tier2 = false;
-                for (SequenceOntologyTerm soTerm : soTerms) {
+                for (SequenceOntologyTerm soTerm : consequenceType.getSequenceOntologyTerms()) {
                     if (VariantClassification.LOF.contains(soTerm.getName())) {
                         tier1 = true;
                         break;
@@ -430,7 +432,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalVariantEvidence.setClassification(new VariantClassification());
 
         // Variant classification: ACMG
-        List<String> acmgs = calculateAcmgClassification(variant, moi);
+        List<String> acmgs = calculateAcmgClassification(consequenceType, annotation, moi);
         clinicalVariantEvidence.getClassification().setAcmg(acmgs);
 
         // Variant classification: clinical significance
@@ -445,7 +447,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 
 
         // Set tier and actionable if necessary
-        if (MapUtils.isNotEmpty(actionableVariants) && actionableVariants.containsKey(variant.getId())) {
+        if (MapUtils.isNotEmpty(actionableVariants) && actionableVariants.containsKey(variantId)) {
             clinicalVariantEvidence.setActionable(true);
 
             // Set tier 3 only if it is null or untiered
@@ -456,9 +458,9 @@ public class ClinicalInterpretationManager extends StorageManager {
             }
 
             // Add 'actionable' phenotypes
-            if (CollectionUtils.isNotEmpty(actionableVariants.get(variant.getId()))) {
+            if (CollectionUtils.isNotEmpty(actionableVariants.get(variantId))) {
                 List<Phenotype> phenotypes = new ArrayList<>();
-                for (String phenotypeId : actionableVariants.get(variant.getId())) {
+                for (String phenotypeId : actionableVariants.get(variantId)) {
                     phenotypes.add(new Phenotype(phenotypeId, phenotypeId, ""));
                 }
                 if (CollectionUtils.isNotEmpty(phenotypes)) {
