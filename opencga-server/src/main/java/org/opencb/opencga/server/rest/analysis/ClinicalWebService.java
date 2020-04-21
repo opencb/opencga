@@ -512,7 +512,6 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PARAM) String sample) {
         try {
-
             return createOkResponse(clinicalInterpretationManager.getActionableVariants(study, sample, token));
         } catch (Exception e) {
             return createErrorResponse(e);
