@@ -72,9 +72,7 @@ public class ClinicalWebService extends AnalysisWebService {
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
-        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
-                Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt.gz"),
-                Paths.get(opencgaHome + "/analysis/resources/"));
+        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
@@ -408,6 +406,13 @@ public class ClinicalWebService extends AnalysisWebService {
     })
     public Response aggregationStats(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                                      @ApiParam(value = "Interpretation ID") @QueryParam("id") String id,
+                                     @ApiParam(value = "Description") @QueryParam("description") String description,
+                                     @ApiParam(value = "Software") @QueryParam("software") String software,
+                                     @ApiParam(value = "Analyst") @QueryParam("analyst") String analyst,
+                                     @ApiParam(value = "Comments") @QueryParam("comment") String comments,
+                                     @ApiParam(value = "Status") @QueryParam("status") String status,
+                                     @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+                                     @ApiParam(value = "Version") @QueryParam("version") String version,
                                      @ApiParam(value = "List of panels") @QueryParam("panel") String panel) {
         return Response.ok().build();
     }
@@ -497,8 +502,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
         // Get clinical variants
         try {
-            List<ClinicalVariant> clinicalVariants = clinicalInterpretationManager.get(query, queryOptions, token);
-            return createAnalysisOkResponse(clinicalVariants);
+            return createOkResponse(clinicalInterpretationManager.get(query, queryOptions, token));
         } catch (CatalogException | IOException | StorageEngineException e) {
             return createErrorResponse(e);
         }
@@ -511,9 +515,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PARAM) String sample) {
         try {
-
-            List<ClinicalVariant> clinicalVariants = clinicalInterpretationManager.getActionableVariants(study, sample, token);
-            return createAnalysisOkResponse(clinicalVariants);
+            return createOkResponse(clinicalInterpretationManager.getActionableVariants(study, sample, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

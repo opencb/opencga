@@ -43,9 +43,7 @@ public interface ClinicalInterpretationAnalysisExecutor {
             CatalogManager catalogManager = new CatalogManager(configuration);
             StorageEngineFactory engineFactory = StorageEngineFactory.get(storageConfiguration);
 
-            return new ClinicalInterpretationManager(catalogManager, engineFactory,
-                    Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt"),
-                    Paths.get(opencgaHome + "/analysis/resources/"));
+            return new ClinicalInterpretationManager(catalogManager, engineFactory);
 
         } catch (CatalogException | IOException e) {
             throw new ToolExecutorException(e);
