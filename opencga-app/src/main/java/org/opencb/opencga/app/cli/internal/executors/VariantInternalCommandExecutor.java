@@ -353,13 +353,13 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.excludeGenotype,
                 cliOptions.genericVariantIndexOptions.includeSampleData,
                 cliOptions.genericVariantIndexOptions.merge,
+                cliOptions.genericVariantIndexOptions.deduplicationPolicy,
                 cliOptions.genericVariantIndexOptions.calculateStats,
                 cliOptions.genericVariantIndexOptions.aggregated,
                 cliOptions.genericVariantIndexOptions.aggregationMappingFile,
                 cliOptions.genericVariantIndexOptions.annotate,
                 cliOptions.genericVariantIndexOptions.annotator,
-                cliOptions.genericVariantIndexOptions.overwriteAnnotations,
-                cliOptions.genericVariantIndexOptions.indexSearch)
+                cliOptions.genericVariantIndexOptions.overwriteAnnotations, cliOptions.genericVariantIndexOptions.indexSearch)
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study)
                 .append(VariantStorageOptions.STDIN.key(), cliOptions.stdin)

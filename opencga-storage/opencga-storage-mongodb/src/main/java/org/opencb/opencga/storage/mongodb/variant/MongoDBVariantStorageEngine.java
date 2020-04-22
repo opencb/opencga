@@ -337,14 +337,14 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                         if (doDirectLoad) {
                             storagePipeline.getOptions().put(STAGE.key(), false);
                             storagePipeline.getOptions().put(MERGE.key(), false);
-                            storagePipeline.directLoad(input);
+                            storagePipeline.directLoad(input, outdirUri);
                             result.setLoadExecuted(true);
                             result.setLoadStats(storagePipeline.getLoadStats());
                             result.setLoadTimeMillis(loadWatch.getTime(TimeUnit.MILLISECONDS));
                         } else {
                             if (doStage) {
                                 logger.info("Load - Stage '{}'", input);
-                                storagePipeline.stage(input);
+                                storagePipeline.stage(input, outdirUri);
                                 result.setLoadResult(input);
                                 result.setLoadStats(storagePipeline.getLoadStats());
                                 result.getLoadStats().put(STAGE.key(), true);

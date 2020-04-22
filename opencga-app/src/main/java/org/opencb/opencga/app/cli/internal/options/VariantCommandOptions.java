@@ -327,7 +327,7 @@ public class VariantCommandOptions {
         public String familyPhenotype;
 
         @Parameter(names = {"--family-segregation"}, description = FAMILY_SEGREGATION_DESCR, arity = 1)
-        public String modeOfInheritance;
+        public String familySegregation;
 
         @Parameter(names = {"--family-members"}, description = FAMILY_MEMBERS_DESC, arity = 1)
         public String familyMembers;
@@ -337,6 +337,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
+
+        @Parameter(names = {"--saved-filter"}, description = SAVED_FILTER_DESCR, arity = 1)
+        public String savedFilter;
 
         // FIXME: This param should not be in the REST command line!
         @Parameter(names = {"--variants-file"}, description = "GFF File with regions")

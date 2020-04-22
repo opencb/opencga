@@ -40,8 +40,8 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
@@ -171,7 +171,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     @Override
-    protected void load(URI inputUri, int studyId, int fileId) throws StorageEngineException {
+    protected void load(URI inputUri, URI outdir, int studyId, int fileId) throws StorageEngineException {
 
         if (getMetadataManager().getTask(studyId, taskId).currentStatus().equals(TaskMetadata.Status.DONE)) {
             logger.info("File {} already loaded. Skip this step!",
@@ -197,7 +197,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     progressLogger.setApproximateTotalCount(fileMetadata.getStats().getVariantCount());
                 }
 
-                loadFromProto(inputUri, table, helper, progressLogger);
+                loadFromProto(inputUri, outdir, table, helper, progressLogger);
             } else {
                 ProgressLogger progressLogger;
                 if (fileMetadata.getStats() != null) {
@@ -207,7 +207,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     progressLogger = new ProgressLogger("Loaded variants for file \"" + fileName + "\" :");
                 }
 
-                loadFromAvro(inputUri, table, helper, progressLogger);
+                loadFromAvro(inputUri, outdir, table, helper, progressLogger);
             }
             logger.info("File \"{}\" loaded in {}", Paths.get(inputUri).getFileName(), TimeUtils.durationToString(stopWatch));
 
@@ -223,7 +223,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
 
-    protected void loadFromProto(URI input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
+    protected void loadFromProto(URI input, URI outdir, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         long counter = 0;
 
@@ -295,7 +295,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         }
     }
 
-    protected void loadFromAvro(URI input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
+    protected void loadFromAvro(URI input, URI outdir, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
         int sliceBufferSize = options.getInt(ARCHIVE_SLICE_BUFFER_SIZE.key(), ARCHIVE_SLICE_BUFFER_SIZE.defaultValue());
@@ -310,7 +310,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 .setReadQueuePutTimeout(1000).build();
 
         // Reader
-        VariantDeduplicationTask dedupTask = new VariantDeduplicationTask(new DiscardDuplicatedVariantsResolver(fileId));
+        VariantDeduplicationTask dedupTask = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
+                .getTask(UriUtils.fileName(input), outdir);
         VariantSliceReader sliceReader = new VariantSliceReader(
                 helper.getChunkSize(), variantReader.then(dedupTask), studyId, fileId, sliceBufferSize, progressLogger);
 
@@ -327,7 +328,6 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         String nonRefFilter = options.getString(ARCHIVE_NON_REF_FILTER.key());
         GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader,
                 null, archiveFields, nonRefFilter);
-
 
         ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, Object> ptr =
                 new ParallelTaskRunner<>(sliceReader, task, null, config);

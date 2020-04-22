@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -49,6 +50,7 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -108,6 +110,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final QueryParam FAMILY_SEGREGATION =
             QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
 
+    public static final String SAVED_FILTER_DESCR = "Use a saved filter at User level";
+    public static final QueryParam SAVED_FILTER =
+            QueryParam.create("savedFilter", SAVED_FILTER_DESCR, QueryParam.Type.TEXT);
+
     @Deprecated
     public static final QueryParam FAMILY_PHENOTYPE = FAMILY_DISORDER;
     @Deprecated
@@ -125,7 +131,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             FAMILY_DISORDER,
             FAMILY_PROBAND,
             FAMILY_SEGREGATION,
-            PANEL);
+            PANEL,
+            SAVED_FILTER
+            );
 
     public enum SegregationMode {
         MONOALLELIC("dominant"),
@@ -215,6 +223,20 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             // Nothing to do!
             return null;
         }
+
+        if (isValidParam(query, SAVED_FILTER)) {
+            String savedFilter = query.getString(SAVED_FILTER.key());
+            String userId = catalogManager.getUserManager().getUserId(token);
+            UserFilter userFilter = catalogManager.getUserManager().getFilter(userId, savedFilter, token).first();
+            if (!userFilter.getResource().equals(Enums.Resource.VARIANT)) {
+                throw VariantQueryException.malformedParam(SAVED_FILTER, savedFilter,
+                        "The selected saved filter is not a filter for '" + Enums.Resource.VARIANT + "'. "
+                                + "It is a filter for '" + userFilter.getResource() + "'");
+            }
+
+            userFilter.getQuery().forEach(query::putIfAbsent);
+        }
+
         List<String> studies = getStudies(query, token);
         String defaultStudyStr = getDefaultStudyId(studies);
         Integer release = getReleaseFilter(query, token);

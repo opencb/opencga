@@ -227,7 +227,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     }
 
     @Override
-    public URI load(URI input) throws StorageEngineException {
+    public URI load(URI input, URI outdir) throws StorageEngineException {
         int studyId = getStudyId();
         int fileId = getFileId();
 
@@ -238,7 +238,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
         FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyId, fileId);
         if (!fileMetadata.isIndexed()) {
-            load(input, studyId, fileId);
+            load(input, outdir, studyId, fileId);
         } else {
             logger.info("File {} already loaded. Skip this step!", UriUtils.fileName(input));
         }
@@ -246,7 +246,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         return input; // TODO  change return value?
     }
 
-    protected abstract void load(URI input, int studyId, int fileId) throws StorageEngineException;
+    protected abstract void load(URI input, URI outdir, int studyId, int fileId) throws StorageEngineException;
 
     @Override
     protected void checkLoadedVariants(int fileId, StudyMetadata studyMetadata) throws

@@ -38,6 +38,7 @@ public class VariantIndexParams extends ToolParams {
                               String loadHomRef,
                               String postLoadCheck,
                               boolean excludeGenotype, String includeSampleData, String merge,
+                              String deduplicationPolicy,
                               boolean calculateStats, Aggregation aggregated, String aggregationMappingFile, boolean annotate,
                               String annotator, boolean overwriteAnnotations, boolean indexSearch) {
         this.file = file;
@@ -58,6 +59,7 @@ public class VariantIndexParams extends ToolParams {
         this.excludeGenotype = excludeGenotype;
         this.includeSampleData = includeSampleData;
         this.merge = merge;
+        this.deduplicationPolicy = deduplicationPolicy;
         this.calculateStats = calculateStats;
         this.aggregated = aggregated;
         this.aggregationMappingFile = aggregationMappingFile;
@@ -89,6 +91,7 @@ public class VariantIndexParams extends ToolParams {
     private boolean excludeGenotype;
     private String includeSampleData = ParamConstants.ALL;
     private String merge;
+    private String deduplicationPolicy;
 
     private boolean calculateStats;
     private Aggregation aggregated = Aggregation.NONE;
@@ -262,6 +265,15 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
+    public String getDeduplicationPolicy() {
+        return deduplicationPolicy;
+    }
+
+    public VariantIndexParams setDeduplicationPolicy(String deduplicationPolicy) {
+        this.deduplicationPolicy = deduplicationPolicy;
+        return this;
+    }
+
     public boolean isCalculateStats() {
         return calculateStats;
     }
@@ -325,28 +337,4 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("VariantIndexParams{");
-        sb.append("file='").append(file).append('\'');
-        sb.append(", resume=").append(resume);
-        sb.append(", outdir='").append(outdir).append('\'');
-        sb.append(", transform=").append(transform);
-        sb.append(", gvcf=").append(gvcf);
-        sb.append(", load=").append(load);
-        sb.append(", loadSplitData=").append(loadSplitData);
-        sb.append(", skipPostLoadCheck=").append(postLoadCheck);
-        sb.append(", excludeGenotype=").append(excludeGenotype);
-        sb.append(", includeExtraFields='").append(includeSampleData).append('\'');
-        sb.append(", merge='").append(merge).append('\'');
-        sb.append(", calculateStats=").append(calculateStats);
-        sb.append(", aggregated=").append(aggregated);
-        sb.append(", aggregationMappingFile='").append(aggregationMappingFile).append('\'');
-        sb.append(", annotate=").append(annotate);
-        sb.append(", annotator='").append(annotator).append('\'');
-        sb.append(", overwriteAnnotations=").append(overwriteAnnotations);
-        sb.append(", indexSearch=").append(indexSearch);
-        sb.append('}');
-        return sb.toString();
-    }
 }

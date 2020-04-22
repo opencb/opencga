@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -298,6 +299,19 @@ public class VariantCatalogQueryUtilsTest {
 
         assertEquals("user@p1:s1:ALL;user@p1:s2:ALL", parseValue("s1,s2", COHORT, "s1:ALL;s2:ALL"));
         assertEquals("user@p1:s1:ALL>0.1;user@p1:s2:ALL>0.1", parseValue("s1,s2", STATS_MAF, "s1:ALL>0.1;s2:ALL>0.1"));
+    }
+
+    @Test
+    public void queryBySavedFilter() throws Exception {
+        String userId = catalog.getUserManager().getUserId(sessionId);
+        catalog.getUserManager().addFilter(userId, "myFilter", "", Enums.Resource.VARIANT,
+                new Query("key1", "value1").append("key2", "value2"), new QueryOptions(), sessionId);
+
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter"), sessionId);
+        assertEquals(new Query().append(STUDY.key(), "user@p1:s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "value1").append("key2", "value2"), query);
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "otherValue"), sessionId);
+        assertEquals(new Query().append(STUDY.key(), "user@p1:s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "otherValue").append("key2", "value2"), query);
     }
 
     @Test

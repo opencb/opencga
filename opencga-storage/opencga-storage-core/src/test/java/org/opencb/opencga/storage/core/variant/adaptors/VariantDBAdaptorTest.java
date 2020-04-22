@@ -1675,6 +1675,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testIncludeSampleId() {
+        Query query = new Query(SAMPLE_METADATA.key(), true)
+                .append(INCLUDE_SAMPLE.key(), "NA19600,NA19685")
+                .append(INCLUDE_SAMPLE_ID.key(), true);
+        QueryOptions options = new QueryOptions(QueryOptions.SORT, true); //no limit;
+
+        for (Variant variant : query(query, options).getResults()) {
+            List<SampleEntry> samples = variant.getStudies().get(0).getSamples();
+            assertEquals(2, samples.size());
+            for (SampleEntry sample : samples) {
+                assertNotNull(sample.getSampleId());
+            }
+        }
+    }
+
+    @Test
     public void testGetAllVariants_include_samples() {
         checkSamplesData("NA19600");
         checkSamplesData("NA19660");

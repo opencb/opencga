@@ -23,6 +23,8 @@ import org.opencb.commons.datastore.core.Query;
  */
 public class VariantQueryParams extends BasicVariantQueryParams {
 
+    private String savedFilter;
+
     private String chromosome;
     private String reference;
     private String alternate;
@@ -90,6 +92,15 @@ public class VariantQueryParams extends BasicVariantQueryParams {
 
     public VariantQueryParams appendQuery(Query query) {
         updateParams(query);
+        return this;
+    }
+
+    public String getSavedFilter() {
+        return savedFilter;
+    }
+
+    public VariantQueryParams setSavedFilter(String savedFilter) {
+        this.savedFilter = savedFilter;
         return this;
     }
 

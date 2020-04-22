@@ -446,14 +446,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantIndex.genericVariantIndexOptions.excludeGenotype,
                         variantIndex.genericVariantIndexOptions.includeSampleData,
                         variantIndex.genericVariantIndexOptions.merge,
+                        variantIndex.genericVariantIndexOptions.deduplicationPolicy,
                         variantIndex.genericVariantIndexOptions.calculateStats,
                         variantIndex.genericVariantIndexOptions.aggregated,
                         variantIndex.genericVariantIndexOptions.aggregationMappingFile,
                         variantIndex.genericVariantIndexOptions.annotate,
                         variantIndex.genericVariantIndexOptions.annotator,
                         variantIndex.genericVariantIndexOptions.overwriteAnnotations,
-                        variantIndex.genericVariantIndexOptions.indexSearch
-                ),
+                        variantIndex.genericVariantIndexOptions.indexSearch),
                 getParams(variantIndex.study));
     }
 

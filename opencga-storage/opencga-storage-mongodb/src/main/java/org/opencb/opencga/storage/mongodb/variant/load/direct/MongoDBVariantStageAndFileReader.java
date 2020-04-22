@@ -117,7 +117,7 @@ public class MongoDBVariantStageAndFileReader implements DataReader<Document> {
 
         variantReader.close();
 
-        return false;
+        return true;
     }
 
     @Override
@@ -134,6 +134,7 @@ public class MongoDBVariantStageAndFileReader implements DataReader<Document> {
 
     @Override
     public boolean post() {
+        variantReader.post();
         return true;
     }
 

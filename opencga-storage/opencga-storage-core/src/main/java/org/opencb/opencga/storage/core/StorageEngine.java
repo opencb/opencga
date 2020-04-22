@@ -123,7 +123,7 @@ public abstract class StorageEngine<DBADAPTOR> implements AutoCloseable {
             result.setPreLoadResult(inputFileUri);
 
             logger.info("Load '{}'", inputFileUri);
-            inputFileUri = storagePipeline.load(inputFileUri);
+            inputFileUri = storagePipeline.load(inputFileUri, outdirUri);
             result.setLoadResult(inputFileUri);
 
             logger.info("PostLoad '{}'", inputFileUri);
