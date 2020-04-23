@@ -26,7 +26,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     NORMALIZATION_SKIP("normalization.skip", false), // Do not run normalization
     NORMALIZATION_REFERENCE_GENOME("normalization.referenceGenome"),
 
-    DEDUPLICATION_POLICY("deduplication.policy", "discard"),
+    DEDUPLICATION_POLICY("deduplication.policy", "maxQual"),
     DEDUPLICATION_BUFFER_SIZE("deduplication.bufferSize", 100),
 
     FAMILY("family", false),

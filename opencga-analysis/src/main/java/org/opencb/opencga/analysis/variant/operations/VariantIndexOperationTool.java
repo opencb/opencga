@@ -135,13 +135,20 @@ public class VariantIndexOperationTool extends OperationTool {
                 inputFiles.add(result.getInput());
             }
 
-            if (!keepIntermediateFiles) {
-                File[] files = getScratchDir().toFile().listFiles();
-                if (files != null) {
-                    for (File file : files) {
-                        if (file.getName().endsWith(VariantReaderUtils.MALFORMED_FILE + ".txt")) {
+            File[] files = getOutDir(keepIntermediateFiles).toFile().listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.getName().endsWith(VariantReaderUtils.MALFORMED_FILE + ".txt")) {
+                        if (!keepIntermediateFiles) {
                             Files.move(file.toPath(), getOutDir());
                         }
+                        addWarning("Found malformed variants. Check file " + file.getName());
+                    }
+                    if (file.getName().endsWith(VariantReaderUtils.DUPLICATED_FILE + ".tsv")) {
+                        if (!keepIntermediateFiles) {
+                            Files.move(file.toPath(), getOutDir());
+                        }
+                        addWarning("Found duplicated variants. Check file " + file.getName());
                     }
                 }
             }
