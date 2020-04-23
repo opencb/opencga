@@ -126,6 +126,9 @@ public class VariantToVcfSliceConverterTask implements Task<ImmutablePair<Long, 
     }
 
     public static boolean isHomRef(String gt) {
+        if (gt == null) {
+            return false;
+        }
         for (int i = 0; i < gt.length(); i++) {
             char c = gt.charAt(i);
             if (c != '0' && c != '/' && c != '|') {
