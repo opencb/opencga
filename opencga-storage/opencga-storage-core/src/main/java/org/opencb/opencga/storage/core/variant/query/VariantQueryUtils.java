@@ -414,8 +414,8 @@ public final class VariantQueryUtils {
     public static boolean isVariantId(String value) {
         int count = StringUtils.countMatches(value, ':');
         return count == 3
-                // It may have more colons if is a symbolic alternate like <DUP:TANDEM>
-                || count > 3 && StringUtils.contains(value, '<');
+                // It may have more colons if is a symbolic alternate like <DUP:TANDEM>, or a breakend 4:100:C:]15:300]A
+                || count > 3 && StringUtils.containsAny(value, '<', '[', ']');
     }
 
     /**
@@ -429,14 +429,12 @@ public final class VariantQueryUtils {
     public static Variant toVariant(String value) {
         Variant variant = null;
         if (isVariantId(value)) {
-            if (value.contains(":")) {
-                try {
-                    variant = new Variant(value);
-                } catch (IllegalArgumentException ignore) {
-                    variant = null;
-                    // TODO: Should this throw an exception?
-                    logger.info("Wrong variant " + value, ignore);
-                }
+            try {
+                variant = new Variant(value);
+            } catch (IllegalArgumentException ignore) {
+                variant = null;
+                // TODO: Should this throw an exception?
+                logger.info("Wrong variant " + value, ignore);
             }
         }
         return variant;

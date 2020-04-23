@@ -21,6 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -345,6 +346,30 @@ public class VariantQueryUtilsTest extends GenericTest {
             }
         }
         assertEquals(actualQueryParams, new HashSet<>(INTERNAL_VARIANT_QUERY_PARAMS));
+    }
+
+    @Test
+    public void isVariantId() {
+        checkIsVariantId("1:1000:A:T");
+        checkIsVariantId("1:1000-2000:A:T");
+        checkIsVariantId("1:1000-2000:A:<DUP:TANDEM>");
+        checkIsVariantId("11:14525312:-:]11:14521700].");
+        checkIsVariantId("4:100:C:[15:300[A");
+        checkIsVariantId("4:100:C:]15:300]A");
+        checkIsVariantId("rs123");
+    }
+
+    public void checkIsVariantId(String v) {
+
+        boolean actual = VariantQueryUtils.isVariantId(v);
+        boolean expected;
+        try {
+            new Variant(v);
+            expected = true;
+        } catch (Exception e) {
+            expected = false;
+        }
+        assertEquals(v, expected, actual);
     }
 
 }
