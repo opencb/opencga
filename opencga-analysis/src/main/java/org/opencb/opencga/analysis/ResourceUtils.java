@@ -27,14 +27,14 @@ import java.util.List;
 
 public class ResourceUtils {
 
-    public static final String URL = "http://resources.opencb.org/opencb/opencga/analysis/";
+    public static final String URL = "http://resources.opencb.org/opencb/opencga/";
 
     public static File downloadThirdParty(URL url, Path outDir) throws IOException {
         return URLUtils.download(url, outDir);
     }
 
     public static File downloadAnalysis(String analysisId, String resouceName, Path outDir) throws IOException {
-        return URLUtils.download(new URL(URL + analysisId + "/" + resouceName), outDir);
+        return URLUtils.download(new URL(URL + "analysis/" + analysisId + "/" + resouceName), outDir);
     }
 
     public static DownloadedRefGenome downloadRefGenome(Species species, Assembly assembly, Authority authority, Path outDir)
@@ -63,7 +63,7 @@ public class ResourceUtils {
         File gziFile = null;
 
         for (String link : links) {
-            URL url = new URL(URL + "resources/reference-genomes/" + link);
+            URL url = new URL(URL + "reference-genomes/" + link);
             File file = URLUtils.download(url, outDir);
             if (file == null) {
                 // Something wrong happened, remove downloaded files
