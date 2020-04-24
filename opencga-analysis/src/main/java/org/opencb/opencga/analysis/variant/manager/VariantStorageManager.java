@@ -97,7 +97,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 
-public class VariantStorageManager extends StorageManager {
+public class VariantStorageManager extends StorageManager implements AutoCloseable {
 
     private final VariantCatalogQueryUtils catalogUtils;
 
@@ -718,6 +718,11 @@ public class VariantStorageManager extends StorageManager {
         } catch (IOException e) {
             throw new StorageEngineException("Error closing the VariantStorageEngine", e);
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        storageEngineFactory.close();
     }
 
     // Permission related methods

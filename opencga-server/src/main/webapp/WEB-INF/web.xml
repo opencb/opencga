@@ -43,6 +43,10 @@
             <param-name>jersey.config.server.provider.packages</param-name>
             <param-value>io.swagger.jaxrs.listing;org.opencb.opencga.server.rest;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json</param-value>
         </init-param>
+        <init-param>
+            <param-name>OPENCGA_HOME</param-name>
+            <param-value>${OPENCGA.INSTALLATION.DIR}</param-value>
+        </init-param>
 
         <init-param>
             <param-name>jersey.config.server.provider.classnames</param-name>
