@@ -44,6 +44,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     private final AuditCommandOptions auditCommandOptions;
     private final ToolsCommandOptions toolsCommandOptions;
     private final ServerCommandOptions serverCommandOptions;
+    private final PanelCommandOptions panelCommandOptions;
     private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
     private final MigrationCommandOptions migrationCommandOptions;
 
@@ -99,6 +100,12 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         JCommander serverSubCommands = jCommander.getCommands().get("server");
         serverSubCommands.addCommand("rest", serverCommandOptions.restServerCommandOptions);
         serverSubCommands.addCommand("grpc", serverCommandOptions.grpcServerCommandOptions);
+
+        panelCommandOptions = new PanelCommandOptions();
+        jCommander.addCommand("panel", panelCommandOptions);
+        JCommander panelSubCommands = jCommander.getCommands().get("panel");
+        panelSubCommands.addCommand("panelapp", panelCommandOptions.panelAppCommandOptions);
+        panelSubCommands.addCommand("cancer-gene-census", panelCommandOptions.cancerGeneCensusCommandOptions);
 
         this.metaCommandOptions = new AdminCliOptionsParser.MetaCommandOptions();
         this.jCommander.addCommand("meta", this.metaCommandOptions);
@@ -259,6 +266,23 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             this.installToolCommandOptions = new InstallToolCommandOptions();
             this.listToolCommandOptions = new ListToolCommandOptions();
             this.showToolCommandOptions = new ShowToolCommandOptions();
+        }
+    }
+
+    /*
+     * Panel CLI options
+     */
+    @Parameters(commandNames = {"panel"}, commandDescription = "Parse external panels to OpenCGA data model")
+    public class PanelCommandOptions extends CommandOptions {
+
+        public PanelAppCommandOptions panelAppCommandOptions;
+        public CancerGeneCensusCommandOptions cancerGeneCensusCommandOptions;
+
+        public GeneralCliOptions.CommonCommandOptions  commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+
+        public PanelCommandOptions() {
+            this.panelAppCommandOptions = new PanelAppCommandOptions();
+            this.cancerGeneCensusCommandOptions = new CancerGeneCensusCommandOptions();
         }
     }
 
@@ -685,6 +709,31 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
     }
 
+    /*
+     * PANEL SUB-COMMANDS
+     */
+    @Parameters(commandNames = {"panelapp"}, commandDescription = "Parse and generate the latest PanelApp panels")
+    public class PanelAppCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", arity = 1, required = true)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"cancer-gene-census"}, commandDescription = "Parse Cancer Gene Census panel")
+    public class CancerGeneCensusCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", arity = 1, required = true)
+        public String outdir;
+
+        @Parameter(names = {"-i", "--input"}, description = "Gene Census panel in TSV format", arity = 1, required = true)
+        public String input;
+    }
 
     /*
      * SERVER SUB-COMMANDS
@@ -798,6 +847,10 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
     public AdminCliOptionsParser.MetaCommandOptions getMetaCommandOptions() {
         return this.metaCommandOptions;
+    }
+
+    public PanelCommandOptions getPanelCommandOptions() {
+        return panelCommandOptions;
     }
 
     public MigrationCommandOptions getMigrationCommandOptions() {

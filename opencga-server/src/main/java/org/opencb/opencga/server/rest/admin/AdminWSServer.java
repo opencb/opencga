@@ -228,36 +228,6 @@ public class AdminWSServer extends OpenCGAWSServer {
         }
     }
 
-
-    @POST
-    @Path("/catalog/panel")
-    @ApiOperation(value = "Handle global panels", response = Panel.class)
-    public Response diseasePanels(
-            @ApiParam(value = "Import panels from PanelApp (GEL)", defaultValue = "false") @QueryParam("panelApp") boolean importPanels,
-            @ApiParam(value = "Flag indicating to overwrite installed panels in case of an ID conflict", defaultValue = "false")
-                @QueryParam("overwrite") boolean overwrite,
-            @ApiParam(value = "Comma separated list of global panel ids to delete")
-                @QueryParam("delete") String panelsToDelete,
-            @ApiParam(value = "Panel parameters to be installed") PanelCreateParams panelPost) {
-        try {
-            if (importPanels) {
-                catalogManager.getPanelManager().importPanelApp(token, overwrite);
-            } else if (StringUtils.isEmpty(panelsToDelete)) {
-                catalogManager.getPanelManager().create(panelPost.toPanel(), overwrite, token);
-            } else {
-                String[] panelIds = panelsToDelete.split(",");
-                for (String panelId : panelIds) {
-                    catalogManager.getPanelManager().delete(panelId, token);
-                }
-            }
-
-            return createOkResponse(catalogManager.getPanelManager().count(PanelManager.INSTALLATION_PANELS,
-                    new Query(), token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     //    @GET
 //    @Path("/audit/stats")
 //    @ApiOperation(value = "Get some stats from the audit database")

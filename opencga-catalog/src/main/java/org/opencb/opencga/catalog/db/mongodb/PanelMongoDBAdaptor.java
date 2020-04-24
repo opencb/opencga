@@ -108,6 +108,27 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
+    public OpenCGAResult insert(long studyUid, List<Panel> panelList) throws CatalogDBException, CatalogParameterException,
+            CatalogAuthorizationException {
+        if (panelList == null || panelList.isEmpty()) {
+            throw new CatalogDBException("Missing panel list");
+        }
+        if (studyUid <= 0) {
+            throw new CatalogDBException("Missing study uid");
+        }
+        return runTransaction(clientSession -> {
+            long tmpStartTime = startQuery();
+            logger.debug("Starting insert transaction of {} panels", panelList.size());
+            dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyUid);
+
+            for (Panel panel : panelList) {
+                insert(clientSession, studyUid, panel);
+            }
+            return endWrite(tmpStartTime, panelList.size(), panelList.size(), 0, 0, null);
+        }, e -> logger.error("Could not insert {} panels: {}", panelList.size(), e.getMessage()));
+    }
+
+    @Override
     public OpenCGAResult insert(long studyUid, Panel panel, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {

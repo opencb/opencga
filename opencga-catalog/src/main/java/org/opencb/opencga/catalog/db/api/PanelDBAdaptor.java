@@ -28,6 +28,7 @@ import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -161,6 +162,9 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     OpenCGAResult insert(Panel panel, boolean overwrite)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult insert(long studyUid, List<Panel> panelList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult insert(long studyId, Panel panel, QueryOptions options)

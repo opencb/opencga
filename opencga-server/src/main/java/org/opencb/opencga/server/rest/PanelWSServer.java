@@ -21,15 +21,16 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
-import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
-import org.opencb.opencga.core.models.panel.PanelCreateParams;
-import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
+import org.opencb.opencga.core.models.panel.PanelCreateParams;
+import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -57,19 +58,18 @@ public class PanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a panel", response = Panel.class)
     public Response createPanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Comma separated list of installation panel ids to be imported. To import them all at once, write the "
-                    + "special word 'ALL_GLOBAL_PANELS'")
-            @QueryParam("import") String panelIds,
+            @ApiParam(value = ParamConstants.PANEL_SOURCE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE) String source,
+            @ApiParam(value = ParamConstants.PANEL_SOURCE_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE_ID) String id,
             @ApiParam(name = "params", value = "Panel parameters") PanelCreateParams params) {
         try {
-            if (StringUtils.isNotEmpty(panelIds)) {
-                if ("ALL_GLOBAL_PANELS".equals(panelIds.toUpperCase())) {
-                    return createOkResponse(panelManager.importAllGlobalPanels(studyStr, queryOptions, token));
-                } else {
-                    return createOkResponse(panelManager.importGlobalPanels(studyStr, getIdList(panelIds), queryOptions, token));
-                }
-            } else {
+            if (StringUtils.isNotEmpty(source) && (params == null || StringUtils.isEmpty(params.getId()))) {
+                // Import from source
+                return createOkResponse(panelManager.importFromSource(studyStr, source, id, token));
+            } else if (StringUtils.isEmpty(source) && params != null && StringUtils.isNotEmpty(params.getId())) {
+                // Create
                 return createOkResponse(panelManager.create(studyStr, params.toPanel(), queryOptions, token));
+            } else {
+                throw new CatalogException("Please choose whether to import panels from 'source' or create a new one.");
             }
         } catch (Exception e) {
             return createErrorResponse(e);

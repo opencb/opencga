@@ -21,20 +21,26 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.tools.clinical.DiseasePanelParsers;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
@@ -133,6 +139,29 @@ public class PanelManagerTest extends GenericTest {
 
         thrown.expect(CatalogAuthorizationException.class);
         panelManager.create(panel, false, sessionIdUser);
+    }
+
+    @Test
+    public void importFromSource() throws CatalogException {
+        OpenCGAResult<Panel> cancer = panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        assertEquals(1, cancer.getNumInserted());
+
+        OpenCGAResult<Panel> panelApp = panelManager.importFromSource(studyFqn, "panelapp", "Thoracic_aortic_aneurysm_and_dissection-PanelAppId-700,VACTERL-like_phenotypes-PanelAppId-101", sessionIdUser);
+        assertEquals(2, panelApp.getNumInserted());
+    }
+
+    @Test
+    public void importFromSourceInvalidId() throws CatalogException {
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Unknown panel");
+        panelManager.importFromSource(studyFqn, "cancer-gene-census", "ZSR222", sessionIdUser);
+    }
+
+    @Test
+    public void importFromInvalidSource() throws CatalogException {
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Unknown source");
+        panelManager.importFromSource(studyFqn, "cancer-gene-census-wrong", null, sessionIdUser);
     }
 
     @Test

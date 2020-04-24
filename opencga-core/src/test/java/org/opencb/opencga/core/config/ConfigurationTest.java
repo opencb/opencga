@@ -16,10 +16,15 @@
 
 package org.opencb.opencga.core.config;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
+import org.opencb.commons.utils.FileUtils;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.net.URI;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -97,6 +102,22 @@ public class ConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
+        URL url = new URL("http://resources.opencb.org/opencb/opencga/disease-panels/sources.txt");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), Charset.defaultCharset()));
+
+        Set<String> sources = new HashSet<>();
+        String line;
+        while((line = reader.readLine()) != null) {
+            sources.add(line);
+        }
+        System.out.println(sources);
+
+
+
+
+        File file = new File(url.toURI());
+        System.out.println(file.list());
+
         Configuration configuration = Configuration
                 .load(getClass().getResource("/configuration-test.yml").openStream());
         System.out.println("catalogConfiguration = " + configuration);

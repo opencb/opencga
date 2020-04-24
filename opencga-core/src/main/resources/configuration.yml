@@ -8,6 +8,9 @@ databasePrefix: ${OPENCGA.DB.PREFIX}
 workspace: ${OPENCGA.USER.WORKSPACE}
 jobDir: ${OPENCGA.USER.WORKSPACE}/jobs
 
+panel:
+  host: "http://resources.opencb.org/opencb/opencga/disease-panels"
+
 ## Configuration for Catalog databases
 catalog:
   database:   # MongoDB database credentials
