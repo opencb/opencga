@@ -156,7 +156,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                             processedSamples.add(sampleId);
 
                             String gt = sample.getGT();
-                            if (gt.isEmpty()) {
+                            if (gt == null || gt.isEmpty()) {
                                 // This is a really weird situation, most likely due to errors in the input files
                                 logger.error("Empty genotype at sample " + sampleId + " in variant " + variant);
                             } else {
