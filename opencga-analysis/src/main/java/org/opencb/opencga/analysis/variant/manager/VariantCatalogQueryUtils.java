@@ -840,7 +840,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     }
 
     /**
-     * Get the panel from catalog. If the panel is not found in the study, or the study is null, search through the global panels.
+     * Get the panel from catalog.
      *
      * @param studyId   StudyId
      * @param panelId   PanelId
@@ -858,7 +858,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
         }
         if (panel == null) {
-            panel = catalogManager.getPanelManager().get(PanelManager.INSTALLATION_PANELS, panelId, null, sessionId).first();
+            throw new CatalogException("Missing panel id.");
         }
         return panel;
     }

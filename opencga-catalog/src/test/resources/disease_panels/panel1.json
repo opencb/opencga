@@ -2,117 +2,117 @@
     "genes": [
         {
             "name": "CACNB2",
-            "confidence": "HighEvidence",
+            "confidence": "HIGH",
             "id": "ENSG00000165995"
         },
         {
             "name": "GPD1L",
-            "confidence": "HighEvidence",
+            "confidence": "HIGH",
             "id": "ENSG00000152642"
         },
         {
             "name": "HCN4",
-            "confidence": "HighEvidence",
+            "confidence": "HIGH",
             "id": "ENSG00000138622"
         },
         {
             "name": "KCNE3",
-            "confidence": "HighEvidence",
+            "confidence": "HIGH",
             "id": "ENSG00000175538"
         },
         {
             "name": "SCN10A",
-            "confidence": "HighEvidence",
+            "confidence": "HIGH",
             "id": "ENSG00000185313"
         },
         {
             "name": "SCN1B",
-            "confidence": "HighEvidence",
+            "confidence": "HIGH",
             "id": "ENSG00000105711"
         },
         {
             "name": "SCN3B",
-            "confidence": "HighEvidence",
+            "confidence": "HIGH",
             "id": "ENSG00000166257"
         },
         {
             "name": "SCN5A",
-            "confidence": "HighEvidence",
+            "confidence": "HIGH",
             "id": "ENSG00000183873"
         },
         {
             "name": "TRPM4",
-            "confidence": "HighEvidence",
+            "confidence": "HIGH",
             "id": "ENSG00000130529"
         },
         {
             "name": "ABCC9",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000069431"
         },
         {
             "name": "ANK2",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000145362"
         },
         {
             "name": "CACNA1C",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000151067"
         },
         {
             "name": "CACNA2D1",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000153956"
         },
         {
             "name": "CAV3",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000182533"
         },
         {
             "name": "DLG1",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000075711"
         },
         {
             "name": "KCND3",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000171385"
         },
         {
             "name": "KCNE5",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000176076"
         },
         {
             "name": "KCNH2",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000055118"
         },
         {
             "name": "KCNJ8",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000121361"
         },
         {
             "name": "PKP2",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000057294"
         },
         {
             "name": "RANGRF",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000108961"
         },
         {
             "name": "SCN2B",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000149575"
         },
         {
             "name": "SLMAP",
-            "confidence": "LowEvidence",
+            "confidence": "LOW",
             "id": "ENSG00000163681"
         }
     ],
@@ -131,7 +131,7 @@
         "DiseaseGroup": "Cardiovascular disorders"
     },
     "variants": [],
-    "phenotypes": [],
+    "disorders": [],
     "regions": [],
     "version": 1
 }

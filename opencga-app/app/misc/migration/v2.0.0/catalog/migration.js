@@ -347,14 +347,14 @@ migrateCollection("interpretation", {"internal": {"$exists": false}}, {}, functi
     bulk.find({"_id": doc._id}).updateOne({"$set": set});
 });
 
-migrateCollection("panel", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
-    var set = {
-        "uuid": generateOpenCGAUUID("PANEL", doc['_creationDate'])
-        }
-    };
-
-    bulk.find({"_id": doc._id}).updateOne({"$set": set});
-});
+// migrateCollection("panel", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+//     var set = {
+//         "uuid": generateOpenCGAUUID("PANEL", doc['_creationDate'])
+//         }
+//     };
+//
+//     bulk.find({"_id": doc._id}).updateOne({"$set": set});
+// });
 
 // ------------------  Store uuids as actual uuids instead of applying base64 over them
 
@@ -403,5 +403,7 @@ function getLeastSignificantBits() {
     return installation.shiftLeft(48).or(randomNumber);
 }
 
+// #1577: Remove all panels
+db.getCollection("panel").remove({});
 
 // TODO: Add indexes for new "deleted" collections

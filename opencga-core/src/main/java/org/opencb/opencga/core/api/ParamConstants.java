@@ -128,6 +128,14 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String PANEL_SOURCE = "source";
+    public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
+            + "sources are 'panelapp' and 'genecensus'";
+    public static final String PANEL_SOURCE_ID = "id";
+    public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel ids to be imported from the defined source."
+            + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "
+            + "'source' will be allowed.";
+
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel ids" + UP_TO_100;
 
     // ---------------------------------------------
