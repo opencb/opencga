@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "hdiStorageAccountName": {
+      "type": "string",
+      "defaultValue": "[concat('opencga',uniqueString(resourceGroup().id))]"
+    }
+  },
+  "variables": {
+    "storageIdentityName": "hdinsight-storage-identity",
+    "storageRoleAssignmentId": "[guid(concat(resourceGroup().name, 'storagecontributor'))]",
+    "storageBlobDataOwnerRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Authorization/roleDefinitions/', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2018-11-30",
+      "name": "[variables('storageIdentityName')]",
+      "properties": {},
+      "location": "[resourceGroup().location]"
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2018-01-01-preview",
+      "name": "[variables('storageRoleAssignmentId')]",
+      "properties": {
+        "roleDefinitionId": "[variables('storageBlobDataOwnerRoleDefinitionId')]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName')), '2015-08-31-preview').principalId]",
+        "principalType":"ServicePrincipal"
+      },
+      "dependsOn": ["[variables('storageIdentityName')]"]
+    }
+  ],
+  "outputs": {
+  }
+}
