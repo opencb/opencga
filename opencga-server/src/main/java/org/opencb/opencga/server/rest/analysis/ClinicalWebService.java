@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
-import org.opencb.opencga.analysis.clinical.custom.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
@@ -43,13 +43,11 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +70,7 @@ public class ClinicalWebService extends AnalysisWebService {
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
-        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
+        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory, opencgaHome);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }

@@ -1,0 +1,29 @@
+---
+tier1:
+  consequenceTypes:
+  - transcript_ablation
+  - splice_acceptor_variant
+  - splice_donor_variant
+  - stop_gained
+  - frameshift_variant
+  - stop_lost
+  - start_lost
+  - transcript_amplification
+  - inframe_insertion
+  - inframe_deletion
+  panels:
+  - all
+
+tier2:
+  consequenceTypes:
+  - missense_variant
+  panels:
+  - all
+
+tier3:
+  actionable: true
+
+maxLowCoverage: 20
+includeLowCoverage: false
+
+skipUntieredVariants: false
