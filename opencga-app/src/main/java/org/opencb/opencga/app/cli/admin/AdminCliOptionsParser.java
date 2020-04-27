@@ -69,7 +69,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         catalogSubCommands.addCommand("export", catalogCommandOptions.exportCatalogCommandOptions);
         catalogSubCommands.addCommand("import", catalogCommandOptions.importCatalogCommandOptions);
         catalogSubCommands.addCommand("daemon", catalogCommandOptions.daemonCatalogCommandOptions);
-        catalogSubCommands.addCommand("panel", catalogCommandOptions.panelCatalogCommandOptions);
 
         usersCommandOptions = new UsersCommandOptions();
         jCommander.addCommand("users", usersCommandOptions);
@@ -188,7 +187,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public ExportCatalogCommandOptions exportCatalogCommandOptions;
         public ImportCatalogCommandOptions importCatalogCommandOptions;
         public DaemonCatalogCommandOptions daemonCatalogCommandOptions;
-        public PanelCatalogCommandOptions panelCatalogCommandOptions;
 
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
@@ -203,7 +201,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             this.exportCatalogCommandOptions = new ExportCatalogCommandOptions();
             this.importCatalogCommandOptions = new ImportCatalogCommandOptions();
             this.daemonCatalogCommandOptions = new DaemonCatalogCommandOptions();
-            this.panelCatalogCommandOptions = new PanelCatalogCommandOptions();
         }
     }
 
@@ -479,28 +476,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--stop"}, description = "Stop OpenCGA Catalog daemon", arity = 0)
         public boolean stop;
     }
-
-    @Parameters(commandNames = {"panel"}, commandDescription = "Handle global panels")
-    public class PanelCatalogCommandOptions extends CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        @Parameter(names = {"--import-from-panelApp"}, description = "Flag indicating that panels should be imported from PanelApp (GEL)",
-                arity = 0)
-        public boolean panelAppImport;
-
-        @Parameter(names = {"--import"}, description = "File or folder containing panels in JSON format to be imported in OpenCGA",
-                arity = 1)
-        public String panelImport;
-
-        @Parameter(names = {"--overwrite"}, description = "Flag indicating to overwrite installed panels in case of an ID conflict", arity = 0)
-        public boolean overwrite;
-
-        @Parameter(names = {"--delete"}, description = "Comma separated list of global panel ids to delete", arity = 1)
-        public String delete;
-    }
-
 
     /*
      * AUDIT SUB-COMMANDS

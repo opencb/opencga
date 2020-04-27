@@ -136,16 +136,9 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.PANELS_DESCRIPTION) @PathParam(value = "panels") String panelStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Panel  version") @QueryParam("version") Integer version,
-            @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
-                    defaultValue = "false") @QueryParam("global") boolean global) {
+            @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("global");
-
-            if (global) {
-                studyStr = PanelManager.INSTALLATION_PANELS;
-            }
 
             List<String> idList = getIdList(panelStr);
             DataResult<Panel> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, true, token);
@@ -185,19 +178,12 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
             @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
-                    defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
             @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("global");
-
-            if (global) {
-                studyStr = PanelManager.INSTALLATION_PANELS;
-            }
 
             return createOkResponse(panelManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {

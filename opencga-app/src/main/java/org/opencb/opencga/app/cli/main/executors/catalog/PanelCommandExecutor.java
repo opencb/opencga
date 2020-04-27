@@ -107,7 +107,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", c.study);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.NAME.key(), c.name);
-        params.putIfNotNull(PanelDBAdaptor.QueryParams.PHENOTYPES.key(), c.phenotypes);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.DISORDERS.key(), c.phenotypes);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.VARIANTS.key(), c.variants);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.REGIONS.key(), c.regions);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.GENES.key(), c.genes);

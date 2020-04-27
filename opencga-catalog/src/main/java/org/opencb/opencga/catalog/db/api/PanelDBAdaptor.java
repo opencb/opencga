@@ -65,10 +65,10 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         CATEGORIES("categories", TEXT_ARRAY, ""),
         CATEGORIES_NAME("categories.name", TEXT_ARRAY, ""),
 
-        PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
-        PHENOTYPES_ID("phenotypes.id", TEXT, ""),
-        PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
-        PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
+        DISORDERS("disorders", TEXT_ARRAY, ""),
+        DISORDERS_ID("disorders.id", TEXT, ""),
+        DISORDERS_NAME("disorders.name", TEXT, ""),
+        DISORDERS_SOURCE("disorders.source", TEXT, ""),
 
         VARIANTS("variants", TEXT_ARRAY, ""),
         VARIANTS_ID("variants.id", TEXT, ""),
@@ -150,19 +150,6 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
             throw CatalogDBException.newInstance("Panel uid '{}' does not exist", panelUid);
         }
     }
-
-    /**
-     * Insert the panel as an installation panel.
-     *
-     * @param panel Panel.
-     * @param overwrite Flag to overwrite in case of an ID conflict.
-     * @return OpenCGAResult object.
-     * @throws CatalogDBException In case of an ID conflict when overwrite is false.
-     * @throws CatalogParameterException if there is any formatting error.
-     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
-     */
-    OpenCGAResult insert(Panel panel, boolean overwrite)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult insert(long studyUid, List<Panel> panelList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

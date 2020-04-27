@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
@@ -25,7 +24,6 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.master.monitor.MonitorService;
 
 import javax.ws.rs.client.Client;
@@ -34,13 +32,10 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Created by imedina on 02/03/15.
@@ -77,9 +72,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 break;
             case "daemon":
                 daemons();
-                break;
-            case "panel":
-                panels();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -225,77 +217,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                     .path("stop");
             Response response = target.request().get();
             logger.info(response.toString());
-        }
-    }
-
-    private void panels() throws CatalogException, IOException {
-        validateConfiguration(catalogCommandOptions.panelCatalogCommandOptions);
-
-        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager()
-                    .loginAsAdmin(catalogCommandOptions.panelCatalogCommandOptions.commonOptions.adminPassword).getToken();
-
-            if (catalogCommandOptions.panelCatalogCommandOptions.panelAppImport) {
-                catalogManager.getPanelManager().importPanelApp(token, catalogCommandOptions.panelCatalogCommandOptions.overwrite);
-            } else if (StringUtils.isNotEmpty(catalogCommandOptions.panelCatalogCommandOptions.panelImport)) {
-                importPanels(catalogManager, token);
-            } else if (StringUtils.isNotEmpty(catalogCommandOptions.panelCatalogCommandOptions.delete)) {
-                deletePanels(catalogManager, token);
-            } else {
-                logger.error("Expected --import or --delete parameter. Nothing to do.");
-            }
-        }
-
-    }
-
-    private void importPanels(CatalogManager catalogManager, String token) throws IOException {
-        Path path = Paths.get(catalogCommandOptions.panelCatalogCommandOptions.panelImport);
-
-        if (path.toFile().isDirectory()) {
-            // Load all the json files from the directory
-            try (Stream<Path> paths = Files.walk(path)) {
-                paths
-                        .filter(Files::isRegularFile)
-                        .forEach(filePath -> {
-                            // Import the panel file
-                            Panel panel;
-                            try {
-                                panel = Panel.load(FileUtils.openInputStream(filePath.toFile()));
-                            } catch (IOException e) {
-                                logger.error("Could not load file {}. {}", filePath.toString(), e.getMessage());
-                                return;
-                            }
-                            try {
-                                catalogManager.getPanelManager().create(panel,
-                                        catalogCommandOptions.panelCatalogCommandOptions.overwrite, token);
-                                logger.info("Panel {} imported", panel.getId());
-                            } catch (CatalogException e) {
-                                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
-                            }
-                        });
-            }
-        } else {
-            // Import the panel file
-            Panel panel = Panel.load(FileUtils.openInputStream(path.toFile()));
-            try {
-                catalogManager.getPanelManager().create(panel, catalogCommandOptions.panelCatalogCommandOptions.overwrite,
-                        token);
-                logger.info("Panel {} imported", panel.getId());
-            } catch (CatalogException e) {
-                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
-            }
-        }
-    }
-
-    private void deletePanels(CatalogManager catalogManager, String token) {
-        String[] panelIds = catalogCommandOptions.panelCatalogCommandOptions.delete.split(",");
-        for (String panelId : panelIds) {
-            try {
-                catalogManager.getPanelManager().delete(panelId, token);
-                logger.info("Panel {} deleted", panelId);
-            } catch (CatalogException e) {
-                logger.error("Could not delete panel {} - {}", panelId, e.getMessage());
-            }
         }
     }
 
