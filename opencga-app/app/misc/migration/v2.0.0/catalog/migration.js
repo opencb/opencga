@@ -406,4 +406,22 @@ function getLeastSignificantBits() {
 // #1577: Remove all panels
 db.getCollection("panel").remove({});
 
+// Job - dependsOn - Add studyUid
+var allJobs = {};
+db.job.find({}, {uid:1, studyUid:1}).forEach(function(doc) { allJobs[doc.uid] = doc.studyUid; } );
+
+migrateCollection("job", {"dependsOn":  { "$exists": true, "$ne": [] }}, {dependsOn: 1}, function(bulk, doc) {
+    if (isNotEmptyArray(doc.dependsOn)) {
+        for (var i = 0; i < doc.dependsOn.length; i++) {
+            var job = doc.dependsOn[i];
+            job['studyUid'] = allJobs[job['uid']];
+        }
+
+        var set = {
+            "dependsOn": doc.dependsOn
+        }
+        bulk.find({"_id": doc._id}).updateOne({"$set": set});
+    }
+});
+
 // TODO: Add indexes for new "deleted" collections
