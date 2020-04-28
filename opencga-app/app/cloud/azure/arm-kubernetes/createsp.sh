@@ -3,11 +3,16 @@ cd $(dirname "$0")
 
 set -e
 
-rgName=$(cat azuredeploy.parameters.private.json | jq -r '.parameters.rgPrefix.value')
 
 if [[ "$#" -ne 2 ]]; then
-  echo "Usage: createsp.sh <subscriptionName> <servicePrincipalName>"
-  echo "Recommended servicePrincipalName: ${rgName}-aks"
+  echo "Usage: $0 <subscriptionName> <servicePrincipalName>"
+
+  if [ ! -f azuredeploy.parameters.private.json ]; then
+    rgName="opencga"
+  else
+    rgName=$(cat azuredeploy.parameters.private.json | jq -r '.parameters.rgPrefix.value')
+  fi
+  echo " * Recommended servicePrincipalName: ${rgName}-aks"
   exit 1
 fi
 
@@ -28,6 +33,6 @@ echo "Service Principal ObjectId     : ${aksServicePrincipalObjectId}"
 echo "----------------------------------------------------------------------"
 echo ""
 echo "To assign roles (to be run separately if the user does not have enough permissions):"
-echo "   ./roleAssignment/opencga_role_assignments.sh $subscriptionName $rgName $aksServicePrincipalObjectId"
+echo "   ./role-assignments.sh $subscriptionName  <rgName> <location>  $aksServicePrincipalObjectId"
 echo "To deploy: "
 echo "   ./deploy.sh $subscriptionName $aksServicePrincipalAppId $aksServicePrincipalClientSecret $aksServicePrincipalObjectId"

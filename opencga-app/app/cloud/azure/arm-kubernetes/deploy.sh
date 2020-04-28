@@ -11,7 +11,8 @@ set -e
 
 
 if [[ "$#" -ne 4 ]]; then
-  echo "Usage: deploy.sh <subscription_name> <aksServicePrincipalAppId> <aksServicePrincipalClientSecret> <aksServicePrincipalObjectId>"
+  echo "Usage: $0 <subscription_name> <aksServicePrincipalAppId> <aksServicePrincipalClientSecret> <aksServicePrincipalObjectId>"
+  echo " * Execute createsp.sh to obtain the service principal values"
   exit 1
 fi
 
@@ -67,7 +68,7 @@ blob_base_url="$(az storage account show -n $storageAccountName  --query primary
 container_base_url=${blob_base_url//\"/}$templateContainer
 
 # deploy infra
-deployment_details=$(az deployment create -n $deployID  -l uksouth --template-uri $template_url --parameters @azuredeploy.parameters.private.json  \
+deployment_details=$(az deployment sub create -n $deployID  -l uksouth --template-uri $template_url --parameters @azuredeploy.parameters.private.json  \
     --parameters _artifactsLocation=$container_base_url   --parameters _artifactsLocationSasToken="?$token"  \
     --parameters aksServicePrincipalAppId=$aksServicePrincipalAppId \
     --parameters aksServicePrincipalClientSecret=$aksServicePrincipalClientSecret \
