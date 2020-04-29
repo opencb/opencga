@@ -37,7 +37,7 @@
     "file-saver": "~1.3.2",
     "font-awesome": "*",
     "highcharts": "~4.2.7",
-    "jquery": "~2.2.4",
+    "jquery": "~3.5.0",
     "jwt-decode": "^2.2.0",
     "moment": "^2.15.1",
     "qtip2": "~3.0.3",
