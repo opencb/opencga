@@ -7,8 +7,8 @@
   "entities": ["FILE"],
   "variables": [
     {
-      "id": "raw_total_sequences",
-      "name": "Raw total sequences",
+      "id": "rawTotalSequences",
+      "name": "rawTotalSequences",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -20,8 +20,8 @@
       "attributes": {}
     },
     {
-      "id": "filtered_sequences",
-      "name": "Filtered sequences",
+      "id": "filteredSequences",
+      "name": "filteredSequences",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -34,7 +34,7 @@
     },
     {
       "id": "sequences",
-      "name": "Sequences",
+      "name": "sequences",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -46,8 +46,8 @@
       "attributes": {}
     },
     {
-      "id": "is_sorted",
-      "name": "Is sorted",
+      "id": "isSorted",
+      "name": "isSorted",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -59,8 +59,8 @@
       "attributes": {}
     },
     {
-      "id": "1st_fragments",
-      "name": "1st fragments",
+      "id": "firstFfragments",
+      "name": "firstFragments",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -68,12 +68,12 @@
       "allowedValues": [],
       "rank": 5,
       "dependsOn": "",
-      "description": "1st fragments",
+      "description": "First fragments",
       "attributes": {}
     },
     {
-      "id": "last_fragments",
-      "name": "Last fragments",
+      "id": "lastFragments",
+      "name": "lastFragments",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -85,8 +85,8 @@
       "attributes": {}
     },
     {
-      "id": "reads_mapped",
-      "name": "Reads mapped",
+      "id": "readsMapped",
+      "name": "readsMapped",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -98,8 +98,8 @@
       "attributes": {}
     },
     {
-      "id": "reads_mapped_and_paired",
-      "name": "Reads mapped and paired",
+      "id": "readsMappedAndPaired",
+      "name": "readsMappedAndPaired",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -111,8 +111,8 @@
       "attributes": {}
     },
     {
-      "id": "reads_unmapped",
-      "name": "Reads unmapped",
+      "id": "readsUnmapped",
+      "name": "readsUnmapped",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -124,8 +124,8 @@
       "attributes": {}
     },
     {
-      "id": "reads_properly_paired",
-      "name": "Reads properly paired",
+      "id": "readsProperlyPaired",
+      "name": "readsProperlyPaired",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -137,8 +137,8 @@
       "attributes": {}
     },
     {
-      "id": "reads_paired",
-      "name": "Reads paired",
+      "id": "readsPaired",
+      "name": "readsPaired",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -150,8 +150,8 @@
       "attributes": {}
     },
     {
-      "id": "reads_duplicated",
-      "name": "Reads duplicated",
+      "id": "readsDuplicated",
+      "name": "readsDuplicated",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -163,8 +163,8 @@
       "attributes": {}
     },
     {
-      "id": "reads_MQ0",
-      "name": "Reads MQ0",
+      "id": "readsMQ0",
+      "name": "readsMQ0",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -176,8 +176,8 @@
       "attributes": {}
     },
     {
-      "id": "reads_QC_failed",
-      "name": "Reads QC failed",
+      "id": "readsQCFailed",
+      "name": "readsQCFailed",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -189,8 +189,8 @@
       "attributes": {}
     },
     {
-      "id": "non-primary_alignments",
-      "name": "Non-primary alignments",
+      "id": "nonPrimaryAlignments",
+      "name": "nonPrimaryAlignments",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -202,8 +202,8 @@
       "attributes": {}
     },
     {
-      "id": "total_length",
-      "name": "Total length",
+      "id": "totalLength",
+      "name": "totalLength",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -215,8 +215,8 @@
       "attributes": {}
     },
     {
-      "id": "total_first_fragment_length",
-      "name": "Total first fragment length",
+      "id": "totalFirstFragmentLength",
+      "name": "totalFirstFragmentLength",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -228,8 +228,8 @@
       "attributes": {}
     },
     {
-      "id": "total_last_fragment_length",
-      "name": "Total last fragment length",
+      "id": "totalLastFragmentLength",
+      "name": "totalLastFragmentLength",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -241,8 +241,8 @@
       "attributes": {}
     },
     {
-      "id": "bases_mapped",
-      "name": "Bases mapped",
+      "id": "basesMapped",
+      "name": "basesMapped",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -254,8 +254,8 @@
       "attributes": {}
     },
     {
-      "id": "bases_mapped_cigar",
-      "name": "Bases mapped (cigar)",
+      "id": "basesMappedCigar",
+      "name": "basesMappedCigar",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -267,8 +267,8 @@
       "attributes": {}
     },
     {
-      "id": "bases_trimmed",
-      "name": "Bases trimmed",
+      "id": "basesTrimmed",
+      "name": "basesTrimmed",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -280,8 +280,8 @@
       "attributes": {}
     },
     {
-      "id": "bases_duplicated",
-      "name": "Bases duplicated",
+      "id": "basesDuplicated",
+      "name": "basesDuplicated",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -294,7 +294,7 @@
     },
     {
       "id": "mismatches",
-      "name": "Mismatches",
+      "name": "mismatches",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -306,8 +306,8 @@
       "attributes": {}
     },
     {
-      "id": "error_rate",
-      "name": "Error rate",
+      "id": "errorRate",
+      "name": "errorRate",
       "category": "number",
       "type": "DOUBLE",
       "required": false,
@@ -319,8 +319,8 @@
       "attributes": {}
     },
     {
-      "id": "average_length",
-      "name": "Average length",
+      "id": "averageLength",
+      "name": "averageLength",
       "category": "number",
       "type": "DOUBLE",
       "required": false,
@@ -332,8 +332,8 @@
       "attributes": {}
     },
     {
-      "id": "average_first_fragment_length",
-      "name": "Average first fragment length",
+      "id": "averageFirstFragmentLength",
+      "name": "averageFirstFragmentLength",
       "category": "number",
       "type": "DOUBLE",
       "required": false,
@@ -345,8 +345,8 @@
       "attributes": {}
     },
     {
-      "id": "average_last_fragment_length",
-      "name": "Average last fragment length",
+      "id": "averageLastFragmentLength",
+      "name": "averageLastFragmentLength",
       "category": "number",
       "type": "DOUBLE",
       "required": false,
@@ -358,8 +358,8 @@
       "attributes": {}
     },
     {
-      "id": "maximum_length",
-      "name": "Maximum length",
+      "id": "maximumLength",
+      "name": "maximumLength",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -371,8 +371,8 @@
       "attributes": {}
     },
     {
-      "id": "maximum_first_fragment_length",
-      "name": "Maximum first fragment length",
+      "id": "maximumFirstFragmentLength",
+      "name": "maximumFirstFragmentLength",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -384,8 +384,8 @@
       "attributes": {}
     },
     {
-      "id": "maximum_last_fragment_length",
-      "name": "Maximum last fragment length",
+      "id": "maximumLastFragmentLength",
+      "name": "maximumLastFragmentLength",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -397,8 +397,8 @@
       "attributes": {}
     },
     {
-      "id": "average_quality",
-      "name": "Average quality",
+      "id": "averageQuality",
+      "name": "averageQuality",
       "category": "number",
       "type": "DOUBLE",
       "required": false,
@@ -410,8 +410,8 @@
       "attributes": {}
     },
     {
-      "id": "insert_size_average",
-      "name": "Insert size average",
+      "id": "insertSizeAverage",
+      "name": "insertSizeAverage",
       "category": "number",
       "type": "DOUBLE",
       "required": false,
@@ -423,8 +423,8 @@
       "attributes": {}
     },
     {
-      "id": "insert_size_standard_deviation",
-      "name": "Insert size standard deviation",
+      "id": "insertSizeStandardDeviation",
+      "name": "insertSizeStandardDeviation",
       "category": "number",
       "type": "DOUBLE",
       "required": false,
@@ -436,8 +436,8 @@
       "attributes": {}
     },
     {
-      "id": "inward_oriented_pairs",
-      "name": "Inward oriented pairs",
+      "id": "inwardOrientedPairs",
+      "name": "inwardOrientedPairs",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -449,8 +449,8 @@
       "attributes": {}
     },
     {
-      "id": "outward_oriented_pairs",
-      "name": "Outward oriented pairs",
+      "id": "outwardOrientedPairs",
+      "name": "outwardOrientedPairs",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -462,8 +462,8 @@
       "attributes": {}
     },
     {
-      "id": "pairs_with_other_orientation",
-      "name": "Pairs with other orientation",
+      "id": "pairsWithOtherOrientation",
+      "name": "pairsWithOtherOrientation",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -475,8 +475,8 @@
       "attributes": {}
     },
     {
-      "id": "pairs_on_different_chromosomes",
-      "name": "Pairs on different chromosomes",
+      "id": "pairsOnDifferentChromosomes",
+      "name": "pairsOnDifferentChromosomes",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -488,8 +488,8 @@
       "attributes": {}
     },
     {
-      "id": "percentage_of_properly_paired_reads",
-      "name": "Percentage of properly paired reads",
+      "id": "percentageOfProperlyPairedReads",
+      "name": "percentageOfProperlyPairedReads",
       "category": "number",
       "type": "DOUBLE",
       "required": false,

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.wrappers;
 
+import com.google.common.base.CaseFormat;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -427,11 +428,9 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             if (line.startsWith("SN")) {
                 count++;
                 String[] splits = line.split("\t");
-                String key = splits[1].split("\\(")[0].trim().replace(" ", "_").replace(":", "");
-                // Special case
-                if (line.contains("bases mapped (cigar):")) {
-                    key += "_cigar";
-                }
+                String key = splits[1].split("\\(")[0].trim().replace("1st", "first").replace(" ", "_").replace("-", "_")
+                        .replace(":", "").replace("(", "").replace(")", "");
+                key = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, key);
                 String value = splits[2].split(" ")[0];
                 annotations.put(key, value);
             } else if (count > 0) {
