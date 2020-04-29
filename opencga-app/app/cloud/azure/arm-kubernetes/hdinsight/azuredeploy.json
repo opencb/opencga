@@ -109,7 +109,7 @@
                 "description": "Log Analytics Workspace ID"
             }
         },
-        "logAnalyticsWorkSpaceKey": {
+        "LogAnalyticsWorkspaceKey": {
             "type": "string",
             "metadata": {
                 "description": "Log Analytics Workspace Key"
@@ -390,7 +390,7 @@
                             "command": [
                                 "/bin/sh",
                                 "-c",
-                                "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az hdinsight monitor enable --name ', variables('clusterName'), ' --resource-group ',resourceGroup().name ,' --workspace-id ',parameters('LogAnalyticsWorkspaceID') ,' --primary-key ',parameters('logAnalyticsWorkSpaceKey'))]"
+                                "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az hdinsight monitor enable --name ', variables('clusterName'), ' --resource-group ',resourceGroup().name ,' --workspace-id ',parameters('LogAnalyticsWorkspaceID') ,' --primary-key ',parameters('LogAnalyticsWorkspaceKey'))]"
                             ],
                             "environmentVariables": [
                             ],
