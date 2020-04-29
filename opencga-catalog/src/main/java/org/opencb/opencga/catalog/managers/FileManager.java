@@ -110,7 +110,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
         INCLUDE_FILE_URI_PATH = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
-                FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
+                FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
                 FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.EXTERNAL.key(),
                 FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
         EXCLUDE_FILE_ATTRIBUTES = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
@@ -2279,6 +2279,45 @@ public class FileManager extends AnnotationSetManager<File> {
                     Collections.singletonList(fileContent), 1);
         } catch (CatalogException e) {
             auditManager.audit(userId, Enums.Action.GREP, Enums.Resource.FILE, fileId, "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<FileContent> image(String studyStr, String fileId, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        long startTime = System.currentTimeMillis();
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("fileId", fileId)
+                .append("token", token);
+        File file;
+        try {
+            file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI_PATH, userId).first();
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
+
+            if (file.getFormat() != File.Format.IMAGE) {
+                throw new CatalogException("File '" + fileId + "' is not an image. Format of file is '" + file.getFormat() + "'.");
+            }
+
+            URI fileUri = getUri(file);
+            FileContent fileContent;
+
+            try {
+                fileContent = ioManagerFactory.get(fileUri).base64Image(Paths.get(fileUri));
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(fileUri, e);
+            }
+            auditManager.audit(userId, Enums.Action.IMAGE_CONTENT, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), 1,
+                    Collections.singletonList(fileContent), 1);
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.IMAGE_CONTENT, Enums.Resource.FILE, fileId, "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }

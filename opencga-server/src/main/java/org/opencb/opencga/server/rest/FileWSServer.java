@@ -152,6 +152,20 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{file}/image")
+    @ApiOperation(value = "Obtain the base64 content of an image", response = FileContent.class)
+    public Response base64Image(
+            @ApiParam(value = ParamConstants.FILE_ID_DESCRIPTION) @PathParam(value = "file") String fileStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
+        try {
+            OpenCGAResult<FileContent> fileQueryResult = fileManager.image(studyStr, fileStr, token);
+            return createOkResponse(fileQueryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/bioformats")
     @ApiOperation(value = "List of accepted file bioformats", response = File.Bioformat.class)
     public Response getBioformats() {
