@@ -46,7 +46,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Individual proband;
     private Family family;
     private Map<String, FamiliarRelationship> roleToProband;
-    private List<Interpretation> interpretations;
+
+    private ClinicalAnalysisQC qc;
+
+    private Interpretation interpretation;
+    private List<Interpretation> secondaryInterpretations;
 
     private ClinicalConsent consent;
 
@@ -144,11 +148,13 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis() {
     }
 
+
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
-                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
-                            List<Interpretation> interpretations, Enums.Priority priority, ClinicalAnalysisAnalyst analyst,
-                            List<String> flags, String creationDate, String dueDate, List<Comment> comments, List<Alert> alerts,
-                            int release, ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
+                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent, ClinicalAnalysisQC qc,
+                            Interpretation interpretation, List<Interpretation> secondaryInterpretations, Enums.Priority priority,
+                            ClinicalAnalysisAnalyst analyst, List<String> flags, String creationDate, String dueDate,
+                            List<Comment> comments, List<Alert> alerts, int release, ClinicalAnalysisInternal internal,
+                            Map<String, Object> attributes, CustomStatus status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -157,7 +163,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.proband = proband;
         this.family = family;
         this.roleToProband = roleToProband;
-        this.interpretations = interpretations;
+        this.qc = qc;
+        this.interpretation = interpretation;
+        this.secondaryInterpretations = secondaryInterpretations;
         this.priority = priority;
         this.flags = flags;
         this.analyst = analyst;
@@ -184,7 +192,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
-        sb.append(", interpretations=").append(interpretations);
+        sb.append(", qc=").append(qc);
+        sb.append(", interpretation=").append(interpretation);
+        sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
         sb.append(", analyst=").append(analyst);
         sb.append(", priority=").append(priority);
@@ -202,6 +212,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return sb.toString();
     }
 
+    @Override
     public String getUuid() {
         return uuid;
     }
@@ -211,24 +222,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public ClinicalAnalysis setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    @Override
-    public ClinicalAnalysis setUid(long uid) {
-        super.setUid(uid);
-        return this;
-    }
-
-    @Override
-    public ClinicalAnalysis setStudyUid(long studyUid) {
-        super.setStudyUid(studyUid);
         return this;
     }
 
@@ -295,21 +296,30 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public List<Interpretation> getInterpretations() {
-        return interpretations;
+    public ClinicalAnalysisQC getQc() {
+        return qc;
     }
 
-    public ClinicalAnalysis setInterpretations(List<Interpretation> interpretations) {
-        this.interpretations = interpretations;
+    public ClinicalAnalysis setQc(ClinicalAnalysisQC qc) {
+        this.qc = qc;
         return this;
     }
 
-    public ClinicalAnalysisAnalyst getAnalyst() {
-        return analyst;
+    public Interpretation getInterpretation() {
+        return interpretation;
     }
 
-    public ClinicalAnalysis setAnalyst(ClinicalAnalysisAnalyst analyst) {
-        this.analyst = analyst;
+    public ClinicalAnalysis setInterpretation(Interpretation interpretation) {
+        this.interpretation = interpretation;
+        return this;
+    }
+
+    public List<Interpretation> getSecondaryInterpretations() {
+        return secondaryInterpretations;
+    }
+
+    public ClinicalAnalysis setSecondaryInterpretations(List<Interpretation> secondaryInterpretations) {
+        this.secondaryInterpretations = secondaryInterpretations;
         return this;
     }
 
@@ -319,6 +329,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setConsent(ClinicalConsent consent) {
         this.consent = consent;
+        return this;
+    }
+
+    public ClinicalAnalysisAnalyst getAnalyst() {
+        return analyst;
+    }
+
+    public ClinicalAnalysis setAnalyst(ClinicalAnalysisAnalyst analyst) {
+        this.analyst = analyst;
         return this;
     }
 
@@ -340,15 +359,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public String getDueDate() {
-        return dueDate;
-    }
-
-    public ClinicalAnalysis setDueDate(String dueDate) {
-        this.dueDate = dueDate;
-        return this;
-    }
-
     public String getCreationDate() {
         return creationDate;
     }
@@ -364,6 +374,24 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public String getDueDate() {
+        return dueDate;
+    }
+
+    public ClinicalAnalysis setDueDate(String dueDate) {
+        this.dueDate = dueDate;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public ClinicalAnalysis setRelease(int release) {
+        this.release = release;
         return this;
     }
 
@@ -391,15 +419,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setInternal(ClinicalAnalysisInternal internal) {
         this.internal = internal;
-        return this;
-    }
-
-    public int getRelease() {
-        return release;
-    }
-
-    public ClinicalAnalysis setRelease(int release) {
-        this.release = release;
         return this;
     }
 
