@@ -37,9 +37,9 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -376,7 +376,7 @@ public class AlignmentWebService extends AnalysisWebService {
         AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
         try {
             return createOkResponse(alignmentStorageManager.statsInfo(study, inputFile, token));
-        } catch (ToolException | StorageEngineException | CatalogException e) {
+        } catch (ToolException | CatalogException e) {
             return createErrorResponse(e);
         }
     }

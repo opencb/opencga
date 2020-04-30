@@ -16,9 +16,12 @@
 
 package org.opencb.opencga.analysis.alignment;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.AlignmentStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
@@ -42,7 +45,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -153,13 +158,26 @@ public class AlignmentStorageManager extends StorageManager {
 
     //-------------------------------------------------------------------------
 
-    public OpenCGAResult<String> statsInfo(String study, String inputFile, String token) throws ToolException, StorageEngineException,
-            CatalogException {
+    public OpenCGAResult<String> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
         OpenCGAResult<File> fileResult;
-        fileResult = catalogManager.getFileManager().get(study, inputFile + ".stats.txt", QueryOptions.empty(), token);
+        fileResult = catalogManager.getFileManager().get(study, inputFile + ".stats.json", QueryOptions.empty(), token);
 
         if (fileResult.getNumMatches() == 1) {
-            return alignmentStorageEngine.getDBAdaptor().statsInfo(Paths.get(fileResult.getResults().get(0).getUri().getPath()));
+            for (AnnotationSet annotationSet : fileResult.getResults().get(0).getAnnotationSets()) {
+                if ("opencga_alignment_stats".equals(annotationSet.getId())) {
+                    StopWatch watch = StopWatch.createStarted();
+                    AlignmentStats stats = JacksonUtils.getDefaultObjectMapper().convertValue(annotationSet.getAnnotations(),
+                            AlignmentStats.class);
+                    try {
+                        String json = JacksonUtils.getDefaultObjectMapper().writeValueAsString(stats);
+                        watch.stop();
+                        return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(json), 1);
+                    } catch (JsonProcessingException e) {
+                        throw new ToolException(e);
+                    }
+                }
+            }
+            throw new ToolException("Alignment stats not computed for " + inputFile);
         } else {
             throw new ToolException("Error accessing to the file: " + inputFile);
         }
