@@ -978,15 +978,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         switch (moi) {
-            case MONOALLELIC:
+            case AUTOSOMAL_DOMINANT:
                 return ModeOfInheritance.dominant(pedigree, disorder, penetrance);
-            case BIALLELIC:
+            case AUTOSOMAL_RECESSIVE:
                 return ModeOfInheritance.recessive(pedigree, disorder, penetrance);
-            case XLINKED_BIALLELIC:
+            case X_LINKED_RECESSIVE:
                 return ModeOfInheritance.xLinked(pedigree, disorder, false, penetrance);
-            case XLINKED_MONOALLELIC:
+            case X_LINKED_DOMINANT:
                 return ModeOfInheritance.xLinked(pedigree, disorder, true, penetrance);
-            case YLINKED:
+            case Y_LINKED:
                 return ModeOfInheritance.yLinked(pedigree, disorder, penetrance);
             case MITOCHONDRIAL:
                 return ModeOfInheritance.mitochondrial(pedigree, disorder, penetrance);

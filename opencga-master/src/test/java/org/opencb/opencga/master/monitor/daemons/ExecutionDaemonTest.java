@@ -275,6 +275,22 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testDependsOnMultiStudy() throws Exception {
+        HashMap<String, Object> params = new HashMap<>();
+        Job firstJob = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, token).first();
+        Job job = catalogManager.getJobManager().submit(studyFqn2, "files-delete", Enums.Priority.MEDIUM, params, null, null,
+                Collections.singletonList(firstJob.getUuid()), null, token).first();
+        assertEquals(1, job.getDependsOn().size());
+        assertEquals(firstJob.getId(), job.getDependsOn().get(0).getId());
+        assertEquals(firstJob.getUuid(), job.getDependsOn().get(0).getUuid());
+
+        job = catalogManager.getJobManager().get(studyFqn2, job.getId(), QueryOptions.empty(), token).first();
+        assertEquals(1, job.getDependsOn().size());
+        assertEquals(firstJob.getId(), job.getDependsOn().get(0).getId());
+        assertEquals(firstJob.getUuid(), job.getDependsOn().get(0).getUuid());
+    }
+
+    @Test
     public void testRunJob() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");

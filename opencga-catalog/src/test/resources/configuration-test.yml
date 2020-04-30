@@ -38,6 +38,9 @@ hooks:
        where: "tags"     # Field over which the action will be performed
        what: "VCF,FILE"        # Value to be updated
 
+panel:
+  host: "http://resources.opencb.org/opencb/opencga/disease-panels"
+
 catalog:
   database:
     hosts:

@@ -526,7 +526,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
 
         if (CollectionUtils.isNotEmpty(phenotypes)) {
             Query query = new Query();
-            query.put(PanelDBAdaptor.QueryParams.PHENOTYPES_NAME.key(), phenotypes);
+            query.put(PanelDBAdaptor.QueryParams.DISORDERS_NAME.key(), phenotypes);
             addPanels(query, panels);
         }
 
@@ -555,7 +555,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         }
 
         if (CollectionUtils.isNotEmpty(phenotypes)) {
-            addPanels(new Query(PanelDBAdaptor.QueryParams.PHENOTYPES_NAME.key(), phenotypes), panels);
+            addPanels(new Query(PanelDBAdaptor.QueryParams.DISORDERS_NAME.key(), phenotypes), panels);
         }
 
         Query query;

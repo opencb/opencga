@@ -108,6 +108,9 @@ public class AdminMain {
                         case "meta":
                             commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
                             break;
+                        case "panel":
+                            commandExecutor = new PanelCommandExecutor(cliOptionsParser.getPanelCommandOptions());
+                            break;
                         case "migration":
                             commandExecutor = new MigrationCommandExecutor(cliOptionsParser.getMigrationCommandOptions());
                             break;
