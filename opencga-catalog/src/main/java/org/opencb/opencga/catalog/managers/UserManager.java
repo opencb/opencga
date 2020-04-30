@@ -151,7 +151,6 @@ public class UserManager extends AbstractManager {
 
     public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-//        checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
         try {
