@@ -30,6 +30,7 @@ public abstract class AbstractDuplicatedVariantsResolver implements Closeable, V
     private int duplicatedLocus;
     private int duplicatedVariants;
     private int discardedVariants;
+    private int extraRefBlockDiscardedVariants;
 
     public AbstractDuplicatedVariantsResolver(String variantFile, IOConnector ioConnector, URI duplicatedVariantsOutputFile) {
         this.ioConnector = ioConnector;
@@ -51,7 +52,7 @@ public abstract class AbstractDuplicatedVariantsResolver implements Closeable, V
 
         duplicatedLocus++;
         duplicatedVariants += list.size();
-        logger.warn("Found {} duplicated variants for file {} in variant {}.", list.size(), variantFile, list.get(0));
+        logger.warn("Found {} duplicated variants for file {} in variant {}", list.size(), variantFile, list.get(0));
 
         try {
             ensureOpenOutputStream();
@@ -88,6 +89,8 @@ public abstract class AbstractDuplicatedVariantsResolver implements Closeable, V
             OriginalCall call = variant.getStudies().get(0).getFile(0).getCall();
             if (call == null || new Variant(call.getVariantId()).getType().equals(VariantType.NO_VARIATION)) {
                 realRefVariants.add(variant);
+            } else {
+                extraRefBlockDiscardedVariants++;
             }
         }
         return realRefVariants;
@@ -103,6 +106,10 @@ public abstract class AbstractDuplicatedVariantsResolver implements Closeable, V
 
     public int getDiscardedVariants() {
         return discardedVariants;
+    }
+
+    public int getExtraRefBlockDiscardedVariants() {
+        return extraRefBlockDiscardedVariants;
     }
 
     @Override

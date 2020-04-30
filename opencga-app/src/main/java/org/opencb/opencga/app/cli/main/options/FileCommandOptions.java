@@ -365,17 +365,17 @@ public class FileCommandOptions {
     public class HeadCommandOptions extends BaseFileCommand{
 
         @Parameter(names = {"--offset"}, description = "Starting byte from which the file will be read", arity = 1)
-        public int offset = -1;
+        public int offset;
 
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
-        public int lines = -1;
+        public int lines = 10;
     }
 
     @Parameters(commandNames = {"tail"}, commandDescription = "Show the last lines of a file (up to a limit)")
     public class TailCommandOptions extends BaseFileCommand{
 
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
-        public int lines = -1;
+        public int lines = 10;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")

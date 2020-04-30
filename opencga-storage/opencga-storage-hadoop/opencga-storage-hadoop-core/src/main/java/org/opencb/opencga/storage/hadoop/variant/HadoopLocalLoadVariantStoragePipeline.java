@@ -40,6 +40,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -310,8 +311,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 .setReadQueuePutTimeout(1000).build();
 
         // Reader
+        AbstractDuplicatedVariantsResolver resolver = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
+                .getResolver(UriUtils.fileName(input), outdir);
         VariantDeduplicationTask dedupTask = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
-                .getTask(UriUtils.fileName(input), outdir);
+                .getTask(resolver);
         VariantSliceReader sliceReader = new VariantSliceReader(
                 helper.getChunkSize(), variantReader.then(dedupTask), studyId, fileId, sliceBufferSize, progressLogger);
 
@@ -337,7 +340,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             throw new StorageEngineException("Error loading file " + input, e);
         }
 
-        logLoadResults(variantReader.getVariantFileMetadata(), dedupTask.getDiscardedVariants(), hadoopDBWriter.getSkippedRefBlock(),
+        logLoadResults(variantReader.getVariantFileMetadata(),
+                resolver.getDuplicatedVariants(),
+                resolver.getDuplicatedLocus(),
+                resolver.getDiscardedVariants(), hadoopDBWriter.getSkippedRefBlock() + resolver.getExtraRefBlockDiscardedVariants(),
                 hadoopDBWriter.getLoadedVariants(), hadoopDBWriter.getSkippedRefVariants());
 
         if (sampleIndexDBLoader != null) {
@@ -346,8 +352,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         }
     }
 
-    private void logLoadResults(VariantFileMetadata variantFileMetadata, int duplicatedVariants, int skipped, int loadedVariants,
-                                int skippedRefVariants) {
+    private void logLoadResults(VariantFileMetadata variantFileMetadata, int duplicatedVariants, int duplicatedLocus, int discardedVariants,
+                                int skipped, int loadedVariants, int skippedRefVariants) {
         // TODO: Check if the expectedCount matches with the count from HBase?
         // @see this.checkLoadedVariants
         logger.info("============================================================");
@@ -355,7 +361,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         for (VariantType variantType : TARGET_VARIANT_TYPE_SET) {
             expectedCount += variantFileMetadata.getStats().getTypeCount().getOrDefault(variantType.toString(), 0);
         }
-        expectedCount -= duplicatedVariants;
+        expectedCount -= discardedVariants;
         expectedCount -= skippedRefVariants;
         if (expectedCount == loadedVariants) {
             logger.info("Number of loaded variants: " + loadedVariants);
@@ -363,7 +369,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             logger.warn("Wrong number of loaded variants. Expected: " + expectedCount + " but loaded " + loadedVariants);
         }
         if (duplicatedVariants > 0) {
-            logger.warn("Found duplicated variants while loading the file. Discarded variants: " + duplicatedVariants);
+            logger.warn("Found {} duplicated variants in {} different locations. {} variants were discarded.",
+                    duplicatedVariants, duplicatedLocus, discardedVariants);
         }
         if (skipped > 0) {
             logger.info("There were " + skipped + " skipped variants");
