@@ -100,14 +100,14 @@ public class UserClientTest extends WorkEnvironmentTest {
 
     @Test
     public void changePassword() throws Exception {
-        userClient.password("user1", new PasswordChangeParams().setPassword("user1_pass").setNewPassword("user1_newPass"));
+        userClient.password(new PasswordChangeParams("user1", "user1_pass", "user1_newPass"));
         String lastSessionId = openCGAClient.getToken();
         AuthenticationResponse response = openCGAClient.login(openCGAClient.getUserId(), "user1_newPass");
         assertNotEquals(lastSessionId, response.getToken());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Bad user or password");
-        userClient.password("user1", new PasswordChangeParams().setPassword("wrongOldPassword").setNewPassword("anyPassword"));
+        userClient.password(new PasswordChangeParams("user1", "wrongOldPassword", "anyPassword"));
     }
 
 }
