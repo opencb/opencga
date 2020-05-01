@@ -22,7 +22,6 @@ import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 
 import java.util.List;
@@ -41,7 +40,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Disorder disorder;
 
     // Map of sample id, list of files (VCF, BAM and BIGWIG)
-    private Map<String, List<File>> files;
+    private List<File> files;
 
     private Individual proband;
     private Family family;
@@ -145,15 +144,55 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         }
     }
 
+    public static class File {
+        private String sampleId;
+        private List<org.opencb.opencga.core.models.file.File> files;
+
+        public File() {
+        }
+
+        public File(String sampleId, List<org.opencb.opencga.core.models.file.File> files) {
+            this.sampleId = sampleId;
+            this.files = files;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("ClinicalFile{");
+            sb.append("sampleId='").append(sampleId).append('\'');
+            sb.append(", files=").append(files);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getSampleId() {
+            return sampleId;
+        }
+
+        public File setSampleId(String sampleId) {
+            this.sampleId = sampleId;
+            return this;
+        }
+
+        public List<org.opencb.opencga.core.models.file.File> getFiles() {
+            return files;
+        }
+
+        public File setFiles(List<org.opencb.opencga.core.models.file.File> files) {
+            this.files = files;
+            return this;
+        }
+    }
+
     public ClinicalAnalysis() {
     }
 
 
-    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
-                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent, ClinicalAnalysisQC qc,
-                            Interpretation interpretation, List<Interpretation> secondaryInterpretations, Enums.Priority priority,
-                            ClinicalAnalysisAnalyst analyst, List<String> flags, String creationDate, String dueDate,
-                            List<Comment> comments, List<Alert> alerts, int release, ClinicalAnalysisInternal internal,
+    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files,
+                            Individual proband, Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
+                            ClinicalAnalysisQC qc, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
+                            Enums.Priority priority, ClinicalAnalysisAnalyst analyst, List<String> flags, String creationDate,
+                            String dueDate, List<Comment> comments, List<Alert> alerts, int release, ClinicalAnalysisInternal internal,
                             Map<String, Object> attributes, CustomStatus status) {
         this.id = id;
         this.description = description;
@@ -260,11 +299,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public Map<String, List<File>> getFiles() {
+    public List<File> getFiles() {
         return files;
     }
 
-    public ClinicalAnalysis setFiles(Map<String, List<File>> files) {
+    public ClinicalAnalysis setFiles(List<File> files) {
         this.files = files;
         return this;
     }

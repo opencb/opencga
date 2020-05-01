@@ -22,7 +22,6 @@ import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 
@@ -37,7 +36,7 @@ public class ClinicalAnalysisCreateParams {
 
     private Disorder disorder;
 
-    private Map<String, List<String>> files;
+    private List<ClinicalAnalysis.File> files;
 
     private ProbandParam proband;
     private FamilyParam family;
@@ -62,7 +61,7 @@ public class ClinicalAnalysisCreateParams {
     }
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
-                                        Map<String, List<String>> files, ProbandParam proband, FamilyParam family,
+                                        List<ClinicalAnalysis.File> files, ProbandParam proband, FamilyParam family,
                                         Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalystParam analyst,
                                         ClinicalAnalysisInternal internal, InterpretationCreateParams interpretation,
                                         List<InterpretationCreateParams> secondaryInterpretations, ClinicalConsent consent, String dueDate,
@@ -91,29 +90,8 @@ public class ClinicalAnalysisCreateParams {
     }
 
     public static ClinicalAnalysisCreateParams of(ClinicalAnalysis clinicalAnalysis) {
-        Map<String, List<String>> files;
-        if (clinicalAnalysis.getFiles() != null) {
-            files = new HashMap<>();
-            for (Map.Entry<String, List<File>> entry : clinicalAnalysis.getFiles().entrySet()) {
-                List<String> tmpFiles = new ArrayList<>();
-                if (entry.getValue() != null) {
-                    for (File file : entry.getValue()) {
-                        if (StringUtils.isNotEmpty(file.getPath())) {
-                            tmpFiles.add(file.getPath());
-                        } else {
-                            tmpFiles.add(file.getUuid());
-                        }
-                    }
-                }
-                if (StringUtils.isNotEmpty(entry.getKey())) {
-                    files.put(entry.getKey(), tmpFiles);
-                }
-            }
-        } else {
-            files = Collections.emptyMap();
-        }
         return new ClinicalAnalysisCreateParams(clinicalAnalysis.getId(), clinicalAnalysis.getDescription(),
-                clinicalAnalysis.getType(), clinicalAnalysis.getDisorder(), files,
+                clinicalAnalysis.getType(), clinicalAnalysis.getDisorder(), clinicalAnalysis.getFiles(),
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
                 clinicalAnalysis.getRoleToProband(),
@@ -171,14 +149,6 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        Map<String, List<File>> fileMap = new HashMap<>();
-        if (files != null) {
-            for (Map.Entry<String, List<String>> entry : files.entrySet()) {
-                List<File> fileList = entry.getValue().stream().map(fileId -> new File().setId(fileId)).collect(Collectors.toList());
-                fileMap.put(entry.getKey(), fileList);
-            }
-        }
-
         Family f = null;
         if (family != null) {
             f = new Family().setId(family.id);
@@ -207,7 +177,7 @@ public class ClinicalAnalysisCreateParams {
 
         String assignee = analyst != null ? analyst.assignee : "";
 
-        return new ClinicalAnalysis(id, description, type, disorder, fileMap, individual, f, roleToProband, consent, null,
+        return new ClinicalAnalysis(id, description, type, disorder, files, individual, f, roleToProband, consent, null,
                 primaryInterpretation, secondaryInterpretationList, priority, new ClinicalAnalysisAnalyst(assignee, ""), flags, null,
                 dueDate, comments, alerts, 1, internal, attributes, status != null ? status.toCustomStatus() : null);
     }
@@ -248,11 +218,11 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public Map<String, List<String>> getFiles() {
+    public List<ClinicalAnalysis.File> getFiles() {
         return files;
     }
 
-    public ClinicalAnalysisCreateParams setFiles(Map<String, List<String>> files) {
+    public ClinicalAnalysisCreateParams setFiles(List<ClinicalAnalysis.File> files) {
         this.files = files;
         return this;
     }
