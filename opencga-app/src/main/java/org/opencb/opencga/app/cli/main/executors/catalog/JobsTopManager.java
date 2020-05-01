@@ -15,14 +15,12 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.response.RestResponse;
 
-import java.io.ByteArrayOutputStream;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static org.opencb.opencga.app.cli.main.executors.catalog.JobsTopManager.Columns.*;
 
 public class JobsTopManager {
 
@@ -34,8 +32,6 @@ public class JobsTopManager {
     private final int iterations;
     private final int jobsLimit;
     private final long delay;
-    // FIXME: Use an intermediate buffer to prepare the table, and print in one system call to avoid flashes
-    private final ByteArrayOutputStream buffer;
     private final QueryOptions queryOptions = new QueryOptions()
             .append(QueryOptions.INCLUDE, "id,name,status,execution,creationDate")
             .append(QueryOptions.COUNT, true)
@@ -45,31 +41,74 @@ public class JobsTopManager {
             .append(QueryOptions.LIMIT, 0);
     private final Table<Job> jobTable;
 
+    public enum Columns {
+        ID,
+        TOOL_ID,
+        STATUS,
+        STUDY,
+        SUBMISSION,
+        PRIORITY,
+        RUNNING_TIME,
+        START,
+        END
+    }
+
     public JobsTopManager(OpenCGAClient openCGAClient, String study, Integer iterations, int jobsLimit, long delay) {
+        this(openCGAClient, study, Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END), iterations,
+                jobsLimit, delay);
+    }
+
+    public JobsTopManager(OpenCGAClient openCGAClient, String study, List<Columns> columns, Integer iterations, int jobsLimit, long delay) {
         this.openCGAClient = openCGAClient;
         this.baseQuery = new Query();
         baseQuery.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), study);
         this.iterations = iterations == null || iterations <= 0 ? -1 : iterations;
         this.jobsLimit = jobsLimit <= 0 ? 20 : jobsLimit;
         this.delay = delay < 0 ? 2 : delay;
-        this.buffer = new ByteArrayOutputStream();
 
-        // TODO: Make this configurable
-        List<TableColumnSchema<Job>> columns = new ArrayList<>();
-        columns.add(new TableColumnSchema<>("ID", Job::getId, 50));
-        columns.add(new TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getName()));
-        columns.add(new TableColumnSchema<>("Submission", Job::getCreationDate));
-        columns.add(new TableColumnSchema<>("Time", JobsTopManager::getDurationString));
-        columns.add(new TableColumnSchema<>("Start", job -> getStart(job) != null ? SIMPLE_DATE_FORMAT.format(getStart(job)) : ""));
-        columns.add(new TableColumnSchema<>("End", job -> getEnd(job) != null ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : ""));
+        List<TableColumnSchema<Job>> tableColumnList = new ArrayList<>(columns.size());
+        for (Columns column : columns) {
+            switch (column) {
+                case ID:
+                    tableColumnList.add(new TableColumnSchema<>("ID", Job::getId, 50));
+                    break;
+                case TOOL_ID:
+                    tableColumnList.add(new TableColumnSchema<>("Tool id", job -> job.getTool().getId()));
+                    break;
+                case STATUS:
+                    tableColumnList.add(new TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getName()));
+                    break;
+                case STUDY:
+                    tableColumnList.add(new TableColumnSchema<>("Study", job -> job.getStudy().getId(), 25));
+                    break;
+                case SUBMISSION:
+                    tableColumnList.add(new TableColumnSchema<>("Submission date", job -> job.getCreationDate() != null
+                            ? SIMPLE_DATE_FORMAT.format(TimeUtils.toDate(job.getCreationDate())) : ""));
+                    break;
+                case PRIORITY:
+                    tableColumnList.add(new TableColumnSchema<>("Priority", job -> job.getPriority() != null
+                            ? job.getPriority().name() : ""));
+                    break;
+                case RUNNING_TIME:
+                    tableColumnList.add(new TableColumnSchema<>("Running time", JobsTopManager::getDurationString));
+                    break;
+                case START:
+                    tableColumnList.add(new TableColumnSchema<>("Start", job -> getStart(job) != null
+                            ? SIMPLE_DATE_FORMAT.format(getStart(job)) : ""));
+                    break;
+                case END:
+                    tableColumnList.add(new TableColumnSchema<>("End", job -> getEnd(job) != null
+                            ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : ""));
+                    break;
+                default:
+                    // TODO: logger
+                    break;
+            }
+        }
 
-
-        // TODO: Decide if use Ascii or JAnsi
         Table.TablePrinter tablePrinter = new Table.JAnsiTablePrinter();
-        // TODO: Improve style
-//        Table.TablePrinter tablePrinter = new Table.JAnsiTablePrinter();
         jobTable = new Table<>(tablePrinter);
-        jobTable.addColumns(columns);
+        jobTable.addColumns(tableColumnList);
 
     }
 
@@ -96,14 +135,10 @@ public class JobsTopManager {
     }
 
     public void print(JobTop top) {
-        // Reuse buffer to avoid allocate new memory
-//        buffer.reset();
+        List<Job> jobList = processJobs(top.getJobs());
+        jobTable.updateTable(jobList);
 
-        // FIXME: Use intermediate buffer
-//        PrintStream out = new PrintStream(buffer);
-//        PrintStream out = System.out;
         jobTable.restoreCursorPosition();
-        jobTable.printFullLine();
         jobTable.println();
         jobTable.println("OpenCGA jobs TOP");
         jobTable.println("  Version " + GitRepositoryState.get().getBuildVersion());
@@ -116,15 +151,8 @@ public class JobsTopManager {
         jobTable.print(Enums.ExecutionStatus.ERROR + ": " + top.getStats().getError() + ", ");
         jobTable.print(Enums.ExecutionStatus.ABORTED + ": " + top.getStats().getAborted());
         jobTable.println();
-
-        List<Job> jobList = processJobs(top.getJobs());
-
-        jobTable.updateTable(jobList);
+        jobTable.println();
         jobTable.printTable();
-
-        // FIXME: Use intermediate buffer
-//        out.flush();
-//        System.out.print(buffer);
     }
 
     private List<Job> processJobs(List<Job> jobs) {
@@ -137,9 +165,9 @@ public class JobsTopManager {
                 for (int i = 0; i < dependsOn.size(); i++) {
                     Job auxJob = dependsOn.get(i);
                     if (i + 1 < dependsOn.size()) {
-                        auxJob.setId(" ├── " + auxJob.getId());
+                        auxJob.setId("├── " + auxJob.getId());
                     } else {
-                        auxJob.setId(" └── " + auxJob.getId());
+                        auxJob.setId("└── " + auxJob.getId());
                     }
 
                     jobList.add(auxJob);

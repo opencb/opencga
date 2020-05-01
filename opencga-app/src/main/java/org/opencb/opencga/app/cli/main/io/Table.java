@@ -58,7 +58,7 @@ public class Table<T> {
     }
 
     public void printTable() {
-        printFullLine();
+//        printFullLine();
         tablePrinter.printHeader(columns);
         tablePrinter.printLine(columns);
 
@@ -110,7 +110,7 @@ public class Table<T> {
         }
 
         public String getPrintName() {
-            return StringUtils.rightPad(tableColumnSchema.getName(), width);
+            return StringUtils.rightPad(getPrintValue(tableColumnSchema.getName()), width);
         }
 
         public String getPrintValue(int idx) {
@@ -210,6 +210,7 @@ public class Table<T> {
 
         private final PrintStream out;
         private String sep = " ";
+        private String pad = " ";
         private int numLines = 0;
 
         public JAnsiTablePrinter() {
@@ -231,10 +232,9 @@ public class Table<T> {
 //            ansi.restoreCursorPosition();
 //            ansi.saveCursorPosition();
             Ansi ansi = ansi();
-            ansi.bold().fg(Ansi.Color.BLACK).bgBright(Ansi.Color.WHITE);
+            ansi.bold().fg(Ansi.Color.BLACK).bgBright(Ansi.Color.WHITE).a(sep);
             for (TableColumn<T> column : columns) {
-                ansi.a(column.getPrintName());
-                ansi.a(sep);
+                ansi.a(pad).a(column.getPrintName()).a(pad + sep);
             }
             ansi.reset();
             out.println(ansi);
@@ -262,18 +262,30 @@ public class Table<T> {
 
         @Override
         public <T> void printLine(List<TableColumn<T>> columns) {
-
+            Ansi ansi = new Ansi();
+            ansi.a(sep);
+            for (TableColumn<T> column : columns) {
+                ansi.a(column.getLine(pad.length() * 2)).a(sep);
+            }
+            ansi.reset();
+            out.println(ansi);
+            numLines++;
         }
 
         @Override
         public <T> void printFullLine(List<TableColumn<T>> columns) {
-
+            for (TableColumn<T> column : columns) {
+                out.print(column.getLine());
+                out.print(StringUtils.repeat("-", pad.length() * 2 + sep.length()));
+            }
+            out.println("-");
+            numLines++;
         }
 
         @Override
         public <T> void printRow(List<TableColumn<T>> columns, int i) {
             Ansi ansi = ansi();
-
+            ansi.a(sep);
 //            boolean colour = false;
             for (TableColumn<T> column : columns) {
 //                if (colour) {
@@ -282,7 +294,7 @@ public class Table<T> {
 //                    ansi.bg(Ansi.Color.DEFAULT);
 //                }
 //                colour = !colour;
-                ansi.a(column.getPrintValue(i)).a(" ");
+                ansi.a(pad).a(column.getPrintValue(i)).a(pad + sep);
             }
             ansi.reset();
             out.println(ansi);
