@@ -44,7 +44,8 @@ public class ClinicalUpdateParams {
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
-    private List<InterpretationUpdateParams> interpretations;
+    private InterpretationUpdateParams interpretation;
+    private List<InterpretationUpdateParams> secondaryInterpretations;
 
     private ClinicalConsent consent;
 
@@ -62,8 +63,8 @@ public class ClinicalUpdateParams {
 
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
                                 Map<String, List<String>> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
-                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
-                                List<InterpretationUpdateParams> interpretations, ClinicalConsent consent, String dueDate,
+                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, InterpretationUpdateParams interpretation,
+                                List<InterpretationUpdateParams> secondaryInterpretations, ClinicalConsent consent, String dueDate,
                                 List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
                                 Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
@@ -73,7 +74,8 @@ public class ClinicalUpdateParams {
         this.files = files;
         this.roleToProband = roleToProband;
         this.analyst = analyst;
-        this.interpretations = interpretations;
+        this.interpretation = interpretation;
+        this.secondaryInterpretations = secondaryInterpretations;
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -101,7 +103,8 @@ public class ClinicalUpdateParams {
         sb.append(", roleToProband=").append(roleToProband);
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
-        sb.append(", interpretations=").append(interpretations);
+        sb.append(", interpretation=").append(interpretation);
+        sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
@@ -210,12 +213,21 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public List<InterpretationUpdateParams> getInterpretations() {
-        return interpretations;
+    public InterpretationUpdateParams getInterpretation() {
+        return interpretation;
     }
 
-    public ClinicalUpdateParams setInterpretations(List<InterpretationUpdateParams> interpretations) {
-        this.interpretations = interpretations;
+    public ClinicalUpdateParams setInterpretation(InterpretationUpdateParams interpretation) {
+        this.interpretation = interpretation;
+        return this;
+    }
+
+    public List<InterpretationUpdateParams> getSecondaryInterpretations() {
+        return secondaryInterpretations;
+    }
+
+    public ClinicalUpdateParams setSecondaryInterpretations(List<InterpretationUpdateParams> secondaryInterpretations) {
+        this.secondaryInterpretations = secondaryInterpretations;
         return this;
     }
 

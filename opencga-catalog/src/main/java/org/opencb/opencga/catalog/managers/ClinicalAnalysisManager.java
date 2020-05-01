@@ -75,7 +75,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS_ID.key()));
+            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                             DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -424,7 +425,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
             clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
-            clinicalAnalysis.setInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getInterpretations(), ArrayList::new));
+            clinicalAnalysis.setQc(ParamUtils.defaultObject(clinicalAnalysis.getQc(), null));
+            clinicalAnalysis.setInterpretation(ParamUtils.defaultObject(clinicalAnalysis.getInterpretation(), null));
+            clinicalAnalysis.setSecondaryInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getSecondaryInterpretations(),
+                    ArrayList::new));
             clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), Enums.Priority.MEDIUM));
             clinicalAnalysis.setFlags(ParamUtils.defaultObject(clinicalAnalysis.getFlags(), ArrayList::new));
             clinicalAnalysis.setConsent(ParamUtils.defaultObject(clinicalAnalysis.getConsent(), new ClinicalConsent()));
@@ -922,12 +926,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
-        if (clinicalAnalysis.getInterpretations() != null && !clinicalAnalysis.getInterpretations().isEmpty()) {
+        if (clinicalAnalysis.getInterpretation() != null && updateParams.getInterpretation() != null) {
             // Check things there are no fields that cannot be updated once there are interpretations
-            if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
-                throw new CatalogException("Cannot update file map anymore. Interpretations found in clinical analysis '"
+                throw new CatalogException("Cannot update clinical analysis map anymore. Interpretation found in clinical analysis '"
                         + clinicalAnalysis.getId() + "'.");
-            }
+        }
+
+        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())
+                && CollectionUtils.isNotEmpty(updateParams.getSecondaryInterpretations())) {
+            // Check things there are no fields that cannot be updated once there are interpretations
+                throw new CatalogException("Cannot update clinical analysis map anymore. Secondary interpretations found in clinical "
+                        + " analysis '" + clinicalAnalysis.getId() + "'.");
         }
 
         ObjectMap parameters = new ObjectMap();
@@ -1197,7 +1206,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     private void checkClinicalAnalysisCanBeDeleted(ClinicalAnalysis clinicalAnalysis) throws CatalogException {
-        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getInterpretations())) {
+        if (clinicalAnalysis.getInterpretation() != null || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
             throw new CatalogException("Deleting ClinicalAnalysis that contains interpretations is forbidden.");
         }
     }

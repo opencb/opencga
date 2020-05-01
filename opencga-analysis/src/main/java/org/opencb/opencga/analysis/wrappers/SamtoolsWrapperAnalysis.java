@@ -462,7 +462,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         org.opencb.opencga.core.models.file.File catalogFile = fileResult.getResults().get(0);
         alignmentStats.setFileId(catalogFile.getId());
         if (CollectionUtils.isNotEmpty(catalogFile.getSamples())) {
-            alignmentStats.setSampleIds(catalogFile.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+            alignmentStats.setSampleId(catalogFile.getSamples().get(0).getId());
         }
 
         return alignmentStats;

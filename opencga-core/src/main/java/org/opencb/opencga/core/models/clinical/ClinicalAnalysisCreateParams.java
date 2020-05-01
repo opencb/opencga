@@ -44,7 +44,8 @@ public class ClinicalAnalysisCreateParams {
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
-    private List<InterpretationCreateParams> interpretations;
+    private InterpretationCreateParams interpretation;
+    private List<InterpretationCreateParams> secondaryInterpretations;
 
     private ClinicalConsent consent;
 
@@ -63,10 +64,10 @@ public class ClinicalAnalysisCreateParams {
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
                                         Map<String, List<String>> files, ProbandParam proband, FamilyParam family,
                                         Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalystParam analyst,
-                                        ClinicalAnalysisInternal internal, List<InterpretationCreateParams> interpretations,
-                                        ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
-                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes,
-                                        CustomStatusParams status) {
+                                        ClinicalAnalysisInternal internal, InterpretationCreateParams interpretation,
+                                        List<InterpretationCreateParams> secondaryInterpretations, ClinicalConsent consent, String dueDate,
+                                        List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
+                                        Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -77,7 +78,8 @@ public class ClinicalAnalysisCreateParams {
         this.roleToProband = roleToProband;
         this.analyst = analyst;
         this.internal = internal;
-        this.interpretations = interpretations;
+        this.interpretation = interpretation;
+        this.secondaryInterpretations = secondaryInterpretations;
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -117,9 +119,14 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getRoleToProband(),
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
                 clinicalAnalysis.getInternal(),
-                clinicalAnalysis.getInterpretations() != null
-                        ? clinicalAnalysis.getInterpretations().stream().map(InterpretationCreateParams::of).collect(Collectors.toList())
-                        : Collections.emptyList(), clinicalAnalysis.getConsent(), clinicalAnalysis.getDueDate(),
+                clinicalAnalysis.getInterpretation() != null
+                        ? InterpretationCreateParams.of(clinicalAnalysis.getInterpretation())
+                        : null,
+                clinicalAnalysis.getSecondaryInterpretations() != null
+                        ? clinicalAnalysis.getSecondaryInterpretations().stream().map(InterpretationCreateParams::of)
+                        .collect(Collectors.toList())
+                        : Collections.emptyList(),
+                clinicalAnalysis.getConsent(), clinicalAnalysis.getDueDate(),
                 clinicalAnalysis.getComments(), clinicalAnalysis.getAlerts(), clinicalAnalysis.getPriority(), clinicalAnalysis.getFlags(),
                 clinicalAnalysis.getAttributes(), CustomStatusParams.of(clinicalAnalysis.getStatus()));
     }
@@ -137,7 +144,8 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", roleToProband=").append(roleToProband);
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
-        sb.append(", interpretations=").append(interpretations);
+        sb.append(", interpretation=").append(interpretation);
+        sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
@@ -188,16 +196,20 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        List<Interpretation> interpretationList =
-                interpretations != null
-                        ? interpretations.stream()
+        Interpretation primaryInterpretation = secondaryInterpretations != null ? interpretation.toClinicalInterpretation() : null;
+
+        List<Interpretation> secondaryInterpretationList =
+                secondaryInterpretations != null
+                        ? secondaryInterpretations.stream()
                         .map(InterpretationCreateParams::toClinicalInterpretation)
                         .collect(Collectors.toList())
                         : new ArrayList<>();
+
         String assignee = analyst != null ? analyst.assignee : "";
-        return new ClinicalAnalysis(id, description, type, disorder, fileMap, individual, f, roleToProband, consent, interpretationList,
-                priority, new ClinicalAnalysisAnalyst(assignee, ""), flags, null, dueDate, comments, alerts, 1, internal, attributes,
-                status != null ? status.toCustomStatus() : null);
+
+        return new ClinicalAnalysis(id, description, type, disorder, fileMap, individual, f, roleToProband, consent, null,
+                primaryInterpretation, secondaryInterpretationList, priority, new ClinicalAnalysisAnalyst(assignee, ""), flags, null,
+                dueDate, comments, alerts, 1, internal, attributes, status != null ? status.toCustomStatus() : null);
     }
 
     public String getId() {
@@ -290,12 +302,21 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public List<InterpretationCreateParams> getInterpretations() {
-        return interpretations;
+    public InterpretationCreateParams getInterpretation() {
+        return interpretation;
     }
 
-    public ClinicalAnalysisCreateParams setInterpretations(List<InterpretationCreateParams> interpretations) {
-        this.interpretations = interpretations;
+    public ClinicalAnalysisCreateParams setInterpretation(InterpretationCreateParams interpretation) {
+        this.interpretation = interpretation;
+        return this;
+    }
+
+    public List<InterpretationCreateParams> getSecondaryInterpretations() {
+        return secondaryInterpretations;
+    }
+
+    public ClinicalAnalysisCreateParams setSecondaryInterpretations(List<InterpretationCreateParams> secondaryInterpretations) {
+        this.secondaryInterpretations = secondaryInterpretations;
         return this;
     }
 

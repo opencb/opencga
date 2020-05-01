@@ -70,7 +70,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         this.options = options;
 
         this.interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
-        this.interpretationQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), false);
+        this.interpretationQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), false);
 
         this.clinicalAnalysisListBuffer= new LinkedList<>();
         this.logger = LoggerFactory.getLogger(ClinicalAnalysisCatalogMongoDBIterator.class);
@@ -119,9 +119,9 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
 
             // Extract the interpretations
             List<Document> interpretations =
-                    (List<Document>) clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key());
+                    (List<Document>) clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key());
             if (ListUtils.isNotEmpty(interpretations) && !options.getBoolean(NATIVE_QUERY)
-                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key())) {
+                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key())) {
                 for (Document interpretation : interpretations) {
                     interpretationSet.add(String.valueOf(interpretation.get(UID)));
                 }
@@ -155,7 +155,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             clinicalAnalysisListBuffer.forEach(clinicalAnalysis -> {
                 List<Document> interpretations = new ArrayList<>();
                 List<Document> origInterpretations =
-                        (List<Document>) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key());
+                        (List<Document>) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key());
 
                 // If the interpretations have been returned... (it might have not been fetched due to permissions issues)
                 for (Document origInterpretation : origInterpretations) {
@@ -164,7 +164,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                     }
                 }
 
-                clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), interpretations);
+                clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretations);
             });
         }
     }

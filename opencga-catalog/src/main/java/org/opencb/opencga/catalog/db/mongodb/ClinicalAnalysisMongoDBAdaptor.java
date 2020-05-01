@@ -176,13 +176,19 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateProbandToUpdate(document.getSet());
 
-        if (parameters.containsKey(QueryParams.INTERPRETATIONS.key())) {
-            List<Object> objectInterpretationList = parameters.getAsList(QueryParams.INTERPRETATIONS.key());
+        // Interpretation (primary)
+        if (parameters.containsKey(QueryParams.INTERPRETATION.key())) {
+            document.getSet().put(QueryParams.INTERPRETATION.key(), parameters.get(QueryParams.INTERPRETATION.key()));
+        }
+
+        // Secondary interpretations
+        if (parameters.containsKey(QueryParams.SECONDARY_INTERPRETATIONS.key())) {
+            List<Object> objectInterpretationList = parameters.getAsList(QueryParams.SECONDARY_INTERPRETATIONS.key());
             List<Interpretation> interpretationList = new ArrayList<>();
             for (Object interpretation : objectInterpretationList) {
                 if (interpretation instanceof Interpretation) {
                     if (!dbAdaptorFactory.getInterpretationDBAdaptor().exists(((Interpretation) interpretation).getUid())) {
-                        throw CatalogDBException.uidNotFound("Interpretation", ((Interpretation) interpretation).getUid());
+                        throw CatalogDBException.uidNotFound("Secondary interpretation", ((Interpretation) interpretation).getUid());
                     }
                     interpretationList.add((Interpretation) interpretation);
                 }
@@ -190,19 +196,19 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
             if (!interpretationList.isEmpty()) {
                 Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-                String operation = (String) actionMap.getOrDefault(QueryParams.INTERPRETATIONS.key(), "ADD");
+                String operation = (String) actionMap.getOrDefault(QueryParams.SECONDARY_INTERPRETATIONS.key(), "ADD");
                 switch (operation) {
                     case "SET":
-                        document.getSet().put(QueryParams.INTERPRETATIONS.key(),
+                        document.getSet().put(QueryParams.SECONDARY_INTERPRETATIONS.key(),
                                 clinicalConverter.convertInterpretations(interpretationList));
                         break;
                     case "REMOVE":
-                        document.getPullAll().put(QueryParams.INTERPRETATIONS.key(),
+                        document.getPullAll().put(QueryParams.SECONDARY_INTERPRETATIONS.key(),
                                 clinicalConverter.convertInterpretations(interpretationList));
                         break;
                     case "ADD":
                     default:
-                        document.getAddToSet().put(QueryParams.INTERPRETATIONS.key(),
+                        document.getAddToSet().put(QueryParams.SECONDARY_INTERPRETATIONS.key(),
                                 clinicalConverter.convertInterpretations(interpretationList));
                         break;
                 }
@@ -395,7 +401,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = removeInnerProjections(qOptions, QueryParams.INTERPRETATIONS.key());
+        qOptions = removeInnerProjections(qOptions, QueryParams.SECONDARY_INTERPRETATIONS.key());
 
         logger.debug("Clinical analysis query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 

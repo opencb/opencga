@@ -74,8 +74,10 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         PROBAND_UID("proband.uid", INTEGER, ""),
         ROLE_TO_PROBAND("roleToProband", TEXT_ARRAY, ""),
         SAMPLE_UID("proband.samples.uid", INTEGER, ""),
-        INTERPRETATIONS("interpretations", TEXT_ARRAY, ""),
-        INTERPRETATIONS_ID("interpretations.id", TEXT_ARRAY, ""),
+        INTERPRETATION("interpretation", TEXT, ""),
+        INTERPRETATION_ID("interpretation.id", TEXT, ""),
+        SECONDARY_INTERPRETATIONS("secondaryInterpretations", TEXT_ARRAY, ""),
+        SECONDARY_INTERPRETATIONS_ID("secondaryInterpretations.id", TEXT_ARRAY, ""),
 
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 

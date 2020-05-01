@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
+import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
@@ -43,13 +44,11 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -132,10 +131,17 @@ public class ClinicalWebService extends AnalysisWebService {
                     ClinicalUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            if (params != null && params.getInterpretations() != null) {
+            if (params != null) {
                 Map<String, Object> actionMap = new HashMap<>();
-                actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
-                queryOptions.put(Constants.ACTIONS, actionMap);
+                if (params.getInterpretation() != null) {
+                    actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ParamUtils.UpdateAction.SET.name());
+                }
+                if (params.getSecondaryInterpretations() != null) {
+                    actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
+                }
+                if (actionMap.size() > 0) {
+                    queryOptions.put(Constants.ACTIONS, actionMap);
+                }
             }
 
             return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
@@ -153,10 +159,17 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true) ClinicalUpdateParams params) {
         try {
-            if (params != null && params.getInterpretations() != null) {
+            if (params != null) {
                 Map<String, Object> actionMap = new HashMap<>();
-                actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
-                queryOptions.put(Constants.ACTIONS, actionMap);
+                if (params.getInterpretation() != null) {
+                    actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ParamUtils.UpdateAction.SET.name());
+                }
+                if (params.getSecondaryInterpretations() != null) {
+                    actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
+                }
+                if (actionMap.size() > 0) {
+                    queryOptions.put(Constants.ACTIONS, actionMap);
+                }
             }
 
             return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
