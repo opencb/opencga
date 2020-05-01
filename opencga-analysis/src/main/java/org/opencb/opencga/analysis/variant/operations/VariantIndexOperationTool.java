@@ -131,6 +131,7 @@ public class VariantIndexOperationTool extends OperationTool {
             if (Collections.isEmpty(results)) {
                 addWarning("Nothing to do!");
             }
+            addAttribute("StoragePipelineResult", results);
             for (StoragePipelineResult result : results) {
                 inputFiles.add(result.getInput());
             }

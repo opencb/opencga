@@ -433,6 +433,24 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         assertTrue(Files.exists(outDir.resolve("variant-test-file-corrupted.vcf.malformed.txt")));
     }
 
+    @Test
+    public void testIndexDuplicated() throws Exception {
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_duplicated_file"));
+        VariantIndexParams params = new VariantIndexParams();
+        params.setFile(create("variant-test-duplicated.vcf").getName());
+
+        ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
+                        .append(ParamConstants.STUDY_PARAM, studyId)
+                        .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
+                , outDir, sessionId);
+
+        assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
+        assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found duplicated variants"));
+        assertTrue(Files.exists(outDir.resolve("variant-test-duplicated.vcf.duplicated.tsv")));
+    }
+
     @Override
     protected Aggregation getAggregation() {
         return Aggregation.NONE;

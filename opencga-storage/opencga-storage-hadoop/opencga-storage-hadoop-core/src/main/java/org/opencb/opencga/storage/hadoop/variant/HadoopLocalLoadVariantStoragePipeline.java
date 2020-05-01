@@ -345,7 +345,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 resolver.getDuplicatedLocus(),
                 resolver.getDiscardedVariants(), hadoopDBWriter.getSkippedRefBlock() + resolver.getExtraRefBlockDiscardedVariants(),
                 hadoopDBWriter.getLoadedVariants(), hadoopDBWriter.getSkippedRefVariants());
-
+        getLoadStats().put("duplicatedVariants", resolver.getDuplicatedVariants());
+        getLoadStats().put("duplicatedLocus", resolver.getDuplicatedLocus());
+        getLoadStats().put("discardedVariants", resolver.getDiscardedVariants());
         if (sampleIndexDBLoader != null) {
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
