@@ -16,11 +16,11 @@ import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -57,7 +57,7 @@ public class JobsTopManager {
         // TODO: Make this configurable
         List<TableColumnSchema<Job>> columns = new ArrayList<>();
         columns.add(new TableColumnSchema<>("ID", Job::getId, 50));
-        columns.add(new TableColumnSchema<>("Status", job -> job.getInternal().getStatus()  .getName()));
+        columns.add(new TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getName()));
         columns.add(new TableColumnSchema<>("Submission", Job::getCreationDate));
         columns.add(new TableColumnSchema<>("Time", JobsTopManager::getDurationString));
         columns.add(new TableColumnSchema<>("Start", job -> getStart(job) != null ? SIMPLE_DATE_FORMAT.format(getStart(job)) : ""));
@@ -65,7 +65,7 @@ public class JobsTopManager {
 
 
         // TODO: Decide if use Ascii or JAnsi
-        Table.TablePrinter tablePrinter = new Table.AsciiTablePrinter();
+        Table.TablePrinter tablePrinter = new Table.JAnsiTablePrinter();
         // TODO: Improve style
 //        Table.TablePrinter tablePrinter = new Table.JAnsiTablePrinter();
         jobTable = new Table<>(tablePrinter);
@@ -97,32 +97,57 @@ public class JobsTopManager {
 
     public void print(JobTop top) {
         // Reuse buffer to avoid allocate new memory
-        buffer.reset();
+//        buffer.reset();
 
         // FIXME: Use intermediate buffer
 //        PrintStream out = new PrintStream(buffer);
-        PrintStream out = System.out;
-
+//        PrintStream out = System.out;
+        jobTable.restoreCursorPosition();
         jobTable.printFullLine();
-        out.println();
-        out.println("OpenCGA jobs TOP");
-        out.println("  Version " + GitRepositoryState.get().getBuildVersion());
-        out.println("  " + SIMPLE_DATE_FORMAT.format(Date.from(Instant.now())));
-        out.println();
-        out.print(Enums.ExecutionStatus.RUNNING + ": " + top.getStats().getRunning() + ", ");
-        out.print(Enums.ExecutionStatus.QUEUED + ": " + top.getStats().getQueued() + ", ");
-        out.print(Enums.ExecutionStatus.PENDING + ": " + top.getStats().getPending() + ", ");
-        out.print(Enums.ExecutionStatus.DONE + ": " + top.getStats().getDone() + ", ");
-        out.print(Enums.ExecutionStatus.ERROR + ": " + top.getStats().getError() + ", ");
-        out.print(Enums.ExecutionStatus.ABORTED + ": " + top.getStats().getAborted());
-        out.println();
+        jobTable.println();
+        jobTable.println("OpenCGA jobs TOP");
+        jobTable.println("  Version " + GitRepositoryState.get().getBuildVersion());
+        jobTable.println("  " + SIMPLE_DATE_FORMAT.format(Date.from(Instant.now())));
+        jobTable.println();
+        jobTable.print(Enums.ExecutionStatus.RUNNING + ": " + top.getStats().getRunning() + ", ");
+        jobTable.print(Enums.ExecutionStatus.QUEUED + ": " + top.getStats().getQueued() + ", ");
+        jobTable.print(Enums.ExecutionStatus.PENDING + ": " + top.getStats().getPending() + ", ");
+        jobTable.print(Enums.ExecutionStatus.DONE + ": " + top.getStats().getDone() + ", ");
+        jobTable.print(Enums.ExecutionStatus.ERROR + ": " + top.getStats().getError() + ", ");
+        jobTable.print(Enums.ExecutionStatus.ABORTED + ": " + top.getStats().getAborted());
+        jobTable.println();
 
-        jobTable.updateTable(top.getJobs());
-        jobTable.print();
+        List<Job> jobList = processJobs(top.getJobs());
+
+        jobTable.updateTable(jobList);
+        jobTable.printTable();
 
         // FIXME: Use intermediate buffer
 //        out.flush();
 //        System.out.print(buffer);
+    }
+
+    private List<Job> processJobs(List<Job> jobs) {
+        List<Job> jobList = new LinkedList<>();
+
+        for (Job job : jobs) {
+            jobList.add(job);
+            if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
+                List<Job> dependsOn = job.getDependsOn();
+                for (int i = 0; i < dependsOn.size(); i++) {
+                    Job auxJob = dependsOn.get(i);
+                    if (i + 1 < dependsOn.size()) {
+                        auxJob.setId(" ├── " + auxJob.getId());
+                    } else {
+                        auxJob.setId(" └── " + auxJob.getId());
+                    }
+
+                    jobList.add(auxJob);
+                }
+            }
+        }
+
+        return jobList;
     }
 
     private static Date getStart(Job job) {
