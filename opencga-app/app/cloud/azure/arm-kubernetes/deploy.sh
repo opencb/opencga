@@ -11,7 +11,8 @@ set -e
 
 
 if [[ "$#" -ne 4 ]]; then
-  echo "Usage: deploy.sh <subscription_name> <aksServicePrincipalAppId> <aksServicePrincipalClientSecret> <aksServicePrincipalObjectId>"
+  echo "Usage: $0 <subscription_name> <aksServicePrincipalAppId> <aksServicePrincipalClientSecret> <aksServicePrincipalObjectId>"
+  echo " * Execute createsp.sh to obtain the service principal values"
   exit 1
 fi
 
@@ -20,26 +21,30 @@ aksServicePrincipalAppId=$2
 aksServicePrincipalClientSecret=$3
 aksServicePrincipalObjectId=$4
 
-deployID=$RANDOM
+if [ ! -f azuredeploy.parameters.private.json ]; then
+  echo "Missing file azuredeploy.parameters.private.json"
+  exit 1
+fi
+
 templateContainer="templates"
 location=$(cat azuredeploy.parameters.private.json | jq -r '.parameters.rgLocation.value')
-spname="opencga-aks"
 rgName=$(cat azuredeploy.parameters.private.json | jq -r '.parameters.rgPrefix.value')
-storageAccountName="${rgName,,}artifacts"
+storageAccountName=`echo "${rgName,,}artifacts" | tr -d "_-"`
+deployID=${rgName}-`date "+%Y-%m-%d-%H.%M.%S"`-R${RANDOM}
 
-az account set --subscription $subscriptionName 
-az group create --name $rgName --location $location 
+az account set --subscription "${subscriptionName}"
+az group create --name "${rgName}" --location "${location}"
 
 
 az storage account create \
-    --resource-group $rgName \
-    --location $location \
+    --resource-group "${rgName}" \
+    --location "${location}" \
     --sku Standard_LRS \
     --kind StorageV2 \
     --name $storageAccountName
 
 connection=$(az storage account show-connection-string \
-    --resource-group $rgName \
+    --resource-group "${rgName}" \
     --name $storageAccountName \
     --query connectionString)
 
@@ -63,7 +68,7 @@ blob_base_url="$(az storage account show -n $storageAccountName  --query primary
 container_base_url=${blob_base_url//\"/}$templateContainer
 
 # deploy infra
-deployment_details=$(az deployment create -n opencga-$deployID  -l uksouth --template-uri $template_url --parameters @azuredeploy.parameters.private.json  \
+deployment_details=$(az deployment sub create -n $deployID  -l uksouth --template-uri $template_url --parameters @azuredeploy.parameters.private.json  \
     --parameters _artifactsLocation=$container_base_url   --parameters _artifactsLocationSasToken="?$token"  \
     --parameters aksServicePrincipalAppId=$aksServicePrincipalAppId \
     --parameters aksServicePrincipalClientSecret=$aksServicePrincipalClientSecret \

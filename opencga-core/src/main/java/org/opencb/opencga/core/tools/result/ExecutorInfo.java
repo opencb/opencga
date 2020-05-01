@@ -25,7 +25,7 @@ public class ExecutorInfo {
 
     private String id;
     @JsonProperty("class")
-    private Class<? extends OpenCgaToolExecutor> clazz;
+    private String clazz;
     private ObjectMap params;
     private ToolExecutor.Source source;
     private ToolExecutor.Framework framework;
@@ -39,7 +39,7 @@ public class ExecutorInfo {
                         ToolExecutor.Source source,
                         ToolExecutor.Framework framework) {
         this.id = id;
-        this.clazz = clazz;
+        this.clazz = clazz.toString();
         this.params = params;
         this.source = source;
         this.framework = framework;
@@ -54,11 +54,11 @@ public class ExecutorInfo {
         return this;
     }
 
-    public Class<? extends OpenCgaToolExecutor> getClazz() {
+    public String getClazz() {
         return clazz;
     }
 
-    public ExecutorInfo setClazz(Class<? extends OpenCgaToolExecutor> clazz) {
+    public ExecutorInfo setClazz(String clazz) {
         this.clazz = clazz;
         return this;
     }

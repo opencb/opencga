@@ -92,6 +92,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected final IOConnectorProvider ioConnectorProvider;
     private final Logger logger = LoggerFactory.getLogger(VariantStoragePipeline.class);
     protected final ObjectMap transformStats = new ObjectMap();
+    protected final ObjectMap loadStats = new ObjectMap();
     protected Integer privateFileId;
     protected Integer privateStudyId;
 //    protected StudyMetadata privateStudyMetadata;
@@ -124,6 +125,11 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     @Override
     public ObjectMap getTransformStats() {
         return transformStats;
+    }
+
+    @Override
+    public ObjectMap getLoadStats() {
+        return loadStats;
     }
 
     @Override
