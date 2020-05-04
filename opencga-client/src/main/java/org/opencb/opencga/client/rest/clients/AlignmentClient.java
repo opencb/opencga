@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.rest.clients;
 
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -109,6 +110,13 @@ public class AlignmentClient extends AbstractParentClient {
         params.putIfNotNull("file1", file1);
         params.putIfNotNull("file2", file2);
         return execute("analysis/alignment", null, "coverage", null, "ratio", params, GET, RegionCoverage.class);
+    }
+
+    public RestResponse<GeneCoverageStats> statsCoverage(String file, String gene, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.putIfNotNull("file", file);
+        params.putIfNotNull("gene", gene);
+        return execute("analysis/alignment", null, "coverage", null, "stats", params, GET, GeneCoverageStats.class);
     }
 
     /**

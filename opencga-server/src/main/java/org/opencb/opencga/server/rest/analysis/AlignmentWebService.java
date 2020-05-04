@@ -21,6 +21,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.LowCoverageRegion;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
@@ -350,11 +351,11 @@ public class AlignmentWebService extends AnalysisWebService {
 
     @GET
     @Path("/coverage/stats")
-    @ApiOperation(value = ALIGNMENT_COVERAGE_QUERY_DESCRIPTION, response = LowCoverageRegion.class)
+    @ApiOperation(value = ALIGNMENT_COVERAGE_QUERY_DESCRIPTION, response = GeneCoverageStats.class)
     public Response coverageQuery(
             @ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(FILE_ID_PARAM) String inputFile,
+            @ApiParam(value = GENE_DESCRIPTION, required = true) @QueryParam(GENE_PARAM) String geneStr,
             @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = GENE_DESCRIPTION) @QueryParam(GENE_PARAM) String geneStr,
             @ApiParam(value = LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION) @DefaultValue(LOW_COVERAGE_REGION_THRESHOLD_DEFAULT) @QueryParam(LOW_COVERAGE_REGION_THRESHOLD_PARAM) int threshold
     ) {
         try {
