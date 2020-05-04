@@ -136,16 +136,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             );
 
     public enum SegregationMode {
-        MONOALLELIC("dominant"),
-        MONOALLELIC_INCOMPLETE_PENETRANCE("monoallelicIncompletePenetrance"),
-        BIALLELIC("recesive"),
-        BIALLELIC_INCOMPLETE_PENETRANCE("biallelicIncompletePenetrance"),
-        XLINKED_MONOALLELIC("XlinkedMonoallelic"),
-        XLINKED_BIALLELIC("XlinkedBiallelic"),
-        YLINKED,
-        DE_NOVO("deNovo"),
-        MENDELIAN_ERROR("mendelianError"),
-        COMPOUND_HETEROZYGOUS("compoundHeterozygous");
+        AUTOSOMAL_DOMINANT,
+        AUTOSOMAL_RECESSIVE,
+        X_LINKED_DOMINANT,
+        X_LINKED_RECESSIVE,
+        Y_LINKED,
+        MITOCHONDRIAL,
+
+        DE_NOVO,
+        MENDELIAN_ERROR,
+        COMPOUND_HETEROZYGOUS;
 
         private static Map<String, SegregationMode> namesMap;
 
@@ -153,6 +153,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             namesMap = new HashMap<>();
             for (SegregationMode mode : values()) {
                 namesMap.put(mode.name().toLowerCase(), mode);
+                namesMap.put(mode.name().replace("_", "").toLowerCase(), mode);
                 if (mode.names != null) {
                     for (String name : mode.names) {
                         namesMap.put(name.toLowerCase(), mode);
@@ -779,26 +780,29 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                                   Map<String, String> pedigreeMemberToSampleId) {
         Map<String, List<String>> genotypes;
         switch (segregationMode) {
-            case MONOALLELIC:
+            case AUTOSOMAL_DOMINANT:
                 genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
-            case MONOALLELIC_INCOMPLETE_PENETRANCE:
-                genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
-                break;
-            case BIALLELIC:
+//            case AUTOSOMAL_DOMINANT_INCOMPLETE_PENETRANCE:
+//                genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
+//                break;
+            case AUTOSOMAL_RECESSIVE:
                 genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
-            case BIALLELIC_INCOMPLETE_PENETRANCE:
-                genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
-                break;
-            case XLINKED_MONOALLELIC:
+//            case AUTOSOMAL_RECESSIVE_INCOMPLETE_PENETRANCE:
+//                genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
+//                break;
+            case X_LINKED_DOMINANT:
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, ClinicalProperty.Penetrance.COMPLETE);
                 break;
-            case XLINKED_BIALLELIC:
+            case X_LINKED_RECESSIVE:
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, ClinicalProperty.Penetrance.COMPLETE);
                 break;
-            case YLINKED:
+            case Y_LINKED:
                 genotypes = ModeOfInheritance.yLinked(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
+                break;
+            case MITOCHONDRIAL:
+                genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
             default:
                 throw new IllegalArgumentException("Unexpected segregation mode " + segregationMode);
