@@ -1301,7 +1301,8 @@ public class JobManager extends ResourceManager<Job> {
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.TOOL.key(),
                         JobDBAdaptor.QueryParams.INTERNAL.key(), JobDBAdaptor.QueryParams.EXECUTION.key(),
-                        JobDBAdaptor.QueryParams.CREATION_DATE.key()))
+                        JobDBAdaptor.QueryParams.DEPENDS_ON.key(), JobDBAdaptor.QueryParams.CREATION_DATE.key(),
+                        JobDBAdaptor.QueryParams.PRIORITY.key(), JobDBAdaptor.QueryParams.STUDY.key()))
                 .append(QueryOptions.COUNT, false)
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
