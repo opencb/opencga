@@ -251,6 +251,11 @@ public class ParamConstants {
     public static final String COVERAGE_WINDOW_SIZE_DESCRIPTION = "Window size for the region coverage (if a coverage range is provided, window size must be 1)";
     public static final String COVERAGE_WINDOW_SIZE_PARAM = "windowSize";
     public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "1";
+
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION = "Only regions whose coverage depth is under this threshold will be reported.";
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_PARAM = "threshold";
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_DEFAULT = "20";
+
     public static final String FILE_ID_PARAM = "file";
     public static final String FILE_ID_1_DESCRIPTION = "Input file #1 (e.g. somatic file)";
     public static final String FILE_ID_1_PARAM = "file1";
