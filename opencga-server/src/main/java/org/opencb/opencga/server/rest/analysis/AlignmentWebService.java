@@ -351,7 +351,7 @@ public class AlignmentWebService extends AnalysisWebService {
 
     @GET
     @Path("/coverage/stats")
-    @ApiOperation(value = ALIGNMENT_COVERAGE_QUERY_DESCRIPTION, response = GeneCoverageStats.class)
+    @ApiOperation(value = ALIGNMENT_COVERAGE_STATS_DESCRIPTION, response = GeneCoverageStats.class)
     public Response coverageQuery(
             @ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(FILE_ID_PARAM) String inputFile,
             @ApiParam(value = GENE_DESCRIPTION, required = true) @QueryParam(GENE_PARAM) String geneStr,
