@@ -342,7 +342,7 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
 
-        @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
+        @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION, required = true)
         public String gene;
 
 
