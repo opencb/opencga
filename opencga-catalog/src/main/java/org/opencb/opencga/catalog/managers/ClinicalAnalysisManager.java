@@ -434,7 +434,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
             clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
-            clinicalAnalysis.setQc(ParamUtils.defaultObject(clinicalAnalysis.getQc(), null));
+            clinicalAnalysis.setQualityControl(ParamUtils.defaultObject(clinicalAnalysis.getQualityControl(), null));
             clinicalAnalysis.setInterpretation(ParamUtils.defaultObject(clinicalAnalysis.getInterpretation(), null));
             clinicalAnalysis.setSecondaryInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getSecondaryInterpretations(),
                     ArrayList::new));
@@ -577,7 +577,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        clinicalAnalysis.setFiles(fileMap);
+        List<ClinicalAnalysis.File> caFiles = new ArrayList<>();
+        for (Map.Entry<String, List<File>> entry : fileMap.entrySet()) {
+            caFiles.add(new ClinicalAnalysis.File(entry.getKey(), entry.getValue()));
+        }
+        clinicalAnalysis.setFiles(caFiles);
     }
 
     private void validateFiles(Study study, ClinicalAnalysis clinicalAnalysis, String userId) throws CatalogException {
@@ -600,27 +604,26 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             throw new CatalogException("Found empty map of files");
         }
 
-        if (!clinicalAnalysis.getFiles().keySet().containsAll(sampleMap.keySet())) {
-            throw new CatalogException("Map of files contains sample ids not related to any member/proband");
+        for (ClinicalAnalysis.File file : clinicalAnalysis.getFiles()) {
+            if (StringUtils.isNotEmpty(file.getSampleId()) && !sampleMap.containsKey(file.getSampleId())) {
+                throw new CatalogException("Clinical analysis file contains sample ids not related to any member/proband");
+            }
         }
 
         // Validate the file ids passed are related to the samples
-        Map<String, List<File>> fileMap = new LinkedHashMap<>();
-        for (Map.Entry<String, List<File>> entry : clinicalAnalysis.getFiles().entrySet()) {
-            List<String> fileIds = entry.getValue().stream().map(File::getId).collect(Collectors.toList());
+        for (ClinicalAnalysis.File caFile : clinicalAnalysis.getFiles()) {
+            List<String> fileIds = caFile.getFiles().stream().map(File::getId).collect(Collectors.toList());
             InternalGetDataResult<File> fileResult = catalogManager.getFileManager().internalGet(study.getUid(), fileIds, new Query(),
                     new QueryOptions(), userId, false);
             // Validate sample id belongs to files
             for (File file : fileResult.getResults()) {
-                if (!file.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).contains(sampleMap.get(entry.getKey()))) {
+                if (!file.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet())
+                        .contains(sampleMap.get(caFile.getSampleId()))) {
                     throw new CatalogException("Associated file '" + file.getPath() + "' seems not to be related to sample '"
-                            + entry.getKey() + "'.");
+                            + caFile.getSampleId() + "'.");
                 }
             }
-            fileMap.put(entry.getKey(), fileResult.getResults());
         }
-
-        clinicalAnalysis.setFiles(fileMap);
     }
 
     private Family getFullValidatedFamily(Family family, Study study, String sessionId) throws CatalogException {
@@ -978,12 +981,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
-            Map<String, List<File>> files = new HashMap<>();
-            for (Map.Entry<String, List<String>> entry : updateParams.getFiles().entrySet()) {
-                List<File> fileList = entry.getValue().stream().map(fileId -> new File().setId(fileId)).collect(Collectors.toList());
-                files.put(entry.getKey(), fileList);
-            }
-            clinicalAnalysis.setFiles(files);
+            clinicalAnalysis.setFiles(updateParams.getFiles());
 
             // Validate files
             validateFiles(study, clinicalAnalysis, userId);

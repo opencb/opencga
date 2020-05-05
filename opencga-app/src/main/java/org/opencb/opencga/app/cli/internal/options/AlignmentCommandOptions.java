@@ -42,6 +42,7 @@ public class AlignmentCommandOptions {
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
     public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
     public CoverageRatioAlignmentCommandOptions coverageRatioAlignmentCommandOptions;
+    public CoverageStatsAlignmentCommandOptions coverageStatsAlignmentCommandOptions;
 
     // Wrappers
     public BwaCommandOptions bwaCommandOptions;
@@ -64,6 +65,7 @@ public class AlignmentCommandOptions {
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
         this.coverageQueryAlignmentCommandOptions = new CoverageQueryAlignmentCommandOptions();
         this.coverageRatioAlignmentCommandOptions = new CoverageRatioAlignmentCommandOptions();
+        this.coverageStatsAlignmentCommandOptions = new CoverageStatsAlignmentCommandOptions();
 
         this.bwaCommandOptions = new BwaCommandOptions();
         this.samtoolsCommandOptions = new SamtoolsCommandOptions();
@@ -329,6 +331,26 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--split-results"}, description = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION)
         public boolean splitResults;
+    }
+
+    @Parameters(commandNames = {"coverage-stats"}, commandDescription = ALIGNMENT_COVERAGE_STATS_DESCRIPTION)
+    public class CoverageStatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION, required = true)
+        public String gene;
+
+
+        @Parameter(names = {"--coverage-range"}, description = COVERAGE_RANGE_DESCRIPTION, arity = 1)
+        public String range;
+
+        @Parameter(names = {"--" + LOW_COVERAGE_REGION_THRESHOLD_PARAM}, description = LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION, arity = 1)
+        public int threshold = Integer.parseInt(LOW_COVERAGE_REGION_THRESHOLD_DEFAULT);
     }
 
     //-------------------------------------------------------------------------

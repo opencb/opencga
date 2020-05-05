@@ -186,6 +186,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 selectedRegions.size());
     }
 
+
     @Override
     public OpenCGAResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException {
         FileUtils.checkFile(path);

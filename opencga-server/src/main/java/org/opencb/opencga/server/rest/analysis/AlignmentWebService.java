@@ -21,6 +21,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.GeneCoverageStats;
+import org.opencb.biodata.models.alignment.LowCoverageRegion;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.BamUtils;
@@ -42,7 +44,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolParams;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -172,11 +173,11 @@ public class AlignmentWebService extends AnalysisWebService {
     }
 
     //-------------------------------------------------------------------------
-    // COVERAGE: run, query and ratio
+    // COVERAGE: index/run, query, ratio and stats
     //-------------------------------------------------------------------------
 
     @POST
-    @Path("/coverage/run")
+    @Path("/coverage/index/run")
     @ApiOperation(value = "Compute coverage for a list of alignment files", response = Job.class)
     public Response coverageRun(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(value = FILE_ID_PARAM) String file,
                                 @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
@@ -225,7 +226,7 @@ public class AlignmentWebService extends AnalysisWebService {
                         OpenCGAResult<RegionCoverage> coverage = alignmentStorageManager
                                 .coverageQuery(study, inputFile, region, 0, Integer.MAX_VALUE, windowSize, token);
 //                        if (coverage.getResults().size() > 0) {
-                            results.add(coverage);
+                        results.add(coverage);
 //                        }
                     }
                 } else {
@@ -262,7 +263,7 @@ public class AlignmentWebService extends AnalysisWebService {
                         OpenCGAResult<RegionCoverage> coverage = alignmentStorageManager
                                 .coverageQuery(study, inputFile, region, minCoverage, maxCoverage, windowSize, token);
 //                        if (coverage.getResults().size() > 0) {
-                            results.add(coverage);
+                        results.add(coverage);
 //                        }
                     }
                 }
@@ -348,6 +349,31 @@ public class AlignmentWebService extends AnalysisWebService {
         }
     }
 
+    @GET
+    @Path("/coverage/stats")
+    @ApiOperation(value = ALIGNMENT_COVERAGE_STATS_DESCRIPTION, response = GeneCoverageStats.class)
+    public Response coverageQuery(
+            @ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(FILE_ID_PARAM) String inputFile,
+            @ApiParam(value = GENE_DESCRIPTION, required = true) @QueryParam(GENE_PARAM) String geneStr,
+            @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION) @DefaultValue(LOW_COVERAGE_REGION_THRESHOLD_DEFAULT) @QueryParam(LOW_COVERAGE_REGION_THRESHOLD_PARAM) int threshold
+    ) {
+        try {
+            ParamUtils.checkIsSingleID(inputFile);
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+
+            // Gene list
+            if (StringUtils.isEmpty(geneStr)) {
+                createErrorResponse("Coverage stats", "Missing genes.");
+            }
+            List<String> inputGenes = Arrays.asList(geneStr.split(","));
+
+            return createOkResponse(alignmentStorageManager.coverageStats(study, inputFile, inputGenes, threshold, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     //-------------------------------------------------------------------------
     // STATS: run, info and query
     //-------------------------------------------------------------------------
@@ -381,9 +407,10 @@ public class AlignmentWebService extends AnalysisWebService {
         }
     }
 
+    @Deprecated
     @GET
     @Path("/stats/query")
-    @ApiOperation(value = ALIGNMENT_STATS_QUERY_DESCRIPTION, response = File.class)
+    @ApiOperation(value = ALIGNMENT_STATS_QUERY_DESCRIPTION, response = File.class, hidden = true)
     public Response statsQuery(@ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
                                @ApiParam(value = RAW_TOTAL_SEQUENCES_DESCRIPTION) @QueryParam(RAW_TOTAL_SEQUENCES) String rawTotalSequences,
                                @ApiParam(value = FILTERED_SEQUENCES_DESCRIPTION) @QueryParam(FILTERED_SEQUENCES) String filteredSequences,

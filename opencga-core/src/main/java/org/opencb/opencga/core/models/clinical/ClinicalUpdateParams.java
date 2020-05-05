@@ -37,7 +37,7 @@ public class ClinicalUpdateParams {
 
     private Disorder disorder;
 
-    private Map<String, List<String>> files;
+    private List<ClinicalAnalysis.File> files;
 
 //    private ProbandParam proband;
 //    private FamilyParam family;
@@ -64,7 +64,7 @@ public class ClinicalUpdateParams {
     }
 
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
-                                Map<String, List<String>> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
+                                List<ClinicalAnalysis.File> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
                                 ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, Interpretation interpretation,
                                 List<Interpretation> secondaryInterpretations, ClinicalAnalysisQcUpdateParams qualityControl,
                                 ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
@@ -190,11 +190,11 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public Map<String, List<String>> getFiles() {
+    public List<ClinicalAnalysis.File> getFiles() {
         return files;
     }
 
-    public ClinicalUpdateParams setFiles(Map<String, List<String>> files) {
+    public ClinicalUpdateParams setFiles(List<ClinicalAnalysis.File> files) {
         this.files = files;
         return this;
     }
