@@ -79,6 +79,12 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         SECONDARY_INTERPRETATIONS("secondaryInterpretations", TEXT_ARRAY, ""),
         SECONDARY_INTERPRETATIONS_ID("secondaryInterpretations.id", TEXT_ARRAY, ""),
         QUALITY_CONTROL("qualityControl", TEXT_ARRAY, ""),
+        QUALITY_CONTROL_QUALITY("qualityControl.quality", TEXT, ""),
+        QUALITY_CONTROL_VARIANT("qualityControl.variant", TEXT, ""),
+        QUALITY_CONTROL_ALIGNMENT("qualityControl.alignment", TEXT, ""),
+        QUALITY_CONTROL_ANALYST("qualityControl.analyst", TEXT, ""),
+        QUALITY_CONTROL_COMMENTS("qualityControl.comments", TEXT_ARRAY, ""),
+        QUALITY_CONTROL_DATE("qualityControl.date", TEXT, ""),
 
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 

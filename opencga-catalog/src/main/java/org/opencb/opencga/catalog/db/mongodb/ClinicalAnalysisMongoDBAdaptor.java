@@ -206,7 +206,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
-            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
+            nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         String[] acceptedMapParams = {QueryParams.ROLE_TO_PROBAND.key()};
@@ -217,7 +217,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         // Interpretation (primary)
         if (parameters.containsKey(QueryParams.INTERPRETATION.key())) {
-            document.getSet().put(QueryParams.INTERPRETATION.key(), parameters.get(QueryParams.INTERPRETATION.key()));
+            document.getSet().put(QueryParams.INTERPRETATION.key(),
+                    clinicalConverter.convertInterpretation((Interpretation) parameters.get(QueryParams.INTERPRETATION.key())));
         }
 
         // Secondary interpretations
@@ -252,6 +253,23 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         break;
                 }
             }
+        }
+
+        if (parameters.containsKey(QueryParams.QUALITY_CONTROL.key())) {
+            // Check all quality control parameters
+            String[] qualityObjectParams = {QueryParams.QUALITY_CONTROL_VARIANT.key(), QueryParams.QUALITY_CONTROL_ALIGNMENT.key(),
+                    QueryParams.QUALITY_CONTROL_ANALYST.key()};
+            filterObjectParams(parameters, document.getSet(), qualityObjectParams, true);
+
+            String[] qualityStringParams = {QueryParams.QUALITY_CONTROL_QUALITY.key()};
+            filterStringParams(parameters, document.getSet(), qualityStringParams, true);
+
+            // We don't set the list of comments, we always add to the current list
+            String[] qualityStringListParams = {QueryParams.QUALITY_CONTROL_COMMENTS.key()};
+            filterStringListParams(parameters, document.getAddToSet(), qualityStringListParams, true);
+
+            // We always update the date
+            nestedPut(QueryParams.QUALITY_CONTROL_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -328,7 +346,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         deletedClinicalCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
 
         // Set status to DELETED
-        documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), clinicalDocument);
+        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), clinicalDocument);
 
         // Insert the document in the DELETE collection
         deletedClinicalCollection.insert(clientSession, clinicalDocument, null);
@@ -361,8 +379,13 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public OpenCGAResult<ClinicalAnalysis> get(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return get(null, query, options);
+    }
+
+    public OpenCGAResult<ClinicalAnalysis> get(ClientSession clientSession, Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        try (DBIterator<ClinicalAnalysis> dbIterator = iterator(query, options)) {
+        try (DBIterator<ClinicalAnalysis> dbIterator = iterator(clientSession, query, options)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -388,7 +411,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public DBIterator<ClinicalAnalysis> iterator(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options);
+        return iterator(null, query, options);
+    }
+
+    public DBIterator<ClinicalAnalysis> iterator(ClientSession clientSession, Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, null);
         return new ClinicalAnalysisCatalogMongoDBIterator<>(mongoCursor, clinicalConverter, dbAdaptorFactory, options);
     }
 
@@ -423,10 +451,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return getMongoCursor(query, options, null);
+        return getMongoCursor(null, query, options, null);
     }
 
     private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return getMongoCursor(null, query, options, user);
+    }
+
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         QueryOptions qOptions;
@@ -440,9 +473,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         logger.debug("Clinical analysis query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return clinicalCollection.iterator(bson, qOptions);
+            return clinicalCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedClinicalCollection.iterator(bson, qOptions);
+            return deletedClinicalCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 
@@ -533,8 +566,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public OpenCGAResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return get(new Query(QueryParams.ID.key(), clinicalAnalysisId)
-                .append(QueryParams.STUDY_UID.key(), studyUid), options);
+        return get(null, studyUid, clinicalAnalysisId, options);
+    }
+
+    public OpenCGAResult<ClinicalAnalysis> get(ClientSession clientSession, long studyUid, String clinicalAnalysisId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.ID.key(), clinicalAnalysisId);
+        return get(clientSession, query, options);
     }
 
     @Override

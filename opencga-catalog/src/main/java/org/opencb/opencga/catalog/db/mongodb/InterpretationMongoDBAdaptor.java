@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -122,15 +123,30 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         interpretationObject.put(PRIVATE_MODIFICATION_DATE, interpretationObject.get(PRIVATE_CREATION_DATE));
         interpretationCollection.insert(clientSession, interpretationObject, null);
 
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), interpretation.getClinicalAnalysisId());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key());
+        // Check clinical analysis does not have any primary interpretation already
+        OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(clientSession, query, options);
+        if (result.getNumResults() == 0) {
+            throw new CatalogDBException("Clinical analysis '" + interpretation.getClinicalAnalysisId() + "' does not exist.");
+        }
+
         if (primary) {
-            // TODO: Think about best behaviour
+            if (result.first().getInterpretation() == null || StringUtils.isEmpty(result.first().getInterpretation().getId())) {
+                throw new CatalogDBException("Clinical analysis '" + interpretation.getClinicalAnalysisId() + "' already has a "
+                        + "primary interpretation.");
+            }
+
+            ObjectMap updateParams = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
+            UpdateDocument updateDocument = clinicalDBAdaptor.parseAndValidateUpdateParams(updateParams, query, QueryOptions.empty());
+            clinicalDBAdaptor.getClinicalCollection().update(clientSession, clinicalDBAdaptor.parseQuery(query),
+                    updateDocument.toFinalUpdateDocument(), null);
         } else {
-            Query query = new Query()
-                    .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                    .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), interpretation.getClinicalAnalysisId());
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.ADD.name());
-            QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+            options = new QueryOptions(Constants.ACTIONS, actionMap);
             ObjectMap updateParams = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
                             Collections.singletonList(interpretation));
 
