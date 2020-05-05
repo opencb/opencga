@@ -102,35 +102,74 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public OpenCGAResult update(long id, ObjectMap parameters, QueryOptions options)
+    public OpenCGAResult update(long uid, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Query query = new Query(QueryParams.UID.key(), id);
-        UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, options);
+        Query query = new Query(QueryParams.UID.key(), uid);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
+        OpenCGAResult<Document> documentResult = nativeGet(query, options);
+        if (documentResult.getNumResults() == 0) {
+            throw new CatalogDBException("Could not update clinical analysis. Clinical Analysis uid '" + uid + "' not found.");
+        }
+        String clinicalAnalysisId = documentResult.first().getString(QueryParams.ID.key());
+
+        try {
+            return runTransaction(clientSession -> privateUpdate(clientSession, documentResult.first(), parameters, queryOptions));
+        } catch (CatalogDBException e) {
+            logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage(), e);
+            throw new CatalogDBException("Could not update clinical analysis " + clinicalAnalysisId + ": " + e.getMessage(), e.getCause());
+        }
+    }
+
+    @Override
+    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return null;
+    }
+
+    private OpenCGAResult privateUpdate(ClientSession clientSession, Document first, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        long tmpStartTime = startQuery();
+        String clinicalAnalysisId = first.getString(QueryParams.ID.key());
+        long clinicalAnalysisUid = first.getLong(QueryParams.UID.key());
+
+        Query query = new Query(QueryParams.UID.key(), clinicalAnalysisUid);
+        UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, queryOptions);
 
         Document updateOperation = updateDocument.toFinalUpdateDocument();
 
+        List<Event> events = new ArrayList<>();
         if (!updateOperation.isEmpty()) {
-            Bson bsonQuery = Filters.eq(PRIVATE_UID, id);
+            Bson bsonQuery = Filters.eq(PRIVATE_UID, clinicalAnalysisUid);
 
             logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
                     MongoClient.getDefaultCodecRegistry()), updateDocument);
-            DataResult result = clinicalCollection.update(bsonQuery, updateOperation, null);
+            DataResult result = clinicalCollection.update(clientSession, bsonQuery, updateOperation, null);
 
             if (result.getNumMatches() == 0) {
-                throw CatalogDBException.uidNotFound("Clinical Analysis", id);
+                throw CatalogDBException.uidNotFound("Clinical Analysis", clinicalAnalysisUid);
             }
-            return new OpenCGAResult(result);
+
+            if (result.getNumMatches() == 0) {
+                throw new CatalogDBException("Clinical Analysis " + clinicalAnalysisId + " not found");
+            }
+            if (result.getNumUpdated() == 0) {
+                events.add(new Event(Event.Type.WARNING, clinicalAnalysisId, "Clinical Analysis was already updated"));
+            }
+
+            logger.debug("Clinical Analysis {} successfully updated", clinicalAnalysisId);
+        } else {
+            throw new CatalogDBException("Nothing to update");
         }
 
-        return OpenCGAResult.empty();
+        return endWrite(tmpStartTime, 1, 1, events);
     }
 
-    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
+    UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
 
         if (parameters.containsKey(QueryParams.ID.key())) {
-            // That can only be done to one individual...
+            // That can only be done to one clinical analysis...
             Query tmpQuery = new Query(query);
 
             OpenCGAResult<ClinicalAnalysis> clinicalAnalysisDataResult = get(tmpQuery, new QueryOptions());
@@ -224,11 +263,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
 
         return document;
-    }
-
-    @Override
-    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        return null;
     }
 
     @Override
@@ -526,7 +560,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
     }
 
-    private Bson parseQuery(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    protected Bson parseQuery(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return parseQuery(query, null, null);
     }
 

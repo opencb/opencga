@@ -47,7 +47,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Family family;
     private Map<String, FamiliarRelationship> roleToProband;
 
-    private ClinicalAnalysisQC qc;
+    private ClinicalAnalysisQc qc;
 
     private Interpretation interpretation;
     private List<Interpretation> secondaryInterpretations;
@@ -150,7 +150,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
-                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent, ClinicalAnalysisQC qc,
+                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent, ClinicalAnalysisQc qc,
                             Interpretation interpretation, List<Interpretation> secondaryInterpretations, Enums.Priority priority,
                             ClinicalAnalysisAnalyst analyst, List<String> flags, String creationDate, String dueDate,
                             List<Comment> comments, List<Alert> alerts, int release, ClinicalAnalysisInternal internal,
@@ -296,11 +296,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public ClinicalAnalysisQC getQc() {
+    public ClinicalAnalysisQc getQc() {
         return qc;
     }
 
-    public ClinicalAnalysis setQc(ClinicalAnalysisQC qc) {
+    public ClinicalAnalysis setQc(ClinicalAnalysisQc qc) {
         this.qc = qc;
         return this;
     }

@@ -357,6 +357,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 events.add(new Event(Event.Type.WARNING, sampleId, "Sample was already updated"));
             }
             logger.debug("Sample {} successfully updated", sampleId);
+        } else {
+            throw new CatalogDBException("Nothing to update");
         }
 
         return endWrite(tmpStartTime, 1, 1, events);

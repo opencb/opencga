@@ -6,16 +6,16 @@ import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
 
-public class ClinicalAnalysisAlignmentQC {
+public class ClinicalAnalysisAlignmentQc {
 
     List<AlignmentStats> stats;
     List<GeneCoverageStats> geneCoverageStats;
     List<File> files;
 
-    public ClinicalAnalysisAlignmentQC() {
+    public ClinicalAnalysisAlignmentQc() {
     }
 
-    public ClinicalAnalysisAlignmentQC(List<AlignmentStats> stats, List<GeneCoverageStats> geneCoverageStats, List<File> files) {
+    public ClinicalAnalysisAlignmentQc(List<AlignmentStats> stats, List<GeneCoverageStats> geneCoverageStats, List<File> files) {
         this.stats = stats;
         this.geneCoverageStats = geneCoverageStats;
         this.files = files;
@@ -35,7 +35,7 @@ public class ClinicalAnalysisAlignmentQC {
         return stats;
     }
 
-    public ClinicalAnalysisAlignmentQC setStats(List<AlignmentStats> stats) {
+    public ClinicalAnalysisAlignmentQc setStats(List<AlignmentStats> stats) {
         this.stats = stats;
         return this;
     }
@@ -44,7 +44,7 @@ public class ClinicalAnalysisAlignmentQC {
         return geneCoverageStats;
     }
 
-    public ClinicalAnalysisAlignmentQC setGeneCoverageStats(List<GeneCoverageStats> geneCoverageStats) {
+    public ClinicalAnalysisAlignmentQc setGeneCoverageStats(List<GeneCoverageStats> geneCoverageStats) {
         this.geneCoverageStats = geneCoverageStats;
         return this;
     }
@@ -53,7 +53,7 @@ public class ClinicalAnalysisAlignmentQC {
         return files;
     }
 
-    public ClinicalAnalysisAlignmentQC setFiles(List<File> files) {
+    public ClinicalAnalysisAlignmentQc setFiles(List<File> files) {
         this.files = files;
         return this;
     }
