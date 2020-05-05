@@ -131,6 +131,7 @@ public class VariantIndexOperationTool extends OperationTool {
             if (Collections.isEmpty(results)) {
                 addWarning("Nothing to do!");
             }
+            addAttribute("StoragePipelineResult", results);
             for (StoragePipelineResult result : results) {
                 inputFiles.add(result.getInput());
             }
@@ -140,13 +141,13 @@ public class VariantIndexOperationTool extends OperationTool {
                 for (File file : files) {
                     if (file.getName().endsWith(VariantReaderUtils.MALFORMED_FILE + ".txt")) {
                         if (!keepIntermediateFiles) {
-                            Files.move(file.toPath(), getOutDir());
+                            Files.move(file.toPath(), getOutDir().resolve(file.getName()));
                         }
                         addWarning("Found malformed variants. Check file " + file.getName());
                     }
                     if (file.getName().endsWith(VariantReaderUtils.DUPLICATED_FILE + ".tsv")) {
                         if (!keepIntermediateFiles) {
-                            Files.move(file.toPath(), getOutDir());
+                            Files.move(file.toPath(), getOutDir().resolve(file.getName()));
                         }
                         addWarning("Found duplicated variants. Check file " + file.getName());
                     }

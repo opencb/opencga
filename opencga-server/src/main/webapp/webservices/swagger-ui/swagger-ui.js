@@ -31060,7 +31060,7 @@ SwaggerUi.Views.MainView = Backbone.View.extend({
         // Nacho: this small hack sorts the API endpoints. Old code is left to ensure that new API methods are also displayed
         var apiOrderMap = {"Users": 1, "Projects": 2, "Studies": 3, "Files": 4, "Jobs": 5, "Samples": 6,
             "Individuals": 7, "Families": 8, "Cohorts": 9, "Disease Panels": 11, "Analysis - Alignment": 12,
-            "Analysis - Variant": 13, "Analysis - Clinical Interpretation": 14, "Operations - Variant Storage": 15, "Meta": 16,
+            "Analysis - Variant": 13, "Analysis - Clinical": 14, "Operations - Variant Storage": 15, "Meta": 16,
             "GA4GH": 17, "Admin": 18};
 
         if (typeof(apiOrderMap[a.name]) != "undefined" && typeof(apiOrderMap[b.name]) != "undefined") {

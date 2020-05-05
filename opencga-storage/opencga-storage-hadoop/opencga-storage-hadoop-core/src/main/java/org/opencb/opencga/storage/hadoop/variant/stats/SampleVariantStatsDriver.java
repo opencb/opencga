@@ -367,7 +367,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
                 String gt = sampleCell.getGT();
 
-                if (gt.isEmpty()) {
+                if (gt == null || gt.isEmpty()) {
                     // This is a really weird situation, most likely due to errors in the input files
                     logger.error("Empty genotype at sample " + sampleId + " in variant " + row.getVariant());
                 } else if (gt.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {

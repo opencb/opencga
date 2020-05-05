@@ -109,7 +109,7 @@
                 "description": "Log Analytics Workspace ID"
             }
         },
-        "logAnalyticsWorkSpaceKey": {
+        "LogAnalyticsWorkspaceKey": {
             "type": "string",
             "metadata": {
                 "description": "Log Analytics Workspace Key"
@@ -134,9 +134,8 @@
      
     },
     "variables": {
-
         "clusterName": "[concat(parameters('clusterNamePrefix'), uniqueString(resourceGroup().id))]",
-        "image": "microsoft/azure-cli",
+        "image": "mcr.microsoft.com/azure-cli",
         "cpuCores": "1.0",
         "memoryInGb": "1.5",
         "containerGroupName": "onboardoms-containerinstance",
@@ -391,7 +390,7 @@
                             "command": [
                                 "/bin/sh",
                                 "-c",
-                                "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az hdinsight oms enable --name ', variables('clusterName'), ' --resource-group ',resourceGroup().name ,' --workspace-id ',parameters('LogAnalyticsWorkspaceID') ,' --primary-key ',parameters('logAnalyticsWorkSpaceKey'))]"
+                                "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az hdinsight monitor enable --name ', variables('clusterName'), ' --resource-group ',resourceGroup().name ,' --workspace-id ',parameters('LogAnalyticsWorkspaceID') ,' --primary-key ',parameters('LogAnalyticsWorkspaceKey'))]"
                             ],
                             "environmentVariables": [
                             ],

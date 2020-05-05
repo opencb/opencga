@@ -46,6 +46,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -291,9 +292,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         try {
             //Dedup task
-
-            VariantDeduplicationTask duplicatedVariantsDetector = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
-                    .getTask(UriUtils.fileName(inputUri), outdirUri);
+            DuplicatedVariantsResolverFactory dedupFactory = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider);
+            AbstractDuplicatedVariantsResolver resolver = dedupFactory.getResolver(UriUtils.fileName(inputUri), outdirUri);
+            VariantDeduplicationTask duplicatedVariantsDetector = dedupFactory.getTask(resolver);
 
             //Remapping ids task
             org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
@@ -355,6 +356,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             writeResult = loader.getResult();
             writeResult.setSkippedVariants(stageReader.getSkippedVariants());
             writeResult.setNonInsertedVariants(duplicatedVariantsDetector.getDiscardedVariants());
+            loadStats.put("duplicatedVariants", resolver.getDuplicatedVariants());
+            loadStats.put("duplicatedLocus", resolver.getDuplicatedLocus());
+            loadStats.put("discardedVariants", resolver.getDiscardedVariants());
             loadStats.append("directLoad", true);
             loadStats.append("writeResult", writeResult);
 
@@ -399,8 +403,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             //Reader
             VariantReader variantReader = variantReaderUtils.getVariantReader(input, metadata, stdin);
 
-            VariantDeduplicationTask duplicatedVariantsDetector = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
-                    .getTask(UriUtils.fileName(input), outdir);
+            DuplicatedVariantsResolverFactory dedupFactory = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider);
+            AbstractDuplicatedVariantsResolver resolver = dedupFactory.getResolver(UriUtils.fileName(input), outdir);
+            VariantDeduplicationTask duplicatedVariantsDetector = dedupFactory.getTask(resolver);
 
             //Remapping ids task
             org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
@@ -449,6 +454,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             stageLoader.getWriteResult().setSkippedVariants(skippedVariants);
             loadStats.append(MERGE.key(), false);
             loadStats.append("stageWriteResult", stageLoader.getWriteResult());
+            loadStats.put("duplicatedVariants", resolver.getDuplicatedVariants());
+            loadStats.put("duplicatedLocus", resolver.getDuplicatedLocus());
+            loadStats.put("discardedVariants", resolver.getDiscardedVariants());
             options.put("skippedVariants", skippedVariants);
             logger.info("Stage Write result: {}", skippedVariants);
         } catch (ExecutionException | RuntimeException e) {
@@ -714,11 +722,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         Set<String> genotypes = new HashSet<>(studyMetadata.getAttributes().getAsStringList(LOADED_GENOTYPES.key()));
         genotypes.addAll(writeResult.getGenotypes());
         studyMetadata.getAttributes().put(LOADED_GENOTYPES.key(), genotypes);
-    }
-
-    @Override
-    public ObjectMap getLoadStats() {
-        return loadStats;
     }
 
     @Override
