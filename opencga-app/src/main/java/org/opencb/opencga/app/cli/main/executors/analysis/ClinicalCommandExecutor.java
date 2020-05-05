@@ -240,7 +240,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     //-------------------------------------------------------------------------
 
     private RestResponse<Job> tiering() throws ClientException {
-        return openCGAClient.getClinicalAnalysisClient().runInterpretationTiering(
+        return openCGAClient.getClinicalAnalysisClient().runInterpretersTiering(
                 new TieringInterpretationAnalysisParams(clinicalCommandOptions.tieringCommandOptions.clinicalAnalysis,
                         clinicalCommandOptions.tieringCommandOptions.panels,
                         clinicalCommandOptions.tieringCommandOptions.penetrance,
@@ -251,7 +251,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> team() throws ClientException {
-        return openCGAClient.getClinicalAnalysisClient().runInterpretationTeam(
+        return openCGAClient.getClinicalAnalysisClient().runInterpretersTeam(
                 new TeamInterpretationAnalysisParams(clinicalCommandOptions.teamCommandOptions.clinicalAnalysis,
                         clinicalCommandOptions.teamCommandOptions.panels,
                         clinicalCommandOptions.teamCommandOptions.familySeggregation,
@@ -264,7 +264,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> zetta() throws ClientException {
         ClinicalCommandOptions.InterpretationZettaCommandOptions cliOptions = clinicalCommandOptions.zettaCommandOptions;
 
-        return openCGAClient.getClinicalAnalysisClient().runInterpretationZetta(
+        return openCGAClient.getClinicalAnalysisClient().runInterpretersZetta(
                 new ZettaInterpretationAnalysisParams()
                         .setClinicalAnalysis(cliOptions.clinicalAnalysis)
                         .setId(cliOptions.basicQueryOptions.id)
@@ -321,7 +321,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> cancerTiering() throws ClientException {
         ClinicalCommandOptions.InterpretationCancerTieringCommandOptions cliOptions = clinicalCommandOptions.cancerTieringCommandOptions;
 
-        return openCGAClient.getClinicalAnalysisClient().runInterpretationCancerTiering(
+        return openCGAClient.getClinicalAnalysisClient().runInterpretersCancerTiering(
                 new CancerTieringInterpretationAnalysisParams()
                         .setClinicalAnalysis(cliOptions.clinicalAnalysis)
                         .setDiscardedVariants(cliOptions.discardedVariants),

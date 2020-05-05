@@ -412,7 +412,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
-            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
+            nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         if (parameters.containsKey(QueryParams.ID.key())) {
@@ -680,7 +680,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             Document tmpSample = sampleDBIterator.next();
 
             // Set status to DELETED
-            documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpSample);
+            nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpSample);
 
             int sampleVersion = tmpSample.getInteger(QueryParams.VERSION.key());
 

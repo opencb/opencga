@@ -350,7 +350,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         logger.debug("Deleting job {} ({})", jobId, jobUid);
 
         // Add status DELETED
-        documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), jobDocument);
+        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), jobDocument);
 
         // Upsert the document into the DELETED collection
         Bson query = new Document()

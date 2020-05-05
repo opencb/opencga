@@ -437,7 +437,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
-            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
+            nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         final String[] acceptedIntParams = {QueryParams.EXPECTED_SIZE.key()};

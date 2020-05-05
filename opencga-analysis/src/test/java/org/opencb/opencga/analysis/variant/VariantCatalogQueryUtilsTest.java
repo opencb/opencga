@@ -60,7 +60,7 @@ import static org.junit.Assert.*;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.SKIP_MISSING_GENES;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 12/12/17.
@@ -342,6 +342,22 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     @Test
+    public void queryBySampleSegregationDeNovo() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:denovo"), sessionId);
+        assertEquals("sample3", query.getString(SAMPLE_DE_NOVO.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+    }
+
+    @Test
+    public void queryBySampleSegregationMendelianError() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:mendelianerror"), sessionId);
+        assertEquals("sample3", query.getString(SAMPLE_MENDELIAN_ERROR.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+    }
+
+    @Test
     public void queryByFamilySegregationMendelianError() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "mendelianError"), sessionId);
         assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key()));
@@ -391,7 +407,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(STUDY.key(), "s1")
                 .append(FAMILY.key(), "f1")
-                .append(FAMILY_SEGREGATION.key(), "monoallelic")
+                .append(FAMILY_SEGREGATION.key(), "autosomal_dominant")
                 .append(FAMILY_DISORDER.key(), "asdf"), sessionId);
     }
 
@@ -406,7 +422,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queryByPanelNotFound() throws Exception {
-        CatalogException e = new CatalogException("Panel MyPanel_wrong not found");
+        CatalogException e = new CatalogException("Panel 'MyPanel_wrong' not found");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel_wrong"), sessionId);

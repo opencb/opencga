@@ -38,10 +38,10 @@ public class AlignmentCommandOptions {
     public QueryAlignmentCommandOptions queryAlignmentCommandOptions;
     public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
     public StatsInfoAlignmentCommandOptions statsInfoAlignmentCommandOptions;
-    public StatsQueryAlignmentCommandOptions statsQueryAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
     public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
     public CoverageRatioAlignmentCommandOptions coverageRatioAlignmentCommandOptions;
+    public CoverageStatsAlignmentCommandOptions coverageStatsAlignmentCommandOptions;
 
     // Wrappers
     public BwaCommandOptions bwaCommandOptions;
@@ -60,10 +60,10 @@ public class AlignmentCommandOptions {
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
         this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
         this.statsInfoAlignmentCommandOptions = new StatsInfoAlignmentCommandOptions();
-        this.statsQueryAlignmentCommandOptions = new StatsQueryAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
         this.coverageQueryAlignmentCommandOptions = new CoverageQueryAlignmentCommandOptions();
         this.coverageRatioAlignmentCommandOptions = new CoverageRatioAlignmentCommandOptions();
+        this.coverageStatsAlignmentCommandOptions = new CoverageStatsAlignmentCommandOptions();
 
         this.bwaCommandOptions = new BwaCommandOptions();
         this.samtoolsCommandOptions = new SamtoolsCommandOptions();
@@ -177,79 +177,6 @@ public class AlignmentCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"stats-query"}, commandDescription = ALIGNMENT_STATS_QUERY_DESCRIPTION)
-    public class StatsQueryAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
-
-        @Parameter(names = {"--raw-total-sequences"}, description = RAW_TOTAL_SEQUENCES_DESCRIPTION)
-        public String rawTotalSequences;
-
-        @Parameter(names = {"--filtered-sequences"}, description = FILTERED_SEQUENCES_DESCRIPTION)
-        public String filteredSequences;
-
-        @Parameter(names = {"--reads-mapped"}, description = READS_MAPPED_DESCRIPTION)
-        public String readsMapped;
-
-        @Parameter(names = {"--reads-mapped-and-paired"}, description = READS_MAPPED_AND_PAIRED_DESCRIPTION)
-        public String readsMappedAndPaired;
-
-        @Parameter(names = {"--reads-unmapped"}, description = READS_UNMAPPED_DESCRIPTION)
-        public String readsUnmapped;
-
-        @Parameter(names = {"--reads-properly-paired"}, description = READS_PROPERLY_PAIRED_DESCRIPTION)
-        public String readsProperlyPaired;
-
-        @Parameter(names = {"--reads-paired"}, description = READS_PAIRED_DESCRIPTION)
-        public String readsPaired;
-
-        @Parameter(names = {"--reads-duplicated"}, description = READS_DUPLICATED_DESCRIPTION)
-        public String readsDuplicated;
-
-        @Parameter(names = {"--reads-mq0"}, description = READS_MQ0_DESCRIPTION)
-        public String readsMQ0;
-
-        @Parameter(names = {"--reads-qc-failed"}, description = READS_QC_FAILED_DESCRIPTION)
-        public String readsQCFailed;
-
-        @Parameter(names = {"--non-primary-alignments"}, description = NON_PRIMARY_ALIGNMENTS_DESCRIPTION)
-        public String nonPrimaryAlignments;
-
-        @Parameter(names = {"--mismatches"}, description = MISMATCHES_DESCRIPTION)
-        public String mismatches;
-
-        @Parameter(names = {"--error-rate"}, description = ERROR_RATE_DESCRIPTION)
-        public String errorRate;
-
-        @Parameter(names = {"--average-length"}, description = AVERAGE_LENGTH_DESCRIPTION)
-        public String averageLength;
-
-        @Parameter(names = {"--average-first-fragment-length"}, description = AVERAGE_FIRST_FRAGMENT_LENGTH_DESCRIPTION)
-        public String averageFirstFragmentLength;
-
-        @Parameter(names = {"--average-last-fragment-length"}, description = AVERAGE_LAST_FRAGMENT_LENGTH_DESCRIPTION)
-        public String averageLastFragmentLength;
-
-        @Parameter(names = {"--average-quality"}, description = AVERAGE_QUALITY_DESCRIPTION)
-        public String averageQuality;
-
-        @Parameter(names = {"--insert-size-average"}, description = INSERT_SIZE_AVERAGE_DESCRIPTION)
-        public String insertSizeAverage;
-
-        @Parameter(names = {"--insert-size-standard-devitation"}, description = INSERT_SIZE_STANDARD_DEVIATION_DESCRIPTION)
-        public String insertSizeStandardDeviation;
-
-        @Parameter(names = {"--pairs-with-other-orientation"}, description = PAIRS_WITH_OTHER_ORIENTATION_DESCRIPTION)
-        public String pairsWithOtherOrientation;
-
-        @Parameter(names = {"--pairs-on-different-chromosomes"}, description = PAIRS_ON_DIFFERENT_CHROMOSOMES_DESCRIPTION)
-        public String pairsOnDifferentChromosomes;
-
-        @Parameter(names = {"--percentage-of-properly-paired-reads"}, description = PERCENTAGE_OF_PROPERLY_PAIRED_READS_DESCRIPTION)
-        public String percentageOfProperlyPairedReads;
-    }
-
     @Parameters(commandNames = {"coverage-run"}, commandDescription = ALIGNMENT_COVERAGE_DESCRIPTION)
     public class CoverageAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
@@ -329,6 +256,26 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--split-results"}, description = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION)
         public boolean splitResults;
+    }
+
+    @Parameters(commandNames = {"coverage-stats"}, commandDescription = ALIGNMENT_COVERAGE_STATS_DESCRIPTION)
+    public class CoverageStatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION, required = true)
+        public String gene;
+
+
+        @Parameter(names = {"--coverage-range"}, description = COVERAGE_RANGE_DESCRIPTION, arity = 1)
+        public String range;
+
+        @Parameter(names = {"--" + LOW_COVERAGE_REGION_THRESHOLD_PARAM}, description = LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION, arity = 1)
+        public int threshold = Integer.parseInt(LOW_COVERAGE_REGION_THRESHOLD_DEFAULT);
     }
 
     //-------------------------------------------------------------------------

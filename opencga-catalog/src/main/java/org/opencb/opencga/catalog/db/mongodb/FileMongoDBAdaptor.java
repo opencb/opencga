@@ -466,7 +466,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
-            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
+            nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -591,7 +591,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
 
                 // Set status
-                documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new FileStatus(status), "status"), tmpFile);
+                nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new FileStatus(status), "status"), tmpFile);
 
                 // Insert the document in the DELETE collection
                 deletedFileCollection.insert(clientSession, tmpFile, null);

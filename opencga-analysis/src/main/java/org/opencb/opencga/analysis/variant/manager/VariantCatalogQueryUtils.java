@@ -136,16 +136,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             );
 
     public enum SegregationMode {
-        AUTOSOMAL_DOMINANT,
-        AUTOSOMAL_RECESSIVE,
+        AUTOSOMAL_DOMINANT("monoallelic"),
+        AUTOSOMAL_RECESSIVE("biallelic"),
         X_LINKED_DOMINANT,
         X_LINKED_RECESSIVE,
         Y_LINKED,
         MITOCHONDRIAL,
 
         DE_NOVO,
-        MENDELIAN_ERROR,
-        COMPOUND_HETEROZYGOUS;
+        MENDELIAN_ERROR("me"),
+        COMPOUND_HETEROZYGOUS("ch");
 
         private static Map<String, SegregationMode> namesMap;
 
@@ -647,16 +647,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 for (String value : keyOpValue.getValue()) {
                     SegregationMode aux = SegregationMode.parseOrNull(value);
                     if (aux != null) {
-                        switch (aux) {
-                            case DE_NOVO:
-                            case MENDELIAN_ERROR:
-                                // Ignore these modes as they will be processed internally
-                                break;
-                            case COMPOUND_HETEROZYGOUS:
-                            default:
-                                segregationMode = aux;
-                                break;
-                        }
+                        segregationMode = aux;
                     }
                 }
             }
@@ -730,6 +721,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     String motherId = member.getMother() != null ? member.getMother().getId() : MISSING_SAMPLE;
 
                     query.put(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(member.getId(), fatherId, motherId));
+                    query.remove(SAMPLE.key());
+                } else if (segregationMode == SegregationMode.DE_NOVO) {
+                    query.put(SAMPLE_DE_NOVO.key(), member.getId());
+                    query.remove(SAMPLE.key());
+                } else if (segregationMode == SegregationMode.MENDELIAN_ERROR) {
+                    query.put(SAMPLE_MENDELIAN_ERROR.key(), member.getId());
                     query.remove(SAMPLE.key());
                 } else {
                     Pedigree pedigree = new Pedigree("", new ArrayList<>(3), Collections.emptyMap());
@@ -862,7 +859,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
         }
         if (panel == null) {
-            throw new CatalogException("Missing panel id.");
+            throw new CatalogException("Panel '" + panelId + "' not found");
         }
         return panel;
     }
