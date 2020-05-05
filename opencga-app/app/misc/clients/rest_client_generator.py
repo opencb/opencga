@@ -24,7 +24,6 @@ class RestClientGenerator(ABC):
 
         self.endpoints = {
             'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
-            'analysis/clinical/{clinicalAnalysis}/interpretations/{interpretation}/update': {'method_name': 'update_interpretation'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'}
         }
         self.categories = {
@@ -40,7 +39,7 @@ class RestClientGenerator(ABC):
             'Disease Panels': 'DiseasePanel',
             'Analysis - Alignment': 'Alignment',
             'Analysis - Variant': 'Variant',
-            'Analysis - Clinical Interpretation': 'Clinical',
+            'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'VariantOperation',
             'Meta': 'Meta',
             'GA4GH': 'GA4GH',
