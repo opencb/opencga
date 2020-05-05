@@ -21,8 +21,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.interpretation.Analyst;
+import org.opencb.biodata.models.clinical.interpretation.Comment;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -190,7 +193,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
         Interpretation interpretation = new Interpretation();
         interpretation.setId("myInterpretation");
-        catalogManager.getInterpretationManager().create(STUDY, dummyEnvironment.first().getId(), interpretation, new QueryOptions(),
+        catalogManager.getInterpretationManager().create(STUDY, dummyEnvironment.first().getId(), interpretation, true, new QueryOptions(),
                 sessionIdUser);
 
         thrown.expect(CatalogException.class);
@@ -251,7 +254,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         i.setPrimaryFindings(Collections.emptyList());
 
         DataResult<Interpretation> interpretationDataResult = catalogManager.getInterpretationManager()
-                .create(STUDY, dummyEnvironment.first().getId(), i, QueryOptions.empty(), sessionIdUser);
+                .create(STUDY, dummyEnvironment.first().getId(), i, true, QueryOptions.empty(), sessionIdUser);
         System.out.println(interpretationDataResult.first());
 
         DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().get(STUDY,

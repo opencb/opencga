@@ -5,14 +5,14 @@ import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
 
-public class ClinicalAnalysisVariantQC {
+public class ClinicalAnalysisVariantQc {
     List<SampleVariantStats> stats;
     List<File> files;
 
-    public ClinicalAnalysisVariantQC() {
+    public ClinicalAnalysisVariantQc() {
     }
 
-    public ClinicalAnalysisVariantQC(List<SampleVariantStats> stats, List<File> files) {
+    public ClinicalAnalysisVariantQc(List<SampleVariantStats> stats, List<File> files) {
         this.stats = stats;
         this.files = files;
     }
@@ -30,7 +30,7 @@ public class ClinicalAnalysisVariantQC {
         return stats;
     }
 
-    public ClinicalAnalysisVariantQC setStats(List<SampleVariantStats> stats) {
+    public ClinicalAnalysisVariantQc setStats(List<SampleVariantStats> stats) {
         this.stats = stats;
         return this;
     }
@@ -39,7 +39,7 @@ public class ClinicalAnalysisVariantQC {
         return files;
     }
 
-    public ClinicalAnalysisVariantQC setFiles(List<File> files) {
+    public ClinicalAnalysisVariantQc setFiles(List<File> files) {
         this.files = files;
         return this;
     }

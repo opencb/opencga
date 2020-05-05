@@ -46,7 +46,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Family family;
     private Map<String, FamiliarRelationship> roleToProband;
 
-    private ClinicalAnalysisQC qc;
+    private ClinicalAnalysisQc qualityControl;
 
     private Interpretation interpretation;
     private List<Interpretation> secondaryInterpretations;
@@ -188,12 +188,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
 
-    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files,
-                            Individual proband, Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
-                            ClinicalAnalysisQC qc, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
-                            Enums.Priority priority, ClinicalAnalysisAnalyst analyst, List<String> flags, String creationDate,
-                            String dueDate, List<Comment> comments, List<Alert> alerts, int release, ClinicalAnalysisInternal internal,
-                            Map<String, Object> attributes, CustomStatus status) {
+    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
+                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalAnalysisQc qualityControl,
+                            Interpretation interpretation, List<Interpretation> secondaryInterpretations, ClinicalConsent consent,
+                            ClinicalAnalysisAnalyst analyst, Enums.Priority priority, List<String> flags, String creationDate,
+                            String modificationDate, String dueDate, int release, List<Comment> comments, List<Alert> alerts,
+                            ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -202,17 +202,18 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.proband = proband;
         this.family = family;
         this.roleToProband = roleToProband;
-        this.qc = qc;
+        this.qualityControl = qualityControl;
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
+        this.consent = consent;
+        this.analyst = analyst;
         this.priority = priority;
         this.flags = flags;
-        this.analyst = analyst;
-        this.consent = consent;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.dueDate = dueDate;
-        this.comments = comments;
         this.release = release;
+        this.comments = comments;
         this.alerts = alerts;
         this.internal = internal;
         this.attributes = attributes;
@@ -231,7 +232,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
-        sb.append(", qc=").append(qc);
+        sb.append(", qc=").append(qualityControl);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
@@ -335,12 +336,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public ClinicalAnalysisQC getQc() {
-        return qc;
+    public ClinicalAnalysisQc getQualityControl() {
+        return qualityControl;
     }
 
-    public ClinicalAnalysis setQc(ClinicalAnalysisQC qc) {
-        this.qc = qc;
+    public ClinicalAnalysis setQualityControl(ClinicalAnalysisQc qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 

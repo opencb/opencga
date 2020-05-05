@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.clinical;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
@@ -25,7 +24,10 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ClinicalAnalysisCreateParams {
@@ -41,6 +43,7 @@ public class ClinicalAnalysisCreateParams {
     private ProbandParam proband;
     private FamilyParam family;
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
+    private ClinicalAnalysisQc qualityControl;
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
     private InterpretationCreateParams interpretation;
@@ -62,8 +65,9 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
                                         List<ClinicalAnalysis.File> files, ProbandParam proband, FamilyParam family,
-                                        Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalystParam analyst,
-                                        ClinicalAnalysisInternal internal, InterpretationCreateParams interpretation,
+                                        Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalysisQc qualityControl,
+                                        ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
+                                        InterpretationCreateParams interpretation,
                                         List<InterpretationCreateParams> secondaryInterpretations, ClinicalConsent consent, String dueDate,
                                         List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
                                         Map<String, Object> attributes, CustomStatusParams status) {
@@ -75,6 +79,7 @@ public class ClinicalAnalysisCreateParams {
         this.proband = proband;
         this.family = family;
         this.roleToProband = roleToProband;
+        this.qualityControl = qualityControl;
         this.analyst = analyst;
         this.internal = internal;
         this.interpretation = interpretation;
@@ -94,7 +99,7 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getType(), clinicalAnalysis.getDisorder(), clinicalAnalysis.getFiles(),
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
-                clinicalAnalysis.getRoleToProband(),
+                clinicalAnalysis.getRoleToProband(), clinicalAnalysis.getQualityControl(),
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
                 clinicalAnalysis.getInternal(),
                 clinicalAnalysis.getInterpretation() != null
@@ -120,6 +125,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
         sb.append(", interpretation=").append(interpretation);
@@ -177,9 +183,9 @@ public class ClinicalAnalysisCreateParams {
 
         String assignee = analyst != null ? analyst.assignee : "";
 
-        return new ClinicalAnalysis(id, description, type, disorder, files, individual, f, roleToProband, consent, null,
-                primaryInterpretation, secondaryInterpretationList, priority, new ClinicalAnalysisAnalyst(assignee, ""), flags, null,
-                dueDate, comments, alerts, 1, internal, attributes, status != null ? status.toCustomStatus() : null);
+        return new ClinicalAnalysis(id, description, type, disorder, files, individual, f, roleToProband, qualityControl,
+                primaryInterpretation, secondaryInterpretationList, consent, new ClinicalAnalysisAnalyst(assignee, ""), priority, flags,
+                null, null,  dueDate, 1, comments, alerts, internal, attributes, status != null ? status.toCustomStatus() : null);
     }
 
     public String getId() {
@@ -251,6 +257,15 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setRoleToProband(Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband) {
         this.roleToProband = roleToProband;
+        return this;
+    }
+
+    public ClinicalAnalysisQc getQualityControl() {
+        return qualityControl;
+    }
+
+    public ClinicalAnalysisCreateParams setQualityControl(ClinicalAnalysisQc qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 

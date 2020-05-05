@@ -44,8 +44,10 @@ public class ClinicalUpdateParams {
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
-    private InterpretationUpdateParams interpretation;
-    private List<InterpretationUpdateParams> secondaryInterpretations;
+    private Interpretation interpretation;
+    private List<Interpretation> secondaryInterpretations;
+
+    private ClinicalAnalysisQcUpdateParams qualityControl;
 
     private ClinicalConsent consent;
 
@@ -63,10 +65,10 @@ public class ClinicalUpdateParams {
 
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
                                 List<ClinicalAnalysis.File> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
-                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, InterpretationUpdateParams interpretation,
-                                List<InterpretationUpdateParams> secondaryInterpretations, ClinicalConsent consent, String dueDate,
-                                List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
-                                Map<String, Object> attributes, CustomStatusParams status) {
+                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, Interpretation interpretation,
+                                List<Interpretation> secondaryInterpretations, ClinicalAnalysisQcUpdateParams qualityControl,
+                                ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
+                                Enums.Priority priority, List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -74,15 +76,16 @@ public class ClinicalUpdateParams {
         this.files = files;
         this.roleToProband = roleToProband;
         this.analyst = analyst;
+        this.internal = internal;
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
+        this.qualityControl = qualityControl;
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
         this.alerts = alerts;
         this.priority = priority;
         this.flags = flags;
-        this.internal = internal;
         this.attributes = attributes;
         this.status = status;
     }
@@ -105,6 +108,7 @@ public class ClinicalUpdateParams {
         sb.append(", internal=").append(internal);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
@@ -213,21 +217,30 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public InterpretationUpdateParams getInterpretation() {
+    public Interpretation getInterpretation() {
         return interpretation;
     }
 
-    public ClinicalUpdateParams setInterpretation(InterpretationUpdateParams interpretation) {
+    public ClinicalUpdateParams setInterpretation(Interpretation interpretation) {
         this.interpretation = interpretation;
         return this;
     }
 
-    public List<InterpretationUpdateParams> getSecondaryInterpretations() {
+    public List<Interpretation> getSecondaryInterpretations() {
         return secondaryInterpretations;
     }
 
-    public ClinicalUpdateParams setSecondaryInterpretations(List<InterpretationUpdateParams> secondaryInterpretations) {
+    public ClinicalUpdateParams setSecondaryInterpretations(List<Interpretation> secondaryInterpretations) {
         this.secondaryInterpretations = secondaryInterpretations;
+        return this;
+    }
+
+    public ClinicalAnalysisQcUpdateParams getQualityControl() {
+        return qualityControl;
+    }
+
+    public ClinicalUpdateParams setQualityControl(ClinicalAnalysisQcUpdateParams qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 

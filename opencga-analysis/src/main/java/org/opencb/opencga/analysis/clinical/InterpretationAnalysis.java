@@ -95,7 +95,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
         // Store interpretation analysis in DB
         try {
             catalogManager.getInterpretationManager().create(studyId, clinicalAnalysis.getId(), new Interpretation(interpretation),
-                    QueryOptions.empty(), token);
+                    true, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("Error saving interpretation into database", e);
         }
