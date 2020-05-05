@@ -553,7 +553,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 QueryParams.LOCATION.key(), QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
-            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
+            nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
@@ -794,7 +794,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             Document tmpIndividual = individualDBIterator.next();
 
             // Set status to DELETED
-            documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpIndividual);
+            nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpIndividual);
 
             int individualVersion = tmpIndividual.getInteger(QueryParams.VERSION.key());
 

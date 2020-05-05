@@ -119,7 +119,8 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
 
     OpenCGAResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, Interpretation interpretation, boolean primary) throws CatalogDBException, CatalogParameterException,
+            CatalogAuthorizationException;
 
     OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

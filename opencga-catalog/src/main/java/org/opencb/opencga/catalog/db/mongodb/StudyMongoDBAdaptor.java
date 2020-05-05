@@ -1298,7 +1298,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
-    Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
+    static Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document studyParameters = new Document();
 
         String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(),
@@ -1314,7 +1314,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         final String[] acceptedObjectParams = {QueryParams.STATUS.key()};
         filterObjectParams(parameters, studyParameters, acceptedObjectParams);
         if (studyParameters.containsKey(QueryParams.STATUS.key())) {
-            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), studyParameters);
+            nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), studyParameters);
         }
 
         if (parameters.containsKey(QueryParams.URI.key())) {

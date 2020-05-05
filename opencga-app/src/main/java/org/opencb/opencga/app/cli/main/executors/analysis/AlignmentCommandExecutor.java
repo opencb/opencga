@@ -24,6 +24,7 @@ import ga4gh.Reads;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -32,7 +33,6 @@ import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
@@ -84,10 +84,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "stats-info":
                 queryResponse = statsInfo();
                 break;
-            case "stats-query":
-                queryResponse = statsQuery();
-                break;
-            case "coverage-run":
+            case "coverage-index-run":
                 queryResponse = coverageRun();
                 break;
             case "coverage-query":
@@ -95,6 +92,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "coverage-ratio":
                 queryResponse = coverageRatio();
+                break;
+            case "coverage-stats":
+                queryResponse = coverageStats();
                 break;
             case BWA_RUN_COMMAND:
                 queryResponse = bwa();
@@ -307,7 +307,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     //-------------------------------------------------------------------------
-    // STATS: run, info and query
+    // STATS: run and info
     //-------------------------------------------------------------------------
 
     private RestResponse<Job> statsRun() throws ClientException {
@@ -326,39 +326,8 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getAlignmentClient().infoStats(cliOptions.study, params);
     }
 
-    private RestResponse<File> statsQuery() throws ClientException {
-        AlignmentCommandOptions.StatsQueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsQueryAlignmentCommandOptions;
-
-        ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull(STUDY_PARAM, cliOptions.study);
-        objectMap.putIfNotNull(RAW_TOTAL_SEQUENCES, cliOptions.rawTotalSequences);
-        objectMap.putIfNotNull(FILTERED_SEQUENCES, cliOptions.filteredSequences);
-        objectMap.putIfNotNull(READS_MAPPED, cliOptions.readsMapped);
-        objectMap.putIfNotNull(READS_MAPPED_AND_PAIRED, cliOptions.readsMappedAndPaired);
-        objectMap.putIfNotNull(READS_UNMAPPED, cliOptions.readsUnmapped);
-        objectMap.putIfNotNull(READS_PROPERLY_PAIRED, cliOptions.readsProperlyPaired);
-        objectMap.putIfNotNull(READS_PAIRED, cliOptions.readsPaired);
-        objectMap.putIfNotNull(READS_DUPLICATED, cliOptions.readsDuplicated);
-        objectMap.putIfNotNull(READS_MQ0, cliOptions.readsMQ0);
-        objectMap.putIfNotNull(READS_QC_FAILED, cliOptions.readsQCFailed);
-        objectMap.putIfNotNull(NON_PRIMARY_ALIGNMENTS, cliOptions.nonPrimaryAlignments);
-        objectMap.putIfNotNull(MISMATCHES, cliOptions.mismatches);
-        objectMap.putIfNotNull(ERROR_RATE, cliOptions.errorRate);
-        objectMap.putIfNotNull(AVERAGE_LENGTH, cliOptions.averageLength);
-        objectMap.putIfNotNull(AVERAGE_FIRST_FRAGMENT_LENGTH, cliOptions.averageFirstFragmentLength);
-        objectMap.putIfNotNull(AVERAGE_LAST_FRAGMENT_LENGTH, cliOptions.averageLastFragmentLength);
-        objectMap.putIfNotNull(AVERAGE_QUALITY, cliOptions.averageQuality);
-        objectMap.putIfNotNull(INSERT_SIZE_AVERAGE, cliOptions.insertSizeAverage);
-        objectMap.putIfNotNull(INSERT_SIZE_STANDARD_DEVIATION, cliOptions.insertSizeStandardDeviation);
-        objectMap.putIfNotNull(PAIRS_WITH_OTHER_ORIENTATION, cliOptions.pairsWithOtherOrientation);
-        objectMap.putIfNotNull(PAIRS_ON_DIFFERENT_CHROMOSOMES, cliOptions.pairsOnDifferentChromosomes);
-        objectMap.putIfNotNull(PERCENTAGE_OF_PROPERLY_PAIRED_READS, cliOptions.percentageOfProperlyPairedReads);
-
-        return openCGAClient.getAlignmentClient().queryStats(objectMap);
-    }
-
     //-------------------------------------------------------------------------
-    // STATS: run, info and query
+    // COVERAGE: index/run, info, query and stats
     //-------------------------------------------------------------------------
 
     private RestResponse<Job> coverageRun() throws ClientException {
@@ -367,7 +336,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study)
                 .append("windowSize", cliOptions.windowSize);
 
-        return openCGAClient.getAlignmentClient().runCoverage(cliOptions.file, params);
+        return openCGAClient.getAlignmentClient().runCoverageIndex(cliOptions.file, params);
     }
 
     private RestResponse<RegionCoverage> coverageQuery() throws ClientException {
@@ -400,6 +369,16 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION, cliOptions.splitResults);
 
         return openCGAClient.getAlignmentClient().ratioCoverage(cliOptions.file1, cliOptions.file2, params);
+    }
+
+    private RestResponse<GeneCoverageStats> coverageStats() throws ClientException {
+        AlignmentCommandOptions.CoverageStatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageStatsAlignmentCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putIfNotNull(LOW_COVERAGE_REGION_THRESHOLD_PARAM, cliOptions.threshold);
+
+        return openCGAClient.getAlignmentClient().statsCoverage(cliOptions.file, cliOptions.gene, params);
     }
 
     //-------------------------------------------------------------------------

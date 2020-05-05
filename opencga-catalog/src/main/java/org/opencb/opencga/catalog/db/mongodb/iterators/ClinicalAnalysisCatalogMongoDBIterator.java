@@ -70,7 +70,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         this.options = options;
 
         this.interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
-        this.interpretationQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), false);
+        this.interpretationQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), false);
 
         this.clinicalAnalysisListBuffer= new LinkedList<>();
         this.logger = LoggerFactory.getLogger(ClinicalAnalysisCatalogMongoDBIterator.class);
@@ -108,7 +108,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         // Get next BUFFER_SIZE documents
         int counter = 0;
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
-            Document clinicalDocument = (Document) mongoCursor.next();
+            Document clinicalDocument = mongoCursor.next();
 
             if (user != null && studyUid <= 0) {
                 studyUid = clinicalDocument.getLong(PRIVATE_STUDY_UID);
@@ -117,13 +117,20 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             clinicalAnalysisListBuffer.add(clinicalDocument);
             counter++;
 
-            // Extract the interpretations
-            List<Document> interpretations =
-                    (List<Document>) clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key());
-            if (ListUtils.isNotEmpty(interpretations) && !options.getBoolean(NATIVE_QUERY)
-                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key())) {
-                for (Document interpretation : interpretations) {
-                    interpretationSet.add(String.valueOf(interpretation.get(UID)));
+            if (!options.getBoolean(NATIVE_QUERY)
+                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key())) {
+                // Extract the interpretations
+                Document interpretationDoc = (Document) clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key());
+                if (interpretationDoc != null && interpretationDoc.getLong(UID) > 0) {
+                    interpretationSet.add(String.valueOf(interpretationDoc.get(UID)));
+                }
+
+                List<Document> secondaryInterpretations = (List<Document>) clinicalDocument
+                        .get(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key());
+                if (ListUtils.isNotEmpty(secondaryInterpretations)) {
+                    for (Document interpretation : secondaryInterpretations) {
+                        interpretationSet.add(String.valueOf(interpretation.get(UID)));
+                    }
                 }
             }
         }
@@ -153,18 +160,24 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
 
             // Add the interpretations obtained to the corresponding clinical analyses
             clinicalAnalysisListBuffer.forEach(clinicalAnalysis -> {
-                List<Document> interpretations = new ArrayList<>();
-                List<Document> origInterpretations =
-                        (List<Document>) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key());
+                Document primaryInterpretation = (Document) clinicalAnalysis
+                        .get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key());
 
-                // If the interpretations have been returned... (it might have not been fetched due to permissions issues)
-                for (Document origInterpretation : origInterpretations) {
-                    if (interpretationMap.containsKey(String.valueOf(origInterpretation.get(UID)))) {
-                        interpretations.add(new Document(interpretationMap.get(String.valueOf(origInterpretation.get(UID)))));
-                    }
+                if (primaryInterpretation != null && interpretationMap.containsKey(String.valueOf(primaryInterpretation.get(UID)))) {
+                    clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(),
+                            interpretationMap.get(String.valueOf(primaryInterpretation.get(UID))));
                 }
 
-                clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), interpretations);
+                List<Document> origSecondaryInterpretations =
+                        (List<Document>) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key());
+                List<Document> secondaryInterpretations = new ArrayList<>();
+                // If the interpretations have been returned... (it might have not been fetched due to permissions issues)
+                for (Document origInterpretation : origSecondaryInterpretations) {
+                    if (interpretationMap.containsKey(String.valueOf(origInterpretation.get(UID)))) {
+                        secondaryInterpretations.add(new Document(interpretationMap.get(String.valueOf(origInterpretation.get(UID)))));
+                    }
+                }
+                clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), secondaryInterpretations);
             });
         }
     }
