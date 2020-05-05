@@ -107,6 +107,19 @@
                             ]
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "login",
+                        "properties": {
+                            "addressPrefix": "10.0.12.0/24",
+                            "ipConfigurations": [
+                            ],
+                            "delegations": [
+                            ],
+                            "serviceEndpoints": [
+                            ]
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
                     }
                 ],
                 "virtualNetworkPeerings": [
@@ -141,15 +154,17 @@
             "type": "string",
             "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','mongo')]"
         },
-
         "solrSubnetId": {
             "type": "string",
             "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','solr')]"
         },
-
         "appgwSubnetId": {
             "type": "string",
             "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','appgw')]"
+        },
+        "login": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','login')]"
         }
     }
 }

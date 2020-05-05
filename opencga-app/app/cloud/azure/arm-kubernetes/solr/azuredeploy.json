@@ -101,7 +101,7 @@
                 "description": "Log Analytics Workspace ID"
             }
         },
-        "logAnalyticsWorkSpaceKey":{
+        "LogAnalyticsWorkspaceKey":{
             "type": "string",
             "metadata": {
                 "description": "Log Analytics Workspace Key"
@@ -149,7 +149,7 @@
         }
       }
     ],
-    "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
+    "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('LogAnalyticsWorkSpaceID'),' -e KEY=',parameters('LogAnalyticsWorkspaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
     "cloudInit": [
       "#cloud-config",
       "",
@@ -207,7 +207,7 @@
             "value": "[parameters('LogAnalyticsWorkspaceID')]"
           },
           "LogAnalyticsWorkspaceKey": {
-              "value": "[parameters('logAnalyticsWorkSpaceKey')]"
+              "value": "[parameters('LogAnalyticsWorkspaceKey')]"
           },
           "LogAnalyticsWorkspaceResourceID": {
             "value": "[parameters('LogAnalyticsWorkspaceResourceID')]"

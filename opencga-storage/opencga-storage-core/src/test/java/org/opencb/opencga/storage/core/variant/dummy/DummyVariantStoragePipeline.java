@@ -16,8 +16,11 @@
 
 package org.opencb.opencga.storage.core.variant.dummy;
 
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
@@ -25,6 +28,8 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsResolver;
+import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +79,18 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
                 throw new StorageEngineException("Interrupted", e);
             }
         }
+        DuplicatedVariantsResolverFactory factory = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider);
+        AbstractDuplicatedVariantsResolver resolver = factory.getResolver(UriUtils.fileName(input), outdir);
+
+        VariantFileMetadata variantFileMetadata = variantReaderUtils.readVariantFileMetadata(input);
+        ProgressLogger progressLogger = new ProgressLogger("Variants loaded:", variantFileMetadata.getStats().getVariantCount());
+        for (Variant variant : variantReaderUtils.getVariantReader(input, variantFileMetadata.toVariantStudyMetadata(""))
+                .then(factory.getTask(resolver))) {
+            progressLogger.increment(1, () -> "up to variant " + variant);
+        }
+        getLoadStats().put("duplicatedVariants", resolver.getDuplicatedVariants());
+        getLoadStats().put("duplicatedLocus", resolver.getDuplicatedLocus());
+        getLoadStats().put("discardedVariants", resolver.getDiscardedVariants());
         if (getOptions().getBoolean(VARIANTS_LOAD_FAIL) || getOptions().getString(VARIANTS_LOAD_FAIL).equals(Paths.get(input).getFileName().toString())) {
             getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.ERROR, "load", fileIds);
             throw new StorageEngineException("Error loading file " + input);

@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.IS;
 
 public class VariantQueryProjectionParser {
 
@@ -495,10 +496,17 @@ public class VariantQueryProjectionParser {
             samples = null;
             if (VariantQueryUtils.isValidParam(query, SAMPLE)) {
                 String value = query.getString(SAMPLE.key());
-                samples = VariantQueryUtils.splitValue(value, VariantQueryUtils.checkOperator(value))
-                        .stream()
-                        .filter((v) -> !VariantQueryUtils.isNegated(v)) // Discard negated
-                        .collect(Collectors.toList());
+                if (value.contains(IS)) {
+                    HashMap<Object, List<String>> map = new LinkedHashMap<>();
+                    VariantQueryUtils.parseGenotypeFilter(value, map);
+                    samples = new ArrayList<>(map.size());
+                    map.keySet().stream().map(Object::toString).forEach(samples::add);
+                } else {
+                    samples = VariantQueryUtils.splitValue(value, VariantQueryUtils.checkOperator(value))
+                            .stream()
+                            .filter((v) -> !VariantQueryUtils.isNegated(v)) // Discard negated
+                            .collect(Collectors.toList());
+                }
             }
             if (VariantQueryUtils.isValidParam(query, GENOTYPE)) {
                 HashMap<Object, List<String>> map = new LinkedHashMap<>();

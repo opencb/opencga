@@ -21,7 +21,10 @@ public class DuplicatedVariantsResolverFactory {
     }
 
     public VariantDeduplicationTask getTask(String variantsFile, URI outdir) {
-        AbstractDuplicatedVariantsResolver resolver = getResolver(variantsFile, outdir);
+        return getTask(getResolver(variantsFile, outdir));
+    }
+
+    public VariantDeduplicationTask getTask(final AbstractDuplicatedVariantsResolver resolver) {
         int bufferSize = configuration.getInt(DEDUPLICATION_BUFFER_SIZE.key(), DEDUPLICATION_BUFFER_SIZE.defaultValue());
 
         return new VariantDeduplicationTask(resolver, bufferSize) {
