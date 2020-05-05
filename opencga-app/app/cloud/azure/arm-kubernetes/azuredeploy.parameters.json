@@ -31,6 +31,18 @@
         },
         "openCgaAdminPassword": {
             "value": "SECUREPASSWORD"
+        },
+        "sshAdminKeyData": {
+            "value": "SECUREPASSWORD"
+        },
+        "mongoDBPassword": {
+            "value": "SECUREPASSWORD"
+        },
+        "catalogSecretKey": {
+            "value": "SECUREPASSWORD"
+        },
+        "sslCertificateEmail": {
+            "value": ""
         }
     }
 }

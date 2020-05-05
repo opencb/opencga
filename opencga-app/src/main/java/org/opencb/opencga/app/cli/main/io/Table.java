@@ -11,9 +11,13 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.fusesource.jansi.Ansi.Erase;
+import static org.fusesource.jansi.Ansi.ansi;
+
 public class Table<T> {
     private final List<TableColumnSchema<T>> schema = new ArrayList<>();
     private List<TableColumn<T>> columns = new ArrayList<>();
+    private final TablePrinter tablePrinter;
 
     public Table() {
         this(new JAnsiTablePrinter());
@@ -22,8 +26,6 @@ public class Table<T> {
     public Table(TablePrinter tablePrinter) {
         this.tablePrinter = tablePrinter;
     }
-
-    private final TablePrinter tablePrinter;
 
     public Table<T> addColumn(String name, Function<T, String> get) {
         return addColumn(new TableColumnSchema<>(name, get));
@@ -43,8 +45,20 @@ public class Table<T> {
         return this;
     }
 
-    public void print() {
-        printFullLine();
+    public void print(String content) {
+        tablePrinter.print(content);
+    }
+
+    public void println() {
+        tablePrinter.println(null);
+    }
+
+    public void println(String content) {
+        tablePrinter.println(content);
+    }
+
+    public void printTable() {
+//        printFullLine();
         tablePrinter.printHeader(columns);
         tablePrinter.printLine(columns);
 
@@ -52,6 +66,10 @@ public class Table<T> {
             tablePrinter.printRow(columns, i);
         }
         printFullLine();
+    }
+
+    public void restoreCursorPosition() {
+        tablePrinter.restorePosition();
     }
 
     public void printFullLine() {
@@ -92,7 +110,7 @@ public class Table<T> {
         }
 
         public String getPrintName() {
-            return StringUtils.rightPad(tableColumnSchema.getName(), width);
+            return StringUtils.rightPad(getPrintValue(tableColumnSchema.getName()), width);
         }
 
         public String getPrintValue(int idx) {
@@ -171,6 +189,14 @@ public class Table<T> {
     }
 
     public interface TablePrinter {
+
+        // Restores initial position so content is overwritten
+        void restorePosition();
+
+        void println(String content);
+
+        void print(String content);
+
         <T> void printHeader(List<Table.TableColumn<T>> columns);
 
         <T> void printLine(List<Table.TableColumn<T>> columns);
@@ -184,6 +210,8 @@ public class Table<T> {
 
         private final PrintStream out;
         private String sep = " ";
+        private String pad = " ";
+        private int numLines = 0;
 
         public JAnsiTablePrinter() {
             AnsiConsole.systemInstall();
@@ -191,31 +219,73 @@ public class Table<T> {
         }
 
         @Override
+        public void restorePosition() {
+            if (numLines > 0) {
+                Ansi ansi = Ansi.ansi();
+                out.print(ansi.cursorUpLine(numLines).eraseScreen(Erase.FORWARD).reset());
+                numLines = 0;
+            }
+        }
+
+        @Override
         public <T> void printHeader(List<TableColumn<T>> columns) {
-            Ansi ansi = Ansi.ansi();
-            ansi.bold().fg(Ansi.Color.BLACK).bgBright(Ansi.Color.WHITE);
+//            ansi.restoreCursorPosition();
+//            ansi.saveCursorPosition();
+            Ansi ansi = ansi();
+            ansi.bold().fg(Ansi.Color.BLACK).bgBright(Ansi.Color.WHITE).a(sep);
             for (TableColumn<T> column : columns) {
-                ansi.a(column.getPrintName());
-                ansi.a(sep);
+                ansi.a(pad).a(column.getPrintName()).a(pad + sep);
             }
             ansi.reset();
             out.println(ansi);
+            numLines++;
+        }
+
+        @Override
+        public void println(String content) {
+            if (content == null) {
+                out.println();
+                numLines++;
+            } else {
+                long count = content.chars().filter(ch -> ch == '\n').count();
+                out.println(content);
+                numLines = numLines + (int) count + 1;
+            }
+        }
+
+        @Override
+        public void print(String content) {
+            long count = content.chars().filter(ch -> ch == '\n').count();
+            out.print(content);
+            numLines = numLines + (int) count;
         }
 
         @Override
         public <T> void printLine(List<TableColumn<T>> columns) {
-
+            Ansi ansi = new Ansi();
+            ansi.a(sep);
+            for (TableColumn<T> column : columns) {
+                ansi.a(column.getLine(pad.length() * 2)).a(sep);
+            }
+            ansi.reset();
+            out.println(ansi);
+            numLines++;
         }
 
         @Override
         public <T> void printFullLine(List<TableColumn<T>> columns) {
-
+            for (TableColumn<T> column : columns) {
+                out.print(column.getLine());
+                out.print(StringUtils.repeat("-", pad.length() * 2 + sep.length()));
+            }
+            out.println("-");
+            numLines++;
         }
 
         @Override
         public <T> void printRow(List<TableColumn<T>> columns, int i) {
-            Ansi ansi = Ansi.ansi();
-
+            Ansi ansi = ansi();
+            ansi.a(sep);
 //            boolean colour = false;
             for (TableColumn<T> column : columns) {
 //                if (colour) {
@@ -224,10 +294,11 @@ public class Table<T> {
 //                    ansi.bg(Ansi.Color.DEFAULT);
 //                }
 //                colour = !colour;
-                ansi.a(column.getPrintValue(i)).a(" ");
+                ansi.a(pad).a(column.getPrintValue(i)).a(pad + sep);
             }
             ansi.reset();
             out.println(ansi);
+            numLines++;
         }
     }
 
@@ -238,6 +309,21 @@ public class Table<T> {
 
         public AsciiTablePrinter() {
             out = System.out;
+        }
+
+        @Override
+        public void restorePosition() {
+            return;
+        }
+
+        @Override
+        public void println(String content) {
+
+        }
+
+        @Override
+        public void print(String content) {
+
         }
 
         @Override
