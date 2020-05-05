@@ -233,7 +233,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         OpenCGAResult<ClinicalVariant> result = new OpenCGAResult<>(variantQueryResult.getTime(),
                 variantQueryResult.getEvents(), variantQueryResult.getNumResults(), Collections.emptyList(),
-                variantQueryResult.getNumMatches());
+                variantQueryResult.getNumMatches(), variantQueryResult.getAttributes());
 
         if (CollectionUtils.isEmpty(variantQueryResult.getResults())) {
             return result;
