@@ -24,7 +24,6 @@ import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +44,7 @@ public class ToolExecutorFactory {
                             ,
                             new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, ToolExecutor.class.getName()))
                     )
-                    .addUrls(ClasspathHelper.forJavaClassPath())
+                    .addUrls(ToolFactory.getUrls())
                     .filterInputsBy(input -> input != null && input.endsWith(".class"))
             );
 
