@@ -602,7 +602,12 @@ public class VariantQueryParser {
                 // Discard special genotypes
                 continue;
             }
-            Genotype genotype = new Genotype(genotypeStr);
+            Genotype genotype;
+            try {
+                genotype = new Genotype(genotypeStr);
+            } catch (RuntimeException e) {
+                throw new VariantQueryException("Malformed genotype '" + genotypeStr + "'", e);
+            }
             int[] allelesIdx = genotype.getAllelesIdx();
             boolean multiallelic = false;
             for (int i = 0; i < allelesIdx.length; i++) {
