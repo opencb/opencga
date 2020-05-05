@@ -61,7 +61,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 
 @Path("/{apiVersion}/analysis/clinical")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Analysis - Clinical Interpretation", position = 4, description = "Methods for working with Clinical Interpretations")
+@Api(value = "Analysis - Clinical", position = 4, description = "Methods for working with Clinical Interpretations")
 public class ClinicalWebService extends AnalysisWebService {
 
     private final ClinicalAnalysisManager clinicalManager;
