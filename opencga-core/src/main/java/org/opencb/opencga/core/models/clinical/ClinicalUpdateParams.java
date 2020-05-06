@@ -23,6 +23,7 @@ import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
 import java.util.Map;
@@ -37,14 +38,17 @@ public class ClinicalUpdateParams {
 
     private Disorder disorder;
 
-    private Map<String, List<String>> files;
+    private List<File> files;
 
 //    private ProbandParam proband;
 //    private FamilyParam family;
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
-    private List<InterpretationUpdateParams> interpretations;
+    private Interpretation interpretation;
+    private List<Interpretation> secondaryInterpretations;
+
+    private ClinicalAnalysisQcUpdateParams qualityControl;
 
     private ClinicalConsent consent;
 
@@ -61,11 +65,11 @@ public class ClinicalUpdateParams {
     }
 
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
-                                Map<String, List<String>> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
-                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
-                                List<InterpretationUpdateParams> interpretations, ClinicalConsent consent, String dueDate,
-                                List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
-                                Map<String, Object> attributes, CustomStatusParams status) {
+                                List<File> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
+                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, Interpretation interpretation,
+                                List<Interpretation> secondaryInterpretations, ClinicalAnalysisQcUpdateParams qualityControl,
+                                ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
+                                Enums.Priority priority, List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -73,14 +77,16 @@ public class ClinicalUpdateParams {
         this.files = files;
         this.roleToProband = roleToProband;
         this.analyst = analyst;
-        this.interpretations = interpretations;
+        this.internal = internal;
+        this.interpretation = interpretation;
+        this.secondaryInterpretations = secondaryInterpretations;
+        this.qualityControl = qualityControl;
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
         this.alerts = alerts;
         this.priority = priority;
         this.flags = flags;
-        this.internal = internal;
         this.attributes = attributes;
         this.status = status;
     }
@@ -101,7 +107,9 @@ public class ClinicalUpdateParams {
         sb.append(", roleToProband=").append(roleToProband);
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
-        sb.append(", interpretations=").append(interpretations);
+        sb.append(", interpretation=").append(interpretation);
+        sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
@@ -183,11 +191,11 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public Map<String, List<String>> getFiles() {
+    public List<File> getFiles() {
         return files;
     }
 
-    public ClinicalUpdateParams setFiles(Map<String, List<String>> files) {
+    public ClinicalUpdateParams setFiles(List<File> files) {
         this.files = files;
         return this;
     }
@@ -210,12 +218,30 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public List<InterpretationUpdateParams> getInterpretations() {
-        return interpretations;
+    public Interpretation getInterpretation() {
+        return interpretation;
     }
 
-    public ClinicalUpdateParams setInterpretations(List<InterpretationUpdateParams> interpretations) {
-        this.interpretations = interpretations;
+    public ClinicalUpdateParams setInterpretation(Interpretation interpretation) {
+        this.interpretation = interpretation;
+        return this;
+    }
+
+    public List<Interpretation> getSecondaryInterpretations() {
+        return secondaryInterpretations;
+    }
+
+    public ClinicalUpdateParams setSecondaryInterpretations(List<Interpretation> secondaryInterpretations) {
+        this.secondaryInterpretations = secondaryInterpretations;
+        return this;
+    }
+
+    public ClinicalAnalysisQcUpdateParams getQualityControl() {
+        return qualityControl;
+    }
+
+    public ClinicalUpdateParams setQualityControl(ClinicalAnalysisQcUpdateParams qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 

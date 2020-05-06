@@ -72,10 +72,20 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     public static final QueryOptions INCLUDE_CLINICAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key()));
+    public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
     public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS_ID.key()));
+            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key()));
+    public static final QueryOptions INCLUDE_QUALITY_CONTROL = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key()));
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                             DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -424,7 +434,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
             clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
-            clinicalAnalysis.setInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getInterpretations(), ArrayList::new));
+            clinicalAnalysis.setQualityControl(ParamUtils.defaultObject(clinicalAnalysis.getQualityControl(), null));
+            clinicalAnalysis.setInterpretation(ParamUtils.defaultObject(clinicalAnalysis.getInterpretation(), null));
+            clinicalAnalysis.setSecondaryInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getSecondaryInterpretations(),
+                    ArrayList::new));
             clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), Enums.Priority.MEDIUM));
             clinicalAnalysis.setFlags(ParamUtils.defaultObject(clinicalAnalysis.getFlags(), ArrayList::new));
             clinicalAnalysis.setConsent(ParamUtils.defaultObject(clinicalAnalysis.getConsent(), new ClinicalConsent()));
@@ -564,7 +577,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        clinicalAnalysis.setFiles(fileMap);
+        Set<File> caFiles = new HashSet<>();
+        for (Map.Entry<String, List<File>> entry : fileMap.entrySet()) {
+            caFiles.addAll(entry.getValue());
+        }
+        clinicalAnalysis.setFiles(new ArrayList<>(caFiles));
     }
 
     private void validateFiles(Study study, ClinicalAnalysis clinicalAnalysis, String userId) throws CatalogException {
@@ -587,27 +604,36 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             throw new CatalogException("Found empty map of files");
         }
 
-        if (!clinicalAnalysis.getFiles().keySet().containsAll(sampleMap.keySet())) {
-            throw new CatalogException("Map of files contains sample ids not related to any member/proband");
-        }
-
         // Validate the file ids passed are related to the samples
-        Map<String, List<File>> fileMap = new LinkedHashMap<>();
-        for (Map.Entry<String, List<File>> entry : clinicalAnalysis.getFiles().entrySet()) {
-            List<String> fileIds = entry.getValue().stream().map(File::getId).collect(Collectors.toList());
-            InternalGetDataResult<File> fileResult = catalogManager.getFileManager().internalGet(study.getUid(), fileIds, new Query(),
-                    new QueryOptions(), userId, false);
-            // Validate sample id belongs to files
-            for (File file : fileResult.getResults()) {
-                if (!file.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).contains(sampleMap.get(entry.getKey()))) {
-                    throw new CatalogException("Associated file '" + file.getPath() + "' seems not to be related to sample '"
-                            + entry.getKey() + "'.");
+        for (File file : clinicalAnalysis.getFiles()) {
+            if (CollectionUtils.isNotEmpty(file.getSamples())) {
+                boolean found = false;
+                for (Sample sample : file.getSamples()) {
+                    if (sampleMap.containsKey(sample.getId())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    throw new CatalogException("Clinical analysis file (" + file.getId() + ") contains sample ids not related to any "
+                            + "member/proband");
                 }
             }
-            fileMap.put(entry.getKey(), fileResult.getResults());
         }
 
-        clinicalAnalysis.setFiles(fileMap);
+//        for (File caFile : clinicalAnalysis.getFiles()) {
+//            List<String> fileIds = caFile.getFiles().stream().map(File::getId).collect(Collectors.toList());
+//            InternalGetDataResult<File> fileResult = catalogManager.getFileManager().internalGet(study.getUid(), fileIds, new Query(),
+//                    new QueryOptions(), userId, false);
+//            // Validate sample id belongs to files
+//            for (File file : fileResult.getResults()) {
+//                if (!file.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet())
+//                        .contains(sampleMap.get(caFile.getSampleId()))) {
+//                    throw new CatalogException("Associated file '" + file.getPath() + "' seems not to be related to sample '"
+//                            + caFile.getSampleId() + "'.");
+//                }
+//            }
+//        }
     }
 
     private Family getFullValidatedFamily(Family family, Study study, String sessionId) throws CatalogException {
@@ -922,12 +948,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
-        if (clinicalAnalysis.getInterpretations() != null && !clinicalAnalysis.getInterpretations().isEmpty()) {
+        if (clinicalAnalysis.getInterpretation() != null && updateParams.getInterpretation() != null) {
             // Check things there are no fields that cannot be updated once there are interpretations
-            if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
-                throw new CatalogException("Cannot update file map anymore. Interpretations found in clinical analysis '"
+                throw new CatalogException("Cannot update clinical analysis map anymore. Interpretation found in clinical analysis '"
                         + clinicalAnalysis.getId() + "'.");
-            }
+        }
+
+        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())
+                && CollectionUtils.isNotEmpty(updateParams.getSecondaryInterpretations())) {
+            // Check things there are no fields that cannot be updated once there are interpretations
+                throw new CatalogException("Cannot update clinical analysis map anymore. Secondary interpretations found in clinical "
+                        + " analysis '" + clinicalAnalysis.getId() + "'.");
         }
 
         ObjectMap parameters = new ObjectMap();
@@ -960,12 +991,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
-            Map<String, List<File>> files = new HashMap<>();
-            for (Map.Entry<String, List<String>> entry : updateParams.getFiles().entrySet()) {
-                List<File> fileList = entry.getValue().stream().map(fileId -> new File().setId(fileId)).collect(Collectors.toList());
-                files.put(entry.getKey(), fileList);
-            }
-            clinicalAnalysis.setFiles(files);
+            clinicalAnalysis.setFiles(updateParams.getFiles());
 
             // Validate files
             validateFiles(study, clinicalAnalysis, userId);
@@ -1157,7 +1183,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             String clinicalId = id;
             String clinicalUuid = "";
             try {
-                OpenCGAResult<ClinicalAnalysis> internalResult = internalGet(study.getUid(), id, INCLUDE_CLINICAL_INTERPRETATIONS, userId);
+                OpenCGAResult<ClinicalAnalysis> internalResult = internalGet(study.getUid(), id, INCLUDE_CLINICAL_INTERPRETATION_IDS,
+                        userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Clinical Analysis '" + id + "' not found");
                 }
@@ -1197,7 +1224,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     private void checkClinicalAnalysisCanBeDeleted(ClinicalAnalysis clinicalAnalysis) throws CatalogException {
-        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getInterpretations())) {
+        if (clinicalAnalysis.getInterpretation() != null || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
             throw new CatalogException("Deleting ClinicalAnalysis that contains interpretations is forbidden.");
         }
     }
@@ -1235,7 +1262,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = clinicalDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_CLINICAL_INTERPRETATIONS, userId);
+            iterator = clinicalDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_CLINICAL_INTERPRETATION_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);

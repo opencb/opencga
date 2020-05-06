@@ -68,8 +68,8 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
 
     private String trait;
 
-    private int maxLowCoverage;
-    private boolean includeLowCoverage;
+    private boolean secondary; // secondary interpretation (vs primary interpretation)
+    private boolean index;     // save interpretation in catalog DB
 
     public ZettaInterpretationAnalysisParams() {
     }
@@ -85,7 +85,7 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
                                              String populationFrequencyRef, String populationFrequencyMaf, String transcriptFlag,
                                              String geneTraitId, String go, String expression, String proteinKeyword, String drug,
                                              String functionalScore, String clinicalSignificance, String customAnnotation, String panel,
-                                             String trait, int maxLowCoverage, boolean includeLowCoverage) {
+                                             String trait, boolean secondary, boolean index) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.id = id;
         this.region = region;
@@ -135,8 +135,8 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         this.customAnnotation = customAnnotation;
         this.panel = panel;
         this.trait = trait;
-        this.maxLowCoverage = maxLowCoverage;
-        this.includeLowCoverage = includeLowCoverage;
+        this.secondary = secondary;
+        this.index = index;
     }
 
     public String getClinicalAnalysis() {
@@ -580,21 +580,21 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
-    public int getMaxLowCoverage() {
-        return maxLowCoverage;
+    public boolean isSecondary() {
+        return secondary;
     }
 
-    public ZettaInterpretationAnalysisParams setMaxLowCoverage(int maxLowCoverage) {
-        this.maxLowCoverage = maxLowCoverage;
+    public ZettaInterpretationAnalysisParams setSecondary(boolean secondary) {
+        this.secondary = secondary;
         return this;
     }
 
-    public boolean isIncludeLowCoverage() {
-        return includeLowCoverage;
+    public boolean isIndex() {
+        return index;
     }
 
-    public ZettaInterpretationAnalysisParams setIncludeLowCoverage(boolean includeLowCoverage) {
-        this.includeLowCoverage = includeLowCoverage;
+    public ZettaInterpretationAnalysisParams setIndex(boolean index) {
+        this.index = index;
         return this;
     }
 }

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.analysis.clinical;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -36,6 +35,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readClinicalVariants;
@@ -54,9 +54,9 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     public static final String PENETRANCE_PARAM_NAME = "penetrance";
     public final static String DISCARDED_VARIANTS_PARAM_NAME = "discarded-variants";
 
-    public final static String MAX_LOW_COVERAGE_PARAM_NAME = "max-low-coverage";
-    public final static String INCLUDE_LOW_COVERAGE_PARAM_NAME = "include-low-coverage";
-    public final static String INCLUDE_UNTIERED_VARIANTS_PARAM_NAME = "include-untiered-variants";
+    public final static String SECONDARY_INTERPRETATION_PARAM_NAME = "secondary";
+    public final static String INDEX_PARAM_NAME = "index";
+//    public final static String INCLUDE_UNTIERED_VARIANTS_PARAM_NAME = "include-untiered-variants";
 
     protected ClinicalInterpretationManager clinicalInterpretationManager;
 
@@ -71,39 +71,31 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels, Query query,
                                       InterpretationAnalysisConfiguration config) throws ToolException {
 
-        // Software
-        Software software = new Software().setName(getId());
+        // Interpretation method
+        InterpretationMethod method = new InterpretationMethod(getId(), query, diseasePanels,
+                Collections.singletonList(new Software().setName(getId())));
 
         // Analyst
         Analyst analyst = clinicalInterpretationManager.getAnalyst(token);
-
-        List<ReportedLowCoverage> reportedLowCoverages = null;
-        if (config.isIncludeLowCoverage() && CollectionUtils.isNotEmpty(diseasePanels)) {
-            reportedLowCoverages = (clinicalInterpretationManager.getReportedLowCoverage(config.getMaxLowCoverage(), clinicalAnalysis,
-                    diseasePanels, studyId, token));
-        }
 
         List<ClinicalVariant> primaryFindings = readClinicalVariants(Paths.get(getOutDir().toString() + "/"
                 + PRIMARY_FINDINGS_FILENAME));
         List<ClinicalVariant> secondaryFindings = readClinicalVariants(Paths.get(getOutDir().toString() + "/"
                 + SECONDARY_FINDINGS_FILENAME));
 
-        Interpretation interpretation = new Interpretation()
+        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = new Interpretation()
                 .setId(getId() + "." + TimeUtils.getTimeMillis())
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(secondaryFindings)
-                .setLowCoverageRegions(reportedLowCoverages)
                 .setAnalyst(analyst)
                 .setClinicalAnalysisId(clinicalAnalysis.getId())
                 .setCreationDate(TimeUtils.getTime())
-                .setPanels(diseasePanels)
-                .setFilters(query)
-                .setSoftware(software);
+                .setMethod(method);
 
         // Store interpretation analysis in DB
         try {
             catalogManager.getInterpretationManager().create(studyId, clinicalAnalysis.getId(), new Interpretation(interpretation),
-                    QueryOptions.empty(), token);
+                    true, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("Error saving interpretation into database", e);
         }
@@ -125,7 +117,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
             CatalogManager catalogManager = new CatalogManager(configuration);
             StorageEngineFactory engineFactory = StorageEngineFactory.get(storageConfiguration);
 
-            return new ClinicalInterpretationManager(catalogManager, engineFactory);
+            return new ClinicalInterpretationManager(catalogManager, engineFactory, Paths.get(opencgaHome));
 
         } catch (CatalogException | IOException e) {
             throw new ToolException(e);
