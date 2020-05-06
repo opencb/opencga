@@ -164,6 +164,9 @@ public class JobsTopManager {
                 List<Job> dependsOn = job.getDependsOn();
                 for (int i = 0; i < dependsOn.size(); i++) {
                     Job auxJob = dependsOn.get(i);
+                    if (auxJob == null) {
+                        continue;
+                    }
                     if (i + 1 < dependsOn.size()) {
                         auxJob.setId("├── " + auxJob.getId());
                     } else {

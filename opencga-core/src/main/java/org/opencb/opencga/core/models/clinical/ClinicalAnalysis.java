@@ -22,6 +22,7 @@ import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 
 import java.util.List;
@@ -39,7 +40,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     private Disorder disorder;
 
-    // Map of sample id, list of files (VCF, BAM and BIGWIG)
+    // List of files (VCF, BAM and BIGWIG)
     private List<File> files;
 
     private Individual proband;
@@ -141,46 +142,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
         public String getIsA() {
             return isA;
-        }
-    }
-
-    public static class File {
-        private String sampleId;
-        private List<org.opencb.opencga.core.models.file.File> files;
-
-        public File() {
-        }
-
-        public File(String sampleId, List<org.opencb.opencga.core.models.file.File> files) {
-            this.sampleId = sampleId;
-            this.files = files;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("ClinicalFile{");
-            sb.append("sampleId='").append(sampleId).append('\'');
-            sb.append(", files=").append(files);
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getSampleId() {
-            return sampleId;
-        }
-
-        public File setSampleId(String sampleId) {
-            this.sampleId = sampleId;
-            return this;
-        }
-
-        public List<org.opencb.opencga.core.models.file.File> getFiles() {
-            return files;
-        }
-
-        public File setFiles(List<org.opencb.opencga.core.models.file.File> files) {
-            this.files = files;
-            return this;
         }
     }
 

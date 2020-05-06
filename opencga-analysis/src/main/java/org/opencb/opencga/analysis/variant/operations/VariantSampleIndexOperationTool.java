@@ -54,7 +54,8 @@ public class VariantSampleIndexOperationTool extends OperationTool {
         ArrayList<String> steps = new ArrayList<>();
         if (sampleIndexParams.isBuildIndex()) {
             steps.add("buildIndex");
-        } else if (sampleIndexParams.isAnnotate()) {
+        }
+        if (sampleIndexParams.isAnnotate()) {
             steps.add("annotate");
         }
         return steps;

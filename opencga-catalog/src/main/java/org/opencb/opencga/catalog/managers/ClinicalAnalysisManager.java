@@ -581,11 +581,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        List<ClinicalAnalysis.File> caFiles = new ArrayList<>();
+        Set<File> caFiles = new HashSet<>();
         for (Map.Entry<String, List<File>> entry : fileMap.entrySet()) {
-            caFiles.add(new ClinicalAnalysis.File(entry.getKey(), entry.getValue()));
+            caFiles.addAll(entry.getValue());
         }
-        clinicalAnalysis.setFiles(caFiles);
+        clinicalAnalysis.setFiles(new ArrayList<>(caFiles));
     }
 
     private void validateFiles(Study study, ClinicalAnalysis clinicalAnalysis, String userId) throws CatalogException {
@@ -608,26 +608,36 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             throw new CatalogException("Found empty map of files");
         }
 
-        for (ClinicalAnalysis.File file : clinicalAnalysis.getFiles()) {
-            if (StringUtils.isNotEmpty(file.getSampleId()) && !sampleMap.containsKey(file.getSampleId())) {
-                throw new CatalogException("Clinical analysis file contains sample ids not related to any member/proband");
-            }
-        }
-
         // Validate the file ids passed are related to the samples
-        for (ClinicalAnalysis.File caFile : clinicalAnalysis.getFiles()) {
-            List<String> fileIds = caFile.getFiles().stream().map(File::getId).collect(Collectors.toList());
-            InternalGetDataResult<File> fileResult = catalogManager.getFileManager().internalGet(study.getUid(), fileIds, new Query(),
-                    new QueryOptions(), userId, false);
-            // Validate sample id belongs to files
-            for (File file : fileResult.getResults()) {
-                if (!file.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet())
-                        .contains(sampleMap.get(caFile.getSampleId()))) {
-                    throw new CatalogException("Associated file '" + file.getPath() + "' seems not to be related to sample '"
-                            + caFile.getSampleId() + "'.");
+        for (File file : clinicalAnalysis.getFiles()) {
+            if (CollectionUtils.isNotEmpty(file.getSamples())) {
+                boolean found = false;
+                for (Sample sample : file.getSamples()) {
+                    if (sampleMap.containsKey(sample.getId())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    throw new CatalogException("Clinical analysis file (" + file.getId() + ") contains sample ids not related to any "
+                            + "member/proband");
                 }
             }
         }
+
+//        for (File caFile : clinicalAnalysis.getFiles()) {
+//            List<String> fileIds = caFile.getFiles().stream().map(File::getId).collect(Collectors.toList());
+//            InternalGetDataResult<File> fileResult = catalogManager.getFileManager().internalGet(study.getUid(), fileIds, new Query(),
+//                    new QueryOptions(), userId, false);
+//            // Validate sample id belongs to files
+//            for (File file : fileResult.getResults()) {
+//                if (!file.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet())
+//                        .contains(sampleMap.get(caFile.getSampleId()))) {
+//                    throw new CatalogException("Associated file '" + file.getPath() + "' seems not to be related to sample '"
+//                            + caFile.getSampleId() + "'.");
+//                }
+//            }
+//        }
     }
 
     private Family getFullValidatedFamily(Family family, Study study, String sessionId) throws CatalogException {

@@ -18,7 +18,6 @@ package org.opencb.opencga.analysis.clinical;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
@@ -43,7 +42,7 @@ public interface ClinicalInterpretationAnalysisExecutor {
             CatalogManager catalogManager = new CatalogManager(configuration);
             StorageEngineFactory engineFactory = StorageEngineFactory.get(storageConfiguration);
 
-            return new ClinicalInterpretationManager(catalogManager, engineFactory);
+            return new ClinicalInterpretationManager(catalogManager, engineFactory, Paths.get(opencgaHome));
 
         } catch (CatalogException | IOException e) {
             throw new ToolExecutorException(e);

@@ -439,7 +439,7 @@ public class StudyManager extends AbstractManager {
 
     public OpenCGAResult<Study> get(List<String> studyList, QueryOptions queryOptions, boolean ignoreException, String sessionId)
             throws CatalogException {
-        OpenCGAResult<Study> result = OpenCGAResult.empty();
+        OpenCGAResult<Study> result = OpenCGAResult.empty(Study.class);
         for (String study : studyList) {
             try {
                 OpenCGAResult<Study> studyObj = get(study, queryOptions, sessionId);

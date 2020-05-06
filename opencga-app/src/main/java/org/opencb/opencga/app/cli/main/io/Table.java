@@ -7,6 +7,7 @@ import org.fusesource.jansi.AnsiConsole;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -15,12 +16,33 @@ import static org.fusesource.jansi.Ansi.Erase;
 import static org.fusesource.jansi.Ansi.ansi;
 
 public class Table<T> {
+    public static final String DEFAULT_EMPTY_VALUE = "-";
     private final List<TableColumnSchema<T>> schema = new ArrayList<>();
     private List<TableColumn<T>> columns = new ArrayList<>();
     private final TablePrinter tablePrinter;
 
+    public enum PrinterType {
+        ASCII, JANSI, TSV,
+    }
+
     public Table() {
         this(new JAnsiTablePrinter());
+    }
+
+    public Table(PrinterType type) {
+        switch (type) {
+            case ASCII:
+                this.tablePrinter = new AsciiTablePrinter();
+                break;
+            case JANSI:
+                this.tablePrinter = new JAnsiTablePrinter();
+                break;
+            case TSV:
+                this.tablePrinter = new TsvTablePrinter();
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown type : " + type);
+        }
     }
 
     public Table(TablePrinter tablePrinter) {
@@ -29,6 +51,30 @@ public class Table<T> {
 
     public Table<T> addColumn(String name, Function<T, String> get) {
         return addColumn(new TableColumnSchema<>(name, get));
+    }
+
+    public Table<T> addColumnNumber(String name, Function<T, ? extends Number> get) {
+        return addColumnNumber(name, get, DEFAULT_EMPTY_VALUE);
+    }
+
+    public Table<T> addColumnNumber(String name, Function<T, ? extends Number> get, String defaultValue) {
+        return addColumn(new TableColumnSchema<>(name, TableColumnSchema.wrap(get, defaultValue)));
+    }
+
+    public Table<T> addColumnEnum(String name, Function<T, ? extends Enum<?>> get) {
+        return addColumnEnum(name, get, DEFAULT_EMPTY_VALUE);
+    }
+
+    public Table<T> addColumnEnum(String name, Function<T, ? extends Enum<?>> get, String defaultValue) {
+        return addColumn(new TableColumnSchema<>(name, TableColumnSchema.wrap(get, defaultValue)));
+    }
+
+    public Table<T> addColumn(String name, Function<T, String> get, String defaultValue) {
+        return addColumn(new TableColumnSchema<>(name, TableColumnSchema.wrap(get, defaultValue)));
+    }
+
+    public Table<T> addColumn(String name, Function<T, String> get, int maxWidth, String defaultValue) {
+        return addColumn(new TableColumnSchema<>(name, TableColumnSchema.wrap(get, defaultValue), maxWidth));
     }
 
     public Table<T> addColumn(String name, Function<T, String> get, int maxWidth) {
@@ -113,12 +159,12 @@ public class Table<T> {
             return StringUtils.rightPad(getPrintValue(tableColumnSchema.getName()), width);
         }
 
-        public String getPrintValue(int idx) {
-            return getPrintValue(values.get(idx));
+        public String getValue(int idx) {
+            return values.get(idx);
         }
 
-        public String getPrintValue(T t) {
-            return getPrintValue(tableColumnSchema.getGet().apply(t));
+        public String getPrintValue(int idx) {
+            return getPrintValue(values.get(idx));
         }
 
         public String getPrintValue(String value) {
@@ -151,24 +197,57 @@ public class Table<T> {
     }
 
     public static class TableColumnSchema<T> {
+        private interface SecureGet<T> extends Function<T, String> {
+        }
+
+        public static final int DEFAULT_MAX_WIDTH = 30;
+        public static final int DEFAULT_MIN_WIDTH = 5;
         private final String name;
-        private final Function<T, String> get;
+        private final SecureGet<T> get;
         private final int minWidth;
         private final int maxWidth;
 
         public TableColumnSchema(String name, Function<T, String> get) {
-            this(name, get, 30);
+            this(name, get, DEFAULT_MAX_WIDTH, DEFAULT_MIN_WIDTH);
         }
 
         public TableColumnSchema(String name, Function<T, String> get, int maxWidth) {
-            this(name, get, maxWidth, 5);
+            this(name, get, maxWidth, DEFAULT_MIN_WIDTH);
         }
 
         public TableColumnSchema(String name, Function<T, String> get, int maxWidth, int minWidth) {
+            this(name, get, maxWidth, minWidth, DEFAULT_EMPTY_VALUE);
+        }
+
+        public TableColumnSchema(String name, Function<T, String> get, int maxWidth, int minWidth, String defaultEmptyValue) {
             this.name = name;
-            this.get = get;
+            this.get = wrap(get, defaultEmptyValue);
             this.maxWidth = maxWidth;
             this.minWidth = minWidth;
+        }
+
+        private static <T> SecureGet<T> wrap(Function<T, ?> get, String defaultValue) {
+            if (get instanceof TableColumnSchema.SecureGet) {
+                return ((SecureGet<T>) get);
+            } else {
+                return t -> {
+                    try {
+                        Object o = get.apply(t);
+                        if (o == null) {
+                            return defaultValue;
+                        } else {
+                            String str = o.toString();
+                            if (str == null || str.isEmpty()) {
+                                return defaultValue;
+                            } else {
+                                return str;
+                            }
+                        }
+                    } catch (RuntimeException e) {
+                        return defaultValue;
+                    }
+                };
+            }
         }
 
         public String getName() {
@@ -363,6 +442,69 @@ public class Table<T> {
                 out.print(pad);
                 out.print(column.getPrintValue(i));
                 out.print(pad + sep);
+            }
+            out.println();
+        }
+    }
+
+    public static class TsvTablePrinter implements TablePrinter {
+        private String sep = "\t";
+        private PrintStream out;
+
+        public TsvTablePrinter() {
+            this(System.out);
+        }
+
+        public TsvTablePrinter(PrintStream out) {
+            this.out = out;
+        }
+
+        @Override
+        public void restorePosition() {
+            return;
+        }
+
+        @Override
+        public void println(String content) {
+            out.println(content);
+        }
+
+        @Override
+        public void print(String content) {
+            out.print(content);
+        }
+
+        @Override
+        public <T> void printHeader(List<TableColumn<T>> columns) {
+            Iterator<TableColumn<T>> iterator = columns.iterator();
+            out.print("#");
+            while (iterator.hasNext()) {
+                TableColumn<T> column = iterator.next();
+                out.print(column.getName());
+                if (iterator.hasNext()) {
+                    out.print(sep);
+                }
+            }
+            out.println();
+        }
+
+        @Override
+        public <T> void printLine(List<TableColumn<T>> columns) {
+        }
+
+        @Override
+        public <T> void printFullLine(List<TableColumn<T>> columns) {
+        }
+
+        @Override
+        public <T> void printRow(List<TableColumn<T>> columns, int i) {
+            Iterator<TableColumn<T>> iterator = columns.iterator();
+            while (iterator.hasNext()) {
+                TableColumn<T> column = iterator.next();
+                out.print(column.getValue(i));
+                if (iterator.hasNext()) {
+                    out.print(sep);
+                }
             }
             out.println();
         }

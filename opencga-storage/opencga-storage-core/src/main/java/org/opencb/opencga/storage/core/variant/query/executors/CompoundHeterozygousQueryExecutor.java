@@ -60,8 +60,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
 
     @Override
     public boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException {
-        return !shouldGetExactCount(options) // exact count is not supported
-                && isValidParam(query, VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS);
+        return isValidParam(query, VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS);
     }
 
     @Override

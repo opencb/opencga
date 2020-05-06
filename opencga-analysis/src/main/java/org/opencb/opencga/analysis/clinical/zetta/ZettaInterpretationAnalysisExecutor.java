@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.clinical.custom;
+package org.opencb.opencga.analysis.clinical.zetta;
 
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;

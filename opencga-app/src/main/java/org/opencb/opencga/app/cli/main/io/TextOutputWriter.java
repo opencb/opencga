@@ -24,7 +24,6 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
@@ -49,11 +48,18 @@ import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
  */
 public class TextOutputWriter extends AbstractOutputWriter {
 
+    private Table.PrinterType tableType;
+
     public TextOutputWriter() {
     }
 
     public TextOutputWriter(WriterConfiguration writerConfiguration) {
+        this(writerConfiguration, Table.PrinterType.TSV);
+    }
+
+    public TextOutputWriter(WriterConfiguration writerConfiguration, Table.PrinterType tableType) {
         super(writerConfiguration);
+        this.tableType = tableType;
     }
 
     @Override
@@ -267,126 +273,66 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     private void printFiles(List<DataResult<File>> queryResultList) {
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<File> queryResult : queryResultList) {
-            // Write header
-            sb.append("#ID\tNAME\tTYPE\tFORMAT\tBIOFORMAT\tDESCRIPTION\tCATALOG_PATH\tFILE_SYSTEM_URI\tSTATUS\tSIZE\tINDEX_STATUS"
-                    + "\tRELATED_FILES\tSAMPLES\n");
+        Table<File> table = new Table<File>(tableType)
+                .addColumn("ID", File::getId, 50)
+                .addColumn("NAME", File::getName, 50)
+                .addColumnEnum("TYPE", File::getType)
+                .addColumnEnum("FORMAT", File::getFormat)
+                .addColumnEnum("BIOFORMAT", File::getBioformat)
+                .addColumn("DESCRIPTION", File::getDescription)
+                .addColumn("CATALOG_PATH", File::getPath)
+                .addColumn("FILE_SYSTEM_URI", file -> file.getUri().toString())
+                .addColumn("STATUS", f -> f.getInternal().getStatus().getName())
+                .addColumnNumber("SIZE", File::getSize)
+                .addColumn("INDEX_STATUS", f -> f.getInternal().getIndex().getStatus().getName(), "NA")
+                .addColumn("RELATED_FILES", f -> f.getRelatedFiles().stream().map(rf -> rf.getFile().getName()).collect(Collectors.joining(",")))
+                .addColumn("SAMPLES", f -> f.getSamples().stream().map(Sample::getId).collect(Collectors.joining(",")));
 
-            printFiles(queryResult.getResults(), sb, "");
-        }
-
-        ps.println(sb.toString());
-    }
-
-    private void printFiles(List<File> files, StringBuilder sb, String format) {
-        // # name	type	format	bioformat	description	path	id	status	size	index status	related files   samples
-        for (File file : files) {
-            String indexStatus = "NA";
-            if (file.getInternal().getIndex() != null && file.getInternal().getIndex().getStatus() != null && file.getInternal().getIndex().getStatus().getName() != null) {
-                indexStatus = file.getInternal().getIndex().getStatus().getName();
-            }
-            sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\n", format,
-                    StringUtils.defaultIfEmpty(file.getId(), "-"), StringUtils.defaultIfEmpty(file.getName(), "-"),
-                    file.getType(), file.getFormat(), file.getBioformat(), StringUtils.defaultIfEmpty(file.getDescription(), "-"),
-                    StringUtils.defaultIfEmpty(file.getPath(), "-"), file.getUri(),
-                    file.getInternal().getStatus() != null ? StringUtils.defaultIfEmpty(file.getInternal().getStatus().getName(), "-") : "-", file.getSize(),
-                    indexStatus,
-                    file.getRelatedFiles() != null ?
-                            StringUtils.join(file.getRelatedFiles()
-                                    .stream()
-                                    .map(FileRelatedFile::getFile)
-                                    .map(File::getId)
-                                    .collect(Collectors.toList()), ", ")
-                            : "-",
-                    file.getSamples() != null ?
-                            StringUtils.join(file.getSamples()
-                                    .stream()
-                                    .map(Sample::getId)
-                                    .collect(Collectors.toList()), ", ")
-                            : "-")
-            );
-        }
+        table.updateTable(queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList()));
+        table.printTable();
     }
 
     private void printSamples(List<DataResult<Sample>> queryResultList) {
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<Sample> queryResult : queryResultList) {
-            // Write header
-            if (writerConfiguration.isHeader()) {
-                sb.append("#ID\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_ID\tINDIVIDUAL_NAME\n");
-            }
+        Table<Sample> table = new Table<Sample>(tableType)
+                .addColumn("ID", Sample::getId)
+                .addColumn("DESCRIPTION", Sample::getDescription)
+                .addColumn("STATUS", s -> s.getInternal().getStatus().getName())
+                .addColumn("INDIVIDUAL_ID", Sample::getIndividualId);
 
-            printSamples(queryResult.getResults(), sb, "");
-        }
-
-        ps.println(sb.toString());
-    }
-
-    private void printSamples(List<Sample> samples, StringBuilder sb, String format) {
-        // # name	id	source	description	status	individualName	individualID
-        for (Sample sample : samples) {
-            String individualId = StringUtils.defaultIfEmpty(sample.getIndividualId(), "-");
-            sb.append(String.format("%s%s\t%s\t%s\t%s\n", format,
-                    getId(sample),
-                    StringUtils.defaultIfEmpty(sample.getDescription(), "-"),
-                    sample.getInternal().getStatus() != null ? StringUtils.defaultIfEmpty(sample.getInternal().getStatus().getName(), "-") : "-", individualId));
-        }
+        table.updateTable(queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList()));
+        table.printTable();
     }
 
     private void printCohorts(List<DataResult<Cohort>> queryResultList) {
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<Cohort> queryResult : queryResultList) {
-            // Write header
-            if (writerConfiguration.isHeader()) {
-                sb.append("#ID\tNAME\tTYPE\tDESCRIPTION\tSTATUS\tTOTAL_SAMPLES\tSAMPLES\n");
-            }
+        Table<Cohort> table = new Table<Cohort>(tableType)
+                .addColumn("ID", Cohort::getId)
+                .addColumnEnum("TYPE", Cohort::getType)
+                .addColumn("DESCRIPTION", Cohort::getDescription)
+                .addColumn("STATUS", c -> c.getInternal().getStatus().getName())
+                .addColumnNumber("TOTAL_SAMPLES", c -> c.getSamples().size())
+                .addColumn("SAMPLES", c -> c.getSamples().stream().map(Sample::getId).collect(Collectors.joining(",")));
 
-            for (Cohort cohort : queryResult.getResults()) {
-                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\n", StringUtils.defaultIfEmpty(cohort.getId(), "-"),
-                        StringUtils.defaultIfEmpty(cohort.getId(), "-"), cohort.getType(),
-                        StringUtils.defaultIfEmpty(cohort.getDescription(), "-"),
-                        cohort.getInternal().getStatus() != null ? StringUtils.defaultIfEmpty(cohort.getInternal().getStatus().getName(), "-") : "-",
-                        cohort.getSamples().size(), cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA"));
-            }
-        }
-
-        ps.println(sb.toString());
+        table.updateTable(queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList()));
+        table.printTable();
     }
 
     private void printIndividual(List<DataResult<Individual>> queryResultList) {
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<Individual> queryResult : queryResultList) {
-            // Write header
-            if (writerConfiguration.isHeader()) {
-                sb.append("#ID\tNAME\tSEX\tKARYOTYPIC_SEX\tETHNICITY\tPOPULATION\tSUBPOPULATION\tLIFE_STATUS")
-                        .append("\tSTATUS\tFATHER_ID\tMOTHER_ID\tCREATION_DATE\n");
-            }
+        Table<Individual> table = new Table<Individual>(tableType)
+                .addColumn("ID", Individual::getId)
+                .addColumn("NAME", Individual::getId)
+                .addColumnEnum("SEX", Individual::getSex)
+                .addColumnEnum("KARYOTYPIC_SEX", Individual::getKaryotypicSex)
+                .addColumn("ETHNICITY", Individual::getEthnicity)
+                .addColumn("POPULATION", i -> i.getPopulation().getName(), "NA")
+                .addColumn("SUBPOPULATION", i -> i.getPopulation().getSubpopulation(), "NA")
+                .addColumnEnum("LIFE_STATUS", Individual::getLifeStatus)
+                .addColumn("STATUS", i -> i.getInternal().getStatus().getName())
+                .addColumn("FATHER_ID", i -> i.getFather().getId())
+                .addColumn("MOTHER_ID", i -> i.getMother().getId())
+                .addColumn("CREATION_DATE", Individual::getCreationDate);
 
-            for (Individual individual : queryResult.getResults()) {
-                String population = "NA";
-                String subpopulation = "NA";
-                if (individual.getPopulation() != null) {
-                    if (StringUtils.isNotEmpty(individual.getPopulation().getName())) {
-                        population = individual.getPopulation().getName();
-                    }
-                    if (StringUtils.isNotEmpty(individual.getPopulation().getSubpopulation())) {
-                        subpopulation = individual.getPopulation().getSubpopulation();
-                    }
-                }
-                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                        StringUtils.defaultIfEmpty(individual.getId(), "-"), StringUtils.defaultIfEmpty(individual.getName(), "-"),
-                        individual.getSex(), individual.getKaryotypicSex(),
-                        StringUtils.defaultIfEmpty(individual.getEthnicity(), "-"), population, subpopulation,
-                        individual.getLifeStatus(),
-                        individual.getInternal().getStatus() != null ? StringUtils.defaultIfEmpty(individual.getInternal().getStatus().getName(), "-") : "-",
-                        individual.getFather() != null ? StringUtils.defaultIfEmpty(individual.getFather().getId(), "-") : "-",
-                        individual.getMother() != null ? StringUtils.defaultIfEmpty(individual.getMother().getId(), "-") : "-",
-                        StringUtils.defaultIfEmpty(individual.getCreationDate(), "-")));
-            }
-        }
-
-        ps.println(sb.toString());
+        table.updateTable(queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList()));
+        table.printTable();
     }
 
 //    private void printFamily(List<DataResult<Family>> queryResultList) {
@@ -422,28 +368,17 @@ public class TextOutputWriter extends AbstractOutputWriter {
 //    }
 
     private void printJob(List<DataResult<Job>> queryResultList) {
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<Job> queryResult : queryResultList) {
-            // Write header
-            if (writerConfiguration.isHeader()) {
-                sb.append("#ID\tCREATION_DATE\tSTATUS\tINPUT")
-                        .append("\tOUTPUT\tOUTPUT_DIRECTORY\n");
-            }
+        Table<Job> table = new Table<Job>(tableType)
+                .addColumn("ID", Job::getId, 50)
+                .addColumn("TOOL_ID", j -> j.getTool().getId())
+                .addColumn("CREATION_DATE", Job::getCreationDate)
+                .addColumn("STATUS", j -> j.getInternal().getStatus().getName())
+                .addColumn("INPUT", j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")))
+                .addColumn("OUTPUT", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")))
+                .addColumn("OUTPUT_DIRECTORY", j -> j.getOutDir().getPath());
 
-            for (Job job : queryResult.getResults()) {
-                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\n",
-                        StringUtils.defaultIfEmpty(job.getId(), "-"),
-                        StringUtils.defaultIfEmpty(job.getCreationDate(), "-"),
-                        job.getInternal().getStatus() != null
-                                ? StringUtils.defaultIfEmpty(job.getInternal().getStatus().getName(), "-")
-                                : "-",
-                        job.getInput().stream().map(this::getId).collect(Collectors.joining(",")),
-                        job.getOutput().stream().map(this::getId).collect(Collectors.joining(",")),
-                        getId(job.getOutDir())));
-            }
-        }
-
-        ps.println(sb.toString());
+        table.updateTable(queryResultList.stream().flatMap(r->r.getResults().stream()).collect(Collectors.toList()));
+        table.printTable();
     }
 
     private void printVariableSet(List<DataResult<VariableSet>> queryResultList) {

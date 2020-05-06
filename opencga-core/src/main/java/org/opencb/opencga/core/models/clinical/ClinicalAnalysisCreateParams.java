@@ -21,6 +21,7 @@ import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 
@@ -38,7 +39,7 @@ public class ClinicalAnalysisCreateParams {
 
     private Disorder disorder;
 
-    private List<ClinicalAnalysis.File> files;
+    private List<File> files;
 
     private ProbandParam proband;
     private FamilyParam family;
@@ -64,7 +65,7 @@ public class ClinicalAnalysisCreateParams {
     }
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
-                                        List<ClinicalAnalysis.File> files, ProbandParam proband, FamilyParam family,
+                                        List<File> files, ProbandParam proband, FamilyParam family,
                                         Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalysisQc qualityControl,
                                         ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
                                         InterpretationCreateParams interpretation,
@@ -224,11 +225,11 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public List<ClinicalAnalysis.File> getFiles() {
+    public List<File> getFiles() {
         return files;
     }
 
-    public ClinicalAnalysisCreateParams setFiles(List<ClinicalAnalysis.File> files) {
+    public ClinicalAnalysisCreateParams setFiles(List<File> files) {
         this.files = files;
         return this;
     }
