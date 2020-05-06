@@ -362,7 +362,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                                                   Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
                                                   Map<String, List<String>> actionableVariants, InterpretationAnalysisConfiguration config) {
 
-        if (variant.getAnnotation() ==  null || CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+        if (variant.getAnnotation() ==  null || CollectionUtils.isEmpty(variant.getAnnotation().getConsequenceTypes())) {
             return null;
         }
 
