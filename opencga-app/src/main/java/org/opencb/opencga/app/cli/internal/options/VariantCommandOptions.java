@@ -269,7 +269,7 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = true, arity = 1)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", arity = 1)
         public String outdir = null;
     }
 
