@@ -259,17 +259,18 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             // Check all quality control parameters
             String[] qualityObjectParams = {QueryParams.QUALITY_CONTROL_VARIANT.key(), QueryParams.QUALITY_CONTROL_ALIGNMENT.key(),
                     QueryParams.QUALITY_CONTROL_ANALYST.key()};
-            filterObjectParams(parameters, document.getSet(), qualityObjectParams, true);
+            filterObjectParams(parameters, document.getSet(), qualityObjectParams);
 
             String[] qualityStringParams = {QueryParams.QUALITY_CONTROL_QUALITY.key()};
-            filterStringParams(parameters, document.getSet(), qualityStringParams, true);
+            filterStringParams(parameters, document.getSet(), qualityStringParams);
 
             // We don't set the list of comments, we always add to the current list
-            String[] qualityStringListParams = {QueryParams.QUALITY_CONTROL_COMMENTS.key()};
-            filterStringListParams(parameters, document.getAddToSet(), qualityStringListParams, true);
+            String[] qualityListParams = {QueryParams.QUALITY_CONTROL_COMMENTS.key()};
+            filterObjectParams(parameters, document.getAddToSet(), qualityListParams);
 
             // We always update the date
-            nestedPut(QueryParams.QUALITY_CONTROL_DATE.key(), TimeUtils.getTime(), document.getSet());
+            document.getSet().put(QueryParams.QUALITY_CONTROL_DATE.key(), TimeUtils.getTime());
+//            nestedPut(QueryParams.QUALITY_CONTROL_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -468,6 +469,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             qOptions = new QueryOptions();
         }
+        qOptions = removeInnerProjections(qOptions, QueryParams.INTERPRETATION.key());
         qOptions = removeInnerProjections(qOptions, QueryParams.SECONDARY_INTERPRETATIONS.key());
 
         logger.debug("Clinical analysis query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));

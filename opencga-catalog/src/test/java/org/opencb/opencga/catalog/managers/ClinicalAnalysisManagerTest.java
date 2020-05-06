@@ -26,14 +26,15 @@ import org.opencb.biodata.models.clinical.interpretation.Analyst;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -44,8 +45,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class ClinicalAnalysisManagerTest extends GenericTest {
 
@@ -189,6 +189,33 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void updateQualityContorl() throws CatalogException, InterruptedException {
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
+
+        ClinicalAnalysisQcUpdateParams updateParams = new ClinicalAnalysisQcUpdateParams()
+                .setQuality(ClinicalAnalysisQc.Quality.LOW)
+                .setComments(Arrays.asList(new Comment("pfurio", "INFO", "message1", TimeUtils.getTime())));
+        catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
+                new ClinicalUpdateParams().setQualityControl(updateParams), QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<ClinicalAnalysis> result1 = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(),
+                new QueryOptions(), sessionIdUser);
+
+        assertEquals(ClinicalAnalysisQc.Quality.LOW, result1.first().getQualityControl().getQuality());
+        assertEquals(1, result1.first().getQualityControl().getComments().size());
+
+        updateParams = new ClinicalAnalysisQcUpdateParams()
+                .setComments(Arrays.asList(new Comment("jcoll", "INFO", "message2", TimeUtils.getTime())));
+        catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
+                new ClinicalUpdateParams().setQualityControl(updateParams), QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<ClinicalAnalysis> result2 = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(),
+                new QueryOptions(), sessionIdUser);
+
+        assertEquals(2, result2.first().getQualityControl().getComments().size());
+        assertEquals("message1", result2.first().getQualityControl().getComments().get(0).getMessage());
+        assertEquals("message2", result2.first().getQualityControl().getComments().get(1).getMessage());
+    }
+
+    @Test
     public void deleteClinicalAnalysisWithInterpretation() throws CatalogException {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
         Interpretation interpretation = new Interpretation();
@@ -264,7 +291,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("description", clinicalAnalysisDataResult.first().getInterpretation().getDescription());
 
         clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
-                dummyEnvironment.first().getId(), new QueryOptions(QueryOptions.INCLUDE, "interpretations.id"), sessionIdUser);
+                dummyEnvironment.first().getId(), new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+                        ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key())), sessionIdUser);
         assertEquals(0, clinicalAnalysisDataResult.first().getSecondaryInterpretations().size());
         assertEquals("interpretationId", clinicalAnalysisDataResult.first().getInterpretation().getId());
         assertEquals(null, clinicalAnalysisDataResult.first().getInterpretation().getDescription());

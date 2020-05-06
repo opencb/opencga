@@ -134,7 +134,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         if (primary) {
-            if (result.first().getInterpretation() == null || StringUtils.isEmpty(result.first().getInterpretation().getId())) {
+            if (result.first().getInterpretation() != null && StringUtils.isNotEmpty(result.first().getInterpretation().getId())) {
                 throw new CatalogDBException("Clinical analysis '" + interpretation.getClinicalAnalysisId() + "' already has a "
                         + "primary interpretation.");
             }

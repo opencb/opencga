@@ -282,33 +282,17 @@ class MongoDBUtils {
     }
 
     static void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
-        filterStringParams(parameters, filteredParams, acceptedParams, false);
-    }
-
-    static void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams, boolean nested) {
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
-                if (nested) {
-                    nestedPut(s, parameters.getString(s), filteredParams);
-                } else {
-                    filteredParams.put(s, parameters.getString(s));
-                }
+                filteredParams.put(s, parameters.getString(s));
             }
         }
     }
 
     static void filterStringListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
-        filterStringListParams(parameters, filteredParams, acceptedParams, false);
-    }
-
-    static void filterStringListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams, boolean nested) {
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
-                if (nested) {
-                    nestedPut(s, parameters.getAsStringList(s), filteredParams);
-                } else {
-                    filteredParams.put(s, parameters.getAsStringList(s));
-                }
+                filteredParams.put(s, parameters.getAsStringList(s));
             }
         }
     }
@@ -370,10 +354,6 @@ class MongoDBUtils {
     }
 
     static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
-        filterObjectParams(parameters, filteredParams, acceptedMapParams, false);
-    }
-
-    static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams, boolean nested) {
         for (String s : acceptedMapParams) {
             if (parameters.containsKey(s)) {
                 Document document;
@@ -384,18 +364,10 @@ class MongoDBUtils {
                         for (Object object : originalList) {
                             documentList.add(getMongoDBDocument(object, s));
                         }
-                        if (nested) {
-                            nestedPut(s, documentList, filteredParams);
-                        } else {
-                            filteredParams.put(s, documentList);
-                        }
+                        filteredParams.put(s, documentList);
                     } else {
                         document = getMongoDBDocument(parameters.get(s), s);
-                        if (nested) {
-                            nestedPut(s, document, filteredParams);
-                        } else {
-                            filteredParams.put(s, document);
-                        }
+                        filteredParams.put(s, document);
                     }
                 } catch (CatalogDBException e) {
                     e.printStackTrace();
