@@ -31,38 +31,28 @@ public class InterpretationUpdateParams {
     private String id;
     private String description;
     private String clinicalAnalysisId;
-    private List<DiseasePanel> panels;
-    private Software software;
     private Analyst analyst;
-    private List<Software> dependencies;
-    private Map<String, Object> filters;
+    private InterpretationMethod method;
     private String creationDate;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
-    private List<ReportedLowCoverage> reportedLowCoverages;
     private List<Comment> comments;
     private Map<String, Object> attributes;
 
     public InterpretationUpdateParams() {
     }
 
-    public InterpretationUpdateParams(String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels,
-                                      Software software, Analyst analyst, List<Software> dependencies, Map<String, Object> filters,
-                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
-                                      List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments,
-                                      Map<String, Object> attributes) {
+    public InterpretationUpdateParams(String id, String description, String clinicalAnalysisId, Analyst analyst,
+                                      InterpretationMethod method, String creationDate, List<ClinicalVariant> primaryFindings,
+                                      List<ClinicalVariant> secondaryFindings, List<Comment> comments, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
-        this.panels = panels;
-        this.software = software;
         this.analyst = analyst;
-        this.dependencies = dependencies;
-        this.filters = filters;
+        this.method = method;
         this.creationDate = creationDate;
         this.primaryFindings = primaryFindings;
         this.secondaryFindings = secondaryFindings;
-        this.reportedLowCoverages = reportedLowCoverages;
         this.comments = comments;
         this.attributes = attributes;
     }
@@ -78,15 +68,11 @@ public class InterpretationUpdateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
-        sb.append(", panels=").append(panels);
-        sb.append(", software=").append(software);
         sb.append(", analyst=").append(analyst);
-        sb.append(", dependencies=").append(dependencies);
-        sb.append(", filters=").append(filters);
+        sb.append(", method=").append(method);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", primaryFindings=").append(primaryFindings);
         sb.append(", secondaryFindings=").append(secondaryFindings);
-        sb.append(", reportedLowCoverages=").append(reportedLowCoverages);
         sb.append(", comments=").append(comments);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -120,24 +106,6 @@ public class InterpretationUpdateParams {
         return this;
     }
 
-    public List<DiseasePanel> getPanels() {
-        return panels;
-    }
-
-    public InterpretationUpdateParams setPanels(List<DiseasePanel> panels) {
-        this.panels = panels;
-        return this;
-    }
-
-    public Software getSoftware() {
-        return software;
-    }
-
-    public InterpretationUpdateParams setSoftware(Software software) {
-        this.software = software;
-        return this;
-    }
-
     public Analyst getAnalyst() {
         return analyst;
     }
@@ -147,21 +115,12 @@ public class InterpretationUpdateParams {
         return this;
     }
 
-    public List<Software> getDependencies() {
-        return dependencies;
+    public InterpretationMethod getMethod() {
+        return method;
     }
 
-    public InterpretationUpdateParams setDependencies(List<Software> dependencies) {
-        this.dependencies = dependencies;
-        return this;
-    }
-
-    public Map<String, Object> getFilters() {
-        return filters;
-    }
-
-    public InterpretationUpdateParams setFilters(Map<String, Object> filters) {
-        this.filters = filters;
+    public InterpretationUpdateParams setMethod(InterpretationMethod method) {
+        this.method = method;
         return this;
     }
 
@@ -189,15 +148,6 @@ public class InterpretationUpdateParams {
 
     public InterpretationUpdateParams setSecondaryFindings(List<ClinicalVariant> secondaryFindings) {
         this.secondaryFindings = secondaryFindings;
-        return this;
-    }
-
-    public List<ReportedLowCoverage> getReportedLowCoverages() {
-        return reportedLowCoverages;
-    }
-
-    public InterpretationUpdateParams setReportedLowCoverages(List<ReportedLowCoverage> reportedLowCoverages) {
-        this.reportedLowCoverages = reportedLowCoverages;
         return this;
     }
 

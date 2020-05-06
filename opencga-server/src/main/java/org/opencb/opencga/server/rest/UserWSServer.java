@@ -166,20 +166,33 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @POST
     @Path("/{user}/password")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Change the password of a user", notes = "It doesn't work if the user is authenticated against LDAP.",
-            response = User.class)
-    public Response changePasswordPost(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-                                       @ApiParam(value = "JSON containing the params 'password' (old password) and 'newPassword' (new "
-                                               + "password)", required = true) PasswordChangeParams params) {
+    @ApiOperation(value = "Change the password of a user",
+            notes = "Only for local users. Not available for users belonging to external authentication origins.", response = User.class,
+            hidden = true)
+    public Response deprecatedChangePasswordPost(
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
+            @ApiParam(value = "JSON containing the change of password parameters", required = true) PasswordChangeParams params) {
         try {
-            if (StringUtils.isEmpty(params.getPassword()) || (StringUtils.isEmpty(params.getNpassword()) && StringUtils.isEmpty(params.getNewPassword()))) {
-                throw new Exception("The json must contain the keys password and newPassword.");
-            }
-            params.setNewPassword(StringUtils.isNotEmpty(params.getNewPassword()) ? params.getNewPassword() : params.getNpassword());
             catalogManager.getUserManager().changePassword(userId, params.getPassword(), params.getNewPassword());
+            return createOkResponse(DataResult.empty());
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/password")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Change the password of a user",
+            notes = "Only for local users. Not available for users belonging to external authentication origins.", response = User.class)
+    public Response changePassword(
+            @ApiParam(value = "JSON containing the change of password parameters", required = true) PasswordChangeParams params) {
+        try {
+            catalogManager.getUserManager().changePassword(params.getUser(), params.getPassword(), params.getNewPassword());
             return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);

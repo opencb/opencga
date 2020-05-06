@@ -44,6 +44,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     private final AuditCommandOptions auditCommandOptions;
     private final ToolsCommandOptions toolsCommandOptions;
     private final ServerCommandOptions serverCommandOptions;
+    private final PanelCommandOptions panelCommandOptions;
     private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
     private final MigrationCommandOptions migrationCommandOptions;
 
@@ -68,7 +69,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         catalogSubCommands.addCommand("export", catalogCommandOptions.exportCatalogCommandOptions);
         catalogSubCommands.addCommand("import", catalogCommandOptions.importCatalogCommandOptions);
         catalogSubCommands.addCommand("daemon", catalogCommandOptions.daemonCatalogCommandOptions);
-        catalogSubCommands.addCommand("panel", catalogCommandOptions.panelCatalogCommandOptions);
 
         usersCommandOptions = new UsersCommandOptions();
         jCommander.addCommand("users", usersCommandOptions);
@@ -99,6 +99,12 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         JCommander serverSubCommands = jCommander.getCommands().get("server");
         serverSubCommands.addCommand("rest", serverCommandOptions.restServerCommandOptions);
         serverSubCommands.addCommand("grpc", serverCommandOptions.grpcServerCommandOptions);
+
+        panelCommandOptions = new PanelCommandOptions();
+        jCommander.addCommand("panel", panelCommandOptions);
+        JCommander panelSubCommands = jCommander.getCommands().get("panel");
+        panelSubCommands.addCommand("panelapp", panelCommandOptions.panelAppCommandOptions);
+        panelSubCommands.addCommand("cancer-gene-census", panelCommandOptions.cancerGeneCensusCommandOptions);
 
         this.metaCommandOptions = new AdminCliOptionsParser.MetaCommandOptions();
         this.jCommander.addCommand("meta", this.metaCommandOptions);
@@ -181,7 +187,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public ExportCatalogCommandOptions exportCatalogCommandOptions;
         public ImportCatalogCommandOptions importCatalogCommandOptions;
         public DaemonCatalogCommandOptions daemonCatalogCommandOptions;
-        public PanelCatalogCommandOptions panelCatalogCommandOptions;
 
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
@@ -196,7 +201,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             this.exportCatalogCommandOptions = new ExportCatalogCommandOptions();
             this.importCatalogCommandOptions = new ImportCatalogCommandOptions();
             this.daemonCatalogCommandOptions = new DaemonCatalogCommandOptions();
-            this.panelCatalogCommandOptions = new PanelCatalogCommandOptions();
         }
     }
 
@@ -259,6 +263,23 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             this.installToolCommandOptions = new InstallToolCommandOptions();
             this.listToolCommandOptions = new ListToolCommandOptions();
             this.showToolCommandOptions = new ShowToolCommandOptions();
+        }
+    }
+
+    /*
+     * Panel CLI options
+     */
+    @Parameters(commandNames = {"panel"}, commandDescription = "Parse external panels to OpenCGA data model")
+    public class PanelCommandOptions extends CommandOptions {
+
+        public PanelAppCommandOptions panelAppCommandOptions;
+        public CancerGeneCensusCommandOptions cancerGeneCensusCommandOptions;
+
+        public GeneralCliOptions.CommonCommandOptions  commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+
+        public PanelCommandOptions() {
+            this.panelAppCommandOptions = new PanelAppCommandOptions();
+            this.cancerGeneCensusCommandOptions = new CancerGeneCensusCommandOptions();
         }
     }
 
@@ -455,28 +476,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--stop"}, description = "Stop OpenCGA Catalog daemon", arity = 0)
         public boolean stop;
     }
-
-    @Parameters(commandNames = {"panel"}, commandDescription = "Handle global panels")
-    public class PanelCatalogCommandOptions extends CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        @Parameter(names = {"--import-from-panelApp"}, description = "Flag indicating that panels should be imported from PanelApp (GEL)",
-                arity = 0)
-        public boolean panelAppImport;
-
-        @Parameter(names = {"--import"}, description = "File or folder containing panels in JSON format to be imported in OpenCGA",
-                arity = 1)
-        public String panelImport;
-
-        @Parameter(names = {"--overwrite"}, description = "Flag indicating to overwrite installed panels in case of an ID conflict", arity = 0)
-        public boolean overwrite;
-
-        @Parameter(names = {"--delete"}, description = "Comma separated list of global panel ids to delete", arity = 1)
-        public String delete;
-    }
-
 
     /*
      * AUDIT SUB-COMMANDS
@@ -685,6 +684,31 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
     }
 
+    /*
+     * PANEL SUB-COMMANDS
+     */
+    @Parameters(commandNames = {"panelapp"}, commandDescription = "Parse and generate the latest PanelApp panels")
+    public class PanelAppCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", arity = 1, required = true)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"cancer-gene-census"}, commandDescription = "Parse Cancer Gene Census panel")
+    public class CancerGeneCensusCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", arity = 1, required = true)
+        public String outdir;
+
+        @Parameter(names = {"-i", "--input"}, description = "Gene Census panel in TSV format", arity = 1, required = true)
+        public String input;
+    }
 
     /*
      * SERVER SUB-COMMANDS
@@ -798,6 +822,10 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
     public AdminCliOptionsParser.MetaCommandOptions getMetaCommandOptions() {
         return this.metaCommandOptions;
+    }
+
+    public PanelCommandOptions getPanelCommandOptions() {
+        return panelCommandOptions;
     }
 
     public MigrationCommandOptions getMigrationCommandOptions() {

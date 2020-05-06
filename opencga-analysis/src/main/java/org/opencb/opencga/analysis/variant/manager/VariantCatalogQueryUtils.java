@@ -136,16 +136,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             );
 
     public enum SegregationMode {
-        MONOALLELIC("dominant"),
-        MONOALLELIC_INCOMPLETE_PENETRANCE("monoallelicIncompletePenetrance"),
-        BIALLELIC("recesive"),
-        BIALLELIC_INCOMPLETE_PENETRANCE("biallelicIncompletePenetrance"),
-        XLINKED_MONOALLELIC("XlinkedMonoallelic"),
-        XLINKED_BIALLELIC("XlinkedBiallelic"),
-        YLINKED,
-        DE_NOVO("deNovo"),
-        MENDELIAN_ERROR("mendelianError"),
-        COMPOUND_HETEROZYGOUS("compoundHeterozygous");
+        AUTOSOMAL_DOMINANT("monoallelic"),
+        AUTOSOMAL_RECESSIVE("biallelic"),
+        X_LINKED_DOMINANT,
+        X_LINKED_RECESSIVE,
+        Y_LINKED,
+        MITOCHONDRIAL,
+
+        DE_NOVO,
+        MENDELIAN_ERROR("me"),
+        COMPOUND_HETEROZYGOUS("ch");
 
         private static Map<String, SegregationMode> namesMap;
 
@@ -153,6 +153,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             namesMap = new HashMap<>();
             for (SegregationMode mode : values()) {
                 namesMap.put(mode.name().toLowerCase(), mode);
+                namesMap.put(mode.name().replace("_", "").toLowerCase(), mode);
                 if (mode.names != null) {
                     for (String name : mode.names) {
                         namesMap.put(name.toLowerCase(), mode);
@@ -646,16 +647,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 for (String value : keyOpValue.getValue()) {
                     SegregationMode aux = SegregationMode.parseOrNull(value);
                     if (aux != null) {
-                        switch (aux) {
-                            case DE_NOVO:
-                            case MENDELIAN_ERROR:
-                                // Ignore these modes as they will be processed internally
-                                break;
-                            case COMPOUND_HETEROZYGOUS:
-                            default:
-                                segregationMode = aux;
-                                break;
-                        }
+                        segregationMode = aux;
                     }
                 }
             }
@@ -730,6 +722,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
                     query.put(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(member.getId(), fatherId, motherId));
                     query.remove(SAMPLE.key());
+                } else if (segregationMode == SegregationMode.DE_NOVO) {
+                    query.put(SAMPLE_DE_NOVO.key(), member.getId());
+                    query.remove(SAMPLE.key());
+                } else if (segregationMode == SegregationMode.MENDELIAN_ERROR) {
+                    query.put(SAMPLE_MENDELIAN_ERROR.key(), member.getId());
+                    query.remove(SAMPLE.key());
                 } else {
                     Pedigree pedigree = new Pedigree("", new ArrayList<>(3), Collections.emptyMap());
                     pedigree.getMembers().add(member);
@@ -779,26 +777,29 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                                   Map<String, String> pedigreeMemberToSampleId) {
         Map<String, List<String>> genotypes;
         switch (segregationMode) {
-            case MONOALLELIC:
+            case AUTOSOMAL_DOMINANT:
                 genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
-            case MONOALLELIC_INCOMPLETE_PENETRANCE:
-                genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
-                break;
-            case BIALLELIC:
+//            case AUTOSOMAL_DOMINANT_INCOMPLETE_PENETRANCE:
+//                genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
+//                break;
+            case AUTOSOMAL_RECESSIVE:
                 genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
-            case BIALLELIC_INCOMPLETE_PENETRANCE:
-                genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
-                break;
-            case XLINKED_MONOALLELIC:
+//            case AUTOSOMAL_RECESSIVE_INCOMPLETE_PENETRANCE:
+//                genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
+//                break;
+            case X_LINKED_DOMINANT:
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, ClinicalProperty.Penetrance.COMPLETE);
                 break;
-            case XLINKED_BIALLELIC:
+            case X_LINKED_RECESSIVE:
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, ClinicalProperty.Penetrance.COMPLETE);
                 break;
-            case YLINKED:
+            case Y_LINKED:
                 genotypes = ModeOfInheritance.yLinked(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
+                break;
+            case MITOCHONDRIAL:
+                genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
             default:
                 throw new IllegalArgumentException("Unexpected segregation mode " + segregationMode);
@@ -840,7 +841,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     }
 
     /**
-     * Get the panel from catalog. If the panel is not found in the study, or the study is null, search through the global panels.
+     * Get the panel from catalog.
      *
      * @param studyId   StudyId
      * @param panelId   PanelId
@@ -858,7 +859,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
         }
         if (panel == null) {
-            panel = catalogManager.getPanelManager().get(PanelManager.INSTALLATION_PANELS, panelId, null, sessionId).first();
+            throw new CatalogException("Panel '" + panelId + "' not found");
         }
         return panel;
     }

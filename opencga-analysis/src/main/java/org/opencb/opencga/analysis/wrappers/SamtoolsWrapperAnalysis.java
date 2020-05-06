@@ -16,17 +16,23 @@
 
 package org.opencb.opencga.analysis.wrappers;
 
+import com.google.common.base.CaseFormat;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.alignment.AlignmentStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
-import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -35,11 +41,14 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import static org.apache.commons.io.FileUtils.readLines;
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS;
 import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.ALIGNMENT_STATS_VARIABLE_SET;
 
@@ -180,11 +189,14 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     }
                     case "stats": {
                         File file = getScratchDir().resolve(STDOUT_FILENAME).toFile();
-                        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+                        List<String> lines = readLines(file, Charset.defaultCharset());
                         if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
                             FileUtils.copyFile(file, outputFile);
+                            AlignmentStats alignmentStats = parseSamToolsStats(outputFile);
+                            //File alignmentStatsFile = getOutDir().resolve("alignment_stats.json").toFile();
+                            //JacksonUtils.getDefaultObjectMapper().writer().writeValue(alignmentStatsFile, alignmentStats);
                             if (params.containsKey(INDEX_STATS_PARAM) && params.getBoolean(INDEX_STATS_PARAM)) {
-                                indexStats();
+                                indexStats(alignmentStats);
                             }
                             success = true;
                         }
@@ -204,7 +216,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     File file = getScratchDir().resolve(STDERR_FILENAME).toFile();
                     String msg = "Something wrong happened when executing Samtools";
                     if (file.exists()) {
-                        msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
+                        msg = StringUtils.join(readLines(file, Charset.defaultCharset()), ". ");
                     }
                     throw new ToolException(msg);
                 }
@@ -412,38 +424,61 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         }
     }
 
-    private void indexStats() throws CatalogException, IOException {
-        // TODO: remove when daemon copies the stats file
-        Files.createSymbolicLink(new File(fileUriMap.get(inputFile).getPath()).getParentFile().toPath().resolve(outputFilename),
-                outputFile.toPath());
+    private AlignmentStats parseSamToolsStats(File file) throws IOException, ToolException, CatalogException {
+        // Create a map with the summary numbers of the statistics (samtools stats)
+        Map<String, Object> map = new HashMap<>();
 
-        // Create a variable set with the summary numbers of the statistics
-        Map<String, Object> annotations = new HashMap<>();
-        List<String> lines = org.apache.commons.io.FileUtils.readLines(outputFile, Charset.defaultCharset());
         int count = 0;
-
-        for (String line : lines) {
+        for (String line : readLines(file, Charset.defaultCharset())) {
             // Only take into account the "SN" section (summary numbers)
             if (line.startsWith("SN")) {
                 count++;
                 String[] splits = line.split("\t");
-                String key = splits[1].split("\\(")[0].trim().replace(" ", "_").replace(":", "");
-                // Special case
-                if (line.contains("bases mapped (cigar):")) {
-                    key += "_cigar";
-                }
+                String key = splits[1].replace("(cigar)", "cigar").split("\\(")[0].trim().replace("1st", "first").replace(":", "")
+                        .replace(" ", "_").replace("-", "_");
+                key = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, key);
                 String value = splits[2].split(" ")[0];
-                annotations.put(key, value);
+                System.out.println(key + " = " + value);
+                map.put(key, value);
             } else if (count > 0) {
                 // SN (summary numbers) section has been processed
                 break;
             }
         }
 
+        // Convert map to AlignmentStats
+        AlignmentStats alignmentStats = JacksonUtils.getDefaultObjectMapper().convertValue(map, AlignmentStats.class);
+
+        // Set file and sample IDs
+        OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = catalogManager.getFileManager().get(getStudy(), inputFile,
+                QueryOptions.empty(), token);
+        // Sanity check
+        if (fileResult.getNumResults() > 1) {
+            throw new ToolException("Multiple files found in catalog for " + inputFile);
+        }
+        if (fileResult.getNumResults() == 0) {
+            throw new ToolException("Not file found in catalog for " + inputFile);
+        }
+        org.opencb.opencga.core.models.file.File catalogFile = fileResult.getResults().get(0);
+        alignmentStats.setFileId(catalogFile.getId());
+        if (CollectionUtils.isNotEmpty(catalogFile.getSamples())) {
+            alignmentStats.setSampleId(catalogFile.getSamples().get(0).getId());
+        }
+
+        return alignmentStats;
+    }
+
+    private void indexStats(AlignmentStats alignmentStats) throws CatalogException, IOException {
+        // TODO: remove when daemon copies the stats file
+        Files.createSymbolicLink(new File(fileUriMap.get(inputFile).getPath()).getParentFile().toPath().resolve(outputFilename),
+                outputFile.toPath());
+
+        // Convert AlignmentStats to map in order to create an AnnotationSet
+        Map<String, Object> annotations = JacksonUtils.getDefaultObjectMapper().convertValue(alignmentStats, Map.class);
         AnnotationSet annotationSet = new AnnotationSet(ALIGNMENT_STATS_VARIABLE_SET, ALIGNMENT_STATS_VARIABLE_SET, annotations);
 
+        // Update catalog
         FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
-
         catalogManager.getFileManager().update(getStudy(), inputFile, updateParams, QueryOptions.empty(), token);
     }
 

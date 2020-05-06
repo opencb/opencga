@@ -144,6 +144,13 @@
             "metadata": {
                 "description": "Define an object for a custom tshirt size of the deployment. WARNING: Intended for experimenting or debugging use with care."
             }
+        },
+        "loginNode": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Optionally deploy a login node named {rgPrefix}-login01"
+            }
         }
     },
     "variables": {
@@ -441,6 +448,48 @@
                     },
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
+                    }
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "loginNode",
+            "condition": "[parameters('loginNode')]",
+            "dependsOn": [
+                "vnet",
+                "[parameters('rgPrefix')]",
+                "loganalytics"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/login/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "name" : {
+                        "value" : "[parameters('rgPrefix')]"
+                    },
+                    "adminUsername" : {
+                        "value": "[parameters('adminUsername')]"
+                    },
+                    "sshKeyData" : {
+                        "value": "[parameters('sshAdminKeyData')]"
+                    },
+                    "subnetId" : {
+                        "value" : "[reference('vnet').outputs.login.value]"
+                    },
+                    "LogAnalyticsWorkspaceID": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
+                    },
+                    "LogAnalyticsWorkspaceKey": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
+                    },
+                    "LogAnalyticsWorkspaceResourceID": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
                     }
                 }
             }

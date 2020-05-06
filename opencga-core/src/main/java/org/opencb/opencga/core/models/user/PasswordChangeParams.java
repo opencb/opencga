@@ -21,16 +21,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class PasswordChangeParams {
 
     @JsonProperty(required = true)
+    private String user;
+    @JsonProperty(required = true)
     private String password;
-    @Deprecated
-    private String npassword;
     @JsonProperty(required = true)
     private String newPassword;
 
     public PasswordChangeParams() {
     }
 
-    public PasswordChangeParams(String oldPassword, String newPassword) {
+    public PasswordChangeParams(String user, String oldPassword, String newPassword) {
+        this.user = user;
         this.password = oldPassword;
         this.newPassword = newPassword;
     }
@@ -38,11 +39,20 @@ public class PasswordChangeParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PasswordChangeParams{");
-        sb.append("password='").append(password).append('\'');
-        sb.append(", npassword='").append(npassword).append('\'');
+        sb.append("user='").append(user).append('\'');
+        sb.append(", password='").append(password).append('\'');
         sb.append(", newPassword='").append(newPassword).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public PasswordChangeParams setUser(String user) {
+        this.user = user;
+        return this;
     }
 
     public String getPassword() {
@@ -51,15 +61,6 @@ public class PasswordChangeParams {
 
     public PasswordChangeParams setPassword(String password) {
         this.password = password;
-        return this;
-    }
-
-    public String getNpassword() {
-        return npassword;
-    }
-
-    public PasswordChangeParams setNpassword(String npassword) {
-        this.npassword = npassword;
         return this;
     }
 

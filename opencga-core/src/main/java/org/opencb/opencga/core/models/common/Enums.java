@@ -115,6 +115,7 @@ public final class Enums {
         DOWNLOAD,
         VIEW_LOG,
         VIEW_CONTENT,
+        IMAGE_CONTENT,
         HEAD_CONTENT,
         TAIL_CONTENT,
         INDEX,

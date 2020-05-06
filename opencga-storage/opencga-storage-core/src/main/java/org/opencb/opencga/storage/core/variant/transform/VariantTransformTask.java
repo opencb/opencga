@@ -217,7 +217,7 @@ public class VariantTransformTask implements Task<String, Variant> {
     }
 
     private void onError(RuntimeException e, String line) {
-        logger.error("Error '{}' parsing line: {}", e.getMessage(), line);
+        logger.error("Error '{}' parsing line: '{}'", e.getMessage(), line);
         for (BiConsumer<String, RuntimeException> handler : errorHandlers) {
             handler.accept(line, e);
         }

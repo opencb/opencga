@@ -66,6 +66,8 @@ public abstract class IOManager {
 
     public abstract DataInputStream getFileObject(URI fileUri, int start, int limit) throws CatalogIOException;
 
+    public abstract FileContent base64Image(Path file) throws CatalogIOException;
+
     public abstract FileContent head(Path file, long offset, int lines) throws CatalogIOException;
 
     public abstract FileContent tail(Path file, int lines) throws CatalogIOException;

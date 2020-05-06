@@ -1,12 +1,16 @@
 package org.opencb.opencga.storage.core.variant.query.executors;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Simplest implementation of the VariantQueryExecutor.
@@ -19,6 +23,12 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 public class DBAdaptorVariantQueryExecutor extends VariantQueryExecutor {
 
     private final VariantDBAdaptor dbAdaptor;
+    private Logger logger = LoggerFactory.getLogger(DBAdaptorVariantQueryExecutor.class);
+    private static final List<QueryParam> UNSUPPORTED_PARAMS = Arrays.asList(
+            VariantQueryUtils.SAMPLE_DE_NOVO,
+            VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS,
+            VariantQueryUtils.SAMPLE_MENDELIAN_ERROR,
+            VariantQueryParam.ANNOT_TRAIT);
 
     public DBAdaptorVariantQueryExecutor(VariantDBAdaptor dbAdaptor, String storageEngineId, ObjectMap options) {
         super(dbAdaptor.getMetadataManager(), storageEngineId, options);
@@ -45,7 +55,14 @@ public class DBAdaptorVariantQueryExecutor extends VariantQueryExecutor {
 
     @Override
     public boolean canUseThisExecutor(Query query, QueryOptions options) {
-        // Always can use this executor
+        for (QueryParam unsupportedParam : UNSUPPORTED_PARAMS) {
+            if (VariantQueryUtils.isValidParam(query, unsupportedParam)) {
+                logger.warn("Unsupported variant query param {} in {}",
+                        unsupportedParam.key(),
+                        DBAdaptorVariantQueryExecutor.class.getSimpleName());
+                return false;
+            }
+        }
         return true;
     }
 }

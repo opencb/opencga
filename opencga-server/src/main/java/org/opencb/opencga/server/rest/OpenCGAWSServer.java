@@ -201,6 +201,13 @@ public class OpenCGAWSServer {
     }
 
     private void init() {
+        ServletContext context = httpServletRequest.getServletContext();
+        init(context.getInitParameter("OPENCGA_HOME"));
+    }
+
+    static void init(String opencgaHomeStr) {
+        initialized.set(true);
+
         logger = LoggerFactory.getLogger("org.opencb.opencga.server.rest.OpenCGAWSServer");
         logger.info("========================================================================");
         logger.info("| Starting OpenCGA REST server, initializing OpenCGAWSServer");
@@ -208,18 +215,21 @@ public class OpenCGAWSServer {
 
         // We must load the configuration files and init catalogManager, storageManagerFactory and Logger only the first time.
         // We first read 'config-dir' parameter passed
-        ServletContext context = httpServletRequest.getServletContext();
+
 //        String configDirString = context.getInitParameter("config-dir");
 //        if (StringUtils.isEmpty(configDirString)) {
         // If not environment variable then we check web.xml parameter
-        String opencgaHomeStr = System.getenv("OPENCGA_HOME");
-        if (StringUtils.isEmpty(opencgaHomeStr)) {
-            opencgaHomeStr = context.getInitParameter("OPENCGA_HOME");
-            if (StringUtils.isEmpty(opencgaHomeStr)) {
-                logger.error("No valid OpenCGA home directory provided!");
-            }
+
+        // Preference for the env var OPENCGA_HOME
+        String opencgaHomeEnv = System.getenv("OPENCGA_HOME");
+        if (StringUtils.isNotEmpty(opencgaHomeEnv)) {
+            opencgaHomeStr = opencgaHomeEnv;
         }
-        opencgaHome = Paths.get(opencgaHomeStr);
+        if (StringUtils.isEmpty(opencgaHomeEnv) && StringUtils.isEmpty(opencgaHomeStr)) {
+            logger.error("No valid OpenCGA home directory provided!");
+            throw new IllegalStateException("No valid OpenCGA home directory provided!");
+        }
+        OpenCGAWSServer.opencgaHome = Paths.get(opencgaHomeStr);
 
 //        if (StringUtils.isNotEmpty(context.getInitParameter("OPENCGA_HOME"))) {
 //            configDirString = context.getInitParameter("OPENCGA_HOME") + "/conf";
@@ -233,21 +243,18 @@ public class OpenCGAWSServer {
 
 
         // Check and execute the init methods
-        java.nio.file.Path configDirPath = opencgaHome.resolve("conf");
+        java.nio.file.Path configDirPath = OpenCGAWSServer.opencgaHome.resolve("conf");
         if (Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
             initOpenCGAObjects(configDirPath);
 
-            // Required for reading the analysis.properties file.
-            // TODO: Remove when analysis.properties is totally migrated to configuration.yml
-//            Config.setOpenCGAHome(configDirPath.getParent().toString());
-
             // TODO use configuration.yml for getting the server.log, for now is hardcoded
-            logger.info("|  * Server logfile: " + opencgaHome.resolve("logs").resolve("server.log"));
-            initLogger(opencgaHome.resolve("logs"));
+            logger.info("|  * Server logfile: " + OpenCGAWSServer.opencgaHome.resolve("logs").resolve("server.log"));
+            initLogger(OpenCGAWSServer.opencgaHome.resolve("logs"));
         } else {
             errorMessage = "No valid configuration directory provided: '" + configDirPath.toString() + "'";
             logger.error(errorMessage);
+            throw new IllegalStateException(errorMessage);
         }
 
         logger.info("========================================================================\n");
@@ -259,7 +266,7 @@ public class OpenCGAWSServer {
      *
      * @param configDir directory containing the configuration files
      */
-    private void initOpenCGAObjects(java.nio.file.Path configDir) {
+    private static void initOpenCGAObjects(java.nio.file.Path configDir) {
         try {
             logger.info("|  * Catalog configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/configuration.yml");
             configuration = Configuration
@@ -278,7 +285,7 @@ public class OpenCGAWSServer {
         }
     }
 
-    private void initLogger(java.nio.file.Path logs) {
+    private static void initLogger(java.nio.file.Path logs) {
         try {
             org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
             PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n");
@@ -292,6 +299,29 @@ public class OpenCGAWSServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    static void shutdown() {
+        logger.info("========================================================================");
+        logger.info("| Stopping OpenCGA REST server");
+        try {
+            if (OpenCGAWSServer.variantManager != null) {
+                logger.info("| * Closing VariantStorageManager");
+                OpenCGAWSServer.variantManager.close();
+            }
+        } catch (Exception e) {
+            logger.error("Error closing VariantManager", e);
+        }
+        try {
+            if (OpenCGAWSServer.catalogManager != null) {
+                logger.info("| * Closing CatalogManager");
+                OpenCGAWSServer.catalogManager.close();
+            }
+        } catch (Exception e) {
+            logger.error("Error closing CatalogManager", e);
+        }
+        logger.info("| OpenCGA destroyed");
+        logger.info("========================================================================\n");
     }
 
     private void parseParams() throws VersionException {

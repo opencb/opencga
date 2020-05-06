@@ -160,16 +160,16 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         ExecutorService threadPool = Executors.newFixedThreadPool(8);
 
         List<Future<Boolean>> futureList = new ArrayList<>(8);
-        futureList.add(threadPool.submit(getNamedThread(MONOALLELIC.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MONOALLELIC, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(XLINKED_MONOALLELIC.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, XLINKED_MONOALLELIC, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(YLINKED.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, YLINKED, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(BIALLELIC.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, BIALLELIC, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(XLINKED_BIALLELIC.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, XLINKED_BIALLELIC, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(AUTOSOMAL_DOMINANT.name(),
+                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, AUTOSOMAL_DOMINANT, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(X_LINKED_DOMINANT.name(),
+                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, X_LINKED_DOMINANT, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(Y_LINKED.name(),
+                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, Y_LINKED, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(AUTOSOMAL_RECESSIVE.name(),
+                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, AUTOSOMAL_RECESSIVE, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(X_LINKED_RECESSIVE.name(),
+                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, X_LINKED_RECESSIVE, resultMap))));
         futureList.add(threadPool.submit(getNamedThread(MITOCHONDRIAL.name(),
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MITOCHONDRIAL, resultMap))));
         futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(), () -> compoundHeterozygous(chVariantMap))));
@@ -328,25 +328,25 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         Query query;
         Map<String, List<String>> genotypes;
         switch (moi) {
-            case MONOALLELIC:
+            case AUTOSOMAL_DOMINANT:
                 query = new Query(dominantQuery);
                 genotypes = ModeOfInheritance.dominant(pedigree, disorder, penetrance);
                 break;
-            case YLINKED:
+            case Y_LINKED:
                 query = new Query(dominantQuery)
                         .append(VariantQueryParam.REGION.key(), "Y");
                 genotypes = ModeOfInheritance.yLinked(pedigree, disorder, penetrance);
                 break;
-            case XLINKED_MONOALLELIC:
+            case X_LINKED_DOMINANT:
                 query = new Query(dominantQuery)
                         .append(VariantQueryParam.REGION.key(), "X");
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, penetrance);
                 break;
-            case BIALLELIC:
+            case AUTOSOMAL_RECESSIVE:
                 query = new Query(recessiveQuery);
                 genotypes = ModeOfInheritance.recessive(pedigree, disorder, penetrance);
                 break;
-            case XLINKED_BIALLELIC:
+            case X_LINKED_RECESSIVE:
                 query = new Query(recessiveQuery)
                         .append(VariantQueryParam.REGION.key(), "X");
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, penetrance);
