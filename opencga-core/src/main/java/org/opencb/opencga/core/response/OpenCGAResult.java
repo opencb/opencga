@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,16 +65,22 @@ public class OpenCGAResult<T> extends DataResult<T> {
                 result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(), result.getAttributes());
     }
 
+    @Deprecated
     public static OpenCGAResult empty() {
         return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, new ObjectMap());
+    }
+
+    public static <T> OpenCGAResult<T> empty(Class<T> c) {
+        return new OpenCGAResult<T>(0, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, new ObjectMap())
+                .setResultType(c.getCanonicalName());
     }
 
     public static <T> OpenCGAResult<T> merge(List<OpenCGAResult<T>> results) {
         OpenCGAResult<T> result = new OpenCGAResult<T>(
                 results.stream().map(OpenCGAResult::getTime).reduce(0, Integer::sum),
-                results.stream().map(OpenCGAResult::getEvents).flatMap(events -> events.stream()).collect(Collectors.toList()),
+                results.stream().map(OpenCGAResult::getEvents).flatMap(Collection::stream).collect(Collectors.toList()),
                 results.stream().map(OpenCGAResult::getNumResults).reduce(0, Integer::sum),
-                results.stream().map(OpenCGAResult::getResults).flatMap(res -> res.stream()).collect(Collectors.toList()),
+                results.stream().map(OpenCGAResult::getResults).flatMap(Collection::stream).collect(Collectors.toList()),
                 results.stream().map(OpenCGAResult::getNumMatches).reduce(0L, Long::sum),
                 results.stream().map(OpenCGAResult::getNumInserted).reduce(0L, Long::sum),
                 results.stream().map(OpenCGAResult::getNumUpdated).reduce(0L, Long::sum),

@@ -77,6 +77,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 case "yaml":
                     this.writer = new YamlOutputWriter(writerConfiguration);
                     break;
+                case "table":
+                    this.writer = new TextOutputWriter(writerConfiguration, Table.PrinterType.ASCII);
+                    break;
                 case "text":
                 default:
                     this.writer = new TextOutputWriter(writerConfiguration);
