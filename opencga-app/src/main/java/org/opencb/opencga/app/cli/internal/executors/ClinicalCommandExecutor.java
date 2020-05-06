@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.app.cli.internal.executors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysisConfiguration;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
@@ -34,6 +37,9 @@ import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -107,8 +113,6 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         ClinicalProperty.Penetrance penetrance = cliOptions.penetrance;
 
         TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
-        config.setIncludeLowCoverage(cliOptions.includeLowCoverage);
-        config.setMaxLowCoverage(cliOptions.maxLowCoverage);
 //        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
 
         Path outDir = Paths.get(cliOptions.outdir);
@@ -144,8 +148,6 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
 //        List<String> panelList = Arrays.asList(StringUtils.split(options.panelIds, ","));
 
         TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
-        config.setIncludeLowCoverage(cliOptions.includeLowCoverage);
-        config.setMaxLowCoverage(cliOptions.maxLowCoverage);
 //        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
 
         Path outDir = Paths.get(cliOptions.outdir);
@@ -162,7 +164,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         teamAnalysis.start();
     }
 
-    private void zetta() throws ToolException {
+    private void zetta() throws ToolException, IOException {
         ClinicalCommandOptions.ZettaCommandOptions cliOptions = clinicalCommandOptions.zettaCommandOptions;
 
         Query query = new Query();
@@ -217,13 +219,16 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
 
         query.putIfNotNull("trait", cliOptions.trait);
 
-        ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
-        config.setIncludeLowCoverage(cliOptions.includeLowCoverage);
-        config.setMaxLowCoverage(cliOptions.maxLowCoverage);
-//        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
-
         Path outDir = Paths.get(cliOptions.outdir);
         Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
+
+        ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        Path configPath = opencgaHome.resolve("analysis/zetta-interpretation.yml");
+        if (configPath.toFile().exists()) {
+            FileInputStream fis = new FileInputStream(configPath.toFile());
+            config = objectMapper.readValue(fis, ZettaInterpretationConfiguration.class);
+        }
 
         // Execute tiering analysis
         ZettaInterpretationAnalysis zettaAnalysis = new ZettaInterpretationAnalysis();
@@ -245,8 +250,6 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         String token = cliOptions.commonOptions.token;
 
         CancerTieringInterpretationConfiguration config = new CancerTieringInterpretationConfiguration();
-//        config.setIncludeLowCoverage(cliOptions.includeLowCoverage);
-//        config.setMaxLowCoverage(cliOptions.maxLowCoverage);
 //        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
 
         Path outDir = Paths.get(cliOptions.outdir);

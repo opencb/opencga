@@ -11,19 +11,14 @@ tier1:
   - transcript_amplification
   - inframe_insertion
   - inframe_deletion
-  panels:
-  - all
+  panels: true
 
 tier2:
   consequenceTypes:
   - missense_variant
-  panels:
-  - all
+  panels: true
 
 tier3:
   actionable: true
-
-maxLowCoverage: 20
-includeLowCoverage: false
 
 skipUntieredVariants: false

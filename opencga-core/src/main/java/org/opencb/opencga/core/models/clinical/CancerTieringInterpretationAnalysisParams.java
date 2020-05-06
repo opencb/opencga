@@ -10,12 +10,18 @@ public class CancerTieringInterpretationAnalysisParams extends ToolParams {
     private String clinicalAnalysis;
     private List<String> discardedVariants;
 
+    private boolean secondary; // secondary interpretation (vs primary interpretation)
+    private boolean index;     // save interpretation in catalog DB
+
     public CancerTieringInterpretationAnalysisParams() {
     }
 
-    public CancerTieringInterpretationAnalysisParams(String clinicalAnalysis, List<String> discardedVariants) {
+    public CancerTieringInterpretationAnalysisParams(String clinicalAnalysis, List<String> discardedVariants, boolean secondary,
+                                                     boolean index) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.discardedVariants = discardedVariants;
+        this.secondary = secondary;
+        this.index = index;
     }
 
     public String getClinicalAnalysis() {
@@ -33,6 +39,24 @@ public class CancerTieringInterpretationAnalysisParams extends ToolParams {
 
     public CancerTieringInterpretationAnalysisParams setDiscardedVariants(List<String> discardedVariants) {
         this.discardedVariants = discardedVariants;
+        return this;
+    }
+
+    public boolean isSecondary() {
+        return secondary;
+    }
+
+    public CancerTieringInterpretationAnalysisParams setSecondary(boolean secondary) {
+        this.secondary = secondary;
+        return this;
+    }
+
+    public boolean isIndex() {
+        return index;
+    }
+
+    public CancerTieringInterpretationAnalysisParams setIndex(boolean index) {
+        this.index = index;
         return this;
     }
 }

@@ -28,8 +28,6 @@ public class InterpretationAnalysisConfiguration {
     private Tier tier2;
     private Tier tier3;
 
-    private int maxLowCoverage;
-    private boolean includeLowCoverage;
     private boolean skipUntieredVariants;
 
     public class Tier {
@@ -85,13 +83,10 @@ public class InterpretationAnalysisConfiguration {
     public InterpretationAnalysisConfiguration() {
     }
 
-    public InterpretationAnalysisConfiguration(Tier tier1, Tier tier2, Tier tier3, int maxLowCoverage, boolean includeLowCoverage,
-                                               boolean skipUntieredVariants) {
+    public InterpretationAnalysisConfiguration(Tier tier1, Tier tier2, Tier tier3, boolean skipUntieredVariants) {
         this.tier1 = tier1;
         this.tier2 = tier2;
         this.tier3 = tier3;
-        this.maxLowCoverage = maxLowCoverage;
-        this.includeLowCoverage = includeLowCoverage;
         this.skipUntieredVariants = skipUntieredVariants;
     }
 
@@ -119,24 +114,6 @@ public class InterpretationAnalysisConfiguration {
 
     public InterpretationAnalysisConfiguration setTier3(Tier tier3) {
         this.tier3 = tier3;
-        return this;
-    }
-
-    public int getMaxLowCoverage() {
-        return maxLowCoverage;
-    }
-
-    public InterpretationAnalysisConfiguration setMaxLowCoverage(int maxLowCoverage) {
-        this.maxLowCoverage = maxLowCoverage;
-        return this;
-    }
-
-    public boolean isIncludeLowCoverage() {
-        return includeLowCoverage;
-    }
-
-    public InterpretationAnalysisConfiguration setIncludeLowCoverage(boolean includeLowCoverage) {
-        this.includeLowCoverage = includeLowCoverage;
         return this;
     }
 

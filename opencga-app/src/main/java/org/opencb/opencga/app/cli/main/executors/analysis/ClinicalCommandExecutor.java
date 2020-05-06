@@ -240,23 +240,27 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     //-------------------------------------------------------------------------
 
     private RestResponse<Job> tiering() throws ClientException {
+        ClinicalCommandOptions.InterpretationTieringCommandOptions cliOptions = clinicalCommandOptions.tieringCommandOptions;
+
         return openCGAClient.getClinicalAnalysisClient().runInterpretersTiering(
-                new TieringInterpretationAnalysisParams(clinicalCommandOptions.tieringCommandOptions.clinicalAnalysis,
-                        clinicalCommandOptions.tieringCommandOptions.panels,
-                        clinicalCommandOptions.tieringCommandOptions.penetrance,
-                        clinicalCommandOptions.tieringCommandOptions.maxLowCoverage,
-                        clinicalCommandOptions.tieringCommandOptions.includeLowCoverage),
+                new TieringInterpretationAnalysisParams(cliOptions.clinicalAnalysis,
+                        cliOptions.panels,
+                        cliOptions.penetrance,
+                        cliOptions.secondary,
+                        cliOptions.index),
                 getParams(clinicalCommandOptions.tieringCommandOptions.study)
         );
     }
 
     private RestResponse<Job> team() throws ClientException {
+        ClinicalCommandOptions.InterpretationTeamCommandOptions cliOptions = clinicalCommandOptions.teamCommandOptions;
+
         return openCGAClient.getClinicalAnalysisClient().runInterpretersTeam(
                 new TeamInterpretationAnalysisParams(clinicalCommandOptions.teamCommandOptions.clinicalAnalysis,
-                        clinicalCommandOptions.teamCommandOptions.panels,
-                        clinicalCommandOptions.teamCommandOptions.familySeggregation,
-                        clinicalCommandOptions.teamCommandOptions.maxLowCoverage,
-                        clinicalCommandOptions.teamCommandOptions.includeLowCoverage),
+                        cliOptions.panels,
+                        cliOptions.familySeggregation,
+                        cliOptions.secondary,
+                        cliOptions.index),
                 getParams(clinicalCommandOptions.teamCommandOptions.study)
         );
     }
@@ -312,8 +316,8 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         .setCustomAnnotation(cliOptions.annotations)
                         .setPanel(cliOptions.panel)
                         .setTrait(cliOptions.trait)
-                        .setMaxLowCoverage(cliOptions.maxLowCoverage)
-                        .setIncludeLowCoverage(cliOptions.includeLowCoverage),
+                        .setSecondary(cliOptions.secondary)
+                        .setIndex(cliOptions.index),
                 getParams(clinicalCommandOptions.teamCommandOptions.study)
         );
     }
@@ -324,7 +328,9 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().runInterpretersCancerTiering(
                 new CancerTieringInterpretationAnalysisParams()
                         .setClinicalAnalysis(cliOptions.clinicalAnalysis)
-                        .setDiscardedVariants(cliOptions.discardedVariants),
+                        .setDiscardedVariants(cliOptions.discardedVariants)
+                        .setSecondary(cliOptions.secondary)
+                        .setIndex(cliOptions.index),
                 getParams(clinicalCommandOptions.cancerTieringCommandOptions.study)
         );
     }

@@ -284,7 +284,6 @@ public class ClinicalCommandOptions {
 
     }
 
-
     @Parameters(commandNames = {InterpretationTieringCommandOptions.TIERING_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
     public class InterpretationTieringCommandOptions extends GeneralCliOptions.StudyOption {
 
@@ -302,13 +301,13 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + PENETRANCE_PARAM_NAME}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
         public ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
 
-        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
-        public boolean includeLowCoverage;
+        @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
+        public boolean secondary;
 
-        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
-        public int maxLowCoverage;
+        @Parameter(names = {"--" + INDEX_PARAM_NAME}, description = "Index interprtation by storing it in catalog DB", arity = 0)
+        public boolean index;
 
-//        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
+        //        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 //        public boolean includeUntieredVariants;
     }
 
@@ -329,11 +328,11 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + FAMILY_SEGREGATION_PARAM_NAME}, description = "Family segregation", arity = 1)
         public String familySeggregation;
 
-        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
-        public boolean includeLowCoverage;
+        @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
+        public boolean secondary;
 
-        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
-        public int maxLowCoverage;
+        @Parameter(names = {"--" + INDEX_PARAM_NAME}, description = "Index interprtation by storing it in catalog DB", arity = 0)
+        public boolean index;
 
 //        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 //        public boolean includeUntieredVariants;
@@ -450,11 +449,11 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--family-proband"}, description = FAMILY_PROBAND_DESC, arity = 1)
         public String familyProband;
 
-        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
-        public boolean includeLowCoverage;
+        @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
+        public boolean secondary;
 
-        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
-        public int maxLowCoverage;
+        @Parameter(names = {"--" + INDEX_PARAM_NAME}, description = "Index interprtation by storing it in catalog DB", arity = 0)
+        public boolean index;
 
 //        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 //        public boolean includeUntieredVariants;
@@ -473,5 +472,12 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--" + DISCARDED_VARIANTS_PARAM_NAME}, description = "Comma separated list of variant IDs to discard", arity = 1)
         public List<String> discardedVariants;
+
+        @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
+        public boolean secondary;
+
+        @Parameter(names = {"--" + INDEX_PARAM_NAME}, description = "Index interprtation by storing it in catalog DB", arity = 0)
+        public boolean index;
+
     }
 }

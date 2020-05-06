@@ -11,19 +11,20 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
     private String clinicalAnalysis;
     private List<String> panels;
     private ClinicalProperty.Penetrance penetrance;
-    private int maxLowCoverage;
-    private boolean includeLowCoverage;
+
+    private boolean secondary; // secondary interpretation (vs primary interpretation)
+    private boolean index;     // save interpretation in catalog DB
 
     public TieringInterpretationAnalysisParams() {
     }
 
     public TieringInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, ClinicalProperty.Penetrance penetrance,
-                                               int maxLowCoverage, boolean includeLowCoverage) {
+                                               boolean secondary, boolean index) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.panels = panels;
         this.penetrance = penetrance;
-        this.maxLowCoverage = maxLowCoverage;
-        this.includeLowCoverage = includeLowCoverage;
+        this.secondary = secondary;
+        this.index = index;
     }
 
     public String getClinicalAnalysis() {
@@ -53,21 +54,21 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
-    public int getMaxLowCoverage() {
-        return maxLowCoverage;
+    public boolean isSecondary() {
+        return secondary;
     }
 
-    public TieringInterpretationAnalysisParams setMaxLowCoverage(int maxLowCoverage) {
-        this.maxLowCoverage = maxLowCoverage;
+    public TieringInterpretationAnalysisParams setSecondary(boolean secondary) {
+        this.secondary = secondary;
         return this;
     }
 
-    public boolean isIncludeLowCoverage() {
-        return includeLowCoverage;
+    public boolean isIndex() {
+        return index;
     }
 
-    public TieringInterpretationAnalysisParams setIncludeLowCoverage(boolean includeLowCoverage) {
-        this.includeLowCoverage = includeLowCoverage;
+    public TieringInterpretationAnalysisParams setIndex(boolean index) {
+        this.index = index;
         return this;
     }
 }

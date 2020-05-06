@@ -66,11 +66,11 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + PENETRANCE_PARAM_NAME}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
         public ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
 
-        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
-        public boolean includeLowCoverage;
+        @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
+        public boolean secondary;
 
-        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
-        public int maxLowCoverage;
+        @Parameter(names = {"--" + INDEX_PARAM_NAME}, description = "Index interprtation by storing it in catalog DB", arity = 0)
+        public boolean index;
 
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
@@ -94,11 +94,11 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + FAMILY_SEGREGATION_PARAM_NAME}, description = "Family segregation", arity = 1)
         public String familySeggregation;
 
-        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
-        public boolean includeLowCoverage;
+        @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
+        public boolean secondary;
 
-        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
-        public int maxLowCoverage;
+        @Parameter(names = {"--" + INDEX_PARAM_NAME}, description = "Index interprtation by storing it in catalog DB", arity = 0)
+        public boolean index;
 
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
@@ -219,11 +219,11 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
 
-        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
-        public boolean includeLowCoverage;
+        @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
+        public boolean secondary;
 
-        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
-        public int maxLowCoverage;
+        @Parameter(names = {"--" + INDEX_PARAM_NAME}, description = "Index interprtation by storing it in catalog DB", arity = 0)
+        public boolean index;
 
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;

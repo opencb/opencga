@@ -54,9 +54,9 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     public static final String PENETRANCE_PARAM_NAME = "penetrance";
     public final static String DISCARDED_VARIANTS_PARAM_NAME = "discarded-variants";
 
-    public final static String MAX_LOW_COVERAGE_PARAM_NAME = "max-low-coverage";
-    public final static String INCLUDE_LOW_COVERAGE_PARAM_NAME = "include-low-coverage";
-    public final static String INCLUDE_UNTIERED_VARIANTS_PARAM_NAME = "include-untiered-variants";
+    public final static String SECONDARY_INTERPRETATION_PARAM_NAME = "secondary";
+    public final static String INDEX_PARAM_NAME = "index";
+//    public final static String INCLUDE_UNTIERED_VARIANTS_PARAM_NAME = "include-untiered-variants";
 
     protected ClinicalInterpretationManager clinicalInterpretationManager;
 
