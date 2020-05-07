@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,19 +32,19 @@ public class CatalogAuthorizationException extends CatalogException {
         super(cause);
     }
 
-    public static CatalogAuthorizationException cantRead(String userId, String resource, long id, String name) {
+    public static CatalogAuthorizationException cantRead(String userId, String resource, String id, String name) {
         return deny(userId, "read", resource, id, name);
     }
 
-    public static CatalogAuthorizationException cantWrite(String userId, String resource, long id, String name) {
+    public static CatalogAuthorizationException cantWrite(String userId, String resource, String id, String name) {
         return deny(userId, "write", resource, id, name);
     }
 
-    public static CatalogAuthorizationException cantModify(String userId, String resource, long id, String name) {
+    public static CatalogAuthorizationException cantModify(String userId, String resource, String id, String name) {
         return deny(userId, "modify", resource, id, name);
     }
 
-    public static CatalogAuthorizationException cantExecute(String userId, String resource, long id, String name) {
+    public static CatalogAuthorizationException cantExecute(String userId, String resource, String id, String name) {
         return deny(userId, "execute", resource, id, name);
     }
 
@@ -57,7 +57,7 @@ public class CatalogAuthorizationException extends CatalogException {
         return new CatalogAuthorizationException("Permission denied. "
                 + (userId == null || userId.isEmpty() ? "" : "User '" + userId + "'")
                 + " cannot " + permission + " "
-                + resource + " { id: " + id + (name == null || name.isEmpty() ? "" : ", name: \"" + name + "\"") + " }");
+                + resource + " { uid: " + id + (name == null || name.isEmpty() ? "" : ", name: \"" + name + "\"") + " }");
     }
 
     public static CatalogAuthorizationException deny(String userId, String permission, String resource, String id, String name) {

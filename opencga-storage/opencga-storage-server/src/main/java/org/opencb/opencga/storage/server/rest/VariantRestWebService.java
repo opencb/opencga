@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.server.rest;
 
-import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -35,8 +34,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 
 //import org.opencb.opencga.storage.core.variant.adaptors.CatalogVariantDBAdaptor;
 
@@ -59,9 +56,7 @@ public class VariantRestWebService extends GenericRestWebService {
     @Produces("application/json")
     public Response fetch(@QueryParam("storageEngine") String storageEngine,
                           @QueryParam("dbName") String dbName,
-                          @QueryParam("region") String regionsCVS,
-                          @QueryParam("histogram") @DefaultValue("false") boolean histogram,
-                          @QueryParam("histogram_interval") @DefaultValue("2000") int interval
+                          @QueryParam("region") String regionsCVS
     ) {
         try {
             Query query = getVariantQuery(params);
@@ -87,8 +82,8 @@ public class VariantRestWebService extends GenericRestWebService {
 
     public static class VariantFetcher {
 
-        public static DataResult getVariants(String storageEngine, String dbName, boolean histogram, int interval, QueryOptions options)
-                throws StorageEngineException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        public static DataResult getVariants(String storageEngine, String dbName, QueryOptions options)
+                throws StorageEngineException {
             VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(storageEngine, dbName).getDBAdaptor();
 
             Query query = new Query();
@@ -106,42 +101,7 @@ public class VariantRestWebService extends GenericRestWebService {
                 options.put("limit", Math.max(options.getInt("limit", LIMIT_DEFAULT), LIMIT_MAX));
             }
 
-            // Parse the provided regions. The total size of all regions together
-            // can't excede 1 million positions
-            List<Region> regions = Region.parseRegions(options.getString(VariantQueryParam.REGION.key()));
-            regions = regions == null ? Collections.emptyList() : regions;
-            int regionsSize = regions.stream().reduce(0, (size, r) -> size += r.getEnd() - r.getStart(), (a, b) -> a + b);
-
-            DataResult queryResult;
-            if (histogram) {
-                if (regions.size() != 1) {
-                    throw new IllegalArgumentException("Sorry, histogram functionality only works with a single region");
-                } else {
-                    if (interval > 0) {
-                        options.put("interval", interval);
-                    }
-                    queryResult = dbAdaptor.getFrequency(query, regions.get(0), interval);
-                }
-            } else {
-                queryResult = dbAdaptor.get(query, options);
-            }
-            //            else if (regionsSize <= 1000000) {
-            //                if (regions.size() == 0) {
-            //                    if (!queryOptions.containsKey("id") && !queryOptions.containsKey("gene")) {
-            //                        return createErrorResponse("Some positional filer is needed, like region, gene or id.");
-            //                    } else {
-            //                        return createOkResponse(variants.get(query, queryOptions));
-            //                    }
-            //                } else {
-            //                    return createOkResponse(variants.get(query, queryOptions));
-            //                }
-            //            } else {
-            //                return createErrorResponse("The total size of all regions provided can't exceed 1 million positions. "
-            //                        + "If you want to browse a larger number of positions, please provide the parameter
-            // 'histogram=true'");
-            //            }
-
-            return queryResult;
+            return dbAdaptor.get(query, options);
         }
 
     }

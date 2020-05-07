@@ -238,7 +238,8 @@ public class VariantHbaseTestUtils {
     }
 
     private static void printVariantsFromDBAdaptor(VariantHadoopDBAdaptor dbAdaptor, PrintStream out) {
-        VariantDBIterator iterator = dbAdaptor.iterator(new Query(), new QueryOptions("simpleGenotypes", true));
+        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "all,SAMPLE_ID"),
+                new QueryOptions("simpleGenotypes", true));
         ObjectMapper mapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
@@ -272,6 +273,7 @@ public class VariantHbaseTestUtils {
 
         String tableName = dbAdaptor.getArchiveTableName(studyMetadata.getId());
         if (!dbAdaptor.getHBaseManager().tableExists(tableName)) {
+            os.println("Table " + tableName + " does not exist");
             return;
         }
 
@@ -425,7 +427,7 @@ public class VariantHbaseTestUtils {
         }
     }
 
-    private static void printSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
+    public static void printSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
         for (Integer studyId : dbAdaptor.getMetadataManager().getStudies(null).values()) {
             String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
             if (printSampleIndexTable(dbAdaptor, outDir, sampleGtTableName)) return;
@@ -452,7 +454,7 @@ public class VariantHbaseTestUtils {
                     for (Cell cell : result.rawCells()) {
                         String s = Bytes.toString(CellUtil.cloneQualifier(cell));
                         byte[] value = CellUtil.cloneValue(cell);
-                        if (s.startsWith("_C_")) {
+                        if (s.startsWith("_C_") || s.startsWith("_DC")) {
                             map.put(s, String.valueOf(Bytes.toInt(value)));
                         } else if (s.startsWith("_AC_")) {
                             map.put(s, IntStream.of(IndexUtils.countPerBitToObject(value)).mapToObj(String::valueOf).collect(Collectors.toList()).toString());
@@ -491,8 +493,7 @@ public class VariantHbaseTestUtils {
             params.putAll(otherParams);
         }
 
-        variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions()
-                .putAll(params);
+        variantStorageManager.getOptions().putAll(params);
         variantStorageManager.removeFile(studyMetadata.getName(), fileId);
 //        studyMetadata.copy(
 //                variantStorageManager

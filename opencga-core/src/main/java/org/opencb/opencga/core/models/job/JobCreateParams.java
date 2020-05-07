@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.job;
 
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +40,7 @@ public class JobCreateParams {
     private Map<String, Object> params;
 
     private String creationDate;
-    private Enums.ExecutionStatus status;
+    private JobInternal internal;
 
     private TinyFile outDir;
     private List<TinyFile> input;    // input files to this job
@@ -42,7 +58,7 @@ public class JobCreateParams {
     }
 
     public JobCreateParams(String id, String description, ToolInfo tool, Enums.Priority priority, String commandLine,
-                           Map<String, Object> params, String creationDate, Enums.ExecutionStatus status, TinyFile outDir,
+                           Map<String, Object> params, String creationDate, JobInternal internal, TinyFile outDir,
                            List<TinyFile> input, List<TinyFile> output, List<String> tags, ExecutionResult result, TinyFile stdout,
                            TinyFile stderr, Map<String, Object> attributes) {
         this.id = id;
@@ -52,7 +68,7 @@ public class JobCreateParams {
         this.commandLine = commandLine;
         this.params = params;
         this.creationDate = creationDate;
-        this.status = status;
+        this.internal = internal;
         this.outDir = outDir;
         this.input = input;
         this.output = output;
@@ -65,7 +81,8 @@ public class JobCreateParams {
 
     public static JobCreateParams of(Job job) {
         return new JobCreateParams(job.getId(), job.getDescription(), job.getTool(), job.getPriority(), job.getCommandLine(),
-                job.getParams(), job.getCreationDate(), job.getStatus(), TinyFile.of(job.getOutDir()),
+                job.getParams(), job.getCreationDate(),
+                job.getInternal() != null ? new JobInternal(job.getInternal().getStatus()) : null, TinyFile.of(job.getOutDir()),
                 job.getInput() != null ? job.getInput().stream().map(TinyFile::of).collect(Collectors.toList()) : Collections.emptyList(),
                 job.getOutput() != null ? job.getOutput().stream().map(TinyFile::of).collect(Collectors.toList()) : Collections.emptyList(),
                 job.getTags(), job.getExecution(), TinyFile.of(job.getStdout()), TinyFile.of(job.getStderr()), job.getAttributes());
@@ -81,14 +98,14 @@ public class JobCreateParams {
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", params=").append(params);
         sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", outDir=").append(outDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
         sb.append(", result=").append(result);
-        sb.append(", log=").append(stdout);
-        sb.append(", errorLog=").append(stderr);
+        sb.append(", stdout=").append(stdout);
+        sb.append(", stderr=").append(stderr);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -158,12 +175,12 @@ public class JobCreateParams {
         return this;
     }
 
-    public Enums.ExecutionStatus getStatus() {
-        return status;
+    public JobInternal getInternal() {
+        return internal;
     }
 
-    public JobCreateParams setStatus(Enums.ExecutionStatus status) {
-        this.status = status;
+    public JobCreateParams setInternal(JobInternal internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -240,11 +257,31 @@ public class JobCreateParams {
     }
 
     public Job toJob() {
-        return new Job(id, null, description, tool, null, commandLine, params, creationDate, null, priority, status,
-                outDir != null ? outDir.toFile() : null,
-                getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
+        return new Job(id, null, description, tool, null, commandLine, params, creationDate, null, priority,
+                internal != null ? new org.opencb.opencga.core.models.job.JobInternal(internal.getStatus()) : null,
+                outDir != null ? outDir.toFile() : null, getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
                 getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), Collections.emptyList(),
                 tags, result, false, stdout != null ? stdout.toFile() : null, stderr != null ? stderr.toFile() : null, 1, null, attributes);
+    }
+
+    public static class JobInternal {
+        private Enums.ExecutionStatus status;
+
+        public JobInternal() {
+        }
+
+        public JobInternal(Enums.ExecutionStatus status) {
+            this.status = status;
+        }
+
+        public Enums.ExecutionStatus getStatus() {
+            return status;
+        }
+
+        public JobInternal setStatus(Enums.ExecutionStatus status) {
+            this.status = status;
+            return this;
+        }
     }
 
     public static class TinyFile {

@@ -28,15 +28,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
-import java.util.List;
 
 /**
  * Created on 27/05/16.
@@ -78,6 +77,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 case "yaml":
                     this.writer = new YamlOutputWriter(writerConfiguration);
                     break;
+                case "table":
+                    this.writer = new TextOutputWriter(writerConfiguration, Table.PrinterType.ASCII);
+                    break;
                 case "text":
                 default:
                     this.writer = new TextOutputWriter(writerConfiguration);
@@ -88,17 +90,18 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             logger.debug("sessionFile = " + cliSession);
             if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
-                cliSession = new CliSession(clientConfiguration.getRest().getHost(), null, options.token);
+                cliSession = new CliSession(clientConfiguration.getRest().getHost(), null, options.token, null);
                 token = options.token;
                 userId = null;
 
-                openCGAClient = new OpenCGAClient(options.token, clientConfiguration);
+                openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else if (cliSession != null) {
                 // 'logout' field is only null or empty while no logout is executed
                 if (StringUtils.isNotEmpty(cliSession.getToken())) {
                     // no timeout checks
                     if (skipDuration) {
-                        openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);
+                        openCGAClient = new OpenCGAClient(new AuthenticationResponse(cliSession.getToken(), cliSession.getRefreshToken()),
+                                clientConfiguration);
                         openCGAClient.setUserId(cliSession.getUser());
                         if (options.token == null) {
                             options.token = cliSession.getToken();
@@ -116,12 +119,15 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
                             logger.debug("Session ok!!");
                             //                            this.sessionId = cliSession.getSessionId();
-                            openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);
+                            openCGAClient = new OpenCGAClient(new AuthenticationResponse(cliSession.getToken(),
+                                    cliSession.getRefreshToken()), clientConfiguration);
                             openCGAClient.setUserId(cliSession.getUser());
 
                             // Update token
-                            if (claimsMap.containsKey("exp")) {
-                                cliSession.setToken(openCGAClient.refresh());
+                            if (clientConfiguration.getRest().isTokenAutoRefresh() && claimsMap.containsKey("exp")) {
+                                AuthenticationResponse refreshResponse = openCGAClient.refresh();
+                                cliSession.setToken(refreshResponse.getToken());
+                                cliSession.setRefreshToken(refreshResponse.getRefreshToken());
                                 updateCliSessionFile();
                             }
 
@@ -170,29 +176,6 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             throw new CatalogException("Could not parse file " + filePath + ". Is it a valid JSON file?. "
                     + e.getMessage(), e);
         }
-    }
-
-    protected String resolveStudy(String study) {
-        if (StringUtils.isEmpty(study)) {
-            if (StringUtils.isNotEmpty(clientConfiguration.getDefaultStudy())) {
-                return clientConfiguration.getDefaultStudy();
-            }
-        } else {
-            // study is not empty, let's check if it is an alias
-            if (clientConfiguration.getAlias() != null && clientConfiguration.getAlias().size() > 0) {
-                String[] studies = study.split(",");
-                List<String> studyList = new ArrayList<>(studies.length);
-                for (String s : studies) {
-                    if (clientConfiguration.getAlias().containsKey(s)) {
-                        studyList.add(clientConfiguration.getAlias().get(study));
-                    } else {
-                        studyList.add(s);
-                    }
-                }
-                return StringUtils.join(studyList, ",");
-            }
-        }
-        return study;
     }
 
     protected String extractIdsFromListOrFile(String ids) throws CatalogException {

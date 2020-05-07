@@ -1,12 +1,28 @@
-package org.opencb.opencga.core.api;
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import com.beust.jcommander.Parameter;
+package org.opencb.opencga.core.api;
 
 public class ParamConstants {
     private static final String UP_TO_100 = " up to a maximum of 100";
 
     public static final String NONE = "none";
     public static final String ALL = "all";
+
+    public static final String ID = "id";
 
     public static final String INCLUDE_DESCRIPTION = "Fields included in the response, whole JSON path must be provided";
     public static final String EXCLUDE_DESCRIPTION = "Fields excluded in the response, whole JSON path must be provided";
@@ -20,6 +36,18 @@ public class ParamConstants {
     public static final String MODIFICATION_DATE_PARAM = "modificationDate";
     public static final String RELEASE_PARAM = "release";
     public static final String RELEASE_DESCRIPTION = "Release when it was created";
+
+    public static final String ACL_PARAM = "acl";
+    public static final String ACL_FORMAT = "Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return "
+            + "all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators "
+            + "can query by this field. ";
+    public static final String ACL_DESCRIPTION = "Filter entries for which a user has the provided permissions. " + ACL_FORMAT;
+
+    public static final String TSV_ANNOTATION_DESCRIPTION = "JSON containing the 'content' of the TSV file if this has not yet been "
+            + "registered into OpenCGA";
+
+    public static final String DELETED_DESCRIPTION = "Boolean to retrieve deleted entries";
+    public static final String DELETED_PARAM = "deleted";
 
     // ---------------------------------------------
 
@@ -35,6 +63,8 @@ public class ParamConstants {
 
     public static final String STUDY_PARAM = "study";
     public static final String STUDY_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the ID or UUID";
+    public static final String OTHER_STUDIES_FLAG = "otherStudies";
+    public static final String OTHER_STUDIES_FLAG_DESCRIPTION = "Flag indicating the entries being queried can belong to any related study, not just the primary one.";
     public static final String STUDIES_PARAM = "studies";
     public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID" + UP_TO_100;
 
@@ -68,13 +98,14 @@ public class ParamConstants {
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
     public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
 
-    public static final String SAMPLE_ID_DESCRIPTION = "Sample id";
+    public static final String SAMPLE_PARAM = "sample";
+    public static final String SAMPLE_ID_DESCRIPTION = "Sample ID";
     public static final String SAMPLE_NAME_DESCRIPTION = "Sample name";
 
     // ---------------------------------------------
 
     public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual names or ids" + UP_TO_100;
-    public static final String INDIVIDUAL_DESCRIPTION = "Individual ID or name";
+    public static final String INDIVIDUAL_DESCRIPTION = "Individual ID or UUID";
 
     // ---------------------------------------------
 
@@ -93,8 +124,17 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
+    public static final String CLINICAL_ANALYSES_PARAM = "clinicalAnalyses";
 
     // ---------------------------------------------
+
+    public static final String PANEL_SOURCE = "source";
+    public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
+            + "sources are 'panelapp' and 'genecensus'";
+    public static final String PANEL_SOURCE_ID = "id";
+    public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel ids to be imported from the defined source."
+            + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "
+            + "'source' will be allowed.";
 
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel ids" + UP_TO_100;
 
@@ -102,10 +142,11 @@ public class ParamConstants {
 
     public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
 
-    public static final String JOB_ID_DESCRIPTION = "Job ID. It must be a unique string within the study. An id will be autogenerated"
-            + " automatically if not provided.";
+    public static final String JOB_ID_DESCRIPTION = "Job ID or UUID";
+    public static final String JOB_ID_CREATION_DESCRIPTION = "Job ID. It must be a unique string within the study. An id will be "
+            + "autogenerated automatically if not provided.";
     public static final String JOB_ID = "jobId";
-    public static final String JOB_ID_PARAM = "id";
+    public static final String JOB_ID_PARAM = ID;
     public static final String JOB_DESCRIPTION = "jobDescription";
     public static final String JOB_DESCRIPTION_DESCRIPTION = "Job description";
     public static final String JOB_DEPENDS_ON = "jobDependsOn";
@@ -113,12 +154,12 @@ public class ParamConstants {
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job ids the job will depend on.";
     public static final String JOB_TOOL_PARAM = "tool";
     public static final String JOB_TOOL_DESCRIPTION = "Tool executed by the job";
-    public static final String JOB_USER_PARAM = "user";
+    public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
     public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
-    public static final String JOB_STATUS_PARAM = "status";
-    public static final String JOB_STATUS_DESCRIPTION = "Job status";
+    public static final String JOB_STATUS_PARAM = "internal.status.name";
+    public static final String JOB_STATUS_DESCRIPTION = "Job internal status";
     public static final String JOB_VISITED_PARAM = "visited";
     public static final String JOB_VISITED_DESCRIPTION = "Visited status of job";
     public static final String JOB_TAGS = "jobTags";
@@ -210,6 +251,12 @@ public class ParamConstants {
     public static final String COVERAGE_WINDOW_SIZE_DESCRIPTION = "Window size for the region coverage (if a coverage range is provided, window size must be 1)";
     public static final String COVERAGE_WINDOW_SIZE_PARAM = "windowSize";
     public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "1";
+
+    public static final String ALIGNMENT_COVERAGE_STATS_DESCRIPTION = "Compute coverage stats per transcript for a list of genes.";
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION = "Only regions whose coverage depth is under this threshold will be reported.";
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_PARAM = "threshold";
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_DEFAULT = "20";
+
     public static final String FILE_ID_PARAM = "file";
     public static final String FILE_ID_1_DESCRIPTION = "Input file #1 (e.g. somatic file)";
     public static final String FILE_ID_1_PARAM = "file1";

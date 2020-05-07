@@ -1,9 +1,26 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.cohort;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -17,17 +34,19 @@ public class CohortUpdateParams {
     private List<String> samples;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public CohortUpdateParams() {
     }
 
     public CohortUpdateParams(String id, String description, List<String> samples, List<AnnotationSet> annotationSets,
-                              Map<String, Object> attributes) {
+                              Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.samples = samples;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
+        this.status = status;
     }
 
     @JsonIgnore
@@ -51,9 +70,10 @@ public class CohortUpdateParams {
         final StringBuilder sb = new StringBuilder("CohortUpdateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", samples='").append(samples).append('\'');
+        sb.append(", samples=").append(samples);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -91,6 +111,15 @@ public class CohortUpdateParams {
 
     public CohortUpdateParams setAnnotationSets(List<AnnotationSet> annotationSets) {
         this.annotationSets = annotationSets;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public CohortUpdateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.file;
 import org.opencb.opencga.core.models.common.Status;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,6 +60,10 @@ public class FileIndex {
         this.transformedFile = transformedFile;
         this.localFileIndex = localFileIndex;
         this.attributes = attributes;
+    }
+
+    public static FileIndex initialize() {
+        return new FileIndex("", "", new IndexStatus(IndexStatus.NONE), -1, null, null, new HashMap<>());
     }
 
     public static class IndexStatus extends Status {

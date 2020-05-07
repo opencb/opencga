@@ -27,7 +27,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,14 +121,15 @@ public class VariantQueryCommandUtils {
         addParam(query, INCLUDE_FILE, queryVariantsOptions.includeFile);
         addParam(query, FILTER, queryVariantsOptions.filter);
         addParam(query, QUAL, queryVariantsOptions.qual);
-        addParam(query, INFO, queryVariantsOptions.info);
+        addParam(query, FILE_DATA, queryVariantsOptions.fileData);
         addParam(query, GENOTYPE, queryVariantsOptions.sampleGenotype);
         addParam(query, SAMPLE, queryVariantsOptions.samples);
-        addParam(query, FORMAT, queryVariantsOptions.format);
+        addParam(query, SAMPLE_DATA, queryVariantsOptions.sampleData);
         addParam(query, SCORE, queryVariantsOptions.score);
         addParam(query, INCLUDE_SAMPLE, queryVariantsOptions.includeSample);
-        addParam(query, INCLUDE_FORMAT, queryVariantsOptions.includeFormat);
+        addParam(query, INCLUDE_SAMPLE_DATA, queryVariantsOptions.includeSampleData);
         addParam(query, INCLUDE_GENOTYPE, queryVariantsOptions.includeGenotype);
+        addParam(query, INCLUDE_SAMPLE_ID, queryVariantsOptions.includeSampleId);
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.unknownGenotype);
         addParam(query, SAMPLE_METADATA, queryVariantsOptions.samplesMetadata);
         addParam(query, SAMPLE_LIMIT, queryVariantsOptions.sampleLimit);
@@ -152,14 +153,11 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_CLINICAL_SIGNIFICANCE, queryVariantsOptions.clinicalSignificance);
 
         addParam(query, STATS_MGF, queryVariantsOptions.mgf);
+        addParam(query, STATS_PASS_FREQ, queryVariantsOptions.cohortStatsPass);
         addParam(query, MISSING_ALLELES, queryVariantsOptions.missingAlleleCount);
         addParam(query, MISSING_GENOTYPES, queryVariantsOptions.missingGenotypeCount);
 
-
-        boolean returnVariants = !count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
-                && StringUtils.isEmpty(queryVariantsOptions.rank);
-
-        if (returnVariants && !of.isMultiStudyOutput()) {
+        if (!of.isMultiStudyOutput()) {
             if (VariantQueryUtils.isOutputMultiStudy(query, null, allStudyNames)) {
                 String availableStudies = allStudyNames == null || allStudyNames.isEmpty()
                         ? ""

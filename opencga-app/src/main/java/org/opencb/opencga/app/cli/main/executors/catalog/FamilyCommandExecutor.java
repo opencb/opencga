@@ -110,7 +110,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         }
 
         ObjectMap params = new ObjectMap();
-        params.put(FamilyDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.put(FamilyDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
         return openCGAClient.getFamilyClient().create(data, params);
     }
@@ -119,7 +119,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Getting family information");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.STUDY.key(), resolveStudy(familyCommandOptions.infoCommandOptions.study));
+        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.STUDY.key(), familyCommandOptions.infoCommandOptions.study);
         params.putIfNotNull(QueryOptions.INCLUDE, familyCommandOptions.infoCommandOptions.dataModelOptions.include);
         params.putIfNotNull(QueryOptions.EXCLUDE, familyCommandOptions.infoCommandOptions.dataModelOptions.exclude);
         params.put("flattenAnnotations", familyCommandOptions.infoCommandOptions.flattenAnnotations);
@@ -132,7 +132,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching family");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.ID.key(), commandOptions.name);
         params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.MEMBERS.key(), commandOptions.members);
         params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.ANNOTATION.key(), commandOptions.annotation);
@@ -154,7 +154,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         FamilyCommandOptions.StatsCommandOptions commandOptions = familyCommandOptions.statsCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(FamilyDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
         params.putIfNotEmpty("creationYear", commandOptions.creationYear);
         params.putIfNotEmpty("creationMonth", commandOptions.creationMonth);

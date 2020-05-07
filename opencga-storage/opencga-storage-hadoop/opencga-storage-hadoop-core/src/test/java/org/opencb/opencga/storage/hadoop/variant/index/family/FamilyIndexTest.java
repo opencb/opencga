@@ -4,7 +4,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.MendelianError;
@@ -16,7 +16,7 @@ import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -96,32 +96,35 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
         }
 
         Query query = new Query()
-                .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), child)
+                .append(VariantQueryParam.SAMPLE.key(), child + ":MendelianError")
                 .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
                 .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
         VariantQueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
         for (Variant variant : result.getResults()) {
-            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamples());
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getIssues());
             assertThat(mendelianErrorVariants, hasItem(variant.toString()));
+            assertEquals(1, variant.getStudies().get(0).getIssues().size());
+            assertEquals(child, variant.getStudies().get(0).getIssues().get(0).getSample().getSampleId());
         }
         assertEquals(mendelianErrorVariants.size(), result.getNumResults());
 
         query = new Query()
-                .append(VariantQueryUtils.SAMPLE_DE_NOVO.key(), child)
+                .append(VariantQueryParam.SAMPLE.key(), child + ":deNovo")
                 .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
                 .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
         result = variantStorageEngine.get(query, new QueryOptions());
         for (Variant variant : result.getResults()) {
-            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamples());
             assertThat(deNovoVariants, hasItem(variant.toString()));
         }
         assertEquals(deNovoVariants.size(), result.getNumResults());
 
 
         query = new Query()
-                .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), child)
+                .append(VariantQueryParam.SAMPLE.key(), child + ":MendelianError")
                 .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
                 .append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
@@ -129,9 +132,9 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         result = variantStorageEngine.get(query, new QueryOptions());
         for (Variant variant : result.getResults()) {
-            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamples());
             assertThat(mendelianErrorVariants, hasItem(variant.toString()));
-            assertThat(Double.valueOf(variant.getStudies().get(0).getFiles().get(0).getAttributes().get(StudyEntry.QUAL)), gt(30));
+            assertThat(Double.valueOf(variant.getStudies().get(0).getFiles().get(0).getData().get(StudyEntry.QUAL)), gt(30));
         }
         assertNotEquals(0, result.getNumResults());
     }
@@ -157,7 +160,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
         DataResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
 
         for (Variant variant : result.getResults()) {
-            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamples());
         }
         assertThat(result, everyResult(all, withStudy(study, allOf(
                 withSampleData(child, "GT", is("0/1")),
@@ -185,7 +188,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         DataResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
         for (Variant variant : result.getResults()) {
-            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamples());
         }
         assertThat(result, everyResult(all, withStudy(study, allOf(
                 withSampleData(child, "GT", is("0/1")),
@@ -215,7 +218,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         DataResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
         for (Variant variant : result.getResults()) {
-            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamples());
         }
         assertThat(result, everyResult(all, withStudy(study, allOf(
                 withSampleData(child, "GT", is("0/1")),

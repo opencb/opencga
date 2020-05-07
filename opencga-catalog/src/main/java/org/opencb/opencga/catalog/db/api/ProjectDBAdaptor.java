@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -45,21 +46,20 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
-        ORGANIZATION("organization", TEXT_ARRAY, ""),
         ORGANISM("organism", TEXT_ARRAY, ""),
         ORGANISM_SCIENTIFIC_NAME("organism.scientificName", TEXT, ""),
         ORGANISM_COMMON_NAME("organism.commonName", TEXT, ""),
-        ORGANISM_TAXONOMY_CODE("organism.taxonomyCode", TEXT, ""),
         ORGANISM_ASSEMBLY("organism.assembly", TEXT, ""),
         CURRENT_RELEASE("currentRelease", INTEGER, ""),
         FQN("fqn", TEXT, ""),
-        STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
-        STATUS_DATE("status.date", TEXT, ""),
-        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
-        SIZE("size", INTEGER, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_MSG("internal.status.msg", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         USER_ID("userId", TEXT, ""),
-        DATASTORES("dataStores", TEXT_ARRAY, ""),
+        INTERNAL_DATASTORES("internal.datastores", TEXT_ARRAY, ""),
+        INTERNAL_DATASTORES_VARIANT("internal.datastores.variant", TEXT_ARRAY, ""),
+        INTERNAL("internal", TEXT_ARRAY, ""),
+
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
@@ -131,7 +131,8 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
     OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(Project project, String userId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
 
@@ -170,7 +171,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
     OpenCGAResult<Project> get(Query query, QueryOptions options) throws CatalogDBException;
 
     OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     default List<OpenCGAResult<Project>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
@@ -195,11 +196,12 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         return queryResults;
     }
 
-    OpenCGAResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    OpenCGAResult delete(Project project) throws CatalogDBException;
+    OpenCGAResult delete(Project project) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult delete(Query query) throws CatalogDBException;
 
@@ -222,7 +224,8 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         throw new NotImplementedException("");
     }
 
-    OpenCGAResult<Project> restore(long id, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<Project> restore(long id, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
 

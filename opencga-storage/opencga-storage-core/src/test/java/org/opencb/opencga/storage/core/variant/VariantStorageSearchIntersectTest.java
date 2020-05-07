@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
+import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.USE_SEARCH_INDEX;
@@ -176,7 +176,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
         VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(),
                 new QueryOptions(VariantField.SUMMARY, true)
-                        .append(QueryOptions.LIMIT, 2000));
+                        .append(LIMIT, 2000));
         assertEquals(allVariants.getResults().size(), result.getResults().size());
 
     }
@@ -231,7 +231,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         for (int i = 0; i < numQueries; i++) {
             QueryOptions thisOptions = new QueryOptions(options)
                     .append(QueryOptions.SKIP, i * batchSize)
-                    .append(QueryOptions.LIMIT, batchSize);
+                    .append(LIMIT, batchSize);
             VariantQueryResult<Variant> result = variantStorageEngine.get(query, thisOptions);
             for (Variant variant : result.getResults()) {
                 assertTrue(results.add(variant.toString()));
@@ -263,6 +263,17 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 .append(ID.key(), variantIds);
         QueryOptions options = new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES);
         skipLimit(query, options, 50, true);
+    }
+
+    @Test
+    public void testCount() throws Exception {
+        Query query = new Query(SAMPLE.key(), "NA19660")
+                .append(ANNOT_CONSERVATION.key(), "gerp>0.1");
+        long realCount = dbAdaptor.count(query).first();
+        VariantQueryResult<Variant> result = variantQueryExecutor
+                .get(query, new QueryOptions(COUNT, true).append(LIMIT, 0));
+        assertEquals(0, result.getResults().size());
+        assertEquals(realCount, result.getNumMatches());
     }
 
     @Test

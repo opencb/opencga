@@ -10,7 +10,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
@@ -201,8 +201,7 @@ public class SampleIndexEntryFilterTest {
     }
 
     private byte[] toBytes(String... variants) {
-        String str = String.join(",", variants);
-        return Bytes.toBytes(str);
+        return new SampleIndexVariantBiConverter().toBytes(Arrays.stream(variants).map(Variant::new).collect(Collectors.toList()));
     }
 
     private PopulationFrequencyQuery buildPopulationFrequencyQuery(String study, int minFreqInclusive, int maxFreqExclusive) {
@@ -239,7 +238,7 @@ public class SampleIndexEntryFilterTest {
 
     private SingleSampleIndexQuery getSingleSampleIndexQuery(SampleAnnotationIndexQuery annotationIndexQuery, Map<String, SampleFileIndexQuery> fileFilterMap) {
         return new SampleIndexQuery(
-                Collections.emptyList(), null, "study", Collections.singletonMap("S1", Arrays.asList("0/1", "1/1")), null, Collections.emptyMap(), Collections.emptyMap(), fileFilterMap, annotationIndexQuery, Collections.emptySet(), false, VariantQueryUtils.QueryOperation.AND)
+                Collections.emptyList(), null, "study", Collections.singletonMap("S1", Arrays.asList("0/1", "1/1")), Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(), fileFilterMap, annotationIndexQuery, Collections.emptySet(), false, VariantQueryUtils.QueryOperation.AND)
                 .forSample("S1");
     }
 }

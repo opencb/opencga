@@ -1,7 +1,23 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCursor;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.NotImplementedException;
@@ -13,18 +29,23 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.InterpretationConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -37,12 +58,14 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     private final MongoDBCollection interpretationCollection;
     private final MongoDBCollection deletedInterpretationCollection;
+    private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private InterpretationConverter interpretationConverter;
 
     public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection deletedInterpretationCollection,
                                         MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(InterpretationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
+        this.clinicalDBAdaptor = dbAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.interpretationCollection = interpretationCollection;
         this.deletedInterpretationCollection = deletedInterpretationCollection;
         this.interpretationConverter = new InterpretationConverter();
@@ -59,25 +82,36 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+    public OpenCGAResult insert(long studyId, Interpretation interpretation, boolean primary)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return runTransaction(clientSession -> {
+            long tmpStartTime = startQuery();
+            logger.debug("Starting interpretation insert transaction for interpretation id '{}'", interpretation.getId());
+            insert(clientSession, studyId, interpretation, primary);
+            return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+        }, e -> logger.error("Could not create interpretation {}: {}", interpretation.getId(), e.getMessage()));
+    }
+
+    private void insert(ClientSession clientSession, long studyId, Interpretation interpretation, boolean primary)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
-        DataResult<Long> count = interpretationCollection.count(bson);
+        DataResult<Long> count = interpretationCollection.count(clientSession, bson);
         if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Cannot create interpretation. An interpretation with { id: '"
                     + interpretation.getId() + "'} already exists.");
         }
 
-        long interpretationUid = getNewUid();
+        long interpretationUid = getNewUid(clientSession);
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
         if (StringUtils.isEmpty(interpretation.getUuid())) {
-            interpretation.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INTERPRETATION));
+            interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
         }
 
         Document interpretationObject = interpretationConverter.convertToStorageType(interpretation);
@@ -87,11 +121,45 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
         interpretationObject.put(PRIVATE_MODIFICATION_DATE, interpretationObject.get(PRIVATE_CREATION_DATE));
-        return new OpenCGAResult(interpretationCollection.insert(interpretationObject, null));
+        interpretationCollection.insert(clientSession, interpretationObject, null);
+
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), interpretation.getClinicalAnalysisId());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key());
+        // Check clinical analysis does not have any primary interpretation already
+        OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(clientSession, query, options);
+        if (result.getNumResults() == 0) {
+            throw new CatalogDBException("Clinical analysis '" + interpretation.getClinicalAnalysisId() + "' does not exist.");
+        }
+
+        if (primary) {
+            if (result.first().getInterpretation() != null && StringUtils.isNotEmpty(result.first().getInterpretation().getId())) {
+                throw new CatalogDBException("Clinical analysis '" + interpretation.getClinicalAnalysisId() + "' already has a "
+                        + "primary interpretation.");
+            }
+
+            ObjectMap updateParams = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
+            UpdateDocument updateDocument = clinicalDBAdaptor.parseAndValidateUpdateParams(updateParams, query, QueryOptions.empty());
+            clinicalDBAdaptor.getClinicalCollection().update(clientSession, clinicalDBAdaptor.parseQuery(query),
+                    updateDocument.toFinalUpdateDocument(), null);
+        } else {
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.ADD.name());
+            options = new QueryOptions(Constants.ACTIONS, actionMap);
+            ObjectMap updateParams = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
+                            Collections.singletonList(interpretation));
+
+            // Update array of interpretations from clinical analysis
+            UpdateDocument updateDocument = clinicalDBAdaptor.parseAndValidateUpdateParams(updateParams, query, options);
+            clinicalDBAdaptor.getClinicalCollection().update(clientSession, clinicalDBAdaptor.parseQuery(query),
+                    updateDocument.toFinalUpdateDocument(), null);
+        }
     }
 
     @Override
-    public OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(interpretationUid);
         return get(new Query(QueryParams.UID.key(), interpretationUid).append(QueryParams.STUDY_UID.key(),
                 getStudyId(interpretationUid)), options);
@@ -125,7 +193,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public OpenCGAResult<Long> count(Query query, String user)
             throws CatalogDBException {
         return count(query);
     }
@@ -143,13 +211,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     @Override
     public OpenCGAResult<Interpretation> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Interpretation> documentList = new ArrayList<>();
         try (DBIterator<Interpretation> dbIterator = iterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -161,14 +225,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
-        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -345,8 +404,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     @Override
     public DBIterator<Interpretation> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor, interpretationConverter);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options);
+        return new CatalogMongoDBIterator<>(mongoCursor, interpretationConverter);
     }
 
     @Override
@@ -354,13 +413,12 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new MongoDBIterator(mongoCursor);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        return new CatalogMongoDBIterator(mongoCursor);
     }
 
     @Override
-    public DBIterator<Interpretation> iterator(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException {
+    public DBIterator<Interpretation> iterator(long studyUid, Query query, QueryOptions options, String user) throws CatalogDBException {
         return iterator(query, options);
     }
 
@@ -371,7 +429,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -381,7 +439,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         logger.debug("Interpretation query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return interpretationCollection.nativeQuery().find(bson, qOptions).iterator();
+        return interpretationCollection.iterator(bson, qOptions);
     }
 
     @Override
@@ -400,13 +458,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        return null;
-    }
-
-    @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
@@ -427,7 +479,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
-
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -462,12 +513,19 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
+                    case STATUS_NAME:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(),
+                                Status.getPositiveStatus(Enums.ExecutionStatus.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), query, QueryParams.STATUS_NAME.type(),
+                                andBsonList);
+                        break;
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
                     case CLINICAL_ANALYSIS:
                     case DESCRIPTION:
-                    case STATUS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:

@@ -23,10 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Throwables;
 import org.apache.avro.generic.GenericRecord;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
@@ -56,11 +54,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 /**
  * Created by jmmut on 12/02/15.
@@ -71,7 +69,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
     public static final String OUTPUT = "output";
 
     protected static final String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
-    protected static final String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
+//    protected static final String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
 
     private final JsonFactory jsonFactory;
     protected final ObjectMapper jsonObjectMapper;
@@ -180,6 +178,9 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         int numTasks = options.getInt(
                 VariantStorageOptions.STATS_CALCULATE_THREADS.key(),
                 VariantStorageOptions.STATS_CALCULATE_THREADS.defaultValue());
+        boolean statsMultiAllelic = options.getBoolean(
+                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
+                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
         boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
         Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);
@@ -202,7 +203,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         preCalculateStats(metadataManager, studyMetadata, cohorts, overwrite, updateStats, options);
         overwrite = checkOverwrite(metadataManager, studyMetadata, cohorts, overwrite);
 
-        VariantSourceStats variantSourceStats = new VariantSourceStats(null/*FILE_ID*/, Integer.toString(studyMetadata.getId()));
+//        VariantSourceStats variantSourceStats = new VariantSourceStats(null/*FILE_ID*/, Integer.toString(studyMetadata.getId()));
 
 
         // reader, tasks and writer
@@ -216,7 +217,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         List<Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         ProgressLogger progressLogger = buildCreateStatsProgressLogger(dbAdaptor, readerQuery, readerOptions);
         for (int i = 0; i < numTasks; i++) {
-            tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyMetadata, variantSourceStats, tagmap, progressLogger,
+            tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyMetadata, tagmap, progressLogger,
                     aggregation));
         }
         StringDataWriter writer = buildVariantStatsStringDataWriter(output);
@@ -233,11 +234,11 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             throw new StorageEngineException("Unable to calculate statistics.", e);
         }
         // source stats
-        URI fileSourcePath = UriUtils.replacePath(output, output.getPath() + SOURCE_STATS_SUFFIX);
-        try (OutputStream outputSourceStream = ioConnectorProvider.newOutputStream(fileSourcePath)) {
-            ObjectWriter sourceWriter = jsonObjectMapper.writerFor(VariantSourceStats.class);
-            outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
-        }
+//        URI fileSourcePath = UriUtils.replacePath(output, output.getPath() + SOURCE_STATS_SUFFIX);
+//        try (OutputStream outputSourceStream = ioConnectorProvider.newOutputStream(fileSourcePath)) {
+//            ObjectWriter sourceWriter = jsonObjectMapper.writerFor(VariantSourceStats.class);
+//            outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
+//        }
 
 //        variantDBAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, options);
 
@@ -272,12 +273,12 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         //        private String fileId;
         private ObjectMapper jsonObjectMapper;
         private ObjectWriter variantsWriter;
-        private VariantSourceStats variantSourceStats;
+//        private VariantSourceStats variantSourceStats;
         private Properties tagmap;
         private VariantStatisticsCalculator variantStatisticsCalculator;
 
         VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> cohorts,
-                                StudyMetadata studyMetadata, VariantSourceStats variantSourceStats, Properties tagmap,
+                                StudyMetadata studyMetadata, Properties tagmap,
                                 ProgressLogger progressLogger, Aggregation aggregation) {
             this.overwrite = overwrite;
             this.cohorts = cohorts;
@@ -287,7 +288,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
             jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
             variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
-            this.variantSourceStats = variantSourceStats;
+//            this.variantSourceStats = variantSourceStats;
             this.tagmap = tagmap;
             variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
             variantStatisticsCalculator.setAggregationType(aggregation, tagmap);
@@ -297,7 +298,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         public List<String> apply(List<Variant> variants) {
 
             List<String> strings = new ArrayList<>(variants.size());
-            boolean defaultCohortAbsent = false;
+//            boolean defaultCohortAbsent = false;
 
             List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants,
                     studyMetadata.getName(), cohorts);
@@ -306,9 +307,9 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 try {
                     strings.add(variantsWriter.writeValueAsString(variantStatsWrapper));
-                    if (variantStatsWrapper.getCohortStats().get(StudyEntry.DEFAULT_COHORT) == null) {
-                        defaultCohortAbsent = true;
-                    }
+//                    if (variantStatsWrapper.getCohortStats().get(StudyEntry.DEFAULT_COHORT) == null) {
+//                        defaultCohortAbsent = true;
+//                    }
                 } catch (JsonProcessingException e) {
                     throw Throwables.propagate(e);
                 }
@@ -316,12 +317,12 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 
             // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change
             // VariantSource.stats to a map with every subset...
-            if (!defaultCohortAbsent) {
-                synchronized (variantSourceStats) {
-                    variantSourceStats.updateFileStats(variants);
-                    variantSourceStats.updateSampleStats(variants, null);  // TODO test
-                }
-            }
+//            if (!defaultCohortAbsent) {
+//                synchronized (variantSourceStats) {
+//                    variantSourceStats.updateFileStats(variants);
+////                    variantSourceStats.updateSampleStats(variants, null);  // TODO test
+//                }
+//            }
             logger.debug("another batch of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
             if (!variants.isEmpty()) {
                 progressLogger.increment(variants.size(), () -> ", up to position "
@@ -355,7 +356,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             IOException, StorageEngineException {
 
         URI variantStatsUri = UriUtils.replacePath(uri, uri.getPath() + VARIANT_STATS_SUFFIX);
-        URI sourceStatsUri = UriUtils.replacePath(uri, uri.getPath() + SOURCE_STATS_SUFFIX);
+//        URI sourceStatsUri = UriUtils.replacePath(uri, uri.getPath() + SOURCE_STATS_SUFFIX);
 
         Set<String> cohorts = readCohortsFromStatsFile(variantStatsUri);
 //        boolean updateStats = options.getBoolean(Options.STATS_UPDATE.key(), false);
@@ -363,7 +364,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 
         boolean error = false;
         try {
-            logger.info("starting stats loading from {} and {}", variantStatsUri, sourceStatsUri);
+            logger.info("starting stats loading from {}", variantStatsUri);
             long start = System.currentTimeMillis();
 
             loadVariantStats(variantStatsUri, studyMetadata, options);
@@ -452,27 +453,27 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         return new VariantStatsDBWriter(dbAdaptor, studyMetadata, options);
     }
 
-    public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options)
-            throws IOException {
-        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getMetadataManager();
-        StudyMetadata studyMetadata = variantStorageMetadataManager.getStudyMetadata(study);
-        loadSourceStats(variantDBAdaptor, uri, studyMetadata, options);
-    }
-
-    public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyMetadata studyMetadata, QueryOptions options)
-            throws IOException {
-        /* Open input stream and initialize Json parse */
-        VariantSourceStats variantSourceStats;
-        try (InputStream sourceInputStream = ioConnectorProvider.newInputStream(uri);
-             JsonParser sourceParser = jsonFactory.createParser(sourceInputStream)) {
-            variantSourceStats = sourceParser.readValueAs(VariantSourceStats.class);
-        }
-
-        // TODO if variantSourceStats doesn't have studyId and fileId, create another with variantSource.getStudyId() and variantSource
-        // .getFileId()
-//        variantDBAdaptor.getVariantFileMetadataDBAdaptor().updateStats(variantSourceStats, studyMetadata, options);
-
-    }
+//    public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options)
+//            throws IOException {
+//        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getMetadataManager();
+//        StudyMetadata studyMetadata = variantStorageMetadataManager.getStudyMetadata(study);
+//        loadSourceStats(variantDBAdaptor, uri, studyMetadata, options);
+//    }
+//
+//    public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyMetadata studyMetadata, QueryOptions options)
+//            throws IOException {
+//        /* Open input stream and initialize Json parse */
+//        VariantSourceStats variantSourceStats;
+//        try (InputStream sourceInputStream = ioConnectorProvider.newInputStream(uri);
+//             JsonParser sourceParser = jsonFactory.createParser(sourceInputStream)) {
+//            variantSourceStats = sourceParser.readValueAs(VariantSourceStats.class);
+//        }
+//
+//        // TODO if variantSourceStats doesn't have studyId and fileId, create another with variantSource.getStudyId() and variantSource
+//        // .getFileId()
+////        variantDBAdaptor.getVariantFileMetadataDBAdaptor().updateStats(variantSourceStats, studyMetadata, options);
+//
+//    }
 
     void checkAndUpdateCalculatedCohorts(StudyMetadata studyMetadata, URI uri, boolean updateStats)
             throws IOException, StorageEngineException {
@@ -488,7 +489,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
              JsonParser parser = jsonFactory.createParser(variantInputStream)) {
             if (parser.nextToken() != null) {
                 VariantStatsWrapper variantStatsWrapper = parser.readValueAs(VariantStatsWrapper.class);
-                cohortNames = variantStatsWrapper.getCohortStats().keySet();
+                cohortNames = variantStatsWrapper.getCohortStats().stream().map(VariantStats::getCohortId).collect(Collectors.toSet());
             } else {
                 throw new IOException("File " + uri + " is empty");
             }

@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -50,7 +51,6 @@ public abstract class CommandExecutor {
     protected String logLevel;
     @Deprecated
     protected String logFile;
-    protected boolean verbose;
 
     protected String appHome;
     protected String conf;
@@ -79,17 +79,11 @@ public abstract class CommandExecutor {
 
     public CommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean loadClientConfiguration) {
         this.options = options;
-        init(options.logLevel, options.verbose, options.conf, loadClientConfiguration);
+        init(options.logLevel, options.conf, loadClientConfiguration);
     }
 
-    @Deprecated
-    public CommandExecutor(String logLevel, boolean verbose, String conf) {
-        init(logLevel, verbose, conf, true);
-    }
-
-    protected void init(String logLevel, boolean verbose, String conf, boolean loadClientConfiguration) {
+    protected void init(String logLevel, String conf, boolean loadClientConfiguration) {
         this.logLevel = logLevel;
-        this.verbose = verbose;
         this.conf = conf;
 
         /**
@@ -100,11 +94,6 @@ public abstract class CommandExecutor {
 
         if (StringUtils.isEmpty(conf)) {
             this.conf = appHome + "/conf";
-        }
-
-        // At the moment verbose CLI param acts as a debug log level
-        if (verbose) {
-            this.logLevel = "debug";
         }
 
         // Loggers can be initialized, the configuration happens just below these lines
@@ -141,7 +130,7 @@ public abstract class CommandExecutor {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new UncheckedIOException(e);
         }
 
         // Update the timestamp every time one executed command finishes
@@ -236,7 +225,7 @@ public abstract class CommandExecutor {
 
         // We load configuration file either from app home folder or from the JAR
         Path path = Paths.get(this.conf).resolve("configuration.yml");
-        if (path != null && Files.exists(path)) {
+        if (Files.exists(path)) {
             privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
             this.configuration = Configuration.load(new FileInputStream(path.toFile()));
         } else {
@@ -255,7 +244,7 @@ public abstract class CommandExecutor {
     public void loadClientConfiguration() throws IOException {
         // We load configuration file either from app home folder or from the JAR
         Path path = Paths.get(this.conf).resolve("client-configuration.yml");
-        if (path != null && Files.exists(path)) {
+        if (Files.exists(path)) {
             privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
             this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
         } else {
@@ -275,7 +264,7 @@ public abstract class CommandExecutor {
 
         // We load configuration file either from app home folder or from the JAR
         Path path = Paths.get(this.conf).resolve("storage-configuration.yml");
-        if (path != null && Files.exists(path)) {
+        if (Files.exists(path)) {
             privateLogger.debug("Loading storage configuration from '{}'", path.toAbsolutePath());
             this.storageConfiguration = StorageConfiguration.load(new FileInputStream(path.toFile()));
         } else {
@@ -298,7 +287,7 @@ public abstract class CommandExecutor {
         }
     }
 
-    protected void saveCliSessionFile(String user, String session, List<String> studies) throws IOException {
+    protected void saveCliSessionFile(String user, String token, String refreshToken, List<String> studies) throws IOException {
         // Check the home folder exists
         if (!Files.exists(Paths.get(System.getProperty("user.home")))) {
             System.out.println("WARNING: Could not store token. User home folder '" + System.getProperty("user.home")
@@ -312,11 +301,11 @@ public abstract class CommandExecutor {
             Files.createDirectory(sessionPath);
         }
         sessionPath = sessionPath.resolve(SESSION_FILENAME);
-        CliSession cliSession = new CliSession(clientConfiguration.getRest().getHost(), user, session, studies);
+        CliSession cliSession = new CliSession(clientConfiguration.getRest().getHost(), user, token, refreshToken, studies);
 
         // we remove the part where the token signature is to avoid key verification
-        int i = session.lastIndexOf('.');
-        String withoutSignature = session.substring(0, i+1);
+        int i = token.lastIndexOf('.');
+        String withoutSignature = token.substring(0, i+1);
         Date expiration = Jwts.parser().parseClaimsJwt(withoutSignature).getBody().getExpiration();
 
         cliSession.setExpirationTime(TimeUtils.getTime(expiration));
@@ -375,15 +364,6 @@ public abstract class CommandExecutor {
     public void setLogFile(String logFile) {
         this.logFile = logFile;
     }
-
-    public boolean isVerbose() {
-        return verbose;
-    }
-
-    public void setVerbose(boolean verbose) {
-        this.verbose = verbose;
-    }
-
 
     public String getConf() {
         return conf;

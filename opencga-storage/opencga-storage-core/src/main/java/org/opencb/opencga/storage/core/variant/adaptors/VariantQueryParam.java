@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import java.util.*;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 30/03/17.
@@ -73,11 +73,26 @@ public final class VariantQueryParam implements QueryParam {
             + ACCEPTS_ALL_NONE;
     public static final VariantQueryParam INCLUDE_STUDY = new VariantQueryParam("includeStudy", TEXT_ARRAY, INCLUDE_STUDY_DESCR);
 
-    //SAMPLES_DESCR = "Filter variants where ALL the provided samples are mutated (not HOM_REF or missing)";
     public static final String SAMPLE_DESCR
-            = "Filter variants where the samples contain the variant (HET or HOM_ALT). "
-            + ACCEPTS_AND_OR + ' '
-            + "This will automatically set 'includeSample' parameter when not provided";
+            = "Filter variants by sample genotype. "
+            + "This will automatically set 'includeSample' parameter when not provided. "
+            + "This filter accepts multiple 3 forms: "
+            + "1) List of samples: Samples that contain the main variant. " + ACCEPTS_AND_OR + " "
+            + " e.g. HG0097,HG0098 . "
+            + "2) List of samples with genotypes: {sample}:{gt1},{gt2}. " + ACCEPTS_AND_OR + " "
+            + " e.g. HG0097:0/0;HG0098:0/1,1/1 . "
+            + "Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. "
+            + "When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position"
+            + " e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... "
+            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT and MISS "
+            + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . "
+            + "3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted."
+            + "Accepted segregation modes: "
+            + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
+            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, "
+            + "DeNovo, CompoundHeterozygous ]. Value is case insensitive."
+            + " e.g. HG0097:DeNovo "
+            + "Sample must have parents defined and indexed. ";
     public static final VariantQueryParam SAMPLE = new VariantQueryParam("sample", TEXT_ARRAY, SAMPLE_DESCR);
 
     public static final String GENOTYPE_DESCR
@@ -91,26 +106,31 @@ public final class VariantQueryParam implements QueryParam {
             + "This will automatically set 'includeSample' parameter when not provided";
     public static final VariantQueryParam GENOTYPE = new VariantQueryParam("genotype", TEXT_ARRAY, GENOTYPE_DESCR);
 
-    public static final String FORMAT_DESCR
-            = "Filter by any FORMAT field from samples. [{sample}:]{key}{op}{value}[,;]* . "
+    public static final String SAMPLE_DATA_DESCR
+            = "Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}[,;]* . "
             + "If no sample is specified, will use all samples from \"sample\" or \"genotype\" filter. "
             + "e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . "
             + "Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10";
-    public static final VariantQueryParam FORMAT = new VariantQueryParam("format", TEXT_ARRAY, FORMAT_DESCR);
+    public static final VariantQueryParam SAMPLE_DATA = new VariantQueryParam("sampleData", TEXT_ARRAY, SAMPLE_DATA_DESCR);
 
     public static final String INCLUDE_SAMPLE_DESCR
             = "List of samples to be included in the result. "
             + ACCEPTS_ALL_NONE;
     public static final VariantQueryParam INCLUDE_SAMPLE = new VariantQueryParam("includeSample", TEXT_ARRAY, INCLUDE_SAMPLE_DESCR);
 
+    public static final String INCLUDE_SAMPLE_ID_DESCR
+            = "Include sampleId on each result";
+    public static final VariantQueryParam INCLUDE_SAMPLE_ID = new VariantQueryParam("includeSampleId", TEXT_ARRAY, INCLUDE_SAMPLE_ID_DESCR);
+
     public static final String SAMPLE_METADATA_DESCR
             = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
     public static final VariantQueryParam SAMPLE_METADATA = new VariantQueryParam("sampleMetadata", TEXT_ARRAY, SAMPLE_METADATA_DESCR);
 
-    public static final String INCLUDE_FORMAT_DESCR
-            = "List of FORMAT names from Samples Data to include in the output. e.g: DP,AD. "
+    public static final String INCLUDE_SAMPLE_DATA_DESCR
+            = "List of Sample Data keys (i.e. FORMAT column from VCF file) from Sample Data to include in the output. e.g: DP,AD. "
             + ACCEPTS_ALL_NONE;
-    public static final VariantQueryParam INCLUDE_FORMAT = new VariantQueryParam("includeFormat", TEXT_ARRAY, INCLUDE_FORMAT_DESCR);
+    public static final VariantQueryParam INCLUDE_SAMPLE_DATA = new VariantQueryParam("includeSampleData",
+            TEXT_ARRAY, INCLUDE_SAMPLE_DATA_DESCR);
 
     public static final String INCLUDE_GENOTYPE_DESCR
             = "Include genotypes, apart of other formats defined with includeFormat";
@@ -128,12 +148,12 @@ public final class VariantQueryParam implements QueryParam {
             = "Filter variants from the files specified. This will set includeFile parameter when not provided";
     public static final VariantQueryParam FILE = new VariantQueryParam("file", TEXT_ARRAY, FILE_DESCR);
 
-    public static final String INFO_DESCR
-            = "Filter by INFO attributes from file. [{file}:]{key}{op}{value}[,;]* . "
+    public static final String FILE_DATA_DESCR
+            = "Filter by file data (i.e. INFO column from VCF file). [{file}:]{key}{op}{value}[,;]* . "
             + "If no file is specified, will use all files from \"file\" filter. "
             + "e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . "
             + "Many INFO fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10";
-    public static final VariantQueryParam INFO = new VariantQueryParam("info", TEXT_ARRAY, INFO_DESCR);
+    public static final VariantQueryParam FILE_DATA = new VariantQueryParam("fileData", TEXT_ARRAY, FILE_DATA_DESCR);
 
     public static final String FILTER_DESCR
             = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. "
@@ -169,6 +189,10 @@ public final class VariantQueryParam implements QueryParam {
     public static final String STATS_MGF_DESCR
             = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
     public static final VariantQueryParam STATS_MGF = new VariantQueryParam("cohortStatsMgf", TEXT_ARRAY, STATS_MGF_DESCR);
+
+    public static final String STATS_PASS_FREQ_DESCR
+            = "Filter PASS frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8";
+    public static final VariantQueryParam STATS_PASS_FREQ = new VariantQueryParam("cohortStatsPass", TEXT_ARRAY, STATS_PASS_FREQ_DESCR);
 
     public static final String MISSING_ALLELES_DESCR
             = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}";

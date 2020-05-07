@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,11 @@ public class LocalExecutor implements BatchExecutor {
     private static Logger logger;
     private final ExecutorService threadPool;
     private final Map<String, String> jobStatus;
+    private final int maxConcurrentJobs;
 
     public LocalExecutor(Execution execution) {
         logger = LoggerFactory.getLogger(LocalExecutor.class);
-        int maxConcurrentJobs = execution.getOptions().getInt(MAX_CONCURRENT_JOBS, 1);
+        maxConcurrentJobs = execution.getOptions().getInt(MAX_CONCURRENT_JOBS, 1);
         threadPool = Executors.newFixedThreadPool(maxConcurrentJobs);
         jobStatus = Collections.synchronizedMap(new LinkedHashMap<String, String>(1000) {
             @Override
@@ -138,10 +139,17 @@ public class LocalExecutor implements BatchExecutor {
     }
 
     @Override
-    public boolean isExecutorAlive() {
-        return false;
+    public boolean canBeQueued() {
+        return jobStatus.values()
+                .stream()
+                .filter(s -> s.equals(Enums.ExecutionStatus.RUNNING) || s.equals(Enums.ExecutionStatus.QUEUED))
+                .count() < maxConcurrentJobs;
     }
 
+    @Override
+    public boolean isExecutorAlive() {
+        return true;
+    }
 
     private void closeOutputStreams(Command command) {
         /** Close output streams **/

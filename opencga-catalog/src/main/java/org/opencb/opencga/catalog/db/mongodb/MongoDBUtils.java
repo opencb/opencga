@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.user.User;
 
 import java.io.IOException;
 import java.util.*;
@@ -356,7 +356,7 @@ class MongoDBUtils {
     static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
         for (String s : acceptedMapParams) {
             if (parameters.containsKey(s)) {
-                Document document = null;
+                Document document;
                 try {
                     if (parameters.get(s) instanceof List<?>) {
                         List<Object> originalList = parameters.getAsList(s);
@@ -395,6 +395,26 @@ class MongoDBUtils {
                     filteredParams.put(s, aLong);
                 }
             }
+        }
+    }
+
+    protected static void nestedPut(String key, Object value, Map<String, Object> document) {
+        if (key.contains(".")) {
+            String[] keys = key.split("\\.");
+            Map<String, Object> auxDocument = document;
+            for (int i = 0; i < keys.length; i++) {
+                String tmpKey = keys[i];
+                if (i + 1 == keys.length) {
+                    auxDocument.put(tmpKey, value);
+                } else {
+                    if (auxDocument.get(tmpKey) == null) {
+                        auxDocument.put(tmpKey, new HashMap<>());
+                    }
+                    auxDocument = (Map<String, Object>) auxDocument.get(tmpKey);
+                }
+            }
+        } else {
+            document.put(key, value);
         }
     }
 

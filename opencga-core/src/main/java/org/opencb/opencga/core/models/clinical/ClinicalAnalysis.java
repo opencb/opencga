@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,15 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.PrivateStudyUid;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -36,184 +34,127 @@ import java.util.Map;
 public class ClinicalAnalysis extends PrivateStudyUid {
 
     private String id;
-    @Deprecated
-    private String name;
     private String uuid;
     private String description;
     private Type type;
 
     private Disorder disorder;
 
-    // Map of sample id, list of files (VCF, BAM and BIGWIG)
-    private Map<String, List<File>> files;
+    // List of files (VCF, BAM and BIGWIG)
+    private List<File> files;
 
     private Individual proband;
     private Family family;
     private Map<String, FamiliarRelationship> roleToProband;
-    private List<Interpretation> interpretations;
+
+    private ClinicalAnalysisQc qualityControl;
+
+    private Interpretation interpretation;
+    private List<Interpretation> secondaryInterpretations;
 
     private ClinicalConsent consent;
 
-    private ClinicalAnalyst analyst;
+    private ClinicalAnalysisAnalyst analyst;
     private Enums.Priority priority;
     private List<String> flags;
 
     private String creationDate;
     private String modificationDate;
     private String dueDate;
-    private ClinicalStatus status;
     private int release;
 
     private List<Comment> comments;
     private List<Alert> alerts;
+    private ClinicalAnalysisInternal internal;
     private Map<String, Object> attributes;
+
+    private CustomStatus status;
 
     public enum Type {
         SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
     }
 
-    // Todo: Think about a better place to have this enum
-    @Deprecated
-    public enum Action {
-        ADD,
-        SET,
-        REMOVE
-    }
-
     public enum FamiliarRelationship {
-        TWINS_MONOZYGOUS("TwinsMonozygous"), TWINS_DIZYGOUS("TwinsDizygous"), TWINS_UNKNOWN("TwinsUnknown"), FULL_SIBLING("FullSibling"),
-        FULL_SIBLING_F("FullSiblingF"), FULL_SIBLING_M("FullSiblingM"), MOTHER("Mother"), FATHER("Father"), SON("Son"),
-        DAUGHTER("Daughter"), CHILD_OF_UNKNOWN_SEX("ChildOfUnknownSex"), MATERNAL_AUNT("MaternalAunt"), MATERNAL_UNCLE("MaternalUncle"),
-        MATERNAL_UNCLE_OR_AUNT("MaternalUncleOrAunt"), PATERNAL_AUNT("PaternalAunt"), PATERNAL_UNCLE("PaternalUncle"),
-        PATERNAL_UNCLE_OR_AUNT("PaternalUncleOrAunt"), MATERNAL_GRANDMOTHER("MaternalGrandmother"),
-        PATERNAL_GRANDMOTHER("PaternalGrandmother"), MATERNAL_GRANDFATHER("MaternalGrandfather"),
-        PATERNAL_GRANDFATHER("PaternalGrandfather"), DOUBLE_FIRST_COUSIN("DoubleFirstCousin"),
-        MATERNAL_COUSIN_SISTER("MaternalCousinSister"), PATERNAL_COUSIN_SISTER("PaternalCousinSister"),
-        MATERNAL_COUSIN_BROTHER("MaternalCousinBrother"), PATERNAL_COUSIN_BROTHER("PaternalCousinBrother"), COUSIN("Cousin"),
-        SPOUSE("Spouse"), HUSBAND("Husband"), OTHER("Other"), RELATION_IS_NOT_CLEAR("RelationIsNotClear"), UNRELATED("Unrelated"),
-        PROBAND("Proband"), UNKNOWN("Unknown");
+        MOTHER("", "mother"),
+        FATHER("", "father"),
+        STEP_MOTHER("", "mother"),
+        STEP_FATHER("", "father"),
+        IDENTICAL_TWIN("", "twin"),
+        FRATERNAL_TWIN("", "twin"),
+        FULL_SIBLING("", "sibling"),
+        HALF_SIBLING("", "sibling"),
+        STEP_SIBLING("", "sibling"),
+        SISTER("", "sister"),
+        BROTHER("", "brother"),
+        STEP_SISTER("", "sister"),
+        STEP_BROTHER("", "brother"),
+        SON("", "son"),
+        DAUGHTER("", "daughter"),
 
-        private final String value;
+        CHILD_OF_UNKNOWN_SEX("", "child"),
 
-        FamiliarRelationship(String value) {
-            this.value = value;
+        UNCLE("", "uncle"),
+        AUNT("", "aunt"),
+        MATERNAL_AUNT("", "aunt"),
+        MATERNAL_UNCLE("", "uncle"),
+        PATERNAL_AUNT("", "aunt"),
+        PATERNAL_UNCLE("", "uncle"),
+        NEPHEW("", "nephew"),
+        NIECE("", "niece"),
+        GRANDFATHER("", "grandfather"),
+        GRANDMOTHER("", "grandmother"),
+        MATERNAL_GRANDMOTHER("", "grandmother"),
+        PATERNAL_GRANDMOTHER("", "grandmother"),
+        MATERNAL_GRANDFATHER("", "grandfather"),
+        PATERNAL_GRANDFATHER("", "grandfather"),
+        GREAT_GRANDFATHER("", "great-grandfather"),
+        GREAT_GRANDMOTHER("", "great-grandmother"),
+        DOUBLE_FIRST_COUSING("", "cousin"),
+        COUSIN("", "cousin"),
+        MALE_COUSIN("", "cousin"),
+        FEMALE_COUSIN("", "cousin"),
+        SECOND_COUSIN("", "cousin"),
+        MALE_SECOND_COUSIN("", "cousin"),
+        FEMALE_SECOND_COUSIN("", "cousin"),
+        SPOUSE("", "spouse"),
+        HUSBAND("", "husband"),
+        OTHER("", "other"),
+        UNKNOWN("", "unknown"),
+        UNRELATED("", "unrelated"),
+
+        PROBAND("", "proband");
+
+        private final String snomedCtId;
+        private final String isA;
+
+        FamiliarRelationship(String snomedCtId, String isA) {
+            this.snomedCtId = snomedCtId;
+            this.isA = isA;
         }
 
-        @Override
-        public String toString() {
-            return value;
-        }
-    }
-
-    public static class ClinicalAnalyst {
-        private String assignedBy;
-        private String assignee;
-        private String date;
-
-        public ClinicalAnalyst() {
-            this("", "");
+        public String getId() {
+            return this.name();
         }
 
-        public ClinicalAnalyst(String assignee, String assignedBy) {
-            this.assignee = assignee;
-            this.assignedBy = assignedBy;
-            this.date = TimeUtils.getTime();
+        public String getSnomedCtId() {
+            return snomedCtId;
         }
 
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("ClinicalAnalyst{");
-            sb.append("assignee='").append(assignee).append('\'');
-            sb.append(", assignedBy='").append(assignedBy).append('\'');
-            sb.append(", date='").append(date).append('\'');
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getAssignee() {
-            return assignee;
-        }
-
-        public ClinicalAnalyst setAssignee(String assignee) {
-            this.assignee = assignee;
-            return this;
-        }
-
-        public String getAssignedBy() {
-            return assignedBy;
-        }
-
-        public ClinicalAnalyst setAssignedBy(String assignedBy) {
-            this.assignedBy = assignedBy;
-            return this;
-        }
-
-        public String getDate() {
-            return date;
-        }
-
-        public ClinicalAnalyst setDate(String date) {
-            this.date = date;
-            return this;
-        }
-    }
-
-    public static class ClinicalStatus extends Status {
-
-        public static final String INCOMPLETE = "INCOMPLETE";
-        public static final String READY_FOR_VALIDATION = "READY_FOR_VALIDATION";
-        public static final String READY_FOR_INTERPRETATION = "READY_FOR_INTERPRETATION";
-        public static final String INTERPRETATION_IN_PROGRESS = "INTERPRETATION_IN_PROGRESS";
-//        public static final String INTERPRETED = "INTERPRETED";
-        public static final String READY_FOR_INTEPRETATION_REVIEW = "READY_FOR_INTEPRETATION_REVIEW";
-        public static final String INTERPRETATION_REVIEW_IN_PROGRESS = "INTERPRETATION_REVIEW_IN_PROGRESS";
-        public static final String READY_FOR_REPORT = "READY_FOR_REPORT";
-        public static final String REPORT_IN_PROGRESS = "REPORT_IN_PROGRESS";
-        public static final String DONE = "DONE";
-        public static final String REVIEW_IN_PROGRESS = "REVIEW_IN_PROGRESS";
-        public static final String CLOSED = "CLOSED";
-        public static final String REJECTED = "REJECTED";
-
-        public static final List<String> STATUS_LIST = Arrays.asList(INCOMPLETE, READY, DELETED, READY_FOR_VALIDATION,
-                READY_FOR_INTERPRETATION, INTERPRETATION_IN_PROGRESS, READY_FOR_INTEPRETATION_REVIEW, INTERPRETATION_REVIEW_IN_PROGRESS,
-                READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW_IN_PROGRESS, CLOSED, REJECTED);
-
-        public ClinicalStatus(String status, String message) {
-            if (isValid(status)) {
-                init(status, message);
-            } else {
-                throw new IllegalArgumentException("Unknown status " + status);
-            }
-        }
-
-        public ClinicalStatus(String status) {
-            this(status, "");
-        }
-
-        public ClinicalStatus() {
-            this(READY_FOR_INTERPRETATION, "");
-        }
-
-        public static boolean isValid(String status) {
-            if (Status.isValid(status)) {
-                return true;
-            }
-
-            if (STATUS_LIST.contains(status)) {
-                return true;
-            }
-            return false;
+        public String getIsA() {
+            return isA;
         }
     }
 
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
-                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
-                            List<Interpretation> interpretations, Enums.Priority priority, ClinicalAnalyst analyst, List<String> flags,
-                            String creationDate, String dueDate, List<Comment> comments, List<Alert> alerts, ClinicalStatus status,
-                            int release, Map<String, Object> attributes) {
+
+    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
+                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalAnalysisQc qualityControl,
+                            Interpretation interpretation, List<Interpretation> secondaryInterpretations, ClinicalConsent consent,
+                            ClinicalAnalysisAnalyst analyst, Enums.Priority priority, List<String> flags, String creationDate,
+                            String modificationDate, String dueDate, int release, List<Comment> comments, List<Alert> alerts,
+                            ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -222,18 +163,22 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.proband = proband;
         this.family = family;
         this.roleToProband = roleToProband;
-        this.interpretations = interpretations;
+        this.qualityControl = qualityControl;
+        this.interpretation = interpretation;
+        this.secondaryInterpretations = secondaryInterpretations;
+        this.consent = consent;
+        this.analyst = analyst;
         this.priority = priority;
         this.flags = flags;
-        this.analyst = analyst;
-        this.consent = consent;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.dueDate = dueDate;
-        this.comments = comments;
-        this.status = status;
         this.release = release;
+        this.comments = comments;
         this.alerts = alerts;
+        this.internal = internal;
         this.attributes = attributes;
+        this.status = status;
     }
 
     @Override
@@ -248,7 +193,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
-        sb.append(", interpretations=").append(interpretations);
+        sb.append(", qc=").append(qualityControl);
+        sb.append(", interpretation=").append(interpretation);
+        sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
         sb.append(", analyst=").append(analyst);
         sb.append(", priority=").append(priority);
@@ -256,15 +203,17 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
-        sb.append(", status=").append(status);
         sb.append(", release=").append(release);
         sb.append(", comments=").append(comments);
         sb.append(", alerts=").append(alerts);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
 
+    @Override
     public String getUuid() {
         return uuid;
     }
@@ -274,33 +223,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public ClinicalAnalysis setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    @Override
-    public ClinicalAnalysis setUid(long uid) {
-        super.setUid(uid);
-        return this;
-    }
-
-    @Override
-    public ClinicalAnalysis setStudyUid(long studyUid) {
-        super.setStudyUid(studyUid);
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public ClinicalAnalysis setName(String name) {
-        this.name = name;
         return this;
     }
 
@@ -331,11 +261,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public Map<String, List<File>> getFiles() {
+    public List<File> getFiles() {
         return files;
     }
 
-    public ClinicalAnalysis setFiles(Map<String, List<File>> files) {
+    public ClinicalAnalysis setFiles(List<File> files) {
         this.files = files;
         return this;
     }
@@ -367,21 +297,30 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public List<Interpretation> getInterpretations() {
-        return interpretations;
+    public ClinicalAnalysisQc getQualityControl() {
+        return qualityControl;
     }
 
-    public ClinicalAnalysis setInterpretations(List<Interpretation> interpretations) {
-        this.interpretations = interpretations;
+    public ClinicalAnalysis setQualityControl(ClinicalAnalysisQc qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 
-    public ClinicalAnalyst getAnalyst() {
-        return analyst;
+    public Interpretation getInterpretation() {
+        return interpretation;
     }
 
-    public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
-        this.analyst = analyst;
+    public ClinicalAnalysis setInterpretation(Interpretation interpretation) {
+        this.interpretation = interpretation;
+        return this;
+    }
+
+    public List<Interpretation> getSecondaryInterpretations() {
+        return secondaryInterpretations;
+    }
+
+    public ClinicalAnalysis setSecondaryInterpretations(List<Interpretation> secondaryInterpretations) {
+        this.secondaryInterpretations = secondaryInterpretations;
         return this;
     }
 
@@ -391,6 +330,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setConsent(ClinicalConsent consent) {
         this.consent = consent;
+        return this;
+    }
+
+    public ClinicalAnalysisAnalyst getAnalyst() {
+        return analyst;
+    }
+
+    public ClinicalAnalysis setAnalyst(ClinicalAnalysisAnalyst analyst) {
+        this.analyst = analyst;
         return this;
     }
 
@@ -412,15 +360,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public String getDueDate() {
-        return dueDate;
-    }
-
-    public ClinicalAnalysis setDueDate(String dueDate) {
-        this.dueDate = dueDate;
-        return this;
-    }
-
     public String getCreationDate() {
         return creationDate;
     }
@@ -436,6 +375,24 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public String getDueDate() {
+        return dueDate;
+    }
+
+    public ClinicalAnalysis setDueDate(String dueDate) {
+        this.dueDate = dueDate;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public ClinicalAnalysis setRelease(int release) {
+        this.release = release;
         return this;
     }
 
@@ -457,21 +414,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public ClinicalStatus getStatus() {
-        return status;
+    public ClinicalAnalysisInternal getInternal() {
+        return internal;
     }
 
-    public ClinicalAnalysis setStatus(ClinicalStatus status) {
-        this.status = status;
-        return this;
-    }
-
-    public int getRelease() {
-        return release;
-    }
-
-    public ClinicalAnalysis setRelease(int release) {
-        this.release = release;
+    public ClinicalAnalysis setInternal(ClinicalAnalysisInternal internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -484,4 +432,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    public CustomStatus getStatus() {
+        return status;
+    }
+
+    public ClinicalAnalysis setStatus(CustomStatus status) {
+        this.status = status;
+        return this;
+    }
 }

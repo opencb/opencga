@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.junit.Before;
@@ -9,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -115,8 +132,8 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
                 StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         Set<Long> allSampleIds = all.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
 
-        assertThat(all.getStatus().getName(), anyOf(is(Cohort.CohortStatus.INVALID), is(Cohort.CohortStatus.NONE)));
-        Set<Long> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key
+        assertThat(all.getInternal().getStatus().getName(), anyOf(is(CohortStatus.INVALID), is(CohortStatus.NONE)));
+        Set<Long> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key
                 (), FileIndex.IndexStatus.READY), null, sessionId)
                 .getResults()
                 .stream()
@@ -126,7 +143,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         assertEquals(loadedSamples, allSampleIds);
 
         for (String file : fileIds) {
-            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, file, null, sessionId).first().getIndex().getStatus().getName());
+            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, file, null, sessionId).first().getInternal().getIndex().getStatus().getName());
         }
 
     }
@@ -134,7 +151,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
     private void removeStudy(Object study, QueryOptions options) throws Exception {
         variantManager.removeStudy(study.toString(), options, sessionId);
 
-        Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+        Query query = new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
         assertEquals(0L, catalogManager.getFileManager().count(study.toString(), query, sessionId).getNumTotalResults());
 
         Cohort all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();

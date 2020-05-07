@@ -20,6 +20,7 @@ import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.AlignmentCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.analysis.ClinicalCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.VariantCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.*;
 import org.opencb.opencga.app.cli.main.executors.operations.OperationsCommandExecutor;
@@ -117,9 +118,6 @@ public class OpencgaMain {
                         case "cohorts":
                             commandExecutor = new CohortCommandExecutor(cliOptionsParser.getCohortCommands());
                             break;
-                        case "clinical":
-                            commandExecutor = new ClinicalCommandExecutor(cliOptionsParser.getClinicalCommandOptions());
-                            break;
                         case "panels":
                             commandExecutor = new PanelCommandExecutor(cliOptionsParser.getPanelCommands());
                             break;
@@ -131,6 +129,9 @@ public class OpencgaMain {
                             break;
                         case "variant":
                             commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommands());
+                            break;
+                        case "clinical":
+                            commandExecutor = new ClinicalCommandExecutor(cliOptionsParser.getClinicalCommandOptions());
                             break;
                         case OperationsCommandOptions.OPERATIONS_COMMAND:
                             commandExecutor = new OperationsCommandExecutor(cliOptionsParser.getOperationsCommands());

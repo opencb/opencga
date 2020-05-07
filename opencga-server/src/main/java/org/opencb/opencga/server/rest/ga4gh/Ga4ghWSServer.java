@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
@@ -196,8 +197,8 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                 if (org.apache.commons.lang3.StringUtils.isNotEmpty(referenceGenome)) {
                     referencePath = Paths.get(catalogManager.getFileManager().get(studyStr, referenceGenome, FileManager.INCLUDE_FILE_URI_PATH, token).first().getUri().getPath());
                 } else if (ListUtils.isNotEmpty(file.getRelatedFiles())) {
-                    for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
-                        if (relatedFile.getRelation() == File.RelatedFile.Relation.REFERENCE_GENOME) {
+                    for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
+                        if (relatedFile.getRelation() == FileRelatedFile.Relation.REFERENCE_GENOME) {
                             referencePath = Paths.get(relatedFile.getFile().getUri().getPath());
                             break;
                         }

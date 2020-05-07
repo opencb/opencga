@@ -32,6 +32,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
@@ -39,11 +41,13 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
+import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsResolver;
+import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
@@ -167,9 +171,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             studyMetadata.getAttributes().put(DEFAULT_GENOTYPE.key(), defaultGenotype);
         }
 
-        boolean loadSplitData = options.getBoolean(VariantStorageOptions.LOAD_SPLIT_DATA.key(),
-                VariantStorageOptions.LOAD_SPLIT_DATA.defaultValue());
-        boolean newSampleBatch = checkCanLoadSampleBatch(getMetadataManager(), studyMetadata, fileId, loadSplitData);
+        VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(options);
+        boolean newSampleBatch = checkCanLoadSampleBatch(getMetadataManager(), studyMetadata, fileId, splitData != null);
 
         if (newSampleBatch) {
             logger.info("New sample batch!!!");
@@ -234,7 +237,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    public URI load(URI inputUri) throws IOException, StorageEngineException {
+    public URI load(URI inputUri, URI outdir) throws IOException, StorageEngineException {
 
 
 //        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), Options.INCLUDE_GENOTYPES.defaultValue());
@@ -250,13 +253,13 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         boolean directLoad = options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue());
         if (directLoad) {
-            directLoad(inputUri);
+            directLoad(inputUri, outdir);
         } else {
             boolean doMerge = options.getBoolean(MERGE.key(), false);
             boolean doStage = options.getBoolean(STAGE.key(), false);
 
             if (doStage) {
-                stage(inputUri);
+                stage(inputUri, outdir);
             }
 
             long skippedVariants = options.getLong("skippedVariants");
@@ -272,14 +275,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         return inputUri; //TODO: Return something like this: mongo://<host>/<dbName>/<collectionName>
     }
 
-    public void directLoad(URI inputUri) throws StorageEngineException {
+    public void directLoad(URI inputUri, URI outdirUri) throws StorageEngineException {
         int fileId = getFileId();
         int studyId = getStudyId();
         List<Integer> fileIds = Collections.singletonList(fileId);
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri);
         VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(studyId));
-        int numRecords = fileMetadata.getStats().getNumVariants();
+        int numRecords = fileMetadata.getStats().getVariantCount();
         int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
         int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
         final int numReaders = 1;
@@ -289,8 +292,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         try {
             //Dedup task
-            VariantDeduplicationTask duplicatedVariantsDetector =
-                    new VariantDeduplicationTask(new DiscardDuplicatedVariantsResolver(fileId));
+            DuplicatedVariantsResolverFactory dedupFactory = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider);
+            AbstractDuplicatedVariantsResolver resolver = dedupFactory.getResolver(UriUtils.fileName(inputUri), outdirUri);
+            VariantDeduplicationTask duplicatedVariantsDetector = dedupFactory.getTask(resolver);
 
             //Remapping ids task
             org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
@@ -352,6 +356,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             writeResult = loader.getResult();
             writeResult.setSkippedVariants(stageReader.getSkippedVariants());
             writeResult.setNonInsertedVariants(duplicatedVariantsDetector.getDiscardedVariants());
+            loadStats.put("duplicatedVariants", resolver.getDuplicatedVariants());
+            loadStats.put("duplicatedLocus", resolver.getDuplicatedLocus());
+            loadStats.put("discardedVariants", resolver.getDiscardedVariants());
             loadStats.append("directLoad", true);
             loadStats.append("writeResult", writeResult);
 
@@ -370,7 +377,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
     }
 
-    public void stage(URI input) throws StorageEngineException {
+    public void stage(URI input, URI outdir) throws StorageEngineException {
         final int fileId = getFileId();
 
         if (!options.getBoolean(STAGE.key(), false)) {
@@ -381,7 +388,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(getStudyId()));
-        int numRecords = fileMetadata.getStats().getNumVariants();
+        int numRecords = fileMetadata.getStats().getVariantCount();
         int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
         int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
         final int numReaders = 1;
@@ -395,6 +402,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             //Reader
             VariantReader variantReader = variantReaderUtils.getVariantReader(input, metadata, stdin);
+
+            DuplicatedVariantsResolverFactory dedupFactory = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider);
+            AbstractDuplicatedVariantsResolver resolver = dedupFactory.getResolver(UriUtils.fileName(input), outdir);
+            VariantDeduplicationTask duplicatedVariantsDetector = dedupFactory.getTask(resolver);
 
             //Remapping ids task
             org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
@@ -414,10 +425,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setAbortOnFail(true).build();
             if (isStageParallelWrite(options)) {
                 logger.info("Multi thread stage load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
-                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converterTask).then(stageLoader), null, config);
+                ptr = new ParallelTaskRunner<>(variantReader.then(duplicatedVariantsDetector),
+                        remapIdsTask.then(converterTask).then(stageLoader), null, config);
             } else {
                 logger.info("Multi thread stage load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
-                ptr = new ParallelTaskRunner<>(variantReader, remapIdsTask.then(converterTask), stageLoader, config);
+                ptr = new ParallelTaskRunner<>(variantReader.then(duplicatedVariantsDetector),
+                        remapIdsTask.then(converterTask), stageLoader, config);
             }
 
             Thread hook = new Thread(() -> {
@@ -441,6 +454,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             stageLoader.getWriteResult().setSkippedVariants(skippedVariants);
             loadStats.append(MERGE.key(), false);
             loadStats.append("stageWriteResult", stageLoader.getWriteResult());
+            loadStats.put("duplicatedVariants", resolver.getDuplicatedVariants());
+            loadStats.put("duplicatedLocus", resolver.getDuplicatedLocus());
+            loadStats.put("discardedVariants", resolver.getDiscardedVariants());
             options.put("skippedVariants", skippedVariants);
             logger.info("Stage Write result: {}", skippedVariants);
         } catch (ExecutionException | RuntimeException e) {
@@ -709,11 +725,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    public ObjectMap getLoadStats() {
-        return loadStats;
-    }
-
-    @Override
     protected void checkLoadedVariants(List<Integer> fileIds, StudyMetadata studyMetadata)
             throws StorageEngineException {
         if (fileIds.size() == 1) {
@@ -728,7 +739,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     protected void checkLoadedVariants(int fileId, StudyMetadata studyMetadata) throws
             StorageEngineException {
 
-        if (getOptions().getBoolean(POST_LOAD_CHECK_SKIP.key(), POST_LOAD_CHECK_SKIP.defaultValue())) {
+        if (YesNoAuto.parse(getOptions(), POST_LOAD_CHECK.key()) == YesNoAuto.NO) {
             logger.warn("Skip check loaded variants");
             return;
         }
@@ -747,7 +758,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         long expectedSkippedVariants = 0;
         long alreadyLoadedVariants = options.getLong(ALREADY_LOADED_VARIANTS.key(), 0L);
 
-        for (Map.Entry<String, Integer> entry : fileMetadata.getStats().getVariantTypeCounts().entrySet()) {
+        for (Map.Entry<String, Integer> entry : fileMetadata.getStats().getTypeCount().entrySet()) {
             if (SKIPPED_VARIANTS.contains(VariantType.valueOf(entry.getKey()))) {
                 expectedSkippedVariants += entry.getValue();
             } else {
@@ -775,7 +786,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         } else if (writeResult.getSkippedVariants() > 0) {
             logger.warn("There were " + writeResult.getSkippedVariants() + " skipped variants.");
             for (VariantType type : SKIPPED_VARIANTS) {
-                Integer countByType = fileMetadata.getStats().getVariantTypeCounts().get(type.toString());
+                Integer countByType = fileMetadata.getStats().getTypeCount().get(type.toString());
                 if (countByType != null && countByType > 0) {
                     logger.info("  * Of which " + countByType + " are " + type.toString() + " variants.");
                 }

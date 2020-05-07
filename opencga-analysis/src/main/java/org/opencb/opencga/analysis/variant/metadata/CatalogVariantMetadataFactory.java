@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.variant.metadata;
 
 import org.opencb.biodata.models.metadata.Cohort;
@@ -16,7 +32,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,7 +56,6 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                     IndividualDBAdaptor.QueryParams.UID.key(),
                     IndividualDBAdaptor.QueryParams.ID.key(),
                     IndividualDBAdaptor.QueryParams.SEX.key(),
-                    IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
                     IndividualDBAdaptor.QueryParams.MOTHER.key(),
                     IndividualDBAdaptor.QueryParams.FATHER.key()
             ));
@@ -56,7 +71,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
     }
 
     @Override
-    protected VariantMetadata makeVariantMetadata(VariantQueryFields queryFields, QueryOptions queryOptions) throws StorageEngineException {
+    protected VariantMetadata makeVariantMetadata(VariantQueryProjection queryFields, QueryOptions queryOptions) throws StorageEngineException {
         VariantMetadata metadata = super.makeVariantMetadata(queryFields, queryOptions);
         if (queryOptions != null) {
             if (queryOptions.getBoolean(BASIC_METADATA, false)) {
@@ -120,7 +135,10 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
 
             individual.setSex(catalogIndividual.getSex().name());
 //            individual.setFamily(catalogIndividual.getFamily());
-            individual.setPhenotype(catalogIndividual.getAffectationStatus().toString());
+
+            if (catalogIndividual.getPhenotypes() != null && !catalogIndividual.getPhenotypes().isEmpty()) {
+                individual.setPhenotype(catalogIndividual.getPhenotypes().get(0).getId());
+            }
 
             if (catalogIndividual.getMother() != null) {
                 individual.setMother(catalogIndividual.getMother().getId());

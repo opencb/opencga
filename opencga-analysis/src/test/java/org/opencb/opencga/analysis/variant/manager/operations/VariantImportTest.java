@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,9 +58,9 @@ public class VariantImportTest extends AbstractVariantOperationManagerTest {
         indexFile(getSmallFile(), new QueryOptions(VariantStorageOptions.STATS_CALCULATE.key(), true), outputId);
 
         catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, Arrays.asList(
-                new Variable("name", "", "", Variable.VariableType.STRING, null, true, false, null, 0, null, null, null, null),
-                new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
-                new Variable("other", "", "", Variable.VariableType.STRING, "unknown", false, false, null, 0, null, null, null, null)),
+                new Variable("name", "", "", Variable.VariableType.STRING, null, true, false, null, null, 0, null, null, null, null),
+                new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, null, 0, null, null, null, null),
+                new Variable("other", "", "", Variable.VariableType.STRING, "unknown", false, false, null, null, 0, null, null, null, null)),
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId);
 
         catalogManager.getSampleManager().update(studyId, "NA19600", new SampleUpdateParams()

@@ -76,11 +76,11 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         variantDBIterator = emptyIterator();
         addCloseable(queryIterator);
 
-        int limit = this.options.getInt(QueryOptions.LIMIT, 0);
+        int limit = this.options.getInt(QueryOptions.LIMIT, -1);
         skip = Math.max(0, this.options.getInt(QueryOptions.SKIP, 0));
         pendingSkip = skip != 0;
 
-        if (limit <= 0) {
+        if (limit < 0) {
             limit = Integer.MAX_VALUE;
             maxResults = limit;
         } else {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.models;
 
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.nio.file.Path;
@@ -42,7 +42,7 @@ public class StudyInfo {
 
     private Path workspace;
     private Map<File.Bioformat, DataStore> dataStores;
-    private Project.Organism organism;
+    private ProjectOrganism organism;
 
     private List<FileInfo> fileInfos;
 
@@ -136,11 +136,11 @@ public class StudyInfo {
         return this;
     }
 
-    public Project.Organism getOrganism() {
+    public ProjectOrganism getOrganism() {
         return organism;
     }
 
-    public StudyInfo setOrganism(Project.Organism organism) {
+    public StudyInfo setOrganism(ProjectOrganism organism) {
         this.organism = organism;
         return this;
     }

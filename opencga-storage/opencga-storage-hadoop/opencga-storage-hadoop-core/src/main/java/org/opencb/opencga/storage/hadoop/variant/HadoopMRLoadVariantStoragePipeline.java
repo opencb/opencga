@@ -93,7 +93,7 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
         return super.preLoad(input, output);
     }
 
-    protected void load(URI input, int studyId, int fileId) throws StorageEngineException {
+    protected void load(URI input, URI outdir, int studyId, int fileId) throws StorageEngineException {
         URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
 
         String hadoopRoute = options.getString(MR_HADOOP_BIN.key(), MR_HADOOP_BIN.defaultValue());

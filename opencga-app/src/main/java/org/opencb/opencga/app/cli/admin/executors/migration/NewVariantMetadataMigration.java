@@ -12,15 +12,12 @@ import org.opencb.biodata.models.variant.avro.legacy.VariantGlobalStats;
 import org.opencb.biodata.models.variant.avro.legacy.VariantSource;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.mongodb.*;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -289,7 +286,9 @@ public class NewVariantMetadataMigration {
         variantSourceConverter.getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
 
         logger.info("Migrate '" + filesCollectionName + "' collection from db " + mongoDataStore.getDatabaseName());
-        for (Document document : filesCollection.nativeQuery().find(exists("fileId", true), new QueryOptions())) {
+        MongoDBIterator<Document> it = filesCollection.nativeQuery().find(exists("fileId", true), new QueryOptions());
+        while (it.hasNext()) {
+            Document document = it.next();
             logger.info("Migrate VariantSource " + document.getString("studyName"));
 
             // Save backup
@@ -315,7 +314,9 @@ public class NewVariantMetadataMigration {
         variantFileHeaderConverter.getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
 
         logger.info("Migrate '" + studiesCollectionName + "' collection from db " + mongoDataStore.getDatabaseName());
-        for (Document studyConfigurationDocument : studiesCollection.nativeQuery().find(exists("variantMetadata", true), new QueryOptions())) {
+        MongoDBIterator<Document> it = studiesCollection.nativeQuery().find(exists("variantMetadata", true), new QueryOptions());
+        while (it.hasNext()) {
+            Document studyConfigurationDocument = it.next();
             Document variantMetadataObject = studyConfigurationDocument.get("variantMetadata", Document.class);
             if (variantMetadataObject == null) {
                 continue;

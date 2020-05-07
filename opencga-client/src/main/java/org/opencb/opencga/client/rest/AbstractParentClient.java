@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
@@ -44,15 +45,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 04/05/16.
@@ -63,6 +63,7 @@ public abstract class AbstractParentClient {
 
     private String token;
     private ClientConfiguration configuration;
+    private boolean throwExceptionOnError = false;
 
     protected ObjectMapper jsonObjectMapper;
 
@@ -90,16 +91,18 @@ public abstract class AbstractParentClient {
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         if (configuration.getRest() != null) {
-            if (configuration.getRest().getTimeout() > 0) {
-                timeout = configuration.getRest().getTimeout();
+            if (configuration.getRest().getQuery().getBatchSize() > 0) {
+                batchSize = configuration.getRest().getQuery().getBatchSize();
             }
-            if (configuration.getRest().getBatchQuerySize() > 0) {
-                batchSize = configuration.getRest().getBatchQuerySize();
-            }
-            if (configuration.getRest().getDefaultLimit() > 0) {
-                defaultLimit = configuration.getRest().getDefaultLimit();
+            if (configuration.getRest().getQuery().getLimit() > 0) {
+                defaultLimit = configuration.getRest().getQuery().getLimit();
             }
         }
+    }
+
+    protected AbstractParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {
+        this.throwExceptionOnError = throwExceptionOnError;
+        return this;
     }
 
     protected <T> VariantQueryResult<T> executeVariantQuery(String category, String action, Map<String, Object> params, String method,
@@ -120,90 +123,120 @@ public abstract class AbstractParentClient {
 
     protected <T> RestResponse<T> execute(String category1, String id1, String category2, String id2, String action,
                                           Map<String, Object> paramsMap, String method, Class<T> clazz) throws ClientException {
+        List<String> ids;
+        if (StringUtils.isNotEmpty(id1)) {
+            ids = Arrays.asList(id1.split(","));
+        } else {
+            ids = Collections.emptyList();
+        }
+        return execute(category1, ids, category2, id2, action, paramsMap, method, clazz);
+    }
+
+    private <T> RestResponse<T> execute(String category1, List<String> id1, String category2, String id2, String action,
+                                          Map<String, Object> paramsMap, String method, Class<T> clazz) throws ClientException {
         ObjectMap params;
         if (paramsMap == null) {
             params = new ObjectMap();
         } else {
             params = new ObjectMap(paramsMap);
         }
+        params.put(QueryOptions.TIMEOUT, timeout);
 
         client.property(ClientProperties.CONNECT_TIMEOUT, 1000);
         client.property(ClientProperties.READ_TIMEOUT, timeout);
 
-        // Build the basic URL
-        WebTarget path = client
-                .target(configuration.getRest().getHost())
-                .path("webservices")
-                .path("rest")
-                .path("v2")
-                .path(category1);
+        int skip;
+        int limit;
+        int batchSize;
+        if (CollectionUtils.isEmpty(id1)) {
+            skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
+            limit = params.getInt(QueryOptions.LIMIT, defaultLimit);
+            batchSize = AbstractParentClient.batchSize;
+        } else {
+            // Ignore input SKIP and LIMIT from Params
+            skip = 0;
+            limit = id1.size();
+            // Hardcoded OpenCGA IDs limit
+            // See org.opencb.opencga.server.rest.OpenCGAWSServer.MAX_ID_SIZE
+            batchSize = 100;
 
-        // TODO we still have to check if there are multiple IDs, the limit is 200 pero query, this can be parallelized
-        // Some WS do not have IDs such as 'create'
-        if (StringUtils.isNotEmpty(id1)) {
-            path = path.path(id1);
+            params.remove(QueryOptions.SKIP);
+            params.remove(QueryOptions.LIMIT);
         }
-
-        if (StringUtils.isNotEmpty(category2)) {
-            path = path.path(category2);
-        }
-
-        if (StringUtils.isNotEmpty(id2)) {
-            path = path.path(id2);
-        }
-
-        // Add the last URL part, the 'action'
-        path = path.path(action);
-
-        int numRequiredFeatures = params.getInt(QueryOptions.LIMIT, defaultLimit);
-        int limit = Math.min(numRequiredFeatures, batchSize);
-
-        int skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
 
         RestResponse<T> finalRestResponse = null;
-        RestResponse<T> queryResponse;
+        int finalNumResults = 0;
+        int batchNumResults;
+        // Call REST in batches
+        do {
+            // Update the batch limit
+            int batchLimit = Math.min(batchSize, limit - finalNumResults);
 
-        while (true) {
-            params.put(QueryOptions.SKIP, skip);
-            params.put(QueryOptions.LIMIT, limit);
-            params.put(QueryOptions.TIMEOUT, timeout);
+            // Build URL
+            WebTarget path = client
+                    .target(configuration.getRest().getHost())
+                    .path("webservices")
+                    .path("rest")
+                    .path("v2")
+                    .path(category1);
 
-            if ("upload".equals(action)) {
-                queryResponse = callUploadRest(path, params, clazz);
-            } else if ("download".equals(action)) {
-                String destinyPath = params.getString("OPENCGA_DESTINY");
-                params.remove("OPENCGA_DESTINY");
-                download(path, params, destinyPath);
-                queryResponse = new RestResponse<>();
+            // Select batch. Either by ID or with limit/skip
+            if (CollectionUtils.isNotEmpty(id1)) {
+                // Select batch of IDs
+                path = path.path(String.join(",", id1.subList(skip, skip + batchLimit)));
             } else {
-                queryResponse = callRest(path, params, clazz, method);
+                // Select batch with skip/limit
+                params.put(QueryOptions.SKIP, skip);
+                params.put(QueryOptions.LIMIT, batchLimit);
             }
-            int numResults = queryResponse.getResponses().isEmpty() ? 0 : queryResponse.getResponses().get(0).getNumResults();
+            if (StringUtils.isNotEmpty(category2)) {
+                path = path.path(category2);
+            }
+            if (StringUtils.isNotEmpty(id2)) {
+                path = path.path(id2);
+            }
+            path = path.path(action);
+
+            // Call REST
+            RestResponse<T> batchRestResponse = callRest(path, params, clazz, method, action);
+            batchNumResults = batchRestResponse.allResultsSize();
 
             if (finalRestResponse == null) {
-                finalRestResponse = queryResponse;
+                finalRestResponse = batchRestResponse;
             } else {
-                if (numResults > 0) {
-                    finalRestResponse.getResponses().get(0).getResults().addAll(queryResponse.getResponses().get(0).getResults());
-                    finalRestResponse.getResponses().get(0).setNumResults(finalRestResponse.getResponses().get(0).getResults().size());
+                // Merge results
+                if (batchNumResults > 0) {
+                    finalRestResponse.first().getResults().addAll(batchRestResponse.getResponses().get(0).getResults());
+                    finalRestResponse.first().setNumResults(finalRestResponse.first().getResults().size());
                 }
+                finalRestResponse.getEvents().addAll(batchRestResponse.getEvents());
+                finalRestResponse.first().getEvents().addAll(batchRestResponse.first().getEvents());
             }
 
-            int numTotalResults = queryResponse.getResponses().isEmpty() ? 0 : finalRestResponse.getResponses().get(0).getNumResults();
-            if (numResults < limit || numTotalResults >= numRequiredFeatures || numResults == 0) {
-                break;
-            }
-
-            // DO NOT CHANGE THE ORDER OF THE FOLLOWING CODE
-            skip += numResults;
-            if (skip + batchSize < numRequiredFeatures) {
-                limit = batchSize;
-            } else {
-                limit = numRequiredFeatures - numTotalResults;
-            }
-
-        }
+            skip += batchNumResults;
+            finalNumResults += batchNumResults;
+        } while (batchNumResults >= batchSize && finalNumResults < limit);
         return finalRestResponse;
+    }
+
+    private <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method, String action)
+            throws ClientException {
+        RestResponse<T> batchRestResponse;
+        switch (action) {
+            case "upload":
+                batchRestResponse = callUploadRest(path, params, clazz);
+                break;
+            case "download":
+                String destinyPath = params.getString("OPENCGA_DESTINY");
+                params.remove("OPENCGA_DESTINY");
+                callRestDownload(path, params, destinyPath);
+                batchRestResponse = new RestResponse<>();
+                break;
+            default:
+                batchRestResponse = callRest(path, params, clazz, method);
+                break;
+        }
+        return batchRestResponse;
     }
 
     /**
@@ -216,60 +249,48 @@ public abstract class AbstractParentClient {
      * @return A queryResponse object containing the results of the query.
      * @throws ClientException if the path is wrong and cannot be converted to a proper url.
      */
-    private <T> RestResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws ClientException {
-
-        String jsonString;
+    private <T> RestResponse<T> callRest(WebTarget path, ObjectMap params, Class<T> clazz, String method) throws ClientException {
+        Response response;
         switch (method) {
             case DELETE:
             case GET:
                 // TODO we still have to check the limit of the query, and keep querying while there are more results
                 if (params != null) {
-                    for (String s : params.keySet()) {
-                        Object o = params.get(s);
-                        if (o instanceof Collection) {
-                            String value = ((Collection<?>) o).stream().map(Object::toString).collect(Collectors.joining(","));
-                            path = path.queryParam(s, value);
-                        } else {
-                            path = path.queryParam(s, o);
-                        }
+                    for (String key : params.keySet()) {
+                        path = path.queryParam(key, params.getString(key));
                     }
                 }
 
-                Invocation.Builder header = path.request()
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
+                logger.debug("{} URL: {}", method, path.getUri());
+                Invocation.Builder header = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
                 if (method.equals(GET)) {
-                    jsonString = header.get().readEntity(String.class);
+                    response = header.get();
                 } else {
-                    jsonString = header.delete().readEntity(String.class);
+                    response = header.delete();
                 }
                 break;
             case POST:
                 // TODO we still have to check the limit of the query, and keep querying while there are more results
                 if (params != null) {
-                    for (String s : params.keySet()) {
-                        if (!s.equals("body")) {
-                            path = path.queryParam(s, params.get(s));
+                    for (String key : params.keySet()) {
+                        if (!key.equals("body")) {
+                            path = path.queryParam(key, params.getString(key));
                         }
                     }
                 }
 
-                Object paramBody = (params == null ? "" : params.get("body"));
-                logger.debug("Body {}", paramBody);
-                Response body = path.request()
+                Object paramBody = (params != null && params.get("body") != null) ? params.get("body") : "";
+                logger.debug("{} URL: {}, Body {}", method, path.getUri(), paramBody);
+                response = path.request()
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
                         .post(Entity.json(paramBody));
-                jsonString = body.readEntity(String.class);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported REST method " + method);
         }
-
-        try {
-            logger.debug(method + " URL: {}", path.getUri().toURL());
-        } catch (MalformedURLException e) {
-            throw new ClientException(e.getMessage(), e);
-        }
-        return parseResult(jsonString, clazz);
+        RestResponse<T> restResponse = parseResult(response, clazz);
+        checkErrors(restResponse, response.getStatusInfo(), method, path);
+        return restResponse;
     }
 
     /**
@@ -279,7 +300,7 @@ public abstract class AbstractParentClient {
      * @param params Params to be passed to the WS.
      * @param outputFilePath Path where the file will be written (downloaded).
      */
-    private void download(WebTarget path, Map<String, Object> params, String outputFilePath) {
+    private void callRestDownload(WebTarget path, Map<String, Object> params, String outputFilePath) {
         if (Files.isDirectory(Paths.get(outputFilePath))) {
             outputFilePath += ("/" + new File(path.getUri().getPath().replace(":", "/")).getParentFile().getName());
         } else if (Files.notExists(Paths.get(outputFilePath).getParent())) {
@@ -320,9 +341,6 @@ public abstract class AbstractParentClient {
      * @throws ClientException if the path is wrong and cannot be converted to a proper url.
      */
     private <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
-
-        String jsonString;
-
         String filePath = ((String) params.get("file"));
         params.remove("file");
         params.remove("body");
@@ -337,9 +355,11 @@ public abstract class AbstractParentClient {
         }
         final FormDataMultiPart multipart = (FormDataMultiPart) formDataMultiPart.bodyPart(filePart);
 
-        jsonString = path.request()
+        logger.debug(POST + " URL: {}", path.getUri());
+        Response response = path.request()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
-                .post(Entity.entity(multipart, multipart.getMediaType()), String.class);
+                .post(Entity.entity(multipart, multipart.getMediaType()));
+        RestResponse<T> restResponse = parseResult(response, clazz);
 
         try {
             formDataMultiPart.close();
@@ -348,28 +368,52 @@ public abstract class AbstractParentClient {
             throw new ClientException(e.getMessage(), e);
         }
 
-        return parseResult(jsonString, clazz);
+        checkErrors(restResponse, response.getStatusInfo(), POST, path);
+        return restResponse;
     }
 
-    private <T> RestResponse<T> parseResult(String json, Class<T> clazz) throws ClientException {
-        if (json != null && !json.isEmpty()) {
+    private <T> RestResponse<T> parseResult(Response response, Class<T> clazz) throws ClientException {
+        String json = response.readEntity(String.class);
+        if (StringUtils.isNotEmpty(json) && json.startsWith("<")) {
+            return new RestResponse<>("", 0, Collections.singletonList(
+                    new Event(Event.Type.ERROR,
+                            response.getStatusInfo().getStatusCode(),
+                            response.getStatusInfo().getFamily().toString(),
+                            response.getStatusInfo().getReasonPhrase())), null, Collections.emptyList());
+        } else if (StringUtils.isNotEmpty(json)) {
             ObjectReader reader = jsonObjectMapper
                     .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(RestResponse.class, DataResult.class, clazz));
             try {
                 return reader.readValue(json);
             } catch (JsonParseException e) {
-                if (json.startsWith("<html>")) {
-                    if (json.contains("504 Gateway Time-out")) {
-                        return new RestResponse<>("", 0, Collections.singletonList(new Event(Event.Type.ERROR, 504, "Gateway time-out",
-                                "The server didn't respond in time.")), null, Collections.emptyList());
-                    }
-                }
                 throw new ClientException(e.getMessage(), e);
             } catch (JsonProcessingException e) {
                 throw new ClientException(e.getMessage(), e);
             }
         } else {
             return new RestResponse<>();
+        }
+    }
+
+    private <T> void checkErrors(RestResponse<T> restResponse, Response.StatusType status, String method, WebTarget path)
+            throws ClientException {
+        // TODO: Check response status
+//        if (Response.Status.Family.SUCCESSFUL.equals(status.getFamily())) {
+//            // REST call succeed
+//            return;
+//        }
+
+        if (restResponse != null && restResponse.getEvents() != null) {
+            for (Event event : restResponse.getEvents()) {
+                if (Event.Type.ERROR.equals(event.getType())) {
+                    if (throwExceptionOnError) {
+                        logger.error("Server error '{}' on {} {}", event.getMessage(), method, path.getUri());
+                        throw new ClientException("Got server error '" + event.getMessage() + "'");
+                    } else {
+                        logger.debug("Server error '{}' on {} {}", event.getMessage(), method, path.getUri());
+                    }
+                }
+            }
         }
     }
 

@@ -53,7 +53,12 @@ import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
-import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.executors.CompoundHeterozygousQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.DBAdaptorVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
@@ -74,8 +79,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
 /**
@@ -90,6 +95,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public static final String REMOVE_OPERATION_NAME = TaskMetadata.Type.REMOVE.name().toLowerCase();
 
     private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
+    private ObjectMap options;
 
     public enum MergeMode {
         BASIC,
@@ -122,6 +128,39 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         public String key() {
             return c;
+        }
+    }
+
+    public enum SplitData {
+        CHROMOSOME,
+        REGION,
+        MULTI;
+
+        public static SplitData from(ObjectMap options) {
+            Objects.requireNonNull(options);
+            String loadSplitDataStr = options.getString(LOAD_SPLIT_DATA.key());
+            boolean multiFile = options.getBoolean(LOAD_MULTI_FILE_DATA.key());
+            if (StringUtils.isNotEmpty(loadSplitDataStr) && multiFile) {
+                throw new IllegalArgumentException("Unable to mix loadSplitFile and loadMultiFile");
+            }
+            if (StringUtils.isEmpty(loadSplitDataStr) && !multiFile) {
+                return null;
+            }
+            if (multiFile) {
+                return MULTI;
+            } else {
+                switch (loadSplitDataStr.toLowerCase()) {
+                    case "chromosome":
+                        return CHROMOSOME;
+                    case "region":
+                        return REGION;
+                    case "multi":
+                        return MULTI; // FIXME: This shold not be allowed
+                    default:
+                        throw new IllegalArgumentException("Unknown split file method by '" + loadSplitDataStr + "'. "
+                                + "Available values: " + CHROMOSOME + ", " + REGION);
+                }
+            }
         }
     }
 
@@ -578,7 +617,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         // then, load variants
-        queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_FILES));
+        queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
         try (VariantDBIterator iterator = getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor)) {
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
             VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
@@ -819,13 +858,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 for (Integer cohortId : cohortsToInvalidate) {
                     metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
-                            cohort -> cohort.setStatsStatus(TaskMetadata.Status.ERROR));
+                            cohort -> {
+                                cohort.getFiles().removeAll(fileIds);
+                                return cohort.setStatsStatus(TaskMetadata.Status.ERROR);
+                            });
                 }
 
                 // Restore default cohort with indexed samples
-                Integer cohortId = metadataManager.getCohortId(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT);
-                metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
-                        defaultCohort -> defaultCohort.setSamples(metadataManager.getIndexedSamples(studyMetadata.getId())));
+                metadataManager.setSamplesToCohort(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT,
+                        metadataManager.getIndexedSamples(studyMetadata.getId()));
 
 
                 for (Integer fileId : fileIds) {
@@ -870,10 +911,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return cellBaseUtils;
     }
 
-    public ObjectMap getOptions() {
-        ObjectMap options = configuration.getVariantEngine(storageEngineId).getOptions();
+    @Override
+    public void setConfiguration(StorageConfiguration configuration, String storageEngineId, String dbName) {
+        options = new ObjectMap(configuration.getVariantEngine(storageEngineId).getOptions());
         // Merge general options
         configuration.getVariant().getOptions().forEach(options::putIfNotNull);
+        super.setConfiguration(configuration, storageEngineId, dbName);
+    }
+
+    public ObjectMap getOptions() {
         return options;
     }
 
@@ -1026,7 +1072,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public DataResult getFrequency(Query query, Region region, int regionIntervalSize) throws StorageEngineException {
-        return getDBAdaptor().getFrequency(query, region, regionIntervalSize);
+        return getDBAdaptor().getFrequency(getVariantQueryParser().parseQuery(query, new QueryOptions(VariantField.SUMMARY, true)),
+                region, regionIntervalSize);
     }
 
     public DataResult groupBy(Query query, String field, QueryOptions options) throws StorageEngineException {
@@ -1038,7 +1085,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public DataResult<Long> count(Query query) throws StorageEngineException {
-        query = preProcessQuery(query, null);
+        query = preProcessQuery(query, QueryOptions.empty());
         VariantQueryExecutor variantQueryExecutor = getVariantQueryExecutor(query, new QueryOptions(QueryOptions.COUNT, true));
         return variantQueryExecutor.count(query);
     }

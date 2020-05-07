@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,11 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -40,22 +43,24 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         ID("id", TEXT, ""),
         UID("uid", DECIMAL, ""),
         UUID("uuid", TEXT, ""),
-        @Deprecated
-        NAME("name", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        STATUS_DESCRIPTION("status.description", TEXT, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         RELEASE("release", INTEGER, ""),
 
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER, ""),
 
-        DELETED("deleted", BOOLEAN, ""),
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
 //        VARIABLE_NAME("variableName", TEXT, ""),
@@ -65,10 +70,6 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
-
-        STATS("stats", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        NSTATS("nstats", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        BSTATS("bstats", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
@@ -115,11 +116,11 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         }
     }
 
-    default boolean exists(long cohortId) throws CatalogDBException {
+    default boolean exists(long cohortId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), cohortId)).getNumMatches() > 0;
     }
 
-    default void checkId(long cohortId) throws CatalogDBException {
+    default void checkId(long cohortId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (cohortId < 0) {
             throw CatalogDBException.newInstance("Cohort id '{}' is not valid: ", cohortId);
         }
@@ -131,13 +132,16 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     OpenCGAResult nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Cohort> get(long cohortId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<Cohort> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Cohort> getAllInStudy(long studyId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    long getStudyId(long cohortId) throws CatalogDBException;
+    long getStudyId(long cohortId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

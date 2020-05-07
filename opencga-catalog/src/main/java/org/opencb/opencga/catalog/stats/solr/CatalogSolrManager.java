@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -29,6 +28,7 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.models.study.Study;
 import org.slf4j.Logger;
@@ -43,26 +43,28 @@ import java.util.Map;
 /**
  * Created by wasim on 27/06/18.
  */
-public class CatalogSolrManager {
+public class CatalogSolrManager implements AutoCloseable {
 
     private CatalogManager catalogManager;
     private SolrManager solrManager;
     private int insertBatchSize;
-    private String DATABASE_PREFIX = "opencga";
+    private String DATABASE_PREFIX;
 
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
-    public static final String COHORT_SOLR_COLLECTION = "Catalog_Cohort";
-    public static final String FILE_SOLR_COLLECTION = "Catalog_File";
-    public static final String FAMILY_SOLR_COLLECTION = "Catalog_Family";
-    public static final String INDIVIDUAL_SOLR_COLLECTION = "Catalog_Individual";
-    public static final String SAMPLE_SOLR_COLLECTION = "Catalog_Sample";
+    public static final String COHORT_SOLR_COLLECTION = "catalog-cohort";
+    public static final String FILE_SOLR_COLLECTION = "catalog-file";
+    public static final String FAMILY_SOLR_COLLECTION = "catalog-family";
+    public static final String INDIVIDUAL_SOLR_COLLECTION = "catalog-individual";
+    public static final String SAMPLE_SOLR_COLLECTION = "catalog-sample";
+    public static final String JOB_SOLR_COLLECTION = "catalog-job";
 
-    public static final String COHORT_CONF_SET = "OpenCGACatalogCohortConfSet";
-    public static final String FILE_CONF_SET = "OpenCGACatalogFileConfSet";
-    public static final String FAMILY_CONF_SET = "OpenCGACatalogFamilyConfSet";
-    public static final String INDIVIDUAL_CONF_SET = "OpenCGACatalogIndividualConfSet";
-    public static final String SAMPLE_CONF_SET = "OpenCGACatalogSampleConfSet";
-    public static final Map<String, String> CONFIGS_COLLECTION = new HashMap<>();
+    public static final String COHORT_CONF_SET = "opencga-cohort-configset";
+    public static final String FILE_CONF_SET = "opencga-file-configset";
+    public static final String FAMILY_CONF_SET = "opencga-family-configset";
+    public static final String INDIVIDUAL_CONF_SET = "opencga-individual-configset";
+    public static final String SAMPLE_CONF_SET = "opencga-sample-configset";
+    public static final String JOB_CONF_SET = "opencga-job-configset";
+    private final Map<String, String> CONFIGS_COLLECTION = new HashMap<>();
 
     private Logger logger;
 
@@ -76,7 +78,7 @@ public class CatalogSolrManager {
         insertBatchSize = tmpInsertBatchSize > 0 ? tmpInsertBatchSize : DEFAULT_INSERT_BATCH_SIZE;
         this.solrManager = new SolrManager(searchConfiguration.getHosts(), mode, timeout);
 
-        DATABASE_PREFIX = catalogManager.getConfiguration().getDatabasePrefix() + "_";
+        DATABASE_PREFIX = catalogManager.getConfiguration().getDatabasePrefix() + "-";
 
         populateConfigCollectionMap();
 
@@ -135,8 +137,8 @@ public class CatalogSolrManager {
         }
     }
 
-    public <T> void insertCatalogCollection(DBIterator<T> iterator, ComplexTypeConverter converter,
-                                            String collectionName) throws CatalogException {
+    public <T> void insertCatalogCollection(DBIterator<T> iterator, ComplexTypeConverter converter, String collectionName)
+            throws CatalogException {
 
         int count = 0;
         List<T> records = new ArrayList<>(insertBatchSize);
@@ -155,8 +157,8 @@ public class CatalogSolrManager {
         }
     }
 
-    public <T, M> void insertCatalogCollection(List<T> records, ComplexTypeConverter converter,
-                                               String collectionName) throws CatalogException {
+    public <T, M> void insertCatalogCollection(List<T> records, ComplexTypeConverter converter, String collectionName)
+            throws CatalogException {
         List<M> solrModels = new ArrayList<>();
 
         for (T record : records) {
@@ -168,6 +170,8 @@ public class CatalogSolrManager {
             updateResponse = solrManager.getSolrClient().addBeans(DATABASE_PREFIX + collectionName, solrModels);
             if (updateResponse.getStatus() == 0) {
                 solrManager.getSolrClient().commit(DATABASE_PREFIX + collectionName);
+            } else {
+                throw new CatalogException(updateResponse.getException());
             }
         } catch (IOException | SolrServerException e) {
             throw new CatalogException(e.getMessage(), e);
@@ -212,8 +216,6 @@ public class CatalogSolrManager {
      */
     public DataResult<FacetField> facetedQuery(Study study, String collection, Query query, QueryOptions queryOptions, String userId)
             throws CatalogException {
-        StopWatch stopWatch = StopWatch.createStarted();
-
         Query queryCopy = query == null ? new Query() : new Query(query);
         QueryOptions queryOptionsCopy = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
 
@@ -224,7 +226,7 @@ public class CatalogSolrManager {
             List<String> groups = new ArrayList<>();
             study.getGroups().forEach(group -> {
                 if (group.getUserIds().contains(userId)) {
-                    groups.add(group.getName());
+                    groups.add(group.getId());
                 }
             });
 
@@ -255,16 +257,27 @@ public class CatalogSolrManager {
     //***************** PRIVATE ****************/
 
     private void populateConfigCollectionMap() {
-        CONFIGS_COLLECTION.put(DATABASE_PREFIX + COHORT_SOLR_COLLECTION, COHORT_CONF_SET);
-        CONFIGS_COLLECTION.put(DATABASE_PREFIX + FILE_SOLR_COLLECTION, FILE_CONF_SET);
-        CONFIGS_COLLECTION.put(DATABASE_PREFIX + FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET);
-        CONFIGS_COLLECTION.put(DATABASE_PREFIX + INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET);
-        CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLE_SOLR_COLLECTION, SAMPLE_CONF_SET);
+        String version = GitRepositoryState.get().getBuildVersion();
+
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + COHORT_SOLR_COLLECTION, COHORT_CONF_SET + "-" + version);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + FILE_SOLR_COLLECTION, FILE_CONF_SET + "-" + version);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + FAMILY_SOLR_COLLECTION, FAMILY_CONF_SET + "-" + version);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + INDIVIDUAL_SOLR_COLLECTION, INDIVIDUAL_CONF_SET + "-" + version);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + SAMPLE_SOLR_COLLECTION, SAMPLE_CONF_SET + "-" + version);
+        CONFIGS_COLLECTION.put(DATABASE_PREFIX + JOB_SOLR_COLLECTION, JOB_CONF_SET + "-" + version);
     }
 
     protected void setSolrClient(SolrClient solrClient) {
         solrManager.setSolrClient(solrClient);
     }
 
+    @Override
+    public void close() throws CatalogException {
+        try {
+            solrManager.close();
+        } catch (IOException e) {
+            throw new CatalogException(e);
+        }
+    }
 }
 

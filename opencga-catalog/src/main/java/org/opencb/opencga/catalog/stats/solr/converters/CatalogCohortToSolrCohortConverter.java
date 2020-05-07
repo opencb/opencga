@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -7,8 +23,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.CohortSolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +67,7 @@ public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<
     public CohortSolrModel convertToStorageType(Cohort cohort) {
         CohortSolrModel cohortSolrModel = new CohortSolrModel();
 
+        cohortSolrModel.setId(cohort.getUuid());
         cohortSolrModel.setUid(cohort.getUid());
         cohortSolrModel.setStudyId(study.getFqn().replace(":", "__"));
         cohortSolrModel.setType(cohort.getType().name());
@@ -62,7 +79,7 @@ public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<
         cohortSolrModel.setCreationMonth(localDate.getMonth().toString());
         cohortSolrModel.setCreationDay(localDate.getDayOfMonth());
         cohortSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        cohortSolrModel.setStatus(cohort.getStatus().getName());
+        cohortSolrModel.setStatus(cohort.getInternal().getStatus().getName());
 
         if (cohort.getSamples() != null) {
             cohortSolrModel.setNumSamples(cohort.getSamples().size());

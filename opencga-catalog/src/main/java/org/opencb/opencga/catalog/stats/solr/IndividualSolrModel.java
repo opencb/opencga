@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.beans.Field;
@@ -10,13 +26,7 @@ import java.util.Map;
 /**
  * Created by wasim on 27/06/18.
  */
-public class IndividualSolrModel {
-
-    @Field
-    private long uid;
-
-    @Field
-    private String studyId;
+public class IndividualSolrModel extends CatalogSolrModel {
 
     @Field
     private boolean hasFather;
@@ -25,10 +35,22 @@ public class IndividualSolrModel {
     private boolean hasMother;
 
     @Field
-    private int numMultiples;
+    private String locationCity;
 
     @Field
-    private String multiplesType;
+    private String locationState;
+
+    @Field
+    private String locationCountry;
+
+    @Field
+    private int yearOfBirth;
+
+    @Field
+    private String monthOfBirth;
+
+    @Field
+    private int dayOfBirth;
 
     @Field
     private String sex;
@@ -43,43 +65,22 @@ public class IndividualSolrModel {
     private String population;
 
     @Field
-    private int release;
-
-    @Field
     private int version;
-
-    @Field
-    private int creationYear;
-
-    @Field
-    private String creationMonth;
-
-    @Field
-    private int creationDay;
-
-    @Field
-    private String creationDayOfWeek;
-
-    @Field
-    private String status;
 
     @Field
     private String lifeStatus;
 
     @Field
-    private String affectationStatus;
+    private List<String> phenotypes;
 
     @Field
-    private List<String> phenotypes;
+    private List<String> disorders;
 
     @Field
     private int numSamples;
 
     @Field
     private boolean parentalConsanguinity;
-
-    @Field
-    private List<String> acl;
 
     @Field
     private List<String> annotationSets;
@@ -90,18 +91,24 @@ public class IndividualSolrModel {
     public IndividualSolrModel() {
         this.annotationSets = new ArrayList<>();
         this.phenotypes = new ArrayList<>();
+        this.disorders = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualSolrModel{");
-        sb.append("uid=").append(uid);
+        sb.append("id='").append(id).append('\'');
+        sb.append(", uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", hasFather=").append(hasFather);
         sb.append(", hasMother=").append(hasMother);
-        sb.append(", numMultiples=").append(numMultiples);
-        sb.append(", multiplesType='").append(multiplesType).append('\'');
+        sb.append(", locationCity='").append(locationCity).append('\'');
+        sb.append(", locationState='").append(locationState).append('\'');
+        sb.append(", locationCountry='").append(locationCountry).append('\'');
+        sb.append(", yearOfBirth=").append(yearOfBirth);
+        sb.append(", monthOfBirth='").append(monthOfBirth).append('\'');
+        sb.append(", dayOfBirth=").append(dayOfBirth);
         sb.append(", sex='").append(sex).append('\'');
         sb.append(", karyotypicSex='").append(karyotypicSex).append('\'');
         sb.append(", ethnicity='").append(ethnicity).append('\'');
@@ -114,8 +121,8 @@ public class IndividualSolrModel {
         sb.append(", creationDayOfWeek='").append(creationDayOfWeek).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", lifeStatus='").append(lifeStatus).append('\'');
-        sb.append(", affectationStatus='").append(affectationStatus).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", disorders=").append(disorders);
         sb.append(", numSamples=").append(numSamples);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
         sb.append(", acl=").append(acl);
@@ -123,24 +130,6 @@ public class IndividualSolrModel {
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
-    }
-
-    public long getUid() {
-        return uid;
-    }
-
-    public IndividualSolrModel setUid(long uid) {
-        this.uid = uid;
-        return this;
-    }
-
-    public String getStudyId() {
-        return studyId;
-    }
-
-    public IndividualSolrModel setStudyId(String studyId) {
-        this.studyId = studyId;
-        return this;
     }
 
     public boolean isHasFather() {
@@ -161,21 +150,57 @@ public class IndividualSolrModel {
         return this;
     }
 
-    public int getNumMultiples() {
-        return numMultiples;
+    public String getLocationCity() {
+        return locationCity;
     }
 
-    public IndividualSolrModel setNumMultiples(int numMultiples) {
-        this.numMultiples = numMultiples;
+    public IndividualSolrModel setLocationCity(String locationCity) {
+        this.locationCity = locationCity;
         return this;
     }
 
-    public String getMultiplesType() {
-        return multiplesType;
+    public String getLocationState() {
+        return locationState;
     }
 
-    public IndividualSolrModel setMultiplesType(String multiplesType) {
-        this.multiplesType = multiplesType;
+    public IndividualSolrModel setLocationState(String locationState) {
+        this.locationState = locationState;
+        return this;
+    }
+
+    public String getLocationCountry() {
+        return locationCountry;
+    }
+
+    public IndividualSolrModel setLocationCountry(String locationCountry) {
+        this.locationCountry = locationCountry;
+        return this;
+    }
+
+    public int getYearOfBirth() {
+        return yearOfBirth;
+    }
+
+    public IndividualSolrModel setYearOfBirth(int yearOfBirth) {
+        this.yearOfBirth = yearOfBirth;
+        return this;
+    }
+
+    public String getMonthOfBirth() {
+        return monthOfBirth;
+    }
+
+    public IndividualSolrModel setMonthOfBirth(String monthOfBirth) {
+        this.monthOfBirth = monthOfBirth;
+        return this;
+    }
+
+    public int getDayOfBirth() {
+        return dayOfBirth;
+    }
+
+    public IndividualSolrModel setDayOfBirth(int dayOfBirth) {
+        this.dayOfBirth = dayOfBirth;
         return this;
     }
 
@@ -215,66 +240,12 @@ public class IndividualSolrModel {
         return this;
     }
 
-    public int getRelease() {
-        return release;
-    }
-
-    public IndividualSolrModel setRelease(int release) {
-        this.release = release;
-        return this;
-    }
-
     public int getVersion() {
         return version;
     }
 
     public IndividualSolrModel setVersion(int version) {
         this.version = version;
-        return this;
-    }
-
-    public int getCreationYear() {
-        return creationYear;
-    }
-
-    public IndividualSolrModel setCreationYear(int creationYear) {
-        this.creationYear = creationYear;
-        return this;
-    }
-
-    public String getCreationMonth() {
-        return creationMonth;
-    }
-
-    public IndividualSolrModel setCreationMonth(String creationMonth) {
-        this.creationMonth = creationMonth;
-        return this;
-    }
-
-    public int getCreationDay() {
-        return creationDay;
-    }
-
-    public IndividualSolrModel setCreationDay(int creationDay) {
-        this.creationDay = creationDay;
-        return this;
-    }
-
-    public String getCreationDayOfWeek() {
-        return creationDayOfWeek;
-    }
-
-    public IndividualSolrModel setCreationDayOfWeek(String creationDayOfWeek) {
-        this.creationDayOfWeek = creationDayOfWeek;
-        return this;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public IndividualSolrModel setStatus(String status) {
-        this.status = status;
         return this;
     }
 
@@ -287,21 +258,21 @@ public class IndividualSolrModel {
         return this;
     }
 
-    public String getAffectationStatus() {
-        return affectationStatus;
-    }
-
-    public IndividualSolrModel setAffectationStatus(String affectationStatus) {
-        this.affectationStatus = affectationStatus;
-        return this;
-    }
-
     public List<String> getPhenotypes() {
         return phenotypes;
     }
 
     public IndividualSolrModel setPhenotypes(List<String> phenotypes) {
         this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public List<String> getDisorders() {
+        return disorders;
+    }
+
+    public IndividualSolrModel setDisorders(List<String> disorders) {
+        this.disorders = disorders;
         return this;
     }
 
@@ -320,15 +291,6 @@ public class IndividualSolrModel {
 
     public IndividualSolrModel setParentalConsanguinity(boolean parentalConsanguinity) {
         this.parentalConsanguinity = parentalConsanguinity;
-        return this;
-    }
-
-    public List<String> getAcl() {
-        return acl;
-    }
-
-    public IndividualSolrModel setAcl(List<String> acl) {
-        this.acl = acl;
         return this;
     }
 

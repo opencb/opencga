@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -58,7 +60,8 @@ public class VariantAnnotationOperationManager extends OperationManager {
 
     public void annotate(String projectStr, List<String> studies, String region, String outputFileName, Path outdir, ObjectMap params,
                          String token, boolean overwriteAnnotations) throws Exception {
-        annotate(projectStr, studies, null, region, overwriteAnnotations, outputFileName, outdir, params, token);
+        String loadFileStr = params.getString(VariantAnnotationManager.LOAD_FILE);
+        annotate(projectStr, studies, loadFileStr, region, overwriteAnnotations, outputFileName, outdir, params, token);
     }
 
     private void annotate(String projectStr, List<String> studies, String loadFileStr, String region, boolean overwriteAnnotations,
@@ -120,7 +123,7 @@ public class VariantAnnotationOperationManager extends OperationManager {
 
     private void synchronizeProjectMetadata(String projectStr, String token) throws CatalogException, StorageEngineException {
         Project project = catalogManager.getProjectManager().get(projectStr, null, token).first();
-        Project.Organism organism = project.getOrganism();
+        ProjectOrganism organism = project.getOrganism();
         int currentRelease = project.getCurrentRelease();
         CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease);
     }

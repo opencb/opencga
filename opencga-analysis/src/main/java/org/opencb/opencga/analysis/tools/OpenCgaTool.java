@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,25 +20,20 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.commons.Analyst;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.project.DataStore;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
@@ -53,7 +48,6 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
@@ -410,13 +404,11 @@ public abstract class OpenCgaTool {
         erm.addExternalFile(file.getUri());
     }
 
-    protected final OpenCgaToolExecutor getToolExecutor()
-            throws ToolException {
+    protected final OpenCgaToolExecutor getToolExecutor() throws ToolException {
         return getToolExecutor(OpenCgaToolExecutor.class);
     }
 
-    protected final <T extends OpenCgaToolExecutor> T getToolExecutor(Class<T> clazz)
-            throws ToolException {
+    protected final <T extends OpenCgaToolExecutor> T getToolExecutor(Class<T> clazz) throws ToolException {
         String executorId = executorParams == null ? null : executorParams.getString(EXECUTOR_ID);
         if (StringUtils.isEmpty(executorId) && params != null) {
             executorId = params.getString(EXECUTOR_ID);
@@ -424,8 +416,7 @@ public abstract class OpenCgaTool {
         return getToolExecutor(clazz, executorId);
     }
 
-    protected final <T extends OpenCgaToolExecutor> T getToolExecutor(Class<T> clazz, String toolExecutorId)
-            throws ToolException {
+    protected final <T extends OpenCgaToolExecutor> T getToolExecutor(Class<T> clazz, String toolExecutorId) throws ToolException {
         T toolExecutor = toolExecutorFactory.getToolExecutor(getId(), toolExecutorId, clazz, sourceTypes, availableFrameworks);
         String executorId = toolExecutor.getId();
         if (executorParams == null) {
@@ -441,7 +432,6 @@ public abstract class OpenCgaTool {
                 toolExecutor.getFramework()));
 
         toolExecutor.setUp(erm, executorParams, outDir);
-
         return toolExecutor;
     }
 
@@ -477,15 +467,16 @@ public abstract class OpenCgaTool {
     }
 
 
-    protected final Analyst getAnalyst(String token) throws ToolException {
-        try {
-            String userId = catalogManager.getUserManager().getUserId(token);
-            DataResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
-                    Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
-
-            return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
-        } catch (CatalogException e) {
-            throw new ToolException(e.getMessage(), e);
-        }
-    }
+    // TODO can this method be removed?
+//    protected final Analyst getAnalyst(String token) throws ToolException {
+//        try {
+//            String userId = catalogManager.getUserManager().getUserId(token);
+//            DataResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
+//                    Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
+//
+//            return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
+//        } catch (CatalogException e) {
+//            throw new ToolException(e.getMessage(), e);
+//        }
+//    }
 }

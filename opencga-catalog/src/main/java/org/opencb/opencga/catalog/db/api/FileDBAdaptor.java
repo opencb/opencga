@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,13 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -59,12 +62,16 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         RELEASE("release", INTEGER, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        STATUS_DESCRIPTION("status.description", TEXT, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         RELATED_FILES("relatedFiles", TEXT_ARRAY, ""),
         RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
         SIZE("size", INTEGER_ARRAY, ""),
-        EXPERIMENT_UID("experiment.uid", INTEGER_ARRAY, ""),
+        EXPERIMENT("experiment", OBJECT, ""),
         SOFTWARE("software", TEXT_ARRAY, ""),
         SOFTWARE_NAME("software.name", TEXT, ""),
         SOFTWARE_VERSION("software.version", TEXT, ""),
@@ -73,18 +80,18 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
-        JOB_UID("job.uid", INTEGER_ARRAY, ""),
+        JOB_ID("jobId", TEXT, ""),
 
-        DELETED("deleted", BOOLEAN, ""),
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
-        INDEX("index", TEXT_ARRAY, ""),
-        INDEX_USER_ID("index.userId", TEXT, ""),
-        INDEX_CREATION_DATE("index.creationDate", TEXT, ""),
-        INDEX_STATUS_NAME("index.status.name", TEXT, ""),
-        INDEX_STATUS_MESSAGE("index.status.message", TEXT, ""),
-        INDEX_JOB_ID("index.jobId", TEXT, ""),
-        INDEX_TRANSFORMED_FILE("index.transformedFile", TEXT_ARRAY, ""),
-        INDEX_RELEASE("index.release", INTEGER, ""),
+        INTERNAL_INDEX("internal.index", TEXT_ARRAY, ""),
+        INTERNAL_INDEX_USER_ID("internal.index.userId", TEXT, ""),
+        INTERNAL_INDEX_CREATION_DATE("internal.index.creationDate", TEXT, ""),
+        INTERNAL_INDEX_STATUS_NAME("internal.index.status.name", TEXT, ""),
+        INTERNAL_INDEX_STATUS_MESSAGE("internal.index.status.message", TEXT, ""),
+        INTERNAL_INDEX_JOB_ID("internal.index.jobId", TEXT, ""),
+        INTERNAL_INDEX_TRANSFORMED_FILE("internal.index.transformedFile", TEXT_ARRAY, ""),
+        INTERNAL_INDEX_RELEASE("internal.index.release", INTEGER, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -150,9 +157,9 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         CHECKSUM(QueryParams.CHECKSUM.key()),
         STATS(QueryParams.STATS.key()),
         DESCRIPTION(QueryParams.DESCRIPTION.key()),
-        JOB_UID(QueryParams.JOB_UID.key()),
+        JOB_ID(QueryParams.JOB_ID.key()),
         SOFTWARE(QueryParams.SOFTWARE.key()),
-        STATUS_NAME(QueryParams.STATUS_NAME.key()),
+        STATUS_NAME(QueryParams.INTERNAL_STATUS_NAME.key()),
         SAMPLES(QueryParams.SAMPLES.key()),
         URI(QueryParams.URI.key()),
         SIZE(QueryParams.SIZE.key()),
@@ -183,11 +190,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         }
     }
 
-    default boolean exists(long fileId) throws CatalogDBException {
+    default boolean exists(long fileId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), fileId)).getNumMatches() > 0;
     }
 
-    default void checkId(long fileId) throws CatalogDBException {
+    default void checkId(long fileId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (fileId < 0) {
             throw CatalogDBException.newInstance("File id '{}' is not valid: ", fileId);
         }
@@ -200,9 +207,9 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         }
     }
 
-    long getId(long studyId, String path) throws CatalogDBException;
+    long getId(long studyId, String path) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    long getStudyIdByFileId(long fileId) throws CatalogDBException;
+    long getStudyIdByFileId(long fileId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult nativeInsert(Map<String, Object> file, String userId) throws CatalogDBException;
 
@@ -215,8 +222,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param options Options to filter the output that will be returned after the insertion of the file.
      * @return A OpenCGAResult object containing the time spent.
      * @throws CatalogDBException when the file could not be inserted due to different reasons.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /***
      * Retrieves the file from the database containing the fileId given.
@@ -225,8 +235,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param options Options to filter the output.
      * @return A OpenCGAResult object containing the required file.
      * @throws CatalogDBException when the file could not be found in the database.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult<File> get(long fileId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<File> get(long fileId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /***
      * Retrieves all the files belonging to the given study.
@@ -235,8 +248,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param options Options to filter the output.
      * @return A OpenCGAResult object containing all the files belonging to the study.
      * @throws CatalogDBException when the study does not exist.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult<File> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<File> getAllInStudy(long studyId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /***
      * Retrieves all the files present in the folder.
@@ -258,8 +274,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param options Options to filter the file output.
      * @return A OpenCGAResult object.
      * @throws CatalogDBException when the filePath already exists.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult rename(long fileId, String filePath, String fileUri, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult rename(long fileId, String filePath, String fileUri, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Add the samples to the array of samples in the file entry.
@@ -289,8 +308,10 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param status Deletion status we want to set.
      * @return a OpenCGAResult object.
      * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult delete(File file, String status) throws CatalogDBException;
+    OpenCGAResult delete(File file, String status) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Delete file.
@@ -299,7 +320,9 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param status Deletion status we want to set.
      * @return a OpenCGAResult object.
      * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult delete(Query query, String status) throws CatalogDBException;
+    OpenCGAResult delete(Query query, String status) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
 }

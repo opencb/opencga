@@ -1,0 +1,238 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "WorkspaceName": {
+            "type": "string",
+            "defaultValue": "[concat('opencga', uniqueString(resourceGroup().id))]"
+        },
+        "WorkspaceLocation": {
+            "type": "string"
+           }
+    },
+    "resources": [
+        {
+            "apiVersion": "2017-04-26-preview",
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "name": "[parameters('WorkspaceName')]",
+            "location": "[parameters('WorkspaceLocation')]",
+            "properties":{
+                "sku": {
+                    "Name": "PerGB2018"
+                }
+            },
+            "resources": [
+                {
+                    "apiVersion": "2015-11-01-preview",
+                    "location": "[parameters('WorkspaceLocation')]",
+                    "name": "[concat('ServiceMap', '(', parameters('WorkspaceName'),')')]",
+                    "type": "Microsoft.OperationsManagement/solutions",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'))]"
+                    ],
+                    "properties": {
+                        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'))]"
+                    },
+                    "plan": {
+                        "name": "[concat('ServiceMap', '(', parameters('WorkspaceName'),')')]",
+                        "publisher": "Microsoft",
+                        "product": "[Concat('OMSGallery/', 'ServiceMap')]",
+                        "promotionCode": ""
+                    }
+                },
+                {
+                    "apiVersion": "2015-11-01-preview",
+                    "location": "[parameters('WorkspaceLocation')]",
+                    "name": "[concat('InfrastructureInsights', '(', parameters('WorkspaceName'),')')]",
+                    "type": "Microsoft.OperationsManagement/solutions",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'))]"
+                    ],
+                    "properties": {
+                        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'))]"
+                    },
+                    "plan": {
+                        "name": "[concat('InfrastructureInsights', '(', parameters('WorkspaceName'),')')]",
+                        "publisher": "Microsoft",
+                        "product": "[Concat('OMSGallery/', 'InfrastructureInsights')]",
+                        "promotionCode": ""
+                    }
+                },
+                {
+                    "type": "Microsoft.OperationsManagement/solutions",
+                    "name": "[concat('AzureAppGatewayAnalytics', '(', parameters('WorkspaceName'),')')]",
+                    "apiVersion": "2015-11-01-preview",
+                    "location": "[parameters('WorkspaceLocation')]",
+                    "plan": {
+                        "name": "[concat('AzureAppGatewayAnalytics', '(', parameters('WorkspaceName'),')')]",
+                        "promotionCode": "",
+                        "product": "OMSGallery/AzureAppGatewayAnalytics",
+                        "publisher": "Microsoft"
+                    },
+                    "properties": {
+                        "workspaceResourceId": "[resourceId('microsoft.operationalinsights/workspaces', parameters('WorkspaceName'))]"
+                    },
+                    "dependsOn": [
+                        "[resourceId('microsoft.operationalinsights/workspaces', parameters('WorkspaceName'))]"
+                    ]
+                },
+                {
+                    "type": "Microsoft.OperationsManagement/solutions",
+                    "name": "[concat('Containers', '(', parameters('WorkspaceName'),')')]",
+                    "apiVersion": "2015-11-01-preview",
+                    "location": "[parameters('WorkspaceLocation')]",
+                    "plan": {
+                        "name": "[concat('Containers', '(', parameters('WorkspaceName'),')')]",
+                        "promotionCode": "",
+                        "product": "OMSGallery/Containers",
+                        "publisher": "Microsoft"
+                    },
+                    "properties": {
+                        "workspaceResourceId": "[resourceId('microsoft.operationalinsights/workspaces', parameters('WorkspaceName'))]"
+                    },
+                    "dependsOn": [
+                        "[resourceId('microsoft.operationalinsights/workspaces', parameters('WorkspaceName'))]"
+                    ]
+                },
+                {
+                    "type": "Microsoft.OperationsManagement/solutions",
+                    "name": "[concat('HDInsight', '(', parameters('WorkspaceName'),')')]",
+                    "apiVersion": "2015-11-01-preview",
+                    "location": "[parameters('WorkspaceLocation')]",
+                    "plan": {
+                        "name": "[concat('HDInsight', '(', parameters('WorkspaceName'),')')]",
+                        "promotionCode": "",
+                        "product": "OMSGallery/HDInsight",
+                        "publisher": "Microsoft"
+                    },
+                    "properties": {
+                        "workspaceResourceId": "[resourceId('microsoft.operationalinsights/workspaces', parameters('WorkspaceName'))]"
+                    },
+                    "dependsOn": [
+                        "[resourceId('microsoft.operationalinsights/workspaces', parameters('WorkspaceName'))]"
+                    ]
+                },
+                {
+                    "type": "Microsoft.OperationsManagement/solutions",
+                    "name": "[concat('Security', '(', parameters('WorkspaceName'),')')]",
+                    "apiVersion": "2015-11-01-preview",
+                    "location": "[parameters('WorkspaceLocation')]",
+                    "plan": {
+                        "name": "[concat('Security', '(', parameters('WorkspaceName'),')')]",
+                        "promotionCode": "",
+                        "product": "OMSGallery/Security",
+                        "publisher": "Microsoft"
+                    },
+                    "properties": {
+                        "workspaceResourceId": "[resourceId('microsoft.operationalinsights/workspaces', parameters('WorkspaceName'))]"
+                    },
+                    "dependsOn": [
+                        "[resourceId('microsoft.operationalinsights/workspaces', parameters('WorkspaceName'))]"
+                    ]
+                },
+                {
+                    "apiVersion": "2015-11-01-preview",
+                    "type": "dataSources",
+                    "name": "Linux",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'))]"
+                    ],
+                    "kind": "LinuxPerformanceObject",
+                    "properties": {
+                        "performanceCounters": [
+                            {
+                                "counterName": "% Used Inodes"
+                            },
+                            {
+                                "counterName": "Free Megabytes"
+                            },
+                            {
+                                "counterName": "% Used Space"
+                            },
+                            {
+                                "counterName": "Disk Transfers/sec"
+                            },
+                            {
+                                "counterName": "Disk Reads/sec"
+                            },
+                            {
+                                "counterName": "Disk Writes/sec"
+                            }
+                        ],
+                        "objectName": "Logical Disk",
+                        "instanceName": "*",
+                        "intervalSeconds": 10
+                    }
+                },
+                {
+                    "apiVersion": "2015-11-01-preview",
+                    "type": "dataSources",
+                    "name": "LinuxPerfCollection",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'))]"
+                    ],
+                    "kind": "LinuxPerformanceCollection",
+                    "properties": {
+                        "state": "Enabled"
+                    }
+                },
+                {
+                    "apiVersion": "2015-11-01-preview",
+                    "type": "dataSources",
+                    "name": "Syslog",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'))]"
+                    ],
+                    "kind": "LinuxSyslog",
+                    "properties": {
+                        "syslogName": "kern",
+                        "syslogSeverities": [
+                            {
+                                "severity": "emerg"
+                            },
+                            {
+                                "severity": "alert"
+                            },
+                            {
+                                "severity": "crit"
+                            },
+                            {
+                                "severity": "err"
+                            },
+                            {
+                                "severity": "warning"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "apiVersion": "2015-11-01-preview",
+                    "type": "dataSources",
+                    "name": "SyslogCollection",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'))]"
+                    ],
+                    "kind": "LinuxSyslogCollection",
+                    "properties": {
+                        "state": "Enabled"
+                    }
+                }
+            ]
+            
+        }
+    ],
+    "outputs": {
+        "logAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.OperationalInsights/workspaces',  parameters('WorkspaceName'))]"
+        },
+        "logAnalyticsWorkspaceID": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces',  parameters('WorkspaceName'))).customerId]"
+        },
+        "logAnalyticsWorkspaceKey": {
+            "type": "string",
+            "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces',  parameters('WorkspaceName')), '2017-04-26-preview').primarySharedKey]"
+        }
+    }
+}

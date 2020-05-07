@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,15 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
+import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,6 @@ public abstract class AbstractManager {
     protected static Logger logger;
     protected final AuthorizationManager authorizationManager;
     protected final AuditManager auditManager;
-    protected final CatalogIOManagerFactory catalogIOManagerFactory;
     protected final CatalogManager catalogManager;
 
     protected Configuration configuration;
@@ -74,8 +74,7 @@ public abstract class AbstractManager {
     protected static final String INTERNAL_DELIMITER = "__";
 
     AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                           DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                           Configuration configuration) {
+                    DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         this.authorizationManager = authorizationManager;
         this.auditManager = auditManager;
         this.configuration = configuration;
@@ -90,7 +89,6 @@ public abstract class AbstractManager {
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.interpretationDBAdaptor = catalogDBAdaptorFactory.getInterpretationDBAdaptor();
-        this.catalogIOManagerFactory = ioManagerFactory;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.catalogManager = catalogManager;
 
@@ -265,8 +263,11 @@ public abstract class AbstractManager {
          * @param studyId studyId
          * @param members List of members
          * @throws CatalogDBException CatalogDBException
+         * @throws CatalogParameterException if there is any formatting error.
+         * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
          */
-    protected void checkMembers(long studyId, List<String> members) throws CatalogDBException {
+    protected void checkMembers(long studyId, List<String> members)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         for (String member : members) {
             checkMember(studyId, member);
         }
@@ -282,8 +283,11 @@ public abstract class AbstractManager {
      * @param studyId studyId
      * @param member member
      * @throws CatalogDBException CatalogDBException
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    protected void checkMember(long studyId, String member) throws CatalogDBException {
+    protected void checkMember(long studyId, String member)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (member.equals("*")) {
             return;
         } else if (member.startsWith("@")) {

@@ -21,10 +21,6 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
-import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.*;
@@ -40,10 +36,16 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
@@ -54,6 +56,10 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
@@ -79,8 +85,14 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 //    private VariantCommandOptions variantCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
     private AlignmentCommandOptions alignmentCommandOptions;
-    private InterpretationCommandOptions interpretationCommandOptions;
+//    private InterpretationCommandOptions interpretationCommandOptions;
+    private ClinicalCommandOptions clinicalCommandOptions;
     private FileCommandOptions fileCommandOptions;
+    private SampleCommandOptions sampleCommandOptions;
+    private FamilyCommandOptions familyCommandOptions;
+    private CohortCommandOptions cohortCommandOptions;
+    private IndividualCommandOptions individualCommandOptions;
+    private JobCommandOptions jobCommandOptions;
 
 
     public InternalCliOptionsParser() {
@@ -90,7 +102,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         dataModelOptions = new GeneralCliOptions.DataModelOptions();
         numericOptions = new GeneralCliOptions.NumericOptions();
 
-        variantQueryCommandOptions = new VariantCommandOptions(commonCommandOptions, dataModelOptions, numericOptions, jCommander)
+        variantQueryCommandOptions = new VariantCommandOptions(commonCommandOptions, dataModelOptions, numericOptions, jCommander, false)
                 .new VariantQueryCommandOptions();
 
         expressionCommandOptions = new ExpressionCommandOptions();
@@ -106,7 +118,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         usersSubCommands.addCommand("gene-set", functionalCommandOptions.genesetFunctionalCommandOptions);
 
         variantCommandOptions = new org.opencb.opencga.app.cli.internal.options.VariantCommandOptions(commonCommandOptions,
-                dataModelOptions, numericOptions, jCommander);
+                dataModelOptions, numericOptions, jCommander, false);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
@@ -138,6 +150,12 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(COHORT_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
         variantSubCommands.addCommand(COHORT_VARIANT_STATS_QUERY_COMMAND, variantCommandOptions.cohortVariantStatsQueryCommandOptions);
         variantSubCommands.addCommand(KNOCKOUT_RUN_COMMAND, variantCommandOptions.knockoutCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_ELIGIBILITY_RUN_COMMAND, variantCommandOptions.sampleEligibilityCommandOptions);
+        variantSubCommands.addCommand(MUTATIONAL_SIGNATURE_RUN_COMMAND, variantCommandOptions.mutationalSignatureCommandOptions);
+        variantSubCommands.addCommand(MENDELIAN_ERROR_RUN_COMMAND, variantCommandOptions.mendelianErrorCommandOptions);
+        variantSubCommands.addCommand(INFERRED_SEX_RUN_COMMAND, variantCommandOptions.inferredSexCommandOptions);
+        variantSubCommands.addCommand(RELATEDNESS_RUN_COMMAND, variantCommandOptions.relatednessCommandOptions);
+        variantSubCommands.addCommand(GENETIC_CHECKS_RUN_COMMAND, variantCommandOptions.geneticChecksCommandOptions);
         variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
         variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
         variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);
@@ -164,11 +182,19 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         toolsSubCommands.addCommand("execute-tool", toolsCommandOptions.executeToolCommandOptions);
         toolsSubCommands.addCommand("execute-job", toolsCommandOptions.executeJobCommandOptions);
 
-        interpretationCommandOptions = new InterpretationCommandOptions(commonCommandOptions, variantQueryCommandOptions, jCommander);
-        jCommander.addCommand("interpretation", interpretationCommandOptions);
-        JCommander interpretationSubCommands = jCommander.getCommands().get("interpretation");
-        interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
-        interpretationSubCommands.addCommand("tiering", interpretationCommandOptions.tieringCommandOptions);
+//        interpretationCommandOptions = new InterpretationCommandOptions(commonCommandOptions, variantQueryCommandOptions, jCommander);
+//        jCommander.addCommand("interpretation", interpretationCommandOptions);
+//        JCommander interpretationSubCommands = jCommander.getCommands().get("interpretation");
+//        interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
+////        interpretationSubCommands.addCommand("tiering", interpretationCommandOptions.tieringCommandOptions);
+
+        clinicalCommandOptions = new ClinicalCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("clinical", clinicalCommandOptions);
+        JCommander clinicalSubCommands = jCommander.getCommands().get("clinical");
+        clinicalSubCommands.addCommand(TIERING_RUN_COMMAND, clinicalCommandOptions.tieringCommandOptions);
+        clinicalSubCommands.addCommand(TEAM_RUN_COMMAND, clinicalCommandOptions.teamCommandOptions);
+        clinicalSubCommands.addCommand(ZETTA_RUN_COMMAND, clinicalCommandOptions.zettaCommandOptions);
+        clinicalSubCommands.addCommand(CANCER_TIERING_RUN_COMMAND, clinicalCommandOptions.cancerTieringCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
@@ -176,6 +202,37 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
         fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
+        fileSubCommands.addCommand("secondary-index", fileCommandOptions.secondaryIndex);
+        fileSubCommands.addCommand("tsv-load", fileCommandOptions.tsvLoad);
+
+        sampleCommandOptions = new SampleCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("samples", sampleCommandOptions);
+        JCommander sampleSubCommands = jCommander.getCommands().get("samples");
+        sampleSubCommands.addCommand("secondary-index", sampleCommandOptions.secondaryIndex);
+        sampleSubCommands.addCommand("tsv-load", sampleCommandOptions.tsvLoad);
+
+        individualCommandOptions = new IndividualCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("individuals", individualCommandOptions);
+        JCommander individualSubCommands = jCommander.getCommands().get("individuals");
+        individualSubCommands.addCommand("secondary-index", individualCommandOptions.secondaryIndex);
+        individualSubCommands.addCommand("tsv-load", individualCommandOptions.tsvLoad);
+
+        cohortCommandOptions = new CohortCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("cohorts", cohortCommandOptions);
+        JCommander cohortSubCommands = jCommander.getCommands().get("cohorts");
+        cohortSubCommands.addCommand("secondary-index", cohortCommandOptions.secondaryIndex);
+        cohortSubCommands.addCommand("tsv-load", cohortCommandOptions.tsvLoad);
+
+        familyCommandOptions = new FamilyCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("families", familyCommandOptions);
+        JCommander familySubCommands = jCommander.getCommands().get("families");
+        familySubCommands.addCommand("secondary-index", familyCommandOptions.secondaryIndex);
+        familySubCommands.addCommand("tsv-load", familyCommandOptions.tsvLoad);
+
+        jobCommandOptions = new JobCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("jobs", jobCommandOptions);
+        JCommander jobSubCommands = jCommander.getCommands().get("jobs");
+        jobSubCommands.addCommand("secondary-index", jobCommandOptions.secondaryIndex);
     }
 
     @Override
@@ -200,7 +257,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         public boolean help;
 
         public JCommander getSubCommand() {
-            return jCommander.getCommands().get(getCommand()).getCommands().get(getSubCommand());
+            return jCommander.getCommands().get(getCommand()).getCommands().get(getParsedSubCommand());
         }
 
         public String getParsedSubCommand() {
@@ -406,11 +463,31 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         return alignmentCommandOptions;
     }
 
-    public InterpretationCommandOptions getInterpretationCommandOptions() {
-        return interpretationCommandOptions;
+    public ClinicalCommandOptions getClinicalCommandOptions() {
+        return clinicalCommandOptions;
     }
 
     public FileCommandOptions getFileCommandOptions() {
         return fileCommandOptions;
+    }
+
+    public SampleCommandOptions getSampleCommandOptions() {
+        return sampleCommandOptions;
+    }
+
+    public FamilyCommandOptions getFamilyCommandOptions() {
+        return familyCommandOptions;
+    }
+
+    public CohortCommandOptions getCohortCommandOptions() {
+        return cohortCommandOptions;
+    }
+
+    public IndividualCommandOptions getIndividualCommandOptions() {
+        return individualCommandOptions;
+    }
+
+    public JobCommandOptions getJobCommandOptions() {
+        return jobCommandOptions;
     }
 }

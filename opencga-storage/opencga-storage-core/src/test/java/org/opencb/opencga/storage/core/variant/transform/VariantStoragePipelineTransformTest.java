@@ -137,8 +137,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         System.setIn(inputStream);
 
 
-        ObjectMap options = variantStorageManager.getConfiguration()
-                .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
+        ObjectMap options = variantStorageManager.getOptions();
 
         options.append(VariantStorageOptions.STDIN.key(), true);
 
@@ -161,8 +160,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         try (PrintStream os = new PrintStream(new FileOutputStream(outputFile))) {
             System.setOut(os);
 
-            ObjectMap options = variantStorageManager.getConfiguration()
-                    .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
+            ObjectMap options = variantStorageManager.getOptions();
 
             options.append(VariantStorageOptions.STDOUT.key(), true);
             options.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "json");
@@ -185,8 +183,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         try (PrintStream os = new PrintStream(new FileOutputStream(outputFile))) {
             System.setOut(os);
 
-            ObjectMap options = variantStorageManager.getConfiguration()
-                    .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
+            ObjectMap options = variantStorageManager.getOptions();
 
             options.append(VariantStorageOptions.STDOUT.key(), true);
             options.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");

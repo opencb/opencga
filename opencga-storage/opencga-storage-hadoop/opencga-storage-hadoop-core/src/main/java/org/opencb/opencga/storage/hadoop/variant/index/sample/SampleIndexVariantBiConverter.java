@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -8,16 +7,16 @@ import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.MENDELIAN_ERROR_COLUMN_BYTES;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.META_PREFIX;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.isGenotypeColumn;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.MULTI_FILE_MASK;
 
 /**
  * Created on 11/04/19.
@@ -43,11 +42,6 @@ public class SampleIndexVariantBiConverter {
             return INT24_LENGTH + reference.length() + SEPARATOR_LENGTH + alternate.length()
                     + (interVariantSeparator ? SEPARATOR_LENGTH : 0);
         }
-    }
-
-    @Deprecated
-    public byte[] toBytesSimpleString(Collection<Variant> variants) {
-        return Bytes.toBytes(variants.stream().map(Variant::toString).collect(Collectors.joining(",")));
     }
 
     public byte[] toBytesFromStrings(Collection<String> variantsStr) {
@@ -133,8 +127,7 @@ public class SampleIndexVariantBiConverter {
 
     public List<Variant> toVariants(Cell cell) {
         List<Variant> variants;
-        byte[] column = CellUtil.cloneQualifier(cell);
-        if (column[0] != META_PREFIX && column[0] != MENDELIAN_ERROR_COLUMN_BYTES[0]) {
+        if (isGenotypeColumn(cell)) {
             byte[] row = CellUtil.cloneRow(cell);
             String chromosome = SampleIndexSchema.chromosomeFromRowKey(row);
             int batchStart = SampleIndexSchema.batchStartFromRowKey(row);
@@ -162,14 +155,7 @@ public class SampleIndexVariantBiConverter {
         if (gtEntry == null || gtEntry.getVariantsLength() <= 0) {
             return EmptySampleIndexEntryIterator.emptyIterator();
         } else {
-            if (StringSampleIndexGtEntryIterator.isStringCodified(entry.getChromosome(),
-                    gtEntry.getVariants(),
-                    gtEntry.getVariantsOffset(),
-                    gtEntry.getVariantsLength())) {
-                return new StringSampleIndexGtEntryIterator(gtEntry, configuration);
-            } else {
-                return new ByteSampleIndexGtEntryIterator(entry.getChromosome(), entry.getBatchStart(), gtEntry, configuration);
-            }
+            return new ByteSampleIndexGtEntryIterator(entry.getChromosome(), entry.getBatchStart(), gtEntry, configuration);
         }
     }
 
@@ -184,6 +170,8 @@ public class SampleIndexVariantBiConverter {
         private BitInputStream ctBtIndex;
         private int nonIntergenicCount;
         private int clinicalCount;
+        private int fileIndexCount; // Number of fileIndex elements visited
+        private int fileIndexIdx;   // Index over file index array. Index of last visited fileIndex
 
         // Reuse the annotation index entry. Avoid create a new instance for each variant.
         private final AnnotationIndexEntry annotationIndexEntry;
@@ -195,6 +183,8 @@ public class SampleIndexVariantBiConverter {
             annotationIndexEntry = new AnnotationIndexEntry();
             annotationIndexEntry.setCtBtCombination(new AnnotationIndexEntry.CtBtCombination(new byte[0], 0, 0));
             annotationIndexEntryIdx = -1;
+            fileIndexIdx = 0;
+            fileIndexCount = 0;
         }
 
         SampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexConfiguration configuration) {
@@ -222,8 +212,41 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public byte nextFileIndex() {
-            return gtEntry.getFileIndex(nextIndex());
+        public boolean isMultiFileIndex() {
+            short fileIndex = gtEntry.getFileIndex(nextFileIndex());
+            return isMultiFileIndex(fileIndex);
+        }
+
+        public boolean isMultiFileIndex(short fileIndex) {
+            return IndexUtils.testIndexAny(fileIndex, MULTI_FILE_MASK);
+        }
+
+        private int nextFileIndex() {
+            while (nextIndex() != fileIndexCount) {
+                // Move index
+                fileIndexIdx++;
+                short fileIndex = gtEntry.getFileIndex(fileIndexIdx);
+                if (!isMultiFileIndex(fileIndex)) {
+                    // If the index is not multifile, move counter
+                    fileIndexCount++;
+                }
+            }
+            return fileIndexIdx;
+        }
+
+        @Override
+        public short nextFileIndexEntry() {
+            return gtEntry.getFileIndex(nextFileIndex());
+        }
+
+        @Override
+        public short nextMultiFileIndexEntry() {
+            if (isMultiFileIndex()) {
+                fileIndexIdx++;
+                return nextFileIndexEntry();
+            } else {
+                throw new NoSuchElementException();
+            }
         }
 
         @Override
@@ -232,7 +255,7 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public byte nextParentsIndex() {
+        public byte nextParentsIndexEntry() {
             return gtEntry.getParentsIndex(nextIndex());
         }
 
@@ -388,7 +411,17 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public byte nextFileIndex() {
+        public short nextFileIndexEntry() {
+            throw new NoSuchElementException("Empty iterator");
+        }
+
+        @Override
+        public boolean isMultiFileIndex() {
+            return false;
+        }
+
+        @Override
+        public short nextMultiFileIndexEntry() {
             throw new NoSuchElementException("Empty iterator");
         }
 
@@ -398,7 +431,7 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public byte nextParentsIndex() {
+        public byte nextParentsIndexEntry() {
             throw new NoSuchElementException("Empty iterator");
         }
 
@@ -410,61 +443,6 @@ public class SampleIndexVariantBiConverter {
         @Override
         public Variant next() {
             throw new NoSuchElementException("Empty iterator");
-        }
-    }
-
-    private static class StringSampleIndexGtEntryIterator extends SampleIndexGtEntryIterator {
-        private final ListIterator<String> variants;
-        private final int size;
-
-        StringSampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry entry, SampleIndexConfiguration configuration) {
-            super(entry, configuration);
-            List<String> values = split(entry.getVariants(), entry.getVariantsOffset(), entry.getVariantsLength());
-            size = values.size();
-            variants = values.listIterator();
-        }
-
-        @Override
-        public int nextIndex() {
-            return variants.nextIndex();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return variants.hasNext();
-        }
-
-        @Override
-        public void skip() {
-            nextAnnotationIndexEntry(); // ensure read annotation
-            increaseCounters();
-            variants.next();
-        }
-
-        @Override
-        public Variant next() {
-            nextAnnotationIndexEntry(); // ensure read annotation
-            increaseCounters();
-            return new Variant(variants.next());
-        }
-
-        public int getApproxSize() {
-            return size;
-        }
-
-        public static boolean isStringCodified(String chromosome, byte[] bytes, int offset, int length) {
-            // Compare only the first letters to run a "startsWith"
-            byte[] startsWith = Bytes.toBytes(chromosome + ':');
-            int compareLength = startsWith.length;
-            if (length > compareLength
-                    && Bytes.compareTo(bytes, offset, compareLength, startsWith, 0, compareLength) == 0) {
-                List<String> values = split(bytes, offset, Math.min(length, 20));
-                String[] split = values.get(0).split(":");
-                if (split.length > 1 && StringUtils.isNumeric(split[1])) {
-                    return true;
-                }
-            }
-            return false;
         }
     }
 

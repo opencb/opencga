@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.commons.collections.map.LinkedMap;
@@ -76,8 +92,6 @@ public class CatalogSolrQueryParser {
         // Individual
         HAS_FATHER("hasFather", BOOLEAN),
         HAS_MOTHER("hasMother", BOOLEAN),
-        NUM_MULTIPLES("numMultiples", INTEGER),
-        MULTIPLES_TYPE("multiplesType", TEXT),
         SEX("sex", TEXT),
         KARYOTYPIC_SEX("karyotypicSex", TEXT),
         ETHNICITY("ethnicity", TEXT),
@@ -247,6 +261,10 @@ public class CatalogSolrQueryParser {
 
     private String getInternalAnnotationKey(String annotation, ObjectMap variableMap) {
         ObjectMap annotationMap = (ObjectMap) variableMap.get(annotation);
+        if (annotationMap == null || annotationMap.isEmpty() && annotation.contains(".")) {
+            String dynamicAnnotation = annotation.substring(0, annotation.lastIndexOf(".")) + ".*";
+            annotationMap = (ObjectMap) variableMap.get(dynamicAnnotation);
+        }
         if (annotationMap == null || annotationMap.isEmpty()) {
             logger.error("Cannot parse " + annotation + " string to internal annotation format");
             return "";
@@ -335,6 +353,22 @@ public class CatalogSolrQueryParser {
                                 queue.add(nestedAuxiliarVariable);
                             }
                         }
+                        break;
+                    case MAP_BOOLEAN:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? BOOLEAN_ARRAY : BOOLEAN);
+                        variableMap.put(fullVariablePath + ".*", auxVariableMap);
+                        break;
+                    case MAP_INTEGER:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? INTEGER_ARRAY : INTEGER);
+                        variableMap.put(fullVariablePath + ".*", auxVariableMap);
+                        break;
+                    case MAP_DOUBLE:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? DECIMAL_ARRAY : DECIMAL);
+                        variableMap.put(fullVariablePath + ".*", auxVariableMap);
+                        break;
+                    case MAP_STRING:
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? TEXT_ARRAY : TEXT);
+                        variableMap.put(fullVariablePath + ".*", auxVariableMap);
                         break;
                     default:
                         break;

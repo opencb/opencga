@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,160 +18,58 @@ package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-/**
- * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
- *         <p>
- *         Set of samples grouped according to criteria
- */
+
 public class Cohort extends Annotable {
 
     private String id;
-    @Deprecated
-    private String name;
     private String uuid;
-    private Study.Type type;
+    private Enums.CohortType type;
     private String creationDate;
     private String modificationDate;
-    private CohortStatus status;
     private String description;
-
     private List<Sample> samples;
-    private Family family;
 
-    @Deprecated
-    private Map<String, Object> stats;
     private int release;
+    private CustomStatus status;
+    private CohortInternal internal;
     private Map<String, Object> attributes;
-
 
     public Cohort() {
     }
 
-    public Cohort(String id, Study.Type type, String creationDate, String description, List<Sample> samples, int release,
+    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples, int release,
                   Map<String, Object> attributes) {
-        this(id, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(),
-                Collections.emptyMap(), release, attributes);
+        this(id, type, creationDate, description, samples, Collections.emptyList(), release, new CustomStatus(), null, attributes);
     }
 
-    public Cohort(String id, Study.Type type, String creationDate, String description, List<Sample> samples,
+    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(id, type, creationDate, new CohortStatus(), description, samples, null, annotationSetList,
-                Collections.emptyMap(), release, attributes);
+        this(id, type, creationDate, description, samples, annotationSetList, release, new CustomStatus(), null, attributes);
     }
 
-    public Cohort(String id, Study.Type type, String creationDate, CohortStatus status, String description, List<Sample> samples,
-                  Family family, List<AnnotationSet> annotationSets, Map<String, Object> stats, int release, Map<String,
-            Object> attributes) {
+    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
+                  List<AnnotationSet> annotationSets, int release, CustomStatus status, CohortInternal internal,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.type = type;
         this.creationDate = creationDate;
-        this.status = status;
         this.description = description;
         this.samples = samples;
-        this.family = family;
         this.annotationSets = annotationSets;
         this.release = release;
-        this.stats = stats;
+        this.status = status;
+        this.internal = internal;
         this.attributes = attributes;
     }
-
-    public static class CohortStatus extends Status {
-
-        public static final String NONE = "NONE";
-        public static final String CALCULATING = "CALCULATING";
-        public static final String INVALID = "INVALID";
-
-        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, CALCULATING, INVALID);
-
-        public CohortStatus(String status, String message) {
-            if (isValid(status)) {
-                init(status, message);
-            } else {
-                throw new IllegalArgumentException("Unknown status " + status);
-            }
-        }
-
-        public CohortStatus(String status) {
-            this(status, "");
-        }
-
-        public CohortStatus() {
-            this(NONE, "");
-        }
-
-        public static boolean isValid(String status) {
-            if (Status.isValid(status)) {
-                return true;
-            }
-            if (status != null && (status.equals(NONE) || status.equals(CALCULATING) || status.equals(INVALID))) {
-                return true;
-            }
-            return false;
-        }
-    }
-
-    public class Family {
-
-        private String id;
-        private List<Long> probands;
-
-        public Family(String id, List<Long> probands) {
-            this.id = id;
-            this.probands = probands;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("Family{");
-            sb.append("id='").append(id).append('\'');
-            sb.append(", probands=").append(probands);
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public Family setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public List<Long> getProbands() {
-            return probands;
-        }
-
-        public Family setProbands(List<Long> probands) {
-            this.probands = probands;
-            return this;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof Family)) {
-                return false;
-            }
-            Family family = (Family) o;
-            return Objects.equals(id, family.id)
-                    && Objects.equals(probands, family.probands);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(id, probands);
-        }
-    }
-
 
     @Override
     public String toString() {
@@ -181,16 +79,41 @@ public class Cohort extends Annotable {
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
-        sb.append(", family=").append(family);
-        sb.append(", stats=").append(stats);
         sb.append(", release=").append(release);
+        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Cohort)) {
+            return false;
+        }
+        Cohort cohort = (Cohort) o;
+        return release == cohort.release
+                && Objects.equals(uuid, cohort.uuid)
+                && Objects.equals(id, cohort.id)
+                && type == cohort.type
+                && Objects.equals(creationDate, cohort.creationDate)
+                && Objects.equals(internal, cohort.internal)
+                && Objects.equals(description, cohort.description)
+                && Objects.equals(samples, cohort.samples)
+                && Objects.equals(status, cohort.status)
+                && Objects.equals(attributes, cohort.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(uuid, id, type, creationDate, internal, description, samples, status, release, attributes);
     }
 
     @Override
@@ -223,22 +146,11 @@ public class Cohort extends Annotable {
         return this;
     }
 
-    @Deprecated
-    public String getName() {
-        return name;
-    }
-
-    @Deprecated
-    public Cohort setName(String name) {
-        this.name = name;
-        return this;
-    }
-
-    public Study.Type getType() {
+    public Enums.CohortType getType() {
         return type;
     }
 
-    public Cohort setType(Study.Type type) {
+    public Cohort setType(Enums.CohortType type) {
         this.type = type;
         return this;
     }
@@ -261,12 +173,12 @@ public class Cohort extends Annotable {
         return this;
     }
 
-    public CohortStatus getStatus() {
-        return status;
+    public CohortInternal getInternal() {
+        return internal;
     }
 
-    public Cohort setStatus(CohortStatus status) {
-        this.status = status;
+    public Cohort setInternal(CohortInternal internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -288,15 +200,6 @@ public class Cohort extends Annotable {
         return this;
     }
 
-    public Family getFamily() {
-        return family;
-    }
-
-    public Cohort setFamily(Family family) {
-        this.family = family;
-        return this;
-    }
-
     public int getRelease() {
         return release;
     }
@@ -306,12 +209,12 @@ public class Cohort extends Annotable {
         return this;
     }
 
-    public Map<String, Object> getStats() {
-        return stats;
+    public CustomStatus getStatus() {
+        return status;
     }
 
-    public Cohort setStats(Map<String, Object> stats) {
-        this.stats = stats;
+    public Cohort setStatus(CustomStatus status) {
+        this.status = status;
         return this;
     }
 
@@ -323,32 +226,4 @@ public class Cohort extends Annotable {
         this.attributes = attributes;
         return this;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Cohort)) {
-            return false;
-        }
-        Cohort cohort = (Cohort) o;
-        return release == cohort.release
-                && Objects.equals(uuid, cohort.uuid)
-                && Objects.equals(id, cohort.id)
-                && type == cohort.type
-                && Objects.equals(creationDate, cohort.creationDate)
-                && Objects.equals(status, cohort.status)
-                && Objects.equals(description, cohort.description)
-                && Objects.equals(samples, cohort.samples)
-                && Objects.equals(family, cohort.family)
-                && Objects.equals(stats, cohort.stats)
-                && Objects.equals(attributes, cohort.attributes);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(uuid, id, type, creationDate, status, description, samples, family, stats, release, attributes);
-    }
-
 }

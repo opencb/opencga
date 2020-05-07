@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,14 +78,22 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
 
     public Document convertJobToDocument(Object job) {
         if (job == null) {
-            return new Document(JobDBAdaptor.QueryParams.UID.key(), -1L);
+            return new Document()
+                    .append(JobDBAdaptor.QueryParams.UID.key(), -1L)
+                    .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), -1L);
         }
         if (job instanceof Job) {
-            return new Document(JobDBAdaptor.QueryParams.UID.key(), ((Job) job).getUid());
+            return new Document()
+                    .append(JobDBAdaptor.QueryParams.UID.key(), ((Job) job).getUid())
+                    .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), ((Job) job).getStudyUid());
         } else if (job instanceof Map) {
-            return new Document(JobDBAdaptor.QueryParams.UID.key(), ((Map) job).get(JobDBAdaptor.QueryParams.UID.key()));
+            return new Document()
+                    .append(JobDBAdaptor.QueryParams.UID.key(), ((Map) job).get(JobDBAdaptor.QueryParams.UID.key()))
+                    .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), ((Map) job).get(JobDBAdaptor.QueryParams.STUDY_UID.key()));
         } else {
-            return new Document(JobDBAdaptor.QueryParams.UID.key(), -1L);
+            return new Document()
+                    .append(JobDBAdaptor.QueryParams.UID.key(), -1L)
+                    .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), -1L);
         }
     }
 

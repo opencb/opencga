@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,24 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
-import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -152,6 +152,10 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
             createDefaultCohortIfNeeded(studyFqn, token);
         }
+
+        toFileSystemPath(studyFqn, params, VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), token);
+        toFileSystemPath(studyFqn, params, VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), token);
+
         variantStorageEngine.getOptions().putAll(params);
     }
 
@@ -257,7 +261,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             for (File file : filesToIndex) {
                 DataResult<FileIndex> fileIndexDataResult = catalogManager.getFileManager().updateFileIndexStatus(file, fileStatus,
                         fileStatusMessage, release, token);
-                file.setIndex(fileIndexDataResult.first());
+                file.getInternal().setIndex(fileIndexDataResult.first());
             }
         }
         return fileUris;
@@ -265,10 +269,10 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private List<StoragePipelineResult> indexFiles(List<URI> fileUris, String token, ObjectMap params) throws Exception {
 
-        String prevDefaultCohortStatus = Cohort.CohortStatus.NONE;
+        String prevDefaultCohortStatus = CohortStatus.NONE;
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
             if (calculateStats) {
-                prevDefaultCohortStatus = updateDefaultCohortStatus(studyFqn, Cohort.CohortStatus.CALCULATING, token);
+                prevDefaultCohortStatus = updateDefaultCohortStatus(studyFqn, CohortStatus.CALCULATING, token);
             }
         }
 
@@ -358,8 +362,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             String indexStatusName;
             String indexStatusMessage = null;
 
-            if (indexedFile.getIndex() != null) {
-                FileIndex index = indexedFile.getIndex();
+            if (indexedFile.getInternal().getIndex() != null) {
+                FileIndex index = indexedFile.getInternal().getIndex();
                 switch (index.getStatus().getName()) {
                     case FileIndex.IndexStatus.NONE:
                     case FileIndex.IndexStatus.TRANSFORMED:
@@ -383,7 +387,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                         break;
                     case FileIndex.IndexStatus.LOADING:
                         if (jobFailed) {
-                            if (indexedFile.getIndex().getTransformedFile() == null) {
+                            if (indexedFile.getInternal().getIndex().getTransformedFile() == null) {
                                 indexStatusName = FileIndex.IndexStatus.NONE;
                             } else {
                                 indexStatusName = FileIndex.IndexStatus.TRANSFORMED;
@@ -401,7 +405,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                             // If transform was executed, restore status to Transformed.
                             if (transformedSuccess && saveIntermediateFiles) {
                                 indexStatusName = FileIndex.IndexStatus.TRANSFORMED;
-                            } else if (indexedFile.getIndex().getTransformedFile() != null) {
+                            } else if (indexedFile.getInternal().getIndex().getTransformedFile() != null) {
                                 // If transform file already exists, restore to Transformed
                                 indexStatusName = FileIndex.IndexStatus.TRANSFORMED;
                             } else {
@@ -444,7 +448,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
                     Cohort defaultCohort = queryResult.first();
-                    catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), Cohort.CohortStatus.READY, null,
+                    catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), CohortStatus.READY, null,
                             sessionId);
 //                    params = new ObjectMap(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.READY);
 //                    catalogManager.getCohortManager().update(defaultCohort.getId(), params, new QueryOptions(), sessionId);
@@ -509,22 +513,22 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     }
 
     private Cohort createDefaultCohort(String studyFqn, String sessionId) throws CatalogException {
-        return catalogManager.getCohortManager().create(studyFqn, StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
+        return catalogManager.getCohortManager().create(studyFqn, StudyEntry.DEFAULT_COHORT, Enums.CohortType.COLLECTION,
                 DEFAULT_COHORT_DESCRIPTION, Collections.emptyList(), null, null, sessionId).first();
     }
 
     private void updateDefaultCohortStatus(Study study, StorageEngineException exception, String sessionId) throws CatalogException {
         if (exception == null) {
-            updateDefaultCohortStatus(study.getFqn(), Cohort.CohortStatus.READY, sessionId);
+            updateDefaultCohortStatus(study.getFqn(), CohortStatus.READY, sessionId);
         } else {
-            updateDefaultCohortStatus(study.getFqn(), Cohort.CohortStatus.INVALID, sessionId);
+            updateDefaultCohortStatus(study.getFqn(), CohortStatus.INVALID, sessionId);
         }
     }
 
     private String updateDefaultCohortStatus(String study, String status, String sessionId) throws CatalogException {
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
         Cohort defaultCohort = catalogManager.getCohortManager().search(study, query, new QueryOptions(), sessionId).first();
-        String prevStatus = defaultCohort.getStatus().getName();
+        String prevStatus = defaultCohort.getInternal().getStatus().getName();
 
         catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), status, null,
                 sessionId);
@@ -546,10 +550,10 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
         List<File> filteredFiles = new ArrayList<>(fileList.size());
         for (File file : fileList) {
-            if (file.getStatus().getName().equals(File.FileStatus.READY) && OperationManager.isVcfFormat(file)) {
+            if (file.getInternal().getStatus().getName().equals(FileStatus.READY) && OperationManager.isVcfFormat(file)) {
                 String indexStatus;
-                if (file.getIndex() != null && file.getIndex().getStatus() != null && file.getIndex().getStatus().getName() != null) {
-                    indexStatus = file.getIndex().getStatus().getName();
+                if (file.getInternal().getIndex() != null && file.getInternal().getIndex().getStatus() != null && file.getInternal().getIndex().getStatus().getName() != null) {
+                    indexStatus = file.getInternal().getIndex().getStatus().getName();
                 } else {
                     indexStatus = FileIndex.IndexStatus.NONE;
                 }
@@ -578,7 +582,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 }
             } else {
                 logger.warn("Skip file " + file.getName() + " with format " + file.getFormat() + " and status "
-                        + file.getStatus().getName());
+                        + file.getInternal().getStatus().getName());
             }
         }
         return filteredFiles;
@@ -633,8 +637,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             }
 
             if (OperationManager.isVcfFormat(file)) {
-                String status = file.getIndex() == null || file.getIndex().getStatus() == null ? FileIndex.IndexStatus.NONE
-                        : file.getIndex().getStatus().getName();
+                String status = file.getInternal().getIndex() == null || file.getInternal().getIndex().getStatus() == null ? FileIndex.IndexStatus.NONE
+                        : file.getInternal().getIndex().getStatus().getName();
                 switch (status) {
                     case FileIndex.IndexStatus.NONE:
                         if (transformedFiles != null) {
@@ -711,10 +715,10 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         String vcfId = null;
         // Matchup variant files, if missing
         if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
-            catalogManager.getFileManager().matchUpVariantFiles(null, Collections.singletonList(file), sessionId);
+            catalogManager.getFileManager().matchUpVariantFiles(study, Collections.singletonList(file), sessionId);
         }
-        for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
-            if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
+        for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
+            if (FileRelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
                 long fileUid = relatedFile.getFile().getUid();
                 // FIXME!!!
                 vcfId = catalogManager.getFileManager().search(study, new Query(UID.key(), fileUid),
@@ -748,8 +752,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     }
 
     private long getTransformedFileIdFromOriginal(File file) throws CatalogException {
-        long transformedFile = file.getIndex() != null && file.getIndex().getTransformedFile() != null
-                ? file.getIndex().getTransformedFile().getId()
+        long transformedFile = file.getInternal().getIndex() != null && file.getInternal().getIndex().getTransformedFile() != null
+                ? file.getInternal().getIndex().getTransformedFile().getId()
                 : -1;
         if (transformedFile == -1) {
             logger.error("This code should never be executed. Every vcf file containing the transformed status should have"

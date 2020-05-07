@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -41,15 +43,17 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
      * @param annotationSetName annotation set name of the annotation to be returned when provided.
      * @return a queryResult containing either all the annotation sets or just the one corresponding to the annotation set name if provided.
      * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     OpenCGAResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName)
-            throws CatalogDBException;
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
-            throws CatalogDBException;
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
-            throws CatalogDBException;
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Add the variable to all the possible annotations from the variableSetId using the default value.

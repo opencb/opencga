@@ -111,7 +111,7 @@ public class AnnotationIndexEntry {
     }
 
     public static AnnotationIndexEntry empty(int numPopFreq) {
-        return new AnnotationIndexEntry().setPopFreqIndex(new byte[numPopFreq]);
+        return new AnnotationIndexEntry().setPopFreqIndex(new byte[numPopFreq]).setCtBtCombination(new CtBtCombination(new byte[0], 0, 0));
     }
 
     public boolean hasSummaryIndex() {

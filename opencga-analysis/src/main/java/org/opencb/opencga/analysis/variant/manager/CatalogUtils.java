@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
 import java.util.*;
 import java.util.function.Function;
@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 
 /**
  * Created by pfurio on 02/12/16.
@@ -110,11 +110,11 @@ public class CatalogUtils {
                     .map(Study::getFqn)
                     .collect(Collectors.toList());
         }
-        List<String> studies = VariantQueryUtils.getIncludeStudiesList(query, Collections.singleton(VariantField.STUDIES));
+        List<String> studies = VariantQueryProjectionParser.getIncludeStudiesList(query, Collections.singleton(VariantField.STUDIES));
         // If studies is null or empty, INCLUDE_STUDY is all or none. Check STUDY param
         if (studies == null || studies.isEmpty()) {
             if (isValidParam(query, VariantQueryParam.STUDY)) {
-                studies = VariantQueryUtils.getIncludeStudiesList(
+                studies = VariantQueryProjectionParser.getIncludeStudiesList(
                         new Query(VariantQueryParam.STUDY.key(), query.get(VariantQueryParam.STUDY.key())),
                         Collections.singleton(VariantField.STUDIES));
             } else {

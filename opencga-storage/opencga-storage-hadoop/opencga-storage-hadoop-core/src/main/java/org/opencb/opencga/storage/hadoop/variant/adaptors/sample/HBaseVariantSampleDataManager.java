@@ -9,25 +9,26 @@ import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PhoenixArray;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
@@ -44,11 +45,13 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final VariantStorageMetadataManager metadataManager;
+    private final CellBaseUtils cellBaseUtils;
 
-    public HBaseVariantSampleDataManager(VariantHadoopDBAdaptor dbAdaptor) {
+    public HBaseVariantSampleDataManager(VariantHadoopDBAdaptor dbAdaptor, CellBaseUtils cellBaseUtils) {
         super(dbAdaptor);
         this.dbAdaptor = dbAdaptor;
         metadataManager = dbAdaptor.getMetadataManager();
+        this.cellBaseUtils = cellBaseUtils;
     }
 
     @Override
@@ -58,7 +61,12 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                                                 int sampleLimit) {
         StopWatch stopWatch = StopWatch.createStarted();
 
-        Variant variant = new Variant(variantStr);
+        final Variant variant;
+        if (VariantQueryUtils.isVariantId(variantStr)) {
+            variant = new Variant(variantStr);
+        } else {
+            variant = cellBaseUtils.getVariant(variantStr);
+        }
 
         int studyId = metadataManager.getStudyId(study);
 
@@ -136,7 +144,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             List<Pair<String, PhoenixArray>> filesMap = new ArrayList<>();
             Set<Integer> fileIdsFromSampleIds = metadataManager.getFileIdsFromSampleIds(studyId, samples);
             HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter();
-            Map<String, VariantStats> stats = new HashMap<>();
+            List<VariantStats> stats = new LinkedList<>();
             dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
                 Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
                 // Add file columns
@@ -166,7 +174,8 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                         })
                         .onCohortStats(statsCell -> {
                             VariantStats variantStats = statsConverter.convert(statsCell);
-                            stats.put(metadataManager.getCohortName(studyId, statsCell.getCohortId()), variantStats);
+                            variantStats.setCohortId(metadataManager.getCohortName(studyId, statsCell.getCohortId()));
+                            stats.add(variantStats);
                         })
                         .onVariantAnnotation(column -> {
                             ImmutableBytesWritable b = column.toBytesWritable();
@@ -177,10 +186,16 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
             // Convert to VariantSampleData
             HBaseToStudyEntryConverter converter = new HBaseToStudyEntryConverter(metadataManager, statsConverter);
-            converter.setStudyNameAsStudyId(true);
-            converter.setFormats(Arrays.asList(VariantQueryUtils.ALL, VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX));
-            converter.setSelectVariantElements(
-                    new VariantQueryFields(metadataManager.getStudyMetadata(studyId), samples, new ArrayList<>(fileIdsFromSampleIds)));
+
+            converter.configure(HBaseVariantConverterConfiguration.builder()
+                    .setStudyNameAsStudyId(true)
+                    .setIncludeSampleId(true)
+                    .setProjection(
+                            new VariantQueryProjection(
+                                    metadataManager.getStudyMetadata(studyId),
+                                    samples,
+                                    new ArrayList<>(fileIdsFromSampleIds)))
+                    .build());
 
             StudyEntry studyEntry = converter.convert(sampleDataMap, filesMap, variant, studyId);
 

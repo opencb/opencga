@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters.stats;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.hadoop.hbase.client.Put;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.biodata.tools.Converter;
+import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -62,22 +62,25 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
                 variantStatsWrapper.getChromosome(), variantStatsWrapper.getStart(), variantStatsWrapper.getEnd(),
                 variantStatsWrapper.getReference(), variantStatsWrapper.getAlternate(), variantStatsWrapper.getSv());
         Put put = new Put(row);
-        for (Map.Entry<String, VariantStats> entry : variantStatsWrapper.getCohortStats().entrySet()) {
-            Integer cohortId = cohortIds.get(entry.getKey());
+        for (VariantStats stats : variantStatsWrapper.getCohortStats()) {
+            Integer cohortId = cohortIds.get(stats.getCohortId());
             if (cohortId == null) {
                 continue;
             }
             Column mafColumn = VariantPhoenixHelper.getStatsMafColumn(studyId, cohortId);
             Column mgfColumn = VariantPhoenixHelper.getStatsMgfColumn(studyId, cohortId);
+            Column passFreqColumn = VariantPhoenixHelper.getStatsPassFreqColumn(studyId, cohortId);
             Column cohortColumn = VariantPhoenixHelper.getStatsFreqColumn(studyId, cohortId);
             Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
 
-            VariantStats stats = entry.getValue();
             add(put, mafColumn, stats.getMaf());
             add(put, mgfColumn, stats.getMgf());
             add(put, cohortColumn, Arrays.asList(stats.getRefAlleleFreq(), stats.getAltAlleleFreq()));
+            add(put, passFreqColumn, stats.getFilterFreq().getOrDefault(VCFConstants.PASSES_FILTERS_v4, 0F));
 
             VariantProto.VariantStats.Builder builder = VariantProto.VariantStats.newBuilder()
+                    .setSampleCount(stats.getSampleCount())
+                    .setFileCount(stats.getFileCount())
                     .setAltAlleleFreq(stats.getAltAlleleFreq())
                     .setAltAlleleCount(stats.getAltAlleleCount())
                     .setRefAlleleFreq(stats.getRefAlleleFreq())
@@ -87,7 +90,15 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
                     .setMissingGenotypeCount(stats.getMissingGenotypeCount());
 
             if (stats.getMafAllele() != null) {
-                builder.setMafAllele(stats.getMafAllele());
+                if (stats.getMafAllele().isEmpty()) {
+                    // Proto does not allow null values.
+                    // proto | avro
+                    // ""    | null
+                    // "-"   | ""
+                    builder.setMafAllele("-");
+                } else {
+                    builder.setMafAllele(stats.getMafAllele());
+                }
             }
             builder.setMaf(stats.getMaf());
 
@@ -97,17 +108,23 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
             builder.setMgf(stats.getMgf());
 
             if (stats.getGenotypeCount() != null) {
-                for (Map.Entry<Genotype, Integer> e : stats.getGenotypeCount().entrySet()) {
-                    builder.putGenotypeCount(e.getKey().toString(), e.getValue());
-                }
+                builder.putAllGenotypeCount(stats.getGenotypeCount());
 //                assert builder.getGenotypeCount() == stats.getGenotypeCount().size();
             }
 
             if (stats.getGenotypeFreq() != null) {
-                for (Map.Entry<Genotype, Float> e : stats.getGenotypeFreq().entrySet()) {
-                    builder.putGenotypeFreq(e.getKey().toString(), e.getValue());
-                }
+                builder.putAllGenotypeFreq(stats.getGenotypeFreq());
 //                assert builder.getGenotypeFreqCount() == stats.getGenotypeFreq().size();
+            }
+
+            if (stats.getFilterCount() != null) {
+                builder.putAllFilterCount(stats.getFilterCount());
+                builder.putAllFilterFreq(stats.getFilterFreq());
+            }
+
+            if (stats.getQualityAvg() != null) {
+                builder.setQualityCount(stats.getQualityCount());
+                builder.setQualityAvg(stats.getQualityAvg());
             }
 
             add(put, statsColumn, builder.build().toByteArray());

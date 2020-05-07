@@ -93,7 +93,7 @@ public class NewStudyMetadata extends AbstractStorageMigrator {
                 String cohortName = entry.getKey();
 
                 CohortMetadata cohortMetadata = new CohortMetadata(studyId, cohortId, cohortName,
-                        new ArrayList<>(sc.getCohorts().get(cohortId)));
+                        new ArrayList<>(sc.getCohorts().get(cohortId)), Collections.emptyList());
                 TaskMetadata.Status status;
                 if (sc.getCalculatedStats().contains(cohortId)) {
                     status = TaskMetadata.Status.READY;
@@ -114,9 +114,9 @@ public class NewStudyMetadata extends AbstractStorageMigrator {
                 SampleMetadata sampleMetadata = new SampleMetadata(studyId, sampleId, sampleName);
                 List<Integer> files = filesInSample.get(sampleId);
                 if (files != null) {
-                    sampleMetadata.setFiles(new HashSet<>(files));
+                    sampleMetadata.setFiles(new ArrayList<>(files));
                 } else {
-                    sampleMetadata.setFiles(new HashSet<>());
+                    sampleMetadata.setFiles(new ArrayList<>());
                 }
                 if (sampleMetadata.getFiles().stream().anyMatch(sc.getIndexedFiles()::contains)) {
                     sampleMetadata.setIndexStatus(TaskMetadata.Status.READY);

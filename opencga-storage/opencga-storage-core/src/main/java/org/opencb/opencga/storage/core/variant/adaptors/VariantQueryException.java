@@ -25,8 +25,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.OR;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.AND;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.OR;
 
 /**
  * Created on 29/01/16 .
@@ -73,6 +73,14 @@ public class VariantQueryException extends IllegalArgumentException {
                                                                      QueryParam queryParam2, String value2) {
         return new VariantQueryException("Unsupported combination of params \"" + queryParam.key() + "\" (value : \"" + value + "\") "
                 + "and \"" + queryParam2.key() + "\" (value : \"" + value2 + "\"). ");
+    }
+
+    public static VariantQueryException unsupportedParamsCombination(Collection<QueryParam> queryParams) {
+        return new VariantQueryException("Unsupported combination of params " + queryParams
+                .stream()
+                .map(QueryParam::key)
+                .sorted()
+                .collect(Collectors.joining("\", \"", "\"", "\".")));
     }
 
     public static VariantQueryException missingParam(QueryParam queryParam, String message) {

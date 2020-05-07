@@ -1,10 +1,28 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -20,7 +38,8 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         UUID("uuid", TEXT, ""),
         CLINICAL_ANALYSIS("clinicalAnalysisId", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
-        STATUS("status", TEXT, ""),
+        STATUS("status", OBJECT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         VERSION("version", INTEGER, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
@@ -30,7 +49,7 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         ANALYST("analyst", TEXT_ARRAY, ""),
         DEPENDENCIES("dependencies", TEXT_ARRAY, ""),
         FILTERS("filters", TEXT_ARRAY, ""),
-        REPORTED_VARIANTS("reportedVariants", TEXT_ARRAY, ""),
+        REPORTED_VARIANTS("clinicalVariants", TEXT_ARRAY, ""),
         REPORTED_LOW_COVERAGE("reportedLowCoverages", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
 
@@ -84,11 +103,11 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         }
     }
 
-    default boolean exists(long interpretationId) throws CatalogDBException {
+    default boolean exists(long interpretationId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), interpretationId)).getNumMatches() > 0;
     }
 
-    default void checkId(long interpretationId) throws CatalogDBException {
+    default void checkId(long interpretationId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (interpretationId < 0) {
             throw CatalogDBException.newInstance("Interpretation id '{}' is not valid: ", interpretationId);
         }
@@ -100,9 +119,11 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
 
     OpenCGAResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, Interpretation interpretation, boolean primary) throws CatalogDBException, CatalogParameterException,
+            CatalogAuthorizationException;
 
-    OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Interpretation> get(long studyUid, String interpretationId, QueryOptions options) throws CatalogDBException;
 

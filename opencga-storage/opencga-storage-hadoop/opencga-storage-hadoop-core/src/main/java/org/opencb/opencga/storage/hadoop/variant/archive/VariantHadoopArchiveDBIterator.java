@@ -72,12 +72,15 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
                 String.valueOf(archiveHelper.getStudyId()), fileMetadata.getId());
         refConverter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(fileMetadata.getSamplesPosition()),
                 String.valueOf(archiveHelper.getStudyId()), fileMetadata.getId());
-        setLimit(options.getLong(QueryOptions.LIMIT));
+        setLimit(options.getLong(QueryOptions.LIMIT, Long.MAX_VALUE));
     }
 
 
     @Override
     public boolean hasNext() {
+        if (count >= limit) {
+            return false;
+        }
         if (nextVariant != null) {
             return true;
         } else {
@@ -88,7 +91,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
 
     @Override
     public Variant next() {
-        if (!(count < limit)) {
+        if (count >= limit) {
             throw new NoSuchElementException("Limit reached");
         }
 
@@ -200,7 +203,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     }
 
     protected VariantHadoopArchiveDBIterator setLimit(long limit) {
-        this.limit = limit <= 0 ? Long.MAX_VALUE : limit;
+        this.limit = limit < 0 ? Long.MAX_VALUE : limit;
         return this;
     }
 

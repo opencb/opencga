@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.junit.Assert;
@@ -14,7 +30,6 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
@@ -48,15 +63,15 @@ public class VariantFileIndexSameNameTest extends AbstractVariantOperationManage
     @Test
     public void testIndex1() throws Exception {
         indexFile(inputFile1, new QueryOptions(), outputId);
-        Assert.assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getIndex().getStatus().getName());
-        Assert.assertNull(catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getIndex().getStatus());
+        Assert.assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
+        Assert.assertEquals(FileIndex.IndexStatus.NONE, catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
     }
 
     @Test
     public void testIndex2() throws Exception {
         indexFile(inputFile2, new QueryOptions(), outputId);
-        Assert.assertNull(catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getIndex().getStatus());
-        Assert.assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getIndex().getStatus().getName());
+        Assert.assertEquals(FileIndex.IndexStatus.NONE, catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
+        Assert.assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
     }
 
     @Test
@@ -93,17 +108,17 @@ public class VariantFileIndexSameNameTest extends AbstractVariantOperationManage
             indexFile(inputFile1, new QueryOptions(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, true), outputId);
             fail("Expected exception");
         } catch (StoragePipelineException e) {
-            assertThat(e.getCause(), hasMessage(containsString("Exception executing load")));
+            assertThat(e.getCause(), hasMessage(containsString("Error loading file")));
         }
         thrown.expect(hasMessage(containsString("Exception executing transform")));
         thrown.expect(hasCause(hasCause(hasMessage(containsString("Already registered with a different path")))));
-        indexFile(inputFile2, new QueryOptions(), outputId);
+        indexFile(inputFile2, new QueryOptions(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, false), outputId);
     }
 
     @Test
     public void testIndexBothSameTime() throws Exception {
         thrown.expect(CatalogException.class);
-        thrown.expectCause(isA(StoragePipelineException.class));
+//        thrown.expectCause(isA(StoragePipelineException.class));
         thrown.expectMessage("Unable to INDEX multiple files with the same name");
         indexFiles(Arrays.asList(inputFile1, inputFile2), new QueryOptions(), outputId);
     }
@@ -111,20 +126,20 @@ public class VariantFileIndexSameNameTest extends AbstractVariantOperationManage
     @Test
     public void testBySteps1() throws Exception {
         File transformFile = transformFile(inputFile1, new QueryOptions());
-        Assert.assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getIndex().getStatus().getName());
-        Assert.assertNull(catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getIndex().getStatus());
+        Assert.assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
+        Assert.assertEquals(FileIndex.IndexStatus.NONE, catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
         loadFile(transformFile, new QueryOptions(), outputId);
-        Assert.assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getIndex().getStatus().getName());
-        Assert.assertNull(catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getIndex().getStatus());
+        Assert.assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
+        Assert.assertEquals(FileIndex.IndexStatus.NONE, catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
     }
 
     @Test
     public void testBySteps2() throws Exception {
         File transformFile = transformFile(inputFile2, new QueryOptions());
-        Assert.assertNull(catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getIndex().getStatus());
-        Assert.assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getIndex().getStatus().getName());
+        Assert.assertEquals(FileIndex.IndexStatus.NONE, catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
+        Assert.assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
         loadFile(transformFile, new QueryOptions(), outputId);
-        Assert.assertNull(catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getIndex().getStatus());
-        Assert.assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getIndex().getStatus().getName());
+        Assert.assertEquals(FileIndex.IndexStatus.NONE, catalogManager.getFileManager().get(studyId, inputFile1.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
+        Assert.assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, inputFile2.getPath(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
     }
 }

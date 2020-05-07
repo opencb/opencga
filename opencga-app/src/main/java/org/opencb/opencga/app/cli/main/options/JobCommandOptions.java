@@ -21,11 +21,13 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.List;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
+import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.RUNNING;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -37,6 +39,7 @@ public class JobCommandOptions {
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
     public TopCommandOptions topCommandOptions;
+    public LogCommandOptions logCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
@@ -59,6 +62,7 @@ public class JobCommandOptions {
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.topCommandOptions = new TopCommandOptions();
+        this.logCommandOptions = new LogCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
 
         AclCommandOptions aclCommandOptions = new AclCommandOptions(commonCommandOptions);
@@ -174,6 +178,27 @@ public class JobCommandOptions {
 
         @Parameter(names = {"-n", "--jobs"}, description = "Number of jobs to print", required = false, arity = 1)
         public int jobsLimit = 20;
+    }
+
+    @Parameters(commandNames = {"log"}, commandDescription = "Provide a view of jobs activity in real time.")
+    public class LogCommandOptions extends StudyOption {
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--job"}, description = ParamConstants.JOB_ID_DESCRIPTION + " or 'running' to print all running jobs.")
+        public String job = RUNNING.toLowerCase();
+
+        @Parameter(names = {"--type"}, description = "Log file to be shown (stdout or stderr)")
+        public String type = "stderr";
+
+        @Parameter(names = {"-f", "--follow"}, description = "Output appended data as the file grows", arity = 0)
+        public boolean follow;
+
+        @Parameter(names = {"-n", "--tail"}, description = "Output the last lines NUM lines.", arity = 1)
+        public Integer tailLines;
+
+        @Parameter(names = {"-d", "--delay"}, description = "Delay between iterations in seconds", required = false, arity = 1)
+        public int delay = 2;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete job")

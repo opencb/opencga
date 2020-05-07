@@ -1,9 +1,26 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.master.monitor.models;
 
-import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.JobInternal;
+import org.opencb.opencga.core.models.job.JobStudyParam;
+import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.job.ToolInfo;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 
 import java.util.List;
@@ -14,8 +31,8 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
     private String commandLine;
 
     private Map<String, String> params;
-    private Enums.ExecutionStatus status;
     private ToolInfo tool;
+    private JobInternal internal;
 
     private File outDir;
     private File tmpDir;
@@ -23,6 +40,7 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
     private List<File> output;   // output files of this job
 
     private ExecutionResult execution;
+    private JobStudyParam study;
 
     private File stdout;
     private File stderr;
@@ -36,18 +54,15 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
         sb.append("commandLine='").append(commandLine).append('\'');
         sb.append(", params=").append(params);
         sb.append(", tool=").append(tool);
-        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", outDir=").append(outDir);
         sb.append(", tmpDir=").append(tmpDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", execution=").append(execution);
+        sb.append(", study=").append(study);
         sb.append(", stdout=").append(stdout);
         sb.append(", stderr=").append(stderr);
-        sb.append(", description='").append(getDescription()).append('\'');
-        sb.append(", tags=").append(getTags());
-        sb.append(", visited=").append(getVisited());
-        sb.append(", attributes=").append(getAttributes());
         sb.append('}');
         return sb.toString();
     }
@@ -79,12 +94,12 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
         return this;
     }
 
-    public Enums.ExecutionStatus getStatus() {
-        return status;
+    public JobInternal getInternal() {
+        return internal;
     }
 
-    public PrivateJobUpdateParams setStatus(Enums.ExecutionStatus status) {
-        this.status = status;
+    public PrivateJobUpdateParams setInternal(JobInternal internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -148,6 +163,15 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
 
     public PrivateJobUpdateParams setStderr(File stderr) {
         this.stderr = stderr;
+        return this;
+    }
+
+    public JobStudyParam getStudy() {
+        return study;
+    }
+
+    public PrivateJobUpdateParams setStudy(JobStudyParam study) {
+        this.study = study;
         return this;
     }
 

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.variant.knockout.result;
 
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
@@ -6,7 +22,7 @@ import java.util.List;
 
 public class KnockoutVariant {
 
-    private String variant;
+    private String id;
     private String genotype;
     private String filter;
     private String qual;
@@ -16,16 +32,16 @@ public class KnockoutVariant {
     public enum KnockoutType {
         HOM_ALT,
         COMP_HET,
-        MULTI_ALLELIC,
+        HET_ALT,
         DELETION_OVERLAP
     }
 
     public KnockoutVariant() {
     }
 
-    public KnockoutVariant(String variant, String genotype, String filter, String qual, KnockoutType knockoutType,
+    public KnockoutVariant(String id, String genotype, String filter, String qual, KnockoutType knockoutType,
                            List<SequenceOntologyTerm> sequenceOntologyTerms) {
-        this.variant = variant;
+        this.id = id;
         this.genotype = genotype;
         this.filter = filter;
         this.qual = qual;
@@ -33,12 +49,12 @@ public class KnockoutVariant {
         this.sequenceOntologyTerms = sequenceOntologyTerms;
     }
 
-    public String getVariant() {
-        return variant;
+    public String getId() {
+        return id;
     }
 
-    public KnockoutVariant setVariant(String variant) {
-        this.variant = variant;
+    public KnockoutVariant setId(String id) {
+        this.id = id;
         return this;
     }
 

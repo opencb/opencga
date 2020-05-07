@@ -84,11 +84,6 @@ public class VariantSearchManager {
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
-    @Deprecated
-    public VariantSearchManager(String host, String collection) {
-        throw new UnsupportedOperationException("Not supported!!");
-    }
-
     public VariantSearchManager(VariantStorageMetadataManager variantStorageMetadataManager, StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
 
@@ -377,11 +372,11 @@ public class VariantSearchManager {
      * @throws VariantSearchException VariantSearchException
      * @throws IOException   IOException
      */
-    public VariantSolrIterator iterator(String collection, Query query, QueryOptions queryOptions)
+    public SolrVariantDBIterator iterator(String collection, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-            return new VariantSolrIterator(solrManager.getSolrClient(), collection, solrQuery,
+            return new SolrVariantDBIterator(solrManager.getSolrClient(), collection, solrQuery,
                     new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions)));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error getting variant iterator", e);
@@ -398,11 +393,11 @@ public class VariantSearchManager {
      * @return Solr VariantSearch iterator
      * @throws VariantSearchException VariantSearchException
      */
-    public VariantSearchSolrIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
+    public SolrNativeIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
             throws VariantSearchException {
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-            return new VariantSearchSolrIterator(solrManager.getSolrClient(), collection, solrQuery);
+            return new SolrNativeIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error getting variant iterator (native)", e);
         }

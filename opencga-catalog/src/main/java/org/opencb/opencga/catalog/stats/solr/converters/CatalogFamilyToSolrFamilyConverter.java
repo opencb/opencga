@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -51,6 +67,7 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
     public FamilySolrModel convertToStorageType(Family family) {
         FamilySolrModel familySolrModel = new FamilySolrModel();
 
+        familySolrModel.setId(family.getUuid());
         familySolrModel.setUid(family.getUid());
         familySolrModel.setStudyId(study.getFqn().replace(":", "__"));
 
@@ -61,12 +78,13 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
         familySolrModel.setCreationMonth(localDate.getMonth().toString());
         familySolrModel.setCreationDay(localDate.getDayOfMonth());
         familySolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        familySolrModel.setStatus(family.getStatus().getName());
+        familySolrModel.setStatus(family.getInternal().getStatus().getName());
 
-        if (family.getStatus() != null) {
-            familySolrModel.setStatus(family.getStatus().getName());
+        if (family.getInternal().getStatus() != null) {
+            familySolrModel.setStatus(family.getInternal().getStatus().getName());
         }
         familySolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(family.getPhenotypes()));
+        familySolrModel.setPhenotypes(SolrConverterUtil.populateDisorders(family.getDisorders()));
 
         familySolrModel.setNumMembers(family.getMembers() != null ? family.getMembers().size() : 0);
         familySolrModel.setExpectedSize(family.getExpectedSize());

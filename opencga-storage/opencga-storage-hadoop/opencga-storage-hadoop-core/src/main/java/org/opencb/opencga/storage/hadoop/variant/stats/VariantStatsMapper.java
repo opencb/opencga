@@ -90,7 +90,6 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
             VariantStatsWrapper stats = variantStatsWrappers.get(0);
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
 
-            System.out.println("stats = " + stats.getCohortStats().keySet());
             Put put = converter.convert(stats);
 
             if (put == null) {

@@ -12,11 +12,11 @@ import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
-import org.opencb.opencga.storage.core.variant.query.AbstractTwoPhasedVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.AbstractTwoPhasedVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addSamplesMetadataIfRequested;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.addSamplesMetadataIfRequested;
 
 /**
  * Created on 01/04/19.
@@ -61,12 +61,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     @Override
     public boolean canUseThisExecutor(Query query, QueryOptions options) {
         if (options.getBoolean(SAMPLE_INDEX_INTERSECT, true)) {
-            if (options.getBoolean(QueryOptions.COUNT, false)) {
-                // TODO: Support count
-                return false;
-            } else {
-                return SampleIndexQueryParser.validSampleIndexQuery(query);
-            }
+            return SampleIndexQueryParser.validSampleIndexQuery(query);
         }
         return false;
     }
@@ -96,6 +91,10 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
         Query query = new Query(inputQuery);
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);
 
+        return getOrIterator(query, options, iterator, sampleIndexQuery);
+    }
+
+    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator, SampleIndexQuery sampleIndexQuery) {
         if (isFullyCoveredQuery(query, options)) {
             logger.info("HBase SampleIndex, skip variants table");
             return getOrIteratorFullyCovered(options, iterator, query, sampleIndexQuery);
@@ -103,7 +102,6 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             logger.info("HBase SampleIndex intersect");
             return getOrIteratorIntersect(sampleIndexQuery, query, options, iterator);
         }
-
     }
 
     private Object getOrIteratorFullyCovered(QueryOptions options, boolean iterator, Query query, SampleIndexQuery sampleIndexQuery) {
@@ -137,9 +135,9 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             asyncCountFuture = null;
         }
 
-        QueryOptions limitLessOptions = new QueryOptions(inputOptions)
-                .append(QueryOptions.LIMIT, -1)
-                .append(QueryOptions.SKIP, -1);
+        QueryOptions limitLessOptions = new QueryOptions(inputOptions);
+        limitLessOptions.remove(QueryOptions.LIMIT);
+        limitLessOptions.remove(QueryOptions.SKIP);
         VariantDBIteratorWithCounts variants = new VariantDBIteratorWithCounts(
                 sampleIndexDBAdaptor.iterator(sampleIndexQuery, limitLessOptions));
 

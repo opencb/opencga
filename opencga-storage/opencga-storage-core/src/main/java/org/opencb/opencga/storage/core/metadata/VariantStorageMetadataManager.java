@@ -32,9 +32,10 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,8 +52,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isNegated;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.removeNegation;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isNegated;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.removeNegation;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 
 /**
@@ -76,11 +77,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private final MetadataCache<Integer, String> sampleNameCache;
     private final MetadataCache<Integer, Boolean> sampleIdIndexedCache;
     private final MetadataCache<Integer, LinkedHashSet<Integer>> sampleIdsFromFileIdCache;
+    private final MetadataCache<Integer, VariantStorageEngine.SplitData> splitDataCache;
 
     private final MetadataCache<String, Integer> fileIdCache;
     private final MetadataCache<Integer, String> fileNameCache;
     private final MetadataCache<Integer, Boolean> fileIdIndexedCache;
-    private final MetadataCache<Integer, Set<Integer>> fileIdsFromSampleIdCache;
+    private final MetadataCache<Integer, List<Integer>> fileIdsFromSampleIdCache;
 
     private final MetadataCache<String, Integer> cohortIdCache;
     private final MetadataCache<Integer, String> cohortNameCache;
@@ -113,6 +115,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 throw VariantQueryException.fileNotFound(fileId, getStudyName(studyId));
             }
             return fileMetadata.getSamples();
+        });
+        splitDataCache = new MetadataCache<>((studyId, sampleId) -> {
+            SampleMetadata sampleMetadata = sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
+            if (sampleMetadata == null) {
+                throw VariantQueryException.sampleNotFound(sampleId, getStudyName(studyId));
+            }
+            return sampleMetadata.getSplitData();
         });
 
         fileIdCache = new MetadataCache<>(fileDBAdaptor::getFileId);
@@ -948,7 +957,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         if (cohortId == null) {
             newCohort = true;
             cohortId = newCohortId(studyId);
-            unsecureUpdateCohortMetadata(studyId, new CohortMetadata(studyId, cohortId, cohortName, Collections.emptyList()));
+            unsecureUpdateCohortMetadata(studyId, new CohortMetadata(studyId, cohortId, cohortName,
+                    Collections.emptyList(),
+                    Collections.emptyList()));
         } else {
             newCohort = false;
         }
@@ -985,6 +996,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 }
             }
         }
+        List<Integer> fileIds = new ArrayList<>(getFileIdsFromSampleIds(studyId, sampleIds));
 
         // Then, add samples to the cohort
         return updateCohortMetadata(studyId, cohortId,
@@ -993,20 +1005,30 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     sampleIdsList.sort(Integer::compareTo);
 
                     List<Integer> oldSamples = cohort.getSamples();
+                    List<Integer> oldFiles = cohort.getFiles() == null ? Collections.emptyList() : cohort.getFiles();
                     oldSamples.sort(Integer::compareTo);
-                    List<Integer> newSamples;
+                    final List<Integer> newSamples;
+                    final List<Integer> newFiles;
                     if (addSamples) {
-                        Set<Integer> allSamples = new HashSet<>(oldSamples);
+                        Set<Integer> allSamples = new HashSet<>(oldSamples.size() + sampleIds.size());
+                        allSamples.addAll(oldSamples);
                         allSamples.addAll(sampleIds);
                         newSamples = new ArrayList<>(allSamples);
+
+                        Set<Integer> allFiles = new HashSet<>(oldFiles.size() + fileIds.size());
+                        allFiles.addAll(oldFiles);
+                        allFiles.addAll(fileIds);
+                        newFiles = new ArrayList<>(allFiles);
                     } else {
                         newSamples = sampleIdsList;
+                        newFiles = fileIds;
                     }
                     cohort.setSamples(newSamples);
+                    cohort.setFiles(newFiles);
 
-                    if (!oldSamples.equals(sampleIdsList)) {
-                        // Cohort has been modified! Invalidate if needed.
-                        if (cohort.isStatsReady()) {
+                    if (cohort.isStatsReady()) {
+                        if (!oldSamples.equals(sampleIdsList) || !oldFiles.equals(fileIds)) {
+                            // Cohort has been modified! Invalidate stats
                             cohort.setStatsStatus(TaskMetadata.Status.ERROR);
                         }
                     }
@@ -1234,11 +1256,26 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public Set<Integer> getFileIdsFromSampleIds(int studyId, Collection<Integer> sampleIds) {
+        return getFileIdsFromSampleIds(studyId, sampleIds, false);
+    }
+
+    public Set<Integer> getFileIdsFromSampleIds(int studyId, Collection<Integer> sampleIds, boolean requireIndexed) {
         Set<Integer> fileIds = new LinkedHashSet<>();
         for (Integer sampleId : sampleIds) {
-            fileIds.addAll(fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptySet()));
+            fileIds.addAll(fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptyList()));
+        }
+        if (requireIndexed) {
+            fileIds.removeIf(fileId -> !isFileIndexed(studyId, fileId));
         }
         return fileIds;
+    }
+
+    public List<Integer> getFileIdsFromSampleId(int studyId, int sampleId) {
+        return fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptyList());
+    }
+
+    public VariantStorageEngine.SplitData getLoadSplitData(int studyId, int sampleId) {
+        return splitDataCache.get(studyId, sampleId);
     }
 
     /*

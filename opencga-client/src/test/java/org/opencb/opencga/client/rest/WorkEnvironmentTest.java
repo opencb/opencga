@@ -63,8 +63,7 @@ public class WorkEnvironmentTest extends ExternalResource {
         Files.createDirectories(opencgaHome.resolve("conf"));
 //            InputStream inputStream = getClass().getResource("/configuration-test.yml").openStream();
 //            Files.copy(inputStream, opencgaHome.resolve("conf").resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
-        configuration.serialize(
-                new FileOutputStream(opencgaHome.resolve("conf").resolve("configuration.yml").toString()));
+        configuration.serialize(new FileOutputStream(opencgaHome.resolve("conf").resolve("configuration.yml").toString()));
 
         InputStream inputStream = getClass().getResource("/storage-configuration.yml").openStream();
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
@@ -77,19 +76,21 @@ public class WorkEnvironmentTest extends ExternalResource {
 
         // Copy the configuration and example demo files
         Files.createDirectories(opencgaHome.resolve("examples"));
-        inputStream = new FileInputStream("../opencga-app/app/examples/20130606_g1k.ped");
+        inputStream = new FileInputStream("../opencga-app/app/misc/examples/20130606_g1k.ped");
         Files.copy(inputStream, opencgaHome.resolve("examples").resolve("20130606_g1k.ped"), StandardCopyOption.REPLACE_EXISTING);
 
-        inputStream = new FileInputStream("../opencga-app/app/examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        inputStream = new FileInputStream("../opencga-app/app/misc/examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         Files.copy(inputStream, opencgaHome.resolve("examples")
                 .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
 
+        catalogManager = new CatalogManager(configuration);
+
         CatalogDemo.createDemoDatabase(catalogManager, "admin", true);
 
-        restServer = new RestServer(opencgaHome.resolve("conf"));
+        restServer = new RestServer(opencgaHome);
         restServer.start();
 
-        catalogManager = new CatalogManager(configuration);
+//        catalogManager = new CatalogManager(configuration);
         clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
         openCGAClient = new OpenCGAClient("user1", "user1_pass", clientConfiguration);
     }

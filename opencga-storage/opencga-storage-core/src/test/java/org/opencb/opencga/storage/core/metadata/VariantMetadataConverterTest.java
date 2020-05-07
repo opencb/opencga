@@ -12,7 +12,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 
@@ -65,7 +65,7 @@ public class VariantMetadataConverterTest {
                 .setSamples(new LinkedHashSet<>(Arrays.asList(4, 5, 6)))
                 .setIndexStatus(TaskMetadata.Status.READY)
         );
-        metadataManager.unsecureUpdateCohortMetadata(1, new CohortMetadata(1, 20, "ALL", Arrays.asList(1, 2, 3, 4, 5, 6))
+        metadataManager.unsecureUpdateCohortMetadata(1, new CohortMetadata(1, 20, "ALL", Arrays.asList(1, 2, 3, 4, 5, 6), Arrays.asList(10, 11))
                 .setStatsStatus(TaskMetadata.Status.READY));
 
         variantMetadataConverter = new VariantMetadataConverter(metadataManager);
@@ -78,7 +78,7 @@ public class VariantMetadataConverterTest {
 
     @Test
     public void toVariantMetadataTest() throws IOException {
-        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryFields(studyMetadata, Collections.emptyList(), Collections.emptyList()));
+        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryProjection(studyMetadata, Collections.emptyList(), Collections.emptyList()));
         System.out.println("variantMetadata = " + objectWriter.writeValueAsString(variantMetadata));
 
     }

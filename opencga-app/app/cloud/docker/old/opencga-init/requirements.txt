@@ -1,0 +1,2 @@
+configargparse==0.14.0
+oyaml==0.8

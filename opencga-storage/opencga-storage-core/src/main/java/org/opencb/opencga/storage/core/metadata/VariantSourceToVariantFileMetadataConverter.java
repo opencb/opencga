@@ -3,17 +3,16 @@ package org.opencb.opencga.storage.core.metadata;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.legacy.VariantSource;
 import org.opencb.biodata.models.variant.avro.legacy.VcfHeader;
-import org.opencb.biodata.models.variant.metadata.ChromosomeStats;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderSimpleLine;
-import org.opencb.biodata.models.variant.stats.VariantSetStats;
-import org.opencb.biodata.tools.Converter;
+import org.opencb.biodata.models.variant.metadata.VariantSetStats;
+import org.opencb.biodata.tools.commons.Converter;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created on 07/09/17.
@@ -74,17 +73,16 @@ public class VariantSourceToVariantFileMetadataConverter implements Converter<Va
     }
 
     public VariantSetStats convertStats(org.opencb.biodata.models.variant.avro.legacy.VariantGlobalStats legacyStats) {
-        return new VariantSetStats(org.opencb.biodata.models.variant.metadata.VariantSetStats.newBuilder()
-                .setNumVariants(legacyStats.getNumRecords())
-                .setMeanQuality(legacyStats.getMeanQuality().floatValue())
-                .setNumPass(legacyStats.getPassCount())
-                .setNumSamples(legacyStats.getSamplesCount())
+        return VariantSetStats.newBuilder()
+                .setVariantCount(legacyStats.getNumRecords())
+                .setQualityAvg(legacyStats.getMeanQuality().floatValue())
+                .setFilterCount(Collections.singletonMap("PASS", legacyStats.getPassCount()))
+                .setSampleCount(legacyStats.getSamplesCount())
                 .setTiTvRatio(legacyStats.getTransitionsCount() / (float) legacyStats.getTransversionsCount())
-                .setVariantTypeCounts(legacyStats.getVariantTypeCounts())
-                .setConsequenceTypesCounts(legacyStats.getConsequenceTypesCount())
-                .setStdDevQuality(0)
-                .setChromosomeStats(legacyStats.getChromosomeCounts().entrySet().stream()
-                        .collect(Collectors.toMap(Map.Entry::getKey, entry -> new ChromosomeStats(entry.getValue(), 0F)))).build());
+                .setTypeCount(legacyStats.getVariantTypeCounts())
+                .setConsequenceTypeCount(legacyStats.getConsequenceTypesCount())
+                .setQualityStdDev(0)
+                .setChromosomeCount(legacyStats.getChromosomeCounts()).build();
     }
 
     protected String takeFromMap(Map<String, String> map, String key) {

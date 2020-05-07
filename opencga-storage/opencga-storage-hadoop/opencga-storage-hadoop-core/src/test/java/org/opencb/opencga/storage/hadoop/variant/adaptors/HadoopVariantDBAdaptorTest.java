@@ -20,7 +20,7 @@ import org.junit.*;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -198,12 +198,13 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getId())
                 .append(VariantQueryParam.FILE.key(), UriUtils.fileName(smallInputUri));
 
-        for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions("archive", true)); iterator.hasNext(); ) {
+        VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions("archive", true));
+        while (iterator.hasNext()) {
             Variant variant = iterator.next();
 //            System.out.println(variant.toJson());
             count++;
         }
-        assertEquals(fileMetadata.getStats().getNumVariants(), count);
+        assertEquals(fileMetadata.getStats().getVariantCount().intValue(), count);
     }
 
 }

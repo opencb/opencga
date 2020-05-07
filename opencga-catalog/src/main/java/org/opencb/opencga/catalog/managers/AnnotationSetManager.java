@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,30 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.common.TsvAnnotationParams;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -68,8 +74,8 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
     }
 
     AnnotationSetManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                         DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                         DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
     }
 
     protected void validateNewAnnotationSets(List<VariableSet> variableSetList, List<AnnotationSet> annotationSetList)
@@ -109,7 +115,63 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         }
     }
 
-    public  <T extends Annotable> void checkUpdateAnnotations(Study study, T entry, ObjectMap parameters, QueryOptions options,
+    public OpenCGAResult<Job> loadTsvAnnotations(String studyStr, String variableSetId, String path, TsvAnnotationParams tsvParams,
+                                                 ObjectMap params, String toolId, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+
+        ParamUtils.checkObj(variableSetId, "VariableSetId");
+        ParamUtils.checkObj(tsvParams, "AnnotationTsvParams");
+        ParamUtils.checkObj(path, "path");
+
+        boolean parents = params.getBoolean("parents");
+        String annotationSetId = params.getString("annotationSetId");
+        if (StringUtils.isEmpty(annotationSetId)) {
+            annotationSetId = variableSetId;
+        }
+
+        // Check variable set exists
+        boolean variableSetExists = false;
+        for (VariableSet variableSet : study.getVariableSets()) {
+            if (variableSet.getId().equals(variableSetId)) {
+                variableSetExists = true;
+                break;
+            }
+        }
+        if (!variableSetExists) {
+            throw new CatalogException("Variable set '" + variableSetId + "' not found.");
+        }
+
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), path);
+
+        OpenCGAResult<File> search = catalogManager.getFileManager().search(study.getFqn(), query, FileManager.INCLUDE_FILE_URI_PATH,
+                token);
+        if (search.getNumResults() == 0) {
+            // File not found under the path. User must have provided a content so we can create the file.
+            if (StringUtils.isEmpty(tsvParams.getContent())) {
+                throw new CatalogParameterException("Missing content of the TSV file");
+            }
+
+            OpenCGAResult<File> result = catalogManager.getFileManager().create(studyStr, new File().setPath(path), parents,
+                    tsvParams.getContent(), FileManager.INCLUDE_FILE_URI_PATH, token);
+            path = result.first().getPath();
+        } else {
+            // File found.
+            path = search.first().getPath();
+        }
+
+        // Submit job to load TSV annotations
+        Map<String, Object> jobParams = new HashMap<>();
+        jobParams.put("file", path);
+        jobParams.put("variableSetId", variableSetId);
+        jobParams.put("annotationSetId", annotationSetId);
+        return catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.MEDIUM, jobParams, token);
+    }
+
+    protected  <T extends Annotable> void checkUpdateAnnotations(Study study, T entry, ObjectMap parameters, QueryOptions options,
                                                               VariableSet.AnnotableDataModels annotableEntity,
                                                               AnnotationSetDBAdaptor dbAdaptor, String user) throws CatalogException {
 

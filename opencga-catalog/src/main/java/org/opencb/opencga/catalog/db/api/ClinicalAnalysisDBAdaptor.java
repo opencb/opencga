@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,11 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -49,8 +52,11 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        STATUS_DESCRIPTION("status.description", TEXT, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         CONSENT("consent", TEXT_ARRAY, ""),
         PRIORITY("priority", TEXT, ""),
         ANALYST("analyst", TEXT_ARRAY, ""),
@@ -68,8 +74,19 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         PROBAND_UID("proband.uid", INTEGER, ""),
         ROLE_TO_PROBAND("roleToProband", TEXT_ARRAY, ""),
         SAMPLE_UID("proband.samples.uid", INTEGER, ""),
-        INTERPRETATIONS("interpretations", TEXT_ARRAY, ""),
-        INTERPRETATIONS_ID("interpretations.id", TEXT_ARRAY, ""),
+        INTERPRETATION("interpretation", TEXT, ""),
+        INTERPRETATION_ID("interpretation.id", TEXT, ""),
+        SECONDARY_INTERPRETATIONS("secondaryInterpretations", TEXT_ARRAY, ""),
+        SECONDARY_INTERPRETATIONS_ID("secondaryInterpretations.id", TEXT_ARRAY, ""),
+        QUALITY_CONTROL("qualityControl", TEXT_ARRAY, ""),
+        QUALITY_CONTROL_QUALITY("qualityControl.quality", TEXT, ""),
+        QUALITY_CONTROL_VARIANT("qualityControl.variant", TEXT, ""),
+        QUALITY_CONTROL_ALIGNMENT("qualityControl.alignment", TEXT, ""),
+        QUALITY_CONTROL_ANALYST("qualityControl.analyst", TEXT, ""),
+        QUALITY_CONTROL_COMMENTS("qualityControl.comments", TEXT_ARRAY, ""),
+        QUALITY_CONTROL_DATE("qualityControl.date", TEXT, ""),
+
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
@@ -120,11 +137,11 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         }
     }
 
-    default boolean exists(long clinicalAnalysisId) throws CatalogDBException {
+    default boolean exists(long clinicalAnalysisId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), clinicalAnalysisId)).getNumMatches() > 0;
     }
 
-    default void checkId(long clinicalAnalysisId) throws CatalogDBException {
+    default void checkId(long clinicalAnalysisId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (clinicalAnalysisId < 0) {
             throw CatalogDBException.newInstance("Clinical analysis id '{}' is not valid: ", clinicalAnalysisId);
         }
@@ -138,9 +155,11 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
     OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException;
 
-    OpenCGAResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
 

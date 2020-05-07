@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,8 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
         document.put("uid", clinicalAnalysis.getUid());
         document.put("studyUid", clinicalAnalysis.getStudyUid());
 
-        document.put("interpretations", convertInterpretations(clinicalAnalysis.getInterpretations()));
+        document.put("interpretation", convertInterpretation(clinicalAnalysis.getInterpretation()));
+        document.put("secondaryInterpretations", convertInterpretations(clinicalAnalysis.getSecondaryInterpretations()));
 
         validateDocumentToUpdate(document);
 
@@ -53,6 +54,7 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
 
     public void validateDocumentToUpdate(Document document) {
         validateInterpretationToUpdate(document);
+        validateSecondaryInterpretationsToUpdate(document);
         validateFamilyToUpdate(document);
         validateProbandToUpdate(document);
     }
@@ -103,14 +105,21 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
     }
 
     public void validateInterpretationToUpdate(Document document) {
-        List<Document> interpretationList = (List) document.get("interpretations");
+        Document interpretation = (Document) document.get("interpretation");
+        if (interpretation != null) {
+            document.put("interpretation", new Document("uid", interpretation.get("uid")));
+        }
+    }
+
+    public void validateSecondaryInterpretationsToUpdate(Document document) {
+        List<Document> interpretationList = (List) document.get("secondaryInterpretations");
         if (interpretationList != null) {
             List<Document> newInterpretationList = new ArrayList<>();
             for (int i = 0; i < interpretationList.size(); i++) {
                 newInterpretationList.add(new Document("uid", interpretationList.get(i).get("uid")));
             }
 
-            document.put("interpretations", newInterpretationList);
+            document.put("secondaryInterpretations", newInterpretationList);
         }
     }
 
@@ -126,5 +135,17 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
             }
         }
         return interpretations;
+    }
+
+    public Document convertInterpretation(Interpretation interpretation) {
+        if (interpretation == null) {
+            return null;
+        }
+
+        long interpretationId = interpretation != null ? (interpretation.getUid() == 0 ? -1L : interpretation.getUid()) : -1L;
+        if (interpretationId > 0) {
+            return new Document("uid", interpretationId);
+        }
+        return null;
     }
 }

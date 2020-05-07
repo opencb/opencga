@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,12 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -41,31 +44,30 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         ID("id", TEXT, ""),
         UID("uid", INTEGER, ""),
         UUID("uuid", TEXT, ""),
-        NAME("name", TEXT, ""),
-        SOURCE("source", TEXT_ARRAY, ""),
         PROCESSING("processing", TEXT_ARRAY, ""),
         COLLECTION("collection", TEXT_ARRAY, ""),
         INDIVIDUAL("individual", TEXT, ""),
         INDIVIDUAL_UID("individual.uid", INTEGER_ARRAY, ""),
         INDIVIDUAL_ID("individualId", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
-        TYPE("type", TEXT, ""),
         SOMATIC("somatic", BOOLEAN, ""),
-        STATS("stats", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        STATUS_DESCRIPTION("status.description", TEXT, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         RELEASE("release", INTEGER, ""), //  Release where the sample was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the sample
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
 
-        DELETED("deleted", BOOLEAN, ""),
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
@@ -121,11 +123,11 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         }
     }
 
-    default boolean exists(long sampleId) throws CatalogDBException {
+    default boolean exists(long sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), sampleId)).getNumMatches() > 0;
     }
 
-    default void checkId(long sampleId) throws CatalogDBException {
+    default void checkId(long sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (sampleId < 0) {
             throw CatalogDBException.newInstance("Sample id '{}' is not valid: ", sampleId);
         }
@@ -138,15 +140,17 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
     OpenCGAResult nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
 
     OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException;
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Sample> get(long sampleId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Sample> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long sampleId) throws CatalogDBException;
 
-    OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    OpenCGAResult updateProjectRelease(long studyId, int release)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

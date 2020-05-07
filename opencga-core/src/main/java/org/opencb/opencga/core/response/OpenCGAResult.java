@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.response;
 
 import org.opencb.commons.datastore.core.DataResult;
@@ -5,7 +21,9 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class OpenCGAResult<T> extends DataResult<T> {
 
@@ -47,10 +65,30 @@ public class OpenCGAResult<T> extends DataResult<T> {
                 result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(), result.getAttributes());
     }
 
+    @Deprecated
     public static OpenCGAResult empty() {
         return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, new ObjectMap());
     }
 
+    public static <T> OpenCGAResult<T> empty(Class<T> c) {
+        return new OpenCGAResult<T>(0, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, new ObjectMap())
+                .setResultType(c.getCanonicalName());
+    }
+
+    public static <T> OpenCGAResult<T> merge(List<OpenCGAResult<T>> results) {
+        OpenCGAResult<T> result = new OpenCGAResult<T>(
+                results.stream().map(OpenCGAResult::getTime).reduce(0, Integer::sum),
+                results.stream().map(OpenCGAResult::getEvents).flatMap(Collection::stream).collect(Collectors.toList()),
+                results.stream().map(OpenCGAResult::getNumResults).reduce(0, Integer::sum),
+                results.stream().map(OpenCGAResult::getResults).flatMap(Collection::stream).collect(Collectors.toList()),
+                results.stream().map(OpenCGAResult::getNumMatches).reduce(0L, Long::sum),
+                results.stream().map(OpenCGAResult::getNumInserted).reduce(0L, Long::sum),
+                results.stream().map(OpenCGAResult::getNumUpdated).reduce(0L, Long::sum),
+                results.stream().map(OpenCGAResult::getNumDeleted).reduce(0L, Long::sum),
+                new ObjectMap());
+
+        return result;
+    }
 
     @Override
     public String toString() {
@@ -103,6 +141,7 @@ public class OpenCGAResult<T> extends DataResult<T> {
 
     public OpenCGAResult<T> setResults(List<T> results) {
         this.results = results;
+        this.setNumResults(results.size());
         return this;
     }
 

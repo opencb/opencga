@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.core.variant.query;
 
 import org.junit.Test;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -9,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.parseGenotypeFilter;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.parseGenotypeFilter;
 
 public class VariantQueryParserTest {
 
@@ -35,9 +34,8 @@ public class VariantQueryParserTest {
     }
 
     protected String preProcessGenotypesFilter(String genotypeFilter, List<String> loadedGenotypes) {
-        VariantQueryParser parser = new VariantQueryParser(null, null);
         Map<Object, List<String>> map = new LinkedHashMap<>();
         VariantQueryUtils.QueryOperation op = parseGenotypeFilter(genotypeFilter, map);
-        return parser.preProcessGenotypesFilter(map, op, loadedGenotypes);
+        return VariantQueryParser.preProcessGenotypesFilter(map, op, loadedGenotypes);
     }
 }

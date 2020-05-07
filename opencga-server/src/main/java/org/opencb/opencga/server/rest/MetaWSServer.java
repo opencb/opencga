@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -303,6 +303,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                 endpoints.add(endpoint);
             }
         }
+
+        Collections.sort(endpoints, Comparator.comparing(endpoint -> (String) endpoint.get("path")));
         map.put("endpoints", endpoints);
         return map;
     }

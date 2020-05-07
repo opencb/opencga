@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.opencb.opencga.client.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.models.project.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,12 +37,7 @@ public class ClientConfiguration {
     private String logFile;
 
     private String version;
-    private int sessionDuration;
-
-    private Project.Organism organism;
-    private String defaultStudy;
-
-    private Map<String, String> alias;
+    private int cliSessionDuration;
 
     private RestConfig rest;
     private GrpcConfig grpc;
@@ -51,19 +45,18 @@ public class ClientConfiguration {
     private VariantClientConfiguration variant;
 
     private static Logger logger;
-
     private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
 
-    static {
-        logger = LoggerFactory.getLogger(ClientConfiguration.class);
-    }
 
     public ClientConfiguration() {
+        logger = LoggerFactory.getLogger(ClientConfiguration.class);
     }
 
     public ClientConfiguration(RestConfig rest, GrpcConfig grpc) {
         this.rest = rest;
         this.grpc = grpc;
+
+        logger = LoggerFactory.getLogger(ClientConfiguration.class);
     }
 
     public static ClientConfiguration load(Path configurationPath) throws IOException {
@@ -105,23 +98,8 @@ public class ClientConfiguration {
             if (variable.startsWith("OPENCGA_")) {
                 logger.debug("Overwriting environment parameter '{}'", variable);
                 switch (variable) {
-                    case "OPENCGA_CLIENT_ORGANISM_TAXONOMY_CODE":
-                        configuration.getOrganism().setTaxonomyCode(Integer.parseInt(envVariables.get(variable)));
-                        break;
-                    case "OPENCGA_CLIENT_ORGANISM_SCIENTIFIC_NAME":
-                        configuration.getOrganism().setScientificName(envVariables.get(variable));
-                        break;
-                    case "OPENCGA_CLIENT_ORGANISM_COMMON_NAME":
-                        configuration.getOrganism().setCommonName(envVariables.get(variable));
-                        break;
-                    case "OPENCGA_CLIENT_ORGANISM_ASSEMBLY":
-                        configuration.getOrganism().setAssembly(envVariables.get(variable));
-                        break;
                     case "OPENCGA_CLIENT_REST_HOST":
                         configuration.getRest().setHost(envVariables.get(variable));
-                        break;
-                    case "OPENCGA_CLIENT_REST_TIMEOUT":
-                        configuration.getRest().setTimeout(Integer.valueOf(envVariables.get(variable)));
                         break;
                     case "OPENCGA_CLIENT_GRPC_HOST":
                         configuration.getGrpc().setHost(envVariables.get(variable));
@@ -139,10 +117,7 @@ public class ClientConfiguration {
         sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", version='").append(version).append('\'');
-        sb.append(", sessionDuration=").append(sessionDuration);
-        sb.append(", organism=").append(organism);
-        sb.append(", defaultStudy='").append(defaultStudy).append('\'');
-        sb.append(", alias=").append(alias);
+        sb.append(", sessionDuration=").append(cliSessionDuration);
         sb.append(", rest=").append(rest);
         sb.append(", grpc=").append(grpc);
         sb.append(", variant=").append(variant);
@@ -177,39 +152,12 @@ public class ClientConfiguration {
         return this;
     }
 
-    public int getSessionDuration() {
-        return sessionDuration;
+    public int getCliSessionDuration() {
+        return cliSessionDuration;
     }
 
-    public ClientConfiguration setSessionDuration(int sessionDuration) {
-        this.sessionDuration = sessionDuration;
-        return this;
-    }
-
-    public Project.Organism getOrganism() {
-        return organism;
-    }
-
-    public ClientConfiguration setOrganism(Project.Organism organism) {
-        this.organism = organism;
-        return this;
-    }
-
-    public String getDefaultStudy() {
-        return defaultStudy;
-    }
-
-    public ClientConfiguration setDefaultStudy(String defaultStudy) {
-        this.defaultStudy = defaultStudy;
-        return this;
-    }
-
-    public Map<String, String> getAlias() {
-        return alias;
-    }
-
-    public ClientConfiguration setAlias(Map<String, String> alias) {
-        this.alias = alias;
+    public ClientConfiguration setCliSessionDuration(int cliSessionDuration) {
+        this.cliSessionDuration = cliSessionDuration;
         return this;
     }
 

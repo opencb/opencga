@@ -104,7 +104,7 @@ public class LocalAlignmentStoragePipeline implements StoragePipeline {
     }
 
     @Override
-    public URI load(URI input) throws IOException, StorageEngineException {
+    public URI load(URI input, URI outdir) throws IOException, StorageEngineException {
         return null;
     }
 

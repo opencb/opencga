@@ -1,9 +1,26 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.family;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.individual.Individual;
 
 import java.util.ArrayList;
@@ -24,6 +41,7 @@ public class FamilyCreateParams {
 
     private Integer expectedSize;
 
+    private CustomStatusParams status;
     private Map<String, Object> attributes;
     private List<AnnotationSet> annotationSets;
 
@@ -32,7 +50,7 @@ public class FamilyCreateParams {
 
     public FamilyCreateParams(String id, String name, String description, List<Phenotype> phenotypes, List<Disorder> disorders,
                               List<IndividualCreateParams> members, Integer expectedSize, Map<String, Object> attributes,
-                              List<AnnotationSet> annotationSets) {
+                              List<AnnotationSet> annotationSets, CustomStatusParams status) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -42,6 +60,7 @@ public class FamilyCreateParams {
         this.expectedSize = expectedSize;
         this.attributes = attributes;
         this.annotationSets = annotationSets;
+        this.status = status;
     }
 
     public static FamilyCreateParams of(Family family) {
@@ -50,7 +69,7 @@ public class FamilyCreateParams {
                 family.getMembers() != null
                         ? family.getMembers().stream().map(IndividualCreateParams::of).collect(Collectors.toList())
                         : Collections.emptyList(),
-                family.getExpectedSize(), family.getAttributes(), family.getAnnotationSets());
+                family.getExpectedSize(), family.getAttributes(), family.getAnnotationSets(), CustomStatusParams.of(family.getStatus()));
     }
 
     @Override
@@ -63,6 +82,7 @@ public class FamilyCreateParams {
         sb.append(", disorders=").append(disorders);
         sb.append(", members=").append(members);
         sb.append(", expectedSize=").append(expectedSize);
+        sb.append(", status=").append(status);
         sb.append(", attributes=").append(attributes);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
@@ -82,8 +102,8 @@ public class FamilyCreateParams {
         String familyId = StringUtils.isEmpty(id) ? name : id;
         String familyName = StringUtils.isEmpty(name) ? familyId : name;
         int familyExpectedSize = expectedSize != null ? expectedSize : -1;
-        return new Family(familyId, familyName, phenotypes, disorders, relatives, description, familyExpectedSize, annotationSets,
-                attributes);
+        return new Family(familyId, familyName, phenotypes, disorders, relatives, "", description, familyExpectedSize, 1, 1, annotationSets,
+                status != null ? status.toCustomStatus() : null, null, attributes);
     }
 
     public String getId() {
@@ -155,6 +175,15 @@ public class FamilyCreateParams {
 
     public FamilyCreateParams setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public FamilyCreateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 

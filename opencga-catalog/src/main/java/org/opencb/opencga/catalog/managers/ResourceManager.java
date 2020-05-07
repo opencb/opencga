@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
@@ -12,20 +28,17 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,8 +48,8 @@ import java.util.stream.Collectors;
 public abstract class ResourceManager<R extends IPrivateStudyUid> extends AbstractManager {
 
     ResourceManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                    DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                    DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
     }
 
     abstract Enums.Resource getEntity();
@@ -118,7 +131,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                 .append("options", new QueryOptions(options))
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        auditManager.initAuditBatch(operationUuid);
 
         try {
             OpenCGAResult<R> result = OpenCGAResult.empty();
@@ -159,6 +173,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationUuid);
         }
     }
 
@@ -282,15 +298,6 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
             }
         }
         return result;
-    }
-
-    void mergeCount(OpenCGAResult<R> queryResult, Future<OpenCGAResult<Long>> countFuture) throws InterruptedException, ExecutionException {
-        while (!countFuture.isDone()) {
-            Thread.sleep(100);
-        }
-        OpenCGAResult<Long> countResult = countFuture.get();
-        queryResult.setNumMatches(countResult.getNumMatches());
-        queryResult.setTime(Math.max(queryResult.getTime(), countResult.getTime()));
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -35,11 +38,11 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface JobDBAdaptor extends DBAdaptor<Job> {
 
-    default boolean exists(long jobId) throws CatalogDBException {
+    default boolean exists(long jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), jobId)).getNumMatches() > 0;
     }
 
-    default void checkId(long jobId) throws CatalogDBException {
+    default void checkId(long jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (jobId < 0) {
             throw CatalogDBException.newInstance("Job id '{}' is not valid: ", jobId);
         }
@@ -51,22 +54,26 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     OpenCGAResult nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Job job, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, Job job, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     default OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
         throw new CatalogDBException("Non implemented action.");
     }
 
-    default OpenCGAResult setStatus(long jobId, String status) throws CatalogDBException {
-        return update(jobId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+    default OpenCGAResult setStatus(long jobId, String status)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return update(jobId, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    default OpenCGAResult setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+    default OpenCGAResult setStatus(Query query, String status)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return update(query, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    default OpenCGAResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {
+    default OpenCGAResult<Job> get(long jobId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), jobId);
         OpenCGAResult<Job> jobDataResult = get(query, options);
         if (jobDataResult == null || jobDataResult.getResults().size() == 0) {
@@ -75,11 +82,12 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         return jobDataResult;
     }
 
-    OpenCGAResult<Job> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Job> getAllInStudy(long studyId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     String getStatus(long jobId, String sessionId) throws CatalogDBException;
 
-    long getStudyId(long jobId) throws CatalogDBException;
+    long getStudyId(long jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -102,12 +110,15 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
 
-        TOOL("tool", TEXT, ""),
+        TOOL("tool", OBJECT, ""),
         TOOL_ID("tool.id", TEXT, ""),
 
         PRIORITY("priority", TEXT, ""),
 
-        STATUS("status", OBJECT, ""),
+        INTERNAL("internal", OBJECT, ""),
+        INTERNAL_STATUS("internal.status", OBJECT, ""),
+        INTERNAL_WEBHOOK("internal.webhook", OBJECT, ""),
+        INTERNAL_EVENTS("internal.events", OBJECT, ""),
         OUT_DIR("outDir", OBJECT, ""),
 
         INPUT("input", OBJECT, ""),
@@ -132,9 +143,9 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         OUTPUT_ERROR("outputError", TEXT_ARRAY, ""),
         //PARAMS,
         VISITED("visited", BOOLEAN, ""),
-        STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
-        STATUS_DATE("status.date", TEXT, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         SIZE("size", DECIMAL, ""),
         OUT_DIR_UID("outDir.uid", INTEGER, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),
@@ -145,10 +156,12 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         RESOURCE_MANAGER_ATTRIBUTES("resourceManagerAttributes", TEXT_ARRAY, ""),
         ERROR("error", TEXT_ARRAY, ""),
         ERROR_DESCRIPTION("errorDescription", TEXT_ARRAY, ""),
-        DELETED("deleted", BOOLEAN, ""),
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
-        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
+        STUDY("study", TEXT_ARRAY, ""),
+        STUDY_ID("study.id", TEXT, ""),
+        STUDY_OTHERS("study.others", TEXT, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
         static {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.*;
@@ -69,7 +71,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     OpenCGAResult<Study> get(Query query, QueryOptions options) throws CatalogDBException;
 
     OpenCGAResult<Study> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     default List<OpenCGAResult<Study>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
@@ -94,11 +96,12 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         return queryResults;
     }
 
-    OpenCGAResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    OpenCGAResult delete(Study study) throws CatalogDBException;
+    OpenCGAResult delete(Study study) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult delete(Query query) throws CatalogDBException;
 
@@ -233,8 +236,11 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @param members new list of users that will compose the group.
      * @return OpenCGAResult object.
      * @throws CatalogDBException when any of the members do not exist.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    OpenCGAResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Adds the list of members to the groupId. If the groupId did not already existed, it creates it.
@@ -258,7 +264,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      */
     OpenCGAResult<Group> removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
-    OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException;
+    OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Delete a group.
@@ -294,7 +301,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return OpenCGAResult object.
      * @throws CatalogDBException if the permission rule id already existed.
      */
-    OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Study.Entity entry, PermissionRule permissionRules)
+    OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Enums.Entity entry, PermissionRule permissionRules)
             throws CatalogDBException;
 
     /**
@@ -305,7 +312,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return the list of permission rules defined.
      * @throws CatalogDBException if there is any error.
      */
-    OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Study.Entity entry) throws CatalogDBException;
+    OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Enums.Entity entry) throws CatalogDBException;
 
     /**
      * Mark a concrete permission rule to be deleted by the daemon.
@@ -322,8 +329,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return OpenCGAResult object.
      * @throws CatalogDBException if the permission rule does not exist.
      */
-    OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Study.Entity entry, String permissionRuleId,
-                                                         PermissionRule.DeleteAction deleteAction) throws CatalogDBException;
+    OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Enums.Entity entry, String permissionRuleId,
+                                                            PermissionRule.DeleteAction deleteAction) throws CatalogDBException;
 
     /*
      * VariableSet Methods
@@ -398,7 +405,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
             throws CatalogDBException, CatalogAuthorizationException;
 
     OpenCGAResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
@@ -416,19 +423,22 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         DESCRIPTION("description", TEXT, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        STATUS_DESCRIPTION("status.description", TEXT, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
+        NOTIFICATION("notification", OBJECT, ""),
+        NOTIFICATION_WEBHOOK("notification.webhook", TEXT, ""),
         PROJECT_ID("projectId", TEXT, ""),
         PROJECT_UID("projectUid", INTEGER, ""),
         PROJECT_UUID("projectUuid", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        STATS("stats", TEXT, ""),
-        TYPE("type", TEXT, ""),
         RELEASE("release", INTEGER, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),

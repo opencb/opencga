@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,10 +62,10 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
                 .getClass().getResource("/configuration-test.yml").openStream());
         configuration.getAdmin().setAlgorithm("HS256");
         catalogManager = new CatalogManager(configuration);
-        try {
-            String token = catalogManager.getUserManager().loginAsAdmin("admin");
+        if (catalogManager.existsCatalogDB()) {
+            String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
             catalogManager.deleteCatalogDB(token);
-        } catch (Exception ignore) {}
+        }
         catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
 
@@ -74,11 +74,11 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         pedigree = loader.readPedigree(pedFileURL.getPath());
 
         userId = "user1";
-        catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", userId, "", -1L, Account.Type.FULL, null);
-        sessionId = catalogManager.getUserManager().login(userId, userId);
-        Project project = catalogManager.getProjectManager().create("def", "default", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionId).getResults().get(0);
-        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", Study.Type.FAMILY, null, "", null, null, null, null, null, null, null, null, sessionId).getResults().get(0);
+        catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", userId, "", -1L, Account.AccountType.FULL, null);
+        sessionId = catalogManager.getUserManager().login(userId, userId).getToken();
+        Project project = catalogManager.getProjectManager().create("def", "default", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), sessionId).getResults().get(0);
+        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", "", null, null, null, null, null, sessionId).getResults().get(0);
         studyId = study.getFqn();
         pedFile = catalogManager.getFileManager().upload(studyId, new FileInputStream(new java.io.File(pedFileURL.toURI())),
                 new File().setPath("data/" + pedFileName), false, true, false, sessionId).first();
@@ -102,15 +102,15 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     @Test
     public void testLoadPedigree_GivenVariableSet() throws Exception {
         HashSet<Variable> variables = new HashSet<>();
-        variables.add(new Variable("id", "", Variable.VariableType.DOUBLE, null, true, false, Collections.<String>emptyList(), 0, null,
+        variables.add(new Variable("id", "", Variable.VariableType.DOUBLE, null, true, false, Collections.<String>emptyList(), null, 0, null,
                 "", null, null));
-        variables.add(new Variable("name", "", Variable.VariableType.STRING, null, true, false, Collections.<String>emptyList(), 0, null,
+        variables.add(new Variable("name", "", Variable.VariableType.STRING, null, true, false, Collections.<String>emptyList(), null, 0, null,
                 "", null, null));
-        variables.add(new Variable("fatherId", "", Variable.VariableType.DOUBLE, null, false, false, Collections.<String>emptyList(), 0,
+        variables.add(new Variable("fatherId", "", Variable.VariableType.DOUBLE, null, false, false, Collections.<String>emptyList(), null, 0,
                 null, "", null, null));
-        variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, false, populations, 0, null, "",
+        variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, false, populations, null, 0, null, "",
                 null, null));
-        variables.add(new Variable("NonExistingField", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, null, "",
+        variables.add(new Variable("NonExistingField", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), null, 0, null, "",
                 null, null));
 
         VariableSet variableSet = new VariableSet("", "", false, false, "", variables,
@@ -127,7 +127,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Query query = new Query(Constants.ANNOTATION, variableSetId + ":family=GB84");
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.LIMIT, 0)
-                .append("count", true);
+                .append(QueryOptions.COUNT, true);
 
         DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, allSamples.getNumMatches());

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.utils;
 
 import org.apache.avro.Schema;
@@ -75,21 +91,26 @@ public class AvroToAnnotationConverter {
             case BYTES:
             case FIXED:
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.STRING,
-                        field.defaultValue(), defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
+                        field.defaultValue() == null ? null : field.defaultValue().getTextValue(),
+                        defaultRequired, false, null, null, field.pos(), null, getDoc(field), null, null);
             case INT:
             case LONG:
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.INTEGER,
-                        field.defaultValue(), defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
+                        field.defaultValue() == null ? null : field.defaultValue().getLongValue(),
+                        defaultRequired, false, null, null, field.pos(), null, getDoc(field), null, null);
             case FLOAT:
             case DOUBLE:
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.DOUBLE,
-                        field.defaultValue(), defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
+                        field.defaultValue() == null ? null : field.defaultValue().getDoubleValue(),
+                        defaultRequired, false, null, null, field.pos(), null, getDoc(field), null, null);
             case BOOLEAN:
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.BOOLEAN,
-                        field.defaultValue(), defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
+                        field.defaultValue() == null ? null : field.defaultValue().getBooleanValue(),
+                        defaultRequired, false, null, null, field.pos(), null, getDoc(field), null, null);
             case ENUM:
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.CATEGORICAL,
-                        field.defaultValue(), defaultRequired, false, schema.getEnumSymbols(), field.pos(), null, field.doc(), null, null);
+                        field.defaultValue() == null ? null : field.defaultValue().getTextValue(),
+                        defaultRequired, false, schema.getEnumSymbols(), null, field.pos(), null, getDoc(field), null, null);
             case ARRAY:
                 return getVariable(field, schema.getElementType()).setMultiValue(true);
             case UNION: {
@@ -112,18 +133,54 @@ public class AvroToAnnotationConverter {
 //                variableSet.add(valueVariable);
 //                return new Variable(field.name(), field.name(), "", Variable.VariableType.OBJECT,
 //                        field.defaultValue(), defaultRequired, true, null, field.pos(), null, field.doc(), variableSet, null);
-                return new Variable(field.name(), field.name(), "", Variable.VariableType.OBJECT,
-                        field.defaultValue(), defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
+                Variable.VariableType mapType;
+                switch (field.schema().getValueType().getType()) {
+                    case STRING:
+                    case BYTES:
+                    case FIXED:
+                        mapType = Variable.VariableType.MAP_STRING;
+                        break;
+                    case INT:
+                    case LONG:
+                        mapType = Variable.VariableType.MAP_INTEGER;
+                        break;
+                    case FLOAT:
+                    case DOUBLE:
+                        mapType = Variable.VariableType.MAP_DOUBLE;
+                        break;
+                    case BOOLEAN:
+                        mapType = Variable.VariableType.MAP_BOOLEAN;
+                        break;
+                    default:
+                        mapType = Variable.VariableType.OBJECT;
+                }
+                return new Variable(field.name(), field.name(), "", mapType,
+                        null, defaultRequired, false, null, null, field.pos(), null, getDoc(field), null, null);
             }
             case RECORD: {
                 Set<Variable> variableSet = new HashSet<>(convertToVariableSet(schema));
                 return new Variable(field.name(), field.name(), "", Variable.VariableType.OBJECT,
-                        field.defaultValue(), defaultRequired, false, null, field.pos(), null, field.doc(), variableSet, null);
+                        null, defaultRequired, false, null, null, field.pos(), null, getDoc(field), variableSet, null);
             }
             default:
             case NULL:
                 throw new IllegalStateException("Unexpected type " + schema.getType());
         }
+    }
+
+    private static String getDoc(Schema.Field field) {
+        // Replace wierd Avro doc characters
+        String doc = field.doc();
+        if (doc == null) {
+            doc = "";
+        }
+        // Remove starting "* "
+        if (doc.startsWith("* ")) {
+            doc = doc.substring(2);
+        }
+        // Remove newlines like "\n      *"
+        doc = doc.replaceAll("\n *\\*", ". ");
+        return doc;
     }
 
     @SuppressWarnings("unchecked")

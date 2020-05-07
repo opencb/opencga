@@ -1,41 +1,54 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.file.File;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class ClinicalUpdateParams {
 
     private String id;
-    @Deprecated
-    private String name;
     private String description;
     private ClinicalAnalysis.Type type;
 
     private Disorder disorder;
 
-    private Map<String, List<String>> files;
+    private List<File> files;
 
-    private ProbandParam proband;
-    private FamilyParam family;
+//    private ProbandParam proband;
+//    private FamilyParam family;
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
     private ClinicalAnalystParam analyst;
-    private ClinicalAnalysis.ClinicalStatus status;
-    private List<InterpretationUpdateParams> interpretations;
+    private ClinicalAnalysisInternal internal;
+    private Interpretation interpretation;
+    private List<Interpretation> secondaryInterpretations;
+
+    private ClinicalAnalysisQcUpdateParams qualityControl;
 
     private ClinicalConsent consent;
 
@@ -46,28 +59,28 @@ public class ClinicalUpdateParams {
     private List<String> flags;
 
     private Map<String, Object> attributes;
+    private CustomStatusParams status;
 
     public ClinicalUpdateParams() {
     }
 
-    public ClinicalUpdateParams(String id, String name, String description, ClinicalAnalysis.Type type, Disorder disorder, Map<String,
-            List<String>> files, ProbandParam proband, FamilyParam family, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
-                                ClinicalAnalystParam analyst, ClinicalAnalysis.ClinicalStatus status,
-                                List<InterpretationUpdateParams> interpretations, ClinicalConsent consent, String dueDate,
-                                List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
-                                Map<String, Object> attributes) {
+    public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
+                                List<File> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
+                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, Interpretation interpretation,
+                                List<Interpretation> secondaryInterpretations, ClinicalAnalysisQcUpdateParams qualityControl,
+                                ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
+                                Enums.Priority priority, List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
-        this.name = name;
         this.description = description;
         this.type = type;
         this.disorder = disorder;
         this.files = files;
-        this.proband = proband;
-        this.family = family;
         this.roleToProband = roleToProband;
         this.analyst = analyst;
-        this.status = status;
-        this.interpretations = interpretations;
+        this.internal = internal;
+        this.interpretation = interpretation;
+        this.secondaryInterpretations = secondaryInterpretations;
+        this.qualityControl = qualityControl;
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -75,6 +88,7 @@ public class ClinicalUpdateParams {
         this.priority = priority;
         this.flags = flags;
         this.attributes = attributes;
+        this.status = status;
     }
 
     @JsonIgnore
@@ -86,17 +100,16 @@ public class ClinicalUpdateParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalUpdateParams{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
-        sb.append(", proband=").append(proband);
-        sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
         sb.append(", analyst=").append(analyst);
-        sb.append(", status=").append(status);
-        sb.append(", interpretations=").append(interpretations);
+        sb.append(", internal=").append(internal);
+        sb.append(", interpretation=").append(interpretation);
+        sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
@@ -104,6 +117,7 @@ public class ClinicalUpdateParams {
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -120,80 +134,6 @@ public class ClinicalUpdateParams {
 
         public SampleParams setId(String id) {
             this.id = id;
-            return this;
-        }
-    }
-
-    public static class ProbandParam {
-        private String id;
-        private List<SampleParams> samples;
-
-        public ProbandParam() {
-        }
-
-        public Individual toUncheckedIndividual() {
-            Individual individual = new Individual().setId(id);
-            if (ListUtils.isNotEmpty(samples)) {
-                List<Sample> sampleList = new ArrayList<>(samples.size());
-                for (SampleParams sample : samples) {
-                    sampleList.add(new Sample().setId(sample.getId()));
-                }
-                individual.setSamples(sampleList);
-            }
-            return  individual;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public ProbandParam setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public List<SampleParams> getSamples() {
-            return samples;
-        }
-
-        public ProbandParam setSamples(List<SampleParams> samples) {
-            this.samples = samples;
-            return this;
-        }
-    }
-
-    public static class FamilyParam {
-        private String id;
-        private List<ProbandParam> members;
-
-        public FamilyParam() {
-        }
-
-        public Family toUncheckedFamily() {
-            List<Individual> memberList = null;
-            if (ListUtils.isNotEmpty(members)) {
-                memberList = members.stream().map(ProbandParam::toUncheckedIndividual).collect(Collectors.toList());
-            }
-            return new Family()
-                    .setId(id)
-                    .setMembers(memberList);
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public FamilyParam setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public List<ProbandParam> getMembers() {
-            return members;
-        }
-
-        public FamilyParam setMembers(List<ProbandParam> members) {
-            this.members = members;
             return this;
         }
     }
@@ -224,15 +164,6 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public ClinicalUpdateParams setName(String name) {
-        this.name = name;
-        return this;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -260,30 +191,12 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public Map<String, List<String>> getFiles() {
+    public List<File> getFiles() {
         return files;
     }
 
-    public ClinicalUpdateParams setFiles(Map<String, List<String>> files) {
+    public ClinicalUpdateParams setFiles(List<File> files) {
         this.files = files;
-        return this;
-    }
-
-    public ProbandParam getProband() {
-        return proband;
-    }
-
-    public ClinicalUpdateParams setProband(ProbandParam proband) {
-        this.proband = proband;
-        return this;
-    }
-
-    public FamilyParam getFamily() {
-        return family;
-    }
-
-    public ClinicalUpdateParams setFamily(FamilyParam family) {
-        this.family = family;
         return this;
     }
 
@@ -305,21 +218,30 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public ClinicalAnalysis.ClinicalStatus getStatus() {
-        return status;
+    public Interpretation getInterpretation() {
+        return interpretation;
     }
 
-    public ClinicalUpdateParams setStatus(ClinicalAnalysis.ClinicalStatus status) {
-        this.status = status;
+    public ClinicalUpdateParams setInterpretation(Interpretation interpretation) {
+        this.interpretation = interpretation;
         return this;
     }
 
-    public List<InterpretationUpdateParams> getInterpretations() {
-        return interpretations;
+    public List<Interpretation> getSecondaryInterpretations() {
+        return secondaryInterpretations;
     }
 
-    public ClinicalUpdateParams setInterpretations(List<InterpretationUpdateParams> interpretations) {
-        this.interpretations = interpretations;
+    public ClinicalUpdateParams setSecondaryInterpretations(List<Interpretation> secondaryInterpretations) {
+        this.secondaryInterpretations = secondaryInterpretations;
+        return this;
+    }
+
+    public ClinicalAnalysisQcUpdateParams getQualityControl() {
+        return qualityControl;
+    }
+
+    public ClinicalUpdateParams setQualityControl(ClinicalAnalysisQcUpdateParams qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 
@@ -386,4 +308,21 @@ public class ClinicalUpdateParams {
         return this;
     }
 
+    public ClinicalAnalysisInternal getInternal() {
+        return internal;
+    }
+
+    public ClinicalUpdateParams setInternal(ClinicalAnalysisInternal internal) {
+        this.internal = internal;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public ClinicalUpdateParams setStatus(CustomStatusParams status) {
+        this.status = status;
+        return this;
+    }
 }

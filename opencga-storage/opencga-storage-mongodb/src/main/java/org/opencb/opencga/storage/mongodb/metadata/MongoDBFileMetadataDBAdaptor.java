@@ -29,7 +29,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantFileMetadataConverter;
 
 import java.util.*;
@@ -124,7 +124,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
     @Override
     public Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) {
         Bson filter = parseQuery(query);
-        return Iterators.transform(collection.nativeQuery().find(filter, options).iterator(),
+        return Iterators.transform(collection.nativeQuery().find(filter, options),
                 variantFileMetadataConverter::convertToDataModelType);
     }
 

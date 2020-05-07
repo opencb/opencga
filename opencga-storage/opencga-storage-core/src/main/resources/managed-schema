@@ -567,7 +567,7 @@
     <fieldType name="double" class="solr.TrieDoubleField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
     <fieldType name="float" class="solr.TrieFloatField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
 
-    <!-- Comman variant and annotation fields -->
+    <!-- Common variant and annotation fields -->
     <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
@@ -589,7 +589,30 @@
     <field name="biotypes" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
     <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
+
+    <!-- Clinical significance -->
+    <field name="clinicalSig" type="string" indexed="true" stored="true" multiValued="true"/>
+
+    <!--
+       The field 'traits' contains info about Clinvar (CV), COSMIC (CN), HPOs (HP), protein features (PD), protein keywords (KW):
+            CV - accession1 - trait1 - clinicalSignificance1
+            CV - accession2 - trait2 - clinicalSignificance2
+            ...
+            CM - mutationID1 - primaryHistology1 - HistologySubtype1
+            CM - mutationID2 - primaryHistology2 - HistologySubtype2
+            ...
+            HP - HPO1 - trait1 - name1
+            HP - HPO2 - trait2 - name2
+            ...
+            PD - ID1 - description1
+            PD - ID2 - description2
+            ...
+            KW - uniprotAccession1 - keyword1
+            KW - uniprotAccession2 - keyword2
+            ...
+    -->
     <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
+
     <!--
        The field 'other' contains info about display consequence type, HGVS, cytobands, repeats, score and trancripts:
             DCT - displayConsequenceType
@@ -608,13 +631,15 @@
             TRANS - transcriptId1 - biotype1 - cdnaPostion1 - cdsPosition1 - codon1 - uniprotAccession1 - uniprotAccession1 - uniprotVariantId1 - annotationFlags1 - position1 - aaChange1 - siftScore1 - siftDescr1 - poliphenScore1 - poliphenDescr1
             TRANS - transcriptId2 - biotype2 - cdnaPostion2 - cdsPosition2 - codon2 - uniprotAccession2 - uniprotAccession2 - uniprotVariantId2 - annotationFlags2 - position2 - aaChange2 - siftScore2 - siftDescr2 - poliphenScore2 - poliphenDescr2
             ...
-       Transcript annotation flags are separated by , (e.g.: CCDS,basic)
+       For TRANS, transcript annotation flags are separated by , (e.g.: CCDS,basic)
     -->
     <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
-    <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="score_*" type="float" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="pValue_*" type="float" indexed="true" stored="true" multiValued="false"/>
+
+    <dynamicField name="passStats_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="altStats_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="score_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="scorePValue_*" type="float" indexed="true" stored="true" multiValued="false"/>
 
     <!-- These fields are only present when indexing one individual or a family -->
     <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>

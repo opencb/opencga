@@ -392,7 +392,8 @@ public class DocumentToVariantAnnotationConverter
                         getDefault(dbObject, DRUG_NAME_FIELD, ""),
                         getDefault(dbObject, DRUG_SOURCE_FIELD, DEFAULT_DRUG_SOURCE),
                         getDefault(dbObject, DRUG_STUDY_TYPE_FIELD, ""),
-                        getDefault(dbObject, DRUG_TYPE_FIELD, DEFAULT_DRUG_TYPE)));
+                        getDefault(dbObject, DRUG_TYPE_FIELD, DEFAULT_DRUG_TYPE),
+                        null, null, null));
             }
         }
         va.setGeneDrugInteraction(drugs);

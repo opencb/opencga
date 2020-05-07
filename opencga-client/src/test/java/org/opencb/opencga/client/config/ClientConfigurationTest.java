@@ -17,7 +17,6 @@
 package org.opencb.opencga.client.config;
 
 import org.junit.Test;
-import org.opencb.opencga.core.models.project.Project;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -31,15 +30,13 @@ public class ClientConfigurationTest {
     public void testDefault() {
         ClientConfiguration clientConfiguration = new ClientConfiguration();
 
-        clientConfiguration.setSessionDuration(120);
+        clientConfiguration.setCliSessionDuration(120);
 
-        RestConfig restConfig = new RestConfig("localhost:9090/opencga", 200, 10000, 2000);
+        RestConfig restConfig = new RestConfig("localhost:9090/opencga", true, new QueryRestConfig(200, 2000));
         GrpcConfig grpcConfig = new GrpcConfig("localhost:9091");
 
         clientConfiguration.setRest(restConfig);
         clientConfiguration.setGrpc(grpcConfig);
-
-        clientConfiguration.setOrganism(new Project.Organism("Homo sapiens", "human", 9606, "GRCh38"));
 
         try {
             clientConfiguration.serialize(new FileOutputStream("/tmp/client-configuration-test.yml"));

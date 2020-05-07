@@ -1,9 +1,10 @@
 package org.opencb.opencga.storage.core.variant.adaptors.sample;
 
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
@@ -13,7 +14,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,12 +86,11 @@ public class VariantSampleDataManager {
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT, 10));
         int dbTime = 0;
         int gtCount = 0;
-        List<List<String>> sampleDataList = new ArrayList<>(limit);
+        List<SampleEntry> sampleEntries = new ArrayList<>(limit);
         Map<String, Integer> filesIdx = new HashMap<>();
         List<FileEntry> files = new ArrayList<>(limit);
-        Map<String, VariantStats> stats = Collections.emptyMap();
-        int fileIdxFormatIdx = -1;
-        List<String> format = null;
+        List<VariantStats> stats = Collections.emptyList();
+        List<String> sampleDataKeys = null;
         VariantAnnotation annotation = null;
 
         int sampleSkip = 0;
@@ -102,10 +101,7 @@ public class VariantSampleDataManager {
             Query query = new Query(VariantQueryParam.ID.key(), variantStr)
                     .append(VariantQueryParam.STUDY.key(), study)
                     .append(VariantQueryParam.SAMPLE_LIMIT.key(), sampleLimit)
-                    .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip)
-                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), VariantQueryUtils.ALL + ","
-                            + VariantQueryParser.SAMPLE_ID + ","
-                            + VariantQueryParser.FILE_IDX);
+                    .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip);
             if (includeSamples != null && !includeSamples.isEmpty()) {
                 query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples); // if empty, will return all
             }
@@ -130,15 +126,14 @@ public class VariantSampleDataManager {
             if (queries == 1) {
                 annotation = partialVariant.getAnnotation();
                 stats = partialStudy.getStats();
-                format = partialStudy.getFormat();
-                fileIdxFormatIdx = format.indexOf(VariantQueryParser.FILE_IDX);
+                sampleDataKeys = partialStudy.getSampleDataKeys();
             }
-            boolean hasGt = format.get(0).equals("GT");
+            boolean hasGt = sampleDataKeys.get(0).equals("GT");
             List<String> samples = partialStudy.getOrderedSamplesName();
             readSamples += samples.size();
             for (int i = 0; i < samples.size(); i++) {
                 String sample = samples.get(i);
-                List<String> sampleData = partialStudy.getSamplesData().get(i);
+                List<String> sampleData = partialStudy.getSamples().get(i).getData();
 
                 String gt = hasGt ? sampleData.get(0) : GenotypeClass.NA_GT_VALUE;
                 if (gt.equals(".")) {
@@ -149,7 +144,7 @@ public class VariantSampleDataManager {
                     // Skip other genotypes
                     gtCount++;
                     if (gtCount > skip) {
-                        if (sampleDataList.size() < limit) {
+                        if (sampleEntries.size() < limit) {
                             Integer sampleId = metadataManager.getSampleId(studyId, sample);
                             FileEntry fileEntry = null;
                             for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId))) {
@@ -173,8 +168,7 @@ public class VariantSampleDataManager {
                                 filesIdx.put(fileEntry.getFileId(), fileIdx);
                                 files.add(fileEntry);
                             }
-                            sampleData.set(fileIdxFormatIdx, String.valueOf(fileIdx));
-                            sampleDataList.add(sampleData);
+                            sampleEntries.add(new SampleEntry(sample, fileIdx, sampleData));
                         }
                     }
                 }
@@ -195,10 +189,10 @@ public class VariantSampleDataManager {
         variant.setAnnotation(annotation);
         StudyEntry studyEntry = new StudyEntry(study);
         variant.addStudyEntry(studyEntry);
-        studyEntry.setSamplesData(sampleDataList);
+        studyEntry.setSamples(sampleEntries);
         studyEntry.setFiles(files);
         studyEntry.setStats(stats);
-        studyEntry.setFormat(format);
+        studyEntry.setSampleDataKeys(sampleDataKeys);
 //        String msg = "Queries : " + queries + " , readSamples : " + readSamples;
         return new DataResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(variant), 1);
     }

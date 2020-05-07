@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,25 +25,27 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.study.*;
-import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -293,55 +295,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW_HEADER:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS;
-                break;
-            case VIEW_CONTENT:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS;
-                break;
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILES;
-                break;
-            case WRITE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_FILES;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_FILES;
-                break;
-            case DOWNLOAD:
-                studyPermission = StudyAclEntry.StudyPermissions.DOWNLOAD_FILES;
-                break;
-            case UPLOAD:
-                studyPermission = StudyAclEntry.StudyPermissions.UPLOAD_FILES;
-                break;
-            case VIEW_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS;
-                break;
-            case WRITE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_FILE_ANNOTATIONS;
-                break;
-            case DELETE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_FILE_ANNOTATIONS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, fileDBAdaptor)) {
+        if (checkUserPermission(userId, query, fileDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
     }
 
-    private boolean checkUserPermission(long studyUid, String userId, Query query, StudyAclEntry.StudyPermissions studyPermission,
-                                        DBAdaptor dbAdaptor) throws CatalogDBException, CatalogAuthorizationException {
+    private boolean checkUserPermission(String userId, Query query, DBAdaptor dbAdaptor) throws CatalogException {
         if (OPENCGA.equals(userId)) {
             return true;
         } else {
-            if (dbAdaptor.count(studyUid, query, userId, studyPermission).getNumMatches() == 1) {
+            if (dbAdaptor.count(query, userId).getNumMatches() == 1) {
                 return true;
             }
         }
@@ -353,32 +320,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleId)
-                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_SAMPLES;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_SAMPLES;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_SAMPLES;
-                break;
-            case WRITE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_SAMPLE_ANNOTATIONS;
-                break;
-            case VIEW_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS;
-                break;
-            case DELETE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_SAMPLE_ANNOTATIONS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, sampleDBAdaptor)) {
+        if (checkUserPermission(userId, query, sampleDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Sample", sampleId, null);
@@ -389,32 +334,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                           IndividualAclEntry.IndividualPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.UID.key(), individualId)
-                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_INDIVIDUALS;
-                break;
-            case WRITE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_INDIVIDUAL_ANNOTATIONS;
-                break;
-            case VIEW_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS;
-                break;
-            case DELETE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_INDIVIDUAL_ANNOTATIONS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, individualDBAdaptor)) {
+        if (checkUserPermission(userId, query, individualDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Individual", individualId, null);
@@ -424,23 +347,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkJobPermission(long studyId, long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.UID.key(), jobId)
-                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_JOBS;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_JOBS;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_JOBS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, jobDBAdaptor)) {
+        if (checkUserPermission(userId, query, jobDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Job", jobId, null);
@@ -451,32 +361,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.UID.key(), cohortId)
-                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_COHORTS;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_COHORTS;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_COHORTS;
-                break;
-            case WRITE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_COHORT_ANNOTATIONS;
-                break;
-            case VIEW_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS;
-                break;
-            case DELETE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_COHORT_ANNOTATIONS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, cohortDBAdaptor)) {
+        if (checkUserPermission(userId, query, cohortDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Cohort", cohortId, null);
@@ -488,23 +376,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(PanelDBAdaptor.QueryParams.UID.key(), panelId)
-                .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_PANELS;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_PANELS;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_PANELS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, panelDBAdaptor)) {
+        if (checkUserPermission(userId, query, panelDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Panel", panelId, null);
@@ -515,32 +390,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(FamilyDBAdaptor.QueryParams.UID.key(), familyId)
-                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FAMILIES;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_FAMILIES;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_FAMILIES;
-                break;
-            case WRITE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_FAMILY_ANNOTATIONS;
-                break;
-            case VIEW_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS;
-                break;
-            case DELETE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_FAMILY_ANNOTATIONS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, familyDBAdaptor)) {
+        if (checkUserPermission(userId, query, familyDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Family", familyId, null);
@@ -552,23 +405,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), analysisId)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_CLINICAL_ANALYSIS;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_CLINICAL_ANALYSIS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, clinicalAnalysisDBAdaptor)) {
+        if (checkUserPermission(userId, query, clinicalAnalysisDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "ClinicalAnalysis", analysisId, null);
@@ -840,22 +680,21 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public OpenCGAResult<Map<String, List<String>>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
-        aclDBAdaptor.setToMembers(studyIds, members, permissions);
+        aclDBAdaptor.setToMembers(studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
         return aclDBAdaptor.get(studyIds, members, Enums.Resource.STUDY);
     }
 
     @Override
     public OpenCGAResult<Map<String, List<String>>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
-        aclDBAdaptor.addToMembers(studyIds, members, permissions);
+        aclDBAdaptor.addToMembers(studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
         return aclDBAdaptor.get(studyIds, members, Enums.Resource.STUDY);
     }
 
     @Override
     public OpenCGAResult<Map<String, List<String>>> removeStudyAcls(List<Long> studyIds, List<String> members,
                                                                     @Nullable List<String> permissions) throws CatalogException {
-        aclDBAdaptor.removeFromMembers(studyIds, members, permissions, Enums.Resource.STUDY);
-        return aclDBAdaptor.get(studyIds, members, Enums.Resource.STUDY);
+        return removeAcls(studyIds, members, permissions, Enums.Resource.STUDY);
     }
 
     private OpenCGAResult<Map<String, List<String>>> getAcls(List<Long> ids, List<String> members, Enums.Resource resource)
@@ -870,8 +709,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogException("Missing identifiers to set acls");
         }
 
+        if (resource2 != null && permissions.contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name())) {
+            throw new CatalogException("Cannot propagate permissions when VARIANT permission is assigned");
+        }
+
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.setToMembers(studyId, ids, ids2, members, permissions, resource, resource2);
+        aclDBAdaptor.setToMembers(studyId, ids, ids2, members, getImplicitPermissions(permissions, resource), resource, resource2);
 
         return getAclResult(ids, members, resource, startTime);
     }
@@ -884,8 +727,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogException("Missing identifiers to add acls");
         }
 
+        if (resource2 != null && permissions.contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name())) {
+            throw new CatalogException("Cannot propagate permissions when VARIANT permission is assigned");
+        }
+
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.addToMembers(studyId, ids, ids2, members, permissions, resource, resource2);
+        aclDBAdaptor.addToMembers(studyId, ids, ids2, members, getImplicitPermissions(permissions, resource), resource, resource2);
         return getAclResult(ids, members, resource, startTime);
     }
 
@@ -897,9 +744,244 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogException("Missing identifiers to remove acls");
         }
 
+        List<String> allPermissions;
+        if (resource2 == Enums.Resource.SAMPLE) {
+            // We do it this way because SAMPLE contains more permissions (VARIANT). If we are propagating the removal from individual
+            // to sample, it is preferable sending VARIANT permission for removal in individual (it doesn't exist) than not sending it
+            // when removing sample permissions
+            allPermissions = getDependentPermissions(permissions, resource2);
+        } else {
+            allPermissions = getDependentPermissions(permissions, resource);
+        }
+
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.removeFromMembers(ids, ids2, members, permissions, resource, resource2);
+        aclDBAdaptor.removeFromMembers(ids, ids2, members, allPermissions, resource, resource2);
         return getAclResult(ids, members, resource, startTime);
+    }
+
+    private List<String> getDependentPermissions(List<String> permissions, Enums.Resource resource) throws CatalogAuthorizationException {
+        if (permissions == null) {
+            return null;
+        }
+        Set<String> allPermissions = new HashSet<>(permissions);
+        switch (resource) {
+            case STUDY:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(StudyAclEntry.StudyPermissions::valueOf)
+                        .map(StudyAclEntry.StudyPermissions::getDependentPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case FILE:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(FileAclEntry.FilePermissions::valueOf)
+                        .map(FileAclEntry.FilePermissions::getDependentPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case SAMPLE:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(SampleAclEntry.SamplePermissions::valueOf)
+                        .map(SampleAclEntry.SamplePermissions::getDependentPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case JOB:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(JobAclEntry.JobPermissions::valueOf)
+                        .map(JobAclEntry.JobPermissions::getDependentPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case INDIVIDUAL:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(IndividualAclEntry.IndividualPermissions::valueOf)
+                        .map(IndividualAclEntry.IndividualPermissions::getDependentPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case COHORT:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(CohortAclEntry.CohortPermissions::valueOf)
+                        .map(CohortAclEntry.CohortPermissions::getDependentPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case DISEASE_PANEL:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(PanelAclEntry.PanelPermissions::valueOf)
+                        .map(PanelAclEntry.PanelPermissions::getDependentPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case FAMILY:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(FamilyAclEntry.FamilyPermissions::valueOf)
+                        .map(FamilyAclEntry.FamilyPermissions::getDependentPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case CLINICAL_ANALYSIS:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf)
+                        .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::getDependentPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            default:
+                throw new CatalogAuthorizationException("Unexpected resource '" + resource + "'");
+        }
+        logger.debug("Permissions sent by the user '{}'. Complete list containing dependent permissions '{}'.", permissions,
+                allPermissions);
+
+        return new ArrayList<>(allPermissions);
+    }
+
+    private List<String> getImplicitPermissions(List<String> permissions, Enums.Resource resource) throws CatalogAuthorizationException {
+        Set<String> allPermissions = new HashSet<>(permissions);
+        switch (resource) {
+            case STUDY:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(StudyAclEntry.StudyPermissions::valueOf)
+                        .map(StudyAclEntry.StudyPermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case FILE:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(FileAclEntry.FilePermissions::valueOf)
+                        .map(FileAclEntry.FilePermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case SAMPLE:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(SampleAclEntry.SamplePermissions::valueOf)
+                        .map(SampleAclEntry.SamplePermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case JOB:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(JobAclEntry.JobPermissions::valueOf)
+                        .map(JobAclEntry.JobPermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case INDIVIDUAL:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(IndividualAclEntry.IndividualPermissions::valueOf)
+                        .map(IndividualAclEntry.IndividualPermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case COHORT:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(CohortAclEntry.CohortPermissions::valueOf)
+                        .map(CohortAclEntry.CohortPermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case DISEASE_PANEL:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(PanelAclEntry.PanelPermissions::valueOf)
+                        .map(PanelAclEntry.PanelPermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case FAMILY:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(FamilyAclEntry.FamilyPermissions::valueOf)
+                        .map(FamilyAclEntry.FamilyPermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case CLINICAL_ANALYSIS:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf)
+                        .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            default:
+                throw new CatalogAuthorizationException("Unexpected resource '" + resource + "'");
+        }
+
+        logger.debug("Permissions sent by the user '{}'. Complete list containing implicit permissions '{}'.", permissions, allPermissions);
+
+        return new ArrayList<>(allPermissions);
     }
 
     OpenCGAResult<Map<String, List<String>>> getAclResult(List<Long> ids, List<String> members, Enums.Resource resource, long startTime)
@@ -930,7 +1012,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException {
+    public void applyPermissionRule(long studyId, PermissionRule permissionRule, Enums.Entity entry) throws CatalogException {
         // 1. We obtain which of those members are actually users to add them to the @members group automatically
         List<String> userList = permissionRule.getMembers().stream()
                 .filter(member -> !member.startsWith("@"))
@@ -945,7 +1027,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry)
+    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Enums.Entity entry)
             throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
@@ -954,7 +1036,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entity entry)
+    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Enums.Entity entry)
             throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
@@ -963,7 +1045,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRule(long studyId, String permissionRuleId, Study.Entity entry) throws CatalogException {
+    public void removePermissionRule(long studyId, String permissionRuleId, Enums.Entity entry) throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 

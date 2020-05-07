@@ -135,12 +135,12 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                 continue;
             }
             String[] members = trio.split(",");
-            Member member = new Member(members[0], Member.Sex.UNKNOWN, Member.AffectionStatus.UNKNOWN);
+            Member member = new Member(members[0], Member.Sex.UNKNOWN);
             if (!members[1].equals("0")) {
-                member.setFather(new Member(members[1], Member.Sex.MALE, Member.AffectionStatus.UNKNOWN));
+                member.setFather(new Member(members[1], Member.Sex.MALE));
             }
             if (!members[2].equals("0")) {
-                member.setMother(new Member(members[2], Member.Sex.FEMALE, Member.AffectionStatus.UNKNOWN));
+                member.setMother(new Member(members[2], Member.Sex.FEMALE));
             }
             pedigree.getMembers().add(member);
         }
@@ -367,7 +367,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
                 String gt = sampleCell.getGT();
 
-                if (gt.isEmpty()) {
+                if (gt == null || gt.isEmpty()) {
                     // This is a really weird situation, most likely due to errors in the input files
                     logger.error("Empty genotype at sample " + sampleId + " in variant " + row.getVariant());
                 } else if (gt.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
@@ -449,24 +449,24 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             calculator.post();
             SampleVariantStats stats = calculator.getSampleVariantStats().get(0);
 
-            stats.setMissingPositions(0);
+//            stats.setMissingPositions(0);
             try {
                 vsm.updateSampleMetadata(studyId, sampleId.get(), sampleMetadata -> {
                     stats.setId(sampleMetadata.getName());
                     if (sampleMetadata.getStats() == null) {
-                        stats.setMissingPositions(0); // Unknown. Unable to calculate using this MR
+//                        stats.setMissingPositions(0); // Unknown. Unable to calculate using this MR
                         sampleMetadata.setStats(stats);
                     } else {
-                        sampleMetadata.getStats().setNumVariants(stats.getNumVariants());
+                        sampleMetadata.getStats().setVariantCount(stats.getVariantCount());
                         sampleMetadata.getStats().setChromosomeCount(stats.getChromosomeCount());
                         sampleMetadata.getStats().setTypeCount(stats.getTypeCount());
                         sampleMetadata.getStats().setIndelLengthCount(stats.getIndelLengthCount());
                         sampleMetadata.getStats().setTiTvRatio(stats.getTiTvRatio());
 
                         sampleMetadata.getStats().setGenotypeCount(stats.getGenotypeCount());
-                        sampleMetadata.getStats().setNumPass(stats.getNumPass());
-                        sampleMetadata.getStats().setMeanQuality(stats.getMeanQuality());
-                        sampleMetadata.getStats().setStdDevQuality(stats.getStdDevQuality());
+                        sampleMetadata.getStats().setFilterCount(stats.getFilterCount());
+                        sampleMetadata.getStats().setQualityAvg(stats.getQualityAvg());
+                        sampleMetadata.getStats().setQualityStdDev(stats.getQualityStdDev());
                         sampleMetadata.getStats().setMendelianErrorCount(stats.getMendelianErrorCount());
                         sampleMetadata.getStats().setHeterozygosityRate(stats.getHeterozygosityRate());
 

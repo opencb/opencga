@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -31,12 +29,32 @@ import java.util.stream.Collectors;
 public class FamilyAclEntry extends AbstractAclEntry<FamilyAclEntry.FamilyPermissions> {
 
     public enum FamilyPermissions {
-        VIEW,
-        UPDATE,
-        DELETE,
-        WRITE_ANNOTATIONS,
-        VIEW_ANNOTATIONS,
-        DELETE_ANNOTATIONS
+        VIEW(Collections.emptyList()),
+        UPDATE(Collections.singletonList(VIEW)),
+        DELETE(Arrays.asList(VIEW, UPDATE)),
+        VIEW_ANNOTATIONS(Collections.singletonList(VIEW)),
+        WRITE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, VIEW)),
+        DELETE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, WRITE_ANNOTATIONS, VIEW));
+
+        private List<FamilyPermissions> implicitPermissions;
+
+        FamilyPermissions(List<FamilyPermissions> implicitPermissions) {
+            this.implicitPermissions = implicitPermissions;
+        }
+
+        public List<FamilyPermissions> getImplicitPermissions() {
+            return implicitPermissions;
+        }
+
+        public List<FamilyPermissions> getDependentPermissions() {
+            List<FamilyPermissions> dependentPermissions = new LinkedList<>();
+            for (FamilyPermissions permission : EnumSet.complementOf(EnumSet.of(this))) {
+                if (permission.getImplicitPermissions().contains(this)) {
+                    dependentPermissions.add(permission);
+                }
+            }
+            return dependentPermissions;
+        }
     }
 
     public FamilyAclEntry() {

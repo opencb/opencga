@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,7 @@ package org.opencb.opencga.core.models.sample;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -30,12 +28,33 @@ import java.util.stream.Collectors;
 public class SampleAclEntry extends AbstractAclEntry<SampleAclEntry.SamplePermissions> {
 
     public enum SamplePermissions {
-        VIEW,
-        UPDATE,
-        DELETE,
-        WRITE_ANNOTATIONS,
-        VIEW_ANNOTATIONS,
-        DELETE_ANNOTATIONS
+        VIEW(Collections.emptyList()),
+        UPDATE(Collections.singletonList(VIEW)),
+        DELETE(Arrays.asList(VIEW, UPDATE)),
+        VIEW_ANNOTATIONS(Collections.singletonList(VIEW)),
+        WRITE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, VIEW)),
+        DELETE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, WRITE_ANNOTATIONS, VIEW)),
+        VIEW_VARIANTS(Arrays.asList(VIEW, VIEW_ANNOTATIONS));
+
+        private List<SamplePermissions> implicitPermissions;
+
+        SamplePermissions(List<SamplePermissions> implicitPermissions) {
+            this.implicitPermissions = implicitPermissions;
+        }
+
+        public List<SamplePermissions> getImplicitPermissions() {
+            return implicitPermissions;
+        }
+
+        public List<SamplePermissions> getDependentPermissions() {
+            List<SamplePermissions> dependentPermissions = new LinkedList<>();
+            for (SamplePermissions permission : EnumSet.complementOf(EnumSet.of(this))) {
+                if (permission.getImplicitPermissions().contains(this)) {
+                    dependentPermissions.add(permission);
+                }
+            }
+            return dependentPermissions;
+        }
     }
 
     public SampleAclEntry() {

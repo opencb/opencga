@@ -40,7 +40,7 @@ public class AddFilePathToStudyConfigurationMigration {
             file = queryResult.first();
         } else {
             for (File i : queryResult.getResults()) {
-                if (i.getIndex().getStatus() != null && Status.READY.equals(i.getIndex().getStatus().getName())) {
+                if (i.getInternal().getIndex().getStatus() != null && Status.READY.equals(i.getInternal().getIndex().getStatus().getName())) {
                     if (file != null) {
                         throw new IllegalStateException("Error migrating storage. "
                                 + "Unable to determine which file is indexed");

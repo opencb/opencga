@@ -1,28 +1,59 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.variant.knockout.result;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.opencb.biodata.models.core.Gene;
 
 import java.util.*;
 
 public class KnockoutByGene {
 
-    private String id;
-    private String name;
+    private Gene gene = new Gene();
     private List<KnockoutSample> samples = new LinkedList<>();
 
-    public String getId() {
-        return id;
+    public Gene getGene() {
+        return gene;
     }
 
-    public KnockoutByGene setId(String id) {
-        this.id = id;
+    public KnockoutByGene setGene(Gene gene) {
+        this.gene = gene;
         return this;
     }
 
-    public String getName() {
-        return name;
+    @JsonIgnore
+    public String getId() {
+        return getGene().getId();
     }
 
+    @JsonIgnore
+    public KnockoutByGene setId(String id) {
+        this.getGene().setId(id);
+        return this;
+    }
+
+    @JsonIgnore
+    public String getName() {
+        return getGene().getName();
+    }
+
+    @JsonIgnore
     public KnockoutByGene setName(String name) {
-        this.name = name;
+        this.getGene().setName(name);
         return this;
     }
 

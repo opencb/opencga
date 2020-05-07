@@ -9,7 +9,7 @@ import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 
 import java.util.*;
 
@@ -28,15 +28,15 @@ public class VariantMetadataConverter {
         this.metadataManager = metadataManager;
     }
 
-    public VariantMetadata toVariantMetadata(VariantQueryFields variantQueryFields) {
+    public VariantMetadata toVariantMetadata(VariantQueryProjection variantQueryProjection) {
         ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
         List<VariantStudyMetadata> studies = new ArrayList<>();
         String specie = projectMetadata.getSpecies();
         String assembly = projectMetadata.getAssembly();
-        for (StudyMetadata studyMetadata : variantQueryFields.getStudyMetadatas().values()) {
+        for (StudyMetadata studyMetadata : variantQueryProjection.getStudyMetadatas()) {
             VariantStudyMetadata variantStudyMetadata = toVariantStudyMetadata(studyMetadata,
-                    variantQueryFields.getSamples().get(studyMetadata.getId()),
-                    variantQueryFields.getFiles().get(studyMetadata.getId()));
+                    variantQueryProjection.getStudy(studyMetadata.getId()).getSamples(),
+                    variantQueryProjection.getStudy(studyMetadata.getId()).getFiles());
             studies.add(variantStudyMetadata);
         }
 

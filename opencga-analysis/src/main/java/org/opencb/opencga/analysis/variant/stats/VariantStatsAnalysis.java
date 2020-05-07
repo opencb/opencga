@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +31,16 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
+import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -48,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -78,6 +81,7 @@ public class VariantStatsAnalysis extends OpenCgaTool {
     private Map<String, List<String>> cohortsMap;
     private Path outputFile;
     private Properties mappingFile;
+    private Path mappingFilePath;
     private boolean dynamicCohort;
 
 
@@ -208,7 +212,8 @@ public class VariantStatsAnalysis extends OpenCgaTool {
         // and create in catalog the cohorts described in the mapping file
         String aggregationMappingFile = params.getString(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key());
         if (AggregationUtils.isAggregated(aggregation) && isNotEmpty(aggregationMappingFile)) {
-            mappingFile = readAggregationMappingFile(aggregationMappingFile);
+            mappingFilePath = getFilePath(aggregationMappingFile);
+            mappingFile = readAggregationMappingFile(mappingFilePath);
         }
 
         if (samplesQuery.isEmpty() && cohorts.isEmpty()) {
@@ -248,7 +253,7 @@ public class VariantStatsAnalysis extends OpenCgaTool {
 
         executorParams.putAll(params);
         executorParams.append(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation)
-                .append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), mappingFile)
+                .append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), mappingFilePath)
                 .append(DefaultVariantStatisticsManager.OUTPUT, outputFile);
     }
 
@@ -341,18 +346,27 @@ public class VariantStatsAnalysis extends OpenCgaTool {
     protected void onShutdown() {
         try {
             if (toolParams.isIndex()) {
-                updateCohorts(studyFqn, cohortsMap.keySet(), token, Cohort.CohortStatus.INVALID, "");
+                updateCohorts(studyFqn, cohortsMap.keySet(), token, CohortStatus.INVALID, "");
             }
         } catch (CatalogException e) {
-            logger.error("Error updating cohorts " + cohortsMap + " to status " + Cohort.CohortStatus.INVALID, e);
+            logger.error("Error updating cohorts " + cohortsMap + " to status " + CohortStatus.INVALID, e);
         }
     }
 
-    private Properties readAggregationMappingFile(String aggregationMapFile) throws IOException {
-        try (InputStream is = FileUtils.newInputStream(Paths.get(aggregationMapFile))) {
+    private Properties readAggregationMappingFile(Path aggregationMapFile) throws IOException {
+        try (InputStream is = FileUtils.newInputStream(aggregationMapFile)) {
             Properties tagmap = new Properties();
             tagmap.load(is);
             return tagmap;
+        }
+    }
+
+    private Path getFilePath(String aggregationMapFile) throws CatalogException {
+        if (Files.exists(Paths.get(aggregationMapFile))) {
+            return Paths.get(aggregationMapFile).toAbsolutePath();
+        } else {
+            return Paths.get(getCatalogManager().getFileManager()
+                    .get(studyFqn, aggregationMapFile, QueryOptions.empty(), getToken()).first().getUri());
         }
     }
 
@@ -423,10 +437,10 @@ public class VariantStatsAnalysis extends OpenCgaTool {
             // If studyAggregation is not define, update study aggregation
             if (studyAggregation == null) {
                 //update study aggregation
-                Map<String, Aggregation> attributes = Collections.singletonMap(STATS_AGGREGATION_CATALOG,
-                        argsAggregation);
-                ObjectMap parameters = new ObjectMap("attributes", attributes);
-                catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
+                Map<String, Object> attributes = Collections.singletonMap(STATS_AGGREGATION_CATALOG, argsAggregation);
+                StudyUpdateParams updateParams = new StudyUpdateParams()
+                        .setAttributes(attributes);
+                catalogManager.getStudyManager().update(studyId, updateParams, null, sessionId);
             }
         } else {
             if (studyAggregation == null) {

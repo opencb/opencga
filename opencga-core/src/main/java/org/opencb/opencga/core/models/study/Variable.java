@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models.study;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -42,6 +43,7 @@ public class Variable {
      * Example for categorical values: T,F
      */
     private List<String> allowedValues;
+    private List<String> allowedKeys;
     private long rank;
     private String dependsOn;
     private String description;
@@ -55,8 +57,8 @@ public class Variable {
     }
 
     public Variable(String id, String name, String category, VariableType type, Object defaultValue, boolean required,
-                    boolean multiValue, List<String> allowedValues, long rank, String dependsOn, String description,
-                    Set<Variable> variableSet, Map<String, Object> attributes) {
+                    boolean multiValue, List<String> allowedValues, List<String> allowedKeys, long rank, String dependsOn,
+                    String description, Set<Variable> variableSet, Map<String, Object> attributes) {
         this.name = name;
         this.id = id;
         this.category = category;
@@ -65,6 +67,7 @@ public class Variable {
         this.required = required;
         this.multiValue = multiValue;
         this.allowedValues = allowedValues;
+        this.allowedKeys = allowedKeys;
         this.rank = rank;
         this.dependsOn = dependsOn;
         this.description = description;
@@ -74,10 +77,10 @@ public class Variable {
 
     @Deprecated
     public Variable(String id, String category, VariableType type, Object defaultValue, boolean required, boolean multiValue,
-                    List<String> allowedValues, long rank, String dependsOn, String description, Set<Variable> variableSet,
-                    Map<String, Object> attributes) {
-        this(id, "", category, type, defaultValue, required, multiValue, allowedValues, rank, dependsOn, description, variableSet,
-                attributes);
+                    List<String> allowedValues, List<String> allowedKeys, long rank, String dependsOn, String description,
+                    Set<Variable> variableSet, Map<String, Object> attributes) {
+        this(id, "", category, type, defaultValue, required, multiValue, allowedValues, allowedKeys, rank, dependsOn, description,
+                variableSet, attributes);
     }
 
     public enum VariableType {
@@ -106,6 +109,7 @@ public class Variable {
         sb.append(", required=").append(required);
         sb.append(", multiValue=").append(multiValue);
         sb.append(", allowedValues=").append(allowedValues);
+        sb.append(", allowedKeys=").append(allowedKeys);
         sb.append(", rank=").append(rank);
         sb.append(", dependsOn='").append(dependsOn).append('\'');
         sb.append(", description='").append(description).append('\'');
@@ -187,6 +191,15 @@ public class Variable {
         return this;
     }
 
+    public List<String> getAllowedKeys() {
+        return allowedKeys;
+    }
+
+    public Variable setAllowedKeys(List<String> allowedKeys) {
+        this.allowedKeys = allowedKeys;
+        return this;
+    }
+
     public long getRank() {
         return rank;
     }
@@ -230,5 +243,35 @@ public class Variable {
     public Variable setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Variable variable = (Variable) o;
+        return required == variable.required
+                && multiValue == variable.multiValue
+                && rank == variable.rank
+                && Objects.equals(id, variable.id)
+                && Objects.equals(name, variable.name)
+                && Objects.equals(category, variable.category)
+                && type == variable.type
+                && Objects.equals(defaultValue, variable.defaultValue)
+                && Objects.equals(allowedValues, variable.allowedValues)
+                && Objects.equals(dependsOn, variable.dependsOn)
+                && Objects.equals(description, variable.description)
+                && Objects.equals(variableSet, variable.variableSet)
+                && Objects.equals(attributes, variable.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, category, type, defaultValue, required, multiValue, allowedValues, rank, dependsOn,
+                description, variableSet, attributes);
     }
 }

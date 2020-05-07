@@ -125,20 +125,22 @@ public class VariantStatisticsCalculator {
                 skippedFiles++;
                 continue;
             }
-            // Clear any stats from the input
-            study.setStats(new HashMap<>());
 
             if (!AggregationUtils.isAggregated(aggregation) && samples != null) {
+                List<VariantStats> stats = new ArrayList<>(samples.size());
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
                     if (overwrite || study.getStats(cohort.getKey()) == null) {
 
                         VariantStats variantStats = VariantStatsCalculator.calculate(variant, study, cohort.getValue());
-                        study.setStats(cohort.getKey(), variantStats);
-
+                        variantStats.setCohortId(cohort.getKey());
+                        stats.add(variantStats);
                     }
                 }
+                study.setStats(stats);
             } else if (aggregatedCalculator != null) { // another way to say that the study is aggregated (!Aggregation
                 // .NONE.equals(aggregation))
+                // Clear any stats from the input
+                study.setStats(new ArrayList<>());
 //                study.setAttributes(removeAttributePrefix(study.getAttributes()));
                 aggregatedCalculator.calculate(variant, study);
             }

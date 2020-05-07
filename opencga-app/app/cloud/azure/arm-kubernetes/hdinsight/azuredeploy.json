@@ -1,0 +1,425 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "clusterNamePrefix": {
+            "type": "string",
+            "defaultValue": "cgahbase",
+            "metadata": {
+                "description": "The name of the HDInsight cluster to create."
+            }
+        },
+        "clusterLoginUserName": {
+            "type": "string",
+            "defaultValue": "admin",
+            "metadata": {
+                "description": "These credentials can be used to submit jobs to the cluster and to log into cluster dashboards."
+            }
+        },
+        "clusterLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "clusterVersion": {
+            "type": "string",
+            "defaultValue": "4.0",
+            "metadata": {
+                "description": "HDInsight cluster version."
+            }
+        },
+        "clusterHeadNodeCount": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "The number of head nodes in the HDInsight cluster."
+            }
+        },
+        "clusterHeadNodeSize": {
+            "type": "string",
+            "defaultValue": "Standard_D4_V2",
+            "metadata": {
+                "description": "Head node VM Size"
+            }
+        },
+        "clusterWorkerNodeCount": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "The number of nodes in the HDInsight cluster."
+            }
+        },
+        "clusterWorkerNodeSize": {
+            "type": "string",
+            "defaultValue": "Standard_D4_V2",
+            "metadata": {
+                "description": "Worker node VM Size"
+            }
+        },
+        "clusterZookeeperNodeCount": {
+            "type": "int",
+            "defaultValue": 3,
+            "metadata": {
+                "description": "The number of Zookeeper nodes in the HDInsight cluster."
+            }
+        },
+        "clusterZookeeperNodeSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2_V2",
+            "metadata": {
+                "description": "Worker node VM Size"
+            }
+        },
+        "clusterKind": {
+            "type": "string",
+            "defaultValue": "HBASE",
+            "metadata": {
+                "description": "The type of the HDInsight cluster to create."
+            }
+        },
+        "sshUserName": {
+            "type": "string",
+            "defaultValue": "sshuser",
+            "metadata": {
+                "description": "These credentials can be used to remotely access the cluster."
+            }
+        },
+        "sshPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "vnetId": {
+            "type": "string",
+            "metadata": {
+                "description": "VNet to be used"
+            }
+        },
+        "subnetId": {
+            "type": "string",
+            "metadata": {
+                "description": "Subnet to be used"
+            }
+        },
+        "LogAnalyticsWorkspaceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace ID"
+            }
+        },
+        "LogAnalyticsWorkspaceKey": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Key"
+            }
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
+        },    
+        "yarnSiteMemoryInMb": {
+            "type": "int",
+            "metadata": {
+                "description": "Sets the 'yarn.nodemanager.resource.memory-mb' value on the cluster in 'yarn-site.xml'"
+            }
+        },
+        "accountType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS"
+        }
+     
+    },
+    "variables": {
+        "clusterName": "[concat(parameters('clusterNamePrefix'), uniqueString(resourceGroup().id))]",
+        "image": "mcr.microsoft.com/azure-cli",
+        "cpuCores": "1.0",
+        "memoryInGb": "1.5",
+        "containerGroupName": "onboardoms-containerinstance",
+        "containerName": "onboardoms",
+        "identityName": "aci-user",
+        "storageIdentityName": "hdinsight-storage-identity",
+        "bootstrapRoleAssignmentId": "[guid(concat(resourceGroup().id, 'bootstrapcontributor'))]",
+        "contributorRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+         "storageRoleAssignmentId": "[guid(concat(resourceGroup().id, 'storagecontributor'))]",
+        "storageBlobDataOwnerRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')]",
+        "storageAccountName":"[concat('opencga',uniqueString(resourceGroup().id))]"
+        
+    },
+    "resources": [
+           {
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "name": "[variables('storageIdentityName')]",
+            "apiVersion": "2015-08-31-preview",
+            "location": "[resourceGroup().location]"
+        },
+       {
+            "name": "[variables('storageAccountName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2018-07-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                         
+            ],
+            "properties": {
+                "accessTier": "Hot",
+                "supportsHttpsTrafficOnly": true,
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "defaultAction": "Deny",
+                    "ipRules": [
+                    ],
+                    "virtualNetworkRules": [
+                        {
+                            "id": "[parameters('subnetId')]"
+                        }
+                    ]
+                },
+                "isHnsEnabled": true
+            },
+            "sku": {
+                "name": "[parameters('accountType')]"
+            },
+            "kind": "StorageV2",
+            "resources": [
+                {
+                    "type": "Microsoft.Authorization/roleAssignments",
+                    "apiVersion": "2018-01-01-preview",
+                    "name": "[variables('storageRoleAssignmentId')]",
+                    "properties": {
+                        "roleDefinitionId": "[variables('storageBlobDataOwnerRoleDefinitionId')]",
+                        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName')), '2015-08-31-preview').principalId]",
+                        "principalType":"ServicePrincipal"
+                    },
+                    "dependsOn": [
+                        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName'))]",
+                        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+                    ]
+                }
+            ]
+        },
+      
+        {
+            "apiVersion": "2018-06-01-preview",
+            "name": "[variables('clusterName')]",
+            "type": "Microsoft.HDInsight/clusters",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]",
+                "[resourceId('Microsoft.Authorization/roleAssignments',variables('storageRoleAssignmentId'))]"
+            ],
+            "properties": {
+                "clusterVersion": "[parameters('clusterVersion')]",
+                "osType": "Linux",
+                "tier": "Standard",
+                "clusterDefinition": {
+                    "kind": "[parameters('clusterKind')]",
+                    "componentVersion": {
+                        "HBase": "2.0"
+                    },
+                    "configurations": {
+                        "gateway": {
+                            "restAuthCredential.isEnabled": true,
+                            "restAuthCredential.username": "[parameters('clusterLoginUserName')]",
+                            "restAuthCredential.password": "[parameters('clusterLoginPassword')]"
+                        },
+                        "yarn-site": {
+                            "yarn.nodemanager.resource.memory-mb": "[parameters('yarnSiteMemoryInMb')]"
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "storageaccounts": [
+                        {
+                            "name": "[concat(variables('storageAccountName'),'.dfs.core.windows.net')]",
+                            "isDefault": true,
+                            "fileSystem": "opencga",
+                            "resourceId":   "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]",
+                            "msiResourceId": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName'))]"
+                        }
+                    ]
+                },
+                "computeProfile": {
+                    "roles": [
+                        {
+                            "name": "headnode",
+                            "minInstanceCount": 1,
+                            "targetInstanceCount": "[parameters('clusterHeadNodeCount')]",
+                            "hardwareProfile": {
+                                "vmSize": "[parameters('clusterHeadNodeSize')]"
+                            },
+                            "osProfile": {
+                                "linuxOperatingSystemProfile": {
+                                    "username": "[parameters('sshUserName')]",
+                                    "password": "[parameters('sshPassword')]"
+                                }
+                            },
+                            "virtualNetworkProfile": {
+                                "id": "[parameters('vnetId')]",
+                                "subnet": "[parameters('subnetId')]"
+                            },
+                            "scriptActions": [
+                            ]
+                        },
+                        {
+                            "name": "workernode",
+                            "targetInstanceCount": "[parameters('clusterWorkerNodeCount')]",
+                            "hardwareProfile": {
+                                "vmSize": "[parameters('clusterWorkerNodeSize')]"
+                            },
+                            "osProfile": {
+                                "linuxOperatingSystemProfile": {
+                                    "username": "[parameters('sshUserName')]",
+                                    "password": "[parameters('sshPassword')]"
+                                }
+                            },
+                            "virtualNetworkProfile": {
+                                "id": "[parameters('vnetId')]",
+                                "subnet": "[parameters('subnetId')]"
+                            },
+                            "scriptActions": [
+                            ],
+                            "dataDisksGroups": [
+                                {
+                                    "disksPerNode": 1
+                                }
+                            ]
+                        },
+                        {
+                            "name": "zookeepernode",
+                            "minInstanceCount": 1,
+                            "targetInstanceCount": "[parameters('clusterZookeeperNodeCount')]",
+                            "hardwareProfile": {
+                                "vmSize": "[parameters('clusterZookeeperNodeSize')]"
+                            },
+                            "osProfile": {
+                                "linuxOperatingSystemProfile": {
+                                    "username": "[parameters('sshUserName')]",
+                                    "password": "[parameters('sshPassword')]"
+                                }
+                            },
+                            "virtualNetworkProfile": {
+                                "id": "[parameters('vnetId')]",
+                                "subnet": "[parameters('subnetId')]"
+                            },
+                            "scriptActions": [
+                            ]
+                        }
+                    ]
+                }
+                
+            },
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName'))]":{}
+                }
+            },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', variables('clusterName'))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.HDInsight/clusters', variables('clusterName'))]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                        "name": "[variables('clusterName')]",
+                        "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                        "metrics": [
+                            {
+                                "category": "Availability",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "enabled": false,
+                                    "days": 0
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+          {
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "name": "[variables('identityName')]",
+            "apiVersion": "2015-08-31-preview",
+            "location": "[resourceGroup().location]"
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2017-09-01",
+            "name": "[variables('bootstrapRoleAssignmentId')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
+                "[resourceId('Microsoft.HDInsight/clusters', variables('clusterName'))]"
+            ],
+            "properties": {
+                "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2015-08-31-preview').principalId]",
+                "scope": "[resourceGroup().id]",
+                "principalType":"ServicePrincipal"
+            }
+        },
+        {
+            "name": "[variables('containerGroupName')]",
+            "type": "Microsoft.ContainerInstance/containerGroups",
+            "apiVersion": "2018-10-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.HDInsight/clusters', variables('clusterName'))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
+                "[resourceId('Microsoft.Authorization/roleAssignments', variables('bootstrapRoleAssignmentId'))]"
+            ],
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]": {
+                    }
+                }
+            },
+            "properties": {
+                "containers": [
+                    {
+                        "name": "[variables('containerName')]",
+                        "properties": {
+                            "image": "[variables('image')]",
+                            "command": [
+                                "/bin/sh",
+                                "-c",
+                                "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az hdinsight monitor enable --name ', variables('clusterName'), ' --resource-group ',resourceGroup().name ,' --workspace-id ',parameters('LogAnalyticsWorkspaceID') ,' --primary-key ',parameters('LogAnalyticsWorkspaceKey'))]"
+                            ],
+                            "environmentVariables": [
+                            ],
+                            "resources": {
+                                "requests": {
+                                    "cpu": "[variables('cpuCores')]",
+                                    "memoryInGb": "[variables('memoryInGb')]"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "restartPolicy": "Never",
+                "osType": "Linux"
+            }
+        }
+    ],
+    "outputs": {
+        "clusterSshDNSName": {
+            "type": "string",
+            "value": "[concat(variables('clusterName'),'-ssh.azurehdinsight.net')]"
+        },
+        "clusterSshUsername": {
+            "type": "string",
+            "value": "[concat(parameters('sshUserName'))]"
+        },
+        "clusterSshPassword": {
+            "type": "string",
+            "value": "[concat(parameters('sshPassword'))]"
+        }
+    }
+}

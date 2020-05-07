@@ -35,7 +35,7 @@ public class VariantSourceToVariantFileMetadataConverterTest extends VariantStor
         VariantFileMetadata convertedFileMetadata = new VariantSourceToVariantFileMetadataConverter().convert(legacy);
 
         // Impossible to get StdDev from legacy VariantSource
-        expectedFileMetadata.getStats().setStdDevQuality(0);
+        expectedFileMetadata.getStats().setQualityStdDev(0F);
 
         assertEquals(expectedFileMetadata, convertedFileMetadata);
     }

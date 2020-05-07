@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -444,11 +444,11 @@ public interface AuthorizationManager {
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;
 
-    void applyPermissionRule(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
+    void applyPermissionRule(long studyId, PermissionRule permissionRule, Enums.Entity entry) throws CatalogException;
 
-    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;
+    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Enums.Entity entry) throws CatalogException;
 
-    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;
+    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Enums.Entity entry) throws CatalogException;
 
-    void removePermissionRule(long studyId, String permissionRuleId, Study.Entity entry) throws CatalogException;
+    void removePermissionRule(long studyId, String permissionRuleId, Enums.Entity entry) throws CatalogException;
 }

@@ -5,14 +5,12 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.Converter;
+import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
 
@@ -92,6 +90,8 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 } else if (columnStartsWith(cell, ANNOTATION_CLINICAL_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_CLINICAL_PREFIX_BYTES))
                             .setClinicalIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                } else if (columnStartsWith(cell, GENOTYPE_DISCREPANCY_COUNT_BYTES)) {
+                    entry.setDiscrepancies(Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
                 }
             } else {
                 if (columnStartsWith(cell, MENDELIAN_ERROR_COLUMN_BYTES)) {
@@ -113,14 +113,43 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
     }
 
     public Map<String, List<Variant>> convertToMap(Result result) {
+        if (result == null) {
+            return Collections.emptyMap();
+        }
         Map<String, List<Variant>> map = new HashMap<>();
         for (Cell cell : result.rawCells()) {
-            String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-            if (gt.charAt(0) != META_PREFIX) {
+            if (SampleIndexSchema.isGenotypeColumn(cell)) {
+                String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
                 map.put(gt, converter.toVariants(cell));
             }
         }
         return map;
+    }
+
+    public Map<String, TreeSet<SampleVariantIndexEntry>> convertToMapSampleVariantIndex(Result result) {
+        if (result == null || result.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, List<Variant>> map = convertToMap(result);
+
+        Map<String, TreeSet<SampleVariantIndexEntry>> mapVariantFileIndex = new HashMap<>();
+        for (Cell cell : result.rawCells()) {
+            if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
+                String gt = SampleIndexSchema.getGt(cell, FILE_PREFIX_BYTES);
+                TreeSet<SampleVariantIndexEntry> values = new TreeSet<>();
+                mapVariantFileIndex.put(gt, values);
+                int i = cell.getValueOffset();
+                for (Variant variant : map.get(gt)) {
+                    short fileIndex;
+                    do {
+                        fileIndex = Bytes.toShort(cell.getValueArray(), i);
+                        values.add(new SampleVariantIndexEntry(variant, fileIndex));
+                        i += VariantFileIndexConverter.BYTES;
+                    } while (VariantFileIndexConverter.isMultiFile(fileIndex));
+                }
+            }
+        }
+        return mapVariantFileIndex;
     }
 
     public int convertToCount(Result result) {

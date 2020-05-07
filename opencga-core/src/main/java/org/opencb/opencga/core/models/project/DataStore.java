@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,47 @@
 
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.commons.datastore.core.ObjectMap;
+
 import java.util.Objects;
 
-/**
- * Created by jacobo on 14/04/15.
- */
+
 public class DataStore {
 
     private String storageEngine;
     private String dbName;
+    private ObjectMap configuration;
 
     public DataStore() {
     }
 
     public DataStore(String storageEngine, String dbName) {
+        this(storageEngine, dbName, new ObjectMap());
+    }
+
+    public DataStore(String storageEngine, String dbName, ObjectMap configuration) {
         this.storageEngine = storageEngine;
         this.dbName = dbName;
+        this.configuration = configuration;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof DataStore)) {
+            return false;
+        }
+        DataStore dataStore = (DataStore) o;
+        return Objects.equals(storageEngine, dataStore.storageEngine)
+                && Objects.equals(dbName, dataStore.dbName)
+                && Objects.equals(configuration, dataStore.configuration);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(storageEngine, dbName, configuration);
     }
 
     @Override
@@ -61,21 +86,12 @@ public class DataStore {
         return this;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof DataStore)) {
-            return false;
-        }
-        DataStore dataStore = (DataStore) o;
-        return Objects.equals(storageEngine, dataStore.storageEngine)
-                && Objects.equals(dbName, dataStore.dbName);
+    public ObjectMap getConfiguration() {
+        return configuration;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(storageEngine, dbName);
+    public DataStore setConfiguration(ObjectMap configuration) {
+        this.configuration = configuration;
+        return this;
     }
 }

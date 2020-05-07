@@ -1,7 +1,23 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.panel;
 
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.opencga.core.models.common.Status;
 
 import java.util.List;
@@ -18,7 +34,7 @@ public class PanelCreateParams {
 
     private List<DiseasePanel.PanelCategory> categories;
     private List<String> tags;
-    private List<Phenotype> phenotypes;
+    private List<OntologyTerm> disorders;
     private List<DiseasePanel.VariantPanel> variants;
     private List<DiseasePanel.GenePanel> genes;
     private List<DiseasePanel.RegionPanel> regions;
@@ -32,7 +48,7 @@ public class PanelCreateParams {
     }
 
     public PanelCreateParams(String id, String name, String description, String author, DiseasePanel.SourcePanel source,
-                             List<DiseasePanel.PanelCategory> categories, List<String> tags, List<Phenotype> phenotypes,
+                             List<DiseasePanel.PanelCategory> categories, List<String> tags, List<OntologyTerm> disorders,
                              List<DiseasePanel.VariantPanel> variants, List<DiseasePanel.GenePanel> genes,
                              List<DiseasePanel.RegionPanel> regions, List<DiseasePanel.STR> strs, Map<String, Integer> stats,
                              Map<String, Object> attributes) {
@@ -43,7 +59,7 @@ public class PanelCreateParams {
         this.source = source;
         this.categories = categories;
         this.tags = tags;
-        this.phenotypes = phenotypes;
+        this.disorders = disorders;
         this.variants = variants;
         this.genes = genes;
         this.regions = regions;
@@ -54,7 +70,7 @@ public class PanelCreateParams {
 
     public static PanelCreateParams of(Panel panel) {
         return new PanelCreateParams(panel.getId(), panel.getName(), panel.getDescription(), panel.getAuthor(), panel.getSource(),
-                panel.getCategories(), panel.getTags(), panel.getPhenotypes(), panel.getVariants(), panel.getGenes(), panel.getRegions(),
+                panel.getCategories(), panel.getTags(), panel.getDisorders(), panel.getVariants(), panel.getGenes(), panel.getRegions(),
                 panel.getStrs(), panel.getStats(), panel.getAttributes());
     }
 
@@ -68,7 +84,7 @@ public class PanelCreateParams {
         sb.append(", source=").append(source);
         sb.append(", categories=").append(categories);
         sb.append(", tags=").append(tags);
-        sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", disorders=").append(disorders);
         sb.append(", variants=").append(variants);
         sb.append(", genes=").append(genes);
         sb.append(", regions=").append(regions);
@@ -80,7 +96,7 @@ public class PanelCreateParams {
     }
 
     public Panel toPanel() {
-        return new Panel(id, name, categories, phenotypes, tags, variants, genes, regions, strs, stats, 1, 1, author,
+        return new Panel(id, name, categories, disorders, tags, variants, genes, regions, strs, stats, 1, 1, author,
                 source, new Status(), description, attributes);
     }
 
@@ -147,12 +163,12 @@ public class PanelCreateParams {
         return this;
     }
 
-    public List<Phenotype> getPhenotypes() {
-        return phenotypes;
+    public List<OntologyTerm> getDisorders() {
+        return disorders;
     }
 
-    public PanelCreateParams setPhenotypes(List<Phenotype> phenotypes) {
-        this.phenotypes = phenotypes;
+    public PanelCreateParams setDisorders(List<OntologyTerm> disorders) {
+        this.disorders = disorders;
         return this;
     }
 

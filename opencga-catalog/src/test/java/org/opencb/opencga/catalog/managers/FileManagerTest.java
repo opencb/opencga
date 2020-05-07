@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,29 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
-import org.opencb.opencga.core.models.study.GroupUpdateParams;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.ByteArrayInputStream;
@@ -85,7 +83,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testCreateFileFromUnsharedStudy() throws CatalogException {
         try {
             fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                    "data/test/folder/file.txt", "My description", null, 0, null, -1, null, null, true, null, null, sessionIdUser2);
+                    "data/test/folder/file.txt", "My description", 0, null, null, null, true, null, null, sessionIdUser2);
             fail("The file could be created despite not having the proper permissions.");
         } catch (CatalogAuthorizationException e) {
             assertEquals(0, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
@@ -95,10 +93,10 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
-        Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
+        StudyAclParams aclParams = new StudyAclParams("", AclParams.Action.ADD, "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, token);
         fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, "blabla", null, sessionIdUser2);
+                "data/test/folder/file.txt", "My description", 0, null, null, null, true, "blabla", null, sessionIdUser2);
         assertEquals(1, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), null, token).getNumResults());
     }
@@ -109,14 +107,13 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testLinkCram() throws CatalogException, IOException {
+    public void testLinkCram() throws CatalogException {
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
         File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, token).first();
         assertEquals(File.Format.FASTA, referenceFile.getFormat());
         assertEquals(File.Bioformat.REFERENCE_GENOME, referenceFile.getBioformat());
 
-        File.RelatedFile relatedFile = new File.RelatedFile(new File().setId("hg19mini.fasta"),
-                File.RelatedFile.Relation.REFERENCE_GENOME);
+        SmallRelatedFileParams relatedFile = new SmallRelatedFileParams("hg19mini.fasta", FileRelatedFile.Relation.REFERENCE_GENOME);
         String cramFile = getClass().getResource("/biofiles/cram/cram_with_crai_index.cram").getFile();
         DataResult<File> link = fileManager.link(studyFqn, Paths.get(cramFile).toUri(), "",
                 new ObjectMap("relatedFiles", Collections.singletonList(relatedFile)), token);
@@ -125,30 +122,30 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(File.Format.CRAM, link.first().getFormat());
         assertEquals(File.Bioformat.ALIGNMENT, link.first().getBioformat());
         assertEquals(referenceFile.getId(), link.first().getRelatedFiles().get(0).getFile().getId());
-        assertEquals(File.RelatedFile.Relation.REFERENCE_GENOME, link.first().getRelatedFiles().get(0).getRelation());
+        assertEquals(FileRelatedFile.Relation.REFERENCE_GENOME, link.first().getRelatedFiles().get(0).getRelation());
     }
 
     @Test
     public void testUpdateRelatedFiles() throws CatalogException {
         FileUpdateParams updateParams = new FileUpdateParams()
-                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
+                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, FileRelatedFile.Relation.PRODUCED_FROM)));
         fileManager.update(studyFqn, testFile1, updateParams, QueryOptions.empty(), token);
 
         File file = fileManager.get(studyFqn, testFile1, QueryOptions.empty(), token).first();
         assertEquals(1, file.getRelatedFiles().size());
         assertEquals(testFile2, file.getRelatedFiles().get(0).getFile().getPath());
-        assertEquals(File.RelatedFile.Relation.PRODUCED_FROM, file.getRelatedFiles().get(0).getRelation());
+        assertEquals(FileRelatedFile.Relation.PRODUCED_FROM, file.getRelatedFiles().get(0).getRelation());
 
         Map<String, String> actionMap = new HashMap<>();
         actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.SET.name());
 
         updateParams = new FileUpdateParams()
-                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, File.RelatedFile.Relation.PART_OF_PAIR)));
+                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, FileRelatedFile.Relation.PART_OF_PAIR)));
         fileManager.update(studyFqn, testFile1, updateParams, new QueryOptions(Constants.ACTIONS, actionMap), token);
         file = fileManager.get(studyFqn, testFile1, QueryOptions.empty(), token).first();
         assertEquals(1, file.getRelatedFiles().size());
         assertEquals(testFile2, file.getRelatedFiles().get(0).getFile().getPath());
-        assertEquals(File.RelatedFile.Relation.PART_OF_PAIR, file.getRelatedFiles().get(0).getRelation());
+        assertEquals(FileRelatedFile.Relation.PART_OF_PAIR, file.getRelatedFiles().get(0).getRelation());
 
         actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.REMOVE.name());
         fileManager.update(studyFqn, testFile1, updateParams, new QueryOptions(Constants.ACTIONS, actionMap), token);
@@ -157,7 +154,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // We add it again
         updateParams = new FileUpdateParams()
-                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
+                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, FileRelatedFile.Relation.PRODUCED_FROM)));
         fileManager.update(studyFqn, testFile1, updateParams, QueryOptions.empty(), token);
 
         // And now we will update with an empty list
@@ -165,6 +162,20 @@ public class FileManagerTest extends AbstractManagerTest {
         actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.SET.name());
         fileManager.update(studyFqn, testFile1, updateParams, new QueryOptions(Constants.ACTIONS, actionMap), token);
         assertEquals(0, file.getRelatedFiles().size());
+    }
+
+    @Test
+    public void testGetBase64Image() throws CatalogException {
+        String qualityImageFile = getClass().getResource("/fastqc-per_base_sequence_quality.png").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(qualityImageFile, "", "", null, null, null), false, token);
+
+        OpenCGAResult<FileContent> result = fileManager.image(studyFqn, "fastqc-per_base_sequence_quality.png", token);
+        assertEquals(1, result.getNumResults());
+        assertEquals("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", result.first().getContent());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not an image");
+        fileManager.image(studyFqn, "test_1K.txt.gz", token);
     }
 
     @Test
@@ -273,16 +284,15 @@ public class FileManagerTest extends AbstractManagerTest {
         }
     }
 
-    private Path createExternalDummyData() throws CatalogIOException {
+    private Path createExternalDummyData() throws CatalogIOException, IOException {
         Path jUnitDir = Paths.get(catalogManager.getConfiguration().getWorkspace()).getParent();
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
+        IOManager ioManager = catalogManager.getIoManagerFactory().getDefault();
         ioManager.createDirectory(jUnitDir.resolve("A").resolve("B").toUri(), true);
         ioManager.createDirectory(jUnitDir.resolve("A").resolve("C").resolve("D").toUri(), true);
-        ioManager.createFile(jUnitDir.resolve("A").resolve("C").resolve("file1.txt").toUri(),
-                new ByteArrayInputStream("blablabla".getBytes()));
-        ioManager.createFile(jUnitDir.resolve("A").resolve("C").resolve("D").resolve("file3.txt").toUri(),
-                new ByteArrayInputStream("blablabla".getBytes()));
+        ioManager.copy(new ByteArrayInputStream("blablabla".getBytes()), jUnitDir.resolve("A").resolve("C").resolve("file1.txt").toUri());
+        ioManager.copy(new ByteArrayInputStream("blablabla".getBytes()),
+                jUnitDir.resolve("A").resolve("C").resolve("D").resolve("file3.txt").toUri());
 
         return jUnitDir.resolve("A");
     }
@@ -314,6 +324,37 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(sampleNames.contains("NA19660"));
         assertTrue(sampleNames.contains("NA19661"));
         assertTrue(sampleNames.contains("NA19685"));
+    }
+
+    @Test
+    public void testLinkFileWithDifferentSampleNames() throws CatalogException, URISyntaxException {
+        URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
+
+        Map<String, String> sampleIdNames = new HashMap<>();
+        sampleIdNames.put("test-name.bam", "sample1");
+        sampleIdNames.put("NA19660", "sample2");
+        sampleIdNames.put("NA19661", "sample3");
+        sampleIdNames.put("NA19685", "sample4");
+
+        FileLinkParams params = new FileLinkParams()
+                .setUri(uri.toString())
+                .setInternal(new FileLinkInternalParams(sampleIdNames));
+        DataResult<File> link = fileManager.link(studyFqn, params, false, token);
+
+        assertEquals(4, link.first().getSamples().size());
+
+        List<Long> sampleList = link.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+        Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleList);
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), token);
+
+        assertEquals(4, sampleDataResult.getNumResults());
+        List<String> sampleNames = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
+        assertTrue(sampleNames.contains("sample1"));
+        assertTrue(sampleNames.contains("sample2"));
+        assertTrue(sampleNames.contains("sample3"));
+        assertTrue(sampleNames.contains("sample4"));
+
+        assertEquals(sampleIdNames, link.first().getInternal().getSampleMap());
     }
 
     @Test
@@ -363,12 +404,12 @@ public class FileManagerTest extends AbstractManagerTest {
         URI uri = createExternalDummyData().toUri();
         link(uri, "myDirectory", studyFqn, new ObjectMap("parents", true), token);
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(uri);
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(uri);
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
         DataResult<File> fileDataResultLinked = fileManager.search(studyFqn, query, null, token);
 
         System.out.println("Number of files/folders linked = " + fileDataResultLinked.getNumResults());
@@ -377,7 +418,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Query updateQuery = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/A/*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
         setToPendingDelete(studyFqn, updateQuery);
 
         // Now we try to unlink them
@@ -393,7 +434,7 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(6, fileDataResultUnlinked.getNumResults());
 
         for (File file : fileDataResultUnlinked.getResults()) {
-            assertEquals("Status should be to REMOVED", File.FileStatus.REMOVED, file.getStatus().getName());
+            assertEquals("Status should be to REMOVED", FileStatus.REMOVED, file.getInternal().getStatus().getName());
             assertEquals("Name should not have changed", file.getName(), file.getName());
             assertTrue("File uri: " + file.getUri() + " should exist", ioManager.exists(file.getUri()));
         }
@@ -406,7 +447,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
         DataResult<File> fileDataResultLinked = fileManager.search(studyFqn, query, null, token);
 
         int numberLinkedFiles = fileDataResultLinked.getNumResults();
@@ -424,7 +465,7 @@ public class FileManagerTest extends AbstractManagerTest {
         unlinkQuery.put(FileDBAdaptor.QueryParams.DELETED.key(), true);
         fileDataResultLinked = fileManager.search(studyFqn, unlinkQuery, QueryOptions.empty(), token);
         assertEquals(1, fileDataResultLinked.getNumResults());
-        assertEquals(File.FileStatus.REMOVED, fileDataResultLinked.first().getStatus().getName());
+        assertEquals(FileStatus.REMOVED, fileDataResultLinked.first().getInternal().getStatus().getName());
 
         // Check the other root linked files/folders have not been touched
         fileDataResultLinked = fileManager.search(studyFqn, query, QueryOptions.empty(), token);
@@ -441,7 +482,7 @@ public class FileManagerTest extends AbstractManagerTest {
         String content = "This is the content\tof the file";
         try {
             fileManager.create(studyFqn3, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
-                    "data/test/myTest/myFile.txt", null, new File.FileStatus(File.FileStatus.READY), 0, null, -1,
+                    "data/test/myTest/myFile.txt", null, 0, null,
                     null, null, false, "This is the content\tof the file", null, sessionIdUser2);
             fail("An error should be raised because parents is false");
         } catch (CatalogException e) {
@@ -449,9 +490,9 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 
         DataResult<File> fileDataResult = fileManager.create(studyFqn3, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
-                "data/test/myTest/myFile.txt", null, new File.FileStatus(File.FileStatus.READY), 0, null, -1, null, null, true,
+                "data/test/myTest/myFile.txt", null, 0, null, null, null, true,
                 content, null, sessionIdUser2);
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileDataResult.first().getUri());
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(fileDataResult.first().getUri());
         assertTrue(ioManager.exists(fileDataResult.first().getUri()));
 
         DataInputStream fileObject = ioManager.getFileObject(fileDataResult.first().getUri(), -1, -1);
@@ -471,10 +512,10 @@ public class FileManagerTest extends AbstractManagerTest {
 //        assertTrue(paths.contains("analysis/"));    //analysis
 
         Path folderPath = Paths.get("data", "new", "folder");
-        File folder = fileManager.createFolder(study.getFqn(), folderPath.toString(), null, true, null,
+        File folder = fileManager.createFolder(study.getFqn(), folderPath.toString(), true, null,
                 QueryOptions.empty(), sessionIdUser2).first();
         System.out.println(folder);
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(folder.getUri());
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(folder.getUri());
         assertTrue(!ioManager.exists(folder.getUri()));
 
         paths = fileManager.search(study.getFqn(), new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type
@@ -484,15 +525,15 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(paths.contains("data/new/folder/"));
 
         URI uri = fileManager.getUri(folder);
-        assertTrue(!catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
+        assertTrue(!catalogManager.getIoManagerFactory().get(uri).exists(uri));
 
-        fileManager.createFolder(study.getFqn(), Paths.get("WOLOLO").toString(), null, true, null, QueryOptions.empty(),
+        fileManager.createFolder(study.getFqn(), Paths.get("WOLOLO").toString(), true, null, QueryOptions.empty(),
                 sessionIdUser2);
 
         Path myStudy = Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("myStudy"));
-        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", Study.Type.CASE_CONTROL, "", "", null, null, null, myStudy.toUri(), null, null, null, null, sessionIdUser2).first().getFqn();
+        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", "", null, null, null, null, null, sessionIdUser2).first().getFqn();
 
-        folder = fileManager.createFolder(newStudy, Paths.get("WOLOLO").toString(), null, true, null,
+        folder = fileManager.createFolder(newStudy, Paths.get("WOLOLO").toString(), true, null,
                 QueryOptions.empty(), sessionIdUser2).first();
         assertTrue(!ioManager.exists(folder.getUri()));
     }
@@ -506,32 +547,32 @@ public class FileManagerTest extends AbstractManagerTest {
 //        assertTrue(paths.contains("analysis/"));    //analysis
 
         Path folderPath = Paths.get("data", "new", "folder");
-        File folder = fileManager.createFolder(studyFqn3, folderPath.toString(), null, true, null, null,
+        File folder = fileManager.createFolder(studyFqn3, folderPath.toString(), true, null, null,
                 sessionIdUser2).first();
 
         assertNotNull(folder);
         assertTrue(folder.getPath().contains(folderPath.toString()));
 
         // When creating the same folder, we should not complain and return it directly
-        File sameFolder = fileManager.createFolder(studyFqn3, folderPath.toString(), null, true, null, null, sessionIdUser2).first();
+        File sameFolder = fileManager.createFolder(studyFqn3, folderPath.toString(), true, null, null, sessionIdUser2).first();
         assertNotNull(sameFolder);
         assertEquals(folder.getPath(), sameFolder.getPath());
         assertEquals(folder.getUid(), sameFolder.getUid());
 
         // However, a user without create permissions will receive an exception
         thrown.expect(CatalogAuthorizationException.class);
-        fileManager.createFolder(studyFqn3, folderPath.toString(), null, true, null, null,
+        fileManager.createFolder(studyFqn3, folderPath.toString(), true, null, null,
                 sessionIdUser3);
     }
 
     @Test
     public void testAnnotationWrongEntity() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
+        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), null, 0, "",
                 "", null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
@@ -552,11 +593,11 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testAnnotationForAnyEntity() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
+        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), null, 0, "",
                 "", null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 null, token).first();
@@ -579,11 +620,11 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testAnnotations() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
+        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), null, 0, "",
                 "", null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.FILE), token).first();
@@ -619,31 +660,31 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testCreate() throws Exception {
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         DataResult<File> fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT,
-                "data/" + fileName, "description", null, 0, null, (long) -1, null, null, true, getDummyVCFContent(), null, token);
+                "data/" + fileName, "description", 0, null, null, null, true, getDummyVCFContent(), null, token);
         assertEquals(3, fileResult.first().getSamples().size());
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
-        fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", null, 0,
-                null, (long) -1, null, null, true, getDummyVCFContent(), null, token);
+        fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", 0,
+                null, null, null, true, getDummyVCFContent(), null, token);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         DataResult<File> queryResult = fileManager.create(studyFqn, new File().setPath("data/" + fileName), false,
-                StringUtils.randomString(200), null, token);
-        assertEquals(File.FileStatus.READY, queryResult.first().getStatus().getName());
+                RandomStringUtils.randomAlphanumeric(200), null, token);
+        assertEquals(FileStatus.READY, queryResult.first().getInternal().getStatus().getName());
         assertEquals(200, queryResult.first().getSize());
 
         fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/deletable/folder/item." + TimeUtils.getTimeMillis() + ".txt",
-                "description", null, 0, null, (long) -1, null, null, true, createRandomString(200), null, token);
+                "description", 0, null, null, null, true, createRandomString(200), null, token);
 
         fileManager.create(studyFqn2, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/deletable/item." + TimeUtils.getTimeMillis() + ".txt",
-                "description", null, 0, null, (long) -1, null, null, true, createRandomString(200), null, token);
+                "description", 0, null, null, null, true, createRandomString(200), null, token);
 
         fileManager.create(studyFqn2, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt",
-                "file at root", null, 0, null, (long) -1, null, null, true, createRandomString(200), null, token);
+                "file at root", 0, null, null, null, true, createRandomString(200), null, token);
 
         fileName =  "item." + TimeUtils.getTimeMillis() + ".txt";
         fileManager.create(studyFqn2, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, fileName,
-                "file at root", null, 0, null, (long) -1, null, null, true, createRandomString(200), null, token);
+                "file at root", 0, null, null, null, true, createRandomString(200), null, token);
 
         DataResult<File> fileDataResult = fileManager.get(studyFqn2, fileName, null, token);
         assertTrue(fileDataResult.first().getSize() > 0);
@@ -660,7 +701,7 @@ public class FileManagerTest extends AbstractManagerTest {
         link(uri, "", studyFqn, new ObjectMap(), token);
 
         File file = fileManager.create(studyFqn, new File(File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder_to_link/file.txt",
-                "", null, 0, null, (long) -1, null, null, null), false, "bla bla", null, token).first();
+                "", FileInternal.initialize(), 0, null, null, null, null), false, "bla bla", null, token).first();
 
         assertEquals(uri.resolve("file.txt"), file.getUri());
     }
@@ -670,7 +711,7 @@ public class FileManagerTest extends AbstractManagerTest {
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
 
         File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName,
-                "description", null, 0, null, (long) -1, null, null, true, getDummyVCFContent(), null, token).first();
+                "description", 0, null, null, null, true, getDummyVCFContent(), null, token).first();
 
         byte[] bytes = new byte[100];
         byte[] bytesOrig = new byte[100];
@@ -729,7 +770,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Create a new study so more than one file will be found under the root /. However, it should be able to consider the study given
         // properly
-        catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, token).first().getUid();
+        catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, token).first().getUid();
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", new Query(), new QueryOptions(),
                 5, token);
@@ -742,11 +783,11 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void renameFileTest() throws CatalogException {
         DataResult<File> queryResult1 = fileManager.create(studyFqn, new File().setPath("data/file.txt"), true,
-                StringUtils.randomString(200), null, token);
+                RandomStringUtils.randomAlphanumeric(200), null, token);
         assertEquals(1, queryResult1.getNumResults());
 
         DataResult<File> queryResult = fileManager.create(studyFqn, new File().setPath("data/nested/folder/file2.txt"),
-                true, StringUtils.randomString(200), null, token);
+                true, RandomStringUtils.randomAlphanumeric(200), null, token);
         assertEquals(1, queryResult.getNumResults());
 
         fileManager.rename(studyFqn, "data/nested/", "nested2", token);
@@ -773,10 +814,10 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void getFileIdByString() throws CatalogException {
-        Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
+        StudyAclParams aclParams = new StudyAclParams("", AclParams.Action.ADD, "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, token);
         File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, "blabla", null,
+                "data/test/folder/file.txt", "My description", 0, null, null, null, true, "blabla", null,
                 sessionIdUser2).first();
         long fileId = fileManager.get(studyFqn, file.getPath(), FileManager.INCLUDE_FILE_IDS, token).first().getUid();
         assertEquals(file.getUid(), fileId);
@@ -803,7 +844,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void renameFileAlreadyExists() throws CatalogException {
-        fileManager.createFolder(studyFqn, "analysis/", new File.FileStatus(), false, "", new QueryOptions(),
+        fileManager.createFolder(studyFqn, "analysis/", false, "", new QueryOptions(),
                 token);
         thrown.expect(CatalogException.class);
         thrown.expectMessage("already exists");
@@ -1024,10 +1065,11 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(2, result.getNumResults());
         assertEquals(8, result.getNumMatches());
 
-        options = new QueryOptions(QueryOptions.LIMIT, 2);
+        options = new QueryOptions(QueryOptions.LIMIT, 2)
+                .append(QueryOptions.COUNT, true);
         result = fileManager.search(studyFqn, new Query(), options, token);
         assertEquals(2, result.getNumResults());
-        assertEquals(2, result.getNumMatches());
+        assertEquals(8, result.getNumMatches());
 
     }
 
@@ -1176,7 +1218,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Change the status to MISSING
         FileUpdateParams updateParams = new FileUpdateParams()
-                .setStatus(new File.FileStatus(File.FileStatus.MISSING));
+                .setInternal(new SmallFileInternal(new FileStatus(FileStatus.MISSING)));
         catalogManager.getFileManager().update(studyFqn, filePath, updateParams, null, token);
 
         try {
@@ -1187,7 +1229,7 @@ public class FileManagerTest extends AbstractManagerTest {
         }
         // Change the status to STAGED
         updateParams = new FileUpdateParams()
-                .setStatus(new File.FileStatus(File.FileStatus.STAGE));
+                .setInternal(new SmallFileInternal(new FileStatus(FileStatus.STAGE)));
         catalogManager.getFileManager().update(studyFqn, filePath, updateParams, null, token);
 
         try {
@@ -1220,7 +1262,7 @@ public class FileManagerTest extends AbstractManagerTest {
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
         int numResults = fileManager.search(studyFqn, query, null, token).getNumResults();
         assertEquals(6, numResults);
 
@@ -1234,7 +1276,7 @@ public class FileManagerTest extends AbstractManagerTest {
         OpenCGAResult<File> search = fileManager.search(studyFqn, query, null, token);
         assertEquals(6, search.getNumResults());
         for (File trashedFile : search.getResults()) {
-            assertEquals(File.FileStatus.TRASHED, trashedFile.getStatus().getName());
+            assertEquals(FileStatus.TRASHED, trashedFile.getInternal().getStatus().getName());
         }
     }
 
@@ -1251,7 +1293,7 @@ public class FileManagerTest extends AbstractManagerTest {
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
-                .append(FileDBAdaptor.QueryParams.STATUS.key(), File.FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), FileStatus.READY);
         int numResults = fileManager.search(studyFqn, query, null, token).getNumResults();
         assertEquals(6, numResults);
 
@@ -1267,7 +1309,7 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(0, numResults);
 
         query.put(FileDBAdaptor.QueryParams.DELETED.key(), true);
-        query.put(FileDBAdaptor.QueryParams.STATUS.key(), File.FileStatus.DELETED);
+        query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), FileStatus.DELETED);
         numResults = fileManager.search(studyFqn, query, null, token).getNumResults();
         assertEquals(6, numResults);
     }
@@ -1285,7 +1327,7 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 //        CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), token).getResults().forEach(f -> {
-                    assertEquals(f.getStatus().getName(), File.FileStatus.TRASHED);
+            assertEquals(f.getInternal().getStatus().getName(), FileStatus.TRASHED);
         });
 
         result = fileManager.search(studyFqn2, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), token).getResults();
@@ -1295,7 +1337,7 @@ public class FileManagerTest extends AbstractManagerTest {
             fileManager.delete(studyFqn2, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null, token);
         }
         fileManager.search(studyFqn2, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), token).getResults().forEach(f -> {
-                    assertEquals(f.getStatus().getName(), File.FileStatus.TRASHED);
+            assertEquals(f.getInternal().getStatus().getName(), FileStatus.TRASHED);
         });
     }
 
@@ -1322,23 +1364,23 @@ public class FileManagerTest extends AbstractManagerTest {
 
     // Cannot delete staged files
     @Test
-    public void deleteFolderTest() throws CatalogException {
+    public void deleteFolderTest() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
 
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles);
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileManager.getUri(folder));
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(fileManager.getUri(folder));
         for (File file : folderFiles) {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
 
         fileManager.create(studyFqn, new File(File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "folder/subfolder/subsubfolder/my_staged.txt", null, new File.FileStatus(File.FileStatus.STAGE), (long) 0, null, (long) -1,
-                null, null, null), true, "bla bla", null, token).first();
+                "folder/subfolder/subsubfolder/my_staged.txt", null, FileInternal.initialize().setStatus(new FileStatus(FileStatus.STAGE)),
+                        0, null, null, null, null), true, "bla bla", null, token).first();
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
         setToPendingDelete(studyFqn, query);
 
         try {
@@ -1362,12 +1404,12 @@ public class FileManagerTest extends AbstractManagerTest {
 
     // Deleted folders should be all put to TRASHED
     @Test
-    public void deleteFolderTest2() throws CatalogException {
+    public void deleteFolderTest2() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
 
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles);
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileManager.getUri(folder));
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(fileManager.getUri(folder));
         for (File file : folderFiles) {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
@@ -1383,7 +1425,7 @@ public class FileManagerTest extends AbstractManagerTest {
         File fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), token).first();
 
         assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());
-        assertEquals("Status should be to TRASHED", File.FileStatus.TRASHED, fileTmp.getStatus().getName());
+        assertEquals("Status should be to TRASHED", FileStatus.TRASHED, fileTmp.getInternal().getStatus().getName());
         assertEquals("Name should not have changed", folder.getName(), fileTmp.getName());
         assertTrue(ioManager.exists(fileTmp.getUri()));
 
@@ -1391,7 +1433,7 @@ public class FileManagerTest extends AbstractManagerTest {
             query.put(FileDBAdaptor.QueryParams.UID.key(), file.getUid());
             fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), token).first();
             assertEquals("Folder name should not be modified", file.getPath(), fileTmp.getPath());
-            assertEquals("Status should be to TRASHED", File.FileStatus.TRASHED, fileTmp.getStatus().getName());
+            assertEquals("Status should be to TRASHED", FileStatus.TRASHED, fileTmp.getInternal().getStatus().getName());
             assertEquals("Name should not have changed", file.getName(), fileTmp.getName());
             assertTrue("File uri: " + fileTmp.getUri() + " should exist", ioManager.exists(fileTmp.getUri()));
         }
@@ -1399,12 +1441,12 @@ public class FileManagerTest extends AbstractManagerTest {
 
     // READY -> PENDING_DELETE
     @Test
-    public void deleteFolderTest3() throws CatalogException {
+    public void deleteFolderTest3() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
 
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles);
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileManager.getUri(folder));
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(fileManager.getUri(folder));
         for (File file : folderFiles) {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
@@ -1414,21 +1456,21 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*");
         OpenCGAResult<File> results = fileManager.search(studyFqn, query,
-                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.STATUS.key()), token);
+                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.INTERNAL_STATUS.key()), token);
         assertEquals(9, results.getNumResults());
         for (File result : results.getResults()) {
-            assertEquals(File.FileStatus.PENDING_DELETE, result.getStatus().getName());
+            assertEquals(FileStatus.PENDING_DELETE, result.getInternal().getStatus().getName());
         }
     }
 
     // READY -> PENDING_DELETE -> DELETED
     @Test
-    public void deleteFolderTest4() throws CatalogException {
+    public void deleteFolderTest4() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
 
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles);
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileManager.getUri(folder));
+        IOManager ioManager = catalogManager.getIoManagerFactory().get(fileManager.getUri(folder));
         for (File file : folderFiles) {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
@@ -1446,7 +1488,7 @@ public class FileManagerTest extends AbstractManagerTest {
         File fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), token).first();
 
         assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());
-        assertEquals("Status should be to DELETED", File.FileStatus.DELETED, fileTmp.getStatus().getName());
+        assertEquals("Status should be to DELETED", FileStatus.DELETED, fileTmp.getInternal().getStatus().getName());
         assertEquals("Name should not have changed", folder.getName(), fileTmp.getName());
         assertFalse(ioManager.exists(fileTmp.getUri()));
 
@@ -1454,38 +1496,38 @@ public class FileManagerTest extends AbstractManagerTest {
             query.put(FileDBAdaptor.QueryParams.UID.key(), file.getUid());
             fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), token).first();
             assertEquals("Folder name should not be modified", file.getPath(), fileTmp.getPath());
-            assertEquals("Status should be to DELETED", File.FileStatus.DELETED, fileTmp.getStatus().getName());
+            assertEquals("Status should be to DELETED", FileStatus.DELETED, fileTmp.getInternal().getStatus().getName());
             assertEquals("Name should not have changed", file.getName(), fileTmp.getName());
             assertFalse("File uri: " + fileTmp.getUri() + " should not exist", ioManager.exists(fileTmp.getUri()));
         }
     }
 
     private File createBasicDirectoryFileTestEnvironment(List<File> folderFiles) throws CatalogException {
-        File folder = fileManager.createFolder(studyFqn, Paths.get("folder").toString(), null, false,
+        File folder = fileManager.createFolder(studyFqn, Paths.get("folder").toString(), false,
                 null, QueryOptions.empty(), token).first();
         folderFiles.add(
-             fileManager.create(studyFqn, new File().setPath("folder/my.txt"), false, StringUtils.randomString(200),
+             fileManager.create(studyFqn, new File().setPath("folder/my.txt"), false, RandomStringUtils.randomAlphanumeric(200),
                      null, token).first()
         );
         folderFiles.add(
-                fileManager.create(studyFqn, new File().setPath("folder/my2.txt"), false, StringUtils.randomString(200),
+                fileManager.create(studyFqn, new File().setPath("folder/my2.txt"), false, RandomStringUtils.randomAlphanumeric(200),
                         null, token).first()
         );
         folderFiles.add(
-                fileManager.create(studyFqn, new File().setPath("folder/my3.txt"), false, StringUtils.randomString(200),
+                fileManager.create(studyFqn, new File().setPath("folder/my3.txt"), false, RandomStringUtils.randomAlphanumeric(200),
                         null, token).first()
         );
         folderFiles.add(
                 fileManager.create(studyFqn, new File().setPath("folder/subfolder/my4.txt"), true,
-                        StringUtils.randomString(200), null, token).first()
+                        RandomStringUtils.randomAlphanumeric(200), null, token).first()
         );
         folderFiles.add(
                 fileManager.create(studyFqn, new File().setPath("folder/subfolder/my5.txt"), false,
-                        StringUtils.randomString(200), null, token).first()
+                        RandomStringUtils.randomAlphanumeric(200), null, token).first()
         );
         folderFiles.add(
                 fileManager.create(studyFqn, new File().setPath("folder/subfolder/subsubfolder/my6.txt"), true,
-                        StringUtils.randomString(200), null, token).first()
+                        RandomStringUtils.randomAlphanumeric(200), null, token).first()
         );
         return folder;
     }
@@ -1514,39 +1556,39 @@ public class FileManagerTest extends AbstractManagerTest {
 
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath())
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.TRASHED);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key());
         DataResult<File> fileDataResult = fileManager.search(study.getFqn(), query, options, token);
         assertEquals(1, fileDataResult.getNumResults());
 
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.DIRECTORY.key(), fileDataResult.first().getPath() + ".*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.TRASHED);
         allFilesInFolder = fileManager.search(study.getFqn(), query, null, token).getResults();
 
         for (File subFile : allFilesInFolder) {
-            assertTrue(subFile.getStatus().getName().equals(File.FileStatus.TRASHED));
+            assertTrue(subFile.getInternal().getStatus().getName().equals(FileStatus.TRASHED));
         }
     }
 
     private void setToPendingDelete(String study, Query query) throws CatalogException {
         FileUpdateParams updateParams = new FileUpdateParams()
-                .setStatus(new File.FileStatus(File.FileStatus.PENDING_DELETE));
+                .setInternal(new SmallFileInternal(new FileStatus(FileStatus.PENDING_DELETE)));
         fileManager.update(study, query, updateParams, QueryOptions.empty(), token);
     }
 
     @Test
     public void assignPermissionsRecursively() throws Exception {
         Path folderPath = Paths.get("data", "new", "folder");
-        fileManager.createFolder(studyFqn, folderPath.toString(), null, true, null,
+        fileManager.createFolder(studyFqn, folderPath.toString(), true, null,
                 QueryOptions.empty(), token).first();
 
         Path filePath = Paths.get("data", "file1.txt");
         fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, filePath.toString(),
-                "", new File.FileStatus(), 10, null, -1, null, null, true, "My content", null, token);
+                "", 10, null, null, null, true, "My content", null, token);
 
         DataResult<Map<String, List<String>>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
-                filePath.toString()), "user2", new File.FileAclParams("VIEW", AclParams.Action.SET, null), token);
+                filePath.toString()), "user2", new FileAclParams("VIEW", AclParams.Action.SET, null), token);
 
         assertEquals(3, dataResult.getNumResults());
         for (Map<String, List<String>> result : dataResult.getResults()) {
@@ -1561,12 +1603,12 @@ public class FileManagerTest extends AbstractManagerTest {
         Path sourcePath = Paths.get(getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI());
         Files.copy(sourcePath, path.resolve("data/" + sourcePath.getFileName()));
         DataResult<File> fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.VCF,
-                File.Bioformat.VARIANT, "data/variant-test-file.vcf.gz", "description", new File.FileStatus(File.FileStatus.STAGE), 0,
-                Collections.emptyList(), -1, Collections.emptyMap(), null, true, null, new QueryOptions(), token);
+                File.Bioformat.VARIANT, "data/variant-test-file.vcf.gz", "description", 0,
+                Collections.emptyList(), Collections.emptyMap(), null, true, null, new QueryOptions(), token);
 
         fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, null, token);
         DataResult<File> read = fileManager.get(studyFqn, fileResult.first().getPath(), new QueryOptions(), token);
-        assertEquals(FileIndex.IndexStatus.TRANSFORMED, read.first().getIndex().getStatus().getName());
+        assertEquals(FileIndex.IndexStatus.TRANSFORMED, read.first().getInternal().getIndex().getStatus().getName());
     }
 
     @Test
@@ -1577,7 +1619,7 @@ public class FileManagerTest extends AbstractManagerTest {
             Files.copy(sourcePath, copy);
         }
         if (Files.exists(Paths.get("/tmp/other"))) {
-            catalogManager.getCatalogIOManagerFactory().getDefault().deleteDirectory(Paths.get("/tmp/other").toUri());
+            catalogManager.getIoManagerFactory().getDefault().deleteDirectory(Paths.get("/tmp/other").toUri());
         }
 
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, "user");
@@ -1634,7 +1676,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // We grant permissions to user2 to the study
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user2",
-                new Study.StudyAclParams("", AclParams.Action.ADD, "admin"), token);
+                new StudyAclParams("", AclParams.Action.ADD, "admin"), token);
 
         // Now, instead of moving it to the user's workspace, we will move it to an external path
         try {

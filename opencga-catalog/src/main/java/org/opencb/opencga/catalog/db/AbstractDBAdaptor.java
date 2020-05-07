@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ package org.opencb.opencga.catalog.db;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -40,12 +40,20 @@ public abstract class AbstractDBAdaptor {
         return System.currentTimeMillis();
     }
 
-    protected <T> OpenCGAResult<T> endQuery(long startTime, List<T> result) {
-        return endQuery(startTime, result, new ArrayList<>());
+    protected <T> OpenCGAResult<T> endQuery(long startTime, DBIterator<T> iterator) {
+        List<T> results = new LinkedList<>();
+        while (iterator.hasNext()) {
+            results.add(iterator.next());
+        }
+        return endQuery(startTime, results, iterator.getNumMatches(), new ArrayList<>());
     }
 
-    protected <T> OpenCGAResult<T> endQuery(long startTime) {
-        return endQuery(startTime, Collections.emptyList(), new ArrayList<>());
+    protected <T> OpenCGAResult<T> endQuery(long startTime, List<T> result) {
+        return endQuery(startTime, result, -1, new ArrayList<>());
+    }
+
+    protected <T> OpenCGAResult<T> endQuery(long startTime, List<T> result, long numMatches) {
+        return endQuery(startTime, result, numMatches, new ArrayList<>());
     }
 
     protected <T> OpenCGAResult<T> endQuery(long startTime, DataResult<T> result) {
@@ -54,13 +62,13 @@ public abstract class AbstractDBAdaptor {
         return new OpenCGAResult<>(result);
     }
 
-    protected <T> OpenCGAResult<T> endQuery(long startTime, List<T> results, List<Event> events) {
+    protected <T> OpenCGAResult<T> endQuery(long startTime, List<T> results, long numMatches, List<Event> events) {
         long end = System.currentTimeMillis();
         if (results == null) {
             results = new LinkedList<>();
         }
         int numResults = results.size();
-        OpenCGAResult<T> result = new OpenCGAResult<>((int) (end - startTime), events, numResults, results, numResults, new ObjectMap());
+        OpenCGAResult<T> result = new OpenCGAResult<>((int) (end - startTime), events, numResults, results, numMatches, new ObjectMap());
         logger.trace("DbTime: {}, numResults: {}, numMatches: {}", result.getTime(), result.getNumResults(), result.getNumMatches());
         return result;
     }

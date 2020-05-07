@@ -107,27 +107,22 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
     /**
      * This method selects a single valid study from these sources and in this order. First, checks if CLI param exists,
-     * second it reads the configuration file, and third it reads the projects and studies from the session file.
+     * second it reads the projects and studies from the session file.
      * @param study parameter from the CLI
-     * @return a singe valid Study from the CLI, configuration or from the session file
+     * @return a single valid Study from the CLI, configuration or from the session file
      * @throws CatalogException when no possible single study can be chosen
      */
     private String getSingleValidStudy(String study) throws CatalogException {
         // First, check the study parameter, if is not empty we just return it, this the user's selection.
         if (StringUtils.isNotEmpty(study)) {
-            return resolveStudy(study);
+            return study;
         } else {
-            // Second, check if there is a default study in the client configuration.
-            if (StringUtils.isNotEmpty(clientConfiguration.getDefaultStudy())) {
-                return clientConfiguration.getDefaultStudy();
+            // Third, check if there is only one single project and study for this user in the current CLI session file.
+            List<String> studies = cliSession == null ? null : cliSession.getStudies();
+            if (ListUtils.isNotEmpty(studies) && studies.size() == 1) {
+                study = studies.get(0);
             } else {
-                // Third, check if there is only one single project and study for this user in the current CLI session file.
-                List<String> studies = cliSession == null ? null : cliSession.getStudies();
-                if (ListUtils.isNotEmpty(studies) && studies.size() == 1) {
-                    study = studies.get(0);
-                } else {
-                    throw new CatalogException("None or more than one study found");
-                }
+                throw new CatalogException("None or more than one study found");
             }
         }
         return study;
@@ -144,7 +139,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 .setId(commandOptions.id)
                 .setAlias(commandOptions.alias)
                 .setName(commandOptions.name)
-                .setType(commandOptions.type)
                 .setDescription(commandOptions.description);
 
         ObjectMap params = new ObjectMap();
@@ -174,8 +168,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         StudyUpdateParams updateParams = new StudyUpdateParams()
                 .setName(c.name)
                 .setDescription(c.description)
-                .setType(c.type)
-                .setStats(new ObjectMap(c.stats))
                 .setAttributes(new ObjectMap(c.attributes));
 
         return openCGAClient.getStudyClient().update(getSingleValidStudy(c.study), updateParams);
@@ -209,9 +201,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), c.id);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), c.name);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), c.alias);
-        params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), c.type);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.CREATION_DATE.key(), c.creationDate);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), c.status);
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), c.status);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), c.attributes);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), c.nattributes);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), c.battributes);
@@ -245,7 +236,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         GroupCreateParams createParams = new GroupCreateParams()
                 .setId(c.groupId)
-                .setName(c.groupName)
                 .setUsers(c.users);
 
         ObjectMap params = new ObjectMap("action", ParamUtils.BasicUpdateAction.ADD);

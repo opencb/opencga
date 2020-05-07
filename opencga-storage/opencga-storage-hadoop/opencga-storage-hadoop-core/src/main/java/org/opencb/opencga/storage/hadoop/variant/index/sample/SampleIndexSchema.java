@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
@@ -46,6 +47,8 @@ public final class SampleIndexSchema {
     static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
     static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
     static final byte[] GENOTYPE_COUNT_PREFIX_BYTES = Bytes.toBytes(GENOTYPE_COUNT_PREFIX);
+    static final String GENOTYPE_DISCREPANCY_COUNT = META_PREFIX + "DC";
+    static final byte[] GENOTYPE_DISCREPANCY_COUNT_BYTES = Bytes.toBytes(GENOTYPE_DISCREPANCY_COUNT);
 
     static final String ANNOTATION_SUMMARY_PREFIX = META_PREFIX + "A_";
     static final byte[] ANNOTATION_SUMMARY_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_SUMMARY_PREFIX);
@@ -67,6 +70,10 @@ public final class SampleIndexSchema {
     static final byte[] PENDING_VARIANT_PREFIX_BYTES = Bytes.toBytes(PENDING_VARIANT_PREFIX);
 
     private SampleIndexSchema() {
+    }
+
+    public static int getChunkStart(Integer start) {
+        return (start / BATCH_SIZE) * BATCH_SIZE;
     }
 
     public static int getExpectedSize(String chromosome) {
@@ -136,8 +143,17 @@ public final class SampleIndexSchema {
         return ((Integer) PInteger.INSTANCE.toObject(row, row.length - 4, 4)) * BATCH_SIZE;
     }
 
+    public static boolean isGenotypeColumn(Cell cell) {
+        byte b = cell.getQualifierArray()[cell.getQualifierOffset()];
+        return b != META_PREFIX && !CellUtil.matchingQualifier(cell, MENDELIAN_ERROR_COLUMN_BYTES);
+    }
+
     public static byte[] toGenotypeColumn(String genotype) {
         return Bytes.toBytes(genotype);
+    }
+
+    public static byte[] toGenotypeDiscrepanciesCountColumn() {
+        return GENOTYPE_DISCREPANCY_COUNT_BYTES;
     }
 
     public static byte[] toGenotypeCountColumn(String genotype) {

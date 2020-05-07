@@ -2,7 +2,8 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,13 +16,20 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public enum GenotypeClass {
+public enum GenotypeClass implements Predicate<String> {
     /**
      * Homozygous reference.
      * <p>
      * 0, 0/0, 0/0/0, ...
      */
-    HOM_REF(gt -> StringUtils.containsOnly(gt, '0', '/', '|')),
+    HOM_REF(gt -> {
+        if (gt.length() == 3) {
+            return gt.equals("0/0") || gt.equals("0|0");
+        } else if (gt.length() == 1) {
+            return gt.charAt(0) == '0';
+        }
+        return StringUtils.containsOnly(gt, '0', '/', '|');
+    }),
 
     /**
      * Homozygous alternate.
@@ -157,17 +165,15 @@ public enum GenotypeClass {
      * 0/1, 1/1, 1/2, 1, ./1, ...
      */
     MAIN_ALT(str -> {
-        if (!str.contains("1")) {
-            return false;
+        if (str.length() == 3) {
+            char sep = str.charAt(1);
+            if (sep == '/' || sep == '|') {
+                return str.charAt(0) == '1' || str.charAt(2) == '1';
+            }
+        } else if (str.length() == 1) {
+            return str.charAt(0) == '1';
         }
-        if (str.equals("0/1")
-                || str.equals("1/1")
-                || str.equals("1|1")
-                || str.equals("0|1")
-                || str.equals("1|0")
-                || str.equals("1")) {
-            return true;
-        }
+
         Genotype genotype = parseGenotype(str);
         if (genotype == null) {
             return false;
@@ -200,14 +206,23 @@ public enum GenotypeClass {
     private static final Logger LOGGER = LoggerFactory.getLogger(GenotypeClass.class);
 
     GenotypeClass(Predicate<String> predicate) {
-        Predicate<String> stringPredicate = gt -> !gt.equals(UNKNOWN_GENOTYPE);
-        this.predicate = stringPredicate.and(predicate);
+        final char first = UNKNOWN_GENOTYPE.charAt(0);
+        Predicate<String> notUnknown = gt -> {
+            if (gt.charAt(0) == first) {
+                return !gt.equals(UNKNOWN_GENOTYPE);
+            } else {
+                return true;
+            }
+        };
+//        Predicate<String> notUnknown = gt -> !gt.equals(UNKNOWN_GENOTYPE);
+        this.predicate = notUnknown.and(predicate);
     }
 
     public Predicate<String> predicate() {
         return predicate;
     }
 
+    @Override
     public boolean test(String genotype) {
         return predicate.test(genotype);
     }

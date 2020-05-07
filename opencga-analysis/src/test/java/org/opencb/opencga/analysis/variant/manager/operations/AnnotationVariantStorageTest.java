@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,7 +144,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantOperationManage
         if (config.getBoolean(OperationTool.KEEP_INTERMEDIATE_FILES)) {
             String study = config.getString("study");
             String catalogPathOutDir = "data/" + Paths.get(tmpDir).toFile().getName() + "/";
-            catalogManager.getFileManager().createFolder(study, catalogPathOutDir, new File.FileStatus(), true, "", FileManager.INCLUDE_FILE_URI_PATH,
+            catalogManager.getFileManager().createFolder(study, catalogPathOutDir, true, "", FileManager.INCLUDE_FILE_URI_PATH,
                     sessionId).first();
             return copyResults(Paths.get(tmpDir), study, catalogPathOutDir, sessionId);
         }

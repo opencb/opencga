@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,25 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.Document;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FileStatus;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleInternal;
 
 import java.io.IOException;
 import java.util.*;
@@ -48,7 +53,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(studyId >= 0);
         File file;
         file = new File("jobs/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, "",
-                new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
+                FileInternal.initialize(), 1000, 1);
         LinkedList<FileAclEntry> acl = new LinkedList<>();
         acl.push(new FileAclEntry("jcoll", Arrays.asList(FileAclEntry.FilePermissions.VIEW.name(),
                 FileAclEntry.FilePermissions.VIEW_CONTENT.name(), FileAclEntry.FilePermissions.VIEW_HEADER.name(),
@@ -56,13 +61,13 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         acl.push(new FileAclEntry("jmmut", Collections.emptyList()));
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, "",
-                new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
+                FileInternal.initialize(), 1000, 1);
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
         file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, "",
-                new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
+                FileInternal.initialize(), 1000, 1);
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
         file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, "",
-                new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
+                FileInternal.initialize(), 1000, 1);
 
         try {
             System.out.println(catalogFileDBAdaptor.insert(-20, file, null, null));
@@ -82,7 +87,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void getFileTest() throws CatalogDBException {
+    public void getFileTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(file.getUid(), null);
         System.out.println(fileDataResult);
@@ -95,21 +100,21 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void getAllFilesStudyNotValidTest() throws CatalogDBException {
+    public void getAllFilesStudyNotValidTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not valid");
         catalogFileDBAdaptor.getAllInStudy(-1, null);
     }
 
     @Test
-    public void getAllFilesStudyNotExistsTest() throws CatalogDBException {
+    public void getAllFilesStudyNotExistsTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not exist");
         catalogFileDBAdaptor.getAllInStudy(216544, null);
     }
 
     @Test
-    public void getAllFilesTest() throws CatalogDBException {
+    public void getAllFilesTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         DataResult<File> allFiles = catalogFileDBAdaptor.getAllInStudy(studyId, null);
         List<File> files = allFiles.getResults();
@@ -155,19 +160,19 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 //    }
 
     @Test
-    public void modifyFileTest() throws CatalogDBException, IOException {
+    public void modifyFileTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
         long fileId = file.getUid();
 
-        Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20));
+        Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + RandomStringUtils.randomAlphanumeric(20));
 
         ObjectMap parameters = new ObjectMap();
-        parameters.put("status.name", File.FileStatus.READY);
+        parameters.put("status.name", FileStatus.READY);
         parameters.put("stats", stats);
         System.out.println(catalogFileDBAdaptor.update(fileId, parameters, QueryOptions.empty()));
 
         file = catalogFileDBAdaptor.get(fileId, null).first();
-        assertEquals(file.getStatus().getName(), File.FileStatus.READY);
+        assertEquals(file.getInternal().getStatus().getName(), FileStatus.READY);
         assertEquals(file.getStats(), stats);
 
         parameters = new ObjectMap();
@@ -179,7 +184,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void renameFileTest() throws CatalogDBException {
+    public void renameFileTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         String newName = "newFile.bam";
         String parentPath = "data/";
         long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getUid(), "data/file.vcf");
@@ -203,7 +208,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void includeFields() throws CatalogDBException {
+    public void includeFields() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(7,
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key()));
         List<File> files = fileDataResult.getResults();
@@ -223,7 +228,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         List<String> distinctFormats = catalogFileDBAdaptor.distinct(
                 new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), pfurioStudies),
                 FileDBAdaptor.QueryParams.FORMAT.key()).getResults();
-        assertEquals(Arrays.asList("UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM"), distinctFormats);
+        assertTrue(Arrays.asList("UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM").containsAll(distinctFormats));
 
         distinctFormats = catalogFileDBAdaptor.distinct(new Query(),
                 FileDBAdaptor.QueryParams.FORMAT.key()).getResults();
@@ -241,15 +246,20 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 FileDBAdaptor.QueryParams.SIZE.key(), 100, false).getResults();
 
         assertEquals(3, rankedFilesPerDiskUsage.size());
+        assertTrue(Arrays.asList(10, 100, 5000)
+                .containsAll(rankedFilesPerDiskUsage.stream().map(d -> d.get("_id")).collect(Collectors.toSet())));
 
-        assertEquals(100, rankedFilesPerDiskUsage.get(0).get("_id"));
-        assertEquals(3, rankedFilesPerDiskUsage.get(0).get("count"));
-
-        assertEquals(5000, rankedFilesPerDiskUsage.get(1).get("_id"));
-        assertEquals(2, rankedFilesPerDiskUsage.get(1).get("count"));
-
-        assertEquals(10, rankedFilesPerDiskUsage.get(2).get("_id"));
-        assertEquals(2, rankedFilesPerDiskUsage.get(2).get("count"));
+        for (Document document : rankedFilesPerDiskUsage) {
+            switch (document.getInteger("_id")) {
+                case 10:
+                case 5000:
+                    assertEquals(2, document.get("count"));
+                    break;
+                case 100:
+                    assertEquals(3, document.get("count"));
+                    break;
+            }
+        }
     }
 
     @Test
@@ -259,22 +269,38 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), pfurioStudies),
                 FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResults();
 
-        assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("items"));
-
-        assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/")
-                .containsAll((Collection<?>) groupByBioformat.get(1).get("items")));
+        assertTrue(Arrays.asList("ALIGNMENT", "NONE")
+                .containsAll(groupByBioformat.stream().map(d -> d.get("_id"))
+                        .map(d -> ((Document) d).get(FileDBAdaptor.QueryParams.BIOFORMAT.key())).collect(Collectors.toSet())));
+        for (Document document : groupByBioformat) {
+            switch (((Document) document.get("_id")).getString(FileDBAdaptor.QueryParams.BIOFORMAT.key())) {
+                case "ALIGNMENT":
+                    assertTrue(Arrays.asList("m_alignment.bam", "alignment.bam").containsAll(document.getList("items", String.class)));
+                    break;
+                case "NONE":
+                    assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/")
+                            .containsAll(document.getList("items", String.class)));
+                    break;
+            }
+        }
 
         groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), 14), // MINECO study
                 FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResults();
 
-        assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertEquals(Arrays.asList("m_alignment.bam"), groupByBioformat.get(0).get("items"));
-
-        assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
-        assertEquals(Arrays.asList("m_file1.txt", "data/"), groupByBioformat.get(1).get("items"));
-
+        assertTrue(Arrays.asList("ALIGNMENT", "NONE")
+                .containsAll(groupByBioformat.stream().map(d -> d.get("_id"))
+                        .map(d -> ((Document) d).get(FileDBAdaptor.QueryParams.BIOFORMAT.key())).collect(Collectors.toSet())));
+        for (Document document : groupByBioformat) {
+            switch (((Document) document.get("_id")).getString(FileDBAdaptor.QueryParams.BIOFORMAT.key())) {
+                case "ALIGNMENT":
+                    assertTrue(Arrays.asList("m_alignment.bam").containsAll(document.getList("items", String.class)));
+                    break;
+                case "NONE":
+                    assertTrue(Arrays.asList("m_file1.txt", "data/")
+                            .containsAll(document.getList("items", String.class)));
+                    break;
+            }
+        }
     }
 
     @Test
@@ -287,25 +313,32 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 new QueryOptions()).getResults();
 
         assertEquals(3, groupByBioformat.size());
+        for (Document document : groupByBioformat) {
+            Document d = (Document) document.get("_id");
 
-        assertEquals(2, ((Document) groupByBioformat.get(0).get("_id")).size()); // Alignment - File
-        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("items"));
-
-        assertEquals(2, ((Document) groupByBioformat.get(1).get("_id")).size()); // None - File
-        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(1).get("items"));
-
-        assertEquals(2, ((Document) groupByBioformat.get(2).get("_id")).size()); // None - Folder
-        assertEquals(Arrays.asList("data/"), groupByBioformat.get(2).get("items"));
-
+            switch (d.getString(FileDBAdaptor.QueryParams.BIOFORMAT.key()) + "_" + d.getString(FileDBAdaptor.QueryParams.TYPE.key())) {
+                case "ALIGNMENT_FILE":
+                    assertTrue(Arrays.asList("m_alignment.bam", "alignment.bam").containsAll(document.getList("items", String.class)));
+                    break;
+                case "NONE_FILE":
+                    assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt").containsAll(document.getList("items", String.class)));
+                    break;
+                case "NONE_FOLDER":
+                    assertTrue(Arrays.asList("data/").containsAll(document.getList("items", String.class)));
+                    break;
+            }
+        }
     }
 
     @Test
     public void testAddSamples() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setStatus(new Status()),
+        new Status();
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setInternal(new SampleInternal(new Status())),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample1 = getSample(studyUid, "sample1");
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setStatus(new Status()),
+        new Status();
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setInternal(new SampleInternal(new Status())),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyUid, "sample2");
 
@@ -317,7 +350,8 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid()).containsAll(
                 fileDataResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
 
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setStatus(new Status()),
+        new Status();
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setInternal(new SampleInternal(new Status())),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample3 = getSample(studyUid, "sample3");
         // Test we avoid duplicities
@@ -332,13 +366,16 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testRemoveSamples() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setStatus(new Status()),
+        new Status();
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setInternal(new SampleInternal(new Status())),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample1 = getSample(studyUid, "sample1");
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setStatus(new Status()),
+        new Status();
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setInternal(new SampleInternal(new Status())),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyUid, "sample2");
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setStatus(new Status()),
+        new Status();
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setInternal(new SampleInternal(new Status())),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample3 = getSample(studyUid, "sample3");
         List<File> files = user3.getProjects().get(0).getStudies().get(0).getFiles();
@@ -387,7 +424,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                     switch (type) {
                         case "FILE":
                             assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size()); // None - File
-                            assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(i).get("items"));
+                            assertTrue(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt").containsAll(groupByBioformat.get(i).getList("items", String.class)));
                             break;
                         default:
                             assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size()); // None - Folder
@@ -397,7 +434,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                     break;
                 case "ALIGNMENT":
                     assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size());
-                    assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(i).get("items"));
+                    assertTrue(Arrays.asList("m_alignment.bam", "alignment.bam").containsAll(groupByBioformat.get(i).getList("items", String.class)));
                     break;
                 default:
                     fail("This case should not happen.");

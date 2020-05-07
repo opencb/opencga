@@ -38,6 +38,7 @@ public class UserCommandOptions {
     public ProjectsCommandOptions projectsCommandOptions;
     public LoginCommandOptions loginCommandOptions;
     public LogoutCommandOptions logoutCommandOptions;
+    public TemplateCommandOptions templateCommandOptions;
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
@@ -61,6 +62,7 @@ public class UserCommandOptions {
         this.projectsCommandOptions = new ProjectsCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.logoutCommandOptions = new LogoutCommandOptions();
+        this.templateCommandOptions = new TemplateCommandOptions();
     }
 
     public JCommander getjCommander() {
@@ -112,11 +114,6 @@ public class UserCommandOptions {
 
         @ParametersDelegate
         public NotRequiredUserParam userParam = new NotRequiredUserParam();
-
-        @Deprecated
-        @Parameter(names = {"--last-modified"}, description = "[DEPRECATED] If matches with the user's last activity, return " +
-                "an empty QueryResult", arity = 1, required = false)
-        public String lastModified;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes")
@@ -183,5 +180,22 @@ public class UserCommandOptions {
         public String sessionId;
 
     }
+
+    @Parameters(commandNames = {"load-template"}, commandDescription = "Load data from a template")
+    public class TemplateCommandOptions {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-f", "--file"}, arity = 1, required = true, description = "Template file")
+        public String file;
+
+        @Parameter(names = {"--validate"}, arity = 0, description = "Only validate template file")
+        public boolean validate;
+
+        @Parameter(names = {"--resume"}, arity = 0, description = "Resume a previously failed template load")
+        public boolean resume;
+    }
+
 
 }

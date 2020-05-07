@@ -28,47 +28,8 @@ import java.util.Map;
  */
 
 /**
- *  I M P O R T A N T:
- *
- * In order to insert VariantSearchModel objects into your solr cores you must
- * add the below fields in the the file schema.xml located in the core/collection folder. Or you
- * can use the solr_schema.xml file from opencga/opencga-storage/opencga-storage-core/src/main/resources/solr_schema.xml
- *
- <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
- <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
- <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
- <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
- <field name="xrefs" type="string" indexed="true" stored="true" multiValued="true"/>
- <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
- <field name="release" type="int" indexed="true" stored="true" multiValued="false"/>
- <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
- <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="gerp" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="caddRaw" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="siftDesc" type="string" indexed="true" stored="true" multiValued="false"/>
- <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="polyphenDesc" type="string" indexed="true" stored="true" multiValued="false"/>
- <field name="genes" type="string" indexed="false" stored="true" multiValued="true"/>
- <field name="biotypes" type="string" indexed="true" stored="true" multiValued="true"/>
- <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
- <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
- <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
- <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
- <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="score_*" type="float" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="pValue_*" type="float" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="dp_*" type="int" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="sampleFormat_*" type="string" indexed="false" stored="true" multiValued="false"/>
- <dynamicField name="qual_*" type="float" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="filter_*" type="string" indexed="true" stored="true" multiValued="false"/>
- <dynamicField name="fileInfo_*" type="string" indexed="false" stored="true" multiValued="false"/>
+ * VariantSearchModel must match the managed-schema file at opencga-storage/opencga-storage-core/src/main/resources.
  */
-
 public class VariantSearchModel {
 
     @Field
@@ -137,20 +98,26 @@ public class VariantSearchModel {
     @Field("geneToSoAcc")
     private List<String> geneToSoAcc;
 
+    @Field("clinicalSig")
+    private List<String> clinicalSig;
+
     @Field("traits")
     private List<String> traits;
 
     @Field("other")
     private List<String> other;
 
-    @Field("stats_*")
-    private Map<String, Float> stats;
+    @Field("passStats_*")
+    private Map<String, Float> passStats;
+
+    @Field("altStats_*")
+    private Map<String, Float> altStats;
 
     @Field("score_*")
     private Map<String, Float> score;
 
-    @Field("pValue_*")
-    private Map<String, Float> pValue;
+    @Field("scorePValue_*")
+    private Map<String, Float> scorePValue;
 
     @Field("popFreq_*")
     private Map<String, Float> popFreq;
@@ -193,9 +160,10 @@ public class VariantSearchModel {
         this.geneToSoAcc = new ArrayList<>();
         this.traits = new ArrayList<>();
         this.other = new ArrayList<>();
-        this.stats = new HashMap<>();
+        this.passStats = new HashMap<>();
+        this.altStats = new HashMap<>();
         this.score = new HashMap<>();
-        this.pValue = new HashMap<>();
+        this.scorePValue = new HashMap<>();
         this.popFreq = new HashMap<>();
         this.gt = new HashMap<>();
         this.dp = new HashMap<>();
@@ -230,11 +198,13 @@ public class VariantSearchModel {
         sb.append(", biotypes=").append(biotypes);
         sb.append(", soAcc=").append(soAcc);
         sb.append(", geneToSoAcc=").append(geneToSoAcc);
+        sb.append(", clinicalSig=").append(clinicalSig);
         sb.append(", traits=").append(traits);
         sb.append(", other=").append(other);
-        sb.append(", stats=").append(stats);
+        sb.append(", passStats=").append(passStats);
+        sb.append(", altStats=").append(altStats);
         sb.append(", score=").append(score);
-        sb.append(", pValue=").append(pValue);
+        sb.append(", scorePValue=").append(scorePValue);
         sb.append(", popFreq=").append(popFreq);
         sb.append(", gt=").append(gt);
         sb.append(", dp=").append(dp);
@@ -444,6 +414,15 @@ public class VariantSearchModel {
         return this;
     }
 
+    public List<String> getClinicalSig() {
+        return clinicalSig;
+    }
+
+    public VariantSearchModel setClinicalSig(List<String> clinicalSig) {
+        this.clinicalSig = clinicalSig;
+        return this;
+    }
+
     public List<String> getTraits() {
         return traits;
     }
@@ -462,12 +441,21 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Map<String, Float> getStats() {
-        return stats;
+    public Map<String, Float> getPassStats() {
+        return passStats;
     }
 
-    public VariantSearchModel setStats(Map<String, Float> stats) {
-        this.stats = stats;
+    public VariantSearchModel setPassStats(Map<String, Float> passStats) {
+        this.passStats = passStats;
+        return this;
+    }
+
+    public Map<String, Float> getAltStats() {
+        return altStats;
+    }
+
+    public VariantSearchModel setAltStats(Map<String, Float> altStats) {
+        this.altStats = altStats;
         return this;
     }
 
@@ -480,12 +468,12 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Map<String, Float> getPValue() {
-        return pValue;
+    public Map<String, Float> getScorePValue() {
+        return scorePValue;
     }
 
-    public VariantSearchModel setPValue(Map<String, Float> pValue) {
-        this.pValue = pValue;
+    public VariantSearchModel setScorePValue(Map<String, Float> scorePValue) {
+        this.scorePValue = scorePValue;
         return this;
     }
 

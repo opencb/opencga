@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -6,6 +22,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,36 +46,43 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
 
         Path rootDir = getOpencgaHome();
 
+        String version = GitRepositoryState.get().getBuildVersion();
+
         // Copy configuration
-        copyConfiguration("cohort-managed-schema", CatalogSolrManager.COHORT_CONF_SET);
-        copyConfiguration("family-managed-schema", CatalogSolrManager.FAMILY_CONF_SET);
-        copyConfiguration("file-managed-schema", CatalogSolrManager.FILE_CONF_SET);
-        copyConfiguration("individual-managed-schema", CatalogSolrManager.INDIVIDUAL_CONF_SET);
-        copyConfiguration("sample-managed-schema", CatalogSolrManager.SAMPLE_CONF_SET);
+        copyConfiguration("cohort-managed-schema", CatalogSolrManager.COHORT_CONF_SET + "-" + version);
+        copyConfiguration("family-managed-schema", CatalogSolrManager.FAMILY_CONF_SET + "-" + version);
+        copyConfiguration("file-managed-schema", CatalogSolrManager.FILE_CONF_SET + "-" + version);
+        copyConfiguration("individual-managed-schema", CatalogSolrManager.INDIVIDUAL_CONF_SET + "-" + version);
+        copyConfiguration("sample-managed-schema", CatalogSolrManager.SAMPLE_CONF_SET + "-" + version);
+        copyConfiguration("job-managed-schema", CatalogSolrManager.JOB_CONF_SET + "-" + version);
 
         String solrHome = rootDir.resolve("solr").toString();
 
         solrClient = create(solrHome, rootDir.resolve("solr/configsets").toString());
 
         CoreAdminRequest.Create request = new CoreAdminRequest.Create();
-        request.setCoreName(getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.COHORT_SOLR_COLLECTION);
-        request.setConfigSet(CatalogSolrManager.COHORT_CONF_SET);
+        request.setCoreName(getConfiguration().getDatabasePrefix() + "-" + CatalogSolrManager.COHORT_SOLR_COLLECTION);
+        request.setConfigSet(CatalogSolrManager.COHORT_CONF_SET + "-" + version);
         request.process(solrClient);
 
-        request.setCoreName(getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
-        request.setConfigSet(CatalogSolrManager.SAMPLE_CONF_SET);
+        request.setCoreName(getConfiguration().getDatabasePrefix() + "-" + CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
+        request.setConfigSet(CatalogSolrManager.SAMPLE_CONF_SET + "-" + version);
         request.process(solrClient);
 
-        request.setCoreName(getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
-        request.setConfigSet(CatalogSolrManager.INDIVIDUAL_CONF_SET);
+        request.setCoreName(getConfiguration().getDatabasePrefix() + "-" + CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
+        request.setConfigSet(CatalogSolrManager.INDIVIDUAL_CONF_SET + "-" + version);
         request.process(solrClient);
 
-        request.setCoreName(getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.FILE_SOLR_COLLECTION);
-        request.setConfigSet(CatalogSolrManager.FILE_CONF_SET);
+        request.setCoreName(getConfiguration().getDatabasePrefix() + "-" + CatalogSolrManager.FILE_SOLR_COLLECTION);
+        request.setConfigSet(CatalogSolrManager.FILE_CONF_SET + "-" + version);
         request.process(solrClient);
 
-        request.setCoreName(getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.FAMILY_SOLR_COLLECTION);
-        request.setConfigSet(CatalogSolrManager.FAMILY_CONF_SET);
+        request.setCoreName(getConfiguration().getDatabasePrefix() + "-" + CatalogSolrManager.FAMILY_SOLR_COLLECTION);
+        request.setConfigSet(CatalogSolrManager.FAMILY_CONF_SET + "-" + version);
+        request.process(solrClient);
+
+        request.setCoreName(getConfiguration().getDatabasePrefix() + "-" + CatalogSolrManager.JOB_SOLR_COLLECTION);
+        request.setConfigSet(CatalogSolrManager.JOB_CONF_SET + "-" + version);
         request.process(solrClient);
     }
 
@@ -114,8 +138,7 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
      * @return an EmbeddedSolrServer with a core created for the given coreName
      * @throws IOException
      */
-    private SolrClient create(final String solrHome, final String configSetHome)
-            throws IOException {
+    private SolrClient create(final String solrHome, final String configSetHome) {
 
         final File solrHomeDir = new File(solrHome);
         if (!solrHomeDir.exists()) {

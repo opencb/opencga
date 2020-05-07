@@ -16,9 +16,10 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.bson.Document;
-import org.opencb.biodata.models.feature.AllelesCode;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.AllelesCode;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -41,6 +42,8 @@ public class DocumentToVariantStatsConverter {
     public static final String STUDY_ID = "sid";
 //    public static final String FILE_ID = "fid";
 
+    public static final String ALLELE_NUMBER_FIELD = "an";
+    public static final String SAMPLES_COUNT_FIELD = "sc";
     public static final String ALT_FREQ_FIELD = "af";
     public static final String REF_FREQ_FIELD = "rf";
     public static final String MAF_FIELD = "maf";
@@ -49,7 +52,12 @@ public class DocumentToVariantStatsConverter {
     public static final String MGFGENOTYPE_FIELD = "mgfGt";
     public static final String MISSALLELE_FIELD = "missAl";
     public static final String MISSGENOTYPE_FIELD = "missGt";
-    public static final String NUMGT_FIELD = "numGt";
+    public static final String GENOTYPE_COUNT_FIELD = "numGt";
+    public static final String FILTER_COUNT_FIELD = "fc";
+    public static final String FILTER_FREQ_FIELD = "ff";
+    public static final String FILES_NUMBER_FIELD = "fn";
+    public static final String QUAL_AVG_FIELD = "qualAvg";
+    public static final String QUAL_VALUES_COUNT_FIELD = "qualC";
 
     protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantStatsConverter.class);
 
@@ -86,37 +94,45 @@ public class DocumentToVariantStatsConverter {
 
         // Genotype counts
         int alleleNumber = 0;
-        int gtNumber = 0;
-        Document genotypes = (Document) object.get(NUMGT_FIELD);
-        HashMap<Genotype, Integer> genotypesCount = new HashMap<>();
+        int samplesCount = 0;
+        boolean missingTotalNumbers;
+        if (object.containsKey(ALLELE_NUMBER_FIELD)) {
+            alleleNumber = object.getInteger(ALLELE_NUMBER_FIELD);
+            samplesCount = object.getInteger(SAMPLES_COUNT_FIELD);
+            missingTotalNumbers = false;
+        } else {
+            missingTotalNumbers = true;
+        }
+        Document genotypes = (Document) object.get(GENOTYPE_COUNT_FIELD);
+        Map<String, Integer> genotypesCount = new HashMap<>();
         for (Map.Entry<String, Object> o : genotypes.entrySet()) {
             String genotypeStr = o.getKey();
             int value = ((Number) o.getValue()).intValue();
-            Genotype g = getGenotype(genotypeStr);
-            genotypesCount.put(g, value);
-            if (g.getCode() != AllelesCode.ALLELES_MISSING) {
-                alleleNumber += value * g.getAllelesIdx().length;
-                gtNumber += value;
+            genotypesCount.put(genotypeStr, value);
+
+            if (missingTotalNumbers) {
+                Genotype g = new Genotype(genotypeStr.replace("*", "2"));
+                if (g.getCode() != AllelesCode.ALLELES_MISSING) {
+                    alleleNumber += value * g.getPloidy();
+                    samplesCount += value;
+                }
             }
         }
         stats.setGenotypeCount(genotypesCount);
-        if (alleleNumber == 0) {
-            stats.setAlleleCount(-1);
-        } else {
-            stats.setAlleleCount(alleleNumber);
-        }
+        stats.setAlleleCount(alleleNumber);
 
-        Map<Genotype, Float> genotypesFreq;
-        if (gtNumber > 0) {
+        Map<String, Float> genotypesFreq;
+        if (samplesCount > 0) {
             genotypesFreq = new HashMap<>();
-            for (Map.Entry<Genotype, Integer> entry : genotypesCount.entrySet()) {
-                if (entry.getKey().getCode() != AllelesCode.ALLELES_MISSING) {
-                    genotypesFreq.put(entry.getKey(), entry.getValue().floatValue() / gtNumber);
+            for (Map.Entry<String, Integer> entry : genotypesCount.entrySet()) {
+                if (!"./.".equals(entry.getKey())) {
+                    genotypesFreq.put(entry.getKey(), entry.getValue().floatValue() / samplesCount);
                 }
             }
         } else {
             genotypesFreq = Collections.emptyMap();
         }
+        stats.setSampleCount(samplesCount);
         stats.setGenotypeFreq(genotypesFreq);
 
         Object alleleFreq = object.get(ALT_FREQ_FIELD);
@@ -144,8 +160,8 @@ public class DocumentToVariantStatsConverter {
             // To calculate the alleleFrequency and so on, we need to get the alleleCounts from the genotypeCounts
             // This code should not be called with datasets loaded after v1.3.3
             int[] alleleCounts = {0, 0};
-            for (Map.Entry<Genotype, Integer> entry : stats.getGenotypeCount().entrySet()) {
-                for (int i : entry.getKey().getAllelesIdx()) {
+            for (Map.Entry<String, Integer> entry : stats.getGenotypeCount().entrySet()) {
+                for (int i : new Genotype(entry.getKey()).getAllelesIdx()) {
                     if (i == 0 || i == 1) {
                         alleleCounts[i] += entry.getValue();
                     }
@@ -162,6 +178,28 @@ public class DocumentToVariantStatsConverter {
                 stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
             }
         }
+
+        if (object.containsKey(FILTER_COUNT_FIELD)) {
+            for (Map.Entry<String, Object> entry : object.get(FILTER_COUNT_FIELD, Document.class).entrySet()) {
+                stats.getFilterCount().put(entry.getKey(), ((Number)entry.getValue()).intValue());
+            }
+            for (Map.Entry<String, Object> entry : object.get(FILTER_FREQ_FIELD, Document.class).entrySet()) {
+                stats.getFilterFreq().put(entry.getKey(), ((Number)entry.getValue()).floatValue());
+            }
+            stats.setFileCount(object.getInteger(FILES_NUMBER_FIELD));
+            if (stats.getFilterFreq().size() == 1) {
+                Float freq = stats.getFilterFreq().get(VCFConstants.PASSES_FILTERS_v4);
+                if (freq != null && freq == 0) {
+                    stats.getFilterFreq().remove(VCFConstants.PASSES_FILTERS_v4);
+                }
+            }
+        }
+        if (object.containsKey(QUAL_AVG_FIELD)) {
+            stats.setQualityAvg(object.getDouble(QUAL_AVG_FIELD).floatValue());
+            stats.setQualityCount(object.getInteger(QUAL_VALUES_COUNT_FIELD));
+        }
+
+
         return stats;
     }
 
@@ -184,14 +222,23 @@ public class DocumentToVariantStatsConverter {
         mongoStats.append(MGFGENOTYPE_FIELD, vs.getMgfGenotype());
         mongoStats.append(MISSALLELE_FIELD, vs.getMissingAlleleCount());
         mongoStats.append(MISSGENOTYPE_FIELD, vs.getMissingGenotypeCount());
+        vs.getFilterCount().putIfAbsent(VCFConstants.PASSES_FILTERS_v4, 0);
+        mongoStats.append(FILTER_COUNT_FIELD, vs.getFilterCount());
+        vs.getFilterFreq().putIfAbsent(VCFConstants.PASSES_FILTERS_v4, 0F);
+        mongoStats.append(FILTER_FREQ_FIELD, vs.getFilterFreq());
+        mongoStats.append(FILES_NUMBER_FIELD, vs.getFileCount());
+        mongoStats.append(QUAL_AVG_FIELD, vs.getQualityAvg());
+        mongoStats.append(QUAL_VALUES_COUNT_FIELD, vs.getQualityCount());
 
         // Genotype counts
         Document genotypes = new Document();
-        for (Map.Entry<Genotype, Integer> g : vs.getGenotypeCount().entrySet()) {
-            String genotypeStr = DocumentToSamplesConverter.genotypeToStorageType(g.getKey().toString());
-            genotypes.append(genotypeStr, g.getValue());
+        for (Map.Entry<String, Integer> entry : vs.getGenotypeCount().entrySet()) {
+            String genotypeStr = DocumentToSamplesConverter.genotypeToStorageType(entry.getKey());
+            genotypes.append(genotypeStr, entry.getValue());
         }
-        mongoStats.append(NUMGT_FIELD, genotypes);
+        mongoStats.append(GENOTYPE_COUNT_FIELD, genotypes);
+        mongoStats.append(ALLELE_NUMBER_FIELD, vs.getAlleleCount());
+        mongoStats.append(SAMPLES_COUNT_FIELD, vs.getSampleCount());
         return mongoStats;
     }
 
@@ -203,20 +250,21 @@ public class DocumentToVariantStatsConverter {
      * @param variant      contains allele info to fill the VariantStats, and it sourceEntries will be filled.
      */
     public void convertCohortsToDataModelType(List<Document> cohortsStats, Variant variant) {
-        for (Document vs : cohortsStats) {
-            VariantStats variantStats = convertToDataModelType(vs, variant);
-            if (variant != null) {
+        if (variant != null) {
+            for (Document vs : cohortsStats) {
+                VariantStats variantStats = convertToDataModelType(vs, variant);
 //                variantStats.setRefAllele(variant.getReference());
 //                variantStats.setAltAllele(variant.getAlternate());
 //                variantStats.setVariantType(variant.getType());
 //                    Integer fid = (Integer) vs.get(FILE_ID);
                 String sid = getStudyName((Integer) vs.get(STUDY_ID));
                 String cid = getCohortName((Integer) vs.get(STUDY_ID), (Integer) vs.get(COHORT_ID));
+                variantStats.setCohortId(cid);
                 StudyEntry sourceEntry;
                 if (sid != null && cid != null) {
                     sourceEntry = variant.getStudiesMap().get(sid);
                     if (sourceEntry != null) {
-                        sourceEntry.setStats(cid, variantStats);
+                        sourceEntry.addStats(variantStats);
                     } else {
                         //This could happen if the study has been excluded
                         logger.trace("ignoring non present source entry studyId={}", sid);
@@ -252,13 +300,11 @@ public class DocumentToVariantStatsConverter {
      * @param studyId     of the source entry
      * @return list of VariantStats (as Documents)
      */
-    public List<Document> convertCohortsToStorageType(Map<String, VariantStats> cohortStats, int studyId) {
+    public List<Document> convertCohortsToStorageType(List<VariantStats> cohortStats, int studyId) {
         List<Document> cohortsStatsList = new LinkedList<>();
-        VariantStats variantStats;
-        for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
-            variantStats = variantStatsEntry.getValue();
+        for (VariantStats variantStats : cohortStats) {
             Document variantStatsDocument = convertToStorageType(variantStats);
-            Integer cohortId = getCohortId(studyId, variantStatsEntry.getKey());
+            Integer cohortId = getCohortId(studyId, variantStats.getCohortId());
             if (cohortId != null) {
                 variantStatsDocument.put(DocumentToVariantStatsConverter.COHORT_ID, (int) cohortId);
                 variantStatsDocument.put(DocumentToVariantStatsConverter.STUDY_ID, studyId);

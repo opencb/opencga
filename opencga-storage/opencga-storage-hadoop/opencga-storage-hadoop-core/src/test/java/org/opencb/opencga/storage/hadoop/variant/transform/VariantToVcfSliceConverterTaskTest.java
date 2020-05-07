@@ -24,12 +24,12 @@ public class VariantToVcfSliceConverterTaskTest {
 
     @Test
     public void isRefVariantTest() throws Exception {
-        assertTrue(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setFormat("GT").addSample("S1", "0/0").build()));
-        assertTrue(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setFormat("GT").addSample("S1", "0/0").addSample("S2", "0").build()));
+        assertTrue(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setSampleDataKeys("GT").addSample("S1", "0/0").build()));
+        assertTrue(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setSampleDataKeys("GT").addSample("S1", "0/0").addSample("S2", "0").build()));
 
-        assertFalse(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setFormat("GT").addSample("S1", "0/0").addSample("S2", "0/1").build()));
-        assertFalse(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setFormat("GT").addSample("S1", "0/1").addSample("S2", "0/0").build()));
-        assertFalse(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setFormat("GT").addSample("S1", "0/1").addSample("S2", "0/1").build()));
-        assertFalse(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setFormat("GT").addSample("S1", "./.").build()));
+        assertFalse(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setSampleDataKeys("GT").addSample("S1", "0/0").addSample("S2", "0/1").build()));
+        assertFalse(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setSampleDataKeys("GT").addSample("S1", "0/1").addSample("S2", "0/0").build()));
+        assertFalse(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setSampleDataKeys("GT").addSample("S1", "0/1").addSample("S2", "0/1").build()));
+        assertFalse(VariantToVcfSliceConverterTask.isRefVariant(new VariantBuilder("1:100:A:C").setSampleDataKeys("GT").addSample("S1", "./.").build()));
     }
 }

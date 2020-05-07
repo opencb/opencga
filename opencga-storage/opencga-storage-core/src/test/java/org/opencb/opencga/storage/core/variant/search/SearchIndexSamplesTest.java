@@ -24,7 +24,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
 import java.io.IOException;
@@ -32,8 +32,8 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.ALL;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NONE;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.ALL;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
 
 /**
  * Created on 20/07/18.
@@ -178,7 +178,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         check(null, new Query(FILE.key(), files1), new QueryOptions());  // About to return all samples from file1.
         check(null, new Query(SAMPLE.key(), "!" + samples1.get(0)).append(GENOTYPE.key(), samples1.get(1) + ":!0/0"), new QueryOptions()); // None positive filter
         check(null, new Query(FILE.key(), files1).append(SAMPLE.key(), "!" + samples2.get(0)), new QueryOptions()); // Filter sample2 not covered
-        check(null, new Query(FORMAT.key(), samples1.get(0) + ":AN>3;DP>3"), new QueryOptions());
+        check(null, new Query(SAMPLE_DATA.key(), samples1.get(0) + ":AN>3;DP>3"), new QueryOptions());
 
         check(COLLECTION_1, new Query(SAMPLE.key(), samples1).append(INCLUDE_SAMPLE.key(), NONE), new QueryOptions());
         check(COLLECTION_1, new Query(SAMPLE.key(), samples1), new QueryOptions());
@@ -190,7 +190,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         check(COLLECTION_1, new Query(FILE.key(), files1).append(SAMPLE.key(), "!" + samples1.get(0)), new QueryOptions()); // Filter sample not covered
         check(COLLECTION_1, new Query(SAMPLE.key(), samples1).append(FILE.key(), files1), new QueryOptions());
         check(COLLECTION_1, new Query(FILE.key(), files1).append(INCLUDE_SAMPLE.key(), samples1), new QueryOptions());
-        check(COLLECTION_1, new Query(FORMAT.key(), samples1.get(0) + ":DP>3"), new QueryOptions());
+        check(COLLECTION_1, new Query(SAMPLE_DATA.key(), samples1.get(0) + ":DP>3"), new QueryOptions());
 
         check(COLLECTION_2, new Query(SAMPLE.key(), samples2), new QueryOptions());
         check(COLLECTION_2, new Query(SAMPLE.key(), samples2.get(0)), new QueryOptions());
@@ -232,7 +232,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         assertEquals(expectedCount, variantSearchManager.query(collection, new Query(), new QueryOptions()).getNumTotalResults());
 
 
-        VariantSolrIterator solrIterator = variantSearchManager.iterator(collection, new Query(), new QueryOptions(QueryOptions.SORT, true));
+        SolrVariantDBIterator solrIterator = variantSearchManager.iterator(collection, new Query(), new QueryOptions(QueryOptions.SORT, true));
 
 //        int i = 0;
         while (solrIterator.hasNext()) {
@@ -246,10 +246,10 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
             StudyEntry expectedStudy = expected.getStudies().get(0);
             StudyEntry actualStudy = actual.getStudies().get(0);
 
-            Map<String, VariantStats> expectedStudyStats = expectedStudy.getStats();
-            expectedStudy.setStats(Collections.emptyMap());
-            Map<String, VariantStats> actualStudyStats = actualStudy.getStats();
-            actualStudy.setStats(Collections.emptyMap());
+            List<VariantStats> expectedStudyStats = expectedStudy.getStats();
+            expectedStudy.setStats(Collections.emptyList());
+            List<VariantStats> actualStudyStats = actualStudy.getStats();
+            actualStudy.setStats(Collections.emptyList());
 
             //assertEquals(expected.toString(), expectedStudy, actualStudy);
             System.out.println("Checking: " + expected.toString());
@@ -300,18 +300,18 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
                 fail("File entry call mismatch: " + expectedFileEntry.getCall() + ", " + actualFileEntry.getCall());
             }
         }
-        if (expectedFileEntry.getAttributes() != null || actualFileEntry.getAttributes() != null) {
-            if (expectedFileEntry.getAttributes().size() != actualFileEntry.getAttributes().size()) {
-                fail("File entry attribute size mismatch: " + expectedFileEntry.getAttributes().size()
-                        + ", " + actualFileEntry.getAttributes().size());
+        if (expectedFileEntry.getData() != null || actualFileEntry.getData() != null) {
+            if (expectedFileEntry.getData().size() != actualFileEntry.getData().size()) {
+                fail("File entry attribute size mismatch: " + expectedFileEntry.getData().size()
+                        + ", " + actualFileEntry.getData().size());
             }
-            for (String key : actualFileEntry.getAttributes().keySet()) {
-                if (!expectedFileEntry.getAttributes().containsKey(key)) {
+            for (String key : actualFileEntry.getData().keySet()) {
+                if (!expectedFileEntry.getData().containsKey(key)) {
                     fail("File entry attribute '" + key + "' not found");
                 }
-                if (!expectedFileEntry.getAttributes().get(key).equals(actualFileEntry.getAttributes().get(key))) {
-                    fail("File entry attribute '" + key + "' mismatch: " + expectedFileEntry.getAttributes().get(key)
-                            + ", " + actualFileEntry.getAttributes().get(key));
+                if (!expectedFileEntry.getData().get(key).equals(actualFileEntry.getData().get(key))) {
+                    fail("File entry attribute '" + key + "' mismatch: " + expectedFileEntry.getData().get(key)
+                            + ", " + actualFileEntry.getData().get(key));
                 }
             }
         }

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.file;
 
 import org.apache.commons.lang3.StringUtils;
@@ -5,16 +21,18 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -58,8 +76,12 @@ public class FetchAndRegisterTask extends OpenCgaTool {
             throw new ToolException("Missing mandatory url");
         }
 
-        String[] split = urlStr.split("/");
-        fileName = split[split.length - 1];
+        URI uri = new URI(urlStr);
+        fileName = UriUtils.fileName(uri);
+
+        if (!path.endsWith("/")) {
+            path = path + "/";
+        }
 
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
@@ -109,6 +131,7 @@ public class FetchAndRegisterTask extends OpenCgaTool {
                 moveFile(studyFqn, getOutDir().resolve(fileName), null, path, token);
             } catch (Exception e) {
                 deleteTemporaryFile();
+                throw new CatalogException(e.getMessage(), e);
             }
         });
     }
@@ -129,7 +152,12 @@ public class FetchAndRegisterTask extends OpenCgaTool {
 
     private void deleteTemporaryFile() throws CatalogIOException {
         if (Files.exists(getOutDir().resolve(fileName))) {
-            catalogManager.getCatalogIOManagerFactory().get(getOutDir().toUri()).deleteFile(getOutDir().resolve(fileName).toUri());
+            URI outDirUri = getOutDir().toUri();
+            try {
+                catalogManager.getIoManagerFactory().get(outDirUri).deleteFile(getOutDir().resolve(fileName).toUri());
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(outDirUri, e);
+            }
         }
     }
 }

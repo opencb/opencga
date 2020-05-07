@@ -36,9 +36,11 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
     public static final String COHORT = "cohort";
 
     private static final String NUM_SAMPLES = "numSamples";
+    private static final String NUM_FILES = "numFiles";
     private Query query;
     private QueryOptions queryOptions;
     private int numSamples;
+    private int numFiles;
 
     @Override
     protected Map<String, String> getParams() {
@@ -80,13 +82,14 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         numSamples = sampleIds.size();
 
         Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(getStudyId(), sampleIds);
+        numFiles = fileIds.size();
 
         query = new Query(VariantMapReduceUtil.getQueryFromConfig(getConf()))
                 .append(VariantQueryParam.STUDY.key(), getStudyId())
                 .append(VariantQueryParam.FILE.key(), fileIds);
         query.remove(VariantQueryParam.COHORT.key());
 
-        queryOptions = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES_DATA, VariantField.STUDIES_STATS));
+        queryOptions = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_STATS));
     }
 
     @Override
@@ -94,6 +97,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         super.setupJob(job, archiveTable, variantTable);
 
         job.getConfiguration().setInt(NUM_SAMPLES, numSamples);
+        job.getConfiguration().setInt(NUM_FILES, numSamples);
 
         return job;
     }
@@ -268,7 +272,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         }
 
         public ExposedVariantSetStatsCalculator setStats(VariantSetStats value) {
-            stats = new org.opencb.biodata.models.variant.stats.VariantSetStats(value);
+            stats = value;
             return this;
         }
     }
@@ -316,7 +320,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         protected void cleanup(Context context) throws IOException, InterruptedException {
             super.cleanup(context);
             CohortVariantStatsWritable cohortVariantStatsWritable = new CohortVariantStatsWritable(
-                    calculator.getStats().getImpl(),
+                    calculator.getStats(),
                     calculator.getTransitionsCount(),
                     calculator.getTransversionsCount(),
                     calculator.getQualCount(),
@@ -373,6 +377,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
 
             calculator.post();
 
+            stats.getValue().setFilesCount(getFiles(context.getConfiguration()).size());
 
             context.write(n, new Text(stats.getValue().toString()));
         }

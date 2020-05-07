@@ -23,7 +23,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -31,6 +31,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,8 +70,7 @@ public class VariantStatsToHBaseConverterTest {
         statsWrapper.setStart(100);
         statsWrapper.setReference("A");
         statsWrapper.setAlternate("C");
-        HashMap<String, VariantStats> map = new HashMap<>();
-        VariantStats expected = new VariantStats();
+        VariantStats expected = new VariantStats("c1");
         expected.setAltAlleleCount(1);
         expected.setAltAlleleFreq(0.1F);
         expected.setRefAlleleCount(2);
@@ -84,8 +84,7 @@ public class VariantStatsToHBaseConverterTest {
         expected.addGenotype(new Genotype("0/0"), 10, false);
         expected.addGenotype(new Genotype("0/1"), 20, false);
         expected.addGenotype(new Genotype("1/1"), 30, false);
-        map.put("c1", expected);
-        statsWrapper.setCohortStats(map);
+        statsWrapper.setCohortStats(Collections.singletonList(expected));
         Put put = toHbase.convert(statsWrapper);
 
         List<Cell> cells = put.getFamilyCellMap().get(GenomeHelper.COLUMN_FAMILY_BYTES);
@@ -100,6 +99,8 @@ public class VariantStatsToHBaseConverterTest {
         }
 
         assertNotNull(convert);
+        assertEquals("", convert.getCohortId());
+        convert.setCohortId("c1");
         assertEquals(expected, convert);
 
     }

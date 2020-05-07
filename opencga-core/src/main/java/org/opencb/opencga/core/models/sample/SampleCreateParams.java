@@ -1,8 +1,24 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.sample;
 
-import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -11,60 +27,49 @@ public class SampleCreateParams {
 
     private String id;
     private String description;
-    private String type;
     private String individualId;
     private SampleProcessing processing;
     private SampleCollection collection;
-    private String source;
     private Boolean somatic;
     private List<Phenotype> phenotypes;
+
+    private CustomStatusParams status;
+
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
-
-    @Deprecated
-    public String name;
-    @Deprecated
-    public Map<String, Object> stats;
 
     public SampleCreateParams() {
     }
 
-    public SampleCreateParams(String id, String description, String type, String individualId, SampleProcessing processing,
-                              SampleCollection collection, String source, Boolean somatic, List<Phenotype> phenotypes,
-                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, String name, Map<String, Object> stats) {
+    public SampleCreateParams(String id, String description, String individualId, SampleProcessing processing, SampleCollection collection,
+                              Boolean somatic, List<Phenotype> phenotypes, CustomStatusParams status, List<AnnotationSet> annotationSets,
+                              Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
-        this.type = type;
         this.individualId = individualId;
         this.processing = processing;
         this.collection = collection;
-        this.source = source;
         this.somatic = somatic;
         this.phenotypes = phenotypes;
+        this.status = status;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
-        this.name = name;
-        this.stats = stats;
     }
 
     public static SampleCreateParams of(Sample sample) {
-        return new SampleCreateParams(sample.getId(), sample.getDescription(), sample.getType(), sample.getIndividualId(),
-                sample.getProcessing(), sample.getCollection(), sample.getSource(), sample.isSomatic(), sample.getPhenotypes(),
-                sample.getAnnotationSets(), sample.getAttributes(), sample.getName(), sample.getStats());
+        return new SampleCreateParams(sample.getId(), sample.getDescription(), sample.getIndividualId(), sample.getProcessing(),
+                sample.getCollection(), sample.isSomatic(), sample.getPhenotypes(), CustomStatusParams.of(sample.getStatus()),
+                sample.getAnnotationSets(), sample.getAttributes());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleCreateParams{");
-        sb.append("name='").append(name).append('\'');
-        sb.append(", stats=").append(stats);
-        sb.append(", id='").append(id).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", type='").append(type).append('\'');
         sb.append(", individualId='").append(individualId).append('\'');
         sb.append(", processing=").append(processing);
         sb.append(", collection=").append(collection);
-        sb.append(", source='").append(source).append('\'');
         sb.append(", somatic=").append(somatic);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", annotationSets=").append(annotationSets);
@@ -74,30 +79,8 @@ public class SampleCreateParams {
     }
 
     public Sample toSample() {
-
-        String sampleId = StringUtils.isEmpty(this.getId()) ? name : this.getId();
-        String sampleName = StringUtils.isEmpty(name) ? sampleId : name;
-        return new Sample(sampleId, getSource(), getIndividualId(), getProcessing(), getCollection(), 1, 1, getDescription(), getType(),
-                getSomatic(), getPhenotypes(), getAnnotationSets(), getAttributes())
-                .setName(sampleName).setStats(stats);
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public SampleCreateParams setName(String name) {
-        this.name = name;
-        return this;
-    }
-
-    public Map<String, Object> getStats() {
-        return stats;
-    }
-
-    public SampleCreateParams setStats(Map<String, Object> stats) {
-        this.stats = stats;
-        return this;
+        return new Sample(getId(), getIndividualId(), getProcessing(), getCollection(), 1, 1, getDescription(), getSomatic(),
+                getPhenotypes(), getAnnotationSets(), getStatus() != null ? getStatus().toCustomStatus() : null, null, getAttributes());
     }
 
     public String getId() {
@@ -115,15 +98,6 @@ public class SampleCreateParams {
 
     public SampleCreateParams setDescription(String description) {
         this.description = description;
-        return this;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public SampleCreateParams setType(String type) {
-        this.type = type;
         return this;
     }
 
@@ -154,15 +128,6 @@ public class SampleCreateParams {
         return this;
     }
 
-    public String getSource() {
-        return source;
-    }
-
-    public SampleCreateParams setSource(String source) {
-        this.source = source;
-        return this;
-    }
-
     public Boolean getSomatic() {
         return somatic;
     }
@@ -178,6 +143,15 @@ public class SampleCreateParams {
 
     public SampleCreateParams setPhenotypes(List<Phenotype> phenotypes) {
         this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public SampleCreateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 

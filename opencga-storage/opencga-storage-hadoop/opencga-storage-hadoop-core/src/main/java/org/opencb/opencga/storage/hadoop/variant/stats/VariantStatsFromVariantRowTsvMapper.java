@@ -13,7 +13,6 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 
 import java.io.IOException;
 import java.util.*;
@@ -30,11 +29,8 @@ public class VariantStatsFromVariantRowTsvMapper extends VariantRowMapper<NullWr
         cohorts = VariantStatsMapper.getCohorts(context.getConfiguration());
         calculators = new LinkedHashMap<>(cohorts.size());
 
-        VariantTableHelper helper = getHelper();
-
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = getStudyMetadata();
-
 
         String unknownGenotype = context.getConfiguration().get(
                 VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),
@@ -58,13 +54,15 @@ public class VariantStatsFromVariantRowTsvMapper extends VariantRowMapper<NullWr
     protected void map(Object key, VariantRow result, Context context) throws IOException, InterruptedException {
         Variant variant = result.getVariant();
         VariantAnnotation variantAnnotation = result.getVariantAnnotation();
-        Map<String, VariantStats> statsMap = new HashMap<>(cohorts.size());
+        List<VariantStats> statsList = new ArrayList<>(cohorts.size());
         for (Map.Entry<String, HBaseVariantStatsCalculator> entry : calculators.entrySet()) {
             String cohort = entry.getKey();
             HBaseVariantStatsCalculator calculator = entry.getValue();
-            statsMap.put(cohort, calculator.apply(result));
+            VariantStats stats = calculator.apply(result);
+            stats.setCohortId(cohort);
+            statsList.add(stats);
         }
-        context.write(NullWritable.get(), new Text(converter.convert(variant, statsMap, variantAnnotation)));
+        context.write(NullWritable.get(), new Text(converter.convert(variant, statsList, variantAnnotation)));
     }
 
 }

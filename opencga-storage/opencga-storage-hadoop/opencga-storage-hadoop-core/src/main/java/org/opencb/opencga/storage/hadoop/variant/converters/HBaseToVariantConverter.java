@@ -24,19 +24,17 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.biodata.tools.Converter;
+import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -64,17 +62,12 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.Variant
  */
 public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant> {
 
-    public static final String MUTABLE_SAMPLES_POSITION = "mutableSamplesPosition";
-    public static final String STUDY_NAME_AS_STUDY_ID = "studyNameAsStudyId";
-    public static final String SIMPLE_GENOTYPES = "simpleGenotypes";
-
     protected final HBaseToVariantAnnotationConverter annotationConverter;
     protected final HBaseToStudyEntryConverter studyEntryConverter;
     protected final Logger logger = LoggerFactory.getLogger(HBaseToVariantConverter.class);
 
     protected static boolean failOnWrongVariants = false; //FIXME
-    protected boolean failOnEmptyVariants = false;
-    protected VariantQueryFields selectVariantElements;
+    protected HBaseVariantConverterConfiguration configuration;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(variantTableHelper)));
@@ -126,46 +119,18 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                 .collect(Collectors.toList());
     }
 
-    public HBaseToVariantConverter<T> setIncludeFields(Set<VariantField> fields) {
-        annotationConverter.setIncludeFields(fields);
+    public HBaseToVariantConverter<T> configure(HBaseVariantConverterConfiguration configuration) {
+        this.configuration = configuration;
+        studyEntryConverter.configure(configuration);
+        if (configuration.getProjection() != null) {
+            annotationConverter.setIncludeFields(configuration.getProjection().getFields());
+        }
+        annotationConverter.setIncludeIndexStatus(configuration.getIncludeIndexStatus());
         return this;
     }
 
-    public HBaseToVariantConverter<T> setIncludeIndexStatus(boolean includeIndexStatus) {
-        annotationConverter.setIncludeIndexStatus(includeIndexStatus);
-        return this;
-    }
-
-    public HBaseToVariantConverter<T> setStudyNameAsStudyId(boolean studyNameAsStudyId) {
-        studyEntryConverter.setStudyNameAsStudyId(studyNameAsStudyId);
-        return this;
-    }
-
-    public HBaseToVariantConverter<T> setMutableSamplesPosition(boolean mutableSamplesPosition) {
-        studyEntryConverter.setMutableSamplesPosition(mutableSamplesPosition);
-        return this;
-    }
-
-    public HBaseToVariantConverter<T> setFailOnEmptyVariants(boolean failOnEmptyVariants) {
-        studyEntryConverter.setFailOnWrongVariants(failOnEmptyVariants);
-        return this;
-    }
-
-    public HBaseToVariantConverter<T> setSimpleGenotypes(boolean simpleGenotypes) {
-        studyEntryConverter.setSimpleGenotypes(simpleGenotypes);
-        return this;
-    }
-
-    public HBaseToVariantConverter<T> setUnknownGenotype(String unknownGenotype) {
-        studyEntryConverter.setUnknownGenotype(unknownGenotype);
-        return this;
-    }
-
-    public HBaseToVariantConverter<T> setSelectVariantElements(VariantQueryFields selectVariantElements) {
-        this.selectVariantElements = selectVariantElements;
-        studyEntryConverter.setSelectVariantElements(selectVariantElements);
-        annotationConverter.setIncludeFields(selectVariantElements.getFields());
-        return this;
+    public HBaseToVariantConverter<T> configure(Configuration configuration) {
+        return configure(HBaseVariantConverterConfiguration.builder(configuration).build());
     }
 
     public static boolean isFailOnWrongVariants() {
@@ -174,18 +139,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     public static void setFailOnWrongVariants(boolean b) {
         failOnWrongVariants = b;
-    }
-
-
-    /**
-     * Format of the converted variants. Discard other values.
-     * @see org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils#getIncludeFormats
-     * @param formats Formats for converted variants
-     * @return this
-     */
-    public HBaseToVariantConverter<T> setFormats(List<String> formats) {
-        studyEntryConverter.setFormats(formats);
-        return this;
     }
 
     public static HBaseToVariantConverter<Result> fromResult(VariantTableHelper helper) throws IOException {
@@ -211,41 +164,34 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             variant.addStudyEntry(studyEntry);
         }
         variant.setAnnotation(annotation);
-        if (annotation != null && StringUtils.isNotEmpty(annotation.getId())) {
-            variant.setId(annotation.getId());
-        } else {
-            variant.setId(variant.toString());
+        variant.setId(variant.toString());
+
+        Set<String> names = new HashSet<>();
+        for (StudyEntry studyEntry : studies.values()) {
+            List<FileEntry> files = studyEntry.getFiles();
+            if (files != null) {
+                for (FileEntry fileEntry : files) {
+                    String id = fileEntry.getData().get(StudyEntry.VCF_ID);
+                    if (id != null) {
+                        names.add(id);
+                    }
+                }
+            }
         }
-        if (failOnEmptyVariants && variant.getStudies().isEmpty()) {
+        variant.setNames(new ArrayList<>(names));
+
+        if (configuration.getFailOnEmptyVariants() && variant.getStudies().isEmpty()) {
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
         return variant;
     }
 
     private void wrongVariant(String message) {
-        if (failOnWrongVariants) {
+        if (configuration.getFailOnWrongVariants()) {
             throw new IllegalStateException(message);
         } else {
             logger.warn(message);
         }
-    }
-
-    public HBaseToVariantConverter<T> configure(Configuration configuration) {
-        if (StringUtils.isNotEmpty(configuration.get(MUTABLE_SAMPLES_POSITION))) {
-            setMutableSamplesPosition(configuration.getBoolean(MUTABLE_SAMPLES_POSITION, true));
-        }
-        if (StringUtils.isNotEmpty(configuration.get(STUDY_NAME_AS_STUDY_ID))) {
-            setStudyNameAsStudyId(configuration.getBoolean(STUDY_NAME_AS_STUDY_ID, false));
-        }
-        if (StringUtils.isNotEmpty(configuration.get(SIMPLE_GENOTYPES))) {
-            setSimpleGenotypes(configuration.getBoolean(SIMPLE_GENOTYPES, false));
-        }
-        setUnknownGenotype(configuration.get(VariantQueryParam.UNKNOWN_GENOTYPE.key()));
-
-//                .setSelectVariantElements(select)
-//                .setFormats(formats)
-
-        return this;
     }
 
     private static class ResultSetToVariantConverter extends HBaseToVariantConverter<ResultSet> {
@@ -298,7 +244,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
                 VariantAnnotation annotation = annotationConverter.convert(result);
                 Map<Integer, StudyEntry> studies;
-                if (selectVariantElements != null && selectVariantElements.getStudies().isEmpty()) {
+                if (configuration.getProjection() != null && configuration.getProjection().getStudyIds().isEmpty()) {
                     studies = Collections.emptyMap();
                 } else {
                     studies = studyEntryConverter.convert(result);

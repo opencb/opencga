@@ -196,7 +196,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         } else {
             logger.info("Init MapReduce job reading from Phoenix");
             String sql = new VariantSqlQueryParser(getHelper(), variantTable, getMetadataManager())
-                    .parse(query, options).getSql();
+                    .parse(query, options);
 
             VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
         }

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.common;
 
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
@@ -19,6 +35,27 @@ import java.util.stream.Collectors;
 public final class Enums {
 
     private Enums() {
+    }
+
+    public enum Entity {
+        SAMPLES(Resource.SAMPLE),
+        FILES(Resource.FILE),
+        COHORTS(Resource.COHORT),
+        INDIVIDUALS(Resource.INDIVIDUAL),
+        FAMILIES(Resource.FAMILY),
+        JOBS(Resource.JOB),
+        CLINICAL_ANALYSES(Resource.CLINICAL_ANALYSIS),
+        DISEASE_PANELS(Resource.DISEASE_PANEL);
+
+        private final Resource resource;
+
+        Entity(Resource resource) {
+            this.resource = resource;
+        }
+
+        public Resource getResource() {
+            return resource;
+        }
     }
 
     public enum Resource {
@@ -76,10 +113,16 @@ public final class Enums {
         COUNT,
         DELETE,
         DOWNLOAD,
+        VIEW_LOG,
+        VIEW_CONTENT,
+        IMAGE_CONTENT,
+        HEAD_CONTENT,
+        TAIL_CONTENT,
         INDEX,
         CHANGE_PERMISSION,
 
         LOGIN,
+        REFRESH_TOKEN,
         CHANGE_USER_PASSWORD,
         RESET_USER_PASSWORD,
         CHANGE_USER_CONFIG,
@@ -103,6 +146,8 @@ public final class Enums {
         REMOVE_VARIABLE_FROM_VARIABLE_SET,
 
         AGGREGATION_STATS,
+
+        RELATIVES,
 
         UPLOAD,
         LINK,
@@ -168,6 +213,19 @@ public final class Enums {
         REMOVE,
         REVERT,
         NONE
+    }
+
+    public enum CohortType {
+        CASE_CONTROL,
+        CASE_SET,
+        CONTROL_SET,
+        PAIRED,
+        PAIRED_TUMOR,
+        AGGREGATE,
+        TIME_SERIES,
+        FAMILY,
+        TRIO,
+        COLLECTION
     }
 
     public static class ExecutionStatus extends Status {

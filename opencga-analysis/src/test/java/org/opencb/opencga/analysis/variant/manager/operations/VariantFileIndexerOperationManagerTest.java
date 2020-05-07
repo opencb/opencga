@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,27 +16,31 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.analysis.tools.ToolRunner;
+import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -47,6 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -77,18 +82,18 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
+        assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
         variantManager.index(studyId, getFile(1).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1000, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
+        assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(1).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         variantManager.index(studyId, getFile(2).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1500, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
+        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getName());
         checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(2).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
@@ -96,13 +101,13 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), false);
         variantManager.index(studyId, getFile(3).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(2000, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(Cohort.CohortStatus.INVALID, getDefaultCohort(studyId).getStatus().getName());
+        assertEquals(CohortStatus.INVALID, getDefaultCohort(studyId).getInternal().getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(3).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         variantManager.index(studyId, getFile(4).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(2504, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
+        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(4).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
         checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
@@ -117,7 +122,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
+        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
     }
@@ -133,8 +138,8 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
             fail("Expected StoragePipelineException exception");
         } catch (Exception e) {
             assertEquals(0, getDefaultCohort(studyId).getSamples().size());
-            assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
-            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getIndex().getStatus().getName());
+            assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getName());
+            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
             assertNotNull(catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
         }
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "none");
@@ -142,7 +147,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         queryOptions.put(VariantFileIndexerOperationManager.LOAD, true);
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
+        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
     }
@@ -170,8 +175,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("index status");
-        catalogManager.getFileManager().delete(study.getFqn(),
-                new Query(FileDBAdaptor.QueryParams.PATH.key(), inputFile.getPath()) , null, sessionId);
+        catalogManager.getFileManager().unlink(study.getFqn(), inputFile.getId(), sessionId);
         }
 
     @Test
@@ -409,6 +413,42 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
         loadFile(transformFile, queryOptions, outputId2);
 
+    }
+
+    @Test
+    public void testIndexMalformed() throws Exception {
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_malformed_file"));
+        VariantIndexParams params = new VariantIndexParams();
+        params.setFile(create("variant-test-file-corrupted.vcf").getName());
+
+        ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
+                        .append(ParamConstants.STUDY_PARAM, studyId)
+                        .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
+                , outDir, sessionId);
+
+        assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
+        assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found malformed variants"));
+        assertTrue(Files.exists(outDir.resolve("variant-test-file-corrupted.vcf.malformed.txt")));
+    }
+
+    @Test
+    public void testIndexDuplicated() throws Exception {
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_duplicated_file"));
+        VariantIndexParams params = new VariantIndexParams();
+        params.setFile(create("variant-test-duplicated.vcf").getName());
+
+        ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
+                        .append(ParamConstants.STUDY_PARAM, studyId)
+                        .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
+                , outDir, sessionId);
+
+        assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
+        assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found duplicated variants"));
+        assertTrue(Files.exists(outDir.resolve("variant-test-duplicated.vcf.duplicated.tsv")));
     }
 
     @Override

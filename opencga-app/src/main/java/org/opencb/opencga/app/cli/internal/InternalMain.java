@@ -83,11 +83,26 @@ public class InternalMain {
                         case "tools":
                             commandExecutor = new ToolsCommandExecutor(cliOptionsParser.getToolsCommandOptions());
                             break;
-                        case "interpretation":
-                            commandExecutor = new InterpretationCommandExecutor(cliOptionsParser.getInterpretationCommandOptions());
+                        case "clinical":
+                            commandExecutor = new ClinicalCommandExecutor(cliOptionsParser.getClinicalCommandOptions());
                             break;
                         case "files":
                             commandExecutor = new FileCommandExecutor(cliOptionsParser.getFileCommandOptions());
+                            break;
+                        case "samples":
+                            commandExecutor = new SampleCommandExecutor(cliOptionsParser.getSampleCommandOptions());
+                            break;
+                        case "cohorts":
+                            commandExecutor = new CohortCommandExecutor(cliOptionsParser.getCohortCommandOptions());
+                            break;
+                        case "individuals":
+                            commandExecutor = new IndividualCommandExecutor(cliOptionsParser.getIndividualCommandOptions());
+                            break;
+                        case "families":
+                            commandExecutor = new FamilyCommandExecutor(cliOptionsParser.getFamilyCommandOptions());
+                            break;
+                        case "jobs":
+                            commandExecutor = new JobCommandExecutor(cliOptionsParser.getJobCommandOptions());
                             break;
                         default:
                             System.err.printf("ERROR: not valid command passed: '" + parsedCommand + "'");

@@ -1,6 +1,23 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -51,19 +68,12 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
     public IndividualSolrModel convertToStorageType(Individual individual) {
         IndividualSolrModel individualSolrModel = new IndividualSolrModel();
 
+        individualSolrModel.setId(individual.getUuid());
         individualSolrModel.setUid(individual.getUid());
         individualSolrModel.setStudyId(study.getFqn().replace(":", "__"));
 
         individualSolrModel.setHasFather(individual.getFather() != null && individual.getFather().getUid() > 0);
         individualSolrModel.setHasMother(individual.getMother() != null && individual.getMother().getUid() > 0);
-        if (individual.getMultiples() != null && individual.getMultiples().getSiblings() != null
-                && !individual.getMultiples().getSiblings().isEmpty()) {
-            individualSolrModel.setNumMultiples(individual.getMultiples().getSiblings().size());
-            individualSolrModel.setMultiplesType(individual.getMultiples().getType());
-        } else {
-            individualSolrModel.setNumMultiples(0);
-            individualSolrModel.setMultiplesType("None");
-        }
 
         if (individual.getSex() != null) {
             individualSolrModel.setSex(individual.getSex().name());
@@ -88,18 +98,29 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
         individualSolrModel.setCreationMonth(localDate.getMonth().toString());
         individualSolrModel.setCreationDay(localDate.getDayOfMonth());
         individualSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        individualSolrModel.setStatus(individual.getStatus().getName());
+        individualSolrModel.setStatus(individual.getInternal().getStatus().getName());
 
-        if (individual.getStatus() != null) {
-            individualSolrModel.setStatus(individual.getStatus().getName());
+        if (individual.getInternal().getStatus() != null) {
+            individualSolrModel.setStatus(individual.getInternal().getStatus().getName());
         }
         if (individual.getLifeStatus() != null) {
             individualSolrModel.setLifeStatus(individual.getLifeStatus().name());
         }
-        if (individual.getAffectationStatus() != null) {
-            individualSolrModel.setAffectationStatus(individual.getAffectationStatus().name());
+        if (individual.getLocation() != null) {
+            individualSolrModel.setLocationCity(individual.getLocation().getCity());
+            individualSolrModel.setLocationState(individual.getLocation().getState());
+            individualSolrModel.setLocationCountry(individual.getLocation().getCountry());
+        }
+        if (StringUtils.isNotEmpty(individual.getDateOfBirth())) {
+            date = TimeUtils.toDate(individual.getDateOfBirth());
+            localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+            individualSolrModel.setDayOfBirth(localDate.getDayOfMonth());
+            individualSolrModel.setMonthOfBirth(localDate.getMonth().toString());
+            individualSolrModel.setYearOfBirth(localDate.getYear());
         }
         individualSolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(individual.getPhenotypes()));
+        individualSolrModel.setDisorders(SolrConverterUtil.populateDisorders(individual.getDisorders()));
 
         individualSolrModel.setNumSamples(individual.getSamples() != null ? individual.getSamples().size() : 0);
 

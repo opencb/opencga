@@ -47,7 +47,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -55,7 +55,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.*;
@@ -242,12 +242,13 @@ public class VariantCommandExecutor extends CommandExecutor {
 // indexVariantsCommandOptions.aggregated);
 
         /* Add CLi options to the variant options */
-        ObjectMap params = storageConfiguration.getOptions();
+        ObjectMap params = variantStorageEngine.getOptions();
         params.put(VariantStorageOptions.MERGE_MODE.key(), indexVariantsCommandOptions.merge);
+        params.put(VariantStorageOptions.DEDUPLICATION_POLICY.key(), indexVariantsCommandOptions.deduplicationPolicy);
         params.put(VariantStorageOptions.STUDY.key(), indexVariantsCommandOptions.study);
         params.put(VariantStorageOptions.STATS_CALCULATE.key(), indexVariantsCommandOptions.calculateStats);
         params.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.excludeGenotype);
-        params.put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), indexVariantsCommandOptions.includeExtraFields);
+        params.put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), indexVariantsCommandOptions.includeSampleData);
 //        variantOptions.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
 //        variantOptions.put(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
         params.put(VariantStorageOptions.STATS_AGGREGATION.key(), indexVariantsCommandOptions.aggregated);
@@ -263,8 +264,15 @@ public class VariantCommandExecutor extends CommandExecutor {
 //            params.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
 //        }
         params.put(VariantStorageOptions.RESUME.key(), indexVariantsCommandOptions.resume);
+        params.put(VariantStorageOptions.FAMILY.key(), indexVariantsCommandOptions.family);
         params.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), indexVariantsCommandOptions.loadSplitData);
-        params.put(VariantStorageOptions.POST_LOAD_CHECK_SKIP.key(), indexVariantsCommandOptions.skipPostLoadCheck);
+        params.put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), indexVariantsCommandOptions.loadMultiFileData);
+        params.put(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), indexVariantsCommandOptions.loadSampleIndex);
+        params.put(VariantStorageOptions.LOAD_ARCHIVE.key(), indexVariantsCommandOptions.loadArchive);
+        params.put(VariantStorageOptions.LOAD_HOM_REF.key(), indexVariantsCommandOptions.loadHomRef);
+        params.put(VariantStorageOptions.NORMALIZATION_SKIP.key(), indexVariantsCommandOptions.normalizationSkip);
+        params.put(VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), indexVariantsCommandOptions.referenceGenome);
+        params.put(VariantStorageOptions.POST_LOAD_CHECK.key(), indexVariantsCommandOptions.postLoadCheck);
         params.put(VariantStorageOptions.INDEX_SEARCH.key(), indexVariantsCommandOptions.indexSearch);
         params.put(VariantStorageOptions.SPECIES.key(), indexVariantsCommandOptions.species);
         params.put(VariantStorageOptions.ASSEMBLY.key(), indexVariantsCommandOptions.assembly);
@@ -335,12 +343,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (variantQueryCommandOptions.commonQueryOptions.count) {
             DataResult<Long> result = variantStorageEngine.count(query);
             System.out.println("Num. results\t" + result.getResults().get(0));
-        } else if (StringUtils.isNotEmpty(variantQueryCommandOptions.rank)) {
-            executeRank(query, variantStorageEngine, variantQueryCommandOptions);
-        } else if (StringUtils.isNotEmpty(variantQueryCommandOptions.groupBy)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            DataResult groupBy = variantStorageEngine.groupBy(query, variantQueryCommandOptions.groupBy, options);
-            System.out.println("groupBy = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
         } else {
             URI uri = StringUtils.isEmpty(variantQueryCommandOptions.commonQueryOptions.output)
                     ? null
@@ -782,7 +784,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.LIMIT, Integer.MAX_VALUE);
                     queryOptions.put(QueryOptions.SKIP, 0);
 
-                    VariantSolrIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+                    SolrVariantDBIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
                     System.out.print("[");
                     while (iterator.hasNext()) {
                         Variant variant = iterator.next();
@@ -801,13 +803,12 @@ public class VariantCommandExecutor extends CommandExecutor {
     }
 
     private void executeRank(Query query, VariantStorageEngine variantStorageEngine,
-                             StorageVariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions)
+                             StorageVariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions, String field)
             throws JsonProcessingException, StorageEngineException {
         ObjectMapper objectMapper = new ObjectMapper();
-        String field = variantQueryCommandOptions.rank;
         boolean asc = false;
-        if (variantQueryCommandOptions.rank.contains(":")) {  //  eg. gene:-1
-            String[] arr = variantQueryCommandOptions.rank.split(":");
+        if (field.contains(":")) {  //  eg. gene:-1
+            String[] arr = field.split(":");
             field = arr[0];
             if (arr[1].endsWith("-1")) {
                 asc = true;

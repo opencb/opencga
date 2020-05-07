@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,16 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -61,10 +65,10 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         CATEGORIES("categories", TEXT_ARRAY, ""),
         CATEGORIES_NAME("categories.name", TEXT_ARRAY, ""),
 
-        PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
-        PHENOTYPES_ID("phenotypes.id", TEXT, ""),
-        PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
-        PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
+        DISORDERS("disorders", TEXT_ARRAY, ""),
+        DISORDERS_ID("disorders.id", TEXT, ""),
+        DISORDERS_NAME("disorders.name", TEXT, ""),
+        DISORDERS_SOURCE("disorders.source", TEXT, ""),
 
         VARIANTS("variants", TEXT_ARRAY, ""),
         VARIANTS_ID("variants.id", TEXT, ""),
@@ -79,9 +83,13 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         REGIONS_LOCATION("regions.location", TEXT, ""),
         REGIONS_SCORE("regions.score", DOUBLE, ""),
 
-        AUTHOR("source.author", TEXT, ""),
+        SOURCE_ID("source.id", TEXT, ""),
+        SOURCE_NAME("source.name", TEXT, ""),
+        SOURCE_VERSION("source.version", TEXT, ""),
+        SOURCE_AUTHOR("source.author", TEXT, ""),
+        SOURCE_PROJECT("source.project", TEXT, ""),
 
-        DELETED("deleted", BOOLEAN, ""),
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY_UID("studyUid", INTEGER_ARRAY, "");
@@ -129,11 +137,11 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         }
     }
 
-    default boolean exists(long panelUid) throws CatalogDBException {
+    default boolean exists(long panelUid) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), panelUid)).getNumMatches() > 0;
     }
 
-    default void checkUid(long panelUid) throws CatalogDBException {
+    default void checkUid(long panelUid) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (panelUid < 0) {
             throw CatalogDBException.newInstance("Panel uid '{}' is not valid: ", panelUid);
         }
@@ -143,23 +151,19 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         }
     }
 
-    /**
-     * Insert the panel as an installation panel.
-     *
-     * @param panel Panel.
-     * @param overwrite Flag to overwrite in case of an ID conflict.
-     * @return OpenCGAResult object.
-     * @throws CatalogDBException In case of an ID conflict when overwrite is false.
-     */
-    OpenCGAResult insert(Panel panel, boolean overwrite) throws CatalogDBException;
+    OpenCGAResult insert(long studyUid, List<Panel> panelList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, Panel panel, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<Panel> get(long panelId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Panel> get(long panelId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long panelId) throws CatalogDBException;
 
-    OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    OpenCGAResult updateProjectRelease(long studyId, int release)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

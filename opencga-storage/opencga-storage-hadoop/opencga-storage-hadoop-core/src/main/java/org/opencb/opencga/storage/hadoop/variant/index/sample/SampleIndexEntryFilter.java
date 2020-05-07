@@ -9,13 +9,14 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationInde
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 
 import java.util.*;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation.AND;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation.OR;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation.AND;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation.OR;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
 
@@ -87,6 +88,7 @@ public class SampleIndexEntryFilter {
     }
 
     private Set<Variant> filterMendelian(MendelianErrorSampleIndexEntryIterator iterator) {
+        // Use SET to ensure order and remove duplicates
         Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
 
         if (iterator != null) {
@@ -114,14 +116,15 @@ public class SampleIndexEntryFilter {
         List<List<Variant>> variantsByGt = new ArrayList<>(gts.size());
         int numVariants = 0;
         // Use countIterator only if don't need to filter by region or by type
-        boolean countIterator = count && regionFilter == null && CollectionUtils.isEmpty(query.getVariantTypes());
+        boolean countIterator = count
+                && regionFilter == null
+                && CollectionUtils.isEmpty(query.getVariantTypes())
+                && !query.isMultiFileSample();
         for (SampleIndexGtEntry gtEntry : gts.values()) {
-
             MutableInt expectedResultsFromAnnotation = new MutableInt(getExpectedResultsFromAnnotation(gtEntry));
 
             SampleIndexEntryIterator variantIterator = gtEntry.iterator(countIterator);
             ArrayList<Variant> variants = new ArrayList<>(variantIterator.getApproxSize());
-            variantsByGt.add(variants);
             while (expectedResultsFromAnnotation.intValue() > 0 && variantIterator.hasNext()) {
                 Variant variant = filter(variantIterator, expectedResultsFromAnnotation);
                 if (variant != null) {
@@ -129,9 +132,15 @@ public class SampleIndexEntryFilter {
                     numVariants++;
                 }
             }
+            if (!variants.isEmpty()) {
+                variantsByGt.add(variants);
+            }
         }
 
-        if (variantsByGt.size() == 1) {
+        // Shortcut. Do not sort or remove duplicates if empty of there are only variants from one genotype
+        if (variantsByGt.isEmpty()) {
+            return Collections.emptyList();
+        } else if (variantsByGt.size() == 1) {
             return variantsByGt.get(0);
         }
 
@@ -141,10 +150,26 @@ public class SampleIndexEntryFilter {
             variants.addAll(variantList);
         }
 
-        // Only sort if not counting
-        if (!count) {
+        boolean mayHaveDiscrepancies = query.isMultiFileSample() && entry.getDiscrepancies() > 0;
+
+        // Only sort not counting or the sample may have discrepancies
+        if (!count || mayHaveDiscrepancies) {
             // List.sort is much faster than a TreeSet
             variants.sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+
+            if (mayHaveDiscrepancies) {
+                // Remove possible duplicated elements
+                Iterator<Variant> iterator = variants.iterator();
+                Variant variant = iterator.next();
+                while (iterator.hasNext()) {
+                    Variant next = iterator.next();
+                    if (variant.sameGenomicVariant(next)) {
+                        iterator.remove();
+                    } else {
+                        variant = next;
+                    }
+                }
+            }
         }
 
         return variants;
@@ -185,8 +210,10 @@ public class SampleIndexEntryFilter {
                 if (filterFile(variants)) {
 
                     // Test parents filter (if any)
-                    if (!variants.hasParentsIndex()
-                            || testParentsGenotypeCode(variants.nextParentsIndex(), query.getFatherFilter(), query.getMotherFilter())) {
+                    if (!variants.hasParentsIndex() || testParentsGenotypeCode(
+                            variants.nextParentsIndexEntry(),
+                            query.getFatherFilter(),
+                            query.getMotherFilter())) {
 
                         // Only at this point, get the variant.
                         Variant variant = variants.next();
@@ -206,7 +233,23 @@ public class SampleIndexEntryFilter {
         if (query.getFileIndexMask() == EMPTY_MASK || !variants.hasFileIndex()) {
             return true;
         }
-        return query.getSampleFileIndexQuery().getValidFileIndex()[variants.nextFileIndex() & query.getFileIndexMask()];
+        if (filterFile(variants.nextFileIndexEntry())) {
+            return true;
+        }
+        while (variants.isMultiFileIndex()) {
+            if (filterFile(variants.nextMultiFileIndexEntry())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean filterFile(short fileIndex) {
+        SampleFileIndexQuery fileQuery = query.getSampleFileIndexQuery();
+        int v = fileIndex & fileQuery.getFileIndexMask();
+
+        return (!fileQuery.hasFileIndexMask1() || fileQuery.getValidFileIndex1()[getByte1(v)])
+                && (!fileQuery.hasFileIndexMask2() || fileQuery.getValidFileIndex2()[getByte2(v)]);
     }
 
     public static boolean isNonIntergenic(byte summaryIndex) {

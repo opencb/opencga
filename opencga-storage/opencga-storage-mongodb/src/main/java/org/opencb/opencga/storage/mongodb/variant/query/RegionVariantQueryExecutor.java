@@ -6,14 +6,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.query.DBAdaptorVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.executors.DBAdaptorVariantQueryExecutor;
 
 import java.util.Set;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.DEFAULT_SKIP_COUNT;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.MODIFIER_QUERY_PARAMS;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.MODIFIER_QUERY_PARAMS;
 
 /**
  * Special executor to be used if the query contains only filters for REGION and (optionally) STUDY. [#837]
@@ -34,7 +33,7 @@ public class RegionVariantQueryExecutor extends DBAdaptorVariantQueryExecutor {
             // Query search index is mandatory. Can not use this executor.
             return false;
         }
-        if (!options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {
+        if (options.getBoolean(QueryOptions.COUNT, false)) {
             // Should not require total count
             return false;
         }

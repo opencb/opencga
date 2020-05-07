@@ -22,7 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.List;
 
@@ -96,7 +96,7 @@ public class CohortCommandOptions {
         public String name;
 
         @Parameter(names = {"--type"}, description = "Cohort type", arity = 1)
-        public Study.Type type = Study.Type.COLLECTION;
+        public Enums.CohortType type = Enums.CohortType.COLLECTION;
 
         @Parameter(names = {"--variable-set"}, description = "Variable set id or name", arity = 1)
         public String variableSetId;

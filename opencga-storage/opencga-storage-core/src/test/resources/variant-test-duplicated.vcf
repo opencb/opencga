@@ -1,0 +1,11 @@
+##fileformat=VCFv4.1
+##FILTER=<ID=PASS,Description="All filters passed">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+1	100	.	T	C	10	PASS	.	GT	0/1
+1	200	.	T	C	40	noPass	.	GT	0/1
+1	200	.	TT	CT	30	PASS	.	GT	0/1
+1	300	.	T	C	30	PASS	.	GT	0/1
+1	300	.	T	C	50	PASS	.	GT	0/1
+1	400	.	T	C	10	PASS	.	GT	0/1
+1	500	.	T	.	10	PASS	.	GT	0/0
+1	500	.	TC	T	10	PASS	.	GT	0/1

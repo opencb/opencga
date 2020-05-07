@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -48,7 +49,7 @@ public class StudyWSServerTest {
         System.out.println("\tsid: " + sessionId);
         System.out.println("\tname: " + stName);
         System.out.println("\talias: " + stName);
-        System.out.println("\ttype: " + Study.Type.CASE_CONTROL);
+        System.out.println("\ttype: " + Enums.CohortType.CASE_CONTROL);
         System.out.println("\tstatus: " + Status.READY);
         System.out.println("\tdescription: description");
 
@@ -57,7 +58,7 @@ public class StudyWSServerTest {
                 .queryParam("sid", sessionId)
                 .queryParam("name", stName)
                 .queryParam("alias", stName)
-                .queryParam("type", Study.Type.CASE_CONTROL)
+                .queryParam("type", Enums.CohortType.CASE_CONTROL)
                 .queryParam("status", Status.READY)
                 .queryParam("description", "description")
                 .request().get(String.class);
@@ -92,7 +93,7 @@ public class StudyWSServerTest {
 
     public void modifyStudy(long studyId, String sessionId) throws IOException {
         String name = studyId + "-mod";
-        Study.Type type = Study.Type.CASE_SET;
+        Enums.CohortType type = Enums.CohortType.CASE_SET;
         String description = "desc-mod";
         String status = "status-mod";
         //String attr = "attr-mod";

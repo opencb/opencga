@@ -13,7 +13,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDB
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
-import org.opencb.opencga.storage.core.variant.query.CompoundHeterozygousQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.CompoundHeterozygousQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 
@@ -21,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created by jacobo on 26/04/19.

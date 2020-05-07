@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.server.rest.admin;
 
 import io.swagger.annotations.*;
@@ -7,12 +23,19 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.cohort.CohortIndexTask;
+import org.opencb.opencga.analysis.family.FamilyIndexTask;
+import org.opencb.opencga.analysis.file.FileIndexTask;
+import org.opencb.opencga.analysis.individual.IndividualIndexTask;
+import org.opencb.opencga.analysis.job.JobIndexTask;
+import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelCreateParams;
 import org.opencb.opencga.core.models.study.Group;
@@ -25,6 +48,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.core.models.admin.UserImportParams.ResourceType.*;
@@ -52,7 +77,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             }
 
             if (user.getType() == null) {
-                user.setType(Account.Type.GUEST);
+                user.setType(Account.AccountType.GUEST);
             }
 
             OpenCGAResult<User> queryResult = catalogManager.getUserManager()
@@ -169,7 +194,15 @@ public class AdminWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Sync Catalog into the Solr", response = Boolean.class)
     public Response syncSolr() {
         try {
-            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(token));
+            ObjectMap params = new ObjectMap();
+            List<OpenCGAResult<Job>> results = new ArrayList<>(6);
+            results.add(catalogManager.getJobManager().submit("admin", FileIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", SampleIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", IndividualIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", FamilyIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", CohortIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", JobIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            return createOkResponse(OpenCGAResult.merge(results));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -190,36 +223,6 @@ public class AdminWSServer extends OpenCGAWSServer {
             catalogManager.installCatalogDB(installParams.getSecretKey(), installParams.getPassword(), installParams.getEmail(),
                     installParams.getOrganization());
             return createOkResponse(DataResult.empty());
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-
-    @POST
-    @Path("/catalog/panel")
-    @ApiOperation(value = "Handle global panels", response = Panel.class)
-    public Response diseasePanels(
-            @ApiParam(value = "Import panels from PanelApp (GEL)", defaultValue = "false") @QueryParam("panelApp") boolean importPanels,
-            @ApiParam(value = "Flag indicating to overwrite installed panels in case of an ID conflict", defaultValue = "false")
-                @QueryParam("overwrite") boolean overwrite,
-            @ApiParam(value = "Comma separated list of global panel ids to delete")
-                @QueryParam("delete") String panelsToDelete,
-            @ApiParam(value = "Panel parameters to be installed") PanelCreateParams panelPost) {
-        try {
-            if (importPanels) {
-                catalogManager.getPanelManager().importPanelApp(token, overwrite);
-            } else if (StringUtils.isEmpty(panelsToDelete)) {
-                catalogManager.getPanelManager().create(panelPost.toPanel(), overwrite, token);
-            } else {
-                String[] panelIds = panelsToDelete.split(",");
-                for (String panelId : panelIds) {
-                    catalogManager.getPanelManager().delete(panelId, token);
-                }
-            }
-
-            return createOkResponse(catalogManager.getPanelManager().count(PanelManager.INSTALLATION_PANELS,
-                    new Query(), token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

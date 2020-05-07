@@ -1,0 +1,232 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmName": {
+      "type": "string",
+      "defaultValue": "[concat(resourceGroup().name, '-login01')]"
+    },
+    "VMSize": {
+      "type": "string",
+      "defaultValue": "Standard_E8_v3",
+      "metadata": {
+        "description": "Size of the VM"
+      }
+    },
+    "diskSizeGB": {
+      "type": "int",
+      "defaultValue": 64,
+      "metadata": {
+        "description": "Size of the OS disk."
+      }
+    },
+    "diskType": {
+      "type": "string",
+      "defaultValue": "StandardSSD_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Premium_LRS",
+        "StandardSSD_LRS"
+      ],
+      "metadata": {
+        "description": "Storage Account type"
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "azureuser",
+      "metadata": {
+        "description": "Admin username on all VMs."
+      }
+    },
+    "sshKeyData": {
+      "type": "securestring",
+      "metadata": {
+        "description": "SSH key used for all VMs."
+      }
+    },
+    "subnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet ID."
+      }
+    },
+    "LogAnalyticsWorkSpaceID": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Workspace ID"
+      }
+    },
+    "LogAnalyticsWorkSpaceKey":{
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Workspace Key"
+      }
+    },
+    "LogAnalyticsWorkspaceResourceID": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Workspace Resource ID"
+      }
+    }
+  },
+  "variables": {
+    "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+    "imagePublisher": "Canonical",
+    "imageOffer": "UbuntuServer",
+    "imageSKU": "18.04-LTS",
+    "nicName": "[concat(parameters('vmName'), '-nic')]",
+    "diskName": "[concat(parameters('vmName'), '-disk')]",
+    "publicIPAddressName": "[concat(parameters('vmName'), '-ip')]",
+    "publicIPAddressType": "Dynamic",
+    "publicIPAddressDNS": "[concat(resourceGroup().name, '-', uniquestring(resourceGroup().id) )]",
+    "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('LogAnalyticsWorkSpaceID'),' -e KEY=',parameters('LogAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
+    "cloudInitArray": [
+      "#cloud-config",
+      "",
+      "package_upgrade: true",
+      "package_reboot_if_required: true",
+      "",
+      "runcmd:",
+      "- export DEBIAN_FRONTEND='noninteractive'",
+      "- curl -fsSL https://get.docker.com/ | sh",
+      "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
+      "[concat('- ', variables('logAnalyticsAgent'))]"
+    ],
+    "cloudInit": "[replace(replace(replace(string(variables('cloudInitArray')),'\",\"','\n'),'[\"',''),'\"]','')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2017-10-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('publicIPAddressDNS')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2018-08-01",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('nicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('publicIPAddressName')]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[parameters('subnetId')]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+              }
+            }
+          }
+        ]
+      },
+      "resources": [
+        {
+          "type": "providers/diagnosticSettings",
+          "name": "[concat('Microsoft.Insights/', variables('nicName'))]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+          ],
+          "apiVersion": "2017-05-01-preview",
+          "properties": {
+            "name": "[variables('nicName')]",
+            "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+            "logs": [
+
+            ],
+            "metrics": [
+              {
+                "category": "AllMetrics",
+                "enabled": "true",
+                "retentionPolicy": {
+                  "enabled": "false",
+                  "days": 0
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "apiVersion": "2018-06-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('vmName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('VMSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('vmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": "true",
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[variables('sshKeyPath')]",
+                  "keyData": "[parameters('sshKeyData')]"
+                }
+              ]
+            }
+          },
+          "customData": "[base64(variables('cloudInit'))]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('imagePublisher')]",
+            "offer": "[variables('imageOffer')]",
+            "sku": "[variables('imageSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[variables('diskName')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "diskSizeGB": "[parameters('diskSizeGB')]",
+            "managedDisk": {
+              "storageAccountType": "[parameters('diskType')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "cloudInit": {
+      "value": "[variables('cloudInit')]",
+      "type": "string"
+    },
+    "vmName": {
+      "value": "[parameters('vmName')]",
+      "type": "string"
+    },
+    "connect": {
+      "value": "[concat('ssh ', parameters('adminUsername'), '@', reference(variables('publicIPAddressName')).dnsSettings.fqdn)]",
+      "type": "string"
+    }
+  }
+}

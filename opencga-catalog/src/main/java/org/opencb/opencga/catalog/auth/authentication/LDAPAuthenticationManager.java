@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -67,13 +66,13 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String authenticate(String username, String password) throws CatalogAuthenticationException {
+    public AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException {
         Map<String, Object> claims = new HashMap<>();
 
         try {
-            List<Attributes> userInfoFromLDAP = LDAPUtils.getUserInfoFromLDAP(host, Arrays.asList(username), usersSearch);
+            List<Attributes> userInfoFromLDAP = LDAPUtils.getUserInfoFromLDAP(host, Arrays.asList(userId), usersSearch);
             if (userInfoFromLDAP == null || userInfoFromLDAP.isEmpty()) {
-                throw new CatalogAuthenticationException("The user id " + username + " could not be found in LDAP.");
+                throw new CatalogAuthenticationException("The user id " + userId + " could not be found in LDAP.");
             }
 
             String rdn = LDAPUtils.getRDN(userInfoFromLDAP.get(0));
@@ -94,7 +93,17 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
-        return jwtManager.createJWTToken(username, claims, expiration);
+        return new AuthenticationResponse(jwtManager.createJWTToken(userId, claims, expiration));
+    }
+
+    @Override
+    public AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException {
+        String userId = getUserId(refreshToken);
+        if (!"*".equals(userId)) {
+            return new AuthenticationResponse(createToken(userId));
+        } else {
+            throw new CatalogAuthenticationException("Cannot refresh token for '*'");
+        }
     }
 
     @Override
@@ -145,9 +154,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
             Map<String, Object> attributes = new HashMap<>();
             attributes.put("LDAP_RDN", rdn);
-            User user = new User(uid, displayName, mail, "", usersSearch, new Account().setType(Account.Type.GUEST)
-                    .setAuthentication(new Account.AuthenticationOrigin(originId, false)),
-                    User.UserStatus.READY, "", -1, -1, new ArrayList<>(), new HashMap<>(), attributes);
+            User user = new User(uid, displayName, mail, usersSearch, new Account().setType(Account.AccountType.GUEST)
+                    .setAuthentication(new Account.AuthenticationOrigin(originId, false)), new UserInternal(new UserStatus()),
+                    new UserQuota(-1, -1, -1, -1), new ArrayList<>(), new HashMap<>(), new LinkedList<>(), attributes);
 
             userList.add(user);
         }

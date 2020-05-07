@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -7,11 +23,14 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -66,7 +85,7 @@ public class VariantImportOperationManager extends OperationManager {
                 String description = "Sample data imported from " + source;
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getSampleIds().entrySet()) {
                     Sample sample = catalogManager.getSampleManager().create(studyStr,
-                            new Sample(entry.getKey(), source, null, description, 1), QueryOptions.empty(), sessionId).first();
+                            new Sample(entry.getKey(), null, description, 1), QueryOptions.empty(), sessionId).first();
                     samplesMap.put(sample.getId(), (int) sample.getUid());
                     samplesIdMap.put(entry.getValue(), (int) sample.getUid());
                 }
@@ -90,12 +109,11 @@ public class VariantImportOperationManager extends OperationManager {
                     } else {
                         description = "Cohort data imported from " + source;
                     }
-                    Cohort cohort = catalogManager.getCohortManager().create(studyConfiguration.getName(), cohortName, Study
-                            .Type.COLLECTION, description, newSampleList, null, Collections.emptyMap(), sessionId).first();
+                    Cohort cohort = catalogManager.getCohortManager().create(studyConfiguration.getName(), cohortName, Enums.CohortType.COLLECTION, description, newSampleList, null, Collections.emptyMap(), sessionId).first();
                     newCohortIds.put(cohortName, (int) cohort.getUid());
                     newCohorts.put((int) cohort.getUid(), newSampleList.stream().map(Sample::getUid).map(Long::intValue)
                             .collect(Collectors.toSet()));
-                    catalogManager.getCohortManager().setStatus(studyStr, cohort.getId(), Cohort.CohortStatus.READY, "", sessionId);
+                    catalogManager.getCohortManager().setStatus(studyStr, cohort.getId(), CohortStatus.READY, "", sessionId);
                 }
                 studyConfiguration.setCohortIds(newCohortIds);
                 studyConfiguration.setCohorts(newCohorts);
@@ -127,8 +145,8 @@ public class VariantImportOperationManager extends OperationManager {
                             .collect(Collectors.toList());
 
                     File file = new File(fileName, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, fileName,
-                            null, "File imported from " + source, null, 0, 0);
-                    file.setIndex(new FileIndex("", "", new FileIndex.IndexStatus(Status.READY, ""), -1, Collections.emptyMap()));
+                            null, "File imported from " + source, new FileInternal(null, new FileIndex("", "",
+                            new FileIndex.IndexStatus(Status.READY, ""), -1, Collections.emptyMap()), Collections.emptyMap()), 0, 0);
                     file.setSamples(samples);
 
                     file = catalogManager.getFileManager().create(studyStr, file, false, null, null, sessionId).first();

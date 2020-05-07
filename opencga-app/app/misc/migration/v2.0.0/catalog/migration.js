@@ -23,20 +23,18 @@ db.getCollection("dataset").drop()
 
 // Add new opencga administrator user to user collection #1425
 var user = db.getCollection("user").findOne({"id": "opencga"});
-
 if (user === null) {
     var metadata = db.getCollection("metadata").findOne({});
     db.getCollection("user").insert({
         "id": "opencga",
         "name": "opencga",
         "email": metadata["admin"]["email"],
-        "password": metadata["admin"]["password"],
+        "_password": metadata["admin"]["password"],
         "organization": "",
         "account": {
             "type": "ADMINISTRATOR",
             "creationDate": metadata["creationDate"],
             "expirationDate": "",
-            "authOrigin": null,
             "authentication": {
                 "id": "internal",
                 "application": false
@@ -47,9 +45,12 @@ if (user === null) {
             "date": metadata["creationDate"],
             "message": ""
         },
-        "lastModified": metadata["creationDate"],
-        "size": -1,
-        "quota": -1,
+        "quota": {
+            "diskUsage": -1,
+            "cpuUsage": -1,
+            "maxDisk": -1,
+            "maxCpu": -1
+        },
         "projects": [],
         "tools": [],
         "configs": {
@@ -95,5 +96,332 @@ migrateCollection("study", {"variableSets" : { $exists: true, $ne: [] } }, {"var
     }
 });
 
+// Ticket #1487
+db.getCollection("study").update({"notification": { $exists: false }}, {
+    "$set": {
+        "notification": {
+            "webhook": null
+        }}}, {"multi": true})
+
+// Ticket #1513 - Remove 'name' field from groups
+migrateCollection("study", {}, {groups: 1}, function(bulk, doc) {
+    if (isEmptyArray(doc.groups) || isUndefinedOrNull(doc.groups[0].name)) {
+        return;
+    }
+
+    for (var i = 0; i < doc.groups.length; i++) {
+        delete doc.groups[i]['name'];
+    }
+
+    var params = {
+        groups: doc.groups
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": params});
+});
+
+var customStatus = {
+    "name": "",
+    "description": "",
+    "date" :""
+};
+
+// Project map of uid -> uuid so we can easily update project uuids stored in study collection
+var projectMap = {};
+// Tickets #1528 #1529
+migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, doc) {
+    // #1531
+    doc['status']['description'] = doc['status']['message'];
+
+    var filters = [];
+    if (isNotUndefinedOrNull(doc.configs) && isNotEmptyArray(doc.configs.filters)) {
+        filters = doc.configs.filters;
+    }
+
+    for (var filter of filters) {
+        filter['id'] = filter['name'];
+        filter['resource'] = filter['bioformat'];
+
+        delete filter['name'];
+        delete filter['bioformat'];
+    }
+
+    var set = {
+        "quota": {
+            "diskUsage": doc['size'],
+            "cpuUsage": -1,
+            "maxDisk": doc['quota'],
+            "maxCpu": -1
+        },
+        "internal": {
+            "status": doc['status']
+        },
+        "_password": doc["password"],
+        "filters": filters
+    };
+    var unset = {
+        "password": "",
+        "lastModified": "",
+        "size": "",
+        "account.authOrigin": "",
+        "status": "",
+        "configs.filters": ""
+    };
+
+    // #1529
+    if (isNotEmptyArray(doc.projects)) {
+        for (var i = 0; i < doc.projects.length; i++) {
+            var project = doc.projects[i];
+
+            project['uuid'] = generateOpenCGAUUID("PROJECT", project['_creationDate']);
+            // Store project map so we can update uuid from study collection
+            projectMap[project['uid']] = project['uuid'];
+
+            project['internal'] = {
+                'status': project['status'],
+                'datastores': project['dataStores']
+            };
+
+            // #1531
+            project['internal']['status']['description'] = project['internal']['status']['message']
+
+            delete project['lastModified'];
+            delete project['size'];
+            delete project['organization'];
+            delete project['organism']['taxonomyCode'];
+            delete project['status'];
+            delete project['dataStores'];
+        }
+
+        set['projects'] = doc.projects;
+    }
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1532
+migrateCollection("study", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "uuid": generateOpenCGAUUID("STUDY", doc['_creationDate']),
+        "_project.uuid": projectMap[doc['_project']['uid']],
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+    var unset = {
+        "stats": "",
+        "type": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1535
+migrateCollection("individual", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "uuid": generateOpenCGAUUID("INDIVIDUAL", doc['_creationDate']),
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+    var unset = {
+        "affectationStatus": "",
+        "multiples": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1536
+migrateCollection("family", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "uuid": generateOpenCGAUUID("FAMILY", doc['_creationDate']),
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set});
+});
+
+// #1537
+migrateCollection("clinical", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "uuid": generateOpenCGAUUID("CLINICAL", doc['_creationDate']),
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+    var unset = {
+        "name": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1540
+migrateCollection("sample", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "uuid": generateOpenCGAUUID("SAMPLE", doc['_creationDate']),
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+    var unset = {
+        "name": "",
+        "source": "",
+        "stats": "",
+        "type": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1539
+migrateCollection("cohort", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "uuid": generateOpenCGAUUID("COHORT", doc['_creationDate']),
+        "internal": {
+            "status": doc['status']
+        },
+        "status": customStatus
+    };
+    var unset = {
+        "name": "",
+        "stats": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+// #1533
+migrateCollection("file", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    doc['status']['description'] = doc['status']['message'];
+
+    var set = {
+        "uuid": generateOpenCGAUUID("FILE", doc['_creationDate']),
+        "internal": {
+            "status": doc['status'],
+            "index": doc['index']
+        },
+        "jobId": "",
+        "status": customStatus
+    };
+    var unset = {
+        "index": "",
+        "job": ""
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
+});
+
+migrateCollection("interpretation", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+    var set = {
+        "uuid": generateOpenCGAUUID("INTERPRETATION", doc['_creationDate']),
+        "internal": {
+            "status": {
+                "name": doc['status'],
+                "description": "",
+                "date": ""
+            }
+        }
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set});
+});
+
+// migrateCollection("panel", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+//     var set = {
+//         "uuid": generateOpenCGAUUID("PANEL", doc['_creationDate'])
+//         }
+//     };
+//
+//     bulk.find({"_id": doc._id}).updateOne({"$set": set});
+// });
+
+// ------------------  Store uuids as actual uuids instead of applying base64 over them
+
+var Entity = Object.freeze({"AUDIT": 0, "PROJECT": 1, "STUDY": 2, "FILE": 3, "SAMPLE": 4, "COHORT": 5, "INDIVIDUAL": 6, "FAMILY": 7,
+    "JOB": 8, "CLINICAL": 9, "PANEL": 10, "INTERPRETATION": 11});
+
+function generateOpenCGAUUID(entity, date) {
+    var mostSignificantBits = getMostSignificantBits(entity, date);
+    var leastSignificantBits = getLeastSignificantBits();
+    return _generateUUID(mostSignificantBits, leastSignificantBits);
+}
+
+function _generateUUID(mostSigBits, leastSigBits) {
+    return (digits(mostSigBits.shiftRightUnsigned(32), 8) + "-" +
+        digits(mostSigBits.shiftRightUnsigned(16), 4) + "-" +
+        digits(mostSigBits, 4) + "-" +
+        digits(leastSigBits.shiftRightUnsigned(48), 4) + "-" +
+        digits(leastSigBits, 12));
+}
+
+function digits(value, digits) {
+    hi = Long.fromNumber(1).shiftLeft(digits * 4).toUnsigned();
+    return hi.or(value.and(hi - 1)).toString(16).substring(1);
+}
+
+function getMostSignificantBits(entity, date) {
+    var time = Long.fromNumber(date.getTime());
+
+    var timeLow = time.and(0xffffffff);
+    var timeMid = time.shiftRightUnsigned(32).and(0xffff);
+
+    var uuidVersion = Long.fromNumber(0);
+    var internalVersion = Long.fromNumber(0);
+    var entityBin = Long.fromNumber(0xff & Entity[entity]);
+
+    return timeLow.shiftLeft(32).toUnsigned().or(timeMid.shiftLeft(16).toUnsigned().or(uuidVersion.shiftLeft(12).toUnsigned()
+        .or(internalVersion.shiftLeft(8).toUnsigned().or(entityBin))));
+}
+
+function getLeastSignificantBits() {
+    var installation = Long.fromNumber(0x1);
+
+    // 12 hex digits random
+    var rand = Long.fromNumber(Math.random() * 100000000000000000);
+    var randomNumber = rand.and(0xffffffffffff);
+    return installation.shiftLeft(48).or(randomNumber);
+}
+
+// #1577: Remove all panels
+db.getCollection("panel").remove({});
+
+// Job - dependsOn - Add studyUid
+var allJobs = {};
+db.job.find({}, {uid:1, studyUid:1}).forEach(function(doc) { allJobs[doc.uid] = doc.studyUid; } );
+
+migrateCollection("job", {"dependsOn":  { "$exists": true, "$ne": [] }}, {dependsOn: 1}, function(bulk, doc) {
+    if (isNotEmptyArray(doc.dependsOn)) {
+        for (var i = 0; i < doc.dependsOn.length; i++) {
+            var job = doc.dependsOn[i];
+            job['studyUid'] = allJobs[job['uid']];
+        }
+
+        var set = {
+            "dependsOn": doc.dependsOn
+        }
+        bulk.find({"_id": doc._id}).updateOne({"$set": set});
+    }
+});
 
 // TODO: Add indexes for new "deleted" collections

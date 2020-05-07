@@ -1,5 +1,22 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -7,11 +24,10 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
@@ -69,37 +85,37 @@ public class AbstractManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.FULL, null);
 
-        token = catalogManager.getUserManager().login("user", PASSWORD);
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
+        token = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
 
-        project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), token).first().getId();
+        project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(), token).first().getId();
         project2 = catalogManager.getProjectManager().create("pmp", "Project Management Project", "life art intelligent system",
-                "myorg", "Homo sapiens", null, null, "GRCh38", new QueryOptions(), sessionIdUser2).first().getId();
-        catalogManager.getProjectManager().create("p1", "project 1", "", "", "Homo sapiens", null, null, "GRCh38", new QueryOptions(),
+                "Homo sapiens", null, "GRCh38", new QueryOptions(), sessionIdUser2).first().getId();
+        catalogManager.getProjectManager().create("p1", "project 1", "", "Homo sapiens", null, "GRCh38", new QueryOptions(),
                 sessionIdUser3).first();
 
-        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, token).first();
+        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, null, token).first();
         studyUid = study.getUid();
         studyFqn = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, token).first();
+        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, null, token).first();
         studyUid2 = study.getUid();
         studyFqn2 = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser2).first();
+        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, null, sessionIdUser2).first();
         studyFqn3 = study.getFqn();
 
-        catalogManager.getFileManager().createFolder(studyFqn2, Paths.get("data/test/folder/").toString(), null, true,
+        catalogManager.getFileManager().createFolder(studyFqn2, Paths.get("data/test/folder/").toString(), true,
                 null, QueryOptions.empty(), token);
 
         testFolder = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/test/folder/").toString(),
-                null, true, null, QueryOptions.empty(), token).first();
+                true, null, QueryOptions.empty(), token).first();
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
@@ -108,7 +124,7 @@ public class AbstractManagerTest extends GenericTest {
 
         testFile1 = testFolder.getPath() + "test_1K.txt.gz";
         DataResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn,
-                new File().setPath(testFile1), false, StringUtils.randomString(1000), null, token);
+                new File().setPath(testFile1), false, RandomStringUtils.randomAlphanumeric(1000), null, token);
 
         File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), null, token).first();
         attributes = new ObjectMap();
@@ -122,7 +138,7 @@ public class AbstractManagerTest extends GenericTest {
         testFile2 = testFolder.getPath() + "test_0.5K.txt";
         DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn,
                 new File().setPath(testFile2).setBioformat(File.Bioformat.DATAMATRIX_EXPRESSION), false,
-                StringUtils.randomString(500), null, token);
+                RandomStringUtils.randomAlphanumeric(500), null, token);
 
         File fileTest05k = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), null, token).first();
         attributes = new ObjectMap();
@@ -135,7 +151,7 @@ public class AbstractManagerTest extends GenericTest {
 
         DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn,
                 new File().setPath(testFolder.getPath() + "test_0.1K.png").setFormat(File.Format.IMAGE), false,
-                StringUtils.randomString(100), null, token);
+                RandomStringUtils.randomAlphanumeric(100), null, token);
 
         File test01k = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), null, token).first();
         attributes = new ObjectMap();
@@ -148,17 +164,17 @@ public class AbstractManagerTest extends GenericTest {
 
         List<Variable> variables = new ArrayList<>();
         variables.addAll(Arrays.asList(
-                new Variable("NAME", "", "", Variable.VariableType.STRING, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
+                new Variable("NAME", "", "", Variable.VariableType.STRING, "", true, false, Collections.<String>emptyList(), null, 0, "", "", null,
                         Collections.<String, Object>emptyMap()),
-                new Variable("AGE", "", "", Variable.VariableType.INTEGER, null, true, false, Collections.singletonList("0:130"), 1, "", "",
+                new Variable("AGE", "", "", Variable.VariableType.INTEGER, null, true, false, Collections.singletonList("0:130"), null, 1, "", "",
                         null, Collections.<String, Object>emptyMap()),
-                new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "1.5", false, false, Collections.singletonList("0:"), 2, "",
+                new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "1.5", false, false, Collections.singletonList("0:"), null, 2, "",
                         "", null, Collections.<String, Object>emptyMap()),
-                new Variable("ALIVE", "", "", Variable.VariableType.BOOLEAN, "", true, false, Collections.<String>emptyList(), 3, "", "",
+                new Variable("ALIVE", "", "", Variable.VariableType.BOOLEAN, "", true, false, Collections.<String>emptyList(), null, 3, "", "",
                         null, Collections.<String, Object>emptyMap()),
-                new Variable("PHEN", "", "", Variable.VariableType.CATEGORICAL, "CASE", true, false, Arrays.asList("CASE", "CONTROL"), 4,
+                new Variable("PHEN", "", "", Variable.VariableType.CATEGORICAL, "CASE", true, false, Arrays.asList("CASE", "CONTROL"), null, 4,
                         "", "", null, Collections.<String, Object>emptyMap()),
-                new Variable("EXTRA", "", "", Variable.VariableType.STRING, "", false, false, Collections.emptyList(), 5, "", "", null,
+                new Variable("EXTRA", "", "", Variable.VariableType.STRING, "", false, false, Collections.emptyList(), null, 5, "", "", null,
                         Collections.<String, Object>emptyMap())
         ));
         VariableSet vs = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs", "vs", true, false, "", null, variables,
@@ -215,7 +231,7 @@ public class AbstractManagerTest extends GenericTest {
 
     /* TYPE_FILE UTILS */
     public static java.io.File createDebugFile() throws IOException {
-        String fileTestName = "/tmp/fileTest_" + StringUtils.randomString(5);
+        String fileTestName = "/tmp/fileTest_" + RandomStringUtils.randomAlphanumeric(5);
         return createDebugFile(fileTestName);
     }
 
@@ -231,7 +247,7 @@ public class AbstractManagerTest extends GenericTest {
             os.writeBytes(i + ", ");
         }
         for (int i = 0; i < lines; i++) {
-            os.writeBytes(StringUtils.randomString(500));
+            os.writeBytes(RandomStringUtils.randomAlphanumeric(500));
             os.write('\n');
         }
         os.close();
@@ -245,7 +261,7 @@ public class AbstractManagerTest extends GenericTest {
             stringBuilder.append(i + ", ");
         }
         for (int i = 0; i < lines; i++) {
-            stringBuilder.append(StringUtils.randomString(500));
+            stringBuilder.append(RandomStringUtils.randomAlphanumeric(500));
             stringBuilder.append("\n");
         }
         return stringBuilder.toString();

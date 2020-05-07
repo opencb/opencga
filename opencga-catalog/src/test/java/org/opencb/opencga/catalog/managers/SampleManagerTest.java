@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -17,18 +33,18 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.*;
-import org.opencb.opencga.core.models.study.GroupUpdateParams;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.user.Account;
@@ -149,9 +165,10 @@ public class SampleManagerTest extends AbstractManagerTest {
                 new Sample().setId("testSample").setDescription("description"), null, token);
 
         SampleCollection collection = new SampleCollection("tissue", "organ", "quantity", "method", "date", Collections.emptyMap());
-        ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.COLLECTION.key(), collection);
+        CustomStatusParams statusParams = new CustomStatusParams("status1", "my description");
         catalogManager.getSampleManager().update(studyFqn, "testSample",
-                new SampleUpdateParams().setCollection(collection), new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+                new SampleUpdateParams().setCollection(collection).setStatus(statusParams),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
 
         DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
         assertEquals("tissue", testSample.first().getCollection().getTissue());
@@ -159,14 +176,25 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals("quantity", testSample.first().getCollection().getQuantity());
         assertEquals("method", testSample.first().getCollection().getMethod());
         assertEquals("date", testSample.first().getCollection().getDate());
+        assertEquals("status1", testSample.first().getStatus().getName());
+        assertEquals("my description", testSample.first().getStatus().getDescription());
+        assertNotNull(testSample.first().getStatus().getDate());
         assertTrue(testSample.first().getCollection().getAttributes().isEmpty());
     }
 
     @Test
     public void testCreateSample() throws CatalogException {
-        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("HG007"), null,
-                token);
+        String time = TimeUtils.getTime();
+
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(studyFqn,
+                new Sample()
+                        .setId("HG007")
+                        .setStatus(new CustomStatus("stat1", "my description", time)),
+                null, token);
         assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("stat1", sampleDataResult.first().getStatus().getName());
+        assertEquals(time, sampleDataResult.first().getStatus().getDate());
+        assertEquals("my description", sampleDataResult.first().getStatus().getDescription());
     }
 
 //    @Test
@@ -194,13 +222,13 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void testAnnotate() throws CatalogException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("AGE", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("AGE", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("HEIGHT", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
+        variables.add(new Variable("HEIGHT", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), null, 0, "",
                 "", null, Collections.emptyMap()));
-        variables.add(new Variable("MAP", "", Variable.VariableType.OBJECT, new HashMap<>(), false, false, Collections.emptyList(), 0, "", "", null,
+        variables.add(new Variable("MAP", "", Variable.VariableType.OBJECT, new HashMap<>(), false, false, Collections.emptyList(), null, 0, "", "", null,
                 Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
@@ -237,26 +265,26 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void testDynamicAnnotationsCreation() throws CatalogException, IOException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("a", "a", "", Variable.VariableType.MAP_STRING, null, true, false, null, 0, "", "",
+        variables.add(new Variable("a", "a", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
                 Collections.emptySet(), Collections.emptyMap()));
-        variables.add(new Variable("a1", "a1", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+        variables.add(new Variable("a1", "a1", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
                 new HashSet<>(Arrays.asList(
-                        new Variable("b", "b", "", Variable.VariableType.MAP_STRING, null, true, false, null, 0, "", "",
+                        new Variable("b", "b", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
                                 Collections.emptySet(), Collections.emptyMap()))),
                 Collections.emptyMap()));
-        variables.add(new Variable("a2", "a2", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+        variables.add(new Variable("a2", "a2", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
                 new HashSet<>(Arrays.asList(
-                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, false, null, 0, "", "",
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, false, null, null, 0, "", "",
                                 new HashSet<>(Arrays.asList(
-                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, true, null, 0, "", "",
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, true, null, null, 0, "", "",
                                                 Collections.emptySet(), Collections.emptyMap()))),
                                 Collections.emptyMap()))),
                 Collections.emptyMap()));
-        variables.add(new Variable("a3", "a3", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+        variables.add(new Variable("a3", "a3", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
                 new HashSet<>(Arrays.asList(
-                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
                                 new HashSet<>(Arrays.asList(
-                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, false, null, 0, "", "",
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
                                                 Collections.emptySet(), Collections.emptyMap()))),
                                 Collections.emptyMap()))),
                 Collections.emptyMap()));
@@ -289,28 +317,106 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testDynamicAnnotationsSearch() throws CatalogException, IOException {
+    public void testVariableAllowedKeys() throws CatalogException, IOException {
+        List<String> allowedKeys = Arrays.asList("x", "y", "z");
+
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("a", "a", "", Variable.VariableType.MAP_STRING, null, true, false, null, 0, "", "",
+        variables.add(new Variable("a", "a", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
                 Collections.emptySet(), Collections.emptyMap()));
-        variables.add(new Variable("a1", "a1", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+        variables.add(new Variable("a1", "a1", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
                 new HashSet<>(Arrays.asList(
-                        new Variable("b", "b", "", Variable.VariableType.MAP_STRING, null, true, false, null, 0, "", "",
+                        new Variable("b", "b", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
                                 Collections.emptySet(), Collections.emptyMap()))),
                 Collections.emptyMap()));
-        variables.add(new Variable("a2", "a2", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+        variables.add(new Variable("a2", "a2", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
                 new HashSet<>(Arrays.asList(
-                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, false, null, 0, "", "",
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, false, null, null, 0, "", "",
                                 new HashSet<>(Arrays.asList(
-                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, true, null, 0, "", "",
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, true, null, allowedKeys, 0,
+                                                "", "", Collections.emptySet(), Collections.emptyMap()))),
+                                Collections.emptyMap()))),
+                Collections.emptyMap()));
+        variables.add(new Variable("a3", "a3", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                                new HashSet<>(Arrays.asList(
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
                                                 Collections.emptySet(), Collections.emptyMap()))),
                                 Collections.emptyMap()))),
                 Collections.emptyMap()));
-        variables.add(new Variable("a3", "a3", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
+
+        InputStream inputStream = this.getClass().getClassLoader().getResource("annotation_sets/complete_annotation.json").openStream();
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMap annotations = objectMapper.readValue(inputStream, ObjectMap.class);
+
+        catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotations))),
+                QueryOptions.empty(), token);
+
+
+        // The only keys covered in the example annotationset are x, y, z; so we will change the allowedKeys so the annotation should be
+        // no longer valid
+        allowedKeys = Arrays.asList("a", "b", "c");
+
+        variables = new ArrayList<>();
+        variables.add(new Variable("a", "a", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
+                Collections.emptySet(), Collections.emptyMap()));
+        variables.add(new Variable("a1", "a1", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
                 new HashSet<>(Arrays.asList(
-                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, true, null, 0, "", "",
+                        new Variable("b", "b", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
+                                Collections.emptySet(), Collections.emptyMap()))),
+                Collections.emptyMap()));
+        variables.add(new Variable("a2", "a2", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, false, null, null, 0, "", "",
                                 new HashSet<>(Arrays.asList(
-                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, false, null, 0, "", "",
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, true, null, allowedKeys, 0,
+                                                "", "", Collections.emptySet(), Collections.emptyMap()))),
+                                Collections.emptyMap()))),
+                Collections.emptyMap()));
+        variables.add(new Variable("a3", "a3", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                                new HashSet<>(Arrays.asList(
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
+                                                Collections.emptySet(), Collections.emptyMap()))),
+                                Collections.emptyMap()))),
+                Collections.emptyMap()));
+        VariableSet vs2 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs2", "vs2", false, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not an accepted id");
+        catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation2", vs2.getId(), annotations))),
+                QueryOptions.empty(), token);
+    }
+
+    @Test
+    public void testDynamicAnnotationsSearch() throws CatalogException, IOException {
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("a", "a", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
+                Collections.emptySet(), Collections.emptyMap()));
+        variables.add(new Variable("a1", "a1", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
+                                Collections.emptySet(), Collections.emptyMap()))),
+                Collections.emptyMap()));
+        variables.add(new Variable("a2", "a2", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, false, null, null, 0, "", "",
+                                new HashSet<>(Arrays.asList(
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, true, null, null, 0, "", "",
+                                                Collections.emptySet(), Collections.emptyMap()))),
+                                Collections.emptyMap()))),
+                Collections.emptyMap()));
+        variables.add(new Variable("a3", "a3", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                new HashSet<>(Arrays.asList(
+                        new Variable("b", "b", "", Variable.VariableType.OBJECT, null, true, true, null, null, 0, "", "",
+                                new HashSet<>(Arrays.asList(
+                                        new Variable("c", "c", "", Variable.VariableType.MAP_STRING, null, true, false, null, null, 0, "", "",
                                                 Collections.emptySet(), Collections.emptyMap()))),
                                 Collections.emptyMap()))),
                 Collections.emptyMap()));
@@ -330,18 +436,18 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         query = new Query(Constants.ANNOTATION, "a3.b.c.z=z2;a2.b.c.z=z");
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().search(studyFqn, query, null, token);
-        assertEquals(1, result.getNumMatches());
+        assertEquals(1, result.getNumResults());
         assertEquals(s_1, result.first().getId());
     }
 
     @Test
     public void searchSamples() throws CatalogException {
-        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup", "myGroup", Arrays.asList("user2", "user3"), token);
-        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup2", "myGroup2", Arrays.asList("user2", "user3"), token);
+        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup", Arrays.asList("user2", "user3"), token);
+        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup2", Arrays.asList("user2", "user3"), token);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@myGroup",
-                new Study.StudyAclParams("", AclParams.Action.SET, null), token);
+                new StudyAclParams("", AclParams.Action.SET, null), token);
 
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("s_1"), "@myGroup", new Sample.SampleAclParams("VIEW",
+        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("s_1"), "@myGroup", new SampleAclParams("VIEW",
                 AclParams.Action.SET, null, null, null), token);
 
         DataResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(),
@@ -352,11 +458,11 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void testDeleteAnnotationset() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
+        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), null, 0, "",
                 "", null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
@@ -391,13 +497,13 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void testSearchAnnotation() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
-        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
+        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), null, 0, "",
                 "", null, Collections.emptyMap()));
-        variables.add(new Variable("OTHER", "", "", Variable.VariableType.OBJECT, null, false, false, null, 1, "", "", null,
+        variables.add(new Variable("OTHER", "", "", Variable.VariableType.OBJECT, null, false, false, null, null, 1, "", "", null,
                 Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
@@ -479,7 +585,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 token).first().getId();
 
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
@@ -514,7 +620,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 token).first().getId();
 
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
@@ -544,7 +650,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 new QueryOptions(), token).first().getId();
 
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "",
                 null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.INDIVIDUAL), token).first();
@@ -573,7 +679,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 token).first().getId();
 
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("NUM", "NUM", "", Variable.VariableType.DOUBLE, "", true, false, null, 0, "", "", null,
+        variables.add(new Variable("NUM", "NUM", "", Variable.VariableType.DOUBLE, "", true, false, null, null, 0, "", "", null,
                 Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
@@ -610,7 +716,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         List<Variable> variables = new ArrayList<>();
         variables.add(new Variable("RANGE_NUM", "RANGE_NUM", "", Variable.VariableType.DOUBLE, "", true, false, Arrays.asList("1:14",
-                "16:22", "50:"), 0, "", "", null, Collections.<String, Object>emptyMap()));
+                "16:22", "50:"), null, 0, "", "", null, Collections.<String, Object>emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
 
@@ -661,7 +767,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         List<Variable> variables = new ArrayList<>();
         variables.add(new Variable("COOL_NAME", "COOL_NAME", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("LUKE",
-                "LEIA", "VADER", "YODA"), 0, "", "", null, Collections.<String, Object>emptyMap()));
+                "LEIA", "VADER", "YODA"), null, 0, "", "", null, Collections.<String, Object>emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
 
@@ -1140,14 +1246,14 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(individualId, sample.getIndividualId());
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new Sample.SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null),
+                new SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null),
                 token);
 
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
         assertEquals(null, sample.getAttributes().get("individual"));
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new Sample.SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null, true),
+                new SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null, true),
                 token);
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
@@ -1241,11 +1347,11 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
-                Account.Type.GUEST, null);
+                Account.AccountType.GUEST, null);
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("dummy")), token);
 
-        String token = catalogManager.getUserManager().login("dummy", "dummy");
+        String token = catalogManager.getUserManager().login("dummy", "dummy").getToken();
         DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(), token);
         assertEquals(1, queryResult.getNumResults());
 
@@ -1315,7 +1421,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search("1000G:phase1", query, new QueryOptions(), token);
 //        DataResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
         assertEquals(1, sampleDataResult.getNumResults());
-        assertEquals(Status.DELETED, sampleDataResult.first().getStatus().getName());
+        assertEquals(Status.DELETED, sampleDataResult.first().getInternal().getStatus().getName());
     }
 
     @Test
@@ -1324,7 +1430,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
         DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample"), "user2", new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null, true),
+                Arrays.asList("sample"), "user2", new SampleAclParams("VIEW", AclParams.Action.SET, null, null, null, true),
                 token);
         assertEquals(1, dataResult.getNumResults());
         assertEquals(1, dataResult.first().size());
@@ -1342,7 +1448,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token);
 
         DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample", "sample2"), "user2", new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null,
+                Arrays.asList("sample", "sample2"), "user2", new SampleAclParams("VIEW", AclParams.Action.SET, null, null, null,
                         true), token);
         assertEquals(2, dataResult.getNumResults());
         assertEquals(1, dataResult.first().size());

@@ -8,9 +8,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +22,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.ALTE
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.REFERENCE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser.isSupportedQueryParam;
 
 /**
@@ -49,7 +50,7 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
             return false;
         }
 
-        if (options.getBoolean(QueryOptions.COUNT, false)) {
+        if (options.getBoolean(QueryOptions.COUNT, false) || options.getBoolean(VariantStorageOptions.APPROXIMATE_COUNT.key(), false)) {
             // Do not use for count
             return false;
         }

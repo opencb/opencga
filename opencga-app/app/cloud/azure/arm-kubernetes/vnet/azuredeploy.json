@@ -1,0 +1,170 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+    },
+    "variables": {
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-08-01",
+            "name": "vnet",
+            "type": "Microsoft.Network/virtualNetworks",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.0.0.0/16"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "kubernetes",
+                        "properties": {
+                            "addressPrefix": "10.0.0.0/22",
+                            "ipConfigurations": [
+                            ],
+                            "delegations": [
+                            ],
+                            "serviceEndpoints": [
+
+                            ]
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "aci",
+                        "properties": {
+                            "addressPrefix": "10.0.4.0/22",
+                            "ipConfigurations": [
+                            ],
+                            "delegations": [
+                                {
+
+                                    "name": "aciDelegation",
+                                    "properties": {
+                                        "serviceName": "Microsoft.ContainerInstance/containerGroups"
+                                    }
+                                }
+                            ],
+                            "serviceEndpoints": [
+
+                            ]
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "hdinsight",
+                        "properties": {
+                            "addressPrefix": "10.0.8.0/24",
+                            "ipConfigurations": [
+                            ],
+                            "delegations": [
+                            ],
+                            "serviceEndpoints": [
+                                {
+                                    "service": "Microsoft.Storage"
+                                }
+                            ]
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "mongo",
+                        "properties": {
+                            "addressPrefix": "10.0.9.0/24",
+                            "ipConfigurations": [
+                            ],
+                            "delegations": [
+                            ],
+                            "serviceEndpoints": [
+                            ]
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "solr",
+                        "properties": {
+                            "addressPrefix": "10.0.10.0/24",
+                            "ipConfigurations": [
+                            ],
+                            "delegations": [
+                            ],
+                            "serviceEndpoints": [
+                            ]
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "appgw",
+                        "properties": {
+                            "addressPrefix": "10.0.11.0/24",
+                            "ipConfigurations": [
+                            ],
+                            "delegations": [
+                            ],
+                            "serviceEndpoints": [
+                            ]
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "login",
+                        "properties": {
+                            "addressPrefix": "10.0.12.0/24",
+                            "ipConfigurations": [
+                            ],
+                            "delegations": [
+                            ],
+                            "serviceEndpoints": [
+                            ]
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    }
+                ],
+                "virtualNetworkPeerings": [
+                ],
+                "enableDdosProtection": false,
+                "enableVmProtection": false
+            }
+        }
+    ],
+    "outputs": {
+        "vnetId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/virtualNetworks', 'vnet')]"
+        },
+        "virtualNetworkName": {
+            "type": "string",
+            "value": "vnet"
+        },
+        "kubernetesSubnetId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','kubernetes')]"
+        },
+        "aciSubnetId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','aci')]"
+        },
+        "hdinsightSubnetId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','hdinsight')]"
+        },
+        "mongoSubnetId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','mongo')]"
+        },
+        "solrSubnetId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','solr')]"
+        },
+        "appgwSubnetId": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','appgw')]"
+        },
+        "login": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','login')]"
+        }
+    }
+}

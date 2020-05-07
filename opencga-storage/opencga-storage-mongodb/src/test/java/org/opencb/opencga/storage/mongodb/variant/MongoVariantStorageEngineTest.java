@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -182,7 +183,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false), false, true);
 
-        long count = dbAdaptor.count(null).first();
+        long count = dbAdaptor.count().first();
         assertEquals(stageCount, count);
     }
 
@@ -236,7 +237,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantStorageOptions.STAGE.key(), false)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true), false, false, true);
 
-        Long count = variantStorageEngine.getDBAdaptor().count(null).first();
+        Long count = variantStorageEngine.getDBAdaptor().count().first();
         assertTrue(count > 0);
     }
 
@@ -544,7 +545,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertTrue(success.get());
 
         VariantMongoDBAdaptor dbAdaptor = (VariantMongoDBAdaptor) variantStorageEngine.getDBAdaptor();
-        long count = dbAdaptor.count(null).first();
+        long count = dbAdaptor.count().first();
         System.out.println("count = " + count);
         assertTrue(count > 0);
 
@@ -616,8 +617,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertEquals(expectedCollection.count().first(), actualCollection.count().first());
         assertNotEquals(0L, expectedCollection.count().first().longValue());
 
-        Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), options).iterator();
-        Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), options).iterator();
+        Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), options);
+        Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), options);
 
         long c = 0;
         while (actualIterator.hasNext() && expectedIterator.hasNext()) {
@@ -640,7 +641,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), false));
 
-        long count = variantStorageEngine.getDBAdaptor().count(null).first();
+        long count = variantStorageEngine.getDBAdaptor().count().first();
         assertEquals(0L, count);
 
         runETL(variantStorageEngine, storagePipelineResult.getTransformResult(), outputUri, new ObjectMap()
@@ -658,7 +659,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
 
-        Long count = variantStorageEngine.getDBAdaptor().count(null).first();
+        Long count = variantStorageEngine.getDBAdaptor().count().first();
         assertTrue(count > 0);
 
         String fileName = Paths.get(smallInputUri).getFileName().toString();
@@ -681,7 +682,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
 
-        Long count = variantStorageEngine.getDBAdaptor().count(null).first();
+        Long count = variantStorageEngine.getDBAdaptor().count().first();
         assertTrue(count > 0);
 
         String fileName = Paths.get(smallInputUri).getFileName().toString();
@@ -976,7 +977,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
             StudyMetadata sc1 = dbAdaptor.getMetadataManager().getStudyMetadata(1);
             StudyMetadata sc2 = dbAdaptor.getMetadataManager().getStudyMetadata(2);
-            for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
+            MongoDBIterator<Document> it = variantsCollection.nativeQuery().find(new Document(), new QueryOptions());
+            while (it.hasNext()) {
+                Document document = it.next();
                 String id = document.getString("_id");
                 List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
                 assertEquals(id, 2, studies.size());
@@ -1125,7 +1128,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor()) {
             MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
 
-            for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
+            MongoDBIterator<Document> it = variantsCollection.nativeQuery().find(new Document(), new QueryOptions());
+            while (it.hasNext()) {
+                Document document = it.next();
                 String id = document.getString("_id");
                 List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
 

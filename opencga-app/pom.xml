@@ -75,7 +75,6 @@
             <version>${opencga.version}</version>
             <!--<type>war</type>-->
         </dependency>
-
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
@@ -104,26 +103,31 @@
         </dependency>
         <!--Uncomment if hadoop dependencies are provided-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.hadoop</groupId>-->
-            <!--<artifactId>hadoop-common</artifactId>-->
-            <!--<version>${hadoop.version}</version>-->
-            <!--<scope>test</scope>-->
+        <!--<groupId>org.apache.hadoop</groupId>-->
+        <!--<artifactId>hadoop-common</artifactId>-->
+        <!--<version>${hadoop.version}</version>-->
+        <!--<scope>test</scope>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.hadoop</groupId>-->
-            <!--<artifactId>hadoop-client</artifactId>-->
-            <!--<version>${hadoop.version}</version>-->
-            <!--<scope>test</scope>-->
+        <!--<groupId>org.apache.hadoop</groupId>-->
+        <!--<artifactId>hadoop-client</artifactId>-->
+        <!--<version>${hadoop.version}</version>-->
+        <!--<scope>test</scope>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.hbase</groupId>-->
-            <!--<artifactId>hbase-server</artifactId>-->
-            <!--<version>${hbase.version}</version>-->
-            <!--<scope>test</scope>-->
+        <!--<groupId>org.apache.hbase</groupId>-->
+        <!--<artifactId>hbase-server</artifactId>-->
+        <!--<version>${hbase.version}</version>-->
+        <!--<scope>test</scope>-->
         <!--</dependency>-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+            <version>1.18</version>
         </dependency>
     </dependencies>
 
@@ -152,11 +156,11 @@
                         </goals>
                     </execution>
                     <!--<execution>-->
-                        <!--<id>daemon-1</id>-->
-                        <!--<phase>package</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>generate-daemons</goal>-->
-                        <!--</goals>-->
+                    <!--<id>daemon-1</id>-->
+                    <!--<phase>package</phase>-->
+                    <!--<goals>-->
+                    <!--<goal>generate-daemons</goal>-->
+                    <!--</goals>-->
                     <!--</execution>-->
                 </executions>
                 <configuration>
@@ -268,7 +272,6 @@
                                     <arg value="-r"/>
                                     <arg value="${app.dir}/conf"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
-                                    <arg value="${project.basedir}/target/conf"/>
                                     <arg value="${app.dir}/analysis"/>
                                     <arg value="${app.dir}/cloud"/>
                                     <arg value="${app.dir}/misc"/>
@@ -276,6 +279,12 @@
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
                                     <arg value="${build.dir}"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-analysis/src/main/R/"/>
+                                    <arg value="${build.dir}/analysis"/>
                                 </exec>
 
                                 <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion</echo>
@@ -298,12 +307,13 @@
                                 <echo>Copying Python and R to ${build.dir}/clients</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-client/src/main/python/pyOpenCGA"/>
+                                    <arg value="${project.basedir}/../opencga-client/src/main/python"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
-                                <exec executable="mv">
-                                    <arg value="${build.dir}/clients/pyOpenCGA"/>
-                                    <arg value="${build.dir}/clients/python"/>
+                                <exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
+                                    <arg value="${build.dir}/clients/python/setup.py"/>
                                 </exec>
                                 <exec executable="cp">
                                     <arg value="-r"/>
@@ -319,33 +329,7 @@
                                     <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
-<!--
-                                <echo>Copying Solr managed-schema file</echo>
-                                <exec executable="cp">
-                                    <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/managed-schema"/>
-                                    <arg value="${build.dir}/misc/solr/conf"/>
-                                </exec>
-                                <exec executable="mv">
-                                    <arg value="${build.dir}/misc/solr/conf"/>
-                                    <arg value="${build.dir}/misc/solr/${solr.configset.name}-${opencga.version}"/>
-                                </exec>
-                                <exec executable="sed">
-                                    <arg value="-i"/>
-                                    <arg value="s/CONFIGSET/${solr.configset.name}/g"/>
-                                    <arg value="${build.dir}/misc/solr/INSTALL.md"/>
-                                </exec>
-                                <exec executable="sed">
-                                    <arg value="-i"/>
-                                    <arg value="s/VERSION/${opencga.version}/g"/>
-                                    <arg value="${build.dir}/misc/solr/INSTALL.md"/>
-                                </exec>
-                                <exec executable="tar">
-                                    <arg value="czvf"/>
-                                    <arg value="${build.dir}/misc/solr/opencga-${opencga.version}-solr-${solr.version}.tar.gz"/>
-                                    <arg value="-directory=${build.dir}/misc/solr"/>
-                                    <arg value="${solr.configset.name}-${opencga.version}"/>
-                                </exec>
--->
+
                                 <exec executable="${project.basedir}/app/misc/solr/prepare_configsets.sh">
                                     <arg value="${project.basedir}/.."/>
                                     <arg value="${opencga.version}"/>

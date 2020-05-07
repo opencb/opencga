@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -38,12 +36,16 @@ import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.TsvAnnotationParams;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
@@ -65,20 +67,20 @@ public class CohortWSServer extends OpenCGAWSServer {
         cohortManager = catalogManager.getCohortManager();
     }
 
-    private Response createCohort(String studyStr, String cohortId, String cohortName, Study.Type type, String variableSetId,
-                                  String cohortDescription, List<String> sampleIdList, List<AnnotationSet> annotationSetList,
-                                  String variableName) {
+    private Response createCohort(String studyStr, String variableSetId, CohortCreateParams cohortParams, String variableName) {
         try {
             List<DataResult<Cohort>> cohorts = new LinkedList<>();
-            if (StringUtils.isNotEmpty(variableName) && ListUtils.isNotEmpty(sampleIdList)) {
+            if (StringUtils.isNotEmpty(variableName) && ListUtils.isNotEmpty(cohortParams.getSamples())) {
                 return createErrorResponse("", "Can only create a cohort given list of sampleIds or a categorical variable name");
             }
 
-            if (ListUtils.isNotEmpty(sampleIdList)) {
-                DataResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, sampleIdList, null, token);
+            if (ListUtils.isNotEmpty(cohortParams.getSamples())) {
+                DataResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, cohortParams.getSamples(), null, token);
                 List<Sample> sampleList = queryResult.getResults();
-                Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, sampleList, annotationSetList, -1, null)
-                        .setName(cohortName);
+                Cohort cohort = new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(), sampleList,
+                        cohortParams.getAnnotationSets(), 1,
+                        cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(),
+                        null, cohortParams.getAttributes());
                 DataResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().create(studyStr, cohort, null, token);
                 cohorts.add(cohortQueryResult);
             } else if (StringUtils.isNotEmpty(variableSetId)) {
@@ -101,13 +103,13 @@ public class CohortWSServer extends OpenCGAWSServer {
                     Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
                             .append("variableSetId", variableSet.getUid());
 
-                    cohorts.add(createCohort(studyStr, cohortName + "_" + s, type, cohortDescription, annotationSetList, samplesQuery,
-                            samplesQOptions));
+                    cohorts.add(createCohort(studyStr, cohortParams.getId() + "_" + s, cohortParams.getType(), cohortParams.getDescription(),
+                            cohortParams.getAnnotationSets(), samplesQuery, samplesQOptions));
                 }
             } else {
                 //Create empty cohort
-                Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, Collections.emptyList(), annotationSetList, -1, null)
-                        .setName(cohortName);
+                Cohort cohort = new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
+                        Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null);
                 cohorts.add(catalogManager.getCohortManager().create(studyStr, cohort, null, token));
             }
             return createOkResponse(cohorts);
@@ -134,10 +136,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 variableSet = variableSetId;
             }
 
-            String cohortId = StringUtils.isEmpty(params.id) ? params.name : params.id;
-            String cohortName = StringUtils.isEmpty(params.name) ? cohortId : params.name;
-            return createCohort(studyStr, cohortId, cohortName, params.type, variableSet, params.description, params.samples,
-                    params.annotationSets, variableName);
+            return createCohort(studyStr, variableSet, params, variableName);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -188,7 +187,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "DEPRECATED: Name of the cohort") @QueryParam("name") String name,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Study.Type type,
+            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Enums.CohortType type,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
                 @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
@@ -196,6 +195,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
@@ -206,12 +206,11 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private DataResult<Cohort> createCohort(String studyStr, String cohortName, Study.Type type, String cohortDescription,
-                                             List<AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions)
+    private DataResult<Cohort> createCohort(String studyStr, String cohortId, Enums.CohortType type, String cohortDescription,
+                                            List<AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions)
             throws CatalogException {
         DataResult<Sample> queryResult = catalogManager.getSampleManager().search(studyStr, query, queryOptions, token);
-        Cohort cohort = new Cohort(cohortName, type, "", cohortDescription, queryResult.getResults(), annotationSetList, -1, null)
-                .setName(cohortName);
+        Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, queryResult.getResults(), annotationSetList, -1, null);
         return catalogManager.getCohortManager().create(studyStr, cohort, null, token);
     }
 
@@ -224,14 +223,14 @@ public class CohortWSServer extends OpenCGAWSServer {
                 @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.COHORT_ID_DESCRIPTION) @QueryParam("id") String id,
             @ApiParam(value = ParamConstants.COHORT_NAME_DESCRIPTION) @QueryParam("name") String name,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Study.Type type,
+            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Enums.CohortType type,
             @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam("status") String status,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
             @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") CohortUpdateParams params) {
+            @ApiParam(value = "body") CohortUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
 
@@ -259,7 +258,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") CohortUpdateParams params) {
+            @ApiParam(value = "body") CohortUpdateParams params) {
         try {
             Map<String, Object> actionMap = new HashMap<>();
 
@@ -279,12 +278,37 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/annotationSets/load")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Load annotation sets from a TSV file", response = Job.class)
+    public Response loadTsvAnnotations(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION, required = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true)
+                @QueryParam("path") String path,
+            @ApiParam(value = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).")
+            @DefaultValue("false") @QueryParam("parents") boolean parents,
+            @ApiParam(value = "Annotation set id. If not provided, variableSetId will be used.") @QueryParam("annotationSetId") String annotationSetId,
+            @ApiParam(value = ParamConstants.TSV_ANNOTATION_DESCRIPTION) TsvAnnotationParams params) {
+        try {
+            ObjectMap additionalParams = new ObjectMap()
+                    .append("parents", parents)
+                    .append("annotationSetId", annotationSetId);
+
+            return createOkResponse(catalogManager.getCohortManager().loadTsvAnnotations(studyStr, variableSetId, path, params,
+                    additionalParams, CohortTsvAnnotationLoader.ID, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
     @Path("/{cohort}/annotationSets/{annotationSet}/annotations/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update annotations from an annotationSet", response = Cohort.class)
     public Response updateAnnotations(
             @ApiParam(value = ParamConstants.COHORT_ID_DESCRIPTION, required = true) @PathParam("cohort") String cohortStr,
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE", defaultValue = "ADD")
                 @QueryParam("action") ParamUtils.CompleteUpdateAction action,
@@ -365,7 +389,6 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
 
             @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-
             @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);

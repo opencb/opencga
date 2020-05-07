@@ -21,7 +21,6 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -132,28 +131,40 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
     protected VariantStats convert(VariantProto.VariantStats protoStats) {
         VariantStats stats = new VariantStats();
 
+        stats.setSampleCount(protoStats.getSampleCount());
+        stats.setFileCount(protoStats.getFileCount());
         stats.setMgf(protoStats.getMgf());
-        stats.setMgfGenotype(protoStats.getMgfGenotype());
+        if (!protoStats.getMgfGenotype().isEmpty()) {
+            stats.setMgfGenotype(protoStats.getMgfGenotype());
+        }
         stats.setMaf(protoStats.getMaf());
-        stats.setMafAllele(protoStats.getMafAllele());
+        String mafAllele = protoStats.getMafAllele();
+        if (!mafAllele.isEmpty()) {
+            // Proto does not allow null values.
+            // proto | avro
+            // ""    | null
+            // "-"   | ""
+            if (mafAllele.equals("-")) {
+                stats.setMafAllele("");
+            } else {
+                stats.setMafAllele(mafAllele);
+            }
+        }
         stats.setAlleleCount(protoStats.getAlleleCount());
         stats.setAltAlleleCount(protoStats.getAltAlleleCount());
         stats.setAltAlleleFreq(protoStats.getAltAlleleFreq());
         stats.setRefAlleleCount(protoStats.getRefAlleleCount());
         stats.setRefAlleleFreq(protoStats.getRefAlleleFreq());
-
-        Map<Genotype, Float> genotypesFreq = new HashMap<>();
-        for (Map.Entry<String, Integer> entry : protoStats.getGenotypeCountMap().entrySet()) {
-            Genotype g = new Genotype(entry.getKey());
-            stats.addGenotype(g, entry.getValue(), false);
-            Float freq = protoStats.getGenotypeFreqMap().get(entry.getKey());
-            if (freq != null) {
-                genotypesFreq.put(g, freq);
-            }
-        }
-        stats.setGenotypeFreq(genotypesFreq);
         stats.setMissingAlleleCount(protoStats.getMissingAlleleCount());
         stats.setMissingGenotypeCount(protoStats.getMissingGenotypeCount());
+        stats.setQualityAvg(protoStats.getQualityAvg());
+        stats.setQualityCount(protoStats.getQualityCount());
+
+        stats.setGenotypeCount(protoStats.getGenotypeCountMap());
+        stats.setGenotypeFreq(protoStats.getGenotypeFreqMap());
+
+        stats.setFilterCount(protoStats.getFilterCountMap());
+        stats.setFilterFreq(protoStats.getFilterFreqMap());
 
         return stats;
     }

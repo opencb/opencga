@@ -18,8 +18,6 @@ package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.MongoClient;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import htsjdk.variant.vcf.VCFConstants;
@@ -35,13 +33,10 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
+import org.opencb.commons.datastore.mongodb.*;
 import org.opencb.opencga.core.response.VariantQueryResult;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -49,6 +44,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
@@ -71,7 +69,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOAD
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.getSetIndexNotSynchronized;
@@ -233,15 +231,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private void removeFilesFromStageCollection(Bson studiesToRemoveQuery, Integer studyId, List<Integer> fileIds) {
         int batchSize = 500;
-        FindIterable<Document> findIterable = getVariantsCollection()
-                .nativeQuery()
-                .find(studiesToRemoveQuery, Projections.include("_id"), new QueryOptions())
-                .batchSize(batchSize);
 
         logger.info("Remove files from stage collection - step 1/3"); // Remove study if only contains removed files
         MongoDBCollection stageCollection = getStageCollection(studyId);
         int updatedStageDocuments = 0;
-        try (MongoCursor<Document> cursor = findIterable.iterator()) {
+        try (MongoDBIterator<Document> cursor = getVariantsCollection()
+                .nativeQuery()
+                .find(studiesToRemoveQuery, Projections.include("_id"), new QueryOptions(MongoDBCollection.BATCH_SIZE, batchSize))) {
             List<String> ids = new ArrayList<>(batchSize);
             int i = 0;
             while (cursor.hasNext()) {
@@ -456,7 +452,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public long cleanTrash(long timeStamp) {
         MongoDBCollection collection = getTrashCollection();
         // Try to get one variant beyond the ts. If exists, remove by query. Otherwise, remove the whole collection.
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 1).append(QueryOptions.SKIP_COUNT, true);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 1);
         int results = collection.find(gt(DocumentToTrashVariantConverter.TIMESTAMP_FIELD, timeStamp), queryOptions).getNumResults();
 
         if (results > 0) {
@@ -474,37 +470,33 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(ParsedVariantQuery variantQuery, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
+        }
+        if (options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
+            DataResult<Long> count = count(variantQuery);
+            DataResult<Variant> result = new DataResult<>(count.getTime(), count.getEvents(), 0, Collections.emptyList(), count.first());
+            return addSamplesMetadataIfRequested(result, variantQuery.getQuery(), options, getMetadataManager());
+        } else if (!options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
+            DataResult<Variant> result = new DataResult<>(0, Collections.emptyList(), 0, Collections.emptyList(), -1);
+            return addSamplesMetadataIfRequested(result, variantQuery.getQuery(), options, getMetadataManager());
         }
 
-        VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
-        Document mongoQuery = queryParser.parseQuery(query);
-        Document projection = queryParser.createProjection(query, options, selectVariantElements);
-        options.putIfAbsent(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT);
+        VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
+        Document mongoQuery = queryParser.parseQuery(variantQuery.getQuery());
+        Document projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
 
         if (options.getBoolean("explain", false)) {
-            Document explain = variantsCollection.nativeQuery()
-                    .find(mongoQuery, projection, options)
-                    .modifiers(new Document("$explain", true))
-                    .first();
+            Document explain = variantsCollection.nativeQuery().explain(mongoQuery, projection, options);
             logger.debug("MongoDB Explain = {}", explain.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
         }
 
-        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, selectVariantElements);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
         return addSamplesMetadataIfRequested(variantsCollection.find(mongoQuery, projection, converter, options),
-                query, options, getMetadataManager());
-    }
-
-    @Override
-    public List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
-        List<VariantQueryResult<Variant>> queryResultList = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            VariantQueryResult<Variant> queryResult = get(query, options);
-            queryResultList.add(queryResult);
-        }
-        return queryResultList;
+                variantQuery.getQuery(), options, getMetadataManager());
     }
 
     @Override
@@ -524,9 +516,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variant = queryResult.first();
         if (variant != null && !variant.getStudies().isEmpty()) {
             StudyEntry studyEntry = variant.getStudies().get(0);
-            Integer psIdx = studyEntry.getFormatPositions().get(VCFConstants.PHASE_SET_KEY);
+            Integer psIdx = studyEntry.getSampleDataKeyPosition(VCFConstants.PHASE_SET_KEY);
             if (psIdx != null) {
-                String ps = studyEntry.getSamplesData().get(0).get(psIdx);
+                String ps = studyEntry.getSamples().get(0).getData().get(psIdx);
                 if (!ps.equals(DocumentToSamplesConverter.UNKNOWN_FIELD)) {
                     sampleName = studyEntry.getOrderedSamplesName().get(0);
 
@@ -573,7 +565,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         } else {
             annotationCollection = getAnnotationCollection(name);
         }
-        VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(
+        VariantQueryProjection selectVariantElements = VariantQueryProjectionParser.parseVariantQueryFields(
                 query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), metadataManager);
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
@@ -588,8 +580,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult<Long> count(Query query) {
-        Document mongoQuery = queryParser.parseQuery(query);
+    public DataResult<Long> count(ParsedVariantQuery variantQuery) {
+        Document mongoQuery = queryParser.parseQuery(variantQuery.getQuery());
         DataResult<Long> count = variantsCollection.count(mongoQuery);
         count.setResults(Collections.singletonList(count.getNumMatches()));
         return count;
@@ -627,18 +619,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) {
-        if (query == null) {
-            query = new Query();
-        }
+    public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
         }
+        return iteratorFinal(variantQuery, options);
+    }
 
-        VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
-        Document mongoQuery = queryParser.parseQuery(query);
-        Document projection = queryParser.createProjection(query, options, selectVariantElements);
-        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, selectVariantElements);
+    private VariantDBIterator iteratorFinal(final ParsedVariantQuery variantQuery, final QueryOptions options) {
+        VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
+        Document mongoQuery = queryParser.parseQuery(variantQuery);
+        Document projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
 
         // Short unsorted queries with timeout or limit don't need the persistent cursor.
@@ -646,8 +638,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 || options.containsKey(QueryOptions.LIMIT)
                 || !options.getBoolean(QueryOptions.SORT, false)) {
             StopWatch stopWatch = StopWatch.createStarted();
-            FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
-            VariantMongoDBIterator dbIterator = new VariantMongoDBIterator(dbCursor, converter);
+            VariantMongoDBIterator dbIterator = new VariantMongoDBIterator(
+                    () -> variantsCollection.nativeQuery().find(mongoQuery, projection, options), converter);
             dbIterator.setTimeFetching(dbIterator.getTimeFetching() + stopWatch.getNanoTime());
             return dbIterator;
         } else {
@@ -656,7 +648,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
     }
 
-    public MongoCursor<Document> nativeIterator(Query query, QueryOptions options, boolean persistent) {
+    public MongoDBIterator<Document> nativeIterator(Query query, QueryOptions options, boolean persistent) {
         if (query == null) {
             query = new Query();
         }
@@ -671,15 +663,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         if (persistent) {
             logger.debug("Using mongodb persistent iterator");
-            return new MongoPersistentCursor(variantsCollection, mongoQuery, projection, options);
+            return new MongoDBIterator<>(new MongoPersistentCursor(variantsCollection, mongoQuery, projection, options), -1);
         } else {
-            FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
-            return dbCursor.iterator();
+            return variantsCollection.nativeQuery().find(mongoQuery, projection, options);
         }
     }
 
     @Override
-    public DataResult getFrequency(Query query, Region region, int regionIntervalSize) {
+    public DataResult getFrequency(ParsedVariantQuery query, Region region, int regionIntervalSize) {
         // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }},
         //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]},
         // 20000] } ] },
@@ -939,7 +930,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
-            Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
+            List<VariantStats> cohortStats = wrapper.getCohortStats();
 
             if (cohortStats.isEmpty()) {
                 continue;
@@ -1087,14 +1078,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private DocumentToVariantConverter getDocumentToVariantConverter(Query query, QueryOptions options) {
-        return getDocumentToVariantConverter(query, VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager));
+        return getDocumentToVariantConverter(query, VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager));
     }
 
-    private DocumentToVariantConverter getDocumentToVariantConverter(Query query, VariantQueryFields selectVariantElements) {
-        List<Integer> returnedStudies = selectVariantElements.getStudies();
+    private DocumentToVariantConverter getDocumentToVariantConverter(Query query, VariantQueryProjection selectVariantElements) {
+        List<Integer> returnedStudies = selectVariantElements.getStudyIds();
         DocumentToSamplesConverter samplesConverter;
         samplesConverter = new DocumentToSamplesConverter(metadataManager, selectVariantElements);
-        samplesConverter.setFormat(getIncludeFormats(query));
+        samplesConverter.setSampleDataKeys(getIncludeSampleData(query));
+        samplesConverter.setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key()));
         if (query.containsKey(UNKNOWN_GENOTYPE.key())) {
             samplesConverter.setUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));
         }

@@ -45,14 +45,14 @@ public class SampleIndexAnnotationLoader {
     private final VariantStorageMetadataManager metadataManager;
     private Logger logger = LoggerFactory.getLogger(SampleIndexAnnotationLoader.class);
 
-    public SampleIndexAnnotationLoader(GenomeHelper helper, HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
+    public SampleIndexAnnotationLoader(HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
                                        VariantStorageMetadataManager metadataManager, MRExecutor mrExecutor) {
         this.hBaseManager = hBaseManager;
         this.tableNameGenerator = tableNameGenerator;
         this.mrExecutor = mrExecutor;
         this.annotationIndexDBAdaptor = new AnnotationIndexDBAdaptor(hBaseManager, tableNameGenerator.getAnnotationIndexTableName());
         this.metadataManager = metadataManager;
-        this.sampleDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, this.metadataManager);
+        this.sampleDBAdaptor = new SampleIndexDBAdaptor(hBaseManager, tableNameGenerator, this.metadataManager);
         family = GenomeHelper.COLUMN_FAMILY_BYTES;
     }
 

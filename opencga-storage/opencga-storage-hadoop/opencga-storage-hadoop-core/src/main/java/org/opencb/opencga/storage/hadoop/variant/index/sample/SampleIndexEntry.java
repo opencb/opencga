@@ -4,8 +4,10 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Model representing an entry (row) of the SampleIndex.
@@ -24,6 +26,7 @@ public class SampleIndexEntry {
     private byte[] mendelianVariantsValue;
     private int mendelianVariantsLength;
     private int mendelianVariantsOffset;
+    private int discrepancies;
     private SampleIndexConfiguration configuration;
 
     public SampleIndexEntry(int sampleId, String chromosome, int batchStart, SampleIndexConfiguration configuration) {
@@ -69,6 +72,10 @@ public class SampleIndexEntry {
         return mendelianVariantsValue;
     }
 
+    public SampleIndexEntry setMendelianVariants(byte[] mendelianVariantsValue) {
+        return setMendelianVariants(mendelianVariantsValue, 0, mendelianVariantsValue.length);
+    }
+
     public SampleIndexEntry setMendelianVariants(byte[] mendelianVariantsValue, int offset, int length) {
         this.mendelianVariantsValue = mendelianVariantsValue;
         this.mendelianVariantsLength = length;
@@ -94,6 +101,15 @@ public class SampleIndexEntry {
         return this;
     }
 
+    public int getDiscrepancies() {
+        return discrepancies;
+    }
+
+    public SampleIndexEntry setDiscrepancies(int discrepancies) {
+        this.discrepancies = discrepancies;
+        return this;
+    }
+
     public SampleIndexConfiguration getConfiguration() {
         return configuration;
     }
@@ -106,15 +122,6 @@ public class SampleIndexEntry {
         return new MendelianErrorSampleIndexEntryIterator(this);
     }
 
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this)
-                .append("chromosome", chromosome)
-                .append("batchStart", batchStart)
-                .append("gts", gts)
-                .toString();
-    }
-
     public int getSampleId() {
         return sampleId;
     }
@@ -122,6 +129,42 @@ public class SampleIndexEntry {
     public SampleIndexEntry setSampleId(int sampleId) {
         this.sampleId = sampleId;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)
+                .append("sampleId", sampleId)
+                .append("chromosome", chromosome)
+                .append("batchStart", batchStart)
+                .append("gts", gts)
+                .toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SampleIndexEntry that = (SampleIndexEntry) o;
+        return sampleId == that.sampleId
+                && batchStart == that.batchStart
+                && discrepancies == that.discrepancies
+                && Objects.equals(chromosome, that.chromosome)
+                && Objects.equals(gts, that.gts)
+                && Bytes.equals(mendelianVariantsValue, mendelianVariantsOffset, mendelianVariantsLength,
+                that.mendelianVariantsValue, that.mendelianVariantsOffset, that.mendelianVariantsLength)
+                && Objects.equals(configuration, that.configuration);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(sampleId, chromosome, batchStart, gts, mendelianVariantsLength, mendelianVariantsOffset, configuration);
+        result = 31 * result + Arrays.hashCode(mendelianVariantsValue);
+        return result;
     }
 
     public class SampleIndexGtEntry {
@@ -241,8 +284,8 @@ public class SampleIndexEntry {
             return fileIndex;
         }
 
-        public byte getFileIndex(int idx) {
-            return fileIndex[fileIndexOffset + idx];
+        public short getFileIndex(int idx) {
+            return Bytes.toShort(fileIndex, fileIndexOffset + idx * Short.BYTES);
         }
 
         public SampleIndexGtEntry setFileIndex(byte[] fileIndex) {
@@ -404,14 +447,78 @@ public class SampleIndexEntry {
 
         @Override
         public String toString() {
-            return new ToStringBuilder(this)
-                    .append("gt", gt)
-                    .append("variants", variants)
-                    .append("fileIndex", fileIndex)
-                    .append("annotationIndex", annotationIndex)
-                    .append("annotationCounts", annotationCounts)
-                    .append("parentsIndex", parentsIndex)
-                    .toString();
+            final StringBuilder sb = new StringBuilder("SampleIndexGtEntry{");
+            sb.append("gt='").append(gt).append('\'');
+            sb.append(", count=").append(count);
+            sb.append(", variants=").append(variants == null ? "null"
+                    : Bytes.toStringBinary(variants, variantsOffset, variantsLength));
+            sb.append(", fileIndex=").append(fileIndex == null ? "null"
+                    : Bytes.toStringBinary(fileIndex, fileIndexOffset, fileIndexLength));
+            sb.append(", annotationIndex=").append(annotationIndex == null ? "null"
+                    : Bytes.toStringBinary(annotationIndex, annotationIndexOffset, annotationIndexLength));
+            sb.append(", annotationCounts=").append(Arrays.toString(annotationCounts));
+            sb.append(", consequenceTypeIndex=").append(consequenceTypeIndex == null ? "null"
+                    : Bytes.toStringBinary(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength));
+            sb.append(", biotypeIndex=").append(biotypeIndex == null ? "null"
+                    : Bytes.toStringBinary(biotypeIndex, biotypeIndexOffset, biotypeIndexLength));
+            sb.append(", ctBtIndex=").append(ctBtIndex == null ? "null"
+                    : Bytes.toStringBinary(ctBtIndex, ctBtIndexOffset, ctBtIndexLength));
+            sb.append(", populationFrequencyIndex=").append(populationFrequencyIndex == null ? "null"
+                    : Bytes.toStringBinary(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength));
+            sb.append(", clinicalIndex=").append(clinicalIndex == null ? "null"
+                    : Bytes.toStringBinary(clinicalIndex, clinicalIndexOffset, clinicalIndexLength));
+            sb.append(", parentsIndex=").append(parentsIndex == null ? "null"
+                    : Bytes.toStringBinary(parentsIndex, parentsIndexOffset, parentsIndexLength));
+            sb.append('}');
+            return sb.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            SampleIndexGtEntry that = (SampleIndexGtEntry) o;
+            return count == that.count
+                    && Objects.equals(gt, that.gt)
+                    && Arrays.equals(annotationCounts, that.annotationCounts)
+                    && Bytes.equals(fileIndex, fileIndexOffset, that.fileIndexLength,
+                        that.fileIndex, that.fileIndexOffset, that.fileIndexLength)
+                    && Bytes.equals(variants, variantsOffset, that.variantsLength,
+                        that.variants, that.variantsOffset, that.variantsLength)
+                    && Bytes.equals(annotationIndex, annotationIndexOffset, that.annotationIndexLength,
+                        that.annotationIndex, that.annotationIndexOffset, that.annotationIndexLength)
+                    && Bytes.equals(consequenceTypeIndex, consequenceTypeIndexOffset, that.consequenceTypeIndexLength,
+                        that.consequenceTypeIndex, that.consequenceTypeIndexOffset, that.consequenceTypeIndexLength)
+                    && Bytes.equals(biotypeIndex, biotypeIndexOffset, that.biotypeIndexLength,
+                        that.biotypeIndex, that.biotypeIndexOffset, that.biotypeIndexLength)
+                    && Bytes.equals(ctBtIndex, ctBtIndexOffset, that.ctBtIndexLength,
+                        that.ctBtIndex, that.ctBtIndexOffset, that.ctBtIndexLength)
+                    && Bytes.equals(populationFrequencyIndex, populationFrequencyIndexOffset, that.populationFrequencyIndexLength,
+                        that.populationFrequencyIndex, that.populationFrequencyIndexOffset, that.populationFrequencyIndexLength)
+                    && Bytes.equals(clinicalIndex, clinicalIndexOffset, that.clinicalIndexLength,
+                        that.clinicalIndex, that.clinicalIndexOffset, that.clinicalIndexLength)
+                    && Bytes.equals(parentsIndex, parentsIndexOffset, that.parentsIndexLength,
+                        that.parentsIndex, that.parentsIndexOffset, that.parentsIndexLength);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(gt, count);
+            result = 31 * result + Arrays.hashCode(annotationCounts);
+            result = 31 * result + Bytes.hashCode(variants, variantsOffset, variantsLength);
+            result = 31 * result + Bytes.hashCode(fileIndex, fileIndexOffset, fileIndexLength);
+            result = 31 * result + Bytes.hashCode(annotationIndex, annotationIndexOffset, annotationIndexLength);
+            result = 31 * result + Bytes.hashCode(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength);
+            result = 31 * result + Bytes.hashCode(biotypeIndex, biotypeIndexOffset, biotypeIndexLength);
+            result = 31 * result + Bytes.hashCode(ctBtIndex, ctBtIndexOffset, ctBtIndexLength);
+            result = 31 * result + Bytes.hashCode(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength);
+            result = 31 * result + Bytes.hashCode(clinicalIndex, clinicalIndexOffset, clinicalIndexLength);
+            result = 31 * result + Bytes.hashCode(parentsIndex, parentsIndexOffset, parentsIndexLength);
+            return result;
         }
     }
 }

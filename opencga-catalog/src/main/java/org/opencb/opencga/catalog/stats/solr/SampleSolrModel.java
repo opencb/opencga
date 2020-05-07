@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.beans.Field;
@@ -10,40 +26,10 @@ import java.util.Map;
 /**
  * Created by wasim on 27/06/18.
  */
-public class SampleSolrModel {
-
-    @Field
-    private long uid;
-
-    @Field
-    private String studyId;
-
-    @Field
-    private String source;
-
-    @Field
-    private int release;
+public class SampleSolrModel extends CatalogSolrModel {
 
     @Field
     private int version;
-
-    @Field
-    private int creationYear;
-
-    @Field
-    private String creationMonth;
-
-    @Field
-    private int creationDay;
-
-    @Field
-    private String creationDayOfWeek;
-
-    @Field
-    private String status;
-
-    @Field
-    private String type;
 
     @Field
     private boolean somatic;
@@ -73,9 +59,6 @@ public class SampleSolrModel {
     private List<String> phenotypes;
 
     @Field
-    private List<String> acl;
-
-    @Field
     private List<String> annotationSets;
 
     @Field("annotations__*")
@@ -90,9 +73,9 @@ public class SampleSolrModel {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleSolrModel{");
-        sb.append("uid=").append(uid);
+        sb.append("id='").append(id).append('\'');
+        sb.append(", uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
-        sb.append(", source='").append(source).append('\'');
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationYear=").append(creationYear);
@@ -100,7 +83,6 @@ public class SampleSolrModel {
         sb.append(", creationDay=").append(creationDay);
         sb.append(", creationDayOfWeek='").append(creationDayOfWeek).append('\'');
         sb.append(", status='").append(status).append('\'');
-        sb.append(", type='").append(type).append('\'');
         sb.append(", somatic=").append(somatic);
         sb.append(", product='").append(product).append('\'');
         sb.append(", preparationMethod='").append(preparationMethod).append('\'');
@@ -117,102 +99,12 @@ public class SampleSolrModel {
         return sb.toString();
     }
 
-    public long getUid() {
-        return uid;
-    }
-
-    public SampleSolrModel setUid(long uid) {
-        this.uid = uid;
-        return this;
-    }
-
-    public String getStudyId() {
-        return studyId;
-    }
-
-    public SampleSolrModel setStudyId(String studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public String getSource() {
-        return source;
-    }
-
-    public SampleSolrModel setSource(String source) {
-        this.source = source;
-        return this;
-    }
-
-    public int getRelease() {
-        return release;
-    }
-
-    public SampleSolrModel setRelease(int release) {
-        this.release = release;
-        return this;
-    }
-
     public int getVersion() {
         return version;
     }
 
     public SampleSolrModel setVersion(int version) {
         this.version = version;
-        return this;
-    }
-
-    public int getCreationYear() {
-        return creationYear;
-    }
-
-    public SampleSolrModel setCreationYear(int creationYear) {
-        this.creationYear = creationYear;
-        return this;
-    }
-
-    public String getCreationMonth() {
-        return creationMonth;
-    }
-
-    public SampleSolrModel setCreationMonth(String creationMonth) {
-        this.creationMonth = creationMonth;
-        return this;
-    }
-
-    public int getCreationDay() {
-        return creationDay;
-    }
-
-    public SampleSolrModel setCreationDay(int creationDay) {
-        this.creationDay = creationDay;
-        return this;
-    }
-
-    public String getCreationDayOfWeek() {
-        return creationDayOfWeek;
-    }
-
-    public SampleSolrModel setCreationDayOfWeek(String creationDayOfWeek) {
-        this.creationDayOfWeek = creationDayOfWeek;
-        return this;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public SampleSolrModel setStatus(String status) {
-        this.status = status;
-        return this;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public SampleSolrModel setType(String type) {
-        this.type = type;
         return this;
     }
 
@@ -294,15 +186,6 @@ public class SampleSolrModel {
 
     public SampleSolrModel setPhenotypes(List<String> phenotypes) {
         this.phenotypes = phenotypes;
-        return this;
-    }
-
-    public List<String> getAcl() {
-        return acl;
-    }
-
-    public SampleSolrModel setAcl(List<String> acl) {
-        this.acl = acl;
         return this;
     }
 

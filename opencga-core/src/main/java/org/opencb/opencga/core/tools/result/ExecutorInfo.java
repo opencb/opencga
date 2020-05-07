@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.tools.result;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,7 +25,7 @@ public class ExecutorInfo {
 
     private String id;
     @JsonProperty("class")
-    private Class<? extends OpenCgaToolExecutor> clazz;
+    private String clazz;
     private ObjectMap params;
     private ToolExecutor.Source source;
     private ToolExecutor.Framework framework;
@@ -23,7 +39,7 @@ public class ExecutorInfo {
                         ToolExecutor.Source source,
                         ToolExecutor.Framework framework) {
         this.id = id;
-        this.clazz = clazz;
+        this.clazz = clazz.toString();
         this.params = params;
         this.source = source;
         this.framework = framework;
@@ -38,11 +54,11 @@ public class ExecutorInfo {
         return this;
     }
 
-    public Class<? extends OpenCgaToolExecutor> getClazz() {
+    public String getClazz() {
         return clazz;
     }
 
-    public ExecutorInfo setClazz(Class<? extends OpenCgaToolExecutor> clazz) {
+    public ExecutorInfo setClazz(String clazz) {
         this.clazz = clazz;
         return this;
     }

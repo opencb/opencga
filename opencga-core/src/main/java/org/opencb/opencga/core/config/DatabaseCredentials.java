@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,9 @@ public class DatabaseCredentials {
     }
 
     public void setHosts(List<String> hosts) {
-        this.hosts = hosts;
+        this.hosts = hosts == null
+                ? java.util.Collections.emptyList()
+                : hosts.stream().flatMap(s -> java.util.Arrays.stream(s.split(","))).collect(java.util.stream.Collectors.toList());
     }
 
     public String getUser() {

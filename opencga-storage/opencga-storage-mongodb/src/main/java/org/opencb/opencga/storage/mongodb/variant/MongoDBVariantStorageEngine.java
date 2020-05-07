@@ -44,7 +44,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -68,7 +68,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.*;
 
 /**
@@ -123,6 +123,27 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
         VariantMongoDBAdaptor mongoDbAdaptor = getDBAdaptor();
         return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor, ioConnectorProvider);
+    }
+
+    @Override
+    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = metadataManager.getStudyId(study);
+        for (int i = 0; i < trios.size(); i += 3) {
+            Integer father = metadataManager.getSampleId(studyId, trios.get(i));
+            Integer mother = metadataManager.getSampleId(studyId, trios.get(i + 1));
+            Integer child = metadataManager.getSampleId(studyId, trios.get(i + 2));
+            metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
+                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
+                if (father != null && father > 0) {
+                    sampleMetadata.setFather(father);
+                }
+                if (mother != null && mother > 0) {
+                    sampleMetadata.setMother(mother);
+                }
+                return sampleMetadata;
+            });
+        }
     }
 
     @Override
@@ -316,14 +337,14 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                         if (doDirectLoad) {
                             storagePipeline.getOptions().put(STAGE.key(), false);
                             storagePipeline.getOptions().put(MERGE.key(), false);
-                            storagePipeline.directLoad(input);
+                            storagePipeline.directLoad(input, outdirUri);
                             result.setLoadExecuted(true);
                             result.setLoadStats(storagePipeline.getLoadStats());
                             result.setLoadTimeMillis(loadWatch.getTime(TimeUnit.MILLISECONDS));
                         } else {
                             if (doStage) {
                                 logger.info("Load - Stage '{}'", input);
-                                storagePipeline.stage(input);
+                                storagePipeline.stage(input, outdirUri);
                                 result.setLoadResult(input);
                                 result.setLoadStats(storagePipeline.getLoadStats());
                                 result.getLoadStats().put(STAGE.key(), true);
@@ -499,9 +520,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 && !isValidParam(query, FILE)
                 && !isValidParam(query, FILTER)
                 && !isValidParam(query, QUAL)
-                && !isValidParam(query, INFO)
+                && !isValidParam(query, FILE_DATA)
                 && !isValidParam(query, SAMPLE)
-                && !isValidParam(query, FORMAT)
+                && !isValidParam(query, SAMPLE_DATA)
                 && !isValidParam(query, GENOTYPE)) {
             query.remove(VariantQueryParam.STUDY.key());
         }

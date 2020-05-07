@@ -1,9 +1,31 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 
 import java.util.*;
@@ -143,8 +165,132 @@ public class AuthorizationMongoDBUtils {
         return entry;
     }
 
-    public static Document getQueryForAuthorisedEntries(Document study, String user, String studyPermission, String entryPermission,
-                                                        String entity) throws CatalogAuthorizationException {
+    private static int getPermissionType(Enums.Resource resource) throws CatalogParameterException {
+        switch (resource) {
+            case FILE:
+                return StudyAclEntry.FILE;
+            case SAMPLE:
+                return StudyAclEntry.SAMPLE;
+            case JOB:
+                return StudyAclEntry.JOB;
+            case INDIVIDUAL:
+                return StudyAclEntry.INDIVIDUAL;
+            case COHORT:
+                return StudyAclEntry.COHORT;
+            case DISEASE_PANEL:
+                return StudyAclEntry.DISEASE_PANEL;
+            case FAMILY:
+                return StudyAclEntry.FAMILY;
+            case CLINICAL_ANALYSIS:
+                return StudyAclEntry.CLINICAL_ANALYSIS;
+            default:
+                throw new CatalogParameterException("Unexpected resource '" + resource + "'.");
+        }
+    }
+
+    /**
+     * If query contains {@link ParamConstants#ACL_PARAM}, it will parse the value to generate the corresponding mongo query documents.
+     *
+     * @param study Queried study document.
+     * @param query Original query.
+     * @param resource Affected resource.
+     * @param user User performing the query.
+     * @return A list of documents to satisfy the ACL query.
+     * @throws CatalogDBException when there is a DB error.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
+     */
+    public static List<Document> parseAclQuery(Document study, Query query, Enums.Resource resource, String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        List<Document> aclDocuments = new LinkedList<>();
+        if (!query.containsKey(ParamConstants.ACL_PARAM)) {
+            return aclDocuments;
+        }
+
+        if (study == null || study.isEmpty()) {
+            throw new CatalogDBException("Internal error: Missing study document to generate ACL query");
+        }
+
+        String[] userPermission = query.getString(ParamConstants.ACL_PARAM).split(":");
+        if (userPermission.length != 2) {
+            throw new CatalogParameterException("Unexpected format for '" + ParamConstants.ACL_PARAM + "'. " + ParamConstants.ACL_FORMAT);
+        }
+        String affectedUser = userPermission[0];
+        List<String> permissions = Arrays.asList(userPermission[1].split(","));
+
+        // If user is not checking its own permissions and it is not the owner or admin of the study, we fail
+        if (!user.equals(affectedUser) && !study.getString(PRIVATE_OWNER_ID).equals(user) && !getAdminUsers(study).contains(user)) {
+            throw new CatalogAuthorizationException("Only study owners or admins are authorised to see other user's permissions.");
+        }
+
+        // 0. If the user is the admin or corresponds with the owner, we don't have to check anything else
+        if (study.getString(PRIVATE_OWNER_ID).equals(affectedUser)) {
+            return aclDocuments;
+        }
+        if (OPENCGA.equals(affectedUser)) {
+            return aclDocuments;
+        }
+        if (getAdminUsers(study).contains(affectedUser)) {
+            return aclDocuments;
+        }
+
+        // If user does not exist in the members group, the user will not have any permission
+        if (!isUserInMembers(study, affectedUser)) {
+            throw new CatalogAuthorizationException("User " + affectedUser + " does not have any permissions in study "
+                    + study.getString(StudyDBAdaptor.QueryParams.ID.key()));
+        }
+
+        boolean isAnonymousPresent = false;
+        List<String> groups;
+        boolean hasStudyPermissions;
+
+        if (!affectedUser.equals(ANONYMOUS)) {
+            // 0. Check if anonymous has any permission defined (just for performance)
+            isAnonymousPresent = isUserInMembers(study, ANONYMOUS);
+
+            // 1. We obtain the groups of the user
+            groups = getGroups(study, affectedUser);
+        } else {
+            // 1. Anonymous user will not belong to any group
+            groups = Collections.emptyList();
+        }
+
+        for (String permission : permissions) {
+            String studyPermission = StudyAclEntry.StudyPermissions.getStudyPermission(permission, getPermissionType(resource)).name();
+
+            if (!affectedUser.equals(ANONYMOUS)) {
+                // We check if the study contains the studies expected for the user
+                hasStudyPermissions = checkUserHasPermission(study, affectedUser, groups, studyPermission, false);
+            } else {
+                // 2. We check if the study contains the studies expected for the user
+                hasStudyPermissions = checkAnonymousHasPermission(study, studyPermission);
+            }
+
+            if (hasStudyPermissions && !hasInternalPermissions(study, affectedUser, groups, resource.name())) {
+                break;
+            }
+
+            Document queryDocument = getAuthorisedEntries(affectedUser, groups, permission, isAnonymousPresent);
+            if (hasStudyPermissions) {
+                // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
+                // permissions defined as the user will also be allowed to see them
+                queryDocument = new Document("$or", Arrays.asList(
+                        getNoPermissionsDefined(affectedUser, groups),
+                        queryDocument
+                ));
+            }
+            aclDocuments.add(queryDocument);
+        }
+
+        return aclDocuments;
+    }
+
+    public static Document getQueryForAuthorisedEntries(Document study, String user, String permission, Enums.Resource resource)
+            throws CatalogAuthorizationException, CatalogParameterException {
+        if (StringUtils.isEmpty(user)) {
+            return new Document();
+        }
+
         // 0. If the user is the admin or corresponds with the owner, we don't have to check anything else
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return new Document();
@@ -161,6 +307,8 @@ public class AuthorizationMongoDBUtils {
             throw new CatalogAuthorizationException("User " + user + " does not have any permissions in study "
                     + study.getString(StudyDBAdaptor.QueryParams.ID.key()));
         }
+
+        String studyPermission = StudyAclEntry.StudyPermissions.getStudyPermission(permission, getPermissionType(resource)).name();
 
         boolean isAnonymousPresent = false;
         List<String> groups;
@@ -182,11 +330,11 @@ public class AuthorizationMongoDBUtils {
             hasStudyPermissions = checkAnonymousHasPermission(study, studyPermission);
         }
 
-        if (hasStudyPermissions && !hasInternalPermissions(study, user, groups, entity)) {
+        if (hasStudyPermissions && !hasInternalPermissions(study, user, groups, resource.name())) {
             return new Document();
         }
 
-        Document queryDocument = getAuthorisedEntries(user, groups, entryPermission, isAnonymousPresent);
+        Document queryDocument = getAuthorisedEntries(user, groups, permission, isAnonymousPresent);
         if (hasStudyPermissions) {
             // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
             // permissions defined as the user will also be allowed to see them

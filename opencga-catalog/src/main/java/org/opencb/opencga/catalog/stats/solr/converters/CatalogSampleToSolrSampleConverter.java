@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -50,11 +66,10 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
 
     @Override
     public SampleSolrModel convertToStorageType(Sample sample) {
-
         SampleSolrModel sampleSolrModel = new SampleSolrModel();
 
+        sampleSolrModel.setId(sample.getUuid());
         sampleSolrModel.setUid(sample.getUid());
-        sampleSolrModel.setSource(sample.getSource());
         sampleSolrModel.setStudyId(study.getFqn().replace(":", "__"));
 
         sampleSolrModel.setRelease(sample.getRelease());
@@ -67,10 +82,9 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         sampleSolrModel.setCreationMonth(localDate.getMonth().toString());
         sampleSolrModel.setCreationDay(localDate.getDayOfMonth());
         sampleSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        sampleSolrModel.setStatus(sample.getStatus().getName());
+        sampleSolrModel.setStatus(sample.getInternal().getStatus().getName());
 
-        sampleSolrModel.setStatus(sample.getStatus().getName());
-        sampleSolrModel.setType(sample.getType());
+        sampleSolrModel.setStatus(sample.getInternal().getStatus().getName());
         sampleSolrModel.setSomatic(sample.isSomatic());
 
         if (sample.getPhenotypes() != null) {

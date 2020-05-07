@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,17 @@
 
 package org.opencb.opencga.analysis.alignment;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.alignment.*;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -42,7 +45,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -153,13 +158,26 @@ public class AlignmentStorageManager extends StorageManager {
 
     //-------------------------------------------------------------------------
 
-    public OpenCGAResult<String> statsInfo(String study, String inputFile, String token) throws ToolException, StorageEngineException,
-            CatalogException {
+    public OpenCGAResult<String> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
         OpenCGAResult<File> fileResult;
-        fileResult = catalogManager.getFileManager().get(study, inputFile + ".stats.txt", QueryOptions.empty(), token);
+        fileResult = catalogManager.getFileManager().get(study, inputFile + ".stats.json", QueryOptions.empty(), token);
 
         if (fileResult.getNumMatches() == 1) {
-            return alignmentStorageEngine.getDBAdaptor().statsInfo(Paths.get(fileResult.getResults().get(0).getUri().getPath()));
+            for (AnnotationSet annotationSet : fileResult.getResults().get(0).getAnnotationSets()) {
+                if ("opencga_alignment_stats".equals(annotationSet.getId())) {
+                    StopWatch watch = StopWatch.createStarted();
+                    AlignmentStats stats = JacksonUtils.getDefaultObjectMapper().convertValue(annotationSet.getAnnotations(),
+                            AlignmentStats.class);
+                    try {
+                        String json = JacksonUtils.getDefaultObjectMapper().writeValueAsString(stats);
+                        watch.stop();
+                        return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(json), 1);
+                    } catch (JsonProcessingException e) {
+                        throw new ToolException(e);
+                    }
+                }
+            }
+            throw new ToolException("Alignment stats not computed for " + inputFile);
         } else {
             throw new ToolException("Error accessing to the file: " + inputFile);
         }
@@ -206,6 +224,117 @@ public class AlignmentStorageManager extends StorageManager {
                                                        int windowSize, String sessionId) throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
         return alignmentStorageEngine.getDBAdaptor().coverageQuery(Paths.get(file.getUri()), region, minCoverage, maxCoverage, windowSize);
+    }
+
+    //-------------------------------------------------------------------------
+
+    public OpenCGAResult<GeneCoverageStats> coverageStats(String studyIdStr, String fileIdStr, List<String> geneNames, int threshold, String token)
+            throws Exception {
+        StopWatch watch = StopWatch.createStarted();
+
+        List<GeneCoverageStats> geneCoverageStatsList = new ArrayList<>();
+
+        // Get file
+        File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, token);
+
+        // Get species and assembly from catalog
+        OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
+                new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyIdStr),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
+        if (projectQueryResult.getNumResults() != 1) {
+            throw new CatalogException("Error getting species and assembly from catalog");
+        }
+        String species = projectQueryResult.first().getOrganism().getScientificName();
+        String assembly = projectQueryResult.first().getOrganism().getAssembly();
+
+        for (String geneName : geneNames) {
+            // Init gene coverage stats
+            GeneCoverageStats geneCoverageStats = new GeneCoverageStats();
+            geneCoverageStats.setFileId(file.getId());
+            geneCoverageStats.setGeneName(geneName);
+            if (CollectionUtils.isNotEmpty(file.getSamples())) {
+                geneCoverageStats.setSampleId(file.getSamples().get(0).getId());
+            }
+
+            // Get exon regions per transcript
+            Map<String, List<Region>> exonRegions = getExonRegionsPerTranscript(geneName, species, assembly);
+
+            // Compute coverage stats per transcript
+            for (String transcriptId : exonRegions.keySet()) {
+                TranscriptCoverageStats transcriptCoverageStats = new TranscriptCoverageStats();
+                transcriptCoverageStats.setTranscriptId(transcriptId);
+                transcriptCoverageStats.setLowCoverageThreshold(threshold);
+
+                // Trasscript length as a sum of exon lengths
+                int length = 0;
+                // Coverage depths: 1x, 5x, 10x, 15x, 20x, 25x, 30x, 40x, 50x, 60x
+                double[] depths = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                // List of low coverage regions
+                List<LowCoverageRegion> lowCoverageRegions = new ArrayList<>();
+
+                for (Region region : exonRegions.get(transcriptId)) {
+                    length += region.size();
+
+                    OpenCGAResult<RegionCoverage> regionResult = alignmentStorageEngine.getDBAdaptor().coverageQuery(
+                            Paths.get(file.getUri()), region, 0, threshold, 1);
+                    RegionCoverage regionCoverage = regionResult.first();
+                    if (regionCoverage != null) {
+                        for (double coverage : regionCoverage.getValues()) {
+                            if (coverage >= 1) {
+                                depths[0]++;
+                                if (coverage >= 5) {
+                                    depths[1]++;
+                                    if (coverage >= 10) {
+                                        depths[2]++;
+                                        if (coverage >= 15) {
+                                            depths[3]++;
+                                            if (coverage >= 20) {
+                                                depths[4]++;
+                                                if (coverage >= 25) {
+                                                    depths[5]++;
+                                                    if (coverage >= 30) {
+                                                        depths[6]++;
+                                                        if (coverage >= 40) {
+                                                            depths[7]++;
+                                                            if (coverage >= 50) {
+                                                                depths[8]++;
+                                                                if (coverage >= 60) {
+                                                                    depths[9]++;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (regionCoverage.getStats().getAvg() <= threshold) {
+                            lowCoverageRegions.add(new LowCoverageRegion(regionCoverage.getStart(), regionCoverage.getEnd(),
+                                    regionCoverage.getStats().getAvg(), regionCoverage.getStats().getMin()));
+                        }
+
+                    }
+                }
+                transcriptCoverageStats.setLength(length);
+                // Update (%) depths
+                for (int i = 0; i < depths.length; i++) {
+                    depths[i] = depths[i] / length * 100.0;
+                }
+                transcriptCoverageStats.setDepths(depths);
+                transcriptCoverageStats.setLowCoverageRegions(lowCoverageRegions);
+            }
+
+            geneCoverageStatsList.add(geneCoverageStats);
+        }
+
+
+        watch.stop();
+        return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), geneCoverageStatsList.size(), geneCoverageStatsList,
+                geneCoverageStatsList.size());
     }
 
     //-------------------------------------------------------------------------
@@ -311,6 +440,36 @@ public class AlignmentStorageManager extends StorageManager {
     //-------------------------------------------------------------------------
     // PRIVATE METHODS
     //-------------------------------------------------------------------------
+
+    public Map<String, List<Region>> getExonRegionsPerTranscript(String geneName, String species, String assembly)
+            throws StorageEngineException, IOException {
+        // Init region map, where key = transcript and value = list of exon regions
+        Map<String, List<Region>> regionMap = new HashMap<>();
+
+        // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
+        CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
+                .toClientConfiguration());
+        GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
+        QueryResponse<Gene> response = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty());
+        if (CollectionUtils.isNotEmpty(response.allResults())) {
+            for (Gene gene : response.allResults()) {
+                // Create region from gene coordinates
+                if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
+                    for (Transcript transcript : gene.getTranscripts()) {
+                        List<Region> regions = new ArrayList<>();
+                        if (CollectionUtils.isNotEmpty(transcript.getExons())) {
+                            for (Exon exon : transcript.getExons()) {
+                                regions.add(new Region(exon.getChromosome(), exon.getGenomicCodingStart(), exon.getGenomicCodingEnd()));
+
+                            }
+                        }
+                        regionMap.put(transcript.getId(), regions);
+                    }
+                }
+            }
+        }
+        return regionMap;
+    }
 
     private File extractAlignmentOrCoverageFile(String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
         OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr,

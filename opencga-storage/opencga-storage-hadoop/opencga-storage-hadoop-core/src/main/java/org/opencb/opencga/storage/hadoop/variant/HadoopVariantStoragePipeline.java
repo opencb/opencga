@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.conf.Configuration;
@@ -32,6 +31,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
@@ -60,17 +61,16 @@ import java.io.IOException;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERGE_MODE;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_SLICE_BUFFER_SIZE;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.VARIANT_TABLE_LOAD_REFERENCE;
 
 /**
  * Created by mh719 on 13/05/2016.
@@ -135,6 +135,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                                                 DataReader<String> stringReader, Supplier<Task<String, Variant>> task)
             throws StorageEngineException {
 
+        int sliceBufferSize = options.getInt(ARCHIVE_SLICE_BUFFER_SIZE.key(), ARCHIVE_SLICE_BUFFER_SIZE.defaultValue());
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter;
         try {
@@ -151,7 +152,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         logger.info("Generating output file {}", outputVariantsFile);
 
         VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader,
-                helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()));
+                helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()), sliceBufferSize);
 
         // Use a supplier to avoid concurrent modifications of non thread safe objects.
         Supplier<Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> supplier = VariantToVcfSliceConverterTask::new;
@@ -174,8 +175,11 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         super.preLoad(input, output);
 
         try {
-            ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), getArchiveTable(),
-                    dbAdaptor.getConnection());
+            if (YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()) == YesNoAuto.NO) {
+                logger.info("Skip archive table");
+            } else {
+                ArchiveTableHelper.createArchiveTableIfNeeded(getOptions(), getArchiveTable(), dbAdaptor.getConnection());
+            }
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + getArchiveTable(), e);
         }
@@ -193,6 +197,20 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
         super.securePreLoad(studyMetadata, fileMetadata);
 
+        if (fileMetadata.getSampleIds().isEmpty()) {
+            YesNoAuto loadArchive = YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key());
+            if (loadArchive == YesNoAuto.AUTO) {
+                logger.info("Loading aggregated file with no samples. Skip Archive Table.");
+                getOptions().put(LOAD_ARCHIVE.key(), YesNoAuto.NO);
+            }
+        }
+
+        YesNoAuto loadHomRef = YesNoAuto.parse(getOptions(), LOAD_HOM_REF.key());
+        if (loadHomRef != YesNoAuto.AUTO) {
+            // If auto, use configuration value.
+            getOptions().put(VARIANT_TABLE_LOAD_REFERENCE.key(), loadHomRef.booleanValue());
+        }
+
         MergeMode mergeMode;
         if (!studyMetadata.getAttributes().containsKey(VariantStorageOptions.MERGE_MODE.key())) {
             mergeMode = MergeMode.from(options);
@@ -209,7 +227,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     }
 
     @Override
-    public URI load(URI input) throws StorageEngineException {
+    public URI load(URI input, URI outdir) throws StorageEngineException {
         int studyId = getStudyId();
         int fileId = getFileId();
 
@@ -220,7 +238,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
         FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyId, fileId);
         if (!fileMetadata.isIndexed()) {
-            load(input, studyId, fileId);
+            load(input, outdir, studyId, fileId);
         } else {
             logger.info("File {} already loaded. Skip this step!", UriUtils.fileName(input));
         }
@@ -228,7 +246,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         return input; // TODO  change return value?
     }
 
-    protected abstract void load(URI input, int studyId, int fileId) throws StorageEngineException;
+    protected abstract void load(URI input, URI outdir, int studyId, int fileId) throws StorageEngineException;
 
     @Override
     protected void checkLoadedVariants(int fileId, StudyMetadata studyMetadata) throws
@@ -310,19 +328,22 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             }
 
             try {
-                BiMap<String, Integer> indexedSamples = metadataManager.getIndexedSamplesMap(studyId);
-                Set<Integer> previouslyIndexedSamples = indexedSamples.values();
                 Set<Integer> newSamples = new HashSet<>();
+                List<PhoenixHelper.Column> multiFileSampleColumns = new ArrayList<>();
                 for (Integer fileId : fileIds) {
                     FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
-                    for (Integer sampleId : fileMetadata.getSamples()) {
-                        if (!previouslyIndexedSamples.contains(sampleId)) {
-                            newSamples.add(sampleId);
+                    newSamples.addAll(fileMetadata.getSamples());
+                }
+                for (Integer sampleId : newSamples) {
+                    SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+                    if (SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
+                        // If multi file load, register all secondary sample columns
+                        for (Integer fileId : sampleMetadata.getFiles().subList(1, sampleMetadata.getFiles().size())) {
+                            multiFileSampleColumns.add(VariantPhoenixHelper.getSampleColumn(studyId, sampleId, fileId));
                         }
                     }
                 }
-                phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyId, fileIds,
-                        newSamples);
+                phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyId, fileIds, newSamples, multiFileSampleColumns);
 
                 int release = metadataManager.getProjectMetadata().getRelease();
                 phoenixHelper.registerRelease(jdbcConnection, variantsTableName, release);

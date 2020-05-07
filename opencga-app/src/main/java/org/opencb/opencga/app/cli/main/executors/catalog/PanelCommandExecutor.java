@@ -93,10 +93,10 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         PanelCommandOptions.InfoCommandOptions c = panelsCommandOptions.infoCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull("study", resolveStudy(c.study));
+        params.putIfNotNull("study", c.study);
         params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
-        return openCGAClient.getPanelClient().info(c.id, params);
+        return openCGAClient.getDiseasePanelClient().info(c.id, params);
     }
 
     private RestResponse<Panel> search() throws ClientException  {
@@ -105,14 +105,14 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         PanelCommandOptions.SearchCommandOptions c = panelsCommandOptions.searchCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull("study", resolveStudy(c.study));
+        params.putIfNotNull("study", c.study);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.NAME.key(), c.name);
-        params.putIfNotNull(PanelDBAdaptor.QueryParams.PHENOTYPES.key(), c.phenotypes);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.DISORDERS.key(), c.phenotypes);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.VARIANTS.key(), c.variants);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.REGIONS.key(), c.regions);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.GENES.key(), c.genes);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.DESCRIPTION.key(), c.description);
-        params.putIfNotNull(PanelDBAdaptor.QueryParams.AUTHOR.key(), c.author);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.SOURCE_AUTHOR.key(), c.author);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.TAGS.key(), c.tags);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.CATEGORIES.key(), c.categories);
         params.putIfNotNull(PanelDBAdaptor.QueryParams.CREATION_DATE.key(), c.creationDate);
@@ -125,7 +125,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         params.put(QueryOptions.LIMIT, c.numericOptions.limit);
         params.put(QueryOptions.SKIP, c.numericOptions.skip);
 
-        return openCGAClient.getPanelClient().search(params);
+        return openCGAClient.getDiseasePanelClient().search(params);
     }
 
 
@@ -140,7 +140,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
                 .setPermissions(commandOptions.permissions)
                 .setAction(commandOptions.action);
 
-        return openCGAClient.getPanelClient().updateAcl(commandOptions.memberId, aclUpdateParams, queryParams);
+        return openCGAClient.getDiseasePanelClient().updateAcl(commandOptions.memberId, aclUpdateParams, queryParams);
     }
 
     private RestResponse<ObjectMap> acl() throws ClientException {
@@ -152,6 +152,6 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
 
         params.putAll(commandOptions.commonOptions.params);
 
-        return openCGAClient.getPanelClient().acl(commandOptions.id, params);
+        return openCGAClient.getDiseasePanelClient().acl(commandOptions.id, params);
     }
 }

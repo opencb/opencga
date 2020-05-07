@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -152,16 +152,14 @@ public class VariantJsonWriter implements VariantWriter {
             for (StudyEntry studyEntry : variant.getStudies()) {
                 if (!includeSrc) {
                     for (FileEntry fileEntry : studyEntry.getFiles()) {
-                        if (fileEntry.getAttributes().containsKey(VariantVcfFactory.SRC)) {
-                            fileEntry.getAttributes().remove(VariantVcfFactory.SRC);
-                        }
+                        fileEntry.getData().remove(VariantVcfFactory.SRC);
                     }
                 }
                 if (!includeSamples) {
-                    studyEntry.getSamplesData().clear();
+                    studyEntry.getSamples().clear();
                 }
                 if (!includeStats) {
-                    studyEntry.setStats(Collections.emptyMap());
+                    studyEntry.setStats(Collections.emptyList());
                 }
             }
             variantsGenerator.writeObject(variant);

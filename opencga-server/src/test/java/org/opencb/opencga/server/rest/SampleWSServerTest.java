@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Study;
 
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
@@ -62,7 +62,7 @@ public class SampleWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD);
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD).getToken();
         in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in1"), null,
                 sessionId).first().getUid();
         s1 = OpenCGAWSServer.catalogManager.getSampleManager().create(studyId, new Sample().setId("s1"), null, sessionId).first().getUid();
@@ -126,22 +126,22 @@ public class SampleWSServerTest {
                 .queryParam("sid", sessionId)
                 .queryParam("studyId", studyId)
                 .queryParam("name", "Name")
-                .queryParam("type", Study.Type.COLLECTION)
+                .queryParam("type", Enums.CohortType.COLLECTION)
                 .request().get(String.class);
         Cohort c = WSServerTestUtils.parseResult(json, Cohort.class).getResponse().get(0).first();
         assertEquals(0, c.getSamples().size());
-        assertEquals(Study.Type.COLLECTION, c.getType());
+        assertEquals(Enums.CohortType.COLLECTION, c.getType());
     }
 
     @Test
     public void createCohort() throws IOException {
         String json = webTarget.path("cohorts").path("create")
                 .queryParam("sid", sessionId).queryParam("studyId", studyId).queryParam("name", "Name")
-                .queryParam("type", Study.Type.FAMILY).queryParam("sampleIds", s1 + "," + s2 + "," + s3 + "," + s4)
+                .queryParam("type", Enums.CohortType.FAMILY).queryParam("sampleIds", s1 + "," + s2 + "," + s3 + "," + s4)
                 .request().get(String.class);
         Cohort c = WSServerTestUtils.parseResult(json, Cohort.class).getResponse().get(0).first();
         assertEquals(4, c.getSamples().size());
-        assertEquals(Study.Type.FAMILY, c.getType());
+        assertEquals(Enums.CohortType.FAMILY, c.getType());
     }
 
 }

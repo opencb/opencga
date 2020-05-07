@@ -18,12 +18,16 @@ package org.opencb.opencga.storage.core.utils;
 
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +99,7 @@ public class CellBaseUtils {
                                 || geneStr.equals(aGene.getId())
                                 || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getName()))
                                 || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getId()))
-                                || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getProteinID()))) {
+                                || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getProteinId()))) {
 //                            if (gene != null) {
 //                                // More than one gene found!
 //                                // Leave gene empty, so it is marked as "not found"
@@ -127,7 +131,7 @@ public class CellBaseUtils {
                     missingGenes.add(result.getId());
                     continue;
                 }
-                int start = Math.max(0, gene.getStart() - GENE_EXTRA_REGION);
+                int start = Math.max(1, gene.getStart() - GENE_EXTRA_REGION);
                 int end = gene.getEnd() + GENE_EXTRA_REGION;
                 Region region = new Region(gene.getChromosome(), start, end);
                 regions.add(region);
@@ -189,5 +193,44 @@ public class CellBaseUtils {
 
     public CellBaseClient getCellBaseClient() {
         return cellBaseClient;
+    }
+
+    public Variant getVariant(String variantStr) {
+        return getVariants(Collections.singletonList(variantStr)).get(0);
+    }
+
+    public List<Variant> getVariants(List<String> variantsStr) {
+        List<Variant> variants = new ArrayList<>(variantsStr.size());
+        List<QueryResult<Variant>> response = null;
+        try {
+            response = cellBaseClient.getVariationClient().get(variantsStr,
+                    new QueryOptions(QueryOptions.INCLUDE,
+                            VariantField.CHROMOSOME.fieldName() + ","
+                                    + VariantField.START.fieldName() + ","
+                                    + VariantField.END.fieldName() + ","
+                                    + VariantField.TYPE.fieldName() + ","
+                                    + VariantField.REFERENCE.fieldName() + ","
+                                    + VariantField.ALTERNATE.fieldName()
+                    )).getResponse();
+        } catch (IOException e) {
+            throw VariantQueryException.internalException(e);
+        }
+        VariantNormalizer variantNormalizer = new VariantNormalizer();
+        for (QueryResult<Variant> result : response) {
+            if (result.getResult().size() == 1) {
+                Variant variant = result.getResult().get(0);
+                try {
+                    variants.add(variantNormalizer.normalize(Collections.singletonList(variant), true).get(0));
+                } catch (NonStandardCompliantSampleField e) {
+                    throw VariantQueryException.internalException(e);
+                }
+            } else if (result.getResult().isEmpty()) {
+                throw new VariantQueryException("Unknown variant '" + result.getId() + "'");
+            } else {
+                throw new VariantQueryException("Not unique variant identifier '" + result.getId() + "'."
+                        + " Found " + variants.size() + " results: " + variants);
+            }
+        }
+        return variants;
     }
 }

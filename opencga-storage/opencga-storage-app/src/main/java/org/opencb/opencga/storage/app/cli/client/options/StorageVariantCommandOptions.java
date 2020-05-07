@@ -21,9 +21,9 @@ import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -97,12 +97,15 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--merge"}, description = "Currently two levels of merge are supported: \"basic\" mode merge genotypes of the same variants while \"advanced\" merge multiallelic and overlapping variants.")
         public String merge;
 
+        @Parameter(names = {"--deduplication-policy"}, description = "Specify how duplicated variants should be handled. Available policies: \"discard\", \"maxQual\"")
+        public String deduplicationPolicy = "maxQual";
+
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
         public boolean excludeGenotype;
 
-        @Parameter(names = {"--include-extra-fields"}, description = "Index including other FORMAT fields." +
-                " Use \"" + VariantQueryUtils.ALL + "\", \"" + VariantQueryUtils.NONE + "\", or CSV with the fields to load.")
-        public String includeExtraFields = VariantQueryUtils.ALL;
+        @Parameter(names = {"--include-sample-data"}, description = "Index including other sample data fields (i.e. FORMAT fields)."
+                + " Use \"" + VariantQueryUtils.ALL + "\", \"" + VariantQueryUtils.NONE + "\", or CSV with the fields to load.")
+        public String includeSampleData = VariantQueryUtils.ALL;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public Aggregation aggregated = Aggregation.NONE;
@@ -110,7 +113,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;
 
-        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
+        @Parameter(names = {"--gvcf"}, description = "Hint to indicate that the input file is in gVCF format.")
         public boolean gvcf;
 
 //        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
@@ -134,11 +137,35 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
         public boolean resume;
 
-        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)")
-        public boolean loadSplitData;
+        @Parameter(names = {"--family"}, description = "Indicate that the files to be loaded are part of a family. "
+                + "This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards")
+        public boolean family;
 
-        @Parameter(names = {"--skip-post-load-check"}, description = "Do not execute post load checks over the database")
-        public boolean skipPostLoadCheck;
+        @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a group of samples is split in multiple files, either by CHROMOSOME or by REGION. In either case, variants from different files must not overlap.")
+        public String loadSplitData;
+
+        @Parameter(names = {"--load-multi-file-data"}, description = "Indicate the presence of multiple files for the same sample. Each file could be the result of a different vcf-caller or experiment over the same sample.", arity = 0)
+        public boolean loadMultiFileData;
+
+        @Parameter(names = {"--load-sample-index"}, description = "Build sample index while loading. (yes, no, auto)")
+        public String loadSampleIndex = "auto";
+
+        @Parameter(names = {"--load-archive"}, description = "Load archive data. (yes, no, auto)")
+        public String loadArchive = "auto";
+
+        @Parameter(names = {"--load-hom-ref"}, description = "Load HOM_REF genotypes. (yes, no, auto)")
+        public String loadHomRef = "auto";
+
+        @Parameter(names = {"--post-load-check"}, description = "Execute post load checks over the database. (yes, no, auto)")
+        public String postLoadCheck = "auto";
+
+        @Parameter(names = {"--normalization-skip"}, description = "Do not execute the normalization process. "
+                + "WARN: INDELs will be stored with the context base")
+        public boolean normalizationSkip;
+
+        @Parameter(names = {"--reference-genome"}, description = "Reference genome in FASTA format used during the normalization step "
+                + "for a complete left alignment")
+        public String referenceGenome;
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -259,15 +286,9 @@ public class StorageVariantCommandOptions {
     }
 
     /**
-     * @see org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils#parseGenericVariantQuery
+     * @see org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils#parseBasicVariantQuery
      */
     public static class GenericVariantQueryOptions extends BasicVariantQueryOptions {
-
-        @Parameter(names = {"--group-by"}, description = "Group by gene, ensembl gene or consequence_type")
-        public String groupBy;
-
-        @Parameter(names = {"--rank"}, description = "Rank variants by gene, ensemblGene or consequence_type")
-        public String rank;
 
 //        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
 //        public String study;
@@ -278,14 +299,24 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--sample"}, description = SAMPLE_DESCR)
         public String samples;
 
-        @Parameter(names = {"--format"}, description = FORMAT_DESCR)
-        public String format;
+        @Parameter(names = {"--sample-data"}, description = SAMPLE_DATA_DESCR)
+        public String sampleData;
+
+        @Parameter(names = {"--format"}, hidden = true)
+        public void setFormat(String format) {
+            sampleData = format;
+        }
 
         @Parameter(names = {"-f", "--file"}, description = FILE_DESCR)
         public String file;
 
-        @Parameter(names = {"--info"}, description = INFO_DESCR)
-        public String info;
+        @Parameter(names = {"--file-data"}, description = FILE_DATA_DESCR)
+        public String fileData;
+
+        @Parameter(names = {"--info"}, hidden = true)
+        public void setInfo(String info) {
+            fileData = info;
+        }
 
         @Parameter(names = {"--filter"}, description = FILTER_DESCR)
         public String filter;
@@ -354,6 +385,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--mgf", "--cohort-stats-mgf"}, description = STATS_MGF_DESCR)
         public String mgf;
 
+        @Parameter(names = {"--cohort-stats-pass"}, description = STATS_PASS_FREQ_DESCR)
+        public String cohortStatsPass;
+
         @Parameter(names = {"--stats-missing-allele"}, description = MISSING_ALLELES_DESCR)
         public String missingAlleleCount;
 
@@ -403,11 +437,19 @@ public class StorageVariantCommandOptions {
             includeSample = outputSample;
         }
 
-        @Parameter(names = {"--include-format"}, description = INCLUDE_FORMAT_DESCR)
-        public String includeFormat;
+        @Parameter(names = {"--include-sample-data"}, description = INCLUDE_SAMPLE_DATA_DESCR)
+        public String includeSampleData;
+
+        @Parameter(names = {"--include-format"}, hidden = true)
+        public void setIncludeFormat(String includeFormat) {
+            includeSampleData = includeFormat;
+        }
 
         @Parameter(names = {"--include-genotype"}, description = INCLUDE_GENOTYPE_DESCR)
         public boolean includeGenotype;
+
+        @Parameter(names = {"--include-sample-id"}, description = INCLUDE_SAMPLE_ID_DESCR)
+        public boolean includeSampleId;
 
         @Parameter(names = {"--annotations", "--output-vcf-info"}, description = "Set variant annotation to return in the INFO column. " +
                 "Accepted values include 'all', 'default' or a comma-separated list such as 'gene,biotype,consequenceType'", arity = 1)
@@ -421,18 +463,6 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--unknown-genotype"}, description = UNKNOWN_GENOTYPE_DESCR)
         public String unknownGenotype = "./.";
-
-        @Deprecated
-        @Parameter(names = {"--output-histogram"}, hidden = true, description = DEPRECATED + "use --histogram")
-        void setOutputHistogram(boolean histogram) {
-            this.histogram = histogram;
-        }
-
-        @Parameter(names = {"--histogram"}, description = "Calculate histogram. Requires --region.")
-        public boolean histogram;
-
-        @Parameter(names = {"--histogram-interval"}, description = "Histogram interval size. Default:2000", arity = 1)
-        public int interval;
 
         @Deprecated
         @Parameter(names = {"--hpo"}, hidden = true, description = DEPRECATED + "use --trait", arity = 1)

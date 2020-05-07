@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,29 +29,27 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortStatus;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -60,10 +58,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -85,9 +79,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key()));
 
     SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                  DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                  Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                  DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
@@ -105,7 +98,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
-        if (UUIDUtils.isOpenCGAUUID(entry)) {
+        if (UuidUtils.isOpenCgaUuid(entry)) {
             queryCopy.put(SampleDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
             queryCopy.put(SampleDBAdaptor.QueryParams.ID.key(), entry);
@@ -148,7 +141,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         SampleDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             SampleDBAdaptor.QueryParams param = SampleDBAdaptor.QueryParams.ID;
-            if (UUIDUtils.isOpenCGAUUID(entry)) {
+            if (UuidUtils.isOpenCgaUuid(entry)) {
                 param = SampleDBAdaptor.QueryParams.UUID;
                 sampleStringFunction = Sample::getUuid;
             }
@@ -180,7 +173,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
-    private OpenCGAResult<Sample> getSample(long studyUid, String sampleUuid, QueryOptions options) throws CatalogDBException {
+    private OpenCGAResult<Sample> getSample(long studyUid, String sampleUuid, QueryOptions options) throws CatalogException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(SampleDBAdaptor.QueryParams.UUID.key(), sampleUuid);
@@ -189,19 +182,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     void validateNewSample(Study study, Sample sample, String userId) throws CatalogException {
         ParamUtils.checkAlias(sample.getId(), "id");
-        sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
-        sample.setType(ParamUtils.defaultString(sample.getType(), ""));
         sample.setIndividualId(ParamUtils.defaultObject(sample.getIndividualId(), ""));
         sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
-        sample.setStats(ParamUtils.defaultObject(sample.getStats(), Collections.emptyMap()));
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
-        sample.setStatus(new Status());
+        sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::new));
+        sample.getInternal().setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
+        sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
         sample.setVersion(1);
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
-        sample.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE));
+        sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
 
         // Check the id is not in use
         Query query = new Query()
@@ -265,8 +257,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        return sampleDBAdaptor.iterator(study.getUid(), query, options, userId);
+        Query finalQuery = new Query(query);
+        fixQueryObject(study, finalQuery, userId);
+        // Fix query if it contains any annotation
+        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
+        finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return sampleDBAdaptor.iterator(study.getUid(), finalQuery, options, userId);
     }
 
     @Override
@@ -292,21 +290,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            Future<OpenCGAResult<Long>> countFuture = null;
-            if (options.getBoolean(QueryOptions.COUNT)) {
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                Query finalQuery = query;
-                countFuture = executor.submit(() -> sampleDBAdaptor.count(study.getUid(), finalQuery, userId,
-                        StudyAclEntry.StudyPermissions.VIEW_SAMPLES));
-            }
-            OpenCGAResult<Sample> queryResult = OpenCGAResult.empty();
-            if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
-                queryResult = sampleDBAdaptor.get(study.getUid(), query, options, userId);
-            }
-
-            if (countFuture != null) {
-                mergeCount(queryResult, countFuture);
-            }
+            OpenCGAResult<Sample> queryResult = sampleDBAdaptor.get(study.getUid(), query, options, userId);
 
             auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -316,10 +300,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
-        } catch (InterruptedException | ExecutionException e) {
-            auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "", e.getMessage())));
-            throw new CatalogException("Unexpected error", e);
         }
     }
 
@@ -353,8 +333,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             fixQueryObject(study, query, userId);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = sampleDBAdaptor.count(study.getUid(), query, userId,
-                    StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
+            OpenCGAResult<Long> queryResultAux = sampleDBAdaptor.count(query, userId);
 
             auditManager.auditCount(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -383,7 +362,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -402,6 +381,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult result = OpenCGAResult.empty();
         for (String id : sampleIds) {
             String sampleId = id;
@@ -440,6 +420,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -459,7 +440,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -501,6 +482,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         while (iterator.hasNext()) {
             Sample sample = iterator.next();
 
@@ -528,6 +510,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -613,8 +596,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             File file = fileIterator.next();
             if (force) {
                 // Check index status
-                if (file.getIndex() != null && file.getIndex().getStatus() != null
-                        && !FileIndex.IndexStatus.NONE.equals(file.getIndex().getStatus().getName())) {
+                if (file.getInternal().getIndex() != null && file.getInternal().getIndex().getStatus() != null
+                        && !FileIndex.IndexStatus.NONE.equals(file.getInternal().getIndex().getStatus().getName())) {
                     errorFiles.add(file.getPath() + "(" + file.getUid() + ")");
                 }
             } else {
@@ -645,7 +628,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 }
 
                 // Check the status of the cohort
-                if (cohort.getStatus() != null && Cohort.CohortStatus.CALCULATING.equals(cohort.getStatus().getName())) {
+                if (cohort.getInternal().getStatus() != null
+                        && CohortStatus.CALCULATING.equals(cohort.getInternal().getStatus().getName())) {
                     errorCohorts.add(cohort.getId() + "(" + cohort.getUid() + ")");
                 }
             } else {
@@ -690,7 +674,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -722,6 +706,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Sample> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Sample sample = iterator.next();
@@ -740,6 +725,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -749,7 +735,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -818,7 +804,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -835,6 +821,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Sample> result = OpenCGAResult.empty();
         for (String id : sampleIds) {
             String sampleId = id;
@@ -865,6 +852,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
+
         return endResult(result, ignoreException);
     }
 
@@ -993,7 +982,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
+        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
@@ -1004,7 +993,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("sampleList", sampleList)
@@ -1075,7 +1064,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> sampleStringList, String memberList,
-                                                      Sample.SampleAclParams sampleAclParams, String token) throws CatalogException {
+                                                              SampleAclParams sampleAclParams, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1085,7 +1074,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("memberList", memberList)
                 .append("sampleAclParams", sampleAclParams)
                 .append("token", token);
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         List<String> members;
         List<Sample> sampleList;
@@ -1247,7 +1236,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return aclResultList;
     }
 
-    private List<Long> getIndividualsUidsFromSampleUids(long studyUid, List<Long> sampleUids) throws CatalogDBException {
+    private List<Long> getIndividualsUidsFromSampleUids(long studyUid, List<Long> sampleUids) throws CatalogException {
         // Look for all the individuals owning the samples
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
@@ -1282,13 +1271,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
             AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
-            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-            DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION, query,
-                    options, userId);
+            try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
+                DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION, query,
+                        options, userId);
 
-            auditManager.auditFacet(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return result;
+                auditManager.auditFacet(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                return result;
+            }
         } catch (CatalogException e) {
             auditManager.auditFacet(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));

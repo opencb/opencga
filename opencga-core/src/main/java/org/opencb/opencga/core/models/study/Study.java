@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,16 @@ package org.opencb.opencga.core.models.study;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.PrivateFields;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.net.URI;
@@ -43,110 +43,69 @@ public class Study extends PrivateFields {
     private String name;
     private String uuid;
     private String alias;
-    private Type type;
     private String creationDate;
     private String modificationDate;
     private String description;
-    private Status status;
     private long size;
     private String fqn;
 
+    private StudyNotification notification;
     private List<Group> groups;
-
     private List<File> files;
     private List<Job> jobs;
     private List<Individual> individuals;
+    private List<Family> families;
     private List<Sample> samples;
-
     private List<Cohort> cohorts;
-
     private List<Panel> panels;
-
+    private List<ClinicalAnalysis> clinicalAnalyses;
     private List<VariableSet> variableSets;
-
-    private Map<Entity, List<PermissionRule>> permissionRules;
-
+    private Map<Enums.Entity, List<PermissionRule>> permissionRules;
     private URI uri;
-
     private int release;
-    @Deprecated
-    private Map<File.Bioformat, DataStore> dataStores;
 
-    private Map<String, Object> stats;
+    private CustomStatus status;
+
+    private StudyInternal internal;
     private Map<String, Object> attributes;
-
 
     public Study() {
     }
 
-    public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
-        this(alias, name, alias, type, TimeUtils.getTime(), description, status, 0,
-                new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new HashMap<>(),
-                uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>());
+    public Study(String name, String alias, String description, StudyInternal internal, URI uri, int release) {
+        this(alias, name, alias, TimeUtils.getTime(), description, null, 0, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                new LinkedList<>(), new HashMap<>(), uri, release, new CustomStatus(), internal, new HashMap<>());
     }
 
-    public Study(String id, String name, String alias, Type type, String creationDate, String description, Status status, long size,
-                 List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Sample> samples,
-                 List<Cohort> cohorts, List<Panel> panels, List<VariableSet> variableSets,
-                 Map<Entity, List<PermissionRule>> permissionRules, URI uri, Map<File.Bioformat, DataStore> dataStores, int release,
-                 Map<String, Object> stats, Map<String, Object> attributes) {
+    public Study(String id, String name, String alias, String creationDate, String description, StudyNotification notification, long size,
+                 List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
+                 List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
+                 List<VariableSet> variableSets, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release,
+                 CustomStatus status, StudyInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
-        this.type = type;
         this.creationDate = creationDate;
         this.description = description;
-        this.status = status;
+        this.notification = notification;
         this.size = size;
         this.groups = ObjectUtils.defaultIfNull(groups, new ArrayList<>());
         this.files = ObjectUtils.defaultIfNull(files, new ArrayList<>());
+        this.families = ObjectUtils.defaultIfNull(families, new ArrayList<>());
         this.jobs = ObjectUtils.defaultIfNull(jobs, new ArrayList<>());
         this.individuals = ObjectUtils.defaultIfNull(individuals, new ArrayList<>());
         this.samples = ObjectUtils.defaultIfNull(samples, new ArrayList<>());
         this.cohorts = ObjectUtils.defaultIfNull(cohorts, new ArrayList<>());
         this.panels = ObjectUtils.defaultIfNull(panels, new ArrayList<>());
+        this.clinicalAnalyses = ObjectUtils.defaultIfNull(clinicalAnalyses, new ArrayList<>());
+        this.internal = internal;
         this.variableSets = ObjectUtils.defaultIfNull(variableSets, new ArrayList<>());
         this.permissionRules = ObjectUtils.defaultIfNull(permissionRules, new HashMap<>());
         this.uri = uri;
-        this.stats = ObjectUtils.defaultIfNull(stats, new HashMap<>());
+        this.status = status;
         this.release = release;
-        this.dataStores = ObjectUtils.defaultIfNull(dataStores, new HashMap<>());
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
-    }
-
-    public enum Type {
-        CASE_CONTROL,
-        CASE_SET,
-        CONTROL_SET,
-        PAIRED,
-        PAIRED_TUMOR,
-        AGGREGATE,
-        TIME_SERIES,
-        FAMILY,
-        TRIO,
-        COLLECTION
-    }
-
-    public enum Entity {
-        SAMPLES(Enums.Resource.SAMPLE),
-        FILES(Enums.Resource.FILE),
-        COHORTS(Enums.Resource.COHORT),
-        INDIVIDUALS(Enums.Resource.INDIVIDUAL),
-        FAMILIES(Enums.Resource.FAMILY),
-        JOBS(Enums.Resource.JOB),
-        CLINICAL_ANALYSES(Enums.Resource.CLINICAL_ANALYSIS),
-        PANELS(Enums.Resource.DISEASE_PANEL);
-
-        private final Enums.Resource resource;
-
-        Entity(Enums.Resource resource) {
-            this.resource = resource;
-        }
-
-        public Enums.Resource getResource() {
-            return resource;
-        }
     }
 
     @Override
@@ -156,26 +115,27 @@ public class Study extends PrivateFields {
         sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", alias='").append(alias).append('\'');
-        sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", status=").append(status);
         sb.append(", size=").append(size);
         sb.append(", fqn='").append(fqn).append('\'');
+        sb.append(", notification=").append(notification);
         sb.append(", groups=").append(groups);
         sb.append(", files=").append(files);
         sb.append(", jobs=").append(jobs);
         sb.append(", individuals=").append(individuals);
+        sb.append(", families=").append(families);
         sb.append(", samples=").append(samples);
         sb.append(", cohorts=").append(cohorts);
         sb.append(", panels=").append(panels);
+        sb.append(", clinicalAnalyses=").append(clinicalAnalyses);
         sb.append(", variableSets=").append(variableSets);
         sb.append(", permissionRules=").append(permissionRules);
         sb.append(", uri=").append(uri);
         sb.append(", release=").append(release);
-        sb.append(", dataStores=").append(dataStores);
-        sb.append(", stats=").append(stats);
+        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -223,15 +183,6 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public Type getType() {
-        return type;
-    }
-
-    public Study setType(Type type) {
-        this.type = type;
-        return this;
-    }
-
     public String getCreationDate() {
         return creationDate;
     }
@@ -259,12 +210,12 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public Status getStatus() {
-        return status;
+    public StudyNotification getNotification() {
+        return notification;
     }
 
-    public Study setStatus(Status status) {
-        this.status = status;
+    public Study setNotification(StudyNotification notification) {
+        this.notification = notification;
         return this;
     }
 
@@ -313,6 +264,15 @@ public class Study extends PrivateFields {
         return this;
     }
 
+    public List<Family> getFamilies() {
+        return families;
+    }
+
+    public Study setFamilies(List<Family> families) {
+        this.families = families;
+        return this;
+    }
+
     public List<Sample> getSamples() {
         return samples;
     }
@@ -340,6 +300,15 @@ public class Study extends PrivateFields {
         return this;
     }
 
+    public List<ClinicalAnalysis> getClinicalAnalyses() {
+        return clinicalAnalyses;
+    }
+
+    public Study setClinicalAnalyses(List<ClinicalAnalysis> clinicalAnalyses) {
+        this.clinicalAnalyses = clinicalAnalyses;
+        return this;
+    }
+
     public List<VariableSet> getVariableSets() {
         return variableSets;
     }
@@ -349,11 +318,20 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public Map<Entity, List<PermissionRule>> getPermissionRules() {
+    public StudyInternal getInternal() {
+        return internal;
+    }
+
+    public Study setInternal(StudyInternal internal) {
+        this.internal = internal;
+        return this;
+    }
+
+    public Map<Enums.Entity, List<PermissionRule>> getPermissionRules() {
         return permissionRules;
     }
 
-    public Study setPermissionRules(Map<Entity, List<PermissionRule>> permissionRules) {
+    public Study setPermissionRules(Map<Enums.Entity, List<PermissionRule>> permissionRules) {
         this.permissionRules = permissionRules;
         return this;
     }
@@ -385,21 +363,12 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public Map<File.Bioformat, DataStore> getDataStores() {
-        return dataStores;
+    public CustomStatus getStatus() {
+        return status;
     }
 
-    public Study setDataStores(Map<File.Bioformat, DataStore> dataStores) {
-        this.dataStores = dataStores;
-        return this;
-    }
-
-    public Map<String, Object> getStats() {
-        return stats;
-    }
-
-    public Study setStats(Map<String, Object> stats) {
-        this.stats = stats;
+    public Study setStatus(CustomStatus status) {
+        this.status = status;
         return this;
     }
 
@@ -410,49 +379,6 @@ public class Study extends PrivateFields {
     public Study setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
-    }
-
-    // Acl params to communicate the WS and the sample manager
-    public static class StudyAclParams extends AclParams {
-
-        private String template;
-
-        public StudyAclParams() {
-        }
-
-        public StudyAclParams(String permissions, Action action, String template) {
-            super(permissions, action);
-            this.template = template;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("StudyAclParams{");
-            sb.append("permissions='").append(permissions).append('\'');
-            sb.append(", action=").append(action);
-            sb.append(", template='").append(template).append('\'');
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getTemplate() {
-            return template;
-        }
-
-        public StudyAclParams setTemplate(String template) {
-            this.template = template;
-            return this;
-        }
-
-        public StudyAclParams setPermissions(String permissions) {
-            super.setPermissions(permissions);
-            return this;
-        }
-
-        public StudyAclParams setAction(Action action) {
-            super.setAction(action);
-            return this;
-        }
     }
 
 }

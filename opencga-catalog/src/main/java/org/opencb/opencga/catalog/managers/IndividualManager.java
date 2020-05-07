@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,26 +30,25 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
-import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -58,10 +57,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -76,8 +71,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    private final String defaultFacet = "creationYear>>creationMonth;status;multiplesType;ethnicity;population;lifeStatus;"
-            + "affectationStatus;phenotypes;sex;numSamples[0..10]:1";
+    private final String defaultFacet = "creationYear>>creationMonth;status;ethnicity;population;lifeStatus;phenotypes;sex;"
+            + "numSamples[0..10]:1";
 
     public static final QueryOptions INCLUDE_INDIVIDUAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.UUID.key(),
@@ -107,9 +102,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     IndividualManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                      DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                      Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+                      DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
@@ -127,7 +121,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
-        if (UUIDUtils.isOpenCGAUUID(entry)) {
+        if (UuidUtils.isOpenCgaUuid(entry)) {
             queryCopy.put(IndividualDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
             queryCopy.put(IndividualDBAdaptor.QueryParams.ID.key(), entry);
@@ -164,7 +158,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         IndividualDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             IndividualDBAdaptor.QueryParams param = IndividualDBAdaptor.QueryParams.ID;
-            if (UUIDUtils.isOpenCGAUUID(entry)) {
+            if (UuidUtils.isOpenCgaUuid(entry)) {
                 param = IndividualDBAdaptor.QueryParams.UUID;
                 individualStringFunction = Individual::getUuid;
             }
@@ -198,7 +192,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
-    private OpenCGAResult<Individual> getIndividual(long studyUid, String individualUuid, QueryOptions options) throws CatalogDBException {
+    private OpenCGAResult<Individual> getIndividual(long studyUid, String individualUuid, QueryOptions options) throws CatalogException {
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(IndividualDBAdaptor.QueryParams.UUID.key(), individualUuid);
@@ -211,22 +205,23 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
         individual.setLocation(ParamUtils.defaultObject(individual.getLocation(), Location::new));
         individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
-        individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), Individual.Population::new));
+        individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), IndividualPopulation::new));
         individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), IndividualProperty.LifeStatus.UNKNOWN));
         individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), IndividualProperty.KaryotypicSex.UNKNOWN));
         individual.setSex(ParamUtils.defaultObject(individual.getSex(), IndividualProperty.Sex.UNKNOWN));
-        individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(),
-                IndividualProperty.AffectationStatus.UNKNOWN));
         individual.setPhenotypes(ParamUtils.defaultObject(individual.getPhenotypes(), Collections.emptyList()));
         individual.setDisorders(ParamUtils.defaultObject(individual.getDisorders(), Collections.emptyList()));
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
         individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), new ArrayList<>()));
-        individual.setStatus(new Status());
+        individual.setStatus(ParamUtils.defaultObject(individual.getStatus(), CustomStatus::new));
+
+        individual.setInternal(ParamUtils.defaultObject(individual.getInternal(), IndividualInternal::new));
+        individual.getInternal().setStatus(new Status());
         individual.setCreationDate(TimeUtils.getTime());
         individual.setRelease(studyManager.getCurrentRelease(study));
         individual.setVersion(1);
-        individual.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INDIVIDUAL));
+        individual.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INDIVIDUAL));
 
         // Check the id is not in use
         Query query = new Query()
@@ -370,9 +365,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        query.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return individualDBAdaptor.iterator(study.getUid(), query, options, userId);
+        Query finalQuery = new Query(query);
+        fixQuery(study, finalQuery, userId);
+        // Fix query if it contains any annotation
+        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
+        finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return individualDBAdaptor.iterator(study.getUid(), finalQuery, options, userId);
     }
 
     @Override
@@ -399,19 +400,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            Future<OpenCGAResult<Long>> countFuture = null;
-            if (options.getBoolean(QueryOptions.COUNT)) {
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                countFuture = executor.submit(() -> individualDBAdaptor.count(study.getUid(), finalQuery, userId,
-                        StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS));
-            }
-            OpenCGAResult<Individual> queryResult = OpenCGAResult.empty();
-            if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
-                queryResult = individualDBAdaptor.get(study.getUid(), finalQuery, options, userId);
-            }
-            if (countFuture != null) {
-                mergeCount(queryResult, countFuture);
-            }
+            OpenCGAResult<Individual> queryResult = individualDBAdaptor.get(study.getUid(), finalQuery, options, userId);
 
             auditManager.auditSearch(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -421,10 +410,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             auditManager.auditSearch(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
-        } catch (InterruptedException | ExecutionException e) {
-            auditManager.auditSearch(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "", e.getMessage())));
-            throw new CatalogException("Unexpected error", e);
         }
     }
 
@@ -447,8 +432,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
 
             finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = individualDBAdaptor.count(study.getUid(), finalQuery, userId,
-                    StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
+            OpenCGAResult<Long> queryResultAux = individualDBAdaptor.count(finalQuery, userId);
 
             auditManager.auditCount(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -462,6 +446,318 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
+    public OpenCGAResult<Individual> relatives(String studyId, String individualId, int degree, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("individualId", individualId)
+                .append("degree", degree)
+                .append("options", options)
+                .append("token", token);
+
+        String individualUuid = individualId;
+        try {
+            long startTime = System.currentTimeMillis();
+
+            QueryOptions queryOptions = fixOptionsForRelatives(options);
+
+            if (degree < 0 || degree > 2) {
+                throw new CatalogException("Unsupported degree value. Degree must be 0, 1 or 2");
+            }
+
+            List<Individual> individualList = new LinkedList<>();
+            Individual proband = internalGet(study.getUid(), individualId, queryOptions, userId).first();
+            addRelativeToList(proband, ClinicalAnalysis.FamiliarRelationship.PROBAND, 0, individualList);
+
+            individualId = proband.getId();
+            individualUuid = proband.getUuid();
+
+            if (degree == 0) {
+                auditManager.audit(userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), individualList.size(),
+                        individualList, individualList.size());
+            }
+
+            Map<ClinicalAnalysis.FamiliarRelationship, ClinicalAnalysis.FamiliarRelationship> relationMap = new HashMap<>();
+            // ------------------ Processing degree 1
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.MOTHER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.FATHER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.SON);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.DAUGHTER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
+                    ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX);
+            Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> relativeMap = lookForParentsAndChildren(study, proband,
+                    new HashSet<>(), queryOptions, userId);
+            addDegreeRelatives(relativeMap, relationMap, 1, individualList);
+
+            if (degree == 1) {
+                auditManager.audit(userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), individualList.size(),
+                        individualList, individualList.size());
+            }
+
+            Individual mother = relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.MOTHER)
+                    ? relativeMap.get(ClinicalAnalysis.FamiliarRelationship.MOTHER).get(0) : null;
+            Individual father = relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.FATHER)
+                    ? relativeMap.get(ClinicalAnalysis.FamiliarRelationship.FATHER).get(0) : null;
+            List<Individual> children = new LinkedList<>();
+            if (relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.SON)) {
+                children.addAll(relativeMap.get(ClinicalAnalysis.FamiliarRelationship.SON));
+            }
+            if (relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.DAUGHTER)) {
+                children.addAll(relativeMap.get(ClinicalAnalysis.FamiliarRelationship.DAUGHTER));
+            }
+            if (relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX)) {
+                children.addAll(relativeMap.get(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX));
+            }
+
+            // ------------------ Processing degree 2
+            if (mother != null) {
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDMOTHER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDFATHER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
+                        ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
+
+                // Update set of already obtained individuals
+                Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
+                relativeMap = lookForParentsAndChildren(study, mother, skipIndividuals, queryOptions, userId);
+
+                addDegreeRelatives(relativeMap, relationMap, 2, individualList);
+            }
+            if (father != null) {
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.PATERNAL_GRANDMOTHER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.PATERNAL_GRANDFATHER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
+                        ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
+
+                // Update set of already obtained individuals
+                Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
+                relativeMap = lookForParentsAndChildren(study, father, skipIndividuals, queryOptions, userId);
+                addDegreeRelatives(relativeMap, relationMap, 2, individualList);
+            }
+
+            // Update set of already obtained individuals
+            Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
+            for (Individual child : children) {
+                // TODO: Change relations !!
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
+                relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
+                        ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
+
+                relativeMap = lookForChildren(study, child, skipIndividuals, queryOptions, userId);
+                addDegreeRelatives(relativeMap, relationMap, 2, individualList);
+            }
+
+            auditManager.audit(userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), individualList.size(),
+                    individualList, individualList.size());
+
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+    }
+
+    void addDegreeRelatives(Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> relativeMap,
+                            Map<ClinicalAnalysis.FamiliarRelationship, ClinicalAnalysis.FamiliarRelationship> relationMap, int degree,
+                            List<Individual> individualList) {
+        for (Map.Entry<ClinicalAnalysis.FamiliarRelationship, List<Individual>> entry : relativeMap.entrySet()) {
+            switch (entry.getKey()) {
+                case MOTHER:
+                    if (relationMap.isEmpty()) {
+                        addRelativeToList(entry.getValue().get(0), ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDMOTHER, degree,
+                                individualList);
+                    }
+                    break;
+                case FATHER:
+                    addRelativeToList(entry.getValue().get(0), ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDFATHER, degree,
+                            individualList);
+                    break;
+                case SON:
+                    for (Individual child : entry.getValue()) {
+                        addRelativeToList(child, ClinicalAnalysis.FamiliarRelationship.BROTHER, degree, individualList);
+                    }
+                    break;
+                case DAUGHTER:
+                    for (Individual child : entry.getValue()) {
+                        addRelativeToList(child, ClinicalAnalysis.FamiliarRelationship.SISTER, degree, individualList);
+                    }
+                    break;
+                case CHILD_OF_UNKNOWN_SEX:
+                    for (Individual child : entry.getValue()) {
+                        addRelativeToList(child, ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING, degree, individualList);
+                    }
+                    break;
+                default:
+                    logger.warn("Unexpected relation found: " + entry.getKey());
+                    break;
+            }
+        }
+    }
+
+    private Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> lookForParentsAndChildren(Study study, Individual proband,
+                                                                                                   Set<String> skipIndividuals,
+                                                                                                   QueryOptions options, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
+
+        finalResult.putAll(lookForParents(study, proband, skipIndividuals, options, userId));
+        finalResult.putAll(lookForChildren(study, proband, skipIndividuals, options, userId));
+
+        return finalResult;
+    }
+
+    private Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> lookForParents(Study study, Individual proband,
+                                                                                        Set<String> skipIndividuals,
+                                                                                        QueryOptions options, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
+
+        // Looking for father
+        if (proband.getFather() != null && proband.getFather().getUid() > 0) {
+            Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(), proband.getFather().getUid());
+            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(), query, options, userId);
+            if (result.getNumResults() == 1 && !skipIndividuals.contains(result.first().getId())) {
+                finalResult.put(ClinicalAnalysis.FamiliarRelationship.FATHER, Collections.singletonList(result.first()));
+            }
+        }
+        // Looking for mother
+        if (proband.getMother() != null && proband.getMother().getUid() > 0) {
+            Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(), proband.getMother().getUid());
+            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(), query, options, userId);
+            if (result.getNumResults() == 1 && !skipIndividuals.contains(result.first().getId())) {
+                finalResult.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, Collections.singletonList(result.first()));
+            }
+        }
+        return finalResult;
+    }
+
+    private Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> lookForChildren(Study study, Individual proband,
+                                                                                         Set<String> skipIndividuals,
+                                                                                         QueryOptions options, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
+
+        // Looking for children
+        Query query = new Query();
+        if (proband.getSex() == IndividualProperty.Sex.MALE) {
+            query.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), proband.getUid());
+        } else if (proband.getSex() == IndividualProperty.Sex.FEMALE) {
+            query.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), proband.getUid());
+        }
+        if (!query.isEmpty()) {
+            // Sex has been defined
+            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(), query, options, userId);
+            for (Individual child : result.getResults()) {
+                if (skipIndividuals.contains(child.getId())) {
+                    // Skip current individuals
+                    continue;
+                }
+                ClinicalAnalysis.FamiliarRelationship sex = getChildSex(child);
+                if (!finalResult.containsKey(sex)) {
+                    finalResult.put(sex, new LinkedList<>());
+                }
+                finalResult.get(sex).add(child);
+            }
+        } else {
+            // Sex is undefined so we will check with both sexes
+            query.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), proband.getUid());
+            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(), query, options, userId);
+            if (result.getNumResults() > 0) {
+                for (Individual child : result.getResults()) {
+                    if (skipIndividuals.contains(child.getId())) {
+                        // Skip current individuals
+                        continue;
+                    }
+                    ClinicalAnalysis.FamiliarRelationship sex = getChildSex(child);
+                    if (!finalResult.containsKey(sex)) {
+                        finalResult.put(sex, new LinkedList<>());
+                    }
+                    finalResult.get(sex).add(child);
+                }
+            } else {
+                query = new Query(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), proband.getUid());
+                result = individualDBAdaptor.get(study.getUid(), query, options, userId);
+                for (Individual child : result.getResults()) {
+                    if (skipIndividuals.contains(child.getId())) {
+                        // Skip current individuals
+                        continue;
+                    }
+                    ClinicalAnalysis.FamiliarRelationship sex = getChildSex(child);
+                    if (!finalResult.containsKey(sex)) {
+                        finalResult.put(sex, new LinkedList<>());
+                    }
+                    finalResult.get(sex).add(child);
+                }
+            }
+        }
+
+        return finalResult;
+    }
+
+    private ClinicalAnalysis.FamiliarRelationship getChildSex(Individual individual) {
+        if (individual.getSex() == IndividualProperty.Sex.MALE) {
+            return ClinicalAnalysis.FamiliarRelationship.SON;
+        } else if (individual.getSex() == IndividualProperty.Sex.FEMALE) {
+            return ClinicalAnalysis.FamiliarRelationship.DAUGHTER;
+        } else {
+            return ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX;
+        }
+    }
+
+    private QueryOptions fixOptionsForRelatives(QueryOptions options) {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        QueryOptions queryOptions = new QueryOptions(options);
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            Set<String> includeSet = new HashSet<>(options.getAsStringList(QueryOptions.INCLUDE));
+            includeSet.add(IndividualDBAdaptor.QueryParams.ID.key());
+            includeSet.add(IndividualDBAdaptor.QueryParams.UUID.key());
+            includeSet.add(IndividualDBAdaptor.QueryParams.SEX.key());
+            includeSet.add(IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key());
+            includeSet.add(IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key());
+
+            queryOptions.add(QueryOptions.INCLUDE, new ArrayList<>(includeSet));
+        } else if (options.containsKey(QueryOptions.EXCLUDE)) {
+            Set<String> excludeSet = new HashSet<>(options.getAsStringList(QueryOptions.EXCLUDE));
+            excludeSet.remove(IndividualDBAdaptor.QueryParams.ID.key());
+            excludeSet.remove(IndividualDBAdaptor.QueryParams.UUID.key());
+            excludeSet.remove(IndividualDBAdaptor.QueryParams.SEX.key());
+            excludeSet.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
+            excludeSet.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
+
+            queryOptions.add(QueryOptions.EXCLUDE, new ArrayList<>(excludeSet));
+        }
+
+        return queryOptions;
+    }
+
+    private void addRelativeToList(Individual individual, ClinicalAnalysis.FamiliarRelationship relation, int degree,
+                                   List<Individual> individualList) {
+        if (individual.getAttributes() == null) {
+            individual.setAttributes(new ObjectMap());
+        }
+        ObjectMap params = new ObjectMap()
+                .append("DEGREE", degree)
+                .append("RELATION", relation);
+        individual.getAttributes().put("OPENCGA_RELATIVE", params);
+
+        individualList.add(individual);
+    }
+
     @Override
     public OpenCGAResult delete(String studyStr, List<String> individualIds, ObjectMap params, String token) throws CatalogException {
         return delete(studyStr, individualIds, params, false, token);
@@ -473,7 +769,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -492,6 +788,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         OpenCGAResult result = OpenCGAResult.empty();
         for (String id : individualIds) {
             String individualId = id;
@@ -526,6 +823,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -543,7 +841,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -575,6 +873,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         while (iterator.hasNext()) {
             Individual individual = iterator.next();
 
@@ -597,6 +896,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -713,7 +1013,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -748,6 +1048,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Individual> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Individual individual = iterator.next();
@@ -766,6 +1067,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -775,7 +1077,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -845,7 +1147,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -862,6 +1164,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Individual> result = OpenCGAResult.empty();
         for (String id : individualIds) {
             String individualId = id;
@@ -892,6 +1195,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -956,18 +1260,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 if (!TimeUtils.isValidFormat("yyyyMMdd", updateParams.getDateOfBirth())) {
                     throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
                 }
-            }
-        }
-        if (updateParams != null && updateParams.getMultiples() != null) {
-            // Check individual names exist
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(IndividualDBAdaptor.QueryParams.ID.key(), StringUtils.join(updateParams.getMultiples().getSiblings(), ","));
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
-            OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(query, queryOptions);
-            if (individualDataResult.getNumResults() < updateParams.getMultiples().getSiblings().size()) {
-                int missing = updateParams.getMultiples().getSiblings().size() - individualDataResult.getNumResults();
-                throw new CatalogDBException("Missing " + missing + " siblings in the database.");
             }
         }
         if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSamples())) {
@@ -1090,7 +1382,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         // Add study id to the query
         finalQuery.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = individualDBAdaptor.groupBy(study.getUid(), finalQuery, fields, options, userId);
+        OpenCGAResult queryResult = individualDBAdaptor.groupBy(finalQuery, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
@@ -1102,7 +1394,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("individualList", individualList)
@@ -1170,7 +1462,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> individualStrList, String memberList,
-                                                              Individual.IndividualAclParams aclParams, String token)
+                                                              IndividualAclParams aclParams, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);
@@ -1181,7 +1473,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
                 .append("token", token);
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
             int count = 0;
@@ -1300,16 +1592,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 options.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
             }
 
-            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+            try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
+                AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
-            AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+                DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION, query,
+                        options, userId);
+                auditManager.auditFacet(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION, query,
-                    options, userId);
-            auditManager.auditFacet(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return result;
+                return result;
+            }
         } catch (CatalogException e) {
             auditManager.auditFacet(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));
@@ -1319,7 +1611,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     // **************************   Private methods  ******************************** //
 
-    private List<Long> getSampleUidsFromIndividuals(long studyUid, List<Long> individualUidList) throws CatalogDBException {
+    private List<Long> getSampleUidsFromIndividuals(long studyUid, List<Long> individualUidList) throws CatalogException {
         // Look for all the samples belonging to the individual
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)

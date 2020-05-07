@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashSet;
@@ -41,11 +45,11 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     /*
      * User methods
      */
-    default boolean exists(String userId) throws CatalogDBException {
+    default boolean exists(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.ID.key(), userId)).getNumMatches() > 0;
     }
 
-    default void checkId(String userId) throws CatalogDBException {
+    default void checkId(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (StringUtils.isEmpty(userId)) {
             throw CatalogDBException.newInstance("User id '{}' is not valid: ", userId);
         }
@@ -55,7 +59,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
     }
 
-    default void checkIds(List<String> userIds) throws CatalogDBException {
+    default void checkIds(List<String> userIds) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (userIds == null || userIds.isEmpty()) {
             throw CatalogDBException.newInstance("No users to be checked.");
         }
@@ -68,27 +72,32 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
     }
 
-    OpenCGAResult insert(User user, QueryOptions options) throws CatalogDBException;
+    void authenticate(String userId, String password) throws CatalogDBException, CatalogAuthenticationException;
 
-    OpenCGAResult<User> get(String userId, QueryOptions options, String lastModified) throws CatalogDBException;
+    OpenCGAResult insert(User user, String password, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<User> get(String userId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
 //    @Deprecated
 //    default OpenCGAResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
 //        return update(userId, parameters);
 //    }
 
-    OpenCGAResult update(String userId, ObjectMap parameters) throws CatalogDBException;
+    OpenCGAResult update(String userId, ObjectMap parameters)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
 //    @Deprecated
 //    default OpenCGAResult<User> deleteUser(String userId) throws CatalogDBException {
 //        return delete(userId, false);
 //    }
 
-    OpenCGAResult delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult delete(String userId, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
-
-    OpenCGAResult updateUserLastModified(String userId) throws CatalogDBException;
+    OpenCGAResult changePassword(String userId, String oldPassword, String newPassword)
+            throws CatalogDBException, CatalogAuthenticationException;
 
     OpenCGAResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 
@@ -98,7 +107,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     OpenCGAResult deleteConfig(String userId, String name) throws CatalogDBException;
 
     // Filter operations
-    OpenCGAResult addFilter(String userId, User.Filter filter) throws CatalogDBException;
+    OpenCGAResult addFilter(String userId, UserFilter filter) throws CatalogDBException;
 
     OpenCGAResult updateFilter(String userId, String name, ObjectMap params) throws CatalogDBException;
 
@@ -108,12 +117,9 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         ID("id", TEXT_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         EMAIL("email", TEXT_ARRAY, ""),
-        PASSWORD("password", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
-        STATUS_NAME("status.name", TEXT, ""),
-        STATUS_MSG("status.msg", TEXT, ""),
-        STATUS_DATE("status.date", TEXT, ""),
-        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         ACCOUNT("account", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         QUOTA("quota", INTEGER_ARRAY, ""),
@@ -127,7 +133,6 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         PROJECT_NAME("projects.name", TEXT_ARRAY, ""),
         PROJECT_ORGANIZATION("projects.organization", TEXT_ARRAY, ""),
         PROJECT_STATUS("projects.status", TEXT_ARRAY, ""),
-        PROJECT_LAST_MODIFIED("projects.lastModified", TEXT_ARRAY, ""),
 
         TOOL_ID("tools.id", INTEGER_ARRAY, ""),
         TOOL_NAME("tools.name", TEXT_ARRAY, ""),
@@ -141,8 +146,8 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         SESSION_LOGOUT("sessions.logout", TEXT_ARRAY, ""),
 
         CONFIGS("configs", TEXT_ARRAY, ""),
-        CONFIGS_FILTERS("configs.filters", TEXT_ARRAY, ""),
-        CONFIGS_FILTERS_NAME("configs.filters.name", TEXT, "");
+        FILTERS("filters", TEXT_ARRAY, ""),
+        FILTERS_ID("filters.id", TEXT, "");
 
         private static Map<String, QueryParams> map;
         static {
@@ -187,9 +192,9 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     }
 
     enum FilterParams implements QueryParam {
-        NAME("name", TEXT, ""),
+        ID("id", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
-        BIOFORMAT("bioformat", TEXT, ""),
+        RESOURCE("resource", TEXT, ""),
         QUERY("query", TEXT, ""),
         OPTIONS("options", TEXT, "");
 

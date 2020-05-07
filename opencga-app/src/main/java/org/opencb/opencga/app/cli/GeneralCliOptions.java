@@ -19,8 +19,10 @@ package org.opencb.opencga.app.cli;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import org.opencb.opencga.core.api.ParamConstants;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -69,23 +71,13 @@ public class GeneralCliOptions {
                 + "storage-configuration.yml and client-configuration.yml files.")
         public String conf;
 
-        @Deprecated
-        @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
-        public boolean verbose = false;
-
-        @Parameter(names = {"-S", "--sid", "--session-id"}, description = "Token session id. Deprecated, use --token instead", arity = 1)
-        public void setToken(String token) {
-            this.token = token;
-        }
-
-        @Parameter(names = {"--token"}, description = "Token session id", arity = 1)
+        @Parameter(names = {"--token"}, description = "Token session ID", arity = 1)
         public String token;
 
         @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0)
         public boolean metadata = false;
 
-        @Parameter(names = {"--no-header"}, description = "Not include headers in the output (not applicable to json output-format)",
-                required = false, arity = 0)
+        @Parameter(names = {"--no-header"}, description = "Not include headers in the output (not applicable to json output-format)", arity = 0)
         public boolean noHeader = false;
 
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
@@ -129,6 +121,20 @@ public class GeneralCliOptions {
         @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
         public boolean count;
 
+    }
+
+    public static class JobOptions {
+        @Parameter(names = {"--job-id"}, description = ParamConstants.JOB_ID_CREATION_DESCRIPTION, arity = 1)
+        public String jobId;
+
+        @Parameter(names = {"--job-description"}, description = ParamConstants.JOB_DESCRIPTION_DESCRIPTION, arity = 1)
+        public String jobDescription;
+
+        @Parameter(names = {"--job-depends-on"}, description = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION, arity = 1)
+        public List<String> jobDependsOn;
+
+        @Parameter(names = {"--job-tags"}, description = ParamConstants.JOB_TAGS_DESCRIPTION, arity = 1)
+        public List<String> jobTags;
     }
 
 }

@@ -25,8 +25,10 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.*;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper.Column;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -67,6 +69,7 @@ public class VariantPhoenixHelper {
     public static final String COHORT_STATS_FREQ_SUFFIX = "_CF";
     public static final String COHORT_STATS_MAF_SUFFIX = "_MAF";
     public static final String COHORT_STATS_MGF_SUFFIX = "_MGF";
+    public static final String COHORT_STATS_PASS_FREQ_SUFFIX = "_PSF";
 
     public static final char COLUMN_KEY_SEPARATOR = '_';
     public static final String COLUMN_KEY_SEPARATOR_STR = String.valueOf(COLUMN_KEY_SEPARATOR);
@@ -379,10 +382,11 @@ public class VariantPhoenixHelper {
     }
 
     public void registerNewFiles(Connection con, String variantsTableName, Integer studyId, Collection<Integer> fileIds,
-                                 Collection<Integer> sampleIds) throws SQLException {
+                                 Collection<Integer> sampleIds, List<Column> otherColumns) throws SQLException {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         createTableIfNeeded(con, variantsTableName);
-        List<Column> columns = new ArrayList<>(fileIds.size() + sampleIds.size() + 1);
+        List<Column> columns = new ArrayList<>(fileIds.size() + sampleIds.size() + 1 + otherColumns.size());
+        columns.addAll(otherColumns);
         for (Integer fileId : fileIds) {
             columns.add(getFileColumn(studyId, fileId));
         }
@@ -617,7 +621,8 @@ public class VariantPhoenixHelper {
                 getStatsColumn(studyId, cohortId),
                 getStatsFreqColumn(studyId, cohortId),
                 getStatsMafColumn(studyId, cohortId),
-                getStatsMgfColumn(studyId, cohortId));
+                getStatsMgfColumn(studyId, cohortId),
+                getStatsPassFreqColumn(studyId, cohortId));
     }
 
     public static Column getStatsColumn(int studyId, int cohortId) {
@@ -664,6 +669,20 @@ public class VariantPhoenixHelper {
     public static Integer extractSampleId(String columnKey, boolean failOnMissing) {
         if (columnKey.endsWith(SAMPLE_DATA_SUFIX)) {
             return extractId(columnKey, failOnMissing, "sample");
+        } else if (failOnMissing) {
+            throw new IllegalArgumentException("Not a sample column: " + columnKey);
+        } else {
+            return null;
+        }
+    }
+
+    public static int extractFileIdFromSampleColumn(String columnKey) {
+        return extractFileIdFromSampleColumn(columnKey, true);
+    }
+
+    public static Integer extractFileIdFromSampleColumn(String columnKey, boolean failOnMissing) {
+        if (columnKey.endsWith(SAMPLE_DATA_SUFIX) && StringUtils.countMatches(columnKey, COLUMN_KEY_SEPARATOR) == 3) {
+            return extractId(columnKey, failOnMissing, "sample", columnKey.indexOf(COLUMN_KEY_SEPARATOR) + 1);
         } else if (failOnMissing) {
             throw new IllegalArgumentException("Not a sample column: " + columnKey);
         } else {
@@ -738,8 +757,12 @@ public class VariantPhoenixHelper {
     }
 
     private static Integer extractId(String columnKey, boolean failOnMissing, String idType) {
-        int startIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR);
-        int endIndex = columnKey.lastIndexOf(COLUMN_KEY_SEPARATOR);
+        return extractId(columnKey, failOnMissing, idType, 0);
+    }
+
+    private static Integer extractId(String columnKey, boolean failOnMissing, String idType, int fromIndex) {
+        int startIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR, fromIndex);
+        int endIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR, startIndex + 1);
         if (startIndex != endIndex && startIndex > 0) {
             String id = columnKey.substring(startIndex + 1, endIndex);
             if (StringUtils.isNotBlank(columnKey)
@@ -775,16 +798,58 @@ public class VariantPhoenixHelper {
         return Column.build(buildStudyColumnsPrefix(studyId) + cohortId + COHORT_STATS_MGF_SUFFIX, PFloat.INSTANCE);
     }
 
+    public static Column getStatsPassFreqColumn(int studyId, int cohortId) {
+        return Column.build(buildStudyColumnsPrefix(studyId) + cohortId + COHORT_STATS_PASS_FREQ_SUFFIX, PFloat.INSTANCE);
+    }
+
     public static byte[] buildSampleColumnKey(int studyId, int sampleId) {
         return Bytes.toBytes(buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString());
+    }
+
+    public static byte[] buildSampleColumnKey(int studyId, int sampleId, int fileId) {
+        return Bytes.toBytes(buildSampleColumnKey(studyId, sampleId, fileId, new StringBuilder()).toString());
     }
 
     public static StringBuilder buildSampleColumnKey(int studyId, int sampleId, StringBuilder stringBuilder) {
         return buildStudyColumnsPrefix(studyId, stringBuilder).append(sampleId).append(SAMPLE_DATA_SUFIX);
     }
 
+    public static StringBuilder buildSampleColumnKey(int studyId, int sampleId, int fileId, StringBuilder stringBuilder) {
+        return buildStudyColumnsPrefix(studyId, stringBuilder)
+                .append(sampleId).append(COLUMN_KEY_SEPARATOR).append(fileId).append(SAMPLE_DATA_SUFIX);
+    }
+
+    public static List<Column> getSampleColumns(SampleMetadata sampleMetadata) {
+        return getSampleColumns(sampleMetadata, null);
+    }
+
+    public static List<Column> getSampleColumns(SampleMetadata sampleMetadata, Collection<Integer> requiredFiles) {
+        return getSampleColumns(sampleMetadata.getStudyId(), sampleMetadata.getId(), sampleMetadata.getFiles(), requiredFiles,
+                sampleMetadata.getSplitData());
+    }
+
+    public static List<Column> getSampleColumns(int studyId, int sampleId, List<Integer> files, Collection<Integer> requiredFiles,
+                                                VariantStorageEngine.SplitData splitData) {
+        List<Column> columns = new ArrayList<>(1);
+        if (requiredFiles == null || requiredFiles.contains(files.get(0))) {
+            columns.add(getSampleColumn(studyId, sampleId));
+        }
+        if (VariantStorageEngine.SplitData.MULTI.equals(splitData)) {
+            for (Integer file : files.subList(1, files.size())) {
+                if (requiredFiles == null || requiredFiles.contains(file)) {
+                    columns.add(getSampleColumn(studyId, sampleId, file));
+                }
+            }
+        }
+        return columns;
+    }
+
     public static Column getSampleColumn(int studyId, int sampleId) {
         return Column.build(buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
+    }
+
+    public static Column getSampleColumn(int studyId, int sampleId, int fileId) {
+        return Column.build(buildSampleColumnKey(studyId, sampleId, fileId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
     public static boolean isSampleCell(Cell cell) {

@@ -69,7 +69,7 @@ public class NewProjectMetadataMigration {
                 logger.info("Migrating study " + study.getName());
 
                 long numIndexedFiles = catalogManager.getFileManager()
-                        .count(study.getFqn(), new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
+                        .count(study.getFqn(), new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), Arrays.asList(
                                 FileIndex.IndexStatus.TRANSFORMED,
                                 FileIndex.IndexStatus.TRANSFORMING,
                                 FileIndex.IndexStatus.LOADING,

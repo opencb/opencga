@@ -23,19 +23,18 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UserCommandOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.template.TemplateManager;
+import org.opencb.opencga.client.template.config.TemplateConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.PasswordChangeParams;
-import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.user.UserCreateParams;
-import org.opencb.opencga.core.models.user.UserUpdateParams;
+import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -85,6 +84,9 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             case "logout":
                 logout();
                 break;
+            case "template":
+                loadTemplate();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -100,8 +102,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         String password = usersCommandOptions.loginCommandOptions.password;
 
         if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
-            String sessionId = openCGAClient.login(user, password);
-            if (StringUtils.isNotEmpty(sessionId)) {
+            AuthenticationResponse response = openCGAClient.login(user, password);
+            if (response != null) {
                 List<String> studies = new ArrayList<>();
 
                 RestResponse<Project> projects = openCGAClient.getProjectClient().search(
@@ -117,8 +119,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                     }
                 }
                 // write CLI session file
-                saveCliSessionFile(user, sessionId, studies);
-                System.out.println("You have been logged in correctly. This is your new token " + sessionId);
+                saveCliSessionFile(user, response.getToken(), response.getRefreshToken(), studies);
+                System.out.println("You have been logged in correctly. This is your new token " + response.getToken());
             }
         } else {
             String sessionId = usersCommandOptions.commonCommandOptions.token;
@@ -166,7 +168,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             throw new ClientException("Missing user parameter");
         }
 
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), c.lastModified);
         params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
 
@@ -220,11 +221,20 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<User> changePassword () throws ClientException, IOException {
         UserCommandOptions.ChangePasswordCommandOptions c = usersCommandOptions.changePasswordCommandOptions;
 
-        PasswordChangeParams changeParams = new PasswordChangeParams()
-                .setPassword(c.password)
-                .setNewPassword(c.npassword);
+        PasswordChangeParams changeParams = new PasswordChangeParams(c.user, c.password, c.npassword);
+        return openCGAClient.getUserClient().password(changeParams);
+    }
 
-        return openCGAClient.getUserClient().password(c.user, changeParams);
+    private void loadTemplate() throws IOException, ClientException {
+        UserCommandOptions.TemplateCommandOptions options = usersCommandOptions.templateCommandOptions;
+
+        TemplateConfiguration template = TemplateConfiguration.load(Paths.get(options.file));
+        TemplateManager templateManager = new TemplateManager(clientConfiguration, options.resume, cliSession.getToken());
+        if (options.validate) {
+            templateManager.validate(template);
+        } else {
+            templateManager.execute(template);
+        }
     }
 
 }

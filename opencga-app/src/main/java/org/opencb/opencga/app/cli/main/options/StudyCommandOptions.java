@@ -22,7 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.List;
 
@@ -117,9 +117,6 @@ public class StudyCommandOptions {
         @Parameter(names = {"-a", "--alias"}, description = DEPRECATED + "Replaced by 'id'", arity = 1)
         public String alias;
 
-        @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
-        public Study.Type type = Study.Type.CASE_CONTROL;
-
         @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
         public String description;
     }
@@ -154,9 +151,6 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"-a", "--alias"}, description = "Study alias.", arity = 1)
         public String alias;
-
-        @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
-        public Study.Type type;
 
         @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
         public String creationDate;
@@ -199,14 +193,8 @@ public class StudyCommandOptions {
         @Parameter(names = {"-n", "--name"}, description = "Study name", arity = 1)
         public String name;
 
-        @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
-        public Study.Type type;
-
         @Parameter(names = {"-d", "--description"}, description = "Organization", arity = 1)
         public String description;
-
-        @Parameter(names = {"--stats"}, description = "Stats", arity = 1)
-        public String stats;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", arity = 1)
         public String attributes;
@@ -252,9 +240,6 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--id"}, description = "Group id.", required = true, arity = 1)
         public String groupId;
-
-        @Parameter(names = {"--name"}, description = "Group name.", arity = 1)
-        public String groupName;
 
         @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", arity = 1)
         public List<String> users;

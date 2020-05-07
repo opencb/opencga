@@ -1,11 +1,22 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.commons.Analyst;
-import org.opencb.biodata.models.commons.Software;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 
 import java.util.List;
@@ -13,70 +24,72 @@ import java.util.Map;
 
 public class Interpretation extends org.opencb.biodata.models.clinical.interpretation.Interpretation implements IPrivateStudyUid {
 
-    private String uuid;
-
     // Private fields
     private long studyUid;
     private long uid;
+
+    private InterpretationInternal internal;
 
     public Interpretation() {
         super();
     }
 
+    public Interpretation(String id, String description, String clinicalAnalysisId, Analyst analyst, InterpretationMethod method,
+                          String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
+                          List<Comment> comments, Map<String, Object> attributes) {
+        super(id, "", description, clinicalAnalysisId, analyst, method, primaryFindings, secondaryFindings, comments, null, creationDate,
+                0, attributes);
+    }
+
     public Interpretation(org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
-        this(interpretation.getId(), interpretation.getDescription(), interpretation.getClinicalAnalysisId(), interpretation.getPanels(),
-                interpretation.getSoftware(), interpretation.getAnalyst(), interpretation.getDependencies(), interpretation.getFilters(),
-                interpretation.getCreationDate(), interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(),
-                interpretation.getLowCoverageRegions(), interpretation.getComments(), interpretation.getAttributes());
+        this(interpretation.getId(), interpretation.getDescription(), interpretation.getClinicalAnalysisId(), interpretation.getAnalyst(),
+                interpretation.getMethod(), interpretation.getCreationDate(), interpretation.getPrimaryFindings(),
+                interpretation.getSecondaryFindings(), interpretation.getComments(), interpretation.getAttributes());
     }
 
-    public Interpretation(String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
-                          Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
-                          List<ReportedVariant> primaryFindinds, List<ReportedVariant> secondaryFindings,
-                          List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
-        super(id, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
-                reportedLowCoverages, comments, Status.NOT_REVIEWED, creationDate, 1, attributes);
-    }
-
-    public Interpretation(String uuid, String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
-                          Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
-                          List<ReportedVariant> primaryFindinds, List<ReportedVariant> secondaryFindings,
-                          List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
-        super(id, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
-                reportedLowCoverages, comments, Status.NOT_REVIEWED, creationDate, 1, attributes);
-        this.uuid = uuid;
-    }
+//    public Interpretation(org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
+//        this(interpretation.getId(), "", interpretation.getDescription(), interpretation.getClinicalAnalysisId(),
+//                interpretation.getAnalyst(), interpretation.getMethod(),interpretation.getPrimaryFindings(),
+//                interpretation.getSecondaryFindings(), interpretation.getComments(), interpretation.getStatus(),
+//                interpretation.getCreationDate(), interpretation.getVersion(), interpretation.getAttributes());
+//    }
+//
+//    public Interpretation(String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
+//                          Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
+//                          List<ClinicalVariant> primaryFindinds, List<ClinicalVariant> secondaryFindings,
+//                          List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
+//        super(id, "", description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
+//                reportedLowCoverages, comments, InterpretationStatus.NOT_REVIEWED, creationDate, 1, attributes);
+//    }
+//
+//    public Interpretation(String uuid, String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
+//                          Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
+//                          List<ClinicalVariant> primaryFindinds, List<ClinicalVariant> secondaryFindings,
+//                          List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes,
+//                          InterpretationInternal internal) {
+//        super(id, uuid, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds,
+//                secondaryFindings, reportedLowCoverages, comments, InterpretationStatus.NOT_REVIEWED, creationDate, 1, attributes);
+//        this.internal = internal;
+//    }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Interpretation{");
-        sb.append("id='").append(this.getId()).append('\'');
-        sb.append(", uuid='").append(uuid).append('\'');
-        sb.append(", description='").append(this.getDescription()).append('\'');
-        sb.append(", clinicalAnalysisId='").append(this.getClinicalAnalysisId()).append('\'');
-        sb.append(", software=").append(this.getSoftware());
-        sb.append(", analyst=").append(this.getAnalyst());
-        sb.append(", dependencies=").append(this.getDependencies());
-        sb.append(", filters=").append(this.getFilters());
-        sb.append(", panels=").append(this.getPanels());
-        sb.append(", primaryFindings=").append(this.getPrimaryFindings());
-        sb.append(", secondaryFindings=").append(this.getSecondaryFindings());
-        sb.append(", lowCoverageRegions=").append(this.getLowCoverageRegions());
-        sb.append(", comments=").append(this.getComments());
-        sb.append(", status=").append(this.getStatus());
-        sb.append(", creationDate='").append(this.getCreationDate()).append('\'');
-        sb.append(", version=").append(this.getVersion());
-        sb.append(", attributes=").append(this.getAttributes());
+        sb.append("studyUid=").append(studyUid);
+        sb.append(", uid=").append(uid);
+        sb.append(", internal=").append(internal);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getUuid() {
-        return uuid;
+    @Override
+    public long getStudyUid() {
+        return studyUid;
     }
 
-    public Interpretation setUuid(String uuid) {
-        this.uuid = uuid;
+    @Override
+    public Interpretation setStudyUid(long studyUid) {
+        this.studyUid = studyUid;
         return this;
     }
 
@@ -91,114 +104,12 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         return this;
     }
 
-    @Override
-    public long getStudyUid() {
-        return studyUid;
+    public InterpretationInternal getInternal() {
+        return internal;
     }
 
-    @Override
-    public Interpretation setStudyUid(long studyUid) {
-        this.studyUid = studyUid;
+    public Interpretation setInternal(InterpretationInternal internal) {
+        this.internal = internal;
         return this;
     }
-
-
-    // Biodata interpretation setters
-
-    @Override
-    public Interpretation setId(String id) {
-        super.setId(id);
-        return this;
-    }
-
-    @Override
-    public Interpretation setDescription(String description) {
-        super.setDescription(description);
-        return this;
-    }
-
-    @Override
-    public Interpretation setClinicalAnalysisId(String clinicalAnalysisId) {
-        super.setClinicalAnalysisId(clinicalAnalysisId);
-        return this;
-    }
-
-    @Override
-    public Interpretation setSoftware(Software software) {
-        super.setSoftware(software);
-        return this;
-    }
-
-    @Override
-    public Interpretation setAnalyst(Analyst analyst) {
-        super.setAnalyst(analyst);
-        return this;
-    }
-
-    @Override
-    public Interpretation setDependencies(List<Software> dependencies) {
-        super.setDependencies(dependencies);
-        return this;
-    }
-
-    @Override
-    public Interpretation setFilters(Map<String, Object> filters) {
-        super.setFilters(filters);
-        return this;
-    }
-
-    @Override
-    public Interpretation setPanels(List<DiseasePanel> panels) {
-        super.setPanels(panels);
-        return this;
-    }
-
-    @Override
-    public Interpretation setPrimaryFindings(List<ReportedVariant> primaryFindings) {
-        super.setPrimaryFindings(primaryFindings);
-        return this;
-    }
-
-    @Override
-    public Interpretation setSecondaryFindings(List<ReportedVariant> secondaryFindings) {
-        super.setSecondaryFindings(secondaryFindings);
-        return this;
-    }
-
-    @Override
-    public Interpretation setLowCoverageRegions(List<ReportedLowCoverage> lowCoverageRegions) {
-        super.setLowCoverageRegions(lowCoverageRegions);
-        return this;
-    }
-
-    @Override
-    public Interpretation setComments(List<Comment> comments) {
-        super.setComments(comments);
-        return this;
-    }
-
-    @Override
-    public Interpretation setStatus(Interpretation.Status status) {
-        super.setStatus(status);
-        return this;
-    }
-
-    @Override
-    public Interpretation setCreationDate(String creationDate) {
-        super.setCreationDate(creationDate);
-        return this;
-    }
-
-    @Override
-    public Interpretation setVersion(int version) {
-        super.setVersion(version);
-        return this;
-    }
-
-    @Override
-    public Interpretation setAttributes(Map<String, Object> attributes) {
-        super.setAttributes(attributes);
-        return this;
-    }
-
 }

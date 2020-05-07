@@ -21,12 +21,12 @@ public class VariantSearchToVariantConverterTest {
         Variant expectedVariant = Variant.newBuilder("chr1:1000:A:T")
                 .setStudyId("1")
                 .setFileId("5")
-                .setFormat("GT", "AD", "DP")
+                .setSampleDataKeys("GT", "AD", "DP")
                 .addSample("S1", "0/0", "10,1", "11")
                 .addSample("S2", "1/1", "1,2", "1")
                 .setFilter("PASS")
                 .setQuality(200.0)
-                .addAttribute("k1", "v1")
+                .addFileData("k1", "v1")
                 .build();
         expectedVariant.getStudies().get(0).getScores().add(new VariantScore("gwas1", "A", null, 3.4f, 0.002f));
         expectedVariant.getStudies().get(0).getScores().add(new VariantScore("gwas2", "A", "B", 1.23f, 0.1f));
@@ -34,12 +34,12 @@ public class VariantSearchToVariantConverterTest {
         Variant aux = Variant.newBuilder("chr1:1000:A:T")
                 .setStudyId("2")
                 .setFileId("6")
-                .setFormat("GT", "AD", "DP", "AN")
+                .setSampleDataKeys("GT", "AD", "DP", "AN")
                 .addSample("S3", "1/0", "12,2", "22", "dole-se")
                 .setFilter("PASS:Low")
                 .setQuality(210.0)
-                .addAttribute("k2", "v2")
-                .addAttribute("k22", "v22")
+                .addFileData("k2", "v2")
+                .addFileData("k22", "v22")
                 .build();
 
         expectedVariant.addStudyEntry(aux.getStudy("2"));

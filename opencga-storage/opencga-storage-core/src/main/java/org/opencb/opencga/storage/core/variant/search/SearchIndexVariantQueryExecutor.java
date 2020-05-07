@@ -13,8 +13,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.MODIFIER_QUERY_PARAMS;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.MODIFIER_QUERY_PARAMS;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
 
@@ -43,11 +44,32 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchM
 public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQueryExecutor {
 
     private Logger logger = LoggerFactory.getLogger(SearchIndexVariantQueryExecutor.class);
+    private boolean intersectActive;
+    private boolean intersectAlways;
+    private int intersectParamsThreshold;
 
     public SearchIndexVariantQueryExecutor(VariantDBAdaptor dbAdaptor, VariantSearchManager searchManager,
                                            String storageEngineId, String dbName, StorageConfiguration configuration,
                                            ObjectMap options) {
         super(dbAdaptor, searchManager, storageEngineId, dbName, configuration, options);
+        intersectActive = getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue());
+        intersectAlways = getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue());
+        intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
+    }
+
+    public SearchIndexVariantQueryExecutor setIntersectActive(boolean intersectActive) {
+        this.intersectActive = intersectActive;
+        return this;
+    }
+
+    public SearchIndexVariantQueryExecutor setIntersectAlways(boolean intersectAlways) {
+        this.intersectAlways = intersectAlways;
+        return this;
+    }
+
+    public SearchIndexVariantQueryExecutor setIntersectParamsThreshold(int intersectParamsThreshold) {
+        this.intersectParamsThreshold = intersectParamsThreshold;
+        return this;
     }
 
     @Override
@@ -86,9 +108,9 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         } else {
             // Intersect Solr+Engine
 
-            int limit = options.getInt(QueryOptions.LIMIT, 0);
+            int limit = options.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE);
             int skip = options.getInt(QueryOptions.SKIP, 0);
-            boolean pagination = skip > 0 || limit > 0;
+            boolean pagination = !iterator || skip > 0;
 
             Iterator<?> variantsIterator;
             Number numTotalResults = null;
@@ -106,10 +128,10 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                     searchCount = new AtomicLong();
                     numTotalResults = searchCount;
                     // Skip count in storage. We already know the numTotalResults
-                    options.put(QueryOptions.SKIP_COUNT, true);
+                    options.put(QueryOptions.COUNT, false);
                     approxCount = false;
-                } else if (options.getBoolean(APPROXIMATE_COUNT.key(), APPROXIMATE_COUNT.defaultValue())) {
-                    options.put(QueryOptions.SKIP_COUNT, true);
+                } else if (options.getBoolean(APPROXIMATE_COUNT.key()) || options.getBoolean(QueryOptions.COUNT)) {
+                    options.put(QueryOptions.COUNT, false);
                     VariantQueryResult<Long> result = approximateCount(query, options);
                     numTotalResults = result.first();
                     approxCount = result.getApproximateCount();
@@ -144,7 +166,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 if (numTotalResults != null) {
                     queryResult.setApproximateCount(approxCount);
                     queryResult.setApproximateCountSamplingSize(approxCountSamplingSize);
-                    queryResult.setNumTotalResults(numTotalResults.longValue());
+                    queryResult.setNumMatches(numTotalResults.longValue());
                 }
                 queryResult.setSource(SEARCH_ENGINE_ID + '+' + getStorageEngineId());
                 return queryResult;
@@ -211,10 +233,15 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
      * @return          true if should resolve only with SearchManager
      */
     public boolean doQuerySearchManager(Query query, QueryOptions options) {
-        return !VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO) // YES or AUTO
-                && isQueryCovered(query)
-                && (options.getBoolean(QueryOptions.COUNT) || isIncludeCovered(options))
-                && searchActiveAndAlive();
+        if (VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO)) {
+            return false;
+        } // else, YES or AUTO
+        if (isQueryCovered(query) && isIncludeCovered(options)) {
+            if (searchActiveAndAlive()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -229,12 +256,13 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
 
         final boolean intersect;
         boolean active = searchActiveAndAlive();
-
-        if (!getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue())
-                || useSearchIndex.equals(VariantStorageEngine.UseSearchIndex.NO)) {
+        if (useSearchIndex.equals(VariantStorageEngine.UseSearchIndex.NO)) {
+            // useSearchIndex = NO
+            intersect = false;
+        } else if (!intersectActive) {
             // If intersect is not active, do not intersect.
             intersect = false;
-        } else if (getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue())) {
+        } else if (intersectAlways) {
             // If always intersect, intersect if available
             intersect = active;
         } else if (!active) {
@@ -247,7 +275,6 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             // Count only real params
             Collection<VariantQueryParam> coveredParams = coveredParams(query);
             coveredParams.removeAll(MODIFIER_QUERY_PARAMS);
-            int intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
             intersect = coveredParams.size() >= intersectParamsThreshold;
         }
 
@@ -284,7 +311,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                         .map(VariantSearchModel::getId)
                         .iterator();
             } else {
-                VariantSearchSolrIterator nativeIterator = searchManager.nativeIterator(dbName, query, queryOptions);
+                SolrNativeIterator nativeIterator = searchManager.nativeIterator(dbName, query, queryOptions);
                 if (numTotalResults != null) {
                     numTotalResults.set(nativeIterator.getNumFound());
                 }

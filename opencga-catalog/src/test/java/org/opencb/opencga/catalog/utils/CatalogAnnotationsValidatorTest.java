@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,20 +33,20 @@ import java.util.*;
 public class CatalogAnnotationsValidatorTest {
 
     public static final Variable string = new Variable(
-            "string", "", Variable.VariableType.STRING, null, true, false, null, 0, null, null, null, null);
+            "string", "", Variable.VariableType.STRING, null, true, false, null, null, 0, null, null, null, null);
     public static final Variable stringNoRequired = new Variable(
-            "string", "", Variable.VariableType.STRING, null, false, false, null, 0, null, null, null, null);
+            "string", "", Variable.VariableType.STRING, null, false, false, null, null, 0, null, null, null, null);
     public static final Variable stringList = new Variable(
-            "stringList", "", Variable.VariableType.STRING, null, true, true, null, 0, null, null, null, null);
+            "stringList", "", Variable.VariableType.STRING, null, true, true, null, null, 0, null, null, null, null);
     public static final Variable numberList = new Variable(
-            "numberList", "", Variable.VariableType.DOUBLE, null, true, true, null, 0, null, null, null, null);
+            "numberList", "", Variable.VariableType.DOUBLE, null, true, true, null, null, 0, null, null, null, null);
     public static final Variable object = new Variable(
-            "object", "", Variable.VariableType.OBJECT, null, true, false, null, 0, null, null,
+            "object", "", Variable.VariableType.OBJECT, null, true, false, null, null, 0, null, null,
             new HashSet<>(Arrays.<Variable>asList(string, numberList)), null);
     public static final Variable freeObject = new Variable(
-            "freeObject", "", Variable.VariableType.OBJECT, null, true, false, null, 0, null, null, null, null);
+            "freeObject", "", Variable.VariableType.OBJECT, null, true, false, null, null, 0, null, null, null, null);
     public static final Variable nestedObject = new Variable(
-            "nestedObject", "", Variable.VariableType.OBJECT, null, true, false, null, 0, null, null,
+            "nestedObject", "", Variable.VariableType.OBJECT, null, true, false, null, null, 0, null, null,
             new HashSet<>(Arrays.<Variable>asList(stringList, object)), null);
     @Rule
     public ExpectedException thrown = ExpectedException.none();

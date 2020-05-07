@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,13 +59,10 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
 
-            String projectId = StringUtils.isEmpty(project.getId()) ? project.getAlias() : project.getId();
-
             OpenCGAResult<Project> queryResult = catalogManager.getProjectManager()
-                    .create(projectId, project.getName(), project.getDescription(), project.getOrganization(),
+                    .create(project.getId(), project.getName(), project.getDescription(),
                             project.getOrganism() != null ? project.getOrganism().getScientificName() : null,
                             project.getOrganism() != null ? project.getOrganism().getCommonName() : null,
-                            project.getOrganism() != null ? Integer.toString(project.getOrganism().getTaxonomyCode()) : null,
                             project.getOrganism() != null ? project.getOrganism().getAssembly() : null, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -148,7 +145,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
                     + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
             @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields) {
+                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields,
+            @ApiParam(value = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("jobFields") String jobFields) {
         try {
             if (defaultStats == null) {
                 defaultStats = true;
@@ -157,7 +156,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             Map<String, Object> result = new HashMap<>();
             for (String project : idList) {
                 result.put(project, catalogManager.getProjectManager().facet(project, fileFields, sampleFields, individualFields,
-                        cohortFields, familyFields, defaultStats, token));
+                        cohortFields, familyFields, jobFields, defaultStats, token));
             }
             return createOkResponse(result);
         } catch (Exception e) {
@@ -221,9 +220,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 }
                 if (StringUtils.isNotEmpty(updateParams.getOrganism().getScientificName())) {
                     params.append(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), updateParams.getOrganism().getScientificName());
-                }
-                if (updateParams.getOrganism().getTaxonomyCode() > 0) {
-                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), updateParams.getOrganism().getTaxonomyCode());
                 }
                 params.remove("organism");
             }

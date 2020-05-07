@@ -1,13 +1,29 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.individual;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -22,11 +38,10 @@ public class IndividualUpdateParams {
     private String father;
     private String mother;
     private Boolean parentalConsanguinity;
-    private Multiples multiples;
     private Location location;
     private IndividualProperty.Sex sex;
     private String ethnicity;
-    private Individual.Population population;
+    private IndividualPopulation population;
     private String dateOfBirth;
     private IndividualProperty.KaryotypicSex karyotypicSex;
     private IndividualProperty.LifeStatus lifeStatus;
@@ -35,23 +50,23 @@ public class IndividualUpdateParams {
     private List<AnnotationSet> annotationSets;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
+    private CustomStatusParams status;
     private Map<String, Object> attributes;
 
     public IndividualUpdateParams() {
     }
 
-    public IndividualUpdateParams(String id, String name, String father, String mother, Boolean parentalConsanguinity, Multiples multiples,
-                                  Location location, IndividualProperty.Sex sex, String ethnicity, Individual.Population population,
+    public IndividualUpdateParams(String id, String name, String father, String mother, Boolean parentalConsanguinity,
+                                  Location location, IndividualProperty.Sex sex, String ethnicity, IndividualPopulation population,
                                   String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
                                   List<String> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
-                                  List<Disorder> disorders, Map<String, Object> attributes) {
+                                  List<Disorder> disorders, CustomStatusParams status, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
         this.mother = mother;
         this.parentalConsanguinity = parentalConsanguinity;
-        this.multiples = multiples;
         this.location = location;
         this.sex = sex;
         this.ethnicity = ethnicity;
@@ -64,6 +79,7 @@ public class IndividualUpdateParams {
         this.annotationSets = annotationSets;
         this.phenotypes = phenotypes;
         this.disorders = disorders;
+        this.status = status;
         this.attributes = attributes;
     }
 
@@ -91,7 +107,6 @@ public class IndividualUpdateParams {
         sb.append(", father='").append(father).append('\'');
         sb.append(", mother='").append(mother).append('\'');
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
-        sb.append(", multiples=").append(multiples);
         sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
@@ -104,6 +119,7 @@ public class IndividualUpdateParams {
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
+        sb.append(", status=").append(status);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -154,15 +170,6 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public Multiples getMultiples() {
-        return multiples;
-    }
-
-    public IndividualUpdateParams setMultiples(Multiples multiples) {
-        this.multiples = multiples;
-        return this;
-    }
-
     public Location getLocation() {
         return location;
     }
@@ -190,11 +197,11 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public Individual.Population getPopulation() {
+    public IndividualPopulation getPopulation() {
         return population;
     }
 
-    public IndividualUpdateParams setPopulation(Individual.Population population) {
+    public IndividualUpdateParams setPopulation(IndividualPopulation population) {
         this.population = population;
         return this;
     }
@@ -268,6 +275,15 @@ public class IndividualUpdateParams {
 
     public IndividualUpdateParams setDisorders(List<Disorder> disorders) {
         this.disorders = disorders;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public IndividualUpdateParams setStatus(CustomStatusParams status) {
+        this.status = status;
         return this;
     }
 
