@@ -182,8 +182,9 @@ public class VariantCommandOptions {
         this.gatkCommandOptions = new GatkCommandOptions();
     }
 
-    @Parameters(commandNames = {"index"}, commandDescription = VariantIndexOperationTool.DESCRIPTION)
+    @Parameters(commandNames = {VariantIndexCommandOptions.INDEX_RUN_COMMAND}, commandDescription = VariantIndexOperationTool.DESCRIPTION)
     public class VariantIndexCommandOptions extends GeneralCliOptions.StudyOption {
+        public static final String INDEX_RUN_COMMAND = "index-run";
 
         @ParametersDelegate
         public GenericVariantIndexOptions genericVariantIndexOptions = new GenericVariantIndexOptions();
@@ -284,8 +285,9 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"export"}, commandDescription = VariantExportTool.DESCRIPTION)
+    @Parameters(commandNames = {VariantExportCommandOptions.EXPORT_RUN_COMMAND}, commandDescription = VariantExportTool.DESCRIPTION)
     public class VariantExportCommandOptions extends AbstractVariantQueryCommandOptions {
+        public static final String EXPORT_RUN_COMMAND = "export-run";
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
@@ -574,8 +576,9 @@ public class VariantCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")
+    @Parameters(commandNames = {VariantExportStatsCommandOptions.STATS_EXPORT_RUN_COMMAND}, commandDescription = "Export calculated variant stats and frequencies")
     public class VariantExportStatsCommandOptions {
+        public static final String STATS_EXPORT_RUN_COMMAND = "stats-export-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
