@@ -153,7 +153,7 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/index")
+    @Path("/index/run")
     @ApiOperation(value = VariantIndexOperationTool.DESCRIPTION, response = Job.class)
     public Response variantFileIndex(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -352,7 +352,7 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/export")
+    @Path("/export/run")
     @ApiOperation(value = VariantExportTool.DESCRIPTION, response = Job.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
@@ -415,7 +415,7 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/stats/export")
+    @Path("/stats/export/run")
     @ApiOperation(value = "Export calculated variant stats and frequencies", response = Job.class)
     public Response statsExport(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,

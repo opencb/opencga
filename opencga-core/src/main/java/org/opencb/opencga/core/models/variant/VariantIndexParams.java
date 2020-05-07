@@ -32,6 +32,7 @@ public class VariantIndexParams extends ToolParams {
                               boolean gvcf,
                               boolean normalizationSkip, String referenceGenome,
                               boolean family,
+                              boolean somatic,
                               boolean load, String loadSplitData, boolean loadMultiFileData,
                               String loadSampleIndex,
                               String loadArchive,
@@ -49,6 +50,7 @@ public class VariantIndexParams extends ToolParams {
         this.normalizationSkip = normalizationSkip;
         this.referenceGenome = referenceGenome;
         this.family = family;
+        this.somatic = somatic;
         this.load = load;
         this.loadSplitData = loadSplitData;
         this.loadMultiFileData = loadMultiFileData;
@@ -80,6 +82,7 @@ public class VariantIndexParams extends ToolParams {
     private String referenceGenome;
 
     private boolean family;
+    private boolean somatic;
 
     private boolean load;
     private String loadSplitData;
@@ -172,6 +175,15 @@ public class VariantIndexParams extends ToolParams {
 
     public VariantIndexParams setFamily(boolean family) {
         this.family = family;
+        return this;
+    }
+
+    public boolean isSomatic() {
+        return somatic;
+    }
+
+    public VariantIndexParams setSomatic(boolean somatic) {
+        this.somatic = somatic;
         return this;
     }
 

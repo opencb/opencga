@@ -461,7 +461,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             return study;
         });
 
-        if (getOptions().getBoolean(FAMILY.key())) {
+        if (getOptions().getBoolean(FAMILY.key()) || getOptions().getBoolean(SOMATIC.key())) {
             if (YesNoAuto.parse(getOptions(), LOAD_HOM_REF.key()) == YesNoAuto.AUTO) {
                 getOptions().put(LOAD_HOM_REF.key(), YesNoAuto.YES);
             }

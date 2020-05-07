@@ -50,6 +50,9 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantExportCommandOptions.EXPORT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantExportStatsCommandOptions.STATS_EXPORT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantIndexCommandOptions.INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
@@ -121,7 +124,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
                 dataModelOptions, numericOptions, jCommander, false);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
-        variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
+        variantSubCommands.addCommand(INDEX_RUN_COMMAND, variantCommandOptions.indexVariantCommandOptions);
         variantSubCommands.addCommand(VARIANT_DELETE_COMMAND, variantCommandOptions.variantDeleteCommandOptions);
         variantSubCommands.addCommand(SECONDARY_INDEX_COMMAND, variantCommandOptions.variantSecondaryIndexCommandOptions);
         variantSubCommands.addCommand(SECONDARY_INDEX_DELETE_COMMAND, variantCommandOptions.variantSecondaryIndexDeleteCommandOptions);
@@ -138,8 +141,8 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(AGGREGATE_FAMILY_COMMAND, variantCommandOptions.fillGapsVariantCommandOptions);
         variantSubCommands.addCommand(AGGREGATE_COMMAND, variantCommandOptions.aggregateCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
-        variantSubCommands.addCommand("export", variantCommandOptions.exportVariantCommandOptions);
-        variantSubCommands.addCommand("stats-export", variantCommandOptions.exportVariantStatsCommandOptions);
+        variantSubCommands.addCommand(EXPORT_RUN_COMMAND, variantCommandOptions.exportVariantCommandOptions);
+        variantSubCommands.addCommand(STATS_EXPORT_RUN_COMMAND, variantCommandOptions.exportVariantStatsCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantCommandOptions);
 //        variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
         variantSubCommands.addCommand(SAMPLE_RUN_COMMAND, variantCommandOptions.samplesFilterCommandOptions);

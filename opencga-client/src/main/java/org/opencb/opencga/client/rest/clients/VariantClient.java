@@ -244,10 +244,10 @@ public class VariantClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> export(VariantExportParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runExport(VariantExportParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis/variant", null, null, null, "export", params, POST, Job.class);
+        return execute("analysis/variant", null, "export", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -352,10 +352,10 @@ public class VariantClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> index(VariantIndexParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runIndex(VariantIndexParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis/variant", null, null, null, "index", params, POST, Job.class);
+        return execute("analysis/variant", null, "index", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -736,10 +736,10 @@ public class VariantClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> exportStats(VariantStatsExportParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runExportStats(VariantStatsExportParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis/variant", null, "stats", null, "export", params, POST, Job.class);
+        return execute("analysis/variant", null, "stats/export", null, "run", params, POST, Job.class);
     }
 
     /**

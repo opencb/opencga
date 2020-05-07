@@ -30,6 +30,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     DEDUPLICATION_BUFFER_SIZE("deduplication.bufferSize", 100),
 
     FAMILY("family", false),
+    SOMATIC("somatic", false),
 
     LOAD_BATCH_SIZE("load.batchSize", 100),
     LOAD_THREADS("load.numThreads", 6),

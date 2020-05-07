@@ -68,6 +68,8 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantExportCommandOptions.EXPORT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantIndexCommandOptions.INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
@@ -98,7 +100,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         RestResponse queryResponse = null;
         switch (subCommandString) {
 
-            case "index":
+            case INDEX_RUN_COMMAND:
                 queryResponse = index();
                 break;
 
@@ -110,7 +112,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = query();
                 break;
 
-            case "export":
+            case EXPORT_RUN_COMMAND:
                 queryResponse = export();
                 break;
 
@@ -415,7 +417,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         String study = query.getString(VariantQueryParam.STUDY.key());
 
         return openCGAClient.getVariantClient()
-                .export(new VariantExportParams(
+                .runExport(new VariantExportParams(
                         query,
                         c.outdir,
                         c.outputFileName,
@@ -426,7 +428,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private RestResponse<Job> index() throws ClientException {
         VariantCommandOptions.VariantIndexCommandOptions variantIndex = variantCommandOptions.indexVariantCommandOptions;
-        return openCGAClient.getVariantClient().index(
+        return openCGAClient.getVariantClient().runIndex(
                 new VariantIndexParams(
                         variantIndex.fileId,
                         variantIndex.genericVariantIndexOptions.resume,
@@ -436,6 +438,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantIndex.genericVariantIndexOptions.normalizationSkip,
                         variantIndex.genericVariantIndexOptions.referenceGenome,
                         variantIndex.genericVariantIndexOptions.family,
+                        variantIndex.genericVariantIndexOptions.somatic,
                         variantIndex.genericVariantIndexOptions.load,
                         variantIndex.genericVariantIndexOptions.loadSplitData,
                         variantIndex.genericVariantIndexOptions.loadMultiFileData,

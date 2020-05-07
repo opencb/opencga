@@ -141,6 +141,10 @@ public class StorageVariantCommandOptions {
                 + "This will set 'load-hom-ref' to YES if it was in AUTO and execute 'family-index' afterwards")
         public boolean family;
 
+        @Parameter(names = {"--somatic"}, description = "Indicate that the files to be loaded contain somatic samples. "
+                + "This will set 'load-hom-ref' to YES if it was in AUTO.")
+        public boolean somatic;
+
         @Parameter(names = {"--load-split-data"}, description = "Indicate that the variants from a group of samples is split in multiple files, either by CHROMOSOME or by REGION. In either case, variants from different files must not overlap.")
         public String loadSplitData;
 
