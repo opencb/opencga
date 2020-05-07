@@ -228,7 +228,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
-            @ApiParam(value = "params") IndividualUpdateParams updateParams) {
+            @ApiParam(value = "body") IndividualUpdateParams updateParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             queryOptions.put(Constants.REFRESH, refresh);
@@ -270,7 +270,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
-            @ApiParam(value = "params") IndividualUpdateParams updateParams) {
+            @ApiParam(value = "body") IndividualUpdateParams updateParams) {
         try {
             queryOptions.put(Constants.REFRESH, refresh);
             queryOptions.remove("updateSampleVersion");

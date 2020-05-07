@@ -60,7 +60,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.PANEL_SOURCE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE) String source,
             @ApiParam(value = ParamConstants.PANEL_SOURCE_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE_ID) String id,
-            @ApiParam(name = "params", value = "Panel parameters") PanelCreateParams params) {
+            @ApiParam(name = "body", value = "Panel parameters") PanelCreateParams params) {
         try {
             if (StringUtils.isNotEmpty(source) && (params == null || StringUtils.isEmpty(params.getId()))) {
                 // Import from source
@@ -97,7 +97,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
             @ApiParam(value = "Create a new version of panel", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(name = "params", value = "Panel parameters") PanelUpdateParams panelParams) {
+            @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(panelManager.update(studyStr, query, panelParams, true, queryOptions, token));
@@ -115,7 +115,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels,
             @ApiParam(value = "Create a new version of panel", defaultValue = "false")
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(name = "params", value = "Panel parameters") PanelUpdateParams panelParams) {
+            @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
             return createOkResponse(panelManager.update(studyStr, getIdList(panels), panelParams, true, queryOptions, token));
         } catch (Exception e) {
