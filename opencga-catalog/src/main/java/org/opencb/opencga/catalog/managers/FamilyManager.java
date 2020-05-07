@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.*;
@@ -184,16 +184,22 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public DBIterator<Family> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(sessionId, "sessionId");
+    public DBIterator<Family> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        ParamUtils.checkObj(token, "sessionId");
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(sessionId);
+        String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return familyDBAdaptor.iterator(study.getUid(), query, options, userId);
+        Query finalQuery = new Query(query);
+        fixQueryObject(study, finalQuery, token);
+        // Fix query if it contains any annotation
+        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+        AnnotationUtils.fixQueryOptionAnnotation(options);
+        finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return familyDBAdaptor.iterator(study.getUid(), finalQuery, options, userId);
     }
 
     @Override
@@ -972,15 +978,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         switch (moi) {
-            case MONOALLELIC:
+            case AUTOSOMAL_DOMINANT:
                 return ModeOfInheritance.dominant(pedigree, disorder, penetrance);
-            case BIALLELIC:
+            case AUTOSOMAL_RECESSIVE:
                 return ModeOfInheritance.recessive(pedigree, disorder, penetrance);
-            case XLINKED_BIALLELIC:
+            case X_LINKED_RECESSIVE:
                 return ModeOfInheritance.xLinked(pedigree, disorder, false, penetrance);
-            case XLINKED_MONOALLELIC:
+            case X_LINKED_DOMINANT:
                 return ModeOfInheritance.xLinked(pedigree, disorder, true, penetrance);
-            case YLINKED:
+            case Y_LINKED:
                 return ModeOfInheritance.yLinked(pedigree, disorder, penetrance);
             case MITOCHONDRIAL:
                 return ModeOfInheritance.mitochondrial(pedigree, disorder, penetrance);
@@ -1175,13 +1181,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
-            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-            DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, query,
-                    options, userId);
-            auditManager.auditFacet(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            try (CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager)) {
+                DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, query,
+                        options, userId);
+                auditManager.auditFacet(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return result;
+                return result;
+            }
         } catch (CatalogException e) {
             auditManager.auditFacet(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));

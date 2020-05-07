@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ public class FileWSServer extends OpenCGAWSServer {
     )
     public Response createFilePOST(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                                    @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                   @ApiParam(name = "params", value = "File parameters", required = true) FileCreateParams params) {
+                                   @ApiParam(name = "body", value = "File parameters", required = true) FileCreateParams params) {
         try {
             ObjectUtils.defaultIfNull(params, new FileCreateParams());
             DataResult<File> file;
@@ -107,7 +107,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Download an external file to catalog and register it", response = Job.class)
     public Response downloadAndRegister(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(name = "params", value = "Fetch parameters", required = true) FileFetch fetchParams) {
+            @ApiParam(name = "body", value = "Fetch parameters", required = true) FileFetch fetchParams) {
         try {
             Map<String, Object> params = new HashMap<>();
             params.put(ParamConstants.STUDY_PARAM, studyStr);
@@ -143,8 +143,22 @@ public class FileWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("files");
 
-            List<String> idList = getIdList(fileStr);
+            List<String> idList = getIdList(fileStr.replaceAll(":", "/"));
             DataResult<File> fileQueryResult = fileManager.get(studyStr, idList, new Query("deleted", deleted), queryOptions, true, token);
+            return createOkResponse(fileQueryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{file}/image")
+    @ApiOperation(value = "Obtain the base64 content of an image", response = FileContent.class)
+    public Response base64Image(
+            @ApiParam(value = ParamConstants.FILE_ID_DESCRIPTION) @PathParam(value = "file") String fileStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
+        try {
+            OpenCGAResult<FileContent> fileQueryResult = fileManager.image(studyStr, fileStr, token);
             return createOkResponse(fileQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -462,7 +476,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
             @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
-            @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
+            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             if (samplesAction == null) {
@@ -497,7 +511,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
             @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
-            @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
+            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             if (samplesAction == null) {
                 samplesAction = ParamUtils.UpdateAction.ADD;
@@ -614,7 +628,7 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response link(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
-            @ApiParam(name = "params", value = "File parameters", required = true) FileLinkParams params) {
+            @ApiParam(name = "body", value = "File parameters", required = true) FileLinkParams params) {
         try {
             return createOkResponse(catalogManager.getFileManager().link(studyStr, params, parents, token));
         } catch (Exception e) {

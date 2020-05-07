@@ -73,11 +73,26 @@ public final class VariantQueryParam implements QueryParam {
             + ACCEPTS_ALL_NONE;
     public static final VariantQueryParam INCLUDE_STUDY = new VariantQueryParam("includeStudy", TEXT_ARRAY, INCLUDE_STUDY_DESCR);
 
-    //SAMPLES_DESCR = "Filter variants where ALL the provided samples are mutated (not HOM_REF or missing)";
     public static final String SAMPLE_DESCR
-            = "Filter variants where the samples contain the variant (HET or HOM_ALT). "
-            + ACCEPTS_AND_OR + ' '
-            + "This will automatically set 'includeSample' parameter when not provided";
+            = "Filter variants by sample genotype. "
+            + "This will automatically set 'includeSample' parameter when not provided. "
+            + "This filter accepts multiple 3 forms: "
+            + "1) List of samples: Samples that contain the main variant. " + ACCEPTS_AND_OR + " "
+            + " e.g. HG0097,HG0098 . "
+            + "2) List of samples with genotypes: {sample}:{gt1},{gt2}. " + ACCEPTS_AND_OR + " "
+            + " e.g. HG0097:0/0;HG0098:0/1,1/1 . "
+            + "Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. "
+            + "When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position"
+            + " e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... "
+            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT and MISS "
+            + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . "
+            + "3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted."
+            + "Accepted segregation modes: "
+            + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
+            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, "
+            + "DeNovo, CompoundHeterozygous ]. Value is case insensitive."
+            + " e.g. HG0097:DeNovo "
+            + "Sample must have parents defined and indexed. ";
     public static final VariantQueryParam SAMPLE = new VariantQueryParam("sample", TEXT_ARRAY, SAMPLE_DESCR);
 
     public static final String GENOTYPE_DESCR

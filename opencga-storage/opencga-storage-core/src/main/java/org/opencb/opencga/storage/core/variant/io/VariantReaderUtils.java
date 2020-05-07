@@ -47,6 +47,7 @@ import java.util.regex.Pattern;
 public class VariantReaderUtils {
 
     public static final String MALFORMED_FILE = "malformed";
+    public static final String DUPLICATED_FILE = "duplicated";
     public static final String VARIANTS_FILE = "variants";
     public static final String METADATA_FILE = "file";
     public static final String METADATA_FORMAT = "json";

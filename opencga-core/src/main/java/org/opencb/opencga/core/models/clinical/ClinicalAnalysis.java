@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
@@ -40,13 +40,17 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     private Disorder disorder;
 
-    // Map of sample id, list of files (VCF, BAM and BIGWIG)
-    private Map<String, List<File>> files;
+    // List of files (VCF, BAM and BIGWIG)
+    private List<File> files;
 
     private Individual proband;
     private Family family;
     private Map<String, FamiliarRelationship> roleToProband;
-    private List<Interpretation> interpretations;
+
+    private ClinicalAnalysisQc qualityControl;
+
+    private Interpretation interpretation;
+    private List<Interpretation> secondaryInterpretations;
 
     private ClinicalConsent consent;
 
@@ -144,11 +148,13 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
-                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
-                            List<Interpretation> interpretations, Enums.Priority priority, ClinicalAnalysisAnalyst analyst,
-                            List<String> flags, String creationDate, String dueDate, List<Comment> comments, List<Alert> alerts,
-                            int release, ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
+
+    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
+                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalAnalysisQc qualityControl,
+                            Interpretation interpretation, List<Interpretation> secondaryInterpretations, ClinicalConsent consent,
+                            ClinicalAnalysisAnalyst analyst, Enums.Priority priority, List<String> flags, String creationDate,
+                            String modificationDate, String dueDate, int release, List<Comment> comments, List<Alert> alerts,
+                            ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -157,15 +163,18 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.proband = proband;
         this.family = family;
         this.roleToProband = roleToProband;
-        this.interpretations = interpretations;
+        this.qualityControl = qualityControl;
+        this.interpretation = interpretation;
+        this.secondaryInterpretations = secondaryInterpretations;
+        this.consent = consent;
+        this.analyst = analyst;
         this.priority = priority;
         this.flags = flags;
-        this.analyst = analyst;
-        this.consent = consent;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.dueDate = dueDate;
-        this.comments = comments;
         this.release = release;
+        this.comments = comments;
         this.alerts = alerts;
         this.internal = internal;
         this.attributes = attributes;
@@ -184,7 +193,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
-        sb.append(", interpretations=").append(interpretations);
+        sb.append(", qc=").append(qualityControl);
+        sb.append(", interpretation=").append(interpretation);
+        sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
         sb.append(", analyst=").append(analyst);
         sb.append(", priority=").append(priority);
@@ -202,6 +213,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return sb.toString();
     }
 
+    @Override
     public String getUuid() {
         return uuid;
     }
@@ -211,24 +223,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public ClinicalAnalysis setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    @Override
-    public ClinicalAnalysis setUid(long uid) {
-        super.setUid(uid);
-        return this;
-    }
-
-    @Override
-    public ClinicalAnalysis setStudyUid(long studyUid) {
-        super.setStudyUid(studyUid);
         return this;
     }
 
@@ -259,11 +261,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public Map<String, List<File>> getFiles() {
+    public List<File> getFiles() {
         return files;
     }
 
-    public ClinicalAnalysis setFiles(Map<String, List<File>> files) {
+    public ClinicalAnalysis setFiles(List<File> files) {
         this.files = files;
         return this;
     }
@@ -295,21 +297,30 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public List<Interpretation> getInterpretations() {
-        return interpretations;
+    public ClinicalAnalysisQc getQualityControl() {
+        return qualityControl;
     }
 
-    public ClinicalAnalysis setInterpretations(List<Interpretation> interpretations) {
-        this.interpretations = interpretations;
+    public ClinicalAnalysis setQualityControl(ClinicalAnalysisQc qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 
-    public ClinicalAnalysisAnalyst getAnalyst() {
-        return analyst;
+    public Interpretation getInterpretation() {
+        return interpretation;
     }
 
-    public ClinicalAnalysis setAnalyst(ClinicalAnalysisAnalyst analyst) {
-        this.analyst = analyst;
+    public ClinicalAnalysis setInterpretation(Interpretation interpretation) {
+        this.interpretation = interpretation;
+        return this;
+    }
+
+    public List<Interpretation> getSecondaryInterpretations() {
+        return secondaryInterpretations;
+    }
+
+    public ClinicalAnalysis setSecondaryInterpretations(List<Interpretation> secondaryInterpretations) {
+        this.secondaryInterpretations = secondaryInterpretations;
         return this;
     }
 
@@ -319,6 +330,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setConsent(ClinicalConsent consent) {
         this.consent = consent;
+        return this;
+    }
+
+    public ClinicalAnalysisAnalyst getAnalyst() {
+        return analyst;
+    }
+
+    public ClinicalAnalysis setAnalyst(ClinicalAnalysisAnalyst analyst) {
+        this.analyst = analyst;
         return this;
     }
 
@@ -340,15 +360,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public String getDueDate() {
-        return dueDate;
-    }
-
-    public ClinicalAnalysis setDueDate(String dueDate) {
-        this.dueDate = dueDate;
-        return this;
-    }
-
     public String getCreationDate() {
         return creationDate;
     }
@@ -364,6 +375,24 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public String getDueDate() {
+        return dueDate;
+    }
+
+    public ClinicalAnalysis setDueDate(String dueDate) {
+        this.dueDate = dueDate;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public ClinicalAnalysis setRelease(int release) {
+        this.release = release;
         return this;
     }
 
@@ -391,15 +420,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setInternal(ClinicalAnalysisInternal internal) {
         this.internal = internal;
-        return this;
-    }
-
-    public int getRelease() {
-        return release;
-    }
-
-    public ClinicalAnalysis setRelease(int release) {
-        this.release = release;
         return this;
     }
 

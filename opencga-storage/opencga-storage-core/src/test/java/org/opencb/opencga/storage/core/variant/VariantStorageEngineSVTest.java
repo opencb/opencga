@@ -112,7 +112,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
             assertEquals(
                     expectedStudyEntry.getSamples()
                             .stream()
-                            .map(l -> new SampleEntry(null, null, Collections.singletonList(l.getData().get(0))))
+                            .map(l -> new SampleEntry(null, 0, Collections.singletonList(l.getData().get(0))))
                             .collect(Collectors.toList()),
                     actualStudyEntry.getSamples());
 

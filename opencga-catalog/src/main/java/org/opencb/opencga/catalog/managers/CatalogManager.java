@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,7 +179,7 @@ public class CatalogManager implements AutoCloseable {
                 .setOrganization(organization);
         userManager.create(user, password, null);
 
-        String token = userManager.login(OPENCGA, password);
+        String token = userManager.login(OPENCGA, password).getToken();
         projectManager.create("admin", "admin", "Default project", "", "", "", null, token);
         studyManager.create("admin", "admin", "admin", "admin", "Default study", null, null, null, Collections.emptyMap(),
                 null, token);

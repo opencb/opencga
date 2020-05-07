@@ -194,11 +194,13 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case GWAS_RUN_COMMAND:
                 gwas();
+                break;
             case KNOCKOUT_RUN_COMMAND:
                 knockout();
                 break;
             case VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND:
                 sampleEligibility();
+                break;
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 mutationalSignature();
                 break;
@@ -338,20 +340,26 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.outdir,
                 cliOptions.genericVariantIndexOptions.transform,
                 cliOptions.genericVariantIndexOptions.gvcf,
+                cliOptions.genericVariantIndexOptions.normalizationSkip,
+                cliOptions.genericVariantIndexOptions.referenceGenome,
+                cliOptions.genericVariantIndexOptions.family,
                 cliOptions.genericVariantIndexOptions.load,
                 cliOptions.genericVariantIndexOptions.loadSplitData,
-                cliOptions.genericVariantIndexOptions.skipSampleIndex,
-                cliOptions.genericVariantIndexOptions.skipPostLoadCheck,
+                cliOptions.genericVariantIndexOptions.loadMultiFileData,
+                cliOptions.genericVariantIndexOptions.loadSampleIndex,
+                cliOptions.genericVariantIndexOptions.loadArchive,
+                cliOptions.genericVariantIndexOptions.loadHomRef,
+                cliOptions.genericVariantIndexOptions.postLoadCheck,
                 cliOptions.genericVariantIndexOptions.excludeGenotype,
-                cliOptions.genericVariantIndexOptions.includeExtraFields,
+                cliOptions.genericVariantIndexOptions.includeSampleData,
                 cliOptions.genericVariantIndexOptions.merge,
+                cliOptions.genericVariantIndexOptions.deduplicationPolicy,
                 cliOptions.genericVariantIndexOptions.calculateStats,
                 cliOptions.genericVariantIndexOptions.aggregated,
                 cliOptions.genericVariantIndexOptions.aggregationMappingFile,
                 cliOptions.genericVariantIndexOptions.annotate,
                 cliOptions.genericVariantIndexOptions.annotator,
-                cliOptions.genericVariantIndexOptions.overwriteAnnotations,
-                cliOptions.genericVariantIndexOptions.indexSearch)
+                cliOptions.genericVariantIndexOptions.overwriteAnnotations, cliOptions.genericVariantIndexOptions.indexSearch)
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study)
                 .append(VariantStorageOptions.STDIN.key(), cliOptions.stdin)

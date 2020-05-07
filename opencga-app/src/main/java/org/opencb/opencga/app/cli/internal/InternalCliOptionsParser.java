@@ -56,6 +56,10 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
@@ -81,7 +85,8 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 //    private VariantCommandOptions variantCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
     private AlignmentCommandOptions alignmentCommandOptions;
-    private InterpretationCommandOptions interpretationCommandOptions;
+//    private InterpretationCommandOptions interpretationCommandOptions;
+    private ClinicalCommandOptions clinicalCommandOptions;
     private FileCommandOptions fileCommandOptions;
     private SampleCommandOptions sampleCommandOptions;
     private FamilyCommandOptions familyCommandOptions;
@@ -177,11 +182,19 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         toolsSubCommands.addCommand("execute-tool", toolsCommandOptions.executeToolCommandOptions);
         toolsSubCommands.addCommand("execute-job", toolsCommandOptions.executeJobCommandOptions);
 
-        interpretationCommandOptions = new InterpretationCommandOptions(commonCommandOptions, variantQueryCommandOptions, jCommander);
-        jCommander.addCommand("interpretation", interpretationCommandOptions);
-        JCommander interpretationSubCommands = jCommander.getCommands().get("interpretation");
-        interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
-        interpretationSubCommands.addCommand("tiering", interpretationCommandOptions.tieringCommandOptions);
+//        interpretationCommandOptions = new InterpretationCommandOptions(commonCommandOptions, variantQueryCommandOptions, jCommander);
+//        jCommander.addCommand("interpretation", interpretationCommandOptions);
+//        JCommander interpretationSubCommands = jCommander.getCommands().get("interpretation");
+//        interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
+////        interpretationSubCommands.addCommand("tiering", interpretationCommandOptions.tieringCommandOptions);
+
+        clinicalCommandOptions = new ClinicalCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("clinical", clinicalCommandOptions);
+        JCommander clinicalSubCommands = jCommander.getCommands().get("clinical");
+        clinicalSubCommands.addCommand(TIERING_RUN_COMMAND, clinicalCommandOptions.tieringCommandOptions);
+        clinicalSubCommands.addCommand(TEAM_RUN_COMMAND, clinicalCommandOptions.teamCommandOptions);
+        clinicalSubCommands.addCommand(ZETTA_RUN_COMMAND, clinicalCommandOptions.zettaCommandOptions);
+        clinicalSubCommands.addCommand(CANCER_TIERING_RUN_COMMAND, clinicalCommandOptions.cancerTieringCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
@@ -244,7 +257,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         public boolean help;
 
         public JCommander getSubCommand() {
-            return jCommander.getCommands().get(getCommand()).getCommands().get(getSubCommand());
+            return jCommander.getCommands().get(getCommand()).getCommands().get(getParsedSubCommand());
         }
 
         public String getParsedSubCommand() {
@@ -450,8 +463,8 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         return alignmentCommandOptions;
     }
 
-    public InterpretationCommandOptions getInterpretationCommandOptions() {
-        return interpretationCommandOptions;
+    public ClinicalCommandOptions getClinicalCommandOptions() {
+        return clinicalCommandOptions;
     }
 
     public FileCommandOptions getFileCommandOptions() {

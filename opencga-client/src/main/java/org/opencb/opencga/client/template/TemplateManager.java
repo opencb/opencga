@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.VariableSetCreateParams;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.response.RestResponse;
@@ -72,7 +73,7 @@ public class TemplateManager {
     private final boolean resume;
 
     public TemplateManager(ClientConfiguration clientConfiguration, boolean resume, String token) {
-        this.openCGAClient = new OpenCGAClient(token, clientConfiguration);
+        this.openCGAClient = new OpenCGAClient(new AuthenticationResponse(token), clientConfiguration);
         this.openCGAClient.setThrowExceptionOnError(true);
         this.resume = resume;
 
@@ -547,7 +548,7 @@ public class TemplateManager {
         if (status.equals(Enums.ExecutionStatus.ABORTED) || status.equals(Enums.ExecutionStatus.ERROR)) {
             throw new ClientException("Error submitting job " + job.getTool().getId() + " " + job.getId());
         }
-        return job.getId();
+        return job.getUuid();
     }
 
 }

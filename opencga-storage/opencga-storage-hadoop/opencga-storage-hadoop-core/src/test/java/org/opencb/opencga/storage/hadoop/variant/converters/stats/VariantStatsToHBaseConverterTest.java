@@ -23,7 +23,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -99,6 +99,8 @@ public class VariantStatsToHBaseConverterTest {
         }
 
         assertNotNull(convert);
+        assertEquals("", convert.getCohortId());
+        convert.setCohortId("c1");
         assertEquals(expected, convert);
 
     }

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis;
 
 import org.opencb.commons.utils.URLUtils;
@@ -11,14 +27,14 @@ import java.util.List;
 
 public class ResourceUtils {
 
-    public static final String URL = "http://resources.opencb.org/opencb/opencga/analysis/";
+    public static final String URL = "http://resources.opencb.org/opencb/opencga/";
 
     public static File downloadThirdParty(URL url, Path outDir) throws IOException {
         return URLUtils.download(url, outDir);
     }
 
     public static File downloadAnalysis(String analysisId, String resouceName, Path outDir) throws IOException {
-        return URLUtils.download(new URL(URL + analysisId + "/" + resouceName), outDir);
+        return URLUtils.download(new URL(URL + "analysis/" + analysisId + "/" + resouceName), outDir);
     }
 
     public static DownloadedRefGenome downloadRefGenome(Species species, Assembly assembly, Authority authority, Path outDir)
@@ -47,7 +63,7 @@ public class ResourceUtils {
         File gziFile = null;
 
         for (String link : links) {
-            URL url = new URL(URL + "resources/reference-genomes/" + link);
+            URL url = new URL(URL + "reference-genomes/" + link);
             File file = URLUtils.download(url, outDir);
             if (file == null) {
                 // Something wrong happened, remove downloaded files

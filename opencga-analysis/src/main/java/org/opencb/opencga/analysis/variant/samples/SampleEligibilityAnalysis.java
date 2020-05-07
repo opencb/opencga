@@ -1,7 +1,27 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.variant.samples;
 
-import org.apache.commons.lang3.time.StopWatch;
+import com.fasterxml.jackson.databind.SequenceWriter;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
@@ -14,6 +34,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -24,7 +45,10 @@ import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
@@ -77,6 +101,9 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         super.check();
         analysisParams.updateParams(params);
         studyFqn = getStudyFqn();
+        if (StringUtils.isEmpty(analysisParams.getQuery())) {
+            throw new IllegalArgumentException("Missing query");
+        }
 
         if (analysisParams.isIndex()) {
             if (StringUtils.isEmpty(analysisParams.getCohortId())) {
@@ -156,11 +183,46 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             addAttribute("numSamples", samplesResult.size());
             logger.info("Found {} samples", samplesResult.size());
 
+            try (SequenceWriter sequenceWriter = JacksonUtils.getDefaultObjectMapper()
+                    .writerFor(Individual.class)
+                    .writeValues(getOutDir().resolve("individuals.json").toFile())) {
+                // TODO: Iterator should work here
+//                Iterator<Individual> it = getCatalogManager().getIndividualManager()
+//                        .iterator(studyFqn,
+//                                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesResult),
+//                                new QueryOptions(), getToken());
+                Iterator<Individual> it = getCatalogManager().getIndividualManager()
+                        .search(studyFqn,
+                                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesResult),
+                                new QueryOptions(), getToken()).getResults().iterator();
+                while (it.hasNext()) {
+                    Individual individual = it.next();
+                    sequenceWriter.write(individual);
+                }
+            }
             try (PrintStream out = new PrintStream(getOutDir().resolve("samples.tsv").toFile())) {
                 out.println("##num_samples=" + samplesResult.size());
-                out.println("#SAMPLE");
-                for (String s : samplesResult) {
-                    out.println(s);
+                out.println("#SAMPLE\tINDIVIDUAL\tPHENOTYPES\tDISOREDERS");
+                for (String sample : samplesResult) {
+                    Individual individual = getCatalogManager().getIndividualManager().search(studyFqn,
+                            new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sample), new QueryOptions(), getToken()).first();
+                    String individualId;
+                    String phenotypes;
+                    String disorders;
+                    if (individual == null) {
+                        individualId = ".";
+                        phenotypes = ".";
+                        disorders = ".";
+                    } else {
+                        individualId = individual.getId();
+                        phenotypes = CollectionUtils.isNotEmpty(individual.getPhenotypes())
+                                ? individual.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.joining(","))
+                                : ".";
+                        disorders = CollectionUtils.isNotEmpty(individual.getDisorders())
+                                ? individual.getDisorders().stream().map(Disorder::getId).collect(Collectors.joining(","))
+                                : ".";
+                    }
+                    out.println(sample + "\t" + individualId + "\t" + phenotypes + "\t" + disorders);
                 }
             }
         });

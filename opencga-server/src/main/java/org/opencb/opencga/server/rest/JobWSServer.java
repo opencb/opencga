@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,7 +186,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_OUTPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_OUTPUT_FILES_PARAM) String output,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
             @ApiParam(value = "Boolean to retrieve deleted jobs", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "params") JobUpdateParams parameters) {
+            @ApiParam(value = "body") JobUpdateParams parameters) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(jobManager.update(studyStr, query, parameters, true, queryOptions, token));
@@ -202,7 +202,7 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response updateByPost(
             @ApiParam(value = ParamConstants.JOBS_DESCRIPTION, required = true) @PathParam("jobs") String jobStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "params") JobUpdateParams parameters) {
+            @ApiParam(value = "body") JobUpdateParams parameters) {
         try {
             return createOkResponse(jobManager.update(studyStr, getIdList(jobStr), parameters, queryOptions, token));
         } catch (Exception e) {

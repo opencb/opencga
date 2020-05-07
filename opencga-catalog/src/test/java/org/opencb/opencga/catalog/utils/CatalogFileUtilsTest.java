@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public class CatalogFileUtilsTest {
 
         //Create USER
         catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.AccountType.FULL, null);
-        userSessionId = catalogManager.getUserManager().login("user", "asdf");
+        userSessionId = catalogManager.getUserManager().login("user", "asdf").getToken();
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
         String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), userSessionId).getResults().get(0).getId();

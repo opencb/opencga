@@ -43,13 +43,13 @@ public class VariantFileIndexEntryConverterTest {
                 fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", "0").setQuality(10.0).build()));
 
         for (Integer dp : Arrays.asList(1, 5, 10, 20, 50)) {
-            assertEquals((byte) (snv | IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT),
+            assertEquals((short) (snv | (IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT)),
                     fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).build()));
-            assertEquals((byte) (snv | IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT),
+            assertEquals((short) (snv | (IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT)),
                     fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).addFileData("DP", 10000).build()));
-            assertEquals((byte) (snv | IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT),
+            assertEquals((short) (snv | (IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT)),
                     fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).addFileData("DP", 0).build()));
-            assertEquals((byte) (snv | IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT),
+            assertEquals((short) (snv | (IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT)),
                     fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").setSampleDataKeys("GT").addSample("s1", "0/1").addFileData("DP", dp).build()));
         }
 

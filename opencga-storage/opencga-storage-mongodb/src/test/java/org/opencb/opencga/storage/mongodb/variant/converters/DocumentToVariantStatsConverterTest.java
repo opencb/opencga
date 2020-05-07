@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
@@ -55,18 +54,18 @@ public class DocumentToVariantStatsConverterTest {
         genotypes.append("0/0", 100);
         genotypes.append("0/1", 50);
         genotypes.append("1/1", 10);
-        mongoStats.append(DocumentToVariantStatsConverter.NUMGT_FIELD, genotypes);
+        mongoStats.append(DocumentToVariantStatsConverter.GENOTYPE_COUNT_FIELD, genotypes);
 
 //        stats = new VariantStats(null, -1, null, null, VariantType.SNV, 0.1f, 0.01f, "A", "A/A", 10, 5, -1, -1, -1, -1, -1);
         stats = new VariantStats(70 / numAlleles, 0.01f, "A", "A/A", 10, 5);
-        stats.addGenotype(new Genotype("0/0"), 100);
-        stats.addGenotype(new Genotype("0/1"), 50);
-        stats.addGenotype(new Genotype("1/1"), 10);
-        Map<Genotype, Float> genotypeFreq = new HashMap<>();
+        stats.addGenotype("0/0", 100);
+        stats.addGenotype("0/1", 50);
+        stats.addGenotype("1/1", 10);
+        Map<String, Float> genotypeFreq = new HashMap<>();
 
-        genotypeFreq.put(new Genotype("0/0"), 100 / numSamples);
-        genotypeFreq.put(new Genotype("0/1"), 50 / numSamples);
-        genotypeFreq.put(new Genotype("1/1"), 10 / numSamples);
+        genotypeFreq.put("0/0", 100 / numSamples);
+        genotypeFreq.put("0/1", 50 / numSamples);
+        genotypeFreq.put("1/1", 10 / numSamples);
         stats.setAlleleCount((int) numAlleles);
         stats.setGenotypeFreq(genotypeFreq);
         stats.setRefAlleleCount(250);
@@ -109,7 +108,7 @@ public class DocumentToVariantStatsConverterTest {
         stats.setRefAlleleCount(-1);
         stats.setAltAlleleCount(-1);
         DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
-        mongoStats.put(DocumentToVariantStatsConverter.NUMGT_FIELD, new Document());
+        mongoStats.put(DocumentToVariantStatsConverter.GENOTYPE_COUNT_FIELD, new Document());
         VariantStats converted = converter.convertToDataModelType(mongoStats);
         assertEquals(stats, converted);
     }
@@ -122,7 +121,7 @@ public class DocumentToVariantStatsConverterTest {
         stats.setRefAlleleCount(-1);
         stats.setAltAlleleCount(-1);
         DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
-        mongoStats.put(DocumentToVariantStatsConverter.NUMGT_FIELD, new Document());
+        mongoStats.put(DocumentToVariantStatsConverter.GENOTYPE_COUNT_FIELD, new Document());
         mongoStats.remove(DocumentToVariantStatsConverter.ALT_FREQ_FIELD);
         mongoStats.remove(DocumentToVariantStatsConverter.REF_FREQ_FIELD);
         VariantStats converted = converter.convertToDataModelType(mongoStats, new Variant("1", 100, "C", "A"));
@@ -142,8 +141,8 @@ public class DocumentToVariantStatsConverterTest {
         assertEquals(stats.getMissingAlleleCount(), converted.get(DocumentToVariantStatsConverter.MISSALLELE_FIELD));
         assertEquals(stats.getMissingGenotypeCount(), converted.get(DocumentToVariantStatsConverter.MISSGENOTYPE_FIELD));
 
-        assertEquals(100, (converted.get(DocumentToVariantStatsConverter.NUMGT_FIELD, Document.class)).get("0/0"));
-        assertEquals(50, (converted.get(DocumentToVariantStatsConverter.NUMGT_FIELD, Document.class)).get("0/1"));
-        assertEquals(10, (converted.get(DocumentToVariantStatsConverter.NUMGT_FIELD, Document.class)).get("1/1"));
+        assertEquals(100, (converted.get(DocumentToVariantStatsConverter.GENOTYPE_COUNT_FIELD, Document.class)).get("0/0"));
+        assertEquals(50, (converted.get(DocumentToVariantStatsConverter.GENOTYPE_COUNT_FIELD, Document.class)).get("0/1"));
+        assertEquals(10, (converted.get(DocumentToVariantStatsConverter.GENOTYPE_COUNT_FIELD, Document.class)).get("1/1"));
     }
 }

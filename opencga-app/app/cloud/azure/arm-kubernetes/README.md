@@ -11,6 +11,30 @@ This document contains information related to the deployment of OpenCGA to Azure
 3. Create  service principal for Azure Kubernetes Service (AKS) by running `./createsp.sh`
 4. Deploy Open CGA using the command `./deploy.sh <subscription_name> <artifact_storage_rg> <artifact_storage_name> <azure_region> $aksServicePrincipalAppId $aksServicePrincipalClientSecret $aksServicePrincipalObjectId` . The arguments `<artifact_storage_rg>` and `<artifact_storage_name>` specify the location for artifacts that are needed for deployment to be stored.
 
+
+## Deploy without User Access Administrator role
+
+To deploy Azure HDInsight and Azure Kubernetes Services, some "Role Assignment" operations are required. 
+
+If the OpenCGA administrator does not have the role "[_User access administrator_](https://docs.microsoft.com/en-gb/azure/role-based-access-control/built-in-roles#user-access-administrator)", these operations will need to be executed separately from an account with these permissions.
+
+### Required roles
+**Azure Kubernetes Service:**
+  - [Network Contributor Role](https://docs.microsoft.com/en-gb/azure/role-based-access-control/built-in-roles#network-contributor) for the main OpenCGA Vnet through a Service Principal 
+
+**Azure HDInsight (Hadoop)**
+ - [Storage Blob Data Owner Role](https://docs.microsoft.com/en-gb/azure/role-based-access-control/built-in-roles#storage-blob-data-owner) for the OpenCGA HDI storage account through a Managed Identity
+
+OpenCGA ARM Templates for role assignment to Azure with Kubernetes are located in folder `roleAssignments/`
+
+### Usage
+This step should be executed before executing the general deployment.
+
+```shell script
+./createsp.sh <subscriptionName> <servicePrincipalName>
+./role-assignments.sh <subscription_name> <resourceGroupPrefix>  <location> <servicePrincipalObjectId>
+```
+
 ## How do I connect to the Open CGA master pod
 
 1. Run `kubectl get pods` and record the name of the master pod.

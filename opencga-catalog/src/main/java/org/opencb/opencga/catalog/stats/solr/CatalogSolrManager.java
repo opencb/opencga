@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import java.util.Map;
 /**
  * Created by wasim on 27/06/18.
  */
-public class CatalogSolrManager {
+public class CatalogSolrManager implements AutoCloseable {
 
     private CatalogManager catalogManager;
     private SolrManager solrManager;
@@ -271,5 +271,13 @@ public class CatalogSolrManager {
         solrManager.setSolrClient(solrClient);
     }
 
+    @Override
+    public void close() throws CatalogException {
+        try {
+            solrManager.close();
+        } catch (IOException e) {
+            throw new CatalogException(e);
+        }
+    }
 }
 

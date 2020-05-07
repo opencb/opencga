@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -281,12 +281,12 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         }
 
         Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        OpenCGAResult openCGAResult = catalogJobDBAdaptor.groupBy(query, Collections.singletonList("status.name"),
+        OpenCGAResult openCGAResult = catalogJobDBAdaptor.groupBy(query, Collections.singletonList("internal.status.name"),
                 new QueryOptions(QueryOptions.COUNT, true), user3.getId());
 
         assertEquals(2, openCGAResult.getResults().size());
         for (Object o : openCGAResult.getResults()) {
-            String status = ((Map) ((Map) o).get("_id")).get("status.name").toString();
+            String status = ((Map) ((Map) o).get("_id")).get("internal.status.name").toString();
             long count = ((Number) ((Map) o).get("count")).longValue();
             assertThat(status, anyOf(is(Enums.ExecutionStatus.RUNNING), is(Enums.ExecutionStatus.DONE)));
             assertEquals(5, count);

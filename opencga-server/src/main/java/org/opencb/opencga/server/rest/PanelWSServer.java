@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
@@ -5,15 +21,16 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
-import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
-import org.opencb.opencga.core.models.panel.PanelCreateParams;
-import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
+import org.opencb.opencga.core.models.panel.PanelCreateParams;
+import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -41,19 +58,18 @@ public class PanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a panel", response = Panel.class)
     public Response createPanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Comma separated list of installation panel ids to be imported. To import them all at once, write the "
-                    + "special word 'ALL_GLOBAL_PANELS'")
-            @QueryParam("import") String panelIds,
-            @ApiParam(name = "params", value = "Panel parameters") PanelCreateParams params) {
+            @ApiParam(value = ParamConstants.PANEL_SOURCE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE) String source,
+            @ApiParam(value = ParamConstants.PANEL_SOURCE_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE_ID) String id,
+            @ApiParam(name = "body", value = "Panel parameters") PanelCreateParams params) {
         try {
-            if (StringUtils.isNotEmpty(panelIds)) {
-                if ("ALL_GLOBAL_PANELS".equals(panelIds.toUpperCase())) {
-                    return createOkResponse(panelManager.importAllGlobalPanels(studyStr, queryOptions, token));
-                } else {
-                    return createOkResponse(panelManager.importGlobalPanels(studyStr, getIdList(panelIds), queryOptions, token));
-                }
-            } else {
+            if (StringUtils.isNotEmpty(source) && (params == null || StringUtils.isEmpty(params.getId()))) {
+                // Import from source
+                return createOkResponse(panelManager.importFromSource(studyStr, source, id, token));
+            } else if (StringUtils.isEmpty(source) && params != null && StringUtils.isNotEmpty(params.getId())) {
+                // Create
                 return createOkResponse(panelManager.create(studyStr, params.toPanel(), queryOptions, token));
+            } else {
+                throw new CatalogException("Please choose whether to import panels from 'source' or create a new one.");
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -81,7 +97,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
             @ApiParam(value = "Create a new version of panel", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(name = "params", value = "Panel parameters") PanelUpdateParams panelParams) {
+            @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(panelManager.update(studyStr, query, panelParams, true, queryOptions, token));
@@ -99,7 +115,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels,
             @ApiParam(value = "Create a new version of panel", defaultValue = "false")
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(name = "params", value = "Panel parameters") PanelUpdateParams panelParams) {
+            @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
             return createOkResponse(panelManager.update(studyStr, getIdList(panels), panelParams, true, queryOptions, token));
         } catch (Exception e) {
@@ -120,16 +136,9 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.PANELS_DESCRIPTION) @PathParam(value = "panels") String panelStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Panel  version") @QueryParam("version") Integer version,
-            @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
-                    defaultValue = "false") @QueryParam("global") boolean global) {
+            @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("global");
-
-            if (global) {
-                studyStr = PanelManager.INSTALLATION_PANELS;
-            }
 
             List<String> idList = getIdList(panelStr);
             DataResult<Panel> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, true, token);
@@ -169,19 +178,12 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
             @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
-                    defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
             @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("global");
-
-            if (global) {
-                studyStr = PanelManager.INSTALLATION_PANELS;
-            }
 
             return createOkResponse(panelManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {

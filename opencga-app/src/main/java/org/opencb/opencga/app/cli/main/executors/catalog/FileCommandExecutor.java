@@ -277,7 +277,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         objectMap.put("lines", filesCommandOptions.headCommandOptions.lines);
         objectMap.put("offset", filesCommandOptions.headCommandOptions.offset);
         RestResponse<FileContent> head = openCGAClient.getFileClient().head(filesCommandOptions.headCommandOptions.file, objectMap);
-        System.out.println(head.first().first().getContent());
+        System.out.println(head.firstResult().getContent());
         return new RestResponse<>();
     }
 

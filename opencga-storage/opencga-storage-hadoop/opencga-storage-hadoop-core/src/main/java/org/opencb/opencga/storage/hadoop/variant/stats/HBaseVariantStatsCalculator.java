@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static org.opencb.biodata.models.feature.Genotype.HOM_REF;
+import static org.opencb.biodata.models.variant.Genotype.HOM_REF;
 
 /**
  * Created on 13/03/18.
@@ -79,6 +79,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         VariantStats stats = VariantStatsCalculator.calculate(variant, partial.gtCountMap, statsMultiAllelic);
         VariantStatsCalculator.calculateFilterFreq(stats, partial.numFileFilterWithVariant, partial.filterCount);
         stats.setQualityAvg(((float) (partial.qualitySum / partial.numFileQualWithVariant)));
+        stats.setQualityCount(partial.numFileQualWithVariant);
         return stats;
     }
 
@@ -155,7 +156,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                             processedSamples.add(sampleId);
 
                             String gt = sample.getGT();
-                            if (gt.isEmpty()) {
+                            if (gt == null || gt.isEmpty()) {
                                 // This is a really weird situation, most likely due to errors in the input files
                                 logger.error("Empty genotype at sample " + sampleId + " in variant " + variant);
                             } else {

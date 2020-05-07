@@ -224,6 +224,16 @@ public class PhoenixHelper {
 
     public void dropColumns(Connection con, String tableName, Collection<CharSequence> columns, PTableType tableType)
             throws SQLException {
+
+        Set<String> existingColumns = getColumns(con, tableName, tableType).stream().map(Column::column).collect(Collectors.toSet());
+        columns = new ArrayList<>(columns);
+        // Remove non existing columns
+        columns.removeIf(c -> !existingColumns.contains(c.toString()));
+        if (columns.isEmpty()) {
+            // No column exists
+            return;
+        }
+
         logger.info("Dropping columns: " + columns);
         String sql = buildAlterDropColumns(tableName, columns, true, tableType);
         logger.info(sql);

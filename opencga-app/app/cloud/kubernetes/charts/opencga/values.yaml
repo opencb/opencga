@@ -5,21 +5,46 @@
 deploySolr: false
 deployMongo: false
 
-openCGApassword: 
+openCGApassword: "FILL_ME"
 
 catalog:
-  secretKey:  
+  secretKey: "FILL_ME"
+  database:
+    hosts: "FILL_ME"
+    user: "FILL_ME"
+    password: "FILL_ME"
+
+cellbase:
+  hosts: "FILL_ME"
+  database:
+    hosts:
+    user:
+    password:
+
+analysis:
+  index:
+    variant:
+      maxConcurrentJobs: 100
+  execution:
+    id: "k8s"
+    options:
+      k8s:
+        masterNode: "FILL_ME"
+        namespace: "FILL_ME"
+
+solr:
+  hosts: "FILL_ME"
 
 hadoop:
-  sshDns: 
-  sshUsername: 
-  sshPassword: 
+  sshDns: "FILL_ME"
+  sshUsername: "FILL_ME"
+  sshPassword: "FILL_ME"
 
 init:
   name: init
   image:
-    # TODO: Currently building from @marrobi's development image. Update once release available.
-    repository: marrobi/opencga-next-init:latest
+    # TODO: Currently building from dev image. Update once release available.
+    repository: opencb/opencga-init:2.0.0-hdp3.1-dev
 
     pullPolicy: Always
 
@@ -66,8 +91,8 @@ rest:
   replicaCount: 3
 
   image:
-    # TODO: Currently building from @j-coll's development image. Update once release available.
-    repository: jcoll/opencga-next:2.0.0-hdp3.1-dev
+    # TODO: Currently building from dev image. Update once release available.
+    repository: opencb/opencga-base:2.0.0-hdp3.1-dev
     pullPolicy: IfNotPresent
 
   imagePullSecrets: []
@@ -141,7 +166,8 @@ master:
   replicaCount: 1
 
   image:
-    repository: jcoll/opencga-next:2.0.0-hdp3.1-dev
+    # TODO: Currently building from dev image. Update once release available.
+    repository: opencb/opencga-base:2.0.0-hdp3.1-dev
     pullPolicy: Always
 
   imagePullSecrets: []

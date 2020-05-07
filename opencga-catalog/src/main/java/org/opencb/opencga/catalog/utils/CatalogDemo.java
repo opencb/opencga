@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ public final class CatalogDemo {
             throws CatalogException, URISyntaxException {
         if (catalogManager.existsCatalogDB()) {
             if (force) {
-                String token = catalogManager.getUserManager().loginAsAdmin(adminPassword);
+                String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
                 catalogManager.deleteCatalogDB(token);
             } else {
                 throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
@@ -75,7 +75,7 @@ public final class CatalogDemo {
             String password = id + "_pass";
             String email = id + "@gmail.com";
             catalogManager.getUserManager().create(id, name, email, password, "organization", 2000L, Account.AccountType.FULL, null);
-            userSessions.put(id, catalogManager.getUserManager().login(id, password));
+            userSessions.put(id, catalogManager.getUserManager().login(id, password).getToken());
         }
 
         // Create one project per user

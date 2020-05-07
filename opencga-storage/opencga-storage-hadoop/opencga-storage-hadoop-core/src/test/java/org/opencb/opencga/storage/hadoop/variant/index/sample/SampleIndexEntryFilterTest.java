@@ -201,8 +201,7 @@ public class SampleIndexEntryFilterTest {
     }
 
     private byte[] toBytes(String... variants) {
-        String str = String.join(",", variants);
-        return Bytes.toBytes(str);
+        return new SampleIndexVariantBiConverter().toBytes(Arrays.stream(variants).map(Variant::new).collect(Collectors.toList()));
     }
 
     private PopulationFrequencyQuery buildPopulationFrequencyQuery(String study, int minFreqInclusive, int maxFreqExclusive) {

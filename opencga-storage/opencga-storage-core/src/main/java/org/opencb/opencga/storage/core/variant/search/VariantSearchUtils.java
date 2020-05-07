@@ -56,17 +56,19 @@ public class VariantSearchUtils {
                     VariantQueryParam.STATS_MGF,
                     VariantQueryParam.MISSING_ALLELES,
                     VariantQueryParam.MISSING_GENOTYPES,
-                    VariantQueryParam.ANNOT_TRANSCRIPT_FLAG,
                     VariantQueryParam.ANNOT_DRUG)));
 
     public static final Set<VariantQueryParam> UNSUPPORTED_MODIFIERS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.INCLUDE_FILE,
                     VariantQueryParam.INCLUDE_SAMPLE,
+                    VariantQueryParam.INCLUDE_SAMPLE_ID,
 //                    VariantQueryParam.INCLUDE_STUDY,
                     VariantQueryParam.UNKNOWN_GENOTYPE,
                     VariantQueryParam.INCLUDE_SAMPLE_DATA,
                     VariantQueryParam.INCLUDE_GENOTYPE,
-                    VariantQueryParam.SAMPLE_METADATA
+                    VariantQueryParam.SAMPLE_METADATA,
+                    VariantQueryParam.SAMPLE_LIMIT,
+                    VariantQueryParam.SAMPLE_SKIP
                     // RETURNED_COHORTS
             )));
 
@@ -151,6 +153,10 @@ public class VariantSearchUtils {
         Query engineQuery = new Query();
         for (VariantQueryParam uncoveredParam : uncoveredParams) {
             engineQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
+        }
+        // Make sure that all modifiers are present in the engine query
+        for (VariantQueryParam modifierParam : MODIFIER_QUERY_PARAMS) {
+            engineQuery.putIfNotNull(modifierParam.key(), query.get(modifierParam.key()));
         }
         // Despite STUDIES is a covered filter, it has to be in the underlying
         // query to be used as defaultStudy

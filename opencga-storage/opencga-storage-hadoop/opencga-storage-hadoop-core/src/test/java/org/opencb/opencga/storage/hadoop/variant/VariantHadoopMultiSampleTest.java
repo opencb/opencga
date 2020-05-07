@@ -46,7 +46,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -505,7 +504,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 //        String[] format = {VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY};
         for (String key : expectedVariants.keySet()) {
             if (variants.containsKey(key)) {
-                StudyEntry studyEntry = variants.get(key).getStudy(studyName);
+                Variant variant = variants.get(key);
+                StudyEntry studyEntry = variant.getStudy(studyName);
                 StudyEntry expectedStudyEntry = expectedVariants.get(key).getStudies().get(0);
                 for (String sample : samples) {
                     for (String formatKey : format) {
@@ -524,14 +524,19 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                         }
                     }
                 }
-                int numFiles = 0;
+                int expectedFiles = 0;
                 if (!studyEntry.getSampleData("s1", "GT").equals(defaultGenotype)) {
-                    numFiles++;
+                    expectedFiles++;
                 }
                 if (!studyEntry.getSampleData("s2", "GT").equals(defaultGenotype)) {
-                    numFiles++;
+                    expectedFiles++;
                 }
-                assertEquals(key, numFiles, studyEntry.getFiles().size());
+                if (defaultGenotype.equals("0/0") && variant.toString().equals("1:10013:T:C")) {
+                    // Special case
+                    // From file s2.genome.vcf there is a variant with GT 0/0 which has an associated file
+                    expectedFiles++;
+                }
+                assertEquals(key, expectedFiles, studyEntry.getFiles().size());
                 if (missingUpdated) {
                     assertEquals(key, expectedStudyEntry.getSecondaryAlternates().size(), studyEntry.getSecondaryAlternates().size());
                     assertEquals(key,
@@ -739,9 +744,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     public Set<String> checkArchiveTableLoadedVariants(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor,
                                                        VariantFileMetadata fileMetadata) {
-        int fileId = Integer.valueOf(fileMetadata.getId());
+        int fileId = Integer.parseInt(fileMetadata.getId());
         Set<String> variants = getVariants(dbAdaptor, studyMetadata, fileId);
-        int expected = fileMetadata.getStats().getVariantTypeCounts().entrySet().stream()
+        int expected = fileMetadata.getStats().getTypeCount().entrySet().stream()
                 .filter(entry -> VARIANT_TYPES.contains(VariantType.valueOf(entry.getKey())))
                 .map(Map.Entry::getValue)
                 .reduce(Integer::sum)
@@ -757,11 +762,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         Set<String> observed = new HashSet<>(Arrays.asList("M:516:-:CA", "1:10231:C:-", "1:10352:T:A", "M:515:G:A"));
 
         System.out.println("Query from Archive table");
-        dbAdaptor.iterator(
-                new Query()
-                        .append(VariantQueryParam.STUDY.key(), studyMetadata.getId())
-                        .append(VariantQueryParam.FILE.key(), fileId),
-                new QueryOptions("archive", true))
+        dbAdaptor.archiveIterator(studyMetadata.getName(), String.valueOf(fileId), new Query(), new QueryOptions())
                 .forEachRemaining(variant -> {
                     if (VARIANT_TYPES.contains(variant.getType())) {
                         String string = variant.toString();

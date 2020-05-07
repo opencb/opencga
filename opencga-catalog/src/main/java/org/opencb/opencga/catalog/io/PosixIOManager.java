@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Base64;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -331,6 +332,18 @@ public class PosixIOManager extends IOManager {
         } catch (IOException e) {
             throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString() + ": " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public FileContent base64Image(Path file) throws CatalogIOException {
+        byte[] fileContent;
+        try {
+            fileContent = org.apache.commons.io.FileUtils.readFileToByteArray(file.toFile());
+        } catch (IOException e) {
+            throw new CatalogIOException("Cannot get byte array from file '" + file + "'.", e);
+        }
+        String encodedString = Base64.getEncoder().encodeToString(fileContent);
+        return new FileContent(file.toAbsolutePath().toString(), true, file.toFile().length(), (int) file.toFile().length(), encodedString);
     }
 
     @Override

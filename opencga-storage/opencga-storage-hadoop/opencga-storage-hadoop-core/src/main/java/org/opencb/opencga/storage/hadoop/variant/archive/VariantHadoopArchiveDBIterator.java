@@ -72,7 +72,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
                 String.valueOf(archiveHelper.getStudyId()), fileMetadata.getId());
         refConverter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(fileMetadata.getSamplesPosition()),
                 String.valueOf(archiveHelper.getStudyId()), fileMetadata.getId());
-        setLimit(options.getLong(QueryOptions.LIMIT));
+        setLimit(options.getLong(QueryOptions.LIMIT, Long.MAX_VALUE));
     }
 
 

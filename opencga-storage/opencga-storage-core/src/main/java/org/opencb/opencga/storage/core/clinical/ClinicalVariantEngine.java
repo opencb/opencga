@@ -18,9 +18,9 @@ package org.opencb.opencga.storage.core.clinical;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
@@ -97,7 +97,7 @@ public interface ClinicalVariantEngine {
 
     /**
      * Insert a list of Interpretation objects into Solr: previously each Interpretation object is
-     * converted to multiple ReportedVariantSearchModel objects and they will be stored in Solr.
+     * converted to multiple ClinicalVariantSearchModel objects and they will be stored in Solr.
      *
      * @param interpretations   List of Interpretation objects to insert
      * @param collection        Solr collection where to insert
@@ -128,7 +128,7 @@ public interface ClinicalVariantEngine {
         insert(interpretation, collection);
     }
 
-    DataResult<ReportedVariant> query(Query query, QueryOptions options, String collection)
+    DataResult<ClinicalVariant> query(Query query, QueryOptions options, String collection)
             throws IOException, ClinicalVariantException;
 
     DataResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String collection)
@@ -137,14 +137,14 @@ public interface ClinicalVariantEngine {
     DataResult<FacetField> facet(Query query, QueryOptions queryOptions, String collection)
             throws IOException, ClinicalVariantException;
 
-    ReportedVariantIterator iterator(Query query, QueryOptions options, String collection)
+    ClinicalVariantIterator iterator(Query query, QueryOptions options, String collection)
             throws ClinicalVariantException, IOException;
 
 
     void addInterpretationComment(long interpretationId, Comment comment, String collection)
                                     throws IOException, ClinicalVariantException;
 
-    void addReportedVariantComment(long interpretationId, String variantId, Comment comment, String collection)
+    void addClinicalVariantComment(long interpretationId, String variantId, Comment comment, String collection)
                                             throws IOException, ClinicalVariantException;
 
     void setStorageConfiguration(StorageConfiguration storageConfiguration);

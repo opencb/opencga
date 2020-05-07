@@ -1,6 +1,23 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.NotImplementedException;
@@ -13,6 +30,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.InterpretationConverter;
@@ -21,8 +39,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -38,12 +58,14 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     private final MongoDBCollection interpretationCollection;
     private final MongoDBCollection deletedInterpretationCollection;
+    private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private InterpretationConverter interpretationConverter;
 
     public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection deletedInterpretationCollection,
                                         MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(InterpretationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
+        this.clinicalDBAdaptor = dbAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.interpretationCollection = interpretationCollection;
         this.deletedInterpretationCollection = deletedInterpretationCollection;
         this.interpretationConverter = new InterpretationConverter();
@@ -60,21 +82,32 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+    public OpenCGAResult insert(long studyId, Interpretation interpretation, boolean primary)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return runTransaction(clientSession -> {
+            long tmpStartTime = startQuery();
+            logger.debug("Starting interpretation insert transaction for interpretation id '{}'", interpretation.getId());
+            insert(clientSession, studyId, interpretation, primary);
+            return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+        }, e -> logger.error("Could not create interpretation {}: {}", interpretation.getId(), e.getMessage()));
+    }
+
+    private void insert(ClientSession clientSession, long studyId, Interpretation interpretation, boolean primary)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
-        DataResult<Long> count = interpretationCollection.count(bson);
+        DataResult<Long> count = interpretationCollection.count(clientSession, bson);
         if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Cannot create interpretation. An interpretation with { id: '"
                     + interpretation.getId() + "'} already exists.");
         }
 
-        long interpretationUid = getNewUid();
+        long interpretationUid = getNewUid(clientSession);
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
         if (StringUtils.isEmpty(interpretation.getUuid())) {
@@ -88,7 +121,40 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
         interpretationObject.put(PRIVATE_MODIFICATION_DATE, interpretationObject.get(PRIVATE_CREATION_DATE));
-        return new OpenCGAResult(interpretationCollection.insert(interpretationObject, null));
+        interpretationCollection.insert(clientSession, interpretationObject, null);
+
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), interpretation.getClinicalAnalysisId());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key());
+        // Check clinical analysis does not have any primary interpretation already
+        OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(clientSession, query, options);
+        if (result.getNumResults() == 0) {
+            throw new CatalogDBException("Clinical analysis '" + interpretation.getClinicalAnalysisId() + "' does not exist.");
+        }
+
+        if (primary) {
+            if (result.first().getInterpretation() != null && StringUtils.isNotEmpty(result.first().getInterpretation().getId())) {
+                throw new CatalogDBException("Clinical analysis '" + interpretation.getClinicalAnalysisId() + "' already has a "
+                        + "primary interpretation.");
+            }
+
+            ObjectMap updateParams = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
+            UpdateDocument updateDocument = clinicalDBAdaptor.parseAndValidateUpdateParams(updateParams, query, QueryOptions.empty());
+            clinicalDBAdaptor.getClinicalCollection().update(clientSession, clinicalDBAdaptor.parseQuery(query),
+                    updateDocument.toFinalUpdateDocument(), null);
+        } else {
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.ADD.name());
+            options = new QueryOptions(Constants.ACTIONS, actionMap);
+            ObjectMap updateParams = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
+                            Collections.singletonList(interpretation));
+
+            // Update array of interpretations from clinical analysis
+            UpdateDocument updateDocument = clinicalDBAdaptor.parseAndValidateUpdateParams(updateParams, query, options);
+            clinicalDBAdaptor.getClinicalCollection().update(clientSession, clinicalDBAdaptor.parseQuery(query),
+                    updateDocument.toFinalUpdateDocument(), null);
+        }
     }
 
     @Override

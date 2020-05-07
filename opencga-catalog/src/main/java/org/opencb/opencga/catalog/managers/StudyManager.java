@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -439,7 +439,7 @@ public class StudyManager extends AbstractManager {
 
     public OpenCGAResult<Study> get(List<String> studyList, QueryOptions queryOptions, boolean ignoreException, String sessionId)
             throws CatalogException {
-        OpenCGAResult<Study> result = OpenCGAResult.empty();
+        OpenCGAResult<Study> result = OpenCGAResult.empty(Study.class);
         for (String study : studyList) {
             try {
                 OpenCGAResult<Study> studyObj = get(study, queryOptions, sessionId);

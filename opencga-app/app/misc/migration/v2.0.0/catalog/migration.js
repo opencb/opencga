@@ -126,6 +126,8 @@ var customStatus = {
     "date" :""
 };
 
+// Project map of uid -> uuid so we can easily update project uuids stored in study collection
+var projectMap = {};
 // Tickets #1528 #1529
 migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, doc) {
     // #1531
@@ -171,6 +173,10 @@ migrateCollection("user", {"_password": {"$exists": false}}, {}, function(bulk, 
         for (var i = 0; i < doc.projects.length; i++) {
             var project = doc.projects[i];
 
+            project['uuid'] = generateOpenCGAUUID("PROJECT", project['_creationDate']);
+            // Store project map so we can update uuid from study collection
+            projectMap[project['uid']] = project['uuid'];
+
             project['internal'] = {
                 'status': project['status'],
                 'datastores': project['dataStores']
@@ -198,6 +204,8 @@ migrateCollection("study", {"internal": {"$exists": false}}, {}, function(bulk, 
     doc['status']['description'] = doc['status']['message'];
 
     var set = {
+        "uuid": generateOpenCGAUUID("STUDY", doc['_creationDate']),
+        "_project.uuid": projectMap[doc['_project']['uid']],
         "internal": {
             "status": doc['status']
         },
@@ -216,6 +224,7 @@ migrateCollection("individual", {"internal": {"$exists": false}}, {}, function(b
     doc['status']['description'] = doc['status']['message'];
 
     var set = {
+        "uuid": generateOpenCGAUUID("INDIVIDUAL", doc['_creationDate']),
         "internal": {
             "status": doc['status']
         },
@@ -234,6 +243,7 @@ migrateCollection("family", {"internal": {"$exists": false}}, {}, function(bulk,
     doc['status']['description'] = doc['status']['message'];
 
     var set = {
+        "uuid": generateOpenCGAUUID("FAMILY", doc['_creationDate']),
         "internal": {
             "status": doc['status']
         },
@@ -248,6 +258,7 @@ migrateCollection("clinical", {"internal": {"$exists": false}}, {}, function(bul
     doc['status']['description'] = doc['status']['message'];
 
     var set = {
+        "uuid": generateOpenCGAUUID("CLINICAL", doc['_creationDate']),
         "internal": {
             "status": doc['status']
         },
@@ -265,6 +276,7 @@ migrateCollection("sample", {"internal": {"$exists": false}}, {}, function(bulk,
     doc['status']['description'] = doc['status']['message'];
 
     var set = {
+        "uuid": generateOpenCGAUUID("SAMPLE", doc['_creationDate']),
         "internal": {
             "status": doc['status']
         },
@@ -285,6 +297,7 @@ migrateCollection("cohort", {"internal": {"$exists": false}}, {}, function(bulk,
     doc['status']['description'] = doc['status']['message'];
 
     var set = {
+        "uuid": generateOpenCGAUUID("COHORT", doc['_creationDate']),
         "internal": {
             "status": doc['status']
         },
@@ -303,6 +316,7 @@ migrateCollection("file", {"internal": {"$exists": false}}, {}, function(bulk, d
     doc['status']['description'] = doc['status']['message'];
 
     var set = {
+        "uuid": generateOpenCGAUUID("FILE", doc['_creationDate']),
         "internal": {
             "status": doc['status'],
             "index": doc['index']
@@ -320,6 +334,7 @@ migrateCollection("file", {"internal": {"$exists": false}}, {}, function(bulk, d
 
 migrateCollection("interpretation", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
     var set = {
+        "uuid": generateOpenCGAUUID("INTERPRETATION", doc['_creationDate']),
         "internal": {
             "status": {
                 "name": doc['status'],
@@ -330,6 +345,83 @@ migrateCollection("interpretation", {"internal": {"$exists": false}}, {}, functi
     };
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set});
+});
+
+// migrateCollection("panel", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
+//     var set = {
+//         "uuid": generateOpenCGAUUID("PANEL", doc['_creationDate'])
+//         }
+//     };
+//
+//     bulk.find({"_id": doc._id}).updateOne({"$set": set});
+// });
+
+// ------------------  Store uuids as actual uuids instead of applying base64 over them
+
+var Entity = Object.freeze({"AUDIT": 0, "PROJECT": 1, "STUDY": 2, "FILE": 3, "SAMPLE": 4, "COHORT": 5, "INDIVIDUAL": 6, "FAMILY": 7,
+    "JOB": 8, "CLINICAL": 9, "PANEL": 10, "INTERPRETATION": 11});
+
+function generateOpenCGAUUID(entity, date) {
+    var mostSignificantBits = getMostSignificantBits(entity, date);
+    var leastSignificantBits = getLeastSignificantBits();
+    return _generateUUID(mostSignificantBits, leastSignificantBits);
+}
+
+function _generateUUID(mostSigBits, leastSigBits) {
+    return (digits(mostSigBits.shiftRightUnsigned(32), 8) + "-" +
+        digits(mostSigBits.shiftRightUnsigned(16), 4) + "-" +
+        digits(mostSigBits, 4) + "-" +
+        digits(leastSigBits.shiftRightUnsigned(48), 4) + "-" +
+        digits(leastSigBits, 12));
+}
+
+function digits(value, digits) {
+    hi = Long.fromNumber(1).shiftLeft(digits * 4).toUnsigned();
+    return hi.or(value.and(hi - 1)).toString(16).substring(1);
+}
+
+function getMostSignificantBits(entity, date) {
+    var time = Long.fromNumber(date.getTime());
+
+    var timeLow = time.and(0xffffffff);
+    var timeMid = time.shiftRightUnsigned(32).and(0xffff);
+
+    var uuidVersion = Long.fromNumber(0);
+    var internalVersion = Long.fromNumber(0);
+    var entityBin = Long.fromNumber(0xff & Entity[entity]);
+
+    return timeLow.shiftLeft(32).toUnsigned().or(timeMid.shiftLeft(16).toUnsigned().or(uuidVersion.shiftLeft(12).toUnsigned()
+        .or(internalVersion.shiftLeft(8).toUnsigned().or(entityBin))));
+}
+
+function getLeastSignificantBits() {
+    var installation = Long.fromNumber(0x1);
+
+    // 12 hex digits random
+    var rand = Long.fromNumber(Math.random() * 100000000000000000);
+    var randomNumber = rand.and(0xffffffffffff);
+    return installation.shiftLeft(48).or(randomNumber);
+}
+
+// #1577: Remove all panels
+db.getCollection("panel").remove({});
+
+// Job - dependsOn - Add studyUid
+var allJobs = {};
+db.job.find({}, {uid:1, studyUid:1}).forEach(function(doc) { allJobs[doc.uid] = doc.studyUid; } );
+
+migrateCollection("job", {"dependsOn":  { "$exists": true, "$ne": [] }}, {dependsOn: 1}, function(bulk, doc) {
+    if (isNotEmptyArray(doc.dependsOn)) {
+        for (var i = 0; i < doc.dependsOn.length; i++) {
+            var job = doc.dependsOn[i];
+            job['studyUid'] = allJobs[job['uid']];
+        }
+
+        var set = {
+            "dependsOn": doc.dependsOn
+        }
+        bulk.find({"_id": doc._id}).updateOne({"$set": set});
+    }
 });
 
 // TODO: Add indexes for new "deleted" collections

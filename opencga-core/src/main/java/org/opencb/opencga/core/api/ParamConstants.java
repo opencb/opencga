@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.api;
 
 public class ParamConstants {
@@ -29,6 +45,9 @@ public class ParamConstants {
 
     public static final String TSV_ANNOTATION_DESCRIPTION = "JSON containing the 'content' of the TSV file if this has not yet been "
             + "registered into OpenCGA";
+
+    public static final String DELETED_DESCRIPTION = "Boolean to retrieve deleted entries";
+    public static final String DELETED_PARAM = "deleted";
 
     // ---------------------------------------------
 
@@ -79,7 +98,8 @@ public class ParamConstants {
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
     public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
 
-    public static final String SAMPLE_ID_DESCRIPTION = "Sample id";
+    public static final String SAMPLE_PARAM = "sample";
+    public static final String SAMPLE_ID_DESCRIPTION = "Sample ID";
     public static final String SAMPLE_NAME_DESCRIPTION = "Sample name";
 
     // ---------------------------------------------
@@ -104,8 +124,17 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
+    public static final String CLINICAL_ANALYSES_PARAM = "clinicalAnalyses";
 
     // ---------------------------------------------
+
+    public static final String PANEL_SOURCE = "source";
+    public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
+            + "sources are 'panelapp' and 'genecensus'";
+    public static final String PANEL_SOURCE_ID = "id";
+    public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel ids to be imported from the defined source."
+            + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "
+            + "'source' will be allowed.";
 
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel ids" + UP_TO_100;
 
@@ -222,6 +251,12 @@ public class ParamConstants {
     public static final String COVERAGE_WINDOW_SIZE_DESCRIPTION = "Window size for the region coverage (if a coverage range is provided, window size must be 1)";
     public static final String COVERAGE_WINDOW_SIZE_PARAM = "windowSize";
     public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "1";
+
+    public static final String ALIGNMENT_COVERAGE_STATS_DESCRIPTION = "Compute coverage stats per transcript for a list of genes.";
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION = "Only regions whose coverage depth is under this threshold will be reported.";
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_PARAM = "threshold";
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_DEFAULT = "20";
+
     public static final String FILE_ID_PARAM = "file";
     public static final String FILE_ID_1_DESCRIPTION = "Input file #1 (e.g. somatic file)";
     public static final String FILE_ID_1_PARAM = "file1";

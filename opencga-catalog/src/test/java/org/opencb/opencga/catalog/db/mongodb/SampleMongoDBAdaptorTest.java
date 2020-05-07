@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -69,9 +69,9 @@ public class SampleMongoDBAdaptorTest {
     private User user4;
     private long studyId;
 
-    @AfterClass
-    public static void afterClass() {
-        MongoDBAdaptorTest.afterClass();
+    @After
+    public void after() {
+        dbAdaptorFactory.close();
     }
 
     @Before
@@ -83,7 +83,7 @@ public class SampleMongoDBAdaptorTest {
         user2 = MongoDBAdaptorTest.user2;
         user3 = MongoDBAdaptorTest.user3;
         user4 = MongoDBAdaptorTest.user4;
-        dbAdaptorFactory = MongoDBAdaptorTest.catalogDBAdaptor;
+        dbAdaptorFactory = dbAdaptorTest.catalogDBAdaptor;
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();

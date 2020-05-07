@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,18 +22,23 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.tools.ToolRunner;
+import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -59,7 +64,6 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testBySteps() throws Exception {
-
         File inputFile;
         File transformFile;
         for (int i = 77; i <= 93; i++) {
@@ -68,6 +72,33 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
             loadFile(transformFile, new QueryOptions(), outputId);
         }
 
+
+        variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+            System.out.println("variant = " + variant);
+        });
+    }
+
+    @Test
+    public void testIndexFamily() throws Exception {
+        List<File> inputFiles = new LinkedList<>();
+        for (int i = 77; i <= 93; i++) {
+            inputFiles.add(create("platinum/1K.end.platinum-genomes-vcf-NA128" + i + "_S1.genome.vcf.gz"));
+        }
+
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_indexFamily"));
+        System.out.println("outDir = " + outDir);
+        VariantIndexParams params = new VariantIndexParams();
+        params.setFile(inputFiles.stream().map(File::getName).collect(Collectors.joining(",")));
+        params.setFamily(true);
+
+        ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
+                .append(ParamConstants.STUDY_PARAM, studyId), outDir, sessionId);
+
+        assertEquals(2, er.getSteps().size());
+        assertEquals("variant-index", er.getSteps().get(0).getId());
+        assertEquals("family-index", er.getSteps().get(1).getId());
 
         variantManager.iterator(new Query(VariantQueryParam.STUDY.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);

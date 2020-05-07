@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -50,12 +51,14 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -75,6 +78,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -91,8 +95,9 @@ import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 
-public class VariantStorageManager extends StorageManager {
+public class VariantStorageManager extends StorageManager implements AutoCloseable {
 
     private final VariantCatalogQueryUtils catalogUtils;
 
@@ -237,7 +242,7 @@ public class VariantStorageManager extends StorageManager {
     public void annotationLoad(String projectStr, List<String> studies, String loadFile, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         String projectId = getProjectId(projectStr, studies, token);
-        secureOperation(VariantAnnotationIndexOperationTool.ID, projectId, params, token, engine -> {
+        secureOperation(VariantAnnotationIndexOperationTool.ID, projectId, studies, params, token, engine -> {
             new VariantAnnotationOperationManager(this, engine)
                     .annotationLoad(projectStr, getStudiesFqn(studies, token), params, loadFile, token);
             return null;
@@ -381,6 +386,22 @@ public class VariantStorageManager extends StorageManager {
                     trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, skipIncompleteFamilies, token));
                 }
             }
+
+            engine.familyIndex(study, trios, params);
+            return null;
+        });
+    }
+
+    public void familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
+            throws CatalogException, StorageEngineException {
+        secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
+
+            OpenCGAResult<Individual> individualResult = getCatalogManager().getIndividualManager()
+                    .search(study,
+                            new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samples),
+                            new QueryOptions(), token);
+
+            List<List<String>> trios = catalogUtils.getTrios(study, engine.getMetadataManager(), individualResult.getResults(), token);
 
             engine.familyIndex(study, trios, params);
             return null;
@@ -699,6 +720,11 @@ public class VariantStorageManager extends StorageManager {
         }
     }
 
+    @Override
+    public void close() throws IOException {
+        storageEngineFactory.close();
+    }
+
     // Permission related methods
 
     private interface VariantReadOperation<R> {
@@ -877,9 +903,18 @@ public class VariantStorageManager extends StorageManager {
         String userId = catalogManager.getUserManager().getUserId(token);
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
         if (!returnedFields.contains(VariantField.STUDIES_SAMPLES) && !returnedFields.contains(VariantField.STUDIES_FILES)) {
-            List<String> studies = mm.getStudyNames();
-            // Check permissions on each study
-            checkStudyPermissions(studies, userId, token);
+            if (isValidParam(query, STUDY)) {
+                ParsedQuery<String> studies = VariantQueryUtils.splitValue(query, STUDY);
+                studies.getValues().replaceAll(VariantQueryUtils::removeNegation);
+                checkStudyPermissions(studies.getValues(), userId, token);
+            } else {
+                // Check permissions on each study
+                List<String> studies = mm.getStudyNames();
+                List<String> validStudies = checkStudyPermissionsAny(studies, userId, token);
+                if (validStudies.size() != studies.size()) {
+                    query.put(STUDY.key(), validStudies);
+                }
+            }
             return Collections.emptyMap();
         }
 
@@ -911,7 +946,15 @@ public class VariantStorageManager extends StorageManager {
                     .stream()
                     .map(mm::getStudyName)
                     .collect(Collectors.toList());
-            checkStudyPermissions(includeStudies, userId, token);
+            if (VariantQueryProjectionParser.isIncludeStudiesDefined(query)) {
+                checkStudyPermissions(includeStudies, userId, token);
+            } else {
+                List<String> validStudies = checkStudyPermissionsAny(includeStudies, userId, token);
+                if (validStudies.size() != includeStudies.size()) {
+                    query.put(STUDY.key(), validStudies);
+                }
+                includeStudies = validStudies;
+            }
 
             if (!returnedFields.contains(VariantField.STUDIES_SAMPLES)) {
                 for (String returnedStudy : includeStudies) {
@@ -950,6 +993,24 @@ public class VariantStorageManager extends StorageManager {
             }
         }
         return samplesMap;
+    }
+
+    private List<String> checkStudyPermissionsAny(Collection<String> studies, String userId, String token) throws CatalogException {
+        CatalogException exception = null;
+        List<String> validStudies = new ArrayList<>();
+        for (String study : studies) {
+            try {
+                checkStudyPermissions(study, userId, token);
+                validStudies.add(study);
+            } catch (CatalogException e) {
+                exception = e;
+            }
+        }
+        if (!validStudies.isEmpty() || exception == null) {
+            return validStudies;
+        } else {
+            throw exception;
+        }
     }
 
     private void checkStudyPermissions(Collection<String> studies, String userId, String token) throws CatalogException {

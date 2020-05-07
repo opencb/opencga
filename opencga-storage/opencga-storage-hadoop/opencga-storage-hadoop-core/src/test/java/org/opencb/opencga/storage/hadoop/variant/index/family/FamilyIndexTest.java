@@ -4,7 +4,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.MendelianError;
@@ -96,7 +96,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
         }
 
         Query query = new Query()
-                .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), child)
+                .append(VariantQueryParam.SAMPLE.key(), child + ":MendelianError")
                 .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
                 .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
@@ -111,7 +111,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
         assertEquals(mendelianErrorVariants.size(), result.getNumResults());
 
         query = new Query()
-                .append(VariantQueryUtils.SAMPLE_DE_NOVO.key(), child)
+                .append(VariantQueryParam.SAMPLE.key(), child + ":deNovo")
                 .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
                 .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
@@ -124,7 +124,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         query = new Query()
-                .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), child)
+                .append(VariantQueryParam.SAMPLE.key(), child + ":MendelianError")
                 .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
                 .append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")

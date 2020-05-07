@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.config.Email;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -61,12 +62,22 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public String authenticate(String username, String password) throws CatalogAuthenticationException {
+    public AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException {
         try {
-            userDBAdaptor.authenticate(username, password);
-            return jwtManager.createJWTToken(username, expiration);
+            userDBAdaptor.authenticate(userId, password);
+            return new AuthenticationResponse(jwtManager.createJWTToken(userId, expiration));
         } catch (CatalogDBException e) {
-            throw new CatalogAuthenticationException("Could not validate '" + username + "' password\n" + e.getMessage(), e);
+            throw new CatalogAuthenticationException("Could not validate '" + userId + "' password\n" + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException {
+        String userId = getUserId(refreshToken);
+        if (!"*".equals(userId)) {
+            return new AuthenticationResponse(createToken(userId));
+        } else {
+            throw new CatalogAuthenticationException("Cannot refresh token for '*'");
         }
     }
 

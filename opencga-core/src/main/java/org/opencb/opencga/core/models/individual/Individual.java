@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package org.opencb.opencga.core.models.individual;
 
 import org.apache.commons.lang3.ObjectUtils;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;
 import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
 import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;

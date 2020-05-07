@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.server.rest.admin;
 
 import io.swagger.annotations.*;
@@ -207,36 +223,6 @@ public class AdminWSServer extends OpenCGAWSServer {
             catalogManager.installCatalogDB(installParams.getSecretKey(), installParams.getPassword(), installParams.getEmail(),
                     installParams.getOrganization());
             return createOkResponse(DataResult.empty());
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-
-    @POST
-    @Path("/catalog/panel")
-    @ApiOperation(value = "Handle global panels", response = Panel.class)
-    public Response diseasePanels(
-            @ApiParam(value = "Import panels from PanelApp (GEL)", defaultValue = "false") @QueryParam("panelApp") boolean importPanels,
-            @ApiParam(value = "Flag indicating to overwrite installed panels in case of an ID conflict", defaultValue = "false")
-                @QueryParam("overwrite") boolean overwrite,
-            @ApiParam(value = "Comma separated list of global panel ids to delete")
-                @QueryParam("delete") String panelsToDelete,
-            @ApiParam(value = "Panel parameters to be installed") PanelCreateParams panelPost) {
-        try {
-            if (importPanels) {
-                catalogManager.getPanelManager().importPanelApp(token, overwrite);
-            } else if (StringUtils.isEmpty(panelsToDelete)) {
-                catalogManager.getPanelManager().create(panelPost.toPanel(), overwrite, token);
-            } else {
-                String[] panelIds = panelsToDelete.split(",");
-                for (String panelId : panelIds) {
-                    catalogManager.getPanelManager().delete(panelId, token);
-                }
-            }
-
-            return createOkResponse(catalogManager.getPanelManager().count(PanelManager.INSTALLATION_PANELS,
-                    new Query(), token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

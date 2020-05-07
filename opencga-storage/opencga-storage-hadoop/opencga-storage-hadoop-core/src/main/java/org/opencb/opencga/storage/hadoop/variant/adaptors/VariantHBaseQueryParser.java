@@ -390,7 +390,7 @@ public class VariantHBaseQueryParser {
                     } else {
                         for (PhoenixHelper.Column column : VariantPhoenixHelper
                                 .getSampleColumns(studyId, sampleId, allFilesFromSample, requiredFilesFromSample,
-                                        VariantStorageEngine.LoadSplitData.MULTI)) {
+                                        VariantStorageEngine.SplitData.MULTI)) {
                             scan.addColumn(family, column.bytes());
                         }
                     }
@@ -475,7 +475,7 @@ public class VariantHBaseQueryParser {
                 }
                 List<Integer> sampleFiles = new ArrayList<>();
                 sampleFiles.add(null);
-                if (VariantStorageEngine.LoadSplitData.MULTI.equals(metadataManager.getLoadSplitData(studyId, sampleId))) {
+                if (VariantStorageEngine.SplitData.MULTI.equals(metadataManager.getLoadSplitData(studyId, sampleId))) {
                     sampleFiles.addAll(metadataManager.getFileIdsFromSampleId(studyId, sampleId));
                 }
                 List<Filter> gtSubFilters = new ArrayList<>();

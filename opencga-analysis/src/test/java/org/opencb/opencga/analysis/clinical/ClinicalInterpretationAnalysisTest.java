@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -7,7 +23,12 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.analysis.clinical.interpretation.*;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfiguration;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
@@ -94,8 +115,8 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
         Query query = new Query();
         query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
-        CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
-        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis();
+        ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
+        ZettaInterpretationAnalysis customAnalysis = new ZettaInterpretationAnalysis();
         customAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
         customAnalysis.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
@@ -129,8 +150,8 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
 //        query.put(VariantQueryParam.SAMPLE.key(), samples);
         query.put(VariantQueryParam.SAMPLE.key(), "s3");
 
-        CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
-        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis();
+        ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
+        ZettaInterpretationAnalysis customAnalysis = new ZettaInterpretationAnalysis();
         customAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
         customAnalysis.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())

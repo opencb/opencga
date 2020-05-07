@@ -22,7 +22,7 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     // Currently only one is allowed.
     private Set<Integer> secondaryIndexCohorts;
 
-    private VariantStorageEngine.LoadSplitData splitData;
+    private VariantStorageEngine.SplitData splitData;
 
     private Integer father;
     private Integer mother;
@@ -84,14 +84,14 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     }
 
     public boolean isMultiFileSample() {
-        return VariantStorageEngine.LoadSplitData.MULTI.equals(splitData);
+        return VariantStorageEngine.SplitData.MULTI.equals(splitData);
     }
 
-    public VariantStorageEngine.LoadSplitData getSplitData() {
+    public VariantStorageEngine.SplitData getSplitData() {
         return splitData;
     }
 
-    public SampleMetadata setSplitData(VariantStorageEngine.LoadSplitData splitData) {
+    public SampleMetadata setSplitData(VariantStorageEngine.SplitData splitData) {
         this.splitData = splitData;
         return this;
     }

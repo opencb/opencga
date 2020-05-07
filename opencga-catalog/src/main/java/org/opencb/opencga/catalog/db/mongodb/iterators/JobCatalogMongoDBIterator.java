@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import com.mongodb.client.ClientSession;
@@ -31,7 +47,9 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
     private final JobMongoDBAdaptor jobDBAdaptor;
     private final QueryOptions jobQueryOptions = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key(),
-                    JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.INTERNAL_STATUS.key()));
+                    JobDBAdaptor.QueryParams.CREATION_DATE.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
+                    JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), JobDBAdaptor.QueryParams.STUDY.key(),
+                    JobDBAdaptor.QueryParams.TOOL.key(), JobDBAdaptor.QueryParams.PRIORITY.key()));
     private final FileMongoDBAdaptor fileDBAdaptor;
     private final QueryOptions fileQueryOptions = FileManager.INCLUDE_FILE_URI_PATH;
 
@@ -55,7 +73,7 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
     @Override
     protected void fetchNextBatch(Queue<Document> buffer, int bufferSize) {
         Set<Long> fileUids = new HashSet<>();
-        Set<Long> jobUids = new HashSet<>();
+        Map<Long, List<Long>> studyUidJobUidMap = new HashMap<>();  // Map studyUid - jobUid
         while (mongoCursor.hasNext() && buffer.size() < bufferSize) {
             Document job = mongoCursor.next();
             buffer.add(job);
@@ -66,7 +84,7 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
                 getFile(fileUids, job, JobDBAdaptor.QueryParams.OUT_DIR);
                 getFile(fileUids, job, JobDBAdaptor.QueryParams.STDOUT);
                 getFile(fileUids, job, JobDBAdaptor.QueryParams.STDERR);
-                getDocumentUids(jobUids, job, JobDBAdaptor.QueryParams.DEPENDS_ON);
+                getStudyUidUidMap(studyUidJobUidMap, job, JobDBAdaptor.QueryParams.DEPENDS_ON);
             }
         }
 
@@ -77,8 +95,8 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
                 if (user == null) {
                     fileDocuments = fileDBAdaptor.nativeGet(query, fileQueryOptions).getResults();
                 } else {
-                    query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                    fileDocuments = fileDBAdaptor.nativeGet(studyUid, query, fileQueryOptions, user).getResults();
+                    query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), this.studyUid);
+                    fileDocuments = fileDBAdaptor.nativeGet(this.studyUid, query, fileQueryOptions, user).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the files associated to the jobs: {}", e.getMessage(), e);
@@ -99,22 +117,23 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
             });
         }
 
-        if (!jobUids.isEmpty()) {
-            Query query = new Query(JobDBAdaptor.QueryParams.UID.key(), new ArrayList<>(jobUids));
-            List<Document> jobDocuments;
-            try {
-                if (user == null) {
-                    jobDocuments = jobDBAdaptor.nativeGet(query, jobQueryOptions).getResults();
-                } else {
-                    query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                    jobDocuments = jobDBAdaptor.nativeGet(studyUid, query, jobQueryOptions, user).getResults();
+        if (!studyUidJobUidMap.isEmpty()) {
+            List<Document> jobDocuments = new LinkedList<>();
+            for (Long studyUid : studyUidJobUidMap.keySet()) {
+                Query query = new Query(JobDBAdaptor.QueryParams.UID.key(), new ArrayList<>(studyUidJobUidMap.get(studyUid)));
+                try {
+                    if (user == null) {
+                        jobDocuments.addAll(jobDBAdaptor.nativeGet(query, jobQueryOptions).getResults());
+                    } else {
+                        query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+                        jobDocuments.addAll(jobDBAdaptor.nativeGet(studyUid, query, jobQueryOptions, user).getResults());
+                    }
+                } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
+                    logger.warn("Could not obtain the jobs the original jobs depend on: {}", e.getMessage(), e);
+                    return;
                 }
-            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
-                logger.warn("Could not obtain the jobs the original jobs depend on: {}", e.getMessage(), e);
-                return;
             }
-
-            // Map each fileId uid to the file entry
+            // Map each job uid to the job entry
             Map<Long, Document> jobMap = jobDocuments
                     .stream()
                     .collect(Collectors.toMap(d -> d.getLong(JobDBAdaptor.QueryParams.UID.key()), d -> d));
@@ -152,6 +171,22 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
                 Number fileUid = ((Number) ((Document) file).get(JobDBAdaptor.QueryParams.UID.key()));
                 if (fileUid != null && fileUid.longValue() > 0) {
                     fileUids.add(fileUid.longValue());
+                }
+            }
+        }
+    }
+
+    private void getStudyUidUidMap(Map<Long, List<Long>> jobStudyMap, Document job, JobDBAdaptor.QueryParams param) {
+        Object files = job.get(param.key());
+        if (files != null) {
+            for (Object file : ((Collection) files)) {
+                Number fileUid = ((Number) ((Document) file).get(JobDBAdaptor.QueryParams.UID.key()));
+                Number studyUid = ((Number) ((Document) file).get(JobDBAdaptor.QueryParams.STUDY_UID.key()));
+                if (fileUid != null && fileUid.longValue() > 0 && studyUid != null && studyUid.longValue() > 0) {
+                    if (!jobStudyMap.containsKey(studyUid.longValue())) {
+                        jobStudyMap.put(studyUid.longValue(), new LinkedList<>());
+                    }
+                    jobStudyMap.get(studyUid.longValue()).add(fileUid.longValue());
                 }
             }
         }

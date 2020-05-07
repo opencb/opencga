@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -11,9 +27,18 @@ public class VariantIndexParams extends ToolParams {
     }
 
     public VariantIndexParams(String file,
-                              boolean resume, String outdir, boolean transform, boolean gvcf,
-                              boolean load, String loadSplitData, boolean skipSampleIndex, boolean skipPostLoadCheck,
-                              boolean excludeGenotype, String includeExtraFields, String merge,
+                              boolean resume, String outdir,
+                              boolean transform,
+                              boolean gvcf,
+                              boolean normalizationSkip, String referenceGenome,
+                              boolean family,
+                              boolean load, String loadSplitData, boolean loadMultiFileData,
+                              String loadSampleIndex,
+                              String loadArchive,
+                              String loadHomRef,
+                              String postLoadCheck,
+                              boolean excludeGenotype, String includeSampleData, String merge,
+                              String deduplicationPolicy,
                               boolean calculateStats, Aggregation aggregated, String aggregationMappingFile, boolean annotate,
                               String annotator, boolean overwriteAnnotations, boolean indexSearch) {
         this.file = file;
@@ -21,13 +46,20 @@ public class VariantIndexParams extends ToolParams {
         this.outdir = outdir;
         this.transform = transform;
         this.gvcf = gvcf;
+        this.normalizationSkip = normalizationSkip;
+        this.referenceGenome = referenceGenome;
+        this.family = family;
         this.load = load;
         this.loadSplitData = loadSplitData;
-        this.skipSampleIndex = skipSampleIndex;
-        this.skipPostLoadCheck = skipPostLoadCheck;
+        this.loadMultiFileData = loadMultiFileData;
+        this.loadSampleIndex = loadSampleIndex;
+        this.loadArchive = loadArchive;
+        this.loadHomRef = loadHomRef;
+        this.postLoadCheck = postLoadCheck;
         this.excludeGenotype = excludeGenotype;
-        this.includeExtraFields = includeExtraFields;
+        this.includeSampleData = includeSampleData;
         this.merge = merge;
+        this.deduplicationPolicy = deduplicationPolicy;
         this.calculateStats = calculateStats;
         this.aggregated = aggregated;
         this.aggregationMappingFile = aggregationMappingFile;
@@ -44,13 +76,22 @@ public class VariantIndexParams extends ToolParams {
     private boolean transform;
     private boolean gvcf;
 
+    private boolean normalizationSkip;
+    private String referenceGenome;
+
+    private boolean family;
+
     private boolean load;
     private String loadSplitData;
-    private boolean skipSampleIndex;
-    private boolean skipPostLoadCheck;
+    private boolean loadMultiFileData;
+    private String loadSampleIndex;
+    private String loadArchive;
+    private String loadHomRef;
+    private String postLoadCheck;
     private boolean excludeGenotype;
-    private String includeExtraFields = ParamConstants.ALL;
+    private String includeSampleData = ParamConstants.ALL;
     private String merge;
+    private String deduplicationPolicy;
 
     private boolean calculateStats;
     private Aggregation aggregated = Aggregation.NONE;
@@ -107,6 +148,33 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
+    public boolean getNormalizationSkip() {
+        return normalizationSkip;
+    }
+
+    public VariantIndexParams setNormalizationSkip(boolean normalizationSkip) {
+        this.normalizationSkip = normalizationSkip;
+        return this;
+    }
+
+    public String getReferenceGenome() {
+        return referenceGenome;
+    }
+
+    public VariantIndexParams setReferenceGenome(String referenceGenome) {
+        this.referenceGenome = referenceGenome;
+        return this;
+    }
+
+    public boolean isFamily() {
+        return family;
+    }
+
+    public VariantIndexParams setFamily(boolean family) {
+        this.family = family;
+        return this;
+    }
+
     public boolean isLoad() {
         return load;
     }
@@ -125,21 +193,48 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
-    public boolean isSkipSampleIndex() {
-        return skipSampleIndex;
+    public boolean isLoadMultiFileData() {
+        return loadMultiFileData;
     }
 
-    public VariantIndexParams setSkipSampleIndex(boolean skipSampleIndex) {
-        this.skipSampleIndex = skipSampleIndex;
+    public VariantIndexParams setLoadMultiFileData(boolean loadMultiFileData) {
+        this.loadMultiFileData = loadMultiFileData;
         return this;
     }
 
-    public boolean isSkipPostLoadCheck() {
-        return skipPostLoadCheck;
+    public String getLoadSampleIndex() {
+        return loadSampleIndex;
     }
 
-    public VariantIndexParams setSkipPostLoadCheck(boolean skipPostLoadCheck) {
-        this.skipPostLoadCheck = skipPostLoadCheck;
+    public VariantIndexParams setLoadSampleIndex(String loadSampleIndex) {
+        this.loadSampleIndex = loadSampleIndex;
+        return this;
+    }
+
+    public String getLoadArchive() {
+        return loadArchive;
+    }
+
+    public VariantIndexParams setLoadArchive(String loadArchive) {
+        this.loadArchive = loadArchive;
+        return this;
+    }
+
+    public String getLoadHomRef() {
+        return loadHomRef;
+    }
+
+    public VariantIndexParams setLoadHomRef(String loadHomRef) {
+        this.loadHomRef = loadHomRef;
+        return this;
+    }
+
+    public String getPostLoadCheck() {
+        return postLoadCheck;
+    }
+
+    public VariantIndexParams setPostLoadCheck(String postLoadCheck) {
+        this.postLoadCheck = postLoadCheck;
         return this;
     }
 
@@ -152,12 +247,12 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
-    public String getIncludeExtraFields() {
-        return includeExtraFields;
+    public String getIncludeSampleData() {
+        return includeSampleData;
     }
 
-    public VariantIndexParams setIncludeExtraFields(String includeExtraFields) {
-        this.includeExtraFields = includeExtraFields;
+    public VariantIndexParams setIncludeSampleData(String includeSampleData) {
+        this.includeSampleData = includeSampleData;
         return this;
     }
 
@@ -167,6 +262,15 @@ public class VariantIndexParams extends ToolParams {
 
     public VariantIndexParams setMerge(String merge) {
         this.merge = merge;
+        return this;
+    }
+
+    public String getDeduplicationPolicy() {
+        return deduplicationPolicy;
+    }
+
+    public VariantIndexParams setDeduplicationPolicy(String deduplicationPolicy) {
+        this.deduplicationPolicy = deduplicationPolicy;
         return this;
     }
 
@@ -233,28 +337,4 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("VariantIndexParams{");
-        sb.append("file='").append(file).append('\'');
-        sb.append(", resume=").append(resume);
-        sb.append(", outdir='").append(outdir).append('\'');
-        sb.append(", transform=").append(transform);
-        sb.append(", gvcf=").append(gvcf);
-        sb.append(", load=").append(load);
-        sb.append(", loadSplitData=").append(loadSplitData);
-        sb.append(", skipPostLoadCheck=").append(skipPostLoadCheck);
-        sb.append(", excludeGenotype=").append(excludeGenotype);
-        sb.append(", includeExtraFields='").append(includeExtraFields).append('\'');
-        sb.append(", merge='").append(merge).append('\'');
-        sb.append(", calculateStats=").append(calculateStats);
-        sb.append(", aggregated=").append(aggregated);
-        sb.append(", aggregationMappingFile='").append(aggregationMappingFile).append('\'');
-        sb.append(", annotate=").append(annotate);
-        sb.append(", annotator='").append(annotator).append('\'');
-        sb.append(", overwriteAnnotations=").append(overwriteAnnotations);
-        sb.append(", indexSearch=").append(indexSearch);
-        sb.append('}');
-        return sb.toString();
-    }
 }

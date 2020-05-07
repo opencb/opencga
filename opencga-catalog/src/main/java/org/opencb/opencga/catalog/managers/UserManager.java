@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,7 +151,6 @@ public class UserManager extends AbstractManager {
 
     public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-//        checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
         try {
@@ -673,22 +672,22 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public String loginAsAdmin(String password) throws CatalogException {
+    public AuthenticationResponse loginAsAdmin(String password) throws CatalogException {
         return login(OPENCGA, password);
     }
 
-    public String login(String username, String password) throws CatalogException {
+    public AuthenticationResponse login(String username, String password) throws CatalogException {
         ParamUtils.checkParameter(username, "userId");
         ParamUtils.checkParameter(password, "password");
 
         String authId = null;
-        String token = null;
+        AuthenticationResponse response = null;
 
         // We attempt to login the user with the different authentication managers
         for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
             AuthenticationManager authenticationManager = entry.getValue();
             try {
-                token = authenticationManager.authenticate(username, password);
+                response = authenticationManager.authenticate(username, password);
                 authId = entry.getKey();
                 break;
             } catch (CatalogAuthenticationException e) {
@@ -696,7 +695,7 @@ public class UserManager extends AbstractManager {
             }
         }
 
-        if (token == null) {
+        if (response == null) {
             // TODO: We should raise better exceptions. It could fail for other reasons.
             auditManager.auditUser(username, Enums.Action.LOGIN, username,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
@@ -704,7 +703,7 @@ public class UserManager extends AbstractManager {
         }
 
         auditManager.auditUser(username, Enums.Action.LOGIN, username, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        String userId = authenticationManagerMap.get(authId).getUserId(token);
+        String userId = authenticationManagerMap.get(authId).getUserId(response.getToken());
         if (!INTERNAL_AUTHORIZATION.equals(authId)) {
             // External authorization
             try {
@@ -719,7 +718,7 @@ public class UserManager extends AbstractManager {
             }
 
             try {
-                List<String> remoteGroups = authenticationManagerMap.get(authId).getRemoteGroups(token);
+                List<String> remoteGroups = authenticationManagerMap.get(authId).getRemoteGroups(response.getToken());
 
                 // Resync synced groups of user in OpenCGA
                 studyDBAdaptor.resyncUserWithSyncedGroups(userId, remoteGroups, authId);
@@ -728,34 +727,43 @@ public class UserManager extends AbstractManager {
             }
         }
 
-        return token;
+        return response;
     }
 
     /**
      * Create a new token if the token provided corresponds to the user and it is not expired yet.
      *
-     * @param userId user id to whom the token belongs to.
      * @param token  active token.
-     * @return a new token with the default expiration updated.
+     * @return a new AuthenticationResponse object.
      * @throws CatalogException if the token does not correspond to the user or the token is expired.
      */
-    public String refreshToken(String userId, String token) throws CatalogException {
-        String authenticatedUser = userId;
-        try {
-            authenticatedUser = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
-            if (!userId.equals(authenticatedUser)) {
-                throw new CatalogException("Cannot refresh token. The token received does not correspond to " + userId);
+    public AuthenticationResponse refreshToken(String token) throws CatalogException {
+        AuthenticationResponse response = null;
+        CatalogAuthenticationException exception = null;
+        String userId = "";
+        // We attempt to renew the token with the different authentication managers
+        for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+            AuthenticationManager authenticationManager = entry.getValue();
+            try {
+                response = authenticationManager.refreshToken(token);
+                userId = authenticationManager.getUserId(token);
+                break;
+            } catch (CatalogAuthenticationException e) {
+                logger.debug("Could not refresh token with '{}' provider: {}", entry.getKey(), e.getMessage(), e);
+                if (INTERNAL_AUTHORIZATION.equals(entry.getKey())) {
+                    exception = e;
+                }
             }
-            String newToken = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId);
-
-            auditManager.auditUser(authenticatedUser, Enums.Action.LOGIN, userId,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return newToken;
-        } catch (CatalogException e) {
-            auditManager.auditUser(authenticatedUser, Enums.Action.LOGIN, userId,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
         }
+
+        if (response == null && exception != null) {
+            auditManager.auditUser(userId, Enums.Action.REFRESH_TOKEN, userId,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, exception.getError()));
+            throw exception;
+        }
+
+        auditManager.auditUser(userId, Enums.Action.REFRESH_TOKEN, userId, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        return response;
     }
 
     /**

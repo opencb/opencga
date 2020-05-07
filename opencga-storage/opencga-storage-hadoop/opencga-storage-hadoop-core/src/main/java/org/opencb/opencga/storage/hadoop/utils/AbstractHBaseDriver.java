@@ -233,7 +233,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     protected void deleteTemporaryFile(Path outdir) throws IOException {
-        LOGGER.info("Delete temporary file " + outdir);
+        LOGGER.info("Delete temporary file " + outdir.toUri());
         FileSystem fileSystem = outdir.getFileSystem(getConf());
         fileSystem.delete(outdir, true);
         fileSystem.cancelDeleteOnExit(outdir);

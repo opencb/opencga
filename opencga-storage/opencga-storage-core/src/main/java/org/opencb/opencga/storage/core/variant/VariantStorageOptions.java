@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.config.ConfigurationOption;
 
 public enum VariantStorageOptions implements ConfigurationOption {
@@ -22,12 +23,22 @@ public enum VariantStorageOptions implements ConfigurationOption {
     TRANSFORM_FAIL_ON_MALFORMED_VARIANT("transform.failOnMalformed", true),
     TRANSFORM_COMPRESSION("transform.compression", "gzip"),
     TRANSFORM_ISOLATE("transform.isolate", false), // Do not store file in metadata
+    NORMALIZATION_SKIP("normalization.skip", false), // Do not run normalization
+    NORMALIZATION_REFERENCE_GENOME("normalization.referenceGenome"),
+
+    DEDUPLICATION_POLICY("deduplication.policy", "maxQual"),
+    DEDUPLICATION_BUFFER_SIZE("deduplication.bufferSize", 100),
+
+    FAMILY("family", false),
 
     LOAD_BATCH_SIZE("load.batchSize", 100),
     LOAD_THREADS("load.numThreads", 6),
     LOAD_SPLIT_DATA("load.splitData"),
-    POST_LOAD_CHECK_SKIP("postLoad.skipCheck", false),
-    SAMPLE_INDEX_SKIP("sampleIndex.skip", false),
+    LOAD_MULTI_FILE_DATA("load.multiFileData", false),
+    LOAD_SAMPLE_INDEX("load.sampleIndex", YesNoAuto.AUTO),
+    LOAD_ARCHIVE("load.archive", YesNoAuto.AUTO),
+    LOAD_HOM_REF("load.homRef", YesNoAuto.AUTO),
+    POST_LOAD_CHECK("load.postLoadCheck", YesNoAuto.AUTO),
 
     STATS_DEFAULT_GENOTYPE("stats.defaultGenotype", "0/0"), // Default genotype to be used for calculating stats.
     STATS_MULTI_ALLELIC("stats.multiAllelic", false),  // Include secondary alternates in the variant stats calculation

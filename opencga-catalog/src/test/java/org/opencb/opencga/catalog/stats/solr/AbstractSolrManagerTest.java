@@ -1,5 +1,22 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.stats.solr;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -54,6 +71,12 @@ public class AbstractSolrManagerTest extends GenericTest {
         catalogSolrManager.setSolrClient(solrExternalResource.getSolrClient());
     }
 
+    @After
+    public void after() throws CatalogException {
+        solrExternalResource.after();
+        catalogSolrManager.close();
+    }
+
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
         catalogManager.getUserManager().create("owner", "Owner", "owner@mail.com", PASSWORD, "", null, Account.AccountType.FULL, null);
@@ -62,11 +85,11 @@ public class AbstractSolrManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
         catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
 
-        sessionIdOwner = catalogManager.getUserManager().login("owner", PASSWORD);
-        sessionIdAdmin = catalogManager.getUserManager().login("admin1", PASSWORD);
-        sessionIdUser = catalogManager.getUserManager().login("user1", PASSWORD);
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
+        sessionIdOwner = catalogManager.getUserManager().login("owner", PASSWORD).getToken();
+        sessionIdAdmin = catalogManager.getUserManager().login("admin1", PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login("user1", PASSWORD).getToken();
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
 
         Project project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdOwner).first();

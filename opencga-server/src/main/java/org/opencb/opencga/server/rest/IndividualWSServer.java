@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,7 +228,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
-            @ApiParam(value = "params") IndividualUpdateParams updateParams) {
+            @ApiParam(value = "body") IndividualUpdateParams updateParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             queryOptions.put(Constants.REFRESH, refresh);
@@ -270,7 +270,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
-            @ApiParam(value = "params") IndividualUpdateParams updateParams) {
+            @ApiParam(value = "body") IndividualUpdateParams updateParams) {
         try {
             queryOptions.put(Constants.REFRESH, refresh);
             queryOptions.remove("updateSampleVersion");

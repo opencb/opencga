@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -381,7 +381,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         String[] acceptedObjectParams = { QueryParams.STATUS.key() };
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
-            documentPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
+            nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
@@ -461,7 +461,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         checkCohortCanBeDeleted(cohortDocument);
 
         // Add status DELETED
-        documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new CohortStatus(Status.DELETED), "status"), cohortDocument);
+        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new CohortStatus(Status.DELETED), "status"), cohortDocument);
 
         // Upsert the document into the DELETED collection
         Bson query = new Document()

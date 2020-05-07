@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.clinical;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -7,14 +23,14 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
+import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -239,47 +255,47 @@ public class ClinicalUtils {
         }
     }
 
-    public static List<ReportedVariant> getCompoundHeterozygousReportedVariants(Map<String, List<Variant>> chVariantMap,
-                                                                                ReportedVariantCreator creator)
+    public static List<ClinicalVariant> getCompoundHeterozygousClinicalVariants(Map<String, List<Variant>> chVariantMap,
+                                                                                ClinicalVariantCreator creator)
             throws InterpretationAnalysisException {
         // Compound heterozygous management
-        // Create transcript - reported variant map from transcript - variant
-        Map<String, List<ReportedVariant>> reportedVariantMap = new HashMap<>();
+        // Create transcript - clinical variant map from transcript - variant
+        Map<String, List<ClinicalVariant>> clinicalVariantMap = new HashMap<>();
         for (Map.Entry<String, List<Variant>> entry : chVariantMap.entrySet()) {
-            reportedVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
+            clinicalVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
         }
-        return creator.groupCHVariants(reportedVariantMap);
+        return creator.groupCHVariants(clinicalVariantMap);
     }
 
-    public static List<ReportedVariant> readReportedVariants(Path path) throws ToolException {
-        List<ReportedVariant> reportedVariants = new ArrayList<>();
-        if (path != null || path.toFile().exists()) {
+    public static List<ClinicalVariant> readClinicalVariants(Path path) throws ToolException {
+        List<ClinicalVariant> clinicalVariants = new ArrayList<>();
+        if (path != null && path.toFile().exists()) {
             try {
-                ObjectReader objReader = JacksonUtils.getDefaultObjectMapper().readerFor(ReportedVariant.class);
+                ObjectReader objReader = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalVariant.class);
                 LineIterator lineIterator = FileUtils.lineIterator(path.toFile());
                 while (lineIterator.hasNext()) {
-                    reportedVariants.add(objReader.readValue(lineIterator.next()));
+                    clinicalVariants.add(objReader.readValue(lineIterator.next()));
                 }
             } catch (IOException e) {
-                throw new ToolException("Error reading reported variants from file: " + path, e);
+                throw new ToolException("Error reading clinical variants from file: " + path, e);
             }
         }
-        return reportedVariants;
+        return clinicalVariants;
     }
 
-    public static void writeReportedVariants(List<ReportedVariant> reportedVariants, Path path) throws ToolException {
+    public static void writeClinicalVariants(List<ClinicalVariant> clinicalVariants, Path path) throws ToolException {
         // Write primary findings
         try {
             PrintWriter pw = new PrintWriter(path.toFile());
-            if (CollectionUtils.isNotEmpty(reportedVariants)) {
-                ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(ReportedVariant.class);
-                for (ReportedVariant primaryFinding : reportedVariants) {
+            if (CollectionUtils.isNotEmpty(clinicalVariants)) {
+                ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(ClinicalVariant.class);
+                for (ClinicalVariant primaryFinding : clinicalVariants) {
                     pw.println(objectWriter.writeValueAsString(primaryFinding));
                 }
             }
             pw.close();
         } catch (FileNotFoundException | JsonProcessingException e) {
-            throw new ToolException("Error writing reported variants to file: " + path, e);
+            throw new ToolException("Error writing clinical variants to file: " + path, e);
         }
     }
 

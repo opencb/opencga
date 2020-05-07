@@ -10,7 +10,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.MendelianError;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -283,18 +283,18 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                         childDiscrepancies = Collections.singleton(gtMap.get(child));
                     }
 
-                    System.out.println("variant = " + variant);
-                    System.out.println("trio = " + trio);
-                    System.out.println("child = " + child);
-                    System.out.println("father = " + father);
-                    System.out.println("mother = " + mother);
-                    System.out.println("childDiscrepancies = " + childDiscrepancies);
-                    System.out.println("motherDiscrepancies = " + motherDiscrepancies);
-                    System.out.println("fatherDiscrepancies = " + fatherDiscrepancies);
+//                    System.out.println("variant = " + variant);
+//                    System.out.println("trio = " + trio);
+//                    System.out.println("child = " + child);
+//                    System.out.println("father = " + father);
+//                    System.out.println("mother = " + mother);
+//                    System.out.println("childDiscrepancies = " + childDiscrepancies);
+//                    System.out.println("motherDiscrepancies = " + motherDiscrepancies);
+//                    System.out.println("fatherDiscrepancies = " + fatherDiscrepancies);
                     for (String childGtStr : childDiscrepancies) {
                         int idx = genotypeCount.get(child).merge(childGtStr, 1, Integer::sum) - 1;
                         builder.addParents(childGtStr, fatherDiscrepancies, motherDiscrepancies);
-                        System.out.println("childGtStr = " + childGtStr);
+//                        System.out.println("childGtStr = " + childGtStr);
 
                         for (String fatherGtStr : fatherDiscrepancies) {
                             for (String motherGtStr : motherDiscrepancies) {

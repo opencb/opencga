@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.master.monitor.daemons;
 
 import org.junit.Assert;
@@ -54,7 +70,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void setUp() throws IOException, CatalogException {
         super.setUp();
 
-        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin("admin");
+        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin("admin").getToken();
         String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
         catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().setMaxConcurrentJobs(1);
 
@@ -256,6 +272,22 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job3, QueryOptions.empty(), token);
         assertEquals(1, jobOpenCGAResult.getNumResults());
         assertEquals(Enums.ExecutionStatus.QUEUED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+    }
+
+    @Test
+    public void testDependsOnMultiStudy() throws Exception {
+        HashMap<String, Object> params = new HashMap<>();
+        Job firstJob = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, token).first();
+        Job job = catalogManager.getJobManager().submit(studyFqn2, "files-delete", Enums.Priority.MEDIUM, params, null, null,
+                Collections.singletonList(firstJob.getUuid()), null, token).first();
+        assertEquals(1, job.getDependsOn().size());
+        assertEquals(firstJob.getId(), job.getDependsOn().get(0).getId());
+        assertEquals(firstJob.getUuid(), job.getDependsOn().get(0).getUuid());
+
+        job = catalogManager.getJobManager().get(studyFqn2, job.getId(), QueryOptions.empty(), token).first();
+        assertEquals(1, job.getDependsOn().size());
+        assertEquals(firstJob.getId(), job.getDependsOn().get(0).getId());
+        assertEquals(firstJob.getUuid(), job.getDependsOn().get(0).getUuid());
     }
 
     @Test

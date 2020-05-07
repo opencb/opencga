@@ -75,7 +75,7 @@ public class VariantTransformTask implements Task<String, Variant> {
     public VariantTransformTask(VariantFactory factory,
                                 String studyId, VariantFileMetadata fileMetadata,
                                 VariantSetStatsCalculator variantStatsTask,
-                                boolean generateReferenceBlocks) {
+                                boolean generateReferenceBlocks, VariantNormalizer.VariantNormalizerConfig normalizerConfig) {
         this.factory = factory;
         this.fileMetadata = fileMetadata;
         this.metadata = fileMetadata.toVariantStudyMetadata(studyId);
@@ -83,14 +83,14 @@ public class VariantTransformTask implements Task<String, Variant> {
 
         this.vcfCodec = null;
         this.converter = null;
-        this.normalizer = initNormalizer(fileMetadata, generateReferenceBlocks);
+        this.normalizer = initNormalizer(fileMetadata, generateReferenceBlocks, normalizerConfig);
 
     }
 
     public VariantTransformTask(VCFHeader header, VCFHeaderVersion version,
                                 String studyId, VariantFileMetadata fileMetadata,
                                 VariantSetStatsCalculator variantStatsTask,
-                                boolean generateReferenceBlocks) {
+                                boolean generateReferenceBlocks, VariantNormalizer.VariantNormalizerConfig normalizerConfig) {
         this.variantStatsTask = variantStatsTask;
         this.factory = null;
         this.fileMetadata = fileMetadata;
@@ -99,17 +99,19 @@ public class VariantTransformTask implements Task<String, Variant> {
         this.vcfCodec = new FullVcfCodec();
         this.vcfCodec.setVCFHeader(header, version);
         this.converter = new VariantContextToVariantConverter(studyId, fileMetadata.getId(), fileMetadata.getSampleIds());
-        this.normalizer = initNormalizer(fileMetadata, generateReferenceBlocks);
+        this.normalizer = initNormalizer(fileMetadata, generateReferenceBlocks, normalizerConfig);
     }
 
-    private Task<Variant, Variant> initNormalizer(VariantFileMetadata fileMetadata, boolean generateReferenceBlocks) {
-        VariantNormalizer.VariantNormalizerConfig normalizerConfig = new VariantNormalizer.VariantNormalizerConfig()
-                .setReuseVariants(true)
-                .setNormalizeAlleles(true)
-                .setDecomposeMNVs(false)
-                .setGenerateReferenceBlocks(generateReferenceBlocks);
-        Task<Variant, Variant> normalizer = new VariantNormalizer(normalizerConfig)
-                .configure(fileMetadata.getHeader());
+    private Task<Variant, Variant> initNormalizer(VariantFileMetadata fileMetadata, boolean generateReferenceBlocks,
+                                                  VariantNormalizer.VariantNormalizerConfig normalizerConfig) {
+        Task<Variant, Variant> normalizer;
+        if (normalizerConfig == null) {
+            // Do not normalize
+            normalizer = t -> t;
+        } else {
+            normalizer = new VariantNormalizer(normalizerConfig)
+                    .configure(fileMetadata.getHeader());
+        }
         if (generateReferenceBlocks) {
             normalizer = normalizer
                     .then(new VariantSorterTask(100)) // Sort before generating reference blocks
@@ -215,7 +217,7 @@ public class VariantTransformTask implements Task<String, Variant> {
     }
 
     private void onError(RuntimeException e, String line) {
-        logger.error("Error '{}' parsing line: {}", e.getMessage(), line);
+        logger.error("Error '{}' parsing line: '{}'", e.getMessage(), line);
         for (BiConsumer<String, RuntimeException> handler : errorHandlers) {
             handler.accept(line, e);
         }

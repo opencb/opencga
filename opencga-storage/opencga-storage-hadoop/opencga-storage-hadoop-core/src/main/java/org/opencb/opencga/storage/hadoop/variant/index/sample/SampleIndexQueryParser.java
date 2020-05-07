@@ -220,7 +220,7 @@ public class SampleIndexQueryParser {
                 } else {
                     negatedSamples.add(sampleMetadata.getName());
                 }
-                if (VariantStorageEngine.LoadSplitData.MULTI.equals(sampleMetadata.getSplitData())) {
+                if (VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
                     multiFileSamples.add(sampleMetadata.getName());
                 }
 
@@ -265,7 +265,7 @@ public class SampleIndexQueryParser {
 
                         if (father != null) {
                             Integer fatherId = metadataManager.getSampleId(studyId, father);
-                            boolean includeDiscrepancies = VariantStorageEngine.LoadSplitData.MULTI
+                            boolean includeDiscrepancies = VariantStorageEngine.SplitData.MULTI
                                     .equals(metadataManager.getLoadSplitData(studyId, fatherId));
                             boolean[] filter = buildParentGtFilter(gtMap.get(father), includeDiscrepancies);
                             if (!isFullyCoveredParentFilter(filter)) {
@@ -275,7 +275,7 @@ public class SampleIndexQueryParser {
                         }
                         if (mother != null) {
                             Integer motherId = metadataManager.getSampleId(studyId, mother);
-                            boolean includeDiscrepancies = VariantStorageEngine.LoadSplitData.MULTI
+                            boolean includeDiscrepancies = VariantStorageEngine.SplitData.MULTI
                                     .equals(metadataManager.getLoadSplitData(studyId, motherId));
                             boolean[] filter = buildParentGtFilter(gtMap.get(mother), includeDiscrepancies);
                             if (!isFullyCoveredParentFilter(filter)) {

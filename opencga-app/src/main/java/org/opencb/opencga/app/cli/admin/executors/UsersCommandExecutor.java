@@ -27,7 +27,6 @@ import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.user.User;
 
 import java.io.IOException;
@@ -80,7 +79,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 executor.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().loginAsAdmin(executor.commonOptions.adminPassword);
+            String token = catalogManager.getUserManager().loginAsAdmin(executor.commonOptions.adminPassword).getToken();
 
             if (executor.syncAll) {
                 catalogManager.getUserManager().syncAllUsersOfExternalGroup(executor.study, executor.authOrigin, token);
@@ -106,7 +105,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
                 executor.commonOptions.adminPassword);
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().loginAsAdmin(executor.commonOptions.adminPassword);
+            String token = catalogManager.getUserManager().loginAsAdmin(executor.commonOptions.adminPassword).getToken();
 
             if (StringUtils.isEmpty(executor.resourceType)) {
                 logger.error("Missing resource type");
@@ -151,7 +150,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager()
-                    .loginAsAdmin(usersCommandOptions.createUserCommandOptions.commonOptions.adminPassword);
+                    .loginAsAdmin(usersCommandOptions.createUserCommandOptions.commonOptions.adminPassword).getToken();
 
             User user = catalogManager.getUserManager().create(usersCommandOptions.createUserCommandOptions.userId,
                     usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
@@ -196,17 +195,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
             System.out.println("The disk quota has been properly updated: " + user.toString());
         }
-    }
-
-    private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
-        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
-                if (authOrigin.equals(authenticationOrigin.getId())) {
-                    return authenticationOrigin;
-                }
-            }
-        }
-        return null;
     }
 
 }

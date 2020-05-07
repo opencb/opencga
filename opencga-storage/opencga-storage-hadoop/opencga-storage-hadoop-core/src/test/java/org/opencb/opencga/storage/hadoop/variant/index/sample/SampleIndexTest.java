@@ -106,7 +106,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_2)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
-                .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.LoadSplitData.MULTI);
+                .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
 
         runETL(engine, getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         runETL(engine, getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
@@ -121,20 +121,24 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     @Test
     public void checkLoadedData() throws Exception {
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        Iterator<SampleMetadata> it = variantStorageEngine.getMetadataManager().sampleMetadataIterator(1);
+        int studyId = variantStorageEngine.getMetadataManager().getStudyId(STUDY_NAME);
+        Iterator<SampleMetadata> it = variantStorageEngine.getMetadataManager().sampleMetadataIterator(studyId);
         while (it.hasNext()) {
             SampleMetadata sample = it.next();
-            Iterator<SampleIndexEntry> indexIt = variantStorageEngine.getSampleIndexDBAdaptor().rawIterator(1, sample.getId());
+            Iterator<SampleIndexEntry> indexIt = variantStorageEngine.getSampleIndexDBAdaptor().rawIterator(studyId, sample.getId());
             while (indexIt.hasNext()) {
                 SampleIndexEntry record = indexIt.next();
 
                 List<Variant> variants = variantStorageEngine.getDBAdaptor().get(new Query()
+                        .append(VariantQueryParam.STUDY.key(), STUDY_NAME)
                         .append(VariantQueryParam.SAMPLE.key(), sample.getName())
                         .append(VariantQueryParam.REGION.key(),
                                 record.getChromosome() + ":" + record.getBatchStart() + "-" + (record.getBatchStart() + SampleIndexSchema.BATCH_SIZE - 1)), null).getResults();
 
-                Map<String, List<String>> gtsMap = variants.stream().collect(groupingBy(v -> v.getStudies().get(0).getSampleData(0).get(0), mapping(Variant::toString, toList())));
+                Map<String, List<String>> gtsMap = variants.stream()
+                        .collect(groupingBy(v -> v.getStudies().get(0).getSampleData(0).get(0), mapping(Variant::toString, toList())));
 //                System.out.println("record = " + record);
+                gtsMap.keySet().removeIf(gt -> !gt.contains("1"));
 
                 Assert.assertEquals(gtsMap.keySet(), record.getGts().keySet());
                 for (Map.Entry<String, SampleIndexEntry.SampleIndexGtEntry> entry : record.getGts().entrySet()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ public class Configuration {
     private Email email;
     private Catalog catalog;
     private Analysis analysis;
+    private Panel panel;
 
     private ServerConfiguration server;
     private Authentication authentication;
@@ -71,6 +72,7 @@ public class Configuration {
         email = new Email();
         catalog = new Catalog();
         analysis = new Analysis();
+        panel = new Panel();
         server = new ServerConfiguration();
         authentication = new Authentication();
     }
@@ -195,6 +197,7 @@ public class Configuration {
         sb.append(", hooks=").append(hooks);
         sb.append(", email=").append(email);
         sb.append(", catalog=").append(catalog);
+        sb.append(", panel=").append(panel);
         sb.append(", server=").append(server);
         sb.append(", authentication=").append(authentication);
         sb.append('}');
@@ -326,6 +329,15 @@ public class Configuration {
 
     public Configuration setAudit(Audit audit) {
         this.audit = audit;
+        return this;
+    }
+
+    public Panel getPanel() {
+        return panel;
+    }
+
+    public Configuration setPanel(Panel panel) {
+        this.panel = panel;
         return this;
     }
 

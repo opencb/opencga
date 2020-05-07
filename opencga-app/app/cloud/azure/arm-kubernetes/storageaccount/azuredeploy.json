@@ -103,7 +103,6 @@
     "accountKey": {
       "type": "string",
       "value": "[listKeys(variables('storageAccountName'),'2017-10-01').keys[0].value]"
-    },
-
+    }
   }
 }

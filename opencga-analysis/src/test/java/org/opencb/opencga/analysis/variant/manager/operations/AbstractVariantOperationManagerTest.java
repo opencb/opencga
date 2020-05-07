@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,7 +161,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 //        policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
         User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.AccountType.FULL, null).first();
-        sessionId = catalogManager.getUserManager().login(userId, "user");
+        sessionId = catalogManager.getUserManager().login(userId, "user").getToken();
         projectAlias = "p1";
         projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).first().getId();
@@ -258,12 +258,8 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
         // Default cohort should not be modified
-        try {
-            assertEquals(defaultCohort, getDefaultCohort(studyId));
-        } catch (AssertionError e) {
-            defaultCohort.equals(getDefaultCohort(studyId));
-            throw e;
-        }
+        assertEquals(String.valueOf(defaultCohort), String.valueOf(getDefaultCohort(studyId)));
+
 
         //Get transformed file
         Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), outputId)
@@ -372,7 +368,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             String transformedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                     inputFile.getInternal().getIndex().getTransformedFile().getId()), new QueryOptions(), sessionId).first().getId();
 
-            File transformedFile = catalogManager.getFileManager().get(studyFqn, transformedFileId, new QueryOptions(), sessionId).first();
+            File transformedFile = catalogManager.getFileManager().get(studyId, transformedFileId, new QueryOptions(), sessionId).first();
 
             List<FileRelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
                     .filter(relatedFile -> relatedFile.getRelation().equals(FileRelatedFile.Relation.PRODUCED_FROM))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.alignment.AlignmentHeader;
+import htsjdk.samtools.SAMFileHeader;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
@@ -120,10 +120,21 @@ public class FileMetadataReader {
 
         switch (bioformat) {
             case ALIGNMENT: {
-                AlignmentHeader alignmentHeader = readAlignmentHeader(studyId, file, file.getUri());
+                SAMFileHeader alignmentHeader;
+                try {
+                    alignmentHeader = readAlignmentHeader(file, file.getUri());
+                } catch (CatalogIOException e) {
+                    throw new CatalogIOException("Unable to read alignment header", e);
+                }
                 if (alignmentHeader != null) {
-                    updateParams.setAttributes(file.getAttributes());
-                    updateParams.getAttributes().put("alignmentHeader", alignmentHeader);
+                    try {
+                        Map<String, Object> alignmentHeaderMap = JacksonUtils.getDefaultObjectMapper().readValue(
+                                JacksonUtils.getDefaultObjectMapper().writeValueAsString(alignmentHeader), Map.class);
+                        updateParams.setAttributes(file.getAttributes());
+                        updateParams.getAttributes().put("alignmentHeader", alignmentHeaderMap);
+                    } catch (IOException e) {
+                        throw new CatalogIOException("Could not parse SAMFileHeader to Map", e);
+                    }
                 }
                 break;
             }
@@ -208,13 +219,11 @@ public class FileMetadataReader {
                 if (attributes.containsKey("alignmentHeader")) {
                     Object alignmentHeaderObj = attributes.get("alignmentHeader");
 
-                    if (alignmentHeaderObj instanceof AlignmentHeader) {
-                        sortedSampleNames = getSampleFromAlignmentHeader(((AlignmentHeader) alignmentHeaderObj));
-                    } else if (alignmentHeaderObj instanceof Map) {
+                    if (alignmentHeaderObj instanceof Map) {
                         sortedSampleNames = getSampleFromAlignmentHeader((Map) alignmentHeaderObj);
                     } else {
-                        logger.warn("Unexpected object type of AlignmentHeader ({}) in file attributes. Expected {} or {}",
-                                alignmentHeaderObj.getClass(), AlignmentHeader.class, Map.class);
+                        logger.warn("Unexpected object type of AlignmentHeader ({}) in file attributes. Expected {}",
+                                alignmentHeaderObj.getClass(), Map.class);
                     }
                 }
                 break;
@@ -246,19 +255,9 @@ public class FileMetadataReader {
         List<String> sampleNames;
         sampleNames = new LinkedList<>(new ObjectMap(alignmentHeaderObj).getList("readGroups")
                 .stream()
-                .map((rg) -> ((Map) ((Map) rg).get("attributes")).get("SM").toString())
+                .map((rg) -> ((Map) rg).get("sample").toString())
                 .filter((s) -> s != null)
                 .collect(Collectors.toSet()));
-        return sampleNames;
-    }
-
-    private List<String> getSampleFromAlignmentHeader(AlignmentHeader alignmentHeader) {
-        List<String> sampleNames;
-        Set<String> sampleSet = alignmentHeader.getReadGroups().stream()
-                .map((rg) -> rg.getAttributes().get("SM"))
-                .filter((s) -> s != null)
-                .collect(Collectors.toSet());
-        sampleNames = new LinkedList<>(sampleSet);
         return sampleNames;
     }
 
@@ -292,12 +291,12 @@ public class FileMetadataReader {
         }
     }
 
-    public static AlignmentHeader readAlignmentHeader(String studyId, File file, URI fileUri) throws CatalogIOException {
+    public static SAMFileHeader readAlignmentHeader(File file, URI fileUri) throws CatalogIOException {
         try {
             if (file.getFormat() == File.Format.SAM || file.getFormat() == File.Format.BAM
                     || FileUtils.detectFormat(fileUri) == File.Format.SAM || FileUtils.detectFormat(fileUri) == File.Format.BAM) {
                 BamManager bamManager = new BamManager(Paths.get(fileUri));
-                return bamManager.getHeader(studyId);
+                return bamManager.getHeader();
             } else if (file.getFormat() == File.Format.CRAM || FileUtils.detectFormat(fileUri) == File.Format.CRAM) {
                 Path reference = null;
                 for (FileRelatedFile relatedFile : file.getRelatedFiles()) {
@@ -307,7 +306,7 @@ public class FileMetadataReader {
                     }
                 }
                 BamManager bamManager = new BamManager(Paths.get(fileUri), reference);
-                return bamManager.getHeader(studyId);
+                return bamManager.getHeader();
             }
             return null;
         } catch (IOException e) {

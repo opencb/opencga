@@ -53,7 +53,8 @@ import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
-import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.CompoundHeterozygousQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.DBAdaptorVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
@@ -78,8 +79,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
 /**
@@ -130,18 +131,36 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    public enum LoadSplitData {
+    public enum SplitData {
         CHROMOSOME,
         REGION,
         MULTI;
 
-        public static LoadSplitData from(ObjectMap options) {
+        public static SplitData from(ObjectMap options) {
             Objects.requireNonNull(options);
             String loadSplitDataStr = options.getString(LOAD_SPLIT_DATA.key());
-            if (StringUtils.isEmpty(loadSplitDataStr)) {
+            boolean multiFile = options.getBoolean(LOAD_MULTI_FILE_DATA.key());
+            if (StringUtils.isNotEmpty(loadSplitDataStr) && multiFile) {
+                throw new IllegalArgumentException("Unable to mix loadSplitFile and loadMultiFile");
+            }
+            if (StringUtils.isEmpty(loadSplitDataStr) && !multiFile) {
                 return null;
             }
-            return LoadSplitData.valueOf(loadSplitDataStr.toUpperCase());
+            if (multiFile) {
+                return MULTI;
+            } else {
+                switch (loadSplitDataStr.toLowerCase()) {
+                    case "chromosome":
+                        return CHROMOSOME;
+                    case "region":
+                        return REGION;
+                    case "multi":
+                        return MULTI; // FIXME: This shold not be allowed
+                    default:
+                        throw new IllegalArgumentException("Unknown split file method by '" + loadSplitDataStr + "'. "
+                                + "Available values: " + CHROMOSOME + ", " + REGION);
+                }
+            }
         }
     }
 
@@ -1053,7 +1072,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public DataResult getFrequency(Query query, Region region, int regionIntervalSize) throws StorageEngineException {
-        return getDBAdaptor().getFrequency(query, region, regionIntervalSize);
+        return getDBAdaptor().getFrequency(getVariantQueryParser().parseQuery(query, new QueryOptions(VariantField.SUMMARY, true)),
+                region, regionIntervalSize);
     }
 
     public DataResult groupBy(Query query, String field, QueryOptions options) throws StorageEngineException {

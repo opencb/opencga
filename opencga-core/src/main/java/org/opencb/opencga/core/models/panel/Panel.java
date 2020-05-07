@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.opencb.opencga.core.models.panel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
@@ -55,11 +55,11 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
         this.version = version;
     }
 
-    public Panel(String id, String name, List<PanelCategory> categories, List<Phenotype> phenotypes, List<String> tags,
+    public Panel(String id, String name, List<PanelCategory> categories, List<OntologyTerm> disorders, List<String> tags,
                  List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
                  List<STR> strs, Map<String, Integer> stats, int release, int version, String author, SourcePanel source, Status status,
                  String description, Map<String, Object> attributes) {
-        super(id, name, categories, phenotypes, tags, variants, genes, strs, regions, stats, source, TimeUtils.getTime(),
+        super(id, name, categories, disorders, tags, variants, genes, strs, regions, stats, source, TimeUtils.getTime(),
                 TimeUtils.getTime(), description, attributes);
         this.release = release;
         this.version = version;
@@ -92,7 +92,7 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
         sb.append(", name='").append(getName()).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", categories=").append(getCategories());
-        sb.append(", phenotypes=").append(getPhenotypes());
+        sb.append(", disorders=").append(getDisorders());
         sb.append(", tags=").append(getTags());
         sb.append(", variants=").append(getVariants());
         sb.append(", genes=").append(getGenes());

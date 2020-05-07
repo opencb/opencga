@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "vnet"
+    },
+    "subnetName": {
+      "type": "string",
+      "defaultValue": "kubernetes"
+    },
+    "aksServicePrincipalObjectId": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "networkContributorRole": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Authorization/roleDefinitions/', '4d97b98b-1d4f-4787-a291-c67834d212e7')]",
+    "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
+    "subnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnetName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets/providers/roleAssignments",
+      "apiVersion": "2017-05-01",
+      "name": "[concat(parameters('vnetName'), '/', parameters('subnetName'), '/Microsoft.Authorization/', guid(resourceGroup().id, 'aksvnetaccess'))]",
+      "properties": {
+        "roleDefinitionId": "[variables('networkContributorRole')]",
+        "principalId": "[parameters('aksServicePrincipalObjectId')]",
+        "scope": "[variables('subnetId')]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/providers/roleAssignments",
+      "apiVersion": "2017-05-01",
+      "name": "[concat(parameters('vnetName'), '/Microsoft.Authorization/', guid(resourceGroup().id, 'acivnetaccess'))]",
+      "properties": {
+        "roleDefinitionId": "[variables('networkContributorRole')]",
+        "principalId": "[parameters('aksServicePrincipalObjectId')]",
+        "scope": "[variables('vnetId')]"
+      }
+    }
+  ],
+  "outputs": {
+  }
+}

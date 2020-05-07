@@ -126,6 +126,27 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = metadataManager.getStudyId(study);
+        for (int i = 0; i < trios.size(); i += 3) {
+            Integer father = metadataManager.getSampleId(studyId, trios.get(i));
+            Integer mother = metadataManager.getSampleId(studyId, trios.get(i + 1));
+            Integer child = metadataManager.getSampleId(studyId, trios.get(i + 2));
+            metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
+                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
+                if (father != null && father > 0) {
+                    sampleMetadata.setFather(father);
+                }
+                if (mother != null && mother > 0) {
+                    sampleMetadata.setMother(mother);
+                }
+                return sampleMetadata;
+            });
+        }
+    }
+
+    @Override
     public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
@@ -316,14 +337,14 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                         if (doDirectLoad) {
                             storagePipeline.getOptions().put(STAGE.key(), false);
                             storagePipeline.getOptions().put(MERGE.key(), false);
-                            storagePipeline.directLoad(input);
+                            storagePipeline.directLoad(input, outdirUri);
                             result.setLoadExecuted(true);
                             result.setLoadStats(storagePipeline.getLoadStats());
                             result.setLoadTimeMillis(loadWatch.getTime(TimeUnit.MILLISECONDS));
                         } else {
                             if (doStage) {
                                 logger.info("Load - Stage '{}'", input);
-                                storagePipeline.stage(input);
+                                storagePipeline.stage(input, outdirUri);
                                 result.setLoadResult(input);
                                 result.setLoadStats(storagePipeline.getLoadStats());
                                 result.getLoadStats().put(STAGE.key(), true);

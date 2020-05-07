@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -567,26 +567,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             throw new CatalogDBException("Study " + studyUid + " not found");
         }
         return dataResult.first();
-    }
-
-    protected void documentPut(String key, Object value, Document document) {
-        if (key.contains(".")) {
-            String[] keys = key.split("\\.");
-            Document auxDocument = document;
-            for (int i = 0; i < keys.length; i++) {
-                String tmpKey = keys[i];
-                if (i + 1 == keys.length) {
-                    auxDocument.put(tmpKey, value);
-                } else {
-                    if (auxDocument.get(tmpKey) == null) {
-                        auxDocument.put(tmpKey, new Document());
-                    }
-                    auxDocument = (Document) auxDocument.get(tmpKey);
-                }
-            }
-        } else {
-            document.put(key, value);
-        }
     }
 
     public class UpdateDocument {

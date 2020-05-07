@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.core.models.variant;
 
 import org.opencb.commons.datastore.core.Query;
@@ -7,6 +23,8 @@ import org.opencb.commons.datastore.core.Query;
  */
 public class VariantQueryParams extends BasicVariantQueryParams {
 
+    private String savedFilter;
+
     private String chromosome;
     private String reference;
     private String alternate;
@@ -15,20 +33,20 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String includeStudy;
     private String includeSample;
     private String includeFile;
-    private String includeFormat;
+    private String includeSampleData;
     private String includeSampleId;
     private String includeGenotype;
 
     private String file;
     private String qual;
     private String filter;
-    private String info;
+    private String fileData;
 
     private String genotype;
     private String sample;
     private Integer sampleLimit;
     private Integer sampleSkip;
-    private String format;
+    private String sampleData;
     private String sampleAnnotation;
 
     private String family;
@@ -74,6 +92,15 @@ public class VariantQueryParams extends BasicVariantQueryParams {
 
     public VariantQueryParams appendQuery(Query query) {
         updateParams(query);
+        return this;
+    }
+
+    public String getSavedFilter() {
+        return savedFilter;
+    }
+
+    public VariantQueryParams setSavedFilter(String savedFilter) {
+        this.savedFilter = savedFilter;
         return this;
     }
 
@@ -140,12 +167,12 @@ public class VariantQueryParams extends BasicVariantQueryParams {
         return this;
     }
 
-    public String getIncludeFormat() {
-        return includeFormat;
+    public String getIncludeSampleData() {
+        return includeSampleData;
     }
 
-    public VariantQueryParams setIncludeFormat(String includeFormat) {
-        this.includeFormat = includeFormat;
+    public VariantQueryParams setIncludeSampleData(String includeSampleData) {
+        this.includeSampleData = includeSampleData;
         return this;
     }
 
@@ -194,12 +221,12 @@ public class VariantQueryParams extends BasicVariantQueryParams {
         return this;
     }
 
-    public String getInfo() {
-        return info;
+    public String getFileData() {
+        return fileData;
     }
 
-    public VariantQueryParams setInfo(String info) {
-        this.info = info;
+    public VariantQueryParams setFileData(String fileData) {
+        this.fileData = fileData;
         return this;
     }
 
@@ -239,12 +266,12 @@ public class VariantQueryParams extends BasicVariantQueryParams {
         return this;
     }
 
-    public String getFormat() {
-        return format;
+    public String getSampleData() {
+        return sampleData;
     }
 
-    public VariantQueryParams setFormat(String format) {
-        this.format = format;
+    public VariantQueryParams setSampleData(String sampleData) {
+        this.sampleData = sampleData;
         return this;
     }
 

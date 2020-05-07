@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,9 +73,9 @@ public class ProjectManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
         catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.FULL, null);
 
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD);
+        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
 
         project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();

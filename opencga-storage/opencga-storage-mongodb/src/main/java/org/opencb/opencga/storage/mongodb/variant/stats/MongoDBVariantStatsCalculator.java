@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.mongodb.variant.stats;
 
 import org.apache.commons.lang.StringUtils;
 import org.bson.Document;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -168,6 +168,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
 
             VariantStatsCalculator.calculateFilterFreq(stats, numFilterFiles);
             stats.setQualityAvg(((float) (qualitySum / numQualFiles)));
+            stats.setQualityCount(numQualFiles);
             statsWrapper.getCohortStats().add(stats);
         }
 

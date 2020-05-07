@@ -33,6 +33,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
@@ -45,6 +46,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -54,9 +56,9 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
 import org.slf4j.Logger;
@@ -90,6 +92,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected final IOConnectorProvider ioConnectorProvider;
     private final Logger logger = LoggerFactory.getLogger(VariantStoragePipeline.class);
     protected final ObjectMap transformStats = new ObjectMap();
+    protected final ObjectMap loadStats = new ObjectMap();
     protected Integer privateFileId;
     protected Integer privateStudyId;
 //    protected StudyMetadata privateStudyMetadata;
@@ -122,6 +125,11 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     @Override
     public ObjectMap getTransformStats() {
         return transformStats;
+    }
+
+    @Override
+    public ObjectMap getLoadStats() {
+        return loadStats;
     }
 
     @Override
@@ -276,8 +284,29 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         logger.info("Using HTSJDK to read variants.");
         Pair<VCFHeader, VCFHeaderVersion> header = variantReaderUtils.readHtsHeader(input, stdin);
+
+        VariantNormalizer.VariantNormalizerConfig normalizerConfig;
+        if (getOptions().getBoolean(NORMALIZATION_SKIP.key())) {
+            normalizerConfig = null;
+        } else {
+            normalizerConfig = new VariantNormalizer.VariantNormalizerConfig()
+                    .setReuseVariants(true)
+                    .setNormalizeAlleles(true)
+                    .setDecomposeMNVs(false)
+                    .setGenerateReferenceBlocks(generateReferenceBlocks);
+            String referenceGenome = getOptions().getString(NORMALIZATION_REFERENCE_GENOME.key());
+            if (StringUtils.isNotEmpty(referenceGenome)) {
+                try {
+                    logger.info("Enable left alignment with reference genome file '{}'", referenceGenome);
+                    normalizerConfig.enableLeftAlign(referenceGenome);
+                } catch (IOException e) {
+                    throw StorageEngineException.ioException(e);
+                }
+            }
+        }
         Supplier<Task<String, Variant>> task = () ->
-                new VariantTransformTask(header.getKey(), header.getValue(), studyId, metadata, statsCalculator, generateReferenceBlocks)
+                new VariantTransformTask(header.getKey(), header.getValue(), studyId, metadata, statsCalculator, generateReferenceBlocks,
+                        normalizerConfig)
                 .setFailOnError(failOnError)
                 .addMalformedErrorHandler(malformedHandler)
                 .setIncludeSrc(false);
@@ -432,6 +461,11 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             return study;
         });
 
+        if (getOptions().getBoolean(FAMILY.key())) {
+            if (YesNoAuto.parse(getOptions(), LOAD_HOM_REF.key()) == YesNoAuto.AUTO) {
+                getOptions().put(LOAD_HOM_REF.key(), YesNoAuto.YES);
+            }
+        }
         return input;
     }
 
@@ -737,4 +771,5 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     public VariantStorageMetadataManager getMetadataManager() {
         return getDBAdaptor().getMetadataManager();
     }
+
 }

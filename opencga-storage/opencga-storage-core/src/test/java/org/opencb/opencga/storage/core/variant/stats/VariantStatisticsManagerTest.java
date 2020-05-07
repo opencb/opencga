@@ -16,14 +16,15 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -229,34 +230,64 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
                     }
 
                     VariantStats stats = VariantStatsCalculator.calculate(variant, genotypeCount, false);
+                    stats.setCohortId(cohort.getName());
                     int numFiles = 0;
+                    int numQualFiles = 0;
+                    double qualSum = 0;
                     for (Integer file : cohort.getFiles()) {
                         String fileName = dbAdaptor.getMetadataManager().getFileName(studyMetadata.getId(), file);
                         FileEntry fileEntry = studyEntry.getFile(fileName);
                         if (fileEntry != null) {
+                            if (fileEntry.getCall() != null) {
+                                System.out.println("fileEntry.getCall().getVariantId() = " + fileEntry.getCall().getVariantId());
+                                Variant v = new Variant(fileEntry.getCall().getVariantId());
+                                if (v.getType().equals(VariantType.NO_VARIATION)) {
+                                    continue;
+                                }
+                                v = new VariantNormalizer().apply(Collections.singletonList(v)).get(fileEntry.getCall().getAlleleIndex());
+                                if (!v.sameGenomicVariant(variant)) {
+                                    System.out.println("variant   = " + variant);
+                                    System.out.println("file call = " + v);
+                                    continue;
+                                }
+                            }
                             VariantStatsCalculator.addFileFilter(fileEntry.getData().get(StudyEntry.FILTER), stats.getFilterCount());
                             numFiles++;
+                            String q = fileEntry.getData().get(StudyEntry.QUAL);
+                            if (q != null && !q.isEmpty() && !q.equals(".")) {
+                                numQualFiles++;
+                                qualSum += Double.parseDouble(q);
+                            }
                         }
                     }
                     VariantStatsCalculator.calculateFilterFreq(stats, numFiles);
+                    stats.setQualityAvg(((float) (qualSum / numQualFiles)));
+                    stats.setQualityCount(numQualFiles);
 
                     stats.getGenotypeCount().entrySet().removeIf(e -> e.getValue() == 0);
                     stats.getGenotypeFreq().entrySet().removeIf(e -> e.getValue() == 0);
+                    cohortStats.setGenotypeCount(new HashMap<>(cohortStats.getGenotypeCount())); // Make mutable
                     cohortStats.getGenotypeCount().entrySet().removeIf(e -> e.getValue() == 0);
+                    cohortStats.setGenotypeFreq(new HashMap<>(cohortStats.getGenotypeFreq())); // Make mutable
                     cohortStats.getGenotypeFreq().entrySet().removeIf(e -> e.getValue() == 0);
 
-                    assertEquals(variant.toString(), stats.getGenotypeCount(), cohortStats.getGenotypeCount());
-                    assertEquals(variant.toString(), stats.getGenotypeFreq(), cohortStats.getGenotypeFreq());
-                    assertEquals(variant.toString(), stats.getMaf(), cohortStats.getMaf());
-                    if (StringUtils.isNotEmpty(stats.getMafAllele()) || StringUtils.isNotEmpty(cohortStats.getMafAllele())) {
-                        assertEquals(variant.toString(), stats.getMafAllele(), cohortStats.getMafAllele());
-                    }
+//                    assertEquals(variant.toString(), stats.getGenotypeCount(), cohortStats.getGenotypeCount());
+//                    assertEquals(variant.toString(), stats.getGenotypeFreq(), cohortStats.getGenotypeFreq());
+//                    assertEquals(variant.toString(), stats.getMaf(), cohortStats.getMaf());
+//                    if (StringUtils.isNotEmpty(stats.getMafAllele()) || StringUtils.isNotEmpty(cohortStats.getMafAllele())) {
+//                        assertEquals(variant.toString(), stats.getMafAllele(), cohortStats.getMafAllele());
+//                    }
 //                    assertEquals(variant.toString(), stats.getMgf(), cohortStats.getMgf());
-                    assertEquals(variant.toString() + "-- " + cohortStats.getImpl(), stats.getRefAlleleFreq(), cohortStats.getRefAlleleFreq());
-                    assertEquals(variant.toString() + "-- " + cohortStats.getImpl(), stats.getAltAlleleFreq(), cohortStats.getAltAlleleFreq());
+//                    assertEquals(variant.toString() + "-- " + cohortStats.getImpl(), stats.getRefAlleleFreq(), cohortStats.getRefAlleleFreq());
+//                    assertEquals(variant.toString() + "-- " + cohortStats.getImpl(), stats.getAltAlleleFreq(), cohortStats.getAltAlleleFreq());
+//
+//                    assertEquals(variant.toString(), stats.getSamplesCount(), cohortStats.getSamplesCount());
+//                    assertEquals(variant.toString(), stats.getFilesCount(), cohortStats.getFilesCount());
+//
+//                    assertEquals(variant.toString(), stats.getFilterCount(), cohortStats.getFilterCount());
+//                    assertEquals(variant.toString(), stats.getFilterFreq(), cohortStats.getFilterFreq());
 
-                    assertEquals(variant.toString(), stats.getFilterCount(), cohortStats.getFilterCount());
-                    assertEquals(variant.toString(), stats.getFilterFreq(), cohortStats.getFilterFreq());
+                    assertEquals(variant.toString(), stats, cohortStats);
                 }
             }
         }

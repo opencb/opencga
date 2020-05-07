@@ -309,7 +309,7 @@ public final class VariantQueryUtils {
     }
 
     private static boolean transformVariantAnnotationField(String key, QueryOptions queryOptions) {
-        StringBuilder sb = new StringBuilder();
+        List<String> include = new ArrayList<>(10);
         final String annotation = VariantField.ANNOTATION.fieldName();
         for (String field : queryOptions.getAsStringList(key)) {
             String newField;
@@ -322,15 +322,13 @@ public final class VariantQueryUtils {
             if (VariantField.get(newField) == null) {
                 throw VariantQueryException.unknownVariantAnnotationField(key, field);
             }
-
-            sb.append(newField);
-            sb.append(',');
+            include.add(newField);
         }
-        if (sb.length() > 0) {
-            queryOptions.put(key, sb.toString());
-            return true;
-        } else {
+        if (include.isEmpty()) {
             return false;
+        } else {
+            queryOptions.put(key, include);
+            return true;
         }
     }
 
@@ -345,7 +343,11 @@ public final class VariantQueryUtils {
     }
 
     public static String removeNegation(String value) {
-        return value.substring(NOT.length());
+        if (isNegated(value)) {
+            return value.substring(NOT.length());
+        } else {
+            return value;
+        }
     }
 
     public static boolean isNoneOrAll(String value) {
@@ -412,8 +414,8 @@ public final class VariantQueryUtils {
     public static boolean isVariantId(String value) {
         int count = StringUtils.countMatches(value, ':');
         return count == 3
-                // It may have more colons if is a symbolic alternate like <DUP:TANDEM>
-                || count > 3 && StringUtils.contains(value, '<');
+                // It may have more colons if is a symbolic alternate like <DUP:TANDEM>, or a breakend 4:100:C:]15:300]A
+                || count > 3 && StringUtils.containsAny(value, '<', '[', ']');
     }
 
     /**
@@ -427,14 +429,12 @@ public final class VariantQueryUtils {
     public static Variant toVariant(String value) {
         Variant variant = null;
         if (isVariantId(value)) {
-            if (value.contains(":")) {
-                try {
-                    variant = new Variant(value);
-                } catch (IllegalArgumentException ignore) {
-                    variant = null;
-                    // TODO: Should this throw an exception?
-                    logger.info("Wrong variant " + value, ignore);
-                }
+            try {
+                variant = new Variant(value);
+            } catch (IllegalArgumentException ignore) {
+                variant = null;
+                // TODO: Should this throw an exception?
+                logger.info("Wrong variant " + value, ignore);
             }
         }
         return variant;
@@ -742,6 +742,24 @@ public final class VariantQueryUtils {
      * Parse the genotype filter.
      *
      * @param sampleGenotypes Genotypes filter value
+     * @return QueryOperation between samples
+     */
+    public static ParsedQuery<KeyOpValue<String, List<String>>> parseGenotypeFilter(String sampleGenotypes) {
+        Map<Object, List<String>> map = new HashMap<>();
+        QueryOperation op = VariantQueryUtils.parseGenotypeFilter(sampleGenotypes, map);
+
+        List<KeyOpValue<String, List<String>>> values = new ArrayList<>();
+        for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
+            values.add(new KeyOpValue<>(entry.getKey().toString(), "=", entry.getValue()));
+        }
+
+        return new ParsedQuery<>(GENOTYPE, op, values);
+    }
+
+    /**
+     * Parse the genotype filter.
+     *
+     * @param sampleGenotypes Genotypes filter value
      * @param map             Initialized map to be filled with the sample to list of genotypes
      * @return QueryOperation between samples
      */
@@ -967,12 +985,13 @@ public final class VariantQueryUtils {
     public static List<String> splitValue(String value, QueryOperation operation) {
         List<String> list;
         if (value == null || value.isEmpty()) {
-            list = Collections.emptyList();
+            list = new ArrayList<>();
         } else if (operation == null) {
+            list = new ArrayList<>(1);
             if (value.charAt(0) == QUOTE_CHAR && value.charAt(value.length() - 1) == QUOTE_CHAR) {
-                list = Collections.singletonList(value.substring(1, value.length() - 1));
+                list.add(value.substring(1, value.length() - 1));
             } else {
-                list = Collections.singletonList(value);
+                list.add(value);
             }
         } else if (operation == QueryOperation.AND) {
             list = splitQuotes(value, AND_CHAR);
@@ -1041,6 +1060,9 @@ public final class VariantQueryUtils {
 
 
     public static void convertExpressionToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {
+        if (cellBaseUtils == null) {
+            return;
+        }
         if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
             String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
             // Check if comma separated of semi colon separated (AND or OR)
@@ -1061,6 +1083,9 @@ public final class VariantQueryUtils {
     }
 
     public static void convertGoToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {
+        if (cellBaseUtils == null) {
+            return;
+        }
         if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
             String value = query.getString(VariantQueryParam.ANNOT_GO.key());
             // Check if comma separated of semi colon separated (AND or OR)

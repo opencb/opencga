@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class ParamUtils {
 
     public static void checkObj(Object obj, String name) throws CatalogParameterException {
         if (obj == null) {
-            throw new CatalogParameterException("parameter '" + name + "' is null.");
+            throw new CatalogParameterException("Parameter '" + name + "' is missing or null.");
         }
     }
 

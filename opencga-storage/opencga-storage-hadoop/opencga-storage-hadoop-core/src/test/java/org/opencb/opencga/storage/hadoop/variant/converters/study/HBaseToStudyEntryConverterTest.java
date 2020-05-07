@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 
 import java.util.*;
 
@@ -47,8 +48,9 @@ public class HBaseToStudyEntryConverterTest {
             return s;
         });
 
-        final GenomeHelper genomeHelper = new GenomeHelper(new Configuration());
-        converter = new HBaseToStudyEntryConverter(mm, null);
+        converter = new HBaseToStudyEntryConverter(mm, null)
+                .configure(HBaseVariantConverterConfiguration.builder()
+                        .build());
     }
 
     @Test

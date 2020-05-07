@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
                 FileAclEntry.FilePermissions.DELETE_ANNOTATIONS.name(), FILE),
 
         // JOBS
-        EXECUTION(Collections.emptyList()),
+        EXECUTE_JOBS(Collections.emptyList()),
         VIEW_JOBS(Collections.emptyList(), JobAclEntry.JobPermissions.VIEW.name(), JOB),
         WRITE_JOBS(Collections.singletonList(VIEW_JOBS), JobAclEntry.JobPermissions.UPDATE.name(), JOB),
         DELETE_JOBS(Arrays.asList(VIEW_JOBS, WRITE_JOBS), JobAclEntry.JobPermissions.DELETE.name(), JOB),

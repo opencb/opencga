@@ -58,7 +58,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
             boolean validGt;
             if (hasGenotype) {
                 gt = sampleColumn.getGT();
-                if (gt.isEmpty()) {
+                if (gt == null || gt.isEmpty()) {
                     gt = GenotypeClass.NA_GT_VALUE;
                     validGt = true;
                 } else {

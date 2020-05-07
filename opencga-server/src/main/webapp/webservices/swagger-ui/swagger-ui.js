@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * swagger-ui - Swagger UI is a dependency-free collection of HTML, JavaScript, and CSS assets that dynamically generate beautiful documentation from a Swagger-compliant API
  * @version v2.1.1
@@ -31044,7 +31060,7 @@ SwaggerUi.Views.MainView = Backbone.View.extend({
         // Nacho: this small hack sorts the API endpoints. Old code is left to ensure that new API methods are also displayed
         var apiOrderMap = {"Users": 1, "Projects": 2, "Studies": 3, "Files": 4, "Jobs": 5, "Samples": 6,
             "Individuals": 7, "Families": 8, "Cohorts": 9, "Disease Panels": 11, "Analysis - Alignment": 12,
-            "Analysis - Variant": 13, "Analysis - Clinical Interpretation": 14, "Operations - Variant Storage": 15, "Meta": 16,
+            "Analysis - Variant": 13, "Analysis - Clinical": 14, "Operations - Variant Storage": 15, "Meta": 16,
             "GA4GH": 17, "Admin": 18};
 
         if (typeof(apiOrderMap[a.name]) != "undefined" && typeof(apiOrderMap[b.name]) != "undefined") {

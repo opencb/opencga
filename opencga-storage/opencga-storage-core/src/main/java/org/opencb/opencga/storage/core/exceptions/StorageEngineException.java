@@ -21,7 +21,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -98,8 +97,9 @@ public class StorageEngineException extends Exception {
                 + "because they are from a different chromosome, region, or a different variant type, "
                 + "repeat the operation with the option ")
                 .append("-D").append(VariantStorageOptions.LOAD_SPLIT_DATA.key())
-                .append("=")
-                .append(Arrays.toString(VariantStorageEngine.LoadSplitData.values())).append(" . ")
+                .append("=[")
+                .append(VariantStorageEngine.SplitData.CHROMOSOME).append(", ")
+                .append(VariantStorageEngine.SplitData.REGION).append("] . ")
                 .append("WARNING: Wrong usage of this option may cause a data corruption in the database!");
         return new StorageEngineException(sb.toString());
     }

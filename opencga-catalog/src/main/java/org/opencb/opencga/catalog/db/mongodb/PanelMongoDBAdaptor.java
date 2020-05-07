@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,37 +74,24 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public OpenCGAResult insert(Panel panel, boolean overwrite)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult insert(long studyUid, List<Panel> panelList) throws CatalogDBException, CatalogParameterException,
+            CatalogAuthorizationException {
+        if (panelList == null || panelList.isEmpty()) {
+            throw new CatalogDBException("Missing panel list");
+        }
+        if (studyUid <= 0) {
+            throw new CatalogDBException("Missing study uid");
+        }
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
+            logger.debug("Starting insert transaction of {} panels", panelList.size());
+            dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyUid);
 
-            logger.debug("Starting insert transaction of global panel id '{}'", panel.getId());
-            // Check the panel id does not exist
-            Query query = new Query()
-                    .append(QueryParams.STUDY_UID.key(), -1)
-                    .append(QueryParams.ID.key(), panel.getId());
-
-            if (count(clientSession, query).getNumMatches() > 0) {
-                if (overwrite) {
-                    // Delete the panel id
-                    logger.debug("Global panel '" + panel.getId() + "' already existed. Replacing panel...");
-
-                    Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, -1);
-                    panelCollection.update(clientSession, parseQuery(query), new Document("$set", panelDocument), null);
-                } else {
-                    throw CatalogDBException.alreadyExists("panel", QueryParams.ID.key(), panel.getId());
-                }
-            } else {
-                logger.debug("Inserting new global panel '" + panel.getId() + "'");
-
-                Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, -1);
-                panelCollection.insert(clientSession, panelDocument, null);
+            for (Panel panel : panelList) {
+                insert(clientSession, studyUid, panel);
             }
-
-            logger.info("Global panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
-            return endWrite(tmpStartTime, 1, 1, 0, 0, null);
-        }, e -> logger.error("Could not create global panel {}: {}", panel.getId(), e.getMessage()));
+            return endWrite(tmpStartTime, panelList.size(), panelList.size(), 0, 0, null);
+        }, e -> logger.error("Could not insert {} panels: {}", panelList.size(), e.getMessage()));
     }
 
     @Override
@@ -117,7 +104,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyUid);
             insert(clientSession, studyUid, panel);
             return endWrite(tmpStartTime, 1, 1, 0, 0, null);
-        }, e -> logger.error("Could not create global panel {}: {}", panel.getId(), e.getMessage()));
+        }, e -> logger.error("Could not create panel {}: {}", panel.getId(), e.getMessage()));
     }
 
     void insert(ClientSession clientSession, long studyUid, Panel panel) throws CatalogDBException {
@@ -390,7 +377,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         String[] acceptedParamsList = { QueryParams.TAGS.key()};
         filterStringListParams(parameters, panelParameters, acceptedParamsList);
 
-        final String[] acceptedObjectParams = {QueryParams.VARIANTS.key(), QueryParams.PHENOTYPES.key(), QueryParams.REGIONS.key(),
+        final String[] acceptedObjectParams = {QueryParams.VARIANTS.key(), QueryParams.DISORDERS.key(), QueryParams.REGIONS.key(),
                 QueryParams.GENES.key(), QueryParams.CATEGORIES.key()};
         filterObjectParams(parameters, panelParameters, acceptedObjectParams);
 
@@ -769,8 +756,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     case GENES:
                         addAutoOrQuery(QueryParams.GENES_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-                    case PHENOTYPES:
-                        addAutoOrQuery(QueryParams.PHENOTYPES_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                    case DISORDERS:
+                        addAutoOrQuery(QueryParams.DISORDERS_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case REGIONS:
                         addAutoOrQuery(QueryParams.REGIONS_LOCATION.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
@@ -799,9 +786,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     case CATEGORIES_NAME:
                     case VARIANTS_ID:
                     case VARIANTS_PHENOTYPE:
-                    case PHENOTYPES_ID:
-                    case PHENOTYPES_NAME:
-                    case PHENOTYPES_SOURCE:
+                    case DISORDERS_ID:
+                    case DISORDERS_NAME:
+                    case DISORDERS_SOURCE:
                     case GENES_ID:
                     case GENES_NAME:
                     case GENES_CONFIDENCE:

@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -179,6 +180,30 @@ public final class StorageEngineFactory {
             Map.Entry<String, T> entry = iterator.next();
             if (entry.getKey().startsWith(storageEngineId + '_')) {
                 iterator.remove();
+            }
+        }
+    }
+
+    public synchronized void close() throws IOException {
+        List<IOException> ioExceptions = new ArrayList<>();
+        for (VariantStorageEngine value : variantStorageEngineMap.values()) {
+            try {
+                value.close();
+            } catch (IOException e) {
+                logger.error("Error closing variant storage engine on db '" + value.getDBName() + "'");
+                ioExceptions.add(e);
+            }
+        }
+        variantStorageEngineMap.clear();
+        if (!ioExceptions.isEmpty()) {
+            if (ioExceptions.size() == 1) {
+                throw ioExceptions.get(0);
+            } else {
+                IOException e = new IOException("Error closing VariantStorageEngines");
+                for (IOException ioException : ioExceptions) {
+                    e.addSuppressed(ioException);
+                }
+                throw e;
             }
         }
     }

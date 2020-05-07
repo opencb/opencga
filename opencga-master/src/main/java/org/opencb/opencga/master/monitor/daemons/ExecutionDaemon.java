@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 OpenCB
+ * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.clinical.interpretation.CancerTieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;
@@ -80,10 +80,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileAclParams;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobInternal;
-import org.opencb.opencga.core.models.job.JobInternalWebhook;
-import org.opencb.opencga.core.models.job.JobStudyParam;
+import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -209,10 +206,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");
             put(GeneticChecksAnalysis.ID, "variant " + GeneticChecksAnalysis.ID + "-run");
 
-            put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
-            put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
-            put(CustomInterpretationAnalysis.ID, "interpretation " + CustomInterpretationAnalysis.ID);
-            put(CancerTieringInterpretationAnalysis.ID, "interpretation " + CancerTieringInterpretationAnalysis.ID);
+            put(TeamInterpretationAnalysis.ID, "clinical " + TeamInterpretationAnalysis.ID + "-run");
+            put(TieringInterpretationAnalysis.ID, "clinical " + TieringInterpretationAnalysis.ID + "-run");
+            put(ZettaInterpretationAnalysis.ID, "clinical " + ZettaInterpretationAnalysis.ID + "-run");
+            put(CancerTieringInterpretationAnalysis.ID, "clinical " + CancerTieringInterpretationAnalysis.ID + "-run");
         }};
     }
 
@@ -436,6 +433,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
+        updateParams.setTool(new ToolInfo(tool.id(), tool.description(), tool.scope(), tool.type(), tool.resource()));
+
         if (tool.scope() == Tool.Scope.PROJECT) {
             String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(":"));
             OpenCGAResult<Study> studyResult;

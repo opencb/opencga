@@ -84,11 +84,6 @@ public class VariantSearchManager {
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
-    @Deprecated
-    public VariantSearchManager(String host, String collection) {
-        throw new UnsupportedOperationException("Not supported!!");
-    }
-
     public VariantSearchManager(VariantStorageMetadataManager variantStorageMetadataManager, StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
 

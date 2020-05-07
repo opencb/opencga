@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2020 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.analysis.variant;
 
 import org.junit.BeforeClass;
@@ -5,8 +21,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.Query;
@@ -17,6 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -43,7 +60,7 @@ import static org.junit.Assert.*;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.SKIP_MISSING_GENES;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 /**
  * Created on 12/12/17.
@@ -75,11 +92,11 @@ public class VariantCatalogQueryUtilsTest {
 
         User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.AccountType.FULL, null).first();
 
-        sessionId = catalog.getUserManager().login("user", "1234");
+        sessionId = catalog.getUserManager().login("user", "1234").getToken();
         catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", "GRCh38", null, sessionId);
-        catalog.getStudyManager().create("p1", "s1", "s1", null, null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s2", "s2", null, null, null, null, null, null, null, sessionId);
-        catalog.getStudyManager().create("p1", "s3", "s3", null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p1", "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p1", "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p1", "s3", "s3", "s3", null, null, null, null, null, null, sessionId);
         file1 = createFile("data/file1.vcf");
         file2 = createFile("data/file2.vcf");
 
@@ -113,7 +130,7 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getCohortManager().create("s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
 
         catalog.getProjectManager().create("p2", "p2", "", "hsapiens", "Homo Sapiens", "GRCh38", null, sessionId);
-        catalog.getStudyManager().create("p2", "p2s2", "s1", null, null, null, null, null, null, null, sessionId);
+        catalog.getStudyManager().create("p2", "p2s2", "p2s2", "p2s2", null, null, null, null, null, null, sessionId);
 
         Panel panel = new Panel("MyPanel", "MyPanel", 1);
         panel.setGenes(
@@ -285,6 +302,19 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     @Test
+    public void queryBySavedFilter() throws Exception {
+        String userId = catalog.getUserManager().getUserId(sessionId);
+        catalog.getUserManager().addFilter(userId, "myFilter", "", Enums.Resource.VARIANT,
+                new Query("key1", "value1").append("key2", "value2"), new QueryOptions(), sessionId);
+
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter"), sessionId);
+        assertEquals(new Query().append(STUDY.key(), "user@p1:s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "value1").append("key2", "value2"), query);
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "otherValue"), sessionId);
+        assertEquals(new Query().append(STUDY.key(), "user@p1:s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "otherValue").append("key2", "value2"), query);
+    }
+
+    @Test
     public void queryByFamily() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1"), sessionId);
         assertEquals(Arrays.asList("sample1", "sample2", "sample3", "sample4"), query.getAsStringList(SAMPLE.key()));
@@ -300,7 +330,30 @@ public class VariantCatalogQueryUtilsTest {
     @Test
     public void queryByFamilySegregation() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "BIALLELIC"), sessionId);
-        assertEquals("sample3:1/1,1|1;sample4:0/0,0/1,0|0,0|1,1|0;sample1:0/1,0|1,1|0;sample2:0/1,0|1,1|0", query.getString(GENOTYPE.key()));
+        assertEquals("sample1:0/1,0|1,1|0;sample2:0/1,0|1,1|0;sample3:1/1,1|1;sample4:0/0,0/1,0|0,0|1,1|0", query.getString(GENOTYPE.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+    }
+
+    @Test
+    public void queryBySampleSegregation() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:biallelic"), sessionId);
+        assertEquals("sample1:0/1,0|1,1|0;sample2:0/1,0|1,1|0;sample3:1/1,1|1", query.getString(GENOTYPE.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+    }
+
+    @Test
+    public void queryBySampleSegregationDeNovo() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:denovo"), sessionId);
+        assertEquals("sample3", query.getString(SAMPLE_DE_NOVO.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+    }
+
+    @Test
+    public void queryBySampleSegregationMendelianError() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:mendelianerror"), sessionId);
+        assertEquals("sample3", query.getString(SAMPLE_MENDELIAN_ERROR.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
     }
 
@@ -354,7 +407,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(STUDY.key(), "s1")
                 .append(FAMILY.key(), "f1")
-                .append(FAMILY_SEGREGATION.key(), "monoallelic")
+                .append(FAMILY_SEGREGATION.key(), "autosomal_dominant")
                 .append(FAMILY_DISORDER.key(), "asdf"), sessionId);
     }
 
@@ -369,7 +422,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queryByPanelNotFound() throws Exception {
-        CatalogException e = new CatalogException("Panel MyPanel_wrong not found");
+        CatalogException e = new CatalogException("Panel 'MyPanel_wrong' not found");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel_wrong"), sessionId);

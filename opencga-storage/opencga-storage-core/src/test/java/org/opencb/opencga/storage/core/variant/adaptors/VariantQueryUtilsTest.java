@@ -21,6 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -185,20 +186,24 @@ public class VariantQueryUtilsTest extends GenericTest {
         assertEquals(VariantQueryUtils.QueryOperation.AND, parseGenotypeFilter("study:sample:1/1,2/2;sample2:0/0,2/2;sample3:0/0;study1:sample4:0/0,2/2", map));
         assertEquals(expected, map);
 
-        map = new HashMap<>();
+        map.clear();
         // Check ends with operator
         assertEquals(VariantQueryUtils.QueryOperation.AND, parseGenotypeFilter("study:sample:1/1,2/2;sample2:0/0,2/2;sample3:0/0;study1:sample4:0/0,2/2;", map));
         assertEquals(expected, map);
 
-        map = new HashMap<>();
+        map.clear();
         assertEquals(VariantQueryUtils.QueryOperation.OR, parseGenotypeFilter("study:sample:1/1,2/2,sample2:0/0,2/2,sample3:0/0,study1:sample4:0/0,2/2", map));
         assertEquals(expected, map);
 
         expected.put("sample3", Arrays.asList("!0/0"));
-        map = new HashMap<>();
+        map.clear();
         assertEquals(VariantQueryUtils.QueryOperation.OR, parseGenotypeFilter("study:sample:1/1,2/2,sample2:0/0,2/2,sample3:!0/0,study1:sample4:0/0,2/2", map));
         assertEquals(expected, map);
+    }
 
+    @Test
+    public void testParseGenotypeFilterFail() throws Exception {
+        HashMap<Object, List<String>> map = new HashMap<>();
         thrown.expect(VariantQueryException.class);
         parseGenotypeFilter("sample:1/1,2/2,sample2:0/0,2/2;sample3:0/0,2/2", map);
     }
@@ -341,6 +346,30 @@ public class VariantQueryUtilsTest extends GenericTest {
             }
         }
         assertEquals(actualQueryParams, new HashSet<>(INTERNAL_VARIANT_QUERY_PARAMS));
+    }
+
+    @Test
+    public void isVariantId() {
+        checkIsVariantId("1:1000:A:T");
+        checkIsVariantId("1:1000-2000:A:T");
+        checkIsVariantId("1:1000-2000:A:<DUP:TANDEM>");
+        checkIsVariantId("11:14525312:-:]11:14521700].");
+        checkIsVariantId("4:100:C:[15:300[A");
+        checkIsVariantId("4:100:C:]15:300]A");
+        checkIsVariantId("rs123");
+    }
+
+    public void checkIsVariantId(String v) {
+
+        boolean actual = VariantQueryUtils.isVariantId(v);
+        boolean expected;
+        try {
+            new Variant(v);
+            expected = true;
+        } catch (Exception e) {
+            expected = false;
+        }
+        assertEquals(v, expected, actual);
     }
 
 }
