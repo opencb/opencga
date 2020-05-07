@@ -343,6 +343,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.normalizationSkip,
                 cliOptions.genericVariantIndexOptions.referenceGenome,
                 cliOptions.genericVariantIndexOptions.family,
+                cliOptions.genericVariantIndexOptions.somatic,
                 cliOptions.genericVariantIndexOptions.load,
                 cliOptions.genericVariantIndexOptions.loadSplitData,
                 cliOptions.genericVariantIndexOptions.loadMultiFileData,

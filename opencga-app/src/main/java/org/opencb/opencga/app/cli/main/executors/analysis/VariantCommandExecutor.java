@@ -436,6 +436,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantIndex.genericVariantIndexOptions.normalizationSkip,
                         variantIndex.genericVariantIndexOptions.referenceGenome,
                         variantIndex.genericVariantIndexOptions.family,
+                        variantIndex.genericVariantIndexOptions.somatic,
                         variantIndex.genericVariantIndexOptions.load,
                         variantIndex.genericVariantIndexOptions.loadSplitData,
                         variantIndex.genericVariantIndexOptions.loadMultiFileData,
