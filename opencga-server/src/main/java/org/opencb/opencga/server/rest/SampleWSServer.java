@@ -155,15 +155,10 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
             @ApiParam(value = "DEPRECATED: name") @QueryParam("name") String name,
-            @ApiParam(value = "source") @QueryParam("source") String source,
-            @ApiParam(value = "type") @QueryParam("type") String type,
             @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
-            @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION, hidden = true) @QueryParam("individual.id") String individualId,
             @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION) @QueryParam("individual") String individual,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
-                @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
-                @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Boolean to retrieve deleted samples", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
