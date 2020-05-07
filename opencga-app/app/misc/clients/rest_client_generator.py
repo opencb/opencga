@@ -40,7 +40,7 @@ class RestClientGenerator(ABC):
             'Disease Panels': 'DiseasePanel',
             'Analysis - Alignment': 'Alignment',
             'Analysis - Variant': 'Variant',
-            'Analysis - Clinical Interpretation': 'Clinical',
+            'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'VariantOperation',
             'Meta': 'Meta',
             'GA4GH': 'GA4GH',
