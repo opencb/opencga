@@ -36,7 +36,11 @@
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
+            <artifactId>opencga-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-solr</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
