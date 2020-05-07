@@ -72,6 +72,8 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
     private boolean index;     // save interpretation in catalog DB
 
     public ZettaInterpretationAnalysisParams() {
+        secondary = false;
+        index = true;
     }
 
     public ZettaInterpretationAnalysisParams(String clinicalAnalysis, List<String> id, String region, String type, String study,

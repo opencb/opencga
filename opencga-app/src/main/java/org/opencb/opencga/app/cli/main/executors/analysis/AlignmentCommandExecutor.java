@@ -33,12 +33,12 @@ import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.models.alignment.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
-import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -72,8 +72,8 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
         RestResponse queryResponse = null;
         switch (subCommandString) {
-            case "index":
-                queryResponse = index();
+            case "index-run":
+                queryResponse = indexRun();
                 break;
             case "query":
                 query();
@@ -116,13 +116,13 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private RestResponse<Job> index() throws ClientException {
+    private RestResponse<Job> indexRun() throws ClientException {
         logger.debug("Indexing alignment(s)");
+
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
-
-        return openCGAClient.getAlignmentClient().index(cliOptions.file, params);
+        return openCGAClient.getAlignmentClient().runIndex(new AlignmentIndexParams(cliOptions.file),
+                getCommonParamsFromAlignmentOptions(cliOptions.study));
     }
 
     private void query() throws InterruptedException, ClientException {
@@ -388,7 +388,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // BWA
 
     private RestResponse<Job> bwa() throws ClientException {
-        ObjectMap params = new AlignmentWebService.BwaRunParams(
+        ObjectMap params = new BwaWrapperParams(
                 alignmentCommandOptions.bwaCommandOptions.command,
                 alignmentCommandOptions.bwaCommandOptions.fastaFile,
                 alignmentCommandOptions.bwaCommandOptions.indexBaseFile,
@@ -406,7 +406,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // Samtools
 
     private RestResponse<Job> samtools() throws ClientException {
-        ObjectMap params = new AlignmentWebService.SamtoolsRunParams(
+        ObjectMap params = new SamtoolsWrapperParams(
                 alignmentCommandOptions.samtoolsCommandOptions.command,
                 alignmentCommandOptions.samtoolsCommandOptions.inputFile,
                 alignmentCommandOptions.samtoolsCommandOptions.outputFilename,
@@ -428,7 +428,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // Deeptools
 
     private RestResponse<Job> deeptools() throws ClientException {
-        ObjectMap params = new AlignmentWebService.DeeptoolsRunParams(
+        ObjectMap params = new DeeptoolsWrapperParams(
                 alignmentCommandOptions.deeptoolsCommandOptions.executable,
                 alignmentCommandOptions.deeptoolsCommandOptions.bamFile,
                 alignmentCommandOptions.deeptoolsCommandOptions.outdir,
@@ -441,7 +441,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // FastQC
 
     private RestResponse<Job> fastqc() throws ClientException {
-        ObjectMap params = new AlignmentWebService.FastqcRunParams(
+        ObjectMap params = new FastQcWrapperParams(
                 alignmentCommandOptions.fastqcCommandOptions.file,
                 alignmentCommandOptions.fastqcCommandOptions.outdir,
                 alignmentCommandOptions.fastqcCommandOptions.commonOptions.params
@@ -470,5 +470,12 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         } else {
             throw new UnsupportedOperationException();
         }
+    }
+
+    private ObjectMap getCommonParamsFromAlignmentOptions(String study) {
+        ObjectMap params = getCommonParams(study);
+//        addJobParams(clinicalCommandOptions.commonJobOptions, params);
+//        addNumericParams(clinicalCommandOptions.commonNumericOptions, params);
+        return params;
     }
 }

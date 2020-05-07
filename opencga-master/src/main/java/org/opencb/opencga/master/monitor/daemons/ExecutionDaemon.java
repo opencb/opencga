@@ -167,7 +167,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             put(JobIndexTask.ID, "jobs secondary-index");
 
-            put("alignment-index", "alignment index");
+            put("alignment-index-run", "alignment index-run");
             put("alignment-coverage-run", "alignment coverage-run");
             put("alignment-stats-run", "alignment stats-run");
             put(BwaWrapperAnalysis.ID, "alignment " + BwaWrapperAnalysis.ID + "-run");

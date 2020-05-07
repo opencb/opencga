@@ -1069,6 +1069,10 @@ public class FileManager extends AnnotationSetManager<File> {
                 external = true;
             }
 
+            System.out.println(">>>>>>>>>>>>>>>>>>>> external = " + external);
+            System.out.println(">>>>>>>>>>>>>>>>>>>> folderDestiny = " + folderDestiny);
+            System.out.println(">>>>>>>>>>>>>>>>>>>> study.getUri().getPath() = " + study.getUri().getPath());
+
             String filePath = path;
             if (!filePath.endsWith("/")) {
                 filePath += "/";
@@ -1103,6 +1107,10 @@ public class FileManager extends AnnotationSetManager<File> {
             OpenCGAResult<File> result;
             if (external) {
                 result = link(study.getFqn(), folderDestiny.resolve(fileName).toUri(), path, new ObjectMap("parents", true), token);
+
+                System.out.println(">>>>>>>>>>>>>>>>>>>> link: study.getFqn() = " + study.getFqn()
+                        + ", folderDestiny.resolve(fileName).toUri() = " + folderDestiny.resolve(fileName).toUri()
+                        + ", path = " + path);
             } else {
                 result = createFile(study.getFqn(), filePath, "", true, null, token);
             }

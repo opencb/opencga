@@ -16,6 +16,8 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
     private boolean index;     // save interpretation in catalog DB
 
     public TieringInterpretationAnalysisParams() {
+        secondary = false;
+        index = true;
     }
 
     public TieringInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, ClinicalProperty.Penetrance penetrance,

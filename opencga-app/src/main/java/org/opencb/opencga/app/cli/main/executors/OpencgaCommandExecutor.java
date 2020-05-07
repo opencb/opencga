@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -27,6 +28,7 @@ import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
@@ -36,6 +38,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created on 27/05/16.
@@ -211,12 +215,50 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
-
-
     public void createOutput(RestResponse queryResponse) {
         if (queryResponse != null) {
             writer.print(queryResponse);
         }
+    }
+
+    public ObjectMap getCommonParams(String study) {
+        return getCommonParams(null, study, new HashMap<>());
+    }
+
+    public ObjectMap getCommonParams(String study, Map<String, String> initialParams) {
+        return getCommonParams(null, study, initialParams);
+    }
+
+    public ObjectMap getCommonParams(String project, String study, Map<String, String> initialParams) {
+        ObjectMap params = new ObjectMap(initialParams);
+        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
+        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
+        return params;
+    }
+
+    public ObjectMap addJobParams(GeneralCliOptions.JobOptions jobOptions, ObjectMap params) {
+        params.putIfNotEmpty(ParamConstants.JOB_ID, jobOptions.jobId);
+        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, jobOptions.jobDescription);
+        if (jobOptions.jobDependsOn != null) {
+            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", jobOptions.jobDependsOn));
+        }
+        if (jobOptions.jobTags != null) {
+            params.put(ParamConstants.JOB_TAGS, String.join(",", jobOptions.jobTags));
+        }
+        return params;
+    }
+
+    public ObjectMap addNumericParams(GeneralCliOptions.NumericOptions numericOptions, ObjectMap params) {
+        if (numericOptions.limit > 0) {
+            params.put(QueryOptions.LIMIT, numericOptions.limit);
+        }
+        if (numericOptions.skip > 0) {
+            params.put(QueryOptions.SKIP, numericOptions.skip);
+        }
+        if (numericOptions.count) {
+            params.put(QueryOptions.COUNT, numericOptions.count);
+        }
+        return params;
     }
 
 }

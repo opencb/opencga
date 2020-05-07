@@ -163,7 +163,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignment", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignment");
-        alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("index-run", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats-run", alignmentCommandOptions.statsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsInfoAlignmentCommandOptions);

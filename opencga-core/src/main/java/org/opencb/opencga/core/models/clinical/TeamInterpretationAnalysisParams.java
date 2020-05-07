@@ -15,6 +15,8 @@ public class TeamInterpretationAnalysisParams extends ToolParams {
     private boolean index;     // save interpretation in catalog DB
 
     public TeamInterpretationAnalysisParams() {
+        secondary = false;
+        index = true;
     }
 
     public TeamInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, String familySegregation,

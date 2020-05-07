@@ -14,6 +14,8 @@ public class CancerTieringInterpretationAnalysisParams extends ToolParams {
     private boolean index;     // save interpretation in catalog DB
 
     public CancerTieringInterpretationAnalysisParams() {
+        secondary = false;
+        index = true;
     }
 
     public CancerTieringInterpretationAnalysisParams(String clinicalAnalysis, List<String> discardedVariants, boolean secondary,
