@@ -508,6 +508,8 @@ db.individual.createIndex({"uid": 1, "version": 1}, {"unique": true, "background
 db.individual.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
 db.individual.createIndex({"name": 1, "studyUid": 1}, {"background": true});
 db.individual.createIndex({"studyUid": 1}, {"background": true});
+db.individual.createIndex({"father.uid": 1, "studyUid": 1}, {"background": true});
+db.individual.createIndex({"mother.uid": 1, "studyUid": 1}, {"background": true});
 db.individual.createIndex({"sex": 1, "studyUid": 1}, {"background": true});
 db.individual.createIndex({"karyotypicSex": 1, "studyUid": 1}, {"background": true});
 db.individual.createIndex({"dateOfBirth": 1, "studyUid": 1}, {"background": true});

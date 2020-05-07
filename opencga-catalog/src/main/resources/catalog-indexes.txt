@@ -81,6 +81,8 @@
 {"collection": "individual", "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collection": "individual", "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collection": "individual", "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"father.uid": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"mother.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"sex": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"karyotypicSex": 1, "studyUid": 1}, "options": {"background": true}}
