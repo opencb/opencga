@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -11,12 +12,13 @@ public class TeamInterpretationAnalysisParams extends ToolParams {
     private List<String> panels;
     private String familySegregation;
 
+    @JsonProperty(defaultValue = "false")
     private boolean secondary; // secondary interpretation (vs primary interpretation)
+
+    @JsonProperty(defaultValue = "true")
     private boolean index;     // save interpretation in catalog DB
 
     public TeamInterpretationAnalysisParams() {
-        secondary = false;
-        index = true;
     }
 
     public TeamInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, String familySegregation,

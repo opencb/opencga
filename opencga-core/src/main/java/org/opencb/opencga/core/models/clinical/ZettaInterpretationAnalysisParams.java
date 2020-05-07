@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -68,12 +69,13 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
 
     private String trait;
 
+    @JsonProperty(defaultValue = "false")
     private boolean secondary; // secondary interpretation (vs primary interpretation)
+
+    @JsonProperty(defaultValue = "true")
     private boolean index;     // save interpretation in catalog DB
 
     public ZettaInterpretationAnalysisParams() {
-        secondary = false;
-        index = true;
     }
 
     public ZettaInterpretationAnalysisParams(String clinicalAnalysis, List<String> id, String region, String type, String study,

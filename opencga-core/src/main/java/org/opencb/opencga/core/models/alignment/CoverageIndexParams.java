@@ -1,13 +1,17 @@
 package org.opencb.opencga.core.models.alignment;
 
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class CoverageIndexParams {
     public static final String DESCRIPTION = "Coverage computation parameters";
 
     private String file;
+
+    @JsonProperty(defaultValue = "1")
     private int windowSize;
 
     public CoverageIndexParams() {
-        windowSize = 1;
     }
 
     public CoverageIndexParams(String file, int windowSize) {
