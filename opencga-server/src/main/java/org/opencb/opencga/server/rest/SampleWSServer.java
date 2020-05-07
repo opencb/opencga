@@ -155,15 +155,10 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
             @ApiParam(value = "DEPRECATED: name") @QueryParam("name") String name,
-            @ApiParam(value = "source") @QueryParam("source") String source,
-            @ApiParam(value = "type") @QueryParam("type") String type,
             @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
-            @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION, hidden = true) @QueryParam("individual.id") String individualId,
             @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION) @QueryParam("individual") String individual,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
-                @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
-                @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Boolean to retrieve deleted samples", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
@@ -235,7 +230,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") SampleUpdateParams parameters) {
+            @ApiParam(value = "body") SampleUpdateParams parameters) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             if (annotationSetsAction == null) {
@@ -262,7 +257,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") SampleUpdateParams parameters) {
+            @ApiParam(value = "body") SampleUpdateParams parameters) {
         try {
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.UpdateAction.ADD;

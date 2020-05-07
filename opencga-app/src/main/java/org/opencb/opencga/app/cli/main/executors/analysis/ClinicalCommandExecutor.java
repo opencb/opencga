@@ -242,7 +242,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> tiering() throws ClientException {
         ClinicalCommandOptions.InterpretationTieringCommandOptions cliOptions = clinicalCommandOptions.tieringCommandOptions;
 
-        return openCGAClient.getClinicalAnalysisClient().runInterpretersTiering(
+        return openCGAClient.getClinicalAnalysisClient().runInterpreterTiering(
                 new TieringInterpretationAnalysisParams(cliOptions.clinicalAnalysis,
                         cliOptions.panels,
                         cliOptions.penetrance,
@@ -255,7 +255,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> team() throws ClientException {
         ClinicalCommandOptions.InterpretationTeamCommandOptions cliOptions = clinicalCommandOptions.teamCommandOptions;
 
-        return openCGAClient.getClinicalAnalysisClient().runInterpretersTeam(
+        return openCGAClient.getClinicalAnalysisClient().runInterpreterTeam(
                 new TeamInterpretationAnalysisParams(clinicalCommandOptions.teamCommandOptions.clinicalAnalysis,
                         cliOptions.panels,
                         cliOptions.familySeggregation,
@@ -268,7 +268,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> zetta() throws ClientException {
         ClinicalCommandOptions.InterpretationZettaCommandOptions cliOptions = clinicalCommandOptions.zettaCommandOptions;
 
-        return openCGAClient.getClinicalAnalysisClient().runInterpretersZetta(
+        return openCGAClient.getClinicalAnalysisClient().runInterpreterZetta(
                 new ZettaInterpretationAnalysisParams()
                         .setClinicalAnalysis(cliOptions.clinicalAnalysis)
                         .setId(cliOptions.basicQueryOptions.id)
@@ -325,7 +325,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> cancerTiering() throws ClientException {
         ClinicalCommandOptions.InterpretationCancerTieringCommandOptions cliOptions = clinicalCommandOptions.cancerTieringCommandOptions;
 
-        return openCGAClient.getClinicalAnalysisClient().runInterpretersCancerTiering(
+        return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(
                 new CancerTieringInterpretationAnalysisParams()
                         .setClinicalAnalysis(cliOptions.clinicalAnalysis)
                         .setDiscardedVariants(cliOptions.discardedVariants)

@@ -93,7 +93,7 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response create(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
-            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
+            @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
                     ClinicalAnalysisCreateParams params) {
         try {
             return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), queryOptions, token));
@@ -126,7 +126,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
 
-            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
+            @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
                     ClinicalUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -156,7 +156,7 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response update(
             @ApiParam(value = "Comma separated list of clinical analysis IDs") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true) ClinicalUpdateParams params) {
+            @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true) ClinicalUpdateParams params) {
         try {
             if (params != null) {
                 Map<String, Object> actionMap = new HashMap<>();
@@ -322,7 +322,7 @@ public class ClinicalWebService extends AnalysisWebService {
 //    public Response create(
 //            @ApiParam(value = "[[user@]project:]study id") @QueryParam(Params.STUDY_PARAM) String studyId,
 //            @ApiParam(value = "Clinical analysis the interpretation belongs to") @QueryParam("clinicalAnalysis") String clinicalAnalysis,
-//            @ApiParam(name = "params", value = "JSON containing clinical interpretation information", required = true)
+//            @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
 //                    ClinicalInterpretationParameters params) {
 //        try {
 //            return createOkResponse(catalogInterpretationManager.create(studyId, params.toClinicalInterpretation(), queryOptions, sessionId));
@@ -340,7 +340,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
             @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
-            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
+            @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
                     InterpretationCreateParams params) {
         try {
             if (interpretationAction == null) {
@@ -369,7 +369,7 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response updateInterpretation(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-            @ApiParam(name = "params", value = "JSON containing clinical interpretation information", required = true)
+            @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
                     InterpretationUpdateParams params) {
         try {
             return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, params, queryOptions, token));
@@ -385,7 +385,7 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response updateQualityControl(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-            @ApiParam(name = "params", value = "JSON containing quality control information", required = true)
+            @ApiParam(name = "body", value = "JSON containing quality control information", required = true)
                     ClinicalAnalysisQcUpdateParams params) {
         try {
             return createOkResponse(catalogManager.getClinicalAnalysisManager().update(studyStr, clinicalId,
@@ -402,7 +402,7 @@ public class ClinicalWebService extends AnalysisWebService {
 //    public Response updateReport(
 //            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
 //            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-//            @ApiParam(name = "params", value = "JSON containing quality control information", required = true)
+//            @ApiParam(name = "body", value = "JSON containing quality control information", required = true)
 //                    InterpretationUpdateParams params) {
 //        try {
 //            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, params, queryOptions, token));
@@ -422,7 +422,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
             // TODO: Think about having an action in this web service. Are we ever going to allow people to set or remove comments?
             @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
-            @ApiParam(name = "params", value = "JSON containing a list of comments", required = true)
+            @ApiParam(name = "body", value = "JSON containing a list of comments", required = true)
                     List<Comment> comments) {
         try {
             InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setComments(comments);
@@ -569,7 +569,7 @@ public class ClinicalWebService extends AnalysisWebService {
     //-------------------------------------------------------------------------
 
     @POST
-    @Path("/interpreters/tiering/run")
+    @Path("/interpreter/tiering/run")
     @ApiOperation(value = TieringInterpretationAnalysis.DESCRIPTION, response = Job.class)
     public Response interpretationTieringRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -577,12 +577,12 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = TieringInterpretationAnalysisParams.DESCRIPTION) TieringInterpretationAnalysisParams params) {
+            @ApiParam(value = TieringInterpretationAnalysisParams.DESCRIPTION, required = true) TieringInterpretationAnalysisParams params) {
         return submitJob(TieringInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
-    @Path("/interpreters/team/run")
+    @Path("/interpreter/team/run")
     @ApiOperation(value = TeamInterpretationAnalysis.DESCRIPTION, response = Job.class)
     public Response interpretationTeamRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -590,12 +590,12 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = TeamInterpretationAnalysisParams.DESCRIPTION) TeamInterpretationAnalysisParams params) {
+            @ApiParam(value = TeamInterpretationAnalysisParams.DESCRIPTION, required = true) TeamInterpretationAnalysisParams params) {
         return submitJob(TeamInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
-    @Path("/interpreters/zetta/run")
+    @Path("/interpreter/zetta/run")
     @ApiOperation(value = ZettaInterpretationAnalysis.DESCRIPTION, response = Job.class)
     public Response interpretationZettaRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -603,12 +603,12 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = ZettaInterpretationAnalysisParams.DESCRIPTION) ZettaInterpretationAnalysisParams params) {
+            @ApiParam(value = ZettaInterpretationAnalysisParams.DESCRIPTION, required = true) ZettaInterpretationAnalysisParams params) {
         return submitJob(ZettaInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
-    @Path("/interpreters/cancerTiering/run")
+    @Path("/interpreter/cancerTiering/run")
     @ApiOperation(value = CancerTieringInterpretationAnalysis.DESCRIPTION, response = Job.class)
     public Response interpretationCancerTieringRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -616,7 +616,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = CancerTieringInterpretationAnalysisParams.DESCRIPTION) CancerTieringInterpretationAnalysisParams params) {
+            @ApiParam(value = CancerTieringInterpretationAnalysisParams.DESCRIPTION, required = true) CancerTieringInterpretationAnalysisParams params) {
         return submitJob(CancerTieringInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 }

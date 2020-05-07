@@ -230,7 +230,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") CohortUpdateParams params) {
+            @ApiParam(value = "body") CohortUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
 
@@ -258,7 +258,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") CohortUpdateParams params) {
+            @ApiParam(value = "body") CohortUpdateParams params) {
         try {
             Map<String, Object> actionMap = new HashMap<>();
 
