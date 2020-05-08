@@ -55,12 +55,10 @@ import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.query.executors.CompoundHeterozygousQueryExecutor;
-import org.opencb.opencga.storage.core.variant.query.executors.DBAdaptorVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
-import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
@@ -90,6 +88,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
     private final List<VariantQueryExecutor> lazyVariantQueryExecutorsList = new ArrayList<>();
+    private final List<VariantAggregationExecutor> lazyVariantAggregationExecutorsList = new ArrayList<>();
     private CellBaseUtils cellBaseUtils;
 
     public static final String REMOVE_OPERATION_NAME = TaskMetadata.Type.REMOVE.name().toLowerCase();
@@ -1048,7 +1047,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw VariantQueryException.internalException(e);
         }
         // This should never happen, as the DBAdaptorVariantQueryExecutor can always run the query
-        throw new IllegalStateException("No VariantQueryExecutor found to run the query!");
+        throw new VariantQueryException("No VariantQueryExecutor found to run the query!");
     }
 
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
@@ -1098,13 +1097,48 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return               A FacetedQueryResult with the result of the query
      */
     public DataResult<FacetField> facet(Query query, QueryOptions options) {
+        addDefaultLimit(options, getOptions());
+        return getVariantAggregationExecutor(query, options).aggregation(query, options);
+    }
+
+    protected final List<VariantAggregationExecutor> getVariantAggregationExecutors() {
+        if (lazyVariantAggregationExecutorsList.isEmpty()) {
+            synchronized (lazyVariantAggregationExecutorsList) {
+                if (lazyVariantAggregationExecutorsList.isEmpty()) {
+                    lazyVariantAggregationExecutorsList.addAll(initVariantAggregationExecutors());
+                }
+            }
+        }
+        return lazyVariantAggregationExecutorsList;
+    }
+
+    protected List<VariantAggregationExecutor> initVariantAggregationExecutors() {
+        List<VariantAggregationExecutor> executors = new ArrayList<>(3);
+
         try {
-            addDefaultLimit(options, getOptions());
-            return new VariantAggregationExecutor(getVariantSearchManager(), dbName, this, getMetadataManager())
-                    .facet(query, options);
-        } catch (StorageEngineException e) {
+            executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager(), getDBName()));
+            executors.add(new ChromDensityVariantAggregationExecutor(this, getMetadataManager()));
+        } catch (Exception e) {
             throw VariantQueryException.internalException(e);
         }
+        return executors;
+    }
+
+    /**
+     * Determine which {@link VariantQueryExecutor} should be used to execute the given query.
+     *
+     * @param query   Query to execute
+     * @param options Options for the query
+     * @return VariantQueryExecutor to use
+     */
+    public VariantAggregationExecutor getVariantAggregationExecutor(Query query, QueryOptions options) {
+        for (VariantAggregationExecutor executor : getVariantAggregationExecutors()) {
+            if (executor.canUseThisExecutor(query, options)) {
+                return executor;
+            }
+        }
+        // This should never happen, as the DBAdaptorVariantQueryExecutor can always run the query
+        throw new VariantQueryException("No VariantAggregationExecutor found to run the query!");
     }
 
     @Override
