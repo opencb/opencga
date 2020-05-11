@@ -587,6 +587,7 @@ public class SampleIndexVariantBiConverter {
             sb.append("chromosome='").append(chromosome).append('\'');
             sb.append(", batchStart=").append(batchStart);
             sb.append(", gt='").append(gtEntry.getGt()).append('\'');
+            sb.append(", SampleIndexGtEntry='").append(gtEntry.toString()).append('\'');
             sb.append('}');
             return sb.toString();
         }
