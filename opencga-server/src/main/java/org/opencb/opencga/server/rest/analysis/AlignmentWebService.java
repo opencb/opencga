@@ -50,6 +50,7 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 
+import static org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis.INDEX_STATS_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
@@ -394,6 +395,10 @@ public class AlignmentWebService extends AnalysisWebService {
         SamtoolsWrapperParams samtoolsParams = new SamtoolsWrapperParams();
         samtoolsParams.setCommand("stats");
         samtoolsParams.setInputFile(params.getFile());
+
+        Map<String, String> statsParams = new HashMap<>();
+        statsParams.put(INDEX_STATS_PARAM, "true");
+        samtoolsParams.setSamtoolsParams(statsParams);
 
         logger.debug("ObjectMap (Samtools) : {}", samtoolsParams);
 

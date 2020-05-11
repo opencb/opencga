@@ -83,7 +83,7 @@
       "attributes": {}
     },
     {
-      "id": "firstFfragments",
+      "id": "firstFragments",
       "name": "firstFragments",
       "category": "number",
       "type": "INTEGER",
@@ -187,8 +187,8 @@
       "attributes": {}
     },
     {
-      "id": "readsMQ0",
-      "name": "readsMQ0",
+      "id": "readsMq0",
+      "name": "readsMq0",
       "category": "number",
       "type": "INTEGER",
       "required": false,
@@ -200,8 +200,8 @@
       "attributes": {}
     },
     {
-      "id": "readsQCFailed",
-      "name": "readsQCFailed",
+      "id": "readsQcFailed",
+      "name": "readsQcFailed",
       "category": "number",
       "type": "INTEGER",
       "required": false,

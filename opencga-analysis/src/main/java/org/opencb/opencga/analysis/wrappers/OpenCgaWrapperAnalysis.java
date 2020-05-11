@@ -117,8 +117,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
         OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
         try {
-            fileResult = catalogManager.getFileManager().get(getStudy(), filename,
-                    QueryOptions.empty(), token);
+            fileResult = catalogManager.getFileManager().get(getStudy(), filename, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("Error accessing file '" + filename + "' of the study " + getStudy() + "'", e);
         }

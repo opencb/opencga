@@ -160,9 +160,9 @@ public class AlignmentStorageManager extends StorageManager {
 
     public OpenCGAResult<String> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
         OpenCGAResult<File> fileResult;
-        fileResult = catalogManager.getFileManager().get(study, inputFile + ".stats.json", QueryOptions.empty(), token);
+        fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
 
-        if (fileResult.getNumMatches() == 1) {
+        if (fileResult.getNumResults() == 1) {
             for (AnnotationSet annotationSet : fileResult.getResults().get(0).getAnnotationSets()) {
                 if ("opencga_alignment_stats".equals(annotationSet.getId())) {
                     StopWatch watch = StopWatch.createStarted();

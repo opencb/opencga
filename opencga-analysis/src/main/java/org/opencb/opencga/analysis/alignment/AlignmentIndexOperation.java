@@ -81,7 +81,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
     @Override
     protected void run() throws Exception {
 
-        step(() -> {
+        step(ID, () -> {
             BamManager bamManager = new BamManager(inputPath);
             bamManager.createIndex(outputPath);
             bamManager.close();
@@ -90,13 +90,12 @@ public class AlignmentIndexOperation extends OpenCgaTool {
                 throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
             } else {
                 String catalogPath = Paths.get(new java.io.File(inputCatalogFile.getPath()).getParent()).toString();
-                moveFile(study, outputPath, Paths.get(inputPath.toFile().getParent()),
-                        catalogPath + "/" + outputPath.getFileName(), token);
+                moveFile(study, outputPath, Paths.get(inputPath.toFile().getParent()), catalogPath, token);
 
-//                FileUpdateParams updateParams = new FileUpdateParams()
-//                        .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(catalogPath + "/"
-//                                + outputPath.getFileName(), FileRelatedFile.Relation.PRODUCED_FROM)));
-//                catalogManager.getFileManager().update(study, inputFile, updateParams, QueryOptions.empty(), token);
+                FileUpdateParams updateParams = new FileUpdateParams()
+                        .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(catalogPath + "/"
+                                + outputPath.getFileName(), FileRelatedFile.Relation.PRODUCED_FROM)));
+                catalogManager.getFileManager().update(study, inputFile, updateParams, QueryOptions.empty(), token);
             }
         });
     }

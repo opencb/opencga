@@ -75,9 +75,21 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     private String readsNotSelectedFilename;
 
     private File outputFile;
+    private org.opencb.opencga.core.models.file.File inputCatalogFile;
 
     protected void check() throws Exception {
         super.check();
+
+        OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
+        try {
+            fileResult = catalogManager.getFileManager().get(getStudy(), inputFile, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException("Error accessing file '" + inputFile + "' of the study " + getStudy() + "'", e);
+        }
+        if (fileResult.getNumResults() <= 0) {
+            throw new ToolException("File '" + inputFile + "' not found in study '" + getStudy() + "'");
+        }
+        inputCatalogFile = fileResult.getResults().get(0);
 
         if (StringUtils.isEmpty(command)) {
             throw new ToolException("Missing samtools command. Supported commands are 'sort', 'index' and 'view'");
@@ -103,30 +115,30 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         }
 
         if (StringUtils.isEmpty(outputFilename)) {
+            String prefix = Paths.get(inputCatalogFile.getUri().getPath()).toFile().getName();
             switch (command) {
                 case "index": {
-                    String name = new File(inputFile).getName();
-                    if (name.endsWith("cram")) {
-                        outputFilename = new File(inputFile).getName() + ".crai";
+                    if (prefix.endsWith("cram")) {
+                        outputFilename = prefix + ".crai";
                     } else {
-                        outputFilename = new File(inputFile).getName() + ".bai";
+                        outputFilename = prefix + ".bai";
                     }
                     break;
                 }
                 case "faidx": {
-                    outputFilename = new File(inputFile).getName() + ".fai";
+                    outputFilename = prefix + ".fai";
                     break;
                 }
                 case "dict": {
-                    outputFilename = new File(inputFile).getName() + ".dict";
+                    outputFilename = prefix + ".dict";
                     break;
                 }
                 case "stats": {
-                    outputFilename = new File(inputFile).getName() + ".stats.txt";
+                    outputFilename = prefix + ".stats.txt";
                     break;
                 }
                 case "depth": {
-                    outputFilename = new File(inputFile).getName() + ".depth.txt";
+                    outputFilename = prefix + ".depth.txt";
                     break;
                 }
                 default: {
@@ -438,7 +450,6 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         .replace(" ", "_").replace("-", "_");
                 key = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, key);
                 String value = splits[2].split(" ")[0];
-                System.out.println(key + " = " + value);
                 map.put(key, value);
             } else if (count > 0) {
                 // SN (summary numbers) section has been processed
@@ -450,19 +461,9 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         AlignmentStats alignmentStats = JacksonUtils.getDefaultObjectMapper().convertValue(map, AlignmentStats.class);
 
         // Set file and sample IDs
-        OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = catalogManager.getFileManager().get(getStudy(), inputFile,
-                QueryOptions.empty(), token);
-        // Sanity check
-        if (fileResult.getNumResults() > 1) {
-            throw new ToolException("Multiple files found in catalog for " + inputFile);
-        }
-        if (fileResult.getNumResults() == 0) {
-            throw new ToolException("Not file found in catalog for " + inputFile);
-        }
-        org.opencb.opencga.core.models.file.File catalogFile = fileResult.getResults().get(0);
-        alignmentStats.setFileId(catalogFile.getId());
-        if (CollectionUtils.isNotEmpty(catalogFile.getSamples())) {
-            alignmentStats.setSampleId(catalogFile.getSamples().get(0).getId());
+        alignmentStats.setFileId(inputCatalogFile.getId());
+        if (CollectionUtils.isNotEmpty(inputCatalogFile.getSamples())) {
+            alignmentStats.setSampleId(inputCatalogFile.getSamples().get(0).getId());
         }
 
         return alignmentStats;
@@ -479,7 +480,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
         // Update catalog
         FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
-        catalogManager.getFileManager().update(getStudy(), inputFile, updateParams, QueryOptions.empty(), token);
+        catalogManager.getFileManager().update(getStudy(), inputCatalogFile.getId(), updateParams, QueryOptions.empty(), token);
     }
 
     public String getCommand() {
