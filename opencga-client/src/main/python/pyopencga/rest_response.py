@@ -108,7 +108,7 @@ class RestResponse:
             elif 'include' in self.params:
                 fields = self.params['include'].split(',')
             else:
-                fields = ''
+                fields = response['results'][0].keys()
 
             limit = limit if limit is not None else len(response['results'])
             if limit:

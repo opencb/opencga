@@ -37,9 +37,10 @@ class OpencgaClient(object):
         self.auto_refresh = auto_refresh
         self.on_retry = on_retry
         self.clients = []
-        self.user_id = None  # if user and session_id are supplied, we can log out
+        self.user_id = None
         self._login_handler = None
         self.token = token
+        self.refreshToken = None
         self._create_clients()
         self._check_versions()
 
@@ -103,13 +104,13 @@ class OpencgaClient(object):
         """
         def login_handler(refresh=False):
             self.user_id = user
-            # when a valid token and no password is provided to login() this returns a new token
             if refresh:
-                data = {}
+                data = {'refreshToken': self.refresh_token}
             else:
-                data = {'password': password}
-            # call to login() to get the token and set it to all clients
-            self.token = User(self.configuration).login(user=user, data=data).get_result(0)['token']
+                data = {'user': user, 'password': password}
+            tokens = User(self.configuration).login(data=data).get_result(0)
+            self.token = tokens['token']
+            self.refresh_token = tokens['refreshToken']
             for client in self.clients:
                 client.token = self.token
             return self.token
@@ -119,9 +120,13 @@ class OpencgaClient(object):
         if user is not None:
             if password is None:
                 password = getpass.getpass()
-            self._login_handler = self._make_login_handler(user, password)
 
-        assert self._login_handler, "Can't login without username and password provided"
+        try:
+            assert user and password
+        except AssertionError:
+            raise ValueError("User and password required")
+
+        self._login_handler = self._make_login_handler(user, password)
         self._login_handler()
 
     def logout(self):
