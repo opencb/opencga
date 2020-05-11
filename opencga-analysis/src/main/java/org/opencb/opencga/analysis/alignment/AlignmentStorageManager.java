@@ -248,9 +248,11 @@ public class AlignmentStorageManager extends StorageManager {
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
 
         for (String geneName : geneNames) {
+
             // Init gene coverage stats
             GeneCoverageStats geneCoverageStats = new GeneCoverageStats();
             geneCoverageStats.setFileId(file.getId());
+
             geneCoverageStats.setGeneName(geneName);
             if (CollectionUtils.isNotEmpty(file.getSamples())) {
                 geneCoverageStats.setSampleId(file.getSamples().get(0).getId());
@@ -258,8 +260,12 @@ public class AlignmentStorageManager extends StorageManager {
 
             // Get exon regions per transcript
             Map<String, List<Region>> exonRegions = getExonRegionsPerTranscript(geneName, species, assembly);
+//            for (Map.Entry<String, List<Region>> entry : exonRegions.entrySet()) {
+//                System.out.println(entry.getKey() + " -> " + StringUtils.join(entry.getValue().toArray(), ","));
+//            }
 
             // Compute coverage stats per transcript
+            List<TranscriptCoverageStats> transcriptCoverageStatsList = new ArrayList<>();
             for (String transcriptId : exonRegions.keySet()) {
                 TranscriptCoverageStats transcriptCoverageStats = new TranscriptCoverageStats();
                 transcriptCoverageStats.setTranscriptId(transcriptId);
@@ -326,7 +332,10 @@ public class AlignmentStorageManager extends StorageManager {
                 }
                 transcriptCoverageStats.setDepths(depths);
                 transcriptCoverageStats.setLowCoverageRegions(lowCoverageRegions);
+
+                transcriptCoverageStatsList.add(transcriptCoverageStats);
             }
+            geneCoverageStats.setStats(transcriptCoverageStatsList);
 
             geneCoverageStatsList.add(geneCoverageStats);
         }
@@ -451,18 +460,20 @@ public class AlignmentStorageManager extends StorageManager {
                 .toClientConfiguration());
         GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
         QueryResponse<Gene> response = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty());
-        if (CollectionUtils.isNotEmpty(response.allResults())) {
-            for (Gene gene : response.allResults()) {
-                // Create region from gene coordinates
-                if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
-                    for (Transcript transcript : gene.getTranscripts()) {
-                        List<Region> regions = new ArrayList<>();
-                        if (CollectionUtils.isNotEmpty(transcript.getExons())) {
-                            for (Exon exon : transcript.getExons()) {
+        Gene gene = response.firstResult();
+        if (gene != null) {
+            // Create region from gene coordinates
+            if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
+                for (Transcript transcript : gene.getTranscripts()) {
+                    List<Region> regions = new ArrayList<>();
+                    if (CollectionUtils.isNotEmpty(transcript.getExons())) {
+                        for (Exon exon : transcript.getExons()) {
+                            if (exon.getGenomicCodingEnd() != 0 && exon.getGenomicCodingStart() != 0) {
                                 regions.add(new Region(exon.getChromosome(), exon.getGenomicCodingStart(), exon.getGenomicCodingEnd()));
-
                             }
                         }
+                    }
+                    if (CollectionUtils.isNotEmpty(regions)) {
                         regionMap.put(transcript.getId(), regions);
                     }
                 }
@@ -472,9 +483,7 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
     private File extractAlignmentOrCoverageFile(String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
-        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr,
-                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.URI.key(),
-                        FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.FORMAT.key())), sessionId);
+        OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr, QueryOptions.empty(), sessionId);
         if (fileResult.getNumResults() == 0) {
             throw new CatalogException("File " + fileIdStr + " not found");
         }
