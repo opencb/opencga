@@ -37,9 +37,10 @@ class OpencgaClient(object):
         self.auto_refresh = auto_refresh
         self.on_retry = on_retry
         self.clients = []
-        self.user_id = None  # if user and session_id are supplied, we can log out
+        self.user_id = None
         self._login_handler = None
         self.token = token
+        self.refreshToken = token
         self._create_clients()
         self._check_versions()
 
@@ -92,7 +93,7 @@ class OpencgaClient(object):
         for client in self.clients:
             client.on_retry = self.on_retry
 
-    def _make_login_handler(self, user, password, refresh_token):
+    def _make_login_handler(self, user, password):
         """
         Returns a closure that performs the log-in. This will be called on retries
         if the current session ever expires.
@@ -104,27 +105,28 @@ class OpencgaClient(object):
         def login_handler(refresh=False):
             self.user_id = user
             if refresh:
-                data = {'refreshToken': refresh_token}
+                data = {'refreshToken': self.refresh_token}
             else:
                 data = {'user': user, 'password': password}
-            self.token = User(self.configuration).login(data=data).get_result(0)['token']
+            tokens = User(self.configuration).login(data=data).get_result(0)
+            self.token = tokens['token']
+            self.refresh_token = tokens['refreshToken']
             for client in self.clients:
                 client.token = self.token
             return self.token
         return login_handler
 
-    def login(self, user=None, password=None, refresh_token=None):
+    def login(self, user=None, password=None):
         if user is not None:
             if password is None:
                 password = getpass.getpass()
 
         try:
-            assert refresh_token or user
+            assert user and password
         except AssertionError:
-            raise ValueError("User or token required")
+            raise ValueError("User and password required")
 
-        self._login_handler = self._make_login_handler(user, password,
-                                                       refresh_token)
+        self._login_handler = self._make_login_handler(user, password)
         self._login_handler()
 
     def logout(self):
