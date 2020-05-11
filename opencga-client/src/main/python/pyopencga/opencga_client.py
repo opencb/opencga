@@ -92,7 +92,7 @@ class OpencgaClient(object):
         for client in self.clients:
             client.on_retry = self.on_retry
 
-    def _make_login_handler(self, user, password):
+    def _make_login_handler(self, user, password, refresh_token):
         """
         Returns a closure that performs the log-in. This will be called on retries
         if the current session ever expires.
@@ -103,25 +103,28 @@ class OpencgaClient(object):
         """
         def login_handler(refresh=False):
             self.user_id = user
-            # when a valid token and no password is provided to login() this returns a new token
             if refresh:
-                data = {'user': user}
+                data = {'refreshToken': refresh_token}
             else:
                 data = {'user': user, 'password': password}
-            # call to login() to get the token and set it to all clients
             self.token = User(self.configuration).login(data=data).get_result(0)['token']
             for client in self.clients:
                 client.token = self.token
             return self.token
         return login_handler
 
-    def login(self, user=None, password=None):
+    def login(self, user=None, password=None, refresh_token=None):
         if user is not None:
             if password is None:
                 password = getpass.getpass()
-            self._login_handler = self._make_login_handler(user, password)
 
-        assert self._login_handler, "Can't login without username and password provided"
+        try:
+            assert refresh_token or user
+        except AssertionError:
+            raise ValueError("User or token required")
+
+        self._login_handler = self._make_login_handler(user, password,
+                                                       refresh_token)
         self._login_handler()
 
     def logout(self):
