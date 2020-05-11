@@ -40,7 +40,7 @@ class OpencgaClient(object):
         self.user_id = None
         self._login_handler = None
         self.token = token
-        self.refreshToken = token
+        self.refreshToken = None
         self._create_clients()
         self._check_versions()
 
