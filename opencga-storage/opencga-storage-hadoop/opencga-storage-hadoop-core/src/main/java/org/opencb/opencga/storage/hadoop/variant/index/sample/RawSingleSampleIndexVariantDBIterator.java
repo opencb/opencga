@@ -8,6 +8,7 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 
@@ -16,7 +17,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class RawSingleSampleIndexVariantDBIterator implements Iterator<SampleVariantIndexEntry> {
+public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<SampleVariantIndexEntry> {
 
     private final Iterator<SampleVariantIndexEntry> iterator;
     protected int count = 0;
@@ -38,7 +39,7 @@ public class RawSingleSampleIndexVariantDBIterator implements Iterator<SampleVar
                     RawSampleIndexEntryFilter filter = new RawSampleIndexEntryFilter(query, region);
                     try {
                         ResultScanner scanner = table.getScanner(scan);
-//                        addCloseable(scanner);
+                        addCloseable(scanner);
                         Iterator<Result> resultIterator = scanner.iterator();
                         Iterator<Iterator<SampleVariantIndexEntry>> transform = Iterators.transform(resultIterator,
                                 result -> {

@@ -11,6 +11,7 @@ import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.query.executors.AbstractLocalVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
@@ -67,6 +68,28 @@ public class SampleIndexVariantAggregationExecutor extends AbstractLocalVariantA
     protected VariantQueryResult<FacetField> aggregation(Query query, QueryOptions options, String facet) throws Exception {
         StopWatch stopWatch = StopWatch.createStarted();
 
+        FieldVariantAccumulator<SampleVariantIndexEntry> accumulator = createAccumulator(query, facet);
+
+        FacetField topLevelField;
+        try (CloseableIterator<SampleVariantIndexEntry> sampleVariantIndexEntryIterator = sampleIndexDBAdaptor.rawIterator(query)) {
+            topLevelField = accumulator.createField();
+
+            long numMatches = 0;
+            int count = 0;
+            while (sampleVariantIndexEntryIterator.hasNext()) {
+                count++;
+                accumulator.accumulate(topLevelField, sampleVariantIndexEntryIterator.next());
+            }
+            numMatches += count;
+
+            accumulator.cleanEmptyBuckets(topLevelField);
+
+            return new VariantQueryResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), 1, numMatches, Collections.emptyList(),
+                    Collections.singletonList(topLevelField), null, SampleIndexVariantQueryExecutor.SAMPLE_INDEX_TABLE_SOURCE);
+        }
+    }
+
+    private FieldVariantAccumulator<SampleVariantIndexEntry> createAccumulator(Query query, String facet) {
         String[] split = facet.split(NESTED_FACET_SEPARATOR);
         FieldVariantAccumulator<SampleVariantIndexEntry> accumulator = null;
         // Reverse traverse
@@ -145,22 +168,6 @@ public class SampleIndexVariantAggregationExecutor extends AbstractLocalVariantA
             }
             accumulator = thisAccumulator;
         }
-
-        Iterator<SampleVariantIndexEntry> sampleVariantIndexEntryIterator = sampleIndexDBAdaptor.rawIterator(query);
-
-        FacetField topLevelField = accumulator.createField();
-
-        long numMatches = 0;
-        int count = 0;
-        while (sampleVariantIndexEntryIterator.hasNext()) {
-            count++;
-            accumulator.accumulate(topLevelField, sampleVariantIndexEntryIterator.next());
-        }
-        numMatches += count;
-
-        accumulator.cleanEmptyBuckets(topLevelField);
-
-        return new VariantQueryResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), 1, numMatches, Collections.emptyList(),
-                Collections.singletonList(topLevelField), null, SampleIndexVariantQueryExecutor.SAMPLE_INDEX_TABLE_SOURCE);
+        return accumulator;
     }
 }

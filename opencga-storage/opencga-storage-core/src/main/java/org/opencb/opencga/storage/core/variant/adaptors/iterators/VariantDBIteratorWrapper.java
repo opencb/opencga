@@ -10,6 +10,9 @@ class VariantDBIteratorWrapper extends VariantDBIterator {
 
     VariantDBIteratorWrapper(Iterator<Variant> iterator) {
         this.iterator = iterator;
+        if (iterator instanceof AutoCloseable) {
+            addCloseable(((AutoCloseable) iterator));
+        }
     }
 
     @Override

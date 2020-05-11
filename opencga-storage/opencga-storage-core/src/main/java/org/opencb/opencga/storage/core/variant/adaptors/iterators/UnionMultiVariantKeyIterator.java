@@ -16,7 +16,6 @@ public class UnionMultiVariantKeyIterator extends VariantDBIteratorWrapper {
     public UnionMultiVariantKeyIterator(List<VariantDBIterator> iterators) {
         super(new UnionMultiKeyIterator<>(VariantDBIterator.VARIANT_COMPARATOR, iterators));
         this.iterators = iterators;
-        this.iterators.forEach(this::addCloseable);
     }
 
     @Override

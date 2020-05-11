@@ -18,8 +18,6 @@ public class IntersectMultiVariantKeyIterator extends VariantDBIteratorWrapper {
         super(new IntersectMultiKeyIterator<>(VariantDBIterator.VARIANT_COMPARATOR, iterators, negatedIterators));
         this.iterators = iterators;
         this.negatedIterators = negatedIterators;
-        this.iterators.forEach(this::addCloseable);
-        this.negatedIterators.forEach(this::addCloseable);
     }
 
     @Override

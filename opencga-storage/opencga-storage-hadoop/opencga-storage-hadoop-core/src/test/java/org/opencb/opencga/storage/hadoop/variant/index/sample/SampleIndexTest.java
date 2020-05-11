@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.TableName;
@@ -162,7 +163,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void regenerateSampleIndex() throws Exception {
-
         for (String study : studies) {
             int studyId = dbAdaptor.getMetadataManager().getStudyId(study);
             String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
@@ -441,24 +441,19 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void testAggregation() throws Exception {
         SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor());
 
-        VariantQueryResult<FacetField> result = executor.aggregation(new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0)),
-                new QueryOptions(QueryOptions.FACET, "chromosome>>type>>ct"));
+        testAggregation(executor, "chromosome>>type>>ct");
+        testAggregation(executor, "type>>ct");
+        testAggregation(executor, "gt>>type>>ct>>biotype");
+        testAggregation(executor, "clinicalSignificance>>gt>>type>>ct>>biotype");
+    }
 
-        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+    private void testAggregation(SampleIndexVariantAggregationExecutor executor, String facet) throws JsonProcessingException {
+        Query query = new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0));
+        assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, facet)));
 
-        result = executor.aggregation(new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0)),
-                new QueryOptions(QueryOptions.FACET, "type>>ct"));
+        VariantQueryResult<FacetField> result = executor.aggregation(query,
+                new QueryOptions(QueryOptions.FACET, facet));
 
-        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
-
-
-        result = executor.aggregation(new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0)),
-                new QueryOptions(QueryOptions.FACET, "gt>>type>>ct>>biotype"));
-
-        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
-
-        result = executor.aggregation(new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0)),
-                new QueryOptions(QueryOptions.FACET, "clinical>>gt>>type>>ct>>biotype"));
 
         System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
     }

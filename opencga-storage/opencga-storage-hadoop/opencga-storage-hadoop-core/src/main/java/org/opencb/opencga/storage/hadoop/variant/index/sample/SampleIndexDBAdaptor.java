@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.utils.iterators.UnionMultiKeyIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.IntersectMultiVariantKeyIterator;
@@ -240,11 +241,11 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         });
     }
 
-    public Iterator<SampleVariantIndexEntry> rawIterator(Query query) throws IOException {
+    public CloseableIterator<SampleVariantIndexEntry> rawIterator(Query query) throws IOException {
         return rawIterator(parser.parse(query));
     }
 
-    public Iterator<SampleVariantIndexEntry> rawIterator(SampleIndexQuery query) throws IOException {
+    public CloseableIterator<SampleVariantIndexEntry> rawIterator(SampleIndexQuery query) throws IOException {
         Map<String, List<String>> samples = query.getSamplesMap();
 
         if (samples.isEmpty()) {
@@ -258,7 +259,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
             if (gts.isEmpty()) {
                 // If empty, should find none. Return empty iterator
-                return Collections.emptyIterator();
+                return CloseableIterator.emptyIterator();
             } else {
                 logger.info("Single sample indexes iterator");
                 return rawInternalIterator(query.forSample(sample, gts));
@@ -288,7 +289,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             }
         }
 
-        Iterator<SampleVariantIndexEntry> iterator;
+        CloseableIterator<SampleVariantIndexEntry> iterator;
         if (operation.equals(QueryOperation.OR)) {
             logger.info("Union of " + iterators.size() + " sample indexes");
             iterator = new UnionMultiKeyIterator<>(

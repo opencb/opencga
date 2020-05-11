@@ -17,7 +17,7 @@ public class IntersectMultiKeyIterator<T> extends MultiKeyIterator<T> {
                                      List<? extends Iterator<T>> negatedIterators) {
         super(comparator, iterators);
         this.negatedIterators = negatedIterators;
-//        negatedIterators.forEach(this::addCloseable);
+        negatedIterators.forEach(this::addCloseableOptional);
         negatedTs = new ArrayList<>(negatedIterators.size());
     }
 

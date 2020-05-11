@@ -110,7 +110,6 @@ public abstract class AbstractLocalVariantAggregationExecutor extends VariantAgg
     }
 
     protected static class ChromDensityAccumulator<T> extends FieldVariantAccumulator<T> {
-        private final VariantStorageMetadataManager metadataManager;
         private final Region region;
         private final int step;
         private final int numSteps;
@@ -119,14 +118,13 @@ public abstract class AbstractLocalVariantAggregationExecutor extends VariantAgg
         public ChromDensityAccumulator(VariantStorageMetadataManager metadataManager, Region region,
                                         FieldVariantAccumulator<T> nestedFieldAccumulator, int step, Function<T, Integer> getStart) {
             super(nestedFieldAccumulator);
-            this.metadataManager = metadataManager;
             this.region = region;
             this.step = step;
             this.getStart = getStart;
 
             if (region.getEnd() == Integer.MAX_VALUE) {
-                for (Integer studyId : this.metadataManager.getStudyIds()) {
-                    StudyMetadata studyMetadata = this.metadataManager.getStudyMetadata(studyId);
+                for (Integer studyId : metadataManager.getStudyIds()) {
+                    StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
                     VariantFileHeaderComplexLine contig = studyMetadata.getVariantHeaderLine("contig", region.getChromosome());
                     if (contig == null) {
                         contig = studyMetadata.getVariantHeaderLine("contig", "chr" + region.getChromosome());
@@ -248,7 +246,8 @@ public abstract class AbstractLocalVariantAggregationExecutor extends VariantAgg
             // TODO: Accept subset of categories
         }
 
-        public CategoricalAccumulator(Function<T, Collection<String>> getCategory, String name, FieldVariantAccumulator<T> nestedFieldAccumulator) {
+        public CategoricalAccumulator(Function<T, Collection<String>> getCategory, String name,
+                                      FieldVariantAccumulator<T> nestedFieldAccumulator) {
             super(nestedFieldAccumulator);
             this.getCategory = getCategory;
             this.name = name;
@@ -261,8 +260,7 @@ public abstract class AbstractLocalVariantAggregationExecutor extends VariantAgg
 
         @Override
         public List<FacetField.Bucket> prepareBuckets1() {
-            List<FacetField.Bucket> buckets = new ArrayList<>();
-            return buckets;
+            return new ArrayList<>();
         }
 
         @Override

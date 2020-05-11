@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-abstract class MultiKeyIterator<T> implements Iterator<T> {
+abstract class MultiKeyIterator<T> extends CloseableIterator<T> {
 
     protected final Comparator<T> comparator;
     protected final List<? extends Iterator<T>> iterators;
@@ -17,6 +17,7 @@ abstract class MultiKeyIterator<T> implements Iterator<T> {
     MultiKeyIterator(Comparator<T> comparator, List<? extends Iterator<T>> iterators) {
         this.comparator = comparator;
         this.iterators = iterators;
+        this.iterators.forEach(this::addCloseableOptional);
         next = null;
         prev = null;
         count = 0;
