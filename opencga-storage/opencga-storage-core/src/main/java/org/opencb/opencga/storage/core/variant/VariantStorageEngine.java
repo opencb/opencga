@@ -1098,6 +1098,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public DataResult<FacetField> facet(Query query, QueryOptions options) {
         addDefaultLimit(options, getOptions());
+        query = preProcessQuery(query, options);
         return getVariantAggregationExecutor(query, options).aggregation(query, options);
     }
 

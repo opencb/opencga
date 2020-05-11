@@ -581,6 +581,15 @@ public class SampleIndexVariantBiConverter {
             }
         }
 
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("ByteSampleIndexGtEntryIterator{");
+            sb.append("chromosome='").append(chromosome).append('\'');
+            sb.append(", batchStart=").append(batchStart);
+            sb.append(", gt='").append(gtEntry.getGt()).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
     }
 
     private static boolean hasEncodedAlleles(byte[] bytes, int offset) {

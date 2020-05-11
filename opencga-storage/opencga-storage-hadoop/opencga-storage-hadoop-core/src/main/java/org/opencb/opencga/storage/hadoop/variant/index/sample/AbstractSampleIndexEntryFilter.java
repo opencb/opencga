@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
@@ -12,6 +13,8 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationInd
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -31,6 +34,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
 
     private SingleSampleIndexQuery query;
     private Region regionFilter;
+    private Logger logger = LoggerFactory.getLogger(AbstractSampleIndexEntryFilter.class);
 
     private final List<Integer> annotationIndexPositions;
 
@@ -200,7 +204,13 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
     private T filter(SampleIndexEntryIterator variants, MutableInt expectedResultsFromAnnotation) {
         // Either call to next() or to skip(), but no both
 
-        AnnotationIndexEntry annotationIndexEntry = variants.nextAnnotationIndexEntry();
+        AnnotationIndexEntry annotationIndexEntry;
+        try {
+            annotationIndexEntry = variants.nextAnnotationIndexEntry();
+        } catch (RuntimeException e) {
+            logger.error("Error reading AnnotationIndexEntry at " + variants.toString());
+            throw VariantQueryException.internalException(e);
+        }
 
         // Test annotation index (if any)
         if (annotationIndexEntry == null
