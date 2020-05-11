@@ -105,11 +105,11 @@ class OpencgaClient(object):
             self.user_id = user
             # when a valid token and no password is provided to login() this returns a new token
             if refresh:
-                data = {}
+                data = {'user': user}
             else:
-                data = {'password': password}
+                data = {'user': user, 'password': password}
             # call to login() to get the token and set it to all clients
-            self.token = User(self.configuration).login(user=user, data=data).get_result(0)['token']
+            self.token = User(self.configuration).login(data=data).get_result(0)['token']
             for client in self.clients:
                 client.token = self.token
             return self.token
