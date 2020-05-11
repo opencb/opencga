@@ -438,6 +438,108 @@ public class AnnotationIndexConverter {
         }
     }
 
+    public static List<String> getSoNamesFromMask(short mask) {
+        if (mask == 0) {
+            return Collections.emptyList();
+        }
+
+        List<String> names = new ArrayList<>(5);
+        for (int idx = Short.SIZE; idx > 0; idx--) {
+            short subMask = (short) (1 << idx);
+            if (IndexUtils.testIndexAny(subMask, mask)) {
+                String soName = getSoNameFromMask(subMask);
+                if (soName != null) {
+                    names.add(soName);
+                }
+            }
+        }
+        return names;
+    }
+
+    public static String getSoNameFromMask(short mask) {
+        if (mask == 0) {
+            return null;
+        }
+
+        switch (mask) {
+            case CT_MISSENSE_VARIANT_MASK:
+                return MISSENSE_VARIANT;
+            case CT_FRAMESHIFT_VARIANT_MASK:
+                return FRAMESHIFT_VARIANT;
+            case CT_INFRAME_DELETION_MASK:
+                return INFRAME_DELETION;
+            case CT_INFRAME_INSERTION_MASK:
+                return INFRAME_INSERTION;
+            case CT_START_LOST_MASK:
+                return START_LOST;
+            case CT_STOP_GAINED_MASK:
+                return STOP_GAINED;
+            case CT_STOP_LOST_MASK:
+                return STOP_LOST;
+            case CT_SPLICE_ACCEPTOR_VARIANT_MASK:
+                return SPLICE_ACCEPTOR_VARIANT;
+            case CT_SPLICE_DONOR_VARIANT_MASK:
+                return SPLICE_DONOR_VARIANT;
+            case CT_TRANSCRIPT_ABLATION_MASK:
+                return TRANSCRIPT_ABLATION;
+            case CT_TRANSCRIPT_AMPLIFICATION_MASK:
+                return TRANSCRIPT_AMPLIFICATION;
+            case CT_INITIATOR_CODON_VARIANT_MASK:
+                return INITIATOR_CODON_VARIANT;
+            case CT_SPLICE_REGION_VARIANT_MASK:
+                return SPLICE_REGION_VARIANT;
+            case CT_INCOMPLETE_TERMINAL_CODON_VARIANT_MASK:
+                return INCOMPLETE_TERMINAL_CODON_VARIANT;
+            case CT_UTR_MASK: // imprecise
+            case CT_MIRNA_TFBS_MASK: // imprecise
+            default:
+                return "other";
+        }
+    }
+
+    public static List<String> getBiotypesFromMask(byte mask) {
+        if (mask == 0) {
+            return Collections.emptyList();
+        }
+
+        List<String> names = new ArrayList<>(5);
+        for (int idx = Byte.SIZE; idx > 0; idx--) {
+            byte subMask = (byte) (1 << idx);
+            if (IndexUtils.testIndexAny(subMask, mask)) {
+                String soName = getBiotypeFromMask(subMask);
+                if (soName != null) {
+                    names.add(soName);
+                }
+            }
+        }
+        return names;
+    }
+
+    public static String getBiotypeFromMask(byte btMask) {
+
+        switch (btMask) {
+            case 0:
+                return null;
+            case BT_NONSENSE_MEDIATED_DECAY_MASK:
+                return NONSENSE_MEDIATED_DECAY;
+            case BT_MIRNA_MASK:
+                return MIRNA;
+            case BT_RETAINED_INTRON_MASK:
+                return RETAINED_INTRON;
+            case BT_SNRNA_MASK:
+                return SNRNA;
+            case BT_SNORNA_MASK:
+                return SNORNA;
+            case BT_PROTEIN_CODING_MASK:
+                return PROTEIN_CODING;
+            case BT_LNCRNA_MASK: // imprecise
+            case BT_OTHER_NON_PSEUDOGENE: // imprecise
+            default:
+                return "other";
+        }
+
+    }
+
     public static boolean isImpreciseBtMask(byte btMask) {
         return IndexUtils.testIndexAny(btMask, ((byte) (BT_LNCRNA_MASK | BT_OTHER_NON_PSEUDOGENE)));
     }
@@ -482,6 +584,45 @@ public class AnnotationIndexConverter {
                 } else {
                     return BT_OTHER_NON_PSEUDOGENE;
                 }
+        }
+    }
+
+    public static List<ClinicalSignificance> getClinicalsFromMask(byte mask) {
+        if (mask == 0) {
+            return Collections.emptyList();
+        }
+
+        List<ClinicalSignificance> names = new ArrayList<>(5);
+        for (int idx = Byte.SIZE; idx > 0; idx--) {
+            byte subMask = (byte) (1 << idx);
+            if (IndexUtils.testIndexAny(subMask, mask)) {
+                ClinicalSignificance cs = getClinicalFromMask(subMask);
+                if (cs != null) {
+                    names.add(cs);
+                }
+            }
+        }
+        return names;
+    }
+
+    public static ClinicalSignificance getClinicalFromMask(byte mask) {
+        switch (mask) {
+            case 0:
+                return null;
+            case CLINICAL_LIKELY_BENIGN_MASK:
+                return ClinicalSignificance.likely_benign;
+            case CLINICAL_VUS_MASK:
+                return ClinicalSignificance.VUS;
+            case CLINICAL_LIKELY_PATHOGENIC_MASK:
+                return ClinicalSignificance.likely_pathogenic;
+            case CLINICAL_PATHOGENIC_MASK:
+                return ClinicalSignificance.pathogenic;
+            case CLINICAL_SOMATIC_MASK:
+            case CLINICAL_TARGET_DRUG_MASK:
+            case CLINICAL_PGX:
+            case CLINICAL_8_UNUSED_MASK:
+            default:
+                return null;
         }
     }
 

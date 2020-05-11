@@ -18,10 +18,8 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -38,6 +36,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
@@ -438,5 +437,30 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         }
     }
 
+    @Test
+    public void testAggregation() throws Exception {
+        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor());
+
+        VariantQueryResult<FacetField> result = executor.aggregation(new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0)),
+                new QueryOptions(QueryOptions.FACET, "chromosome>>type>>ct"));
+
+        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+
+        result = executor.aggregation(new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0)),
+                new QueryOptions(QueryOptions.FACET, "type>>ct"));
+
+        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+
+
+        result = executor.aggregation(new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0)),
+                new QueryOptions(QueryOptions.FACET, "gt>>type>>ct>>biotype"));
+
+        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+
+        result = executor.aggregation(new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0)),
+                new QueryOptions(QueryOptions.FACET, "clinical>>gt>>type>>ct>>biotype"));
+
+        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+    }
 
 }

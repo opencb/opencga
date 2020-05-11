@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
 import java.util.Objects;
 
@@ -13,9 +14,15 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFile
 public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEntry> {
 
     private final Variant variant;
+    private final String genotype;
     private final short fileIndex;
+    private final AnnotationIndexEntry annotationIndexEntry;
 
     public SampleVariantIndexEntry(Variant variant, short fileIndex) {
+        this(variant, fileIndex, null, null);
+    }
+
+    public SampleVariantIndexEntry(Variant variant, short fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry) {
         if (CollectionUtils.isEmpty(variant.getImpl().getStudies())) {
             this.variant = variant;
         } else {
@@ -34,6 +41,8 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
                     null, null));
         }
         this.fileIndex = fileIndex;
+        this.genotype = genotype;
+        this.annotationIndexEntry = annotationIndexEntry;
     }
 
     public Variant getVariant() {
@@ -42,6 +51,14 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
 
     public short getFileIndex() {
         return fileIndex;
+    }
+
+    public String getGenotype() {
+        return genotype;
+    }
+
+    public AnnotationIndexEntry getAnnotationIndexEntry() {
+        return annotationIndexEntry;
     }
 
     @Override

@@ -34,6 +34,12 @@ import java.util.function.UnaryOperator;
 public abstract class VariantDBIterator implements Iterator<Variant>, AutoCloseable {
 
     public static final EmptyVariantDBIterator EMPTY_ITERATOR = new EmptyVariantDBIterator();
+    public static final Comparator<Variant> VARIANT_COMPARATOR = Comparator.comparing(Variant::getChromosome)
+            .thenComparing(Variant::getStart)
+            .thenComparing(Variant::getEnd)
+            .thenComparing(Variant::getReference)
+            .thenComparing(Variant::getAlternate)
+            .thenComparing(Variant::toString);
     protected long timeFetching = 0;
     protected long timeConverting = 0;
     private List<AutoCloseable> closeables = new ArrayList<>();
@@ -165,31 +171,6 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
 
     public static VariantDBIterator wrapper(Iterator<Variant> variant) {
         return new VariantDBIteratorWrapper(variant);
-    }
-
-    private static class VariantDBIteratorWrapper extends VariantDBIterator {
-        private final Iterator<Variant> iterator;
-        private int count = 0;
-
-        VariantDBIteratorWrapper(Iterator<Variant> iterator) {
-            this.iterator = iterator;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return fetch(iterator::hasNext);
-        }
-
-        @Override
-        public Variant next() {
-            count++;
-            return fetch(iterator::next);
-        }
-
-        @Override
-        public int getCount() {
-            return count;
-        }
     }
 
 }

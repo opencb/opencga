@@ -28,6 +28,17 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
      */
     Variant next();
 
+    default SampleVariantIndexEntry nextSampleVariantIndexEntry() {
+        AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
+        short fileIndex = 0;
+        if (hasFileIndex()) {
+            fileIndex = nextFileIndexEntry();
+        }
+        String genotype = nextGenotype();
+        Variant variant = next();
+        return new SampleVariantIndexEntry(variant, fileIndex, genotype, annotationIndexEntry);
+    }
+
     /**
      * @return the index of the element that would be returned by a
      * subsequent call to {@code next}.

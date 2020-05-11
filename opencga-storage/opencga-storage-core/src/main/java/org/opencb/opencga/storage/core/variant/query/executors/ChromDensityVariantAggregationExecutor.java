@@ -75,7 +75,7 @@ public class ChromDensityVariantAggregationExecutor extends AbstractLocalVariant
             }
             switch (nestedFieldName) {
                 case "type":
-                    nestedFieldAccumulator = new VariantTypeAccumulator();
+                    nestedFieldAccumulator = new VariantTypeAccumulator<>(Variant::getType);
                     break;
                 default:
                     throw invalidNestedField(nestedFieldName);
@@ -118,8 +118,8 @@ public class ChromDensityVariantAggregationExecutor extends AbstractLocalVariant
                             .append(QueryOptions.INCLUDE, VariantField.ID)
                             .append(QueryOptions.SORT, true));
 
-            ChromDensityAccumulator chromDensityAccumulator =
-                    new ChromDensityAccumulator(metadataManager, region, nestedFieldAccumulator, step);
+            VariantChromDensityAccumulator chromDensityAccumulator =
+                    new VariantChromDensityAccumulator(metadataManager, region, nestedFieldAccumulator, step);
 
             logger.info("Query : " + regionQuery.toJson());
 
