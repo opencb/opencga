@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
@@ -42,6 +43,7 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by pfurio on 05/05/17.
@@ -56,6 +58,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     private final String SOLR = "Solr";
     private final String VARIANT_STORAGE = "VariantStorage";
     private final String CATALOG_MONGO_DB = "CatalogMongoDB";
+    private static String healthCheckErrorMessage = null;
     private static LocalTime lastAccess = LocalTime.now();
     private static HashMap<String, String> healthCheckResults = new HashMap<>();
 
@@ -103,70 +106,89 @@ public class MetaWSServer extends OpenCGAWSServer {
     @ApiOperation(httpMethod = "GET", value = "Database status.", response = Map.class)
     public Response status() {
 
-        OpenCGAResult queryResult = new OpenCGAResult();
-        queryResult.setTime(0);
+        OpenCGAResult<Map<String, String>> queryResult = new OpenCGAResult<>();
+        StopWatch stopWatch = StopWatch.createStarted();
 
-        String storageEngineId;
-        StringBuilder errorMsg = new StringBuilder();
         long elapsedTime = Duration.between(lastAccess, LocalTime.now()).getSeconds();
 
         if (!isHealthy() || elapsedTime > configuration.getHealthCheck().getInterval()) {
             logger.info("HealthCheck results without cache!");
-            lastAccess = LocalTime.now();
-            healthCheckResults.clear();
-
-            try {
-                if (catalogManager.getDatabaseStatus()) {
-                    healthCheckResults.put(CATALOG_MONGO_DB, OKAY);
-                } else {
-                    healthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);
-                }
-            } catch (Exception e) {
-                healthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);
-                errorMsg.append(e.getMessage());
-            }
-
-            try {
-                storageEngineId = storageEngineFactory.getVariantStorageEngine().getStorageEngineId();
-                healthCheckResults.put("VariantStorageId", storageEngineId);
-            } catch (Exception e) {
-                errorMsg.append(" No storageEngineId is set in configuration or Unable to initiate storage Engine, ").append(e.getMessage()).append(", ");
-                healthCheckResults.put(VARIANT_STORAGE, NOT_OKAY);
-            }
-
-            try {
-                storageEngineFactory.getVariantStorageEngine().testConnection();
-                healthCheckResults.put(VARIANT_STORAGE, OKAY);
-            } catch (Exception e) {
-                healthCheckResults.put(VARIANT_STORAGE, NOT_OKAY);
-                errorMsg.append(e.getMessage());
-            }
-
-            if (storageEngineFactory.getStorageConfiguration().getSearch().isActive()) {
-                if (variantManager.isSolrAvailable()) {
-                    healthCheckResults.put(SOLR, OKAY);
-                } else {
-                    errorMsg.append(", unable to connect with solr, ");
-                    healthCheckResults.put(SOLR, NOT_OKAY);
-                }
-            } else {
-                healthCheckResults.put(SOLR, "solr not active in storage-configuration!");
-            }
+            updateHealthCheck();
         } else {
             logger.info("HealthCheck results from cache at " + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
             queryResult.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, "HealthCheck results from cache at "
                     + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
         }
 
-        queryResult.setResults(Arrays.asList(healthCheckResults));
+        queryResult.setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
+        queryResult.setResults(Collections.singletonList(healthCheckResults));
 
         if (isHealthy()) {
             logger.info("HealthCheck : " + healthCheckResults.toString());
             return createOkResponse(queryResult);
         } else {
             logger.error("HealthCheck : " + healthCheckResults.toString());
-            return createErrorResponse(errorMsg.toString(), queryResult);
+            return createErrorResponse(healthCheckErrorMessage, queryResult);
         }
+    }
+
+    private synchronized void updateHealthCheck() {
+        String storageEngineId;
+        StringBuilder errorMsg = new StringBuilder();
+
+        Map<String, String> newHealthCheckResults = new HashMap<>();
+
+        try {
+            if (catalogManager.getDatabaseStatus()) {
+                newHealthCheckResults.put(CATALOG_MONGO_DB, OKAY);
+            } else {
+                newHealthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);
+            }
+        } catch (Exception e) {
+            newHealthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);
+            errorMsg.append(e.getMessage());
+        }
+
+        try {
+            storageEngineId = storageEngineFactory.getVariantStorageEngine().getStorageEngineId();
+            newHealthCheckResults.put("VariantStorageId", storageEngineId);
+        } catch (Exception e) {
+            errorMsg.append(" No storageEngineId is set in configuration or Unable to initiate storage Engine, ").append(e.getMessage()).append(", ");
+            newHealthCheckResults.put(VARIANT_STORAGE, NOT_OKAY);
+        }
+
+        try {
+            storageEngineFactory.getVariantStorageEngine().testConnection();
+            newHealthCheckResults.put(VARIANT_STORAGE, OKAY);
+        } catch (Exception e) {
+            newHealthCheckResults.put(VARIANT_STORAGE, NOT_OKAY);
+            errorMsg.append(e.getMessage());
+        }
+
+        if (storageEngineFactory.getStorageConfiguration().getSearch().isActive()) {
+            try {
+                if (variantManager.isSolrAvailable()) {
+                    newHealthCheckResults.put(SOLR, OKAY);
+                } else {
+                    errorMsg.append(", unable to connect with solr, ");
+                    newHealthCheckResults.put(SOLR, NOT_OKAY);
+                }
+            } catch (Exception e) {
+                newHealthCheckResults.put(SOLR, NOT_OKAY);
+                errorMsg.append(e.getMessage());
+            }
+        } else {
+            newHealthCheckResults.put(SOLR, "solr not active in storage-configuration!");
+        }
+
+        if (errorMsg.length() == 0) {
+            healthCheckErrorMessage = null;
+        } else {
+            healthCheckErrorMessage = errorMsg.toString();
+        }
+        healthCheckResults.clear();
+        healthCheckResults.putAll(newHealthCheckResults);
+        lastAccess = LocalTime.now();
     }
 
     @GET
