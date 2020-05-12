@@ -312,13 +312,13 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+            @ApiImplicitParam(name = ParamConstants.FLATTEN_ANNOTATIONS, value = ParamConstants.FLATTEN_ANNOTATION_DESCRIPTION, defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
     public Response search(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Comma separated list of file names") @DefaultValue("") @QueryParam("name") String name,
-            @ApiParam(value = "Comma separated list of paths") @DefaultValue("") @QueryParam("path") String path,
+            @ApiParam(value = ParamConstants.FILE_NAMES_DESCRIPTION) @DefaultValue("") @QueryParam("name") String name,
+            @ApiParam(value = ParamConstants.FILE_PATHS_DESCRIPTION) @DefaultValue("") @QueryParam("path") String path,
             @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @DefaultValue("") @QueryParam("type") String type,
             @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("bioformat") String bioformat,
             @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("format") String formats,
@@ -329,22 +329,15 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @DefaultValue("") @QueryParam("description") String description,
             @ApiParam(value = ParamConstants.FILE_TAGS_DESCRIPTION) @QueryParam("tags") String tags,
             @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @DefaultValue("") @QueryParam("size") String size,
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, hidden = true) @QueryParam("sample") String sample,
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
-            @ApiParam(value = "Job id that created the file(s) or folder(s)") @QueryParam("jobId") String jobId,
+            @ApiParam(value = ParamConstants.FILE_JOB_ID_DESCRIPTION) @QueryParam("jobId") String jobId,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Boolean to retrieve deleted files", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @DefaultValue("") @QueryParam("attributes") String attributes,
-            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @DefaultValue("")
-            @QueryParam("nattributes") String nattributes,
-            @ApiParam(value = "Release value") @QueryParam("release") String release) {
+            @ApiParam(value = ParamConstants.FILE_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = ParamConstants.FILE_ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam("attributes") String attributes,
+            @ApiParam(value = ParamConstants.FILE_RELEASE_DESCRIPTION) @QueryParam("release") String release) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-
-            if (StringUtils.isNotEmpty(sample) && !query.containsKey(FileDBAdaptor.QueryParams.SAMPLES.key())) {
-                query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sample);
-            }
 
             if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key())
                     && (query.get(FileDBAdaptor.QueryParams.NAME.key()) == null
@@ -370,9 +363,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean",
                     paramType = "query")
     })
-    public Response list(@ApiParam(value = "Folder id, name or path") @PathParam("folder") String folder,
-                         @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                         @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
+    public Response list(@ApiParam(value = ParamConstants.FILE_FOLDER_DESCRIPTION) @PathParam(ParamConstants.FILE_FOLDER) String folder,
+                         @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
             ParamUtils.checkIsSingleID(folder);
             DataResult<File> result = catalogManager.getFileManager().getFilesFromFolder(folder, studyStr, queryOptions, token);

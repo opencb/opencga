@@ -80,18 +80,26 @@ public class ParamConstants {
     public static final String FILES_DESCRIPTION = "Comma separated list of file ids or names" + UP_TO_100;
     public static final String FILE_ID_DESCRIPTION = "File ID";
     public static final String FILE_NAME_DESCRIPTION = "File name";
+    public static final String FILE_NAMES_DESCRIPTION = "Comma separated list of file names";
     public static final String FILE_PATH_PARAM = "path";
     public static final String FILE_PATH_DESCRIPTION = "File path";
+    public static final String FILE_PATHS_DESCRIPTION = "Comma separated list of paths";
     public static final String FILE_TYPE_DESCRIPTION = "File type, either FILE or DIRECTORY";
     public static final String FILE_FORMAT_DESCRIPTION = "Comma separated Format values. For existing Formats see files/formats";
     public static final String FILE_BIOFORMAT_DESCRIPTION = "Comma separated Bioformat values. For existing Bioformats see files/bioformats";
     public static final String FILE_STATUS_DESCRIPTION = "File status";
     public static final String FILE_DESCRIPTION_DESCRIPTION = "Description";
     public static final String FILE_TAGS_DESCRIPTION = "Tags";
+    public static final String FILE_JOB_ID_DESCRIPTION = "Job id that created the file(s) or folder(s)";
     public static final String FILE_DIRECTORY_DESCRIPTION = "Directory under which we want to look for files or folders";
     public static final String FILE_CREATION_DATA_DESCRIPTION = "Creation date of the file";
     public static final String FILE_MODIFICATION_DATE_DESCRIPTION = "Last modification date of the file";
+    public static final String FILE_ATTRIBUTES_DESCRIPTION = "Text attributes (Format: sex=male,age>20 ...)";
+    public static final String FILE_DELETED_DESCRIPTION = "Boolean to retrieve only deleted files";
+    public static final String FILE_RELEASE_DESCRIPTION = "Release when the file was registered";
     public static final String FILE_SIZE_DESCRIPTION = "File size";
+    public static final String FILE_FOLDER = "folder";
+    public static final String FILE_FOLDER_DESCRIPTION = "Folder id, name or path";
 
     // ---------------------------------------------
 
@@ -185,6 +193,11 @@ public class ParamConstants {
             + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
             + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
             + " when the action is RESET";
+    /**
+     * Boolean indicating if the annotations have to be returned flattened or not. Default: false
+     */
+    public static final String FLATTEN_ANNOTATIONS = "flattenAnnotations";
+    public static final String FLATTEN_ANNOTATION_DESCRIPTION = "Boolean indicating to flatten the annotations.";
 
     // ---------------------------------------------
 

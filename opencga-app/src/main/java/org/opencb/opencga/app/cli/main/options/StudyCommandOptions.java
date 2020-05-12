@@ -22,7 +22,6 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.List;
 
@@ -60,8 +59,6 @@ public class StudyCommandOptions {
     public CommonCommandOptions commonCommandOptions;
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
-
-    protected static final String DEPRECATED = "[DEPRECATED] ";
 
     public StudyCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
                                JCommander jCommander) {
@@ -108,13 +105,13 @@ public class StudyCommandOptions {
                 arity = 1)
         public String project;
 
-        @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
-        public String name;
-
         @Parameter(names = {"--id"}, description = "Study id", required = true, arity = 1)
         public String id;
 
-        @Parameter(names = {"-a", "--alias"}, description = DEPRECATED + "Replaced by 'id'", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
+        public String name;
+
+        @Parameter(names = {"-a", "--alias"}, description = "Study alias", arity = 1)
         public String alias;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
@@ -152,22 +149,25 @@ public class StudyCommandOptions {
         @Parameter(names = {"-a", "--alias"}, description = "Study alias.", arity = 1)
         public String alias;
 
-        @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
+        @Parameter(names = {"--fqn"}, description = "Study fully qualified name.", arity = 1)
+        public String fqn;
+
+        @Parameter(names = {"--creation-date"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805",
+                arity = 1)
         public String creationDate;
+
+        @Parameter(names = {"--modification-date"}, description = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, "
+                + "<201805", arity = 1)
+        public String modificationDate;
 
         @Parameter(names = {"--status"}, description = "Status.", arity = 1)
         public String status;
 
+        @Parameter(names = {"--release"}, description = "Release value.", arity = 1)
+        public Integer release;
+
         @Parameter(names = {"--attributes"}, description = "Attributes.", arity = 1)
         public String attributes;
-
-        @Parameter(names = {"--nattributes"}, description = "Numerical attributes.", arity = 1)
-        public String nattributes;
-
-        @Parameter(names = {"--battributes"}, description = "Boolean attributes.", arity = 0)
-        public String battributes;
-
-
     }
 
     @Parameters(commandNames = {"scan-files"}, commandDescription = "Scans the study folder to find untracked or missing files")
@@ -190,14 +190,17 @@ public class StudyCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1, required = true)
         public String study;
 
-        @Parameter(names = {"-n", "--name"}, description = "Study name", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "New study name", arity = 1)
         public String name;
+
+        @Parameter(names = {"--alias"}, description = "New study alias", arity = 1)
+        public String alias;
 
         @Parameter(names = {"-d", "--description"}, description = "Organization", arity = 1)
         public String description;
 
-        @Parameter(names = {"--attributes"}, description = "Attributes", arity = 1)
-        public String attributes;
+        @Parameter(names = {"--status"}, description = "New status", arity = 1)
+        public String status;
 
     }
 
@@ -226,11 +229,15 @@ public class StudyCommandOptions {
         @Parameter(names = {"--cohort-fields"}, description = "List of cohort fields separated by semicolons, e.g.: studies;type. "
                 + "For nested fields use >>, e.g.: studies>>biotype;typ", arity = 1)
         public String cohortFields;
+
+        @Parameter(names = {"--job-fields"}, description = "List of job fields separated by semicolons, e.g.: studies;type. "
+                + "For nested fields use >>, e.g.: studies>>biotype;typ", arity = 1)
+        public String jobFields;
     }
 
     @Parameters(commandNames = {"groups"}, commandDescription = "Return the groups present in the studies")
     public class GroupsCommandOptions extends BaseStudyCommand {
-        @Parameter(names = {"--name"}, description = "Group name. If present, it will fetch only information of the group provided.",
+        @Parameter(names = {"--id"}, description = "Group id. If present, it will fetch only information of the group provided.",
                 arity = 1)
         public String group;
     }
@@ -249,15 +256,15 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-delete"}, commandDescription = "Delete group")
     public class GroupsDeleteCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--name"}, description = "Group name", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
 
     }
 
-    @Parameters(commandNames = {"groups-update"}, commandDescription = "Updates the members of the group")
+    @Parameters(commandNames = {"groups-update"}, commandDescription = "Update the members of the group")
     public class GroupsUpdateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--name"}, description = "Group name", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
 
         @Parameter(names = {"--users"}, description = "Comma separated list of users", required = true, arity = 1)
