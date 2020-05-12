@@ -95,9 +95,12 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             long ko = 0;
             long contextCount = 0;
             loopWatch.start();
-            while (iterator.hasNext()) {
-                count++;
+            while (true) {
                 watch.start();
+                if (!iterator.hasNext()) {
+                    break;
+                }
+                count++;
                 Variant variant = iterator.next();
                 watch.stop();
                 iteratorTime += watch.getTime();
@@ -115,7 +118,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                             countMap.get(key).put(sequence, countMap.get(key).get(sequence) + 1);
                         }
                     } catch (Exception e) {
-                        System.out.println("Error getting context sequence for variant " + variant.toStringSimple() + ": " + e.getMessage());
+                        //System.out.println("Error getting context sequence for variant " + variant.toStringSimple() + ": " + e.getMessage());
                         ko++;
                     }
                     watch.stop();
@@ -124,6 +127,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 }
             }
             loopWatch.stop();
+
+            watch.reset();
 
             // Write context
             watch.start();
