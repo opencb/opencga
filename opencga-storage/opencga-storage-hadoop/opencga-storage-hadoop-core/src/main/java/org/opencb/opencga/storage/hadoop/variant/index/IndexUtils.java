@@ -84,11 +84,11 @@ public final class IndexUtils {
     }
 
     public static boolean testIndexAny(byte indexValue, byte indexMask) {
-        return (indexValue & indexMask) != 0;
+        return indexMask == 0 || (indexValue & indexMask) != 0;
     }
 
     public static boolean testIndexAny(short indexValue, short indexMask) {
-        return (indexValue & indexMask) != 0;
+        return indexMask == 0 || (indexValue & indexMask) != 0;
     }
 
     public static boolean testIndexAny(byte[] index, int indexPosition, short indexMask) {

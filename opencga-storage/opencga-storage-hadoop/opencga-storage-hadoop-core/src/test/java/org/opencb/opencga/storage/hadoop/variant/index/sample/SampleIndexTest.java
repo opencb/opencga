@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.TableName;
@@ -18,10 +19,8 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -38,6 +37,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
@@ -163,7 +163,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void regenerateSampleIndex() throws Exception {
-
         for (String study : studies) {
             int studyId = dbAdaptor.getMetadataManager().getStudyId(study);
             String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
@@ -438,5 +437,25 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         }
     }
 
+    @Test
+    public void testAggregation() throws Exception {
+        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor());
+
+        testAggregation(executor, "chromosome>>type>>ct");
+        testAggregation(executor, "type>>ct");
+        testAggregation(executor, "gt>>type>>ct>>biotype");
+        testAggregation(executor, "clinicalSignificance>>gt>>type>>ct>>biotype");
+    }
+
+    private void testAggregation(SampleIndexVariantAggregationExecutor executor, String facet) throws JsonProcessingException {
+        Query query = new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0));
+        assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, facet)));
+
+        VariantQueryResult<FacetField> result = executor.aggregation(query,
+                new QueryOptions(QueryOptions.FACET, facet));
+
+
+        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+    }
 
 }

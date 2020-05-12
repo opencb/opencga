@@ -21,7 +21,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntryFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.AbstractSampleIndexEntryFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 
 import java.net.URI;
@@ -89,7 +89,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             int meCode = MendelianError.compute(fatherGenotype, motherGenotype, childGenotype, variant.getChromosome());
             if (meCode != 0) {
                 mendelianErrorVariants.add(variant.toString());
-                if (SampleIndexEntryFilter.isDeNovo(meCode)) {
+                if (AbstractSampleIndexEntryFilter.isDeNovo(meCode)) {
                     deNovoVariants.add(variant.toString());
                 }
             }

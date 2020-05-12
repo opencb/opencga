@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,16 +32,22 @@ import java.util.function.UnaryOperator;
 /**
  * Created by jacobo on 9/01/15.
  */
-public abstract class VariantDBIterator implements Iterator<Variant>, AutoCloseable {
+public abstract class VariantDBIterator extends CloseableIterator<Variant> {
 
     public static final EmptyVariantDBIterator EMPTY_ITERATOR = new EmptyVariantDBIterator();
+    public static final Comparator<Variant> VARIANT_COMPARATOR = Comparator.comparing(Variant::getChromosome)
+            .thenComparing(Variant::getStart)
+            .thenComparing(Variant::getEnd)
+            .thenComparing(Variant::getReference)
+            .thenComparing(Variant::getAlternate)
+            .thenComparing(Variant::toString);
     protected long timeFetching = 0;
     protected long timeConverting = 0;
-    private List<AutoCloseable> closeables = new ArrayList<>();
     private final Logger logger = LoggerFactory.getLogger(VariantDBIterator.class);
 
+    @Override
     public VariantDBIterator addCloseable(AutoCloseable closeable) {
-        this.closeables.add(closeable);
+        super.addCloseable(closeable);
         return this;
     }
 
@@ -128,13 +135,6 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         }
     }
 
-    @Override
-    public void close() throws Exception {
-        for (AutoCloseable closeable : closeables) {
-            closeable.close();
-        }
-    }
-
     public VariantDBIterator map(UnaryOperator<Variant> map) {
         return new MapperVariantDBIterator(this, map);
     }
@@ -165,31 +165,6 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
 
     public static VariantDBIterator wrapper(Iterator<Variant> variant) {
         return new VariantDBIteratorWrapper(variant);
-    }
-
-    private static class VariantDBIteratorWrapper extends VariantDBIterator {
-        private final Iterator<Variant> iterator;
-        private int count = 0;
-
-        VariantDBIteratorWrapper(Iterator<Variant> iterator) {
-            this.iterator = iterator;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return fetch(iterator::hasNext);
-        }
-
-        @Override
-        public Variant next() {
-            count++;
-            return fetch(iterator::next);
-        }
-
-        @Override
-        public int getCount() {
-            return count;
-        }
     }
 
 }

@@ -456,13 +456,17 @@ public class SampleIndexEntry {
                     : Bytes.toStringBinary(fileIndex, fileIndexOffset, fileIndexLength));
             sb.append(", annotationIndex=").append(annotationIndex == null ? "null"
                     : Bytes.toStringBinary(annotationIndex, annotationIndexOffset, annotationIndexLength));
+            sb.append(", annotationIndexLength=").append(annotationIndexLength);
             sb.append(", annotationCounts=").append(Arrays.toString(annotationCounts));
             sb.append(", consequenceTypeIndex=").append(consequenceTypeIndex == null ? "null"
                     : Bytes.toStringBinary(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength));
+            sb.append(", consequenceTypeIndexLength=").append(consequenceTypeIndexLength);
             sb.append(", biotypeIndex=").append(biotypeIndex == null ? "null"
                     : Bytes.toStringBinary(biotypeIndex, biotypeIndexOffset, biotypeIndexLength));
+            sb.append(", biotypeIndexLength=").append(biotypeIndexLength);
             sb.append(", ctBtIndex=").append(ctBtIndex == null ? "null"
                     : Bytes.toStringBinary(ctBtIndex, ctBtIndexOffset, ctBtIndexLength));
+            sb.append(", ctBtIndexLength=").append(ctBtIndexLength);
             sb.append(", populationFrequencyIndex=").append(populationFrequencyIndex == null ? "null"
                     : Bytes.toStringBinary(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength));
             sb.append(", clinicalIndex=").append(clinicalIndex == null ? "null"
