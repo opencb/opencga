@@ -24,7 +24,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -63,7 +62,9 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                     //.append(VariantQueryParam.FILTER.key(), "PASS")
                     .append(VariantQueryParam.TYPE.key(), "SNV");
 
-            VariantDBIterator iterator = storageManager.iterator(query, new QueryOptions(), getToken());
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "chromosome,start,end,reference,alternate");
+
+            VariantDBIterator iterator = storageManager.iterator(query, queryOptions, getToken());
 
             // Read mutation context from reference genome (.gz, .gz.fai and .gz.gzi files)
             String base = getRefGenomePath().toAbsolutePath().toString();
@@ -75,7 +76,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 String key = variant.getReference() + ">" + variant.getAlternate();
                 if (countMap.containsKey(key)) {
                     try {
-                        ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1, variant.getEnd() + 1);
+                        ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
+                                variant.getEnd() + 1);
                         String sequence = new String(refSeq.getBases());
 
                         if (countMap.get(key).containsKey(sequence)) {
