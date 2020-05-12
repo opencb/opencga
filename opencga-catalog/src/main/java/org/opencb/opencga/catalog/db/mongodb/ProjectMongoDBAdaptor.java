@@ -847,6 +847,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case ID:
                     case FQN:
                     case DESCRIPTION:
+                    case ORGANIZATION:
                     case ORGANISM:
                     case ORGANISM_SCIENTIFIC_NAME:
                     case ORGANISM_COMMON_NAME:

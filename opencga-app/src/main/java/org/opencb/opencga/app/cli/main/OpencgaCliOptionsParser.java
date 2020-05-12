@@ -119,7 +119,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         projectSubCommands.addCommand("search", projectCommandOptions.searchCommandOptions);
         projectSubCommands.addCommand("studies", projectCommandOptions.studiesCommandOptions);
         projectSubCommands.addCommand("update", projectCommandOptions.updateCommandOptions);
-        projectSubCommands.addCommand("delete", projectCommandOptions.deleteCommandOptions);
 
         studyCommandOptions = new StudyCommandOptions(this.commonCommandOptions, this.dataModelOptions, this.numericOptions, jCommander);
         jCommander.addCommand("studies", studyCommandOptions);
@@ -144,7 +143,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         jCommander.addCommand("files", fileCommandOptions);
         JCommander fileSubCommands = jCommander.getCommands().get("files");
 //        fileSubCommands.addCommand("copy", fileCommandOptions.copyCommandOptions);
-        fileSubCommands.addCommand("create-folder", fileCommandOptions.createFolderCommandOptions);
+        fileSubCommands.addCommand("create", fileCommandOptions.createCommandOptions);
         fileSubCommands.addCommand("info", fileCommandOptions.infoCommandOptions);
         fileSubCommands.addCommand("download", fileCommandOptions.downloadCommandOptions);
         fileSubCommands.addCommand("grep", fileCommandOptions.grepCommandOptions);

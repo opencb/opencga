@@ -214,7 +214,11 @@ public class VariantQueryException extends IllegalArgumentException {
     }
 
     public static VariantQueryException internalException(Exception e) {
-        return new VariantQueryException("Internal exception: " + e.getMessage(), e);
+        if (e instanceof VariantQueryException) {
+            return ((VariantQueryException) e);
+        } else {
+            return new VariantQueryException("Internal exception: " + e.getMessage(), e);
+        }
     }
 
     public static VariantQueryException unsupportedVariantQueryFilter(QueryParam param, String storageEngineId) {

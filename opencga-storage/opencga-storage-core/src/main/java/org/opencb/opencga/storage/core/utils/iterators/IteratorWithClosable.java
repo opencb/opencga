@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.adaptors.iterators;
+package org.opencb.opencga.storage.core.utils.iterators;
 
 import java.io.Closeable;
 import java.io.IOException;

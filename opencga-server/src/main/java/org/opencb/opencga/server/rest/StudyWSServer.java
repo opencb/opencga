@@ -99,7 +99,6 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_ID_DESCRIPTION) @QueryParam("id") String id,
             @ApiParam(value = ParamConstants.STUDY_ALIAS_DESCRIPTION) @QueryParam("alias") String alias,
             @ApiParam(value = ParamConstants.STUDY_FQN_DESCRIPTION) @QueryParam("fqn") String fqn,
-            @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
@@ -107,8 +106,6 @@ public class StudyWSServer extends OpenCGAWSServer {
 //            @ApiParam(value = "Boolean to retrieve deleted studies", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
-            @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
-            @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             if (StringUtils.isNotEmpty(projectId) && StringUtils.isEmpty(projectStr)) {

@@ -108,6 +108,8 @@ public class Constants {
     /**
      * Boolean indicating if the annotations have to be returned flattened or not. Default: false
      */
+    // Use ParamConstants.FLATTEN_ANNOTATIONS instead
+    @Deprecated
     public static final String FLATTENED_ANNOTATIONS = "flattenAnnotations";
 
     /* ****************************************    Private attributes       ********************************************/
