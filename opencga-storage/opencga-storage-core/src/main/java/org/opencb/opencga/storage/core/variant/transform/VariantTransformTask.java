@@ -222,7 +222,7 @@ public class VariantTransformTask implements Task<String, Variant> {
             handler.accept(line, e);
         }
         if (failOnError) {
-            logger.info("To ignore parsing errors add '" + VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT + "=true'");
+            logger.info("To ignore parsing errors add '" + VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key() + "=true'");
             throw e;
         }
     }

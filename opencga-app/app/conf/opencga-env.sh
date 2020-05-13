@@ -5,6 +5,9 @@
 #Set log4j properties file
 export JAVA_OPTS="${JAVA_OPTS} -Dlog4j.configuration=file:${BASEDIR}/conf/log4j.properties"
 
+export COLUMNS=`tput cols`
+export LINES=`tput lines`
+
 # export OPENCGA_HOME=${BASEDIR}
 
 if [ -f "${BASEDIR}"/libs/opencga-storage-hadoop-core-*.jar ] ; then
