@@ -189,9 +189,9 @@ public class PhoenixHelper {
     public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, boolean oneCall, PTableType tableType)
             throws SQLException {
         Set<String> columns = getColumns(con, tableName, tableType).stream().map(Column::column).collect(Collectors.toSet());
-        List<Column> missingColumns = newColumns.stream()
+        Set<Column> missingColumns = newColumns.stream()
                 .filter(column -> !columns.contains(column.column()))
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
         if (!missingColumns.isEmpty()) {
             logger.info("Adding missing columns: " + missingColumns);
             if (oneCall) {
@@ -212,7 +212,7 @@ public class PhoenixHelper {
         StringBuilder sb = new StringBuilder();
         sb.append("ALTER ").append(tableType).append(' ').append(getEscapedFullTableName(tableType, tableName))
                 .append(" DROP COLUMN ").append(ifExists ? "IF EXISTS " : "");
-        Iterator<CharSequence> iterator = columns.iterator();
+        Iterator<CharSequence> iterator = new HashSet<>(columns).iterator();
         while (iterator.hasNext()) {
             sb.append('"').append(iterator.next()).append('"');
             if (iterator.hasNext()) {
@@ -226,7 +226,7 @@ public class PhoenixHelper {
             throws SQLException {
 
         Set<String> existingColumns = getColumns(con, tableName, tableType).stream().map(Column::column).collect(Collectors.toSet());
-        columns = new ArrayList<>(columns);
+        columns = new HashSet<>(columns);
         // Remove non existing columns
         columns.removeIf(c -> !existingColumns.contains(c.toString()));
         if (columns.isEmpty()) {
