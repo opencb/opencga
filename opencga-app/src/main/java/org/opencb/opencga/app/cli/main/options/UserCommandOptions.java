@@ -45,8 +45,6 @@ public class UserCommandOptions {
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
 
-    protected static final String DEPRECATED = "[DEPRECATED] ";
-
     public UserCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
                               JCommander jCommander) {
 
@@ -119,20 +117,14 @@ public class UserCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes")
     public class UpdateCommandOptions extends BaseUserCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "New user name", arity = 1)
         public String name;
 
-        @Parameter(names = {"-e", "--email"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"-e", "--email"}, description = "New e-mail", arity = 1)
         public String email;
 
-        @Parameter(names = {"-o", "--organization"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"-o", "--organization"}, description = "New organization", arity = 1)
         public String organization;
-
-        @Parameter(names = {"--attributes"}, description = DEPRECATED + "Use --json instead.", arity = 1)
-        public String attributes;
-
-        @Parameter(names = {"--json"}, description = "JSON file containing the user fields to be updated", required = true, arity = 1)
-        public String json;
     }
 
     @Parameters(commandNames = {"password"}, commandDescription = "Change the user's password")

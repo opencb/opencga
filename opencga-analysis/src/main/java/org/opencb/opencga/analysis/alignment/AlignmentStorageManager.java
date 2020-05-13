@@ -158,7 +158,7 @@ public class AlignmentStorageManager extends StorageManager {
 
     //-------------------------------------------------------------------------
 
-    public OpenCGAResult<String> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
+    public OpenCGAResult<AlignmentStats> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
         OpenCGAResult<File> fileResult;
         fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
 
@@ -168,13 +168,8 @@ public class AlignmentStorageManager extends StorageManager {
                     StopWatch watch = StopWatch.createStarted();
                     AlignmentStats stats = JacksonUtils.getDefaultObjectMapper().convertValue(annotationSet.getAnnotations(),
                             AlignmentStats.class);
-                    try {
-                        String json = JacksonUtils.getDefaultObjectMapper().writeValueAsString(stats);
-                        watch.stop();
-                        return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(json), 1);
-                    } catch (JsonProcessingException e) {
-                        throw new ToolException(e);
-                    }
+                    watch.stop();
+                    return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(stats), 1);
                 }
             }
             throw new ToolException("Alignment stats not computed for " + inputFile);

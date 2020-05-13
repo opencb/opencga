@@ -107,10 +107,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam("id") String id,
             @ApiParam(value = "Project name") @QueryParam("name") String name,
             @ApiParam(value = "Project fqn") @QueryParam("fqn") String fqn,
-            @ApiParam(value = "DEPRECATED: Project alias") @QueryParam("alias") String alias,
             @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
             @ApiParam(value = "Project description") @QueryParam("description") String description,
-            @ApiParam(value = "Study id or alias") @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Study id") @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)

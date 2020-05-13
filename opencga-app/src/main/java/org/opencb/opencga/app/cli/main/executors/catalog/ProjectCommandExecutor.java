@@ -99,9 +99,11 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty("owner", searchCommandOptions.owner);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.STUDY.key(), searchCommandOptions.study);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), searchCommandOptions.name);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), searchCommandOptions.alias);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.FQN.key(), searchCommandOptions.fqn);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), searchCommandOptions.organization);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), searchCommandOptions.description);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.CREATION_DATE.key(), searchCommandOptions.creationDate);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key(), searchCommandOptions.modificationDate);
         params.putIfNotEmpty("status", searchCommandOptions.status);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), searchCommandOptions.attributes);
         params.putAll(searchCommandOptions.commonOptions.params);
@@ -116,8 +118,9 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         ProjectCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
 
         ProjectOrganism organism = null;
-        if (StringUtils.isNotEmpty(commandOptions.commonName)) {
-            organism = new ProjectOrganism().setCommonName(commandOptions.commonName);
+        if (StringUtils.isNotEmpty(commandOptions.commonName) || StringUtils.isNotEmpty(commandOptions.assembly)
+                || StringUtils.isNotEmpty(commandOptions.scientificName)) {
+            organism = new ProjectOrganism(commandOptions.scientificName, commandOptions.commonName, commandOptions.assembly);
         }
 
         ProjectUpdateParams params = new ProjectUpdateParams()

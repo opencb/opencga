@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -167,8 +168,11 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         StudyUpdateParams updateParams = new StudyUpdateParams()
                 .setName(c.name)
-                .setDescription(c.description)
-                .setAttributes(new ObjectMap(c.attributes));
+                .setAlias(c.alias)
+                .setDescription(c.description);
+        if (StringUtils.isNotEmpty(c.status)) {
+            updateParams.setStatus(new CustomStatusParams(c.status, ""));
+        }
 
         return openCGAClient.getStudyClient().update(getSingleValidStudy(c.study), updateParams);
     }
@@ -186,6 +190,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty("cohortFields", c.cohortFields);
         params.putIfNotEmpty("familyFields", c.familyFields);
         params.putIfNotEmpty("fileFields", c.fileFields);
+        params.putIfNotEmpty("jobFields", c.jobFields);
 
         return openCGAClient.getStudyClient().aggregationStats(c.study, params);
     }
@@ -201,11 +206,12 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), c.id);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), c.name);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), c.alias);
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.FQN.key(), c.fqn);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.CREATION_DATE.key(), c.creationDate);
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.MODIFICATION_DATE.key(), c.modificationDate);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), c.status);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), c.attributes);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), c.nattributes);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), c.battributes);
+        params.putIfNotNull(StudyDBAdaptor.QueryParams.RELEASE.key(), c.release);
         params.putAll(c.commonOptions.params);
 
         params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
@@ -224,7 +230,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         studiesCommandOptions.groupsCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsCommandOptions.study);
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull("name", studiesCommandOptions.groupsCommandOptions.group);
+        params.putIfNotNull("id", studiesCommandOptions.groupsCommandOptions.group);
 
         return openCGAClient.getStudyClient().groups(studiesCommandOptions.groupsCommandOptions.study, params);
     }
