@@ -31,14 +31,19 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.stats.solr.converters.*;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
+import org.opencb.opencga.core.models.study.StudyAclParams;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.user.Account;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -165,6 +170,77 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 stopWatch.start();
             }
         }
+    }
+
+    @Test
+    public void testCanViewIfAnonymousHavePermissions() throws CatalogException {
+        // Grant permissions to anonymous user
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
+                new StudyAclParams(null, AclParams.Action.ADD, "view_only"), sessionIdOwner);
+
+        study = catalogManager.getStudyManager().get(studyFqn, new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
+
+        Map<String, Set<String>> studyAcls =
+                SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+        // We replace the current studyAcls for the parsed one
+        study.getAttributes().put("OPENCGA_ACL", studyAcls);
+
+        QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, true);
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UUID.key(),
+                SampleDBAdaptor.QueryParams.STUDY_UID.key(),
+                SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
+                SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
+                SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
+                SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
+                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),SampleDBAdaptor.QueryParams.UID.key(),
+                SampleDBAdaptor.QueryParams.ATTRIBUTES.key()));
+        queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
+
+        SampleDBAdaptor sampleDBAdaptor = factory.getCatalogSampleDBAdaptor();
+        DBIterator<Sample> sampleDBIterator = sampleDBAdaptor.iterator(
+                new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()), queryOptions);
+        catalogSolrManager.insertCatalogCollection(sampleDBIterator, new CatalogSampleToSolrSampleConverter(study),
+                CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
+
+        // We create a new user
+        catalogManager.getUserManager().create("user4", "User4 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
+
+        // We query facets with the new user. That user should be able to see the information because anonymous can see it as well.
+        DataResult<FacetField> facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, "creationYear>>creationMonth"), "user4");
+        assertEquals(1, facet.getNumResults());
+    }
+
+    @Test
+    public void testAnonymousDontView() throws CatalogException {
+        study = catalogManager.getStudyManager().get(studyFqn, new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
+
+        Map<String, Set<String>> studyAcls =
+                SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+        // We replace the current studyAcls for the parsed one
+        study.getAttributes().put("OPENCGA_ACL", studyAcls);
+
+        QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, true);
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UUID.key(),
+                SampleDBAdaptor.QueryParams.STUDY_UID.key(),
+                SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
+                SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
+                SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
+                SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
+                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),SampleDBAdaptor.QueryParams.UID.key(),
+                SampleDBAdaptor.QueryParams.ATTRIBUTES.key()));
+        queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
+
+        SampleDBAdaptor sampleDBAdaptor = factory.getCatalogSampleDBAdaptor();
+        DBIterator<Sample> sampleDBIterator = sampleDBAdaptor.iterator(
+                new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()), queryOptions);
+        catalogSolrManager.insertCatalogCollection(sampleDBIterator, new CatalogSampleToSolrSampleConverter(study),
+                CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
+
+        // We query facets with the new user. That user should be able to see the information because anonymous can see it as well.
+        DataResult<FacetField> facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,
+                new Query(), new QueryOptions(QueryOptions.FACET, "creationYear>>creationMonth"), "*");
+        assertEquals(0, facet.getNumResults());
     }
 
     @Test
