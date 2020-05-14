@@ -184,7 +184,7 @@ public class JobCommandOptions {
         @Parameter(names = {"--release"}, description = ParamConstants.RELEASE_DESCRIPTION, arity = 1)
         public Integer release;
 
-        @Parameter(names = {"--deleted"}, description = ParamConstants.JOB_DELETED_DESCRIPTION, arity = 0)
+        @Parameter(names = {"--deleted"}, description = ParamConstants.DELETED_DESCRIPTION, arity = 0)
         public Boolean deleted;
     }
 

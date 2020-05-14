@@ -49,9 +49,23 @@ public class ParamConstants {
     public static final String DELETED_DESCRIPTION = "Boolean to retrieve deleted entries";
     public static final String DELETED_PARAM = "deleted";
 
+    public static final String ATTRIBUTES_PARAM = "attributes";
+    public static final String ATTRIBUTES_DESCRIPTION = "Text attributes (Format: sex=male,age>20 ...)";
+
+    public static final String INCREMENT_VERSION_PARAM = "incVersion";
+    public static final String INCREMENT_VERSION_DESCRIPTION = "Increment version of entry with the update";
+
+    public static final String SNAPSHOT_PARAM = "snapshot";
+    public static final String SNAPSHOT_DESCRIPTION = "Snapshot value (Latest version of the entry in the specified release)";
+
+    public static final String PHENOTYPES_PARAM = "phenotypes";
+    public static final String PHENOTYPES_DESCRIPTION = "Comma separated list of phenotype ids or names";
+    public static final String DISORDERS_PARAM = "disorders";
+    public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names";
+
     // ---------------------------------------------
 
-    public static final String USER_DESCRIPTION = "User id";
+    public static final String USER_DESCRIPTION = "User ID";
 
     // ---------------------------------------------
 
@@ -69,7 +83,7 @@ public class ParamConstants {
     public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID" + UP_TO_100;
 
     public static final String STUDY_NAME_DESCRIPTION = "Study name";
-    public static final String STUDY_ID_DESCRIPTION = "Study id";
+    public static final String STUDY_ID_DESCRIPTION = "Study ID";
     public static final String STUDY_ALIAS_DESCRIPTION = "Study alias";
     public static final String STUDY_FQN_DESCRIPTION = "Study full qualified name";
     public static final String SILENT_DESCRIPTION = "Boolean to retrieve all possible entries that are queried for, false to raise an "
@@ -77,7 +91,7 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String FILES_DESCRIPTION = "Comma separated list of file ids or names" + UP_TO_100;
+    public static final String FILES_DESCRIPTION = "Comma separated list of file IDs or names" + UP_TO_100;
     public static final String FILE_ID_DESCRIPTION = "File ID";
     public static final String FILE_NAME_DESCRIPTION = "File name";
     public static final String FILE_NAMES_DESCRIPTION = "Comma separated list of file names";
@@ -90,29 +104,40 @@ public class ParamConstants {
     public static final String FILE_STATUS_DESCRIPTION = "File status";
     public static final String FILE_DESCRIPTION_DESCRIPTION = "Description";
     public static final String FILE_TAGS_DESCRIPTION = "Tags";
-    public static final String FILE_JOB_ID_DESCRIPTION = "Job id that created the file(s) or folder(s)";
+    public static final String FILE_JOB_ID_DESCRIPTION = "Job ID that created the file(s) or folder(s)";
     public static final String FILE_DIRECTORY_DESCRIPTION = "Directory under which we want to look for files or folders";
     public static final String FILE_CREATION_DATA_DESCRIPTION = "Creation date of the file";
     public static final String FILE_MODIFICATION_DATE_DESCRIPTION = "Last modification date of the file";
-    public static final String FILE_ATTRIBUTES_DESCRIPTION = "Text attributes (Format: sex=male,age>20 ...)";
-    public static final String FILE_DELETED_DESCRIPTION = "Boolean to retrieve only deleted files";
-    public static final String FILE_RELEASE_DESCRIPTION = "Release when the file was registered";
     public static final String FILE_SIZE_DESCRIPTION = "File size";
     public static final String FILE_FOLDER = "folder";
-    public static final String FILE_FOLDER_DESCRIPTION = "Folder id, name or path";
+    public static final String FILE_FOLDER_DESCRIPTION = "Folder ID, name or path";
 
     // ---------------------------------------------
 
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
     public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
 
+    public static final String SAMPLE_ID_PARAM = "id";
     public static final String SAMPLE_PARAM = "sample";
     public static final String SAMPLE_ID_DESCRIPTION = "Sample ID";
     public static final String SAMPLE_NAME_DESCRIPTION = "Sample name";
+    public static final String SAMPLE_SOMATIC_PARAM = "somatic";
+    public static final String SAMPLE_SOMATIC_DESCRIPTION = "Somatic sample";
+    public static final String SAMPLE_VERSION_PARAM = "version";
+    public static final String SAMPLE_VERSION_DESCRIPTION = "Sample version";
+
+    public static final String SAMPLE_EMPTY_FILES_ACTION_PARAM = "emptyFilesAction";
+    public static final String SAMPLE_EMPTY_FILES_ACTION_DESCRIPTION = "Action to be performed over files that were associated only to"
+            + " the sample to be deleted. Possible actions are NONE, TRASH, DELETE";
+    public static final String SAMPLE_DELETE_EMPTY_COHORTS_PARAM = "deleteEmptyCohorts";
+    public static final String SAMPLE_DELETE_EMPTY_COHORTS_DESCRIPTION = "Boolean indicating if the cohorts associated only to the "
+            + "sample to be deleted should be also deleted.";
+    public static final String SAMPLE_FORCE_DELETE_DESCRIPTION = "Force the deletion of samples even if they are associated to files, "
+            + "individuals or cohorts.";
 
     // ---------------------------------------------
 
-    public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual names or ids" + UP_TO_100;
+    public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual names or IDs" + UP_TO_100;
     public static final String INDIVIDUAL_DESCRIPTION = "Individual ID or UUID";
 
     // ---------------------------------------------
@@ -121,10 +146,10 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String COHORT_DESCRIPTION = "Cohort id or name";
-    public static final String COHORTS_DESCRIPTION = "Comma separated list of cohort names or ids" + UP_TO_100;
+    public static final String COHORT_DESCRIPTION = "Cohort ID or name";
+    public static final String COHORTS_DESCRIPTION = "Comma separated list of cohort names or IDs" + UP_TO_100;
 
-    public static final String COHORT_ID_DESCRIPTION = "Cohort id";
+    public static final String COHORT_ID_DESCRIPTION = "Cohort ID";
     public static final String COHORT_NAME_DESCRIPTION = "Cohort name";
     public static final String COHORT_TYPE_DESCRIPTION = "Cohort type";
     public static final String COHORT_STATUS_DESCRIPTION = "Cohort status";
@@ -140,18 +165,18 @@ public class ParamConstants {
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
             + "sources are 'panelapp' and 'genecensus'";
     public static final String PANEL_SOURCE_ID = "id";
-    public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel ids to be imported from the defined source."
+    public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel IDs to be imported from the defined source."
             + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "
             + "'source' will be allowed.";
 
-    public static final String PANELS_DESCRIPTION = "Comma separated list of panel ids" + UP_TO_100;
+    public static final String PANELS_DESCRIPTION = "Comma separated list of panel IDs" + UP_TO_100;
 
     // ---------------------------------------------
 
     public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
 
     public static final String JOB_ID_DESCRIPTION = "Job ID or UUID";
-    public static final String JOB_ID_CREATION_DESCRIPTION = "Job ID. It must be a unique string within the study. An id will be "
+    public static final String JOB_ID_CREATION_DESCRIPTION = "Job ID. It must be a unique string within the study. An ID will be "
             + "autogenerated automatically if not provided.";
     public static final String JOB_ID = "jobId";
     public static final String JOB_ID_PARAM = ID;
@@ -159,9 +184,9 @@ public class ParamConstants {
     public static final String JOB_DESCRIPTION_DESCRIPTION = "Job description";
     public static final String JOB_DEPENDS_ON = "jobDependsOn";
     public static final String JOB_DEPENDS_ON_PARAM = "dependsOn";
-    public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job ids the job will depend on.";
+    public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job IDs the job will depend on.";
     public static final String JOB_TOOL_ID_PARAM = "toolId";
-    public static final String JOB_TOOL_ID_DESCRIPTION = "Tool id executed by the job";
+    public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job";
     public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
@@ -174,17 +199,19 @@ public class ParamConstants {
     public static final String JOB_TAGS_PARAM = "tags";
     public static final String JOB_TAGS_DESCRIPTION = "Job tags";
     public static final String JOB_INPUT_FILES_PARAM = "input";
-    public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file ids used as input.";
+    public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as input.";
     public static final String JOB_OUTPUT_FILES_PARAM = "output";
-    public static final String JOB_OUTPUT_FILES_DESCRIPTION = "Comma separated list of file ids used as output.";
-    public static final String JOB_DELETED_DESCRIPTION = "Boolean to retrieve only deleted jobs";
+    public static final String JOB_OUTPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as output.";
 
     // ---------------------------------------------
 
-    public static final String VARIABLE_SET_DESCRIPTION = "Variable set id or name";
-    public static final String ANNOTATION_DESCRIPTION = "Annotation, e.g: key1=value(,key2=value)";
+    public static final String ANNOTATION_DOC_URL = "http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0";
+
+    public static final String VARIABLE_SET_DESCRIPTION = "Variable set ID or name";
+    public static final String ANNOTATION_DESCRIPTION = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
+            "please visit " + ANNOTATION_DOC_URL;
     public static final String ANNOTATION_AS_MAP_DESCRIPTION = "Indicates whether to show the annotations as key-value";
-    public static final String ANNOTATION_SET_ID = "AnnotationSet id to be updated.";
+    public static final String ANNOTATION_SET_ID = "AnnotationSet ID to be updated.";
     public static final String ANNOTATION_SET_NAME = "Annotation set name. If provided, only chosen annotation set will be shown";
     public static final String ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing "
             + "annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some "
