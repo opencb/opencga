@@ -1357,6 +1357,7 @@ public class StudyManager extends AbstractManager {
         Query query = new Query(StudyDBAdaptor.VariableSetParams.STUDY_UID.key(), study.getUid())
                 .append(StudyDBAdaptor.VariableSetParams.ID.key(), variableSetId);
 
+        // We query again because we only want to return the variable set if the user can access it
         OpenCGAResult<VariableSet> queryResult = studyDBAdaptor.getVariableSets(query, new QueryOptions(), userId);
         if (queryResult.getNumResults() == 0) {
             throw new CatalogException(variableSetId + " not found.");

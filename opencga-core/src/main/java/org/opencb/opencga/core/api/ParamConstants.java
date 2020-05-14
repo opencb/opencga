@@ -160,13 +160,13 @@ public class ParamConstants {
     public static final String JOB_DEPENDS_ON = "jobDependsOn";
     public static final String JOB_DEPENDS_ON_PARAM = "dependsOn";
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job ids the job will depend on.";
-    public static final String JOB_TOOL_PARAM = "tool";
-    public static final String JOB_TOOL_DESCRIPTION = "Tool executed by the job";
+    public static final String JOB_TOOL_ID_PARAM = "toolId";
+    public static final String JOB_TOOL_ID_DESCRIPTION = "Tool id executed by the job";
     public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
     public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
-    public static final String JOB_STATUS_PARAM = "internal.status.name";
+    public static final String JOB_INTERNAL_STATUS_PARAM = "internalStatus";
     public static final String JOB_STATUS_DESCRIPTION = "Job internal status";
     public static final String JOB_VISITED_PARAM = "visited";
     public static final String JOB_VISITED_DESCRIPTION = "Visited status of job";
@@ -177,6 +177,7 @@ public class ParamConstants {
     public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file ids used as input.";
     public static final String JOB_OUTPUT_FILES_PARAM = "output";
     public static final String JOB_OUTPUT_FILES_DESCRIPTION = "Comma separated list of file ids used as output.";
+    public static final String JOB_DELETED_DESCRIPTION = "Boolean to retrieve only deleted jobs";
 
     // ---------------------------------------------
 

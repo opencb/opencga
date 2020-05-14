@@ -142,27 +142,50 @@ public class JobCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of job ids.", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = ParamConstants.JOB_ID_CREATION_DESCRIPTION, arity = 1)
         public String id;
 
-        @Parameter(names = {"--tool-name"}, description = "Tool name.", required = false, arity = 1)
-        public String toolName;
+        @Parameter(names = {"--other-studies"}, description = ParamConstants.OTHER_STUDIES_FLAG_DESCRIPTION, arity = 0)
+        public Boolean otherStudies;
 
-        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
-        public String status;
+        @Parameter(names = {"--tool-id"}, description = ParamConstants.JOB_TOOL_ID_DESCRIPTION, arity = 1)
+        public String toolId;
 
-        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
-        public String ownerId;
+        @Parameter(names = {"--user-id"}, description = ParamConstants.JOB_USER_DESCRIPTION, arity = 1)
+        public String userId;
 
-        @Parameter(names = {"--date"}, description = "Creation date.", required = false, arity = 1)
-        public String date;
+        @Parameter(names = {"--priority"}, description = ParamConstants.JOB_PRIORITY_DESCRIPTION, arity = 1)
+        public String priority;
 
-        @Parameter(names = {"--input-files"}, description = "Comma separated list of input file ids.", required = false, arity = 1)
+        @Parameter(names = {"--internal-status"}, description = ParamConstants.JOB_STATUS_DESCRIPTION, arity = 1)
+        public String internalStatus;
+
+        @Parameter(names = {"--creation-date"}, description = ParamConstants.CREATION_DATE_DESCRIPTION, arity = 1)
+        public String creationDate;
+
+        @Parameter(names = {"--modification-date"}, description = ParamConstants.MODIFICATION_DATE_DESCRIPTION, arity = 1)
+        public String modificationDate;
+
+        @Parameter(names = {"--visited"}, description = ParamConstants.JOB_VISITED_DESCRIPTION, arity = 0)
+        public Boolean visited;
+
+        @Parameter(names = {"--tags"}, description = ParamConstants.JOB_TAGS_DESCRIPTION, arity = 1)
+        public String tags;
+
+        @Parameter(names = {"--input-files"}, description = ParamConstants.JOB_INPUT_FILES_DESCRIPTION, arity = 1)
         public String inputFiles;
 
-        @Parameter(names = {"--output-files"}, description = "Comma separated list of output file ids.", required = false, arity = 1)
+        @Parameter(names = {"--output-files"}, description = ParamConstants.JOB_OUTPUT_FILES_DESCRIPTION, arity = 1)
         public String outputFiles;
 
+        @Parameter(names = {"--acl"}, description = ParamConstants.ACL_DESCRIPTION, arity = 1)
+        public String acl;
+
+        @Parameter(names = {"--release"}, description = ParamConstants.RELEASE_DESCRIPTION, arity = 1)
+        public Integer release;
+
+        @Parameter(names = {"--deleted"}, description = ParamConstants.JOB_DELETED_DESCRIPTION, arity = 0)
+        public Boolean deleted;
     }
 
     @Parameters(commandNames = {"top"}, commandDescription = "Provide a view of jobs activity in real time.")
@@ -170,14 +193,26 @@ public class JobCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-d", "--delay"}, description = "Delay between iterations in seconds", required = false, arity = 1)
+        @Parameter(names = {"-d", "--delay"}, description = "Delay between iterations in seconds", arity = 1)
         public int delay = 2;
 
-        @Parameter(names = { "--iterations"}, description = "Exit after N iterations", required = false, arity = 1)
+        @Parameter(names = { "--iterations"}, description = "Exit after N iterations", arity = 1)
         public Integer iterations;
 
-        @Parameter(names = {"-n", "--jobs"}, description = "Number of jobs to print", required = false, arity = 1)
+        @Parameter(names = {"-n", "--jobs"}, description = "Number of jobs to print", arity = 1)
         public Integer jobsLimit;
+
+        @Parameter(names = {"--tool-id"}, description = ParamConstants.JOB_TOOL_ID_DESCRIPTION, arity = 1)
+        public String toolId;
+
+        @Parameter(names = {"--user-id"}, description = ParamConstants.JOB_USER_DESCRIPTION, arity = 1)
+        public String userId;
+
+        @Parameter(names = {"--priority"}, description = ParamConstants.JOB_PRIORITY_DESCRIPTION, arity = 1)
+        public String priority;
+
+        @Parameter(names = {"--internal-status"}, description = ParamConstants.JOB_STATUS_DESCRIPTION, arity = 1)
+        public String internalStatus;
     }
 
     @Parameters(commandNames = {"log"}, commandDescription = "Provide a view of jobs activity in real time.")
@@ -197,15 +232,13 @@ public class JobCommandOptions {
         @Parameter(names = {"-n", "--tail"}, description = "Output the last lines NUM lines.", arity = 1)
         public Integer tailLines;
 
-        @Parameter(names = {"-d", "--delay"}, description = "Delay between iterations in seconds", required = false, arity = 1)
+        @Parameter(names = {"-d", "--delay"}, description = "Delay between iterations in seconds", arity = 1)
         public int delay = 2;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete job")
     public class DeleteCommandOptions extends BaseJobCommand {
 
-        @Parameter(names = {"--delete-files"}, description = "Delete files, default:true", required = false, arity = 0)
-        public boolean deleteFiles = true;
     }
 
 }
