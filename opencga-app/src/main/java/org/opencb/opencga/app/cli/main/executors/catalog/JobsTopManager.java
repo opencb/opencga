@@ -1,6 +1,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import com.google.common.base.Stopwatch;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.app.cli.main.io.Table;
@@ -176,10 +177,8 @@ public class JobsTopManager {
 
     private List<Job> processJobs(List<Job> jobs) {
         List<Job> jobList = new LinkedList<>();
-        jobs.sort(Comparator.comparing(Job::getCreationDate));
-        if (jobs.size() > jobsLimit) {
-            jobs = jobs.subList(jobs.size() - jobsLimit, jobs.size());
-        }
+        jobs.sort(Comparator.comparing(Job::getCreationDate).thenComparing(j -> CollectionUtils.size(j.getDependsOn())));
+        jobs = trimJobs(jobs);
 
         int jobDependsMax = 5;
         for (Job job : jobs) {
@@ -215,14 +214,34 @@ public class JobsTopManager {
             }
         }
 
-        while (jobList.size() > jobsLimit) {
-            jobList.remove(0);
-            while (jobList.get(0).getId().startsWith("├") || jobList.get(0).getId().startsWith("└")) {
-                jobList.remove(0);
-            }
-        }
+        jobList = trimJobs(jobList);
 
         return jobList;
+    }
+
+    private List<Job> trimJobs(List<Job> jobs) {
+        int i = 0;
+        while (jobs.size() > jobsLimit) {
+            if (i > jobs.size()) {
+                jobs = jobs.subList(jobs.size() - jobsLimit, jobs.size());
+                while (jobs.size() > 0 && jobs.get(0).getId().startsWith("├") || jobs.get(0).getId().startsWith("└")) {
+                    jobs.remove(0);
+                }
+                break;
+            }
+            Job job = jobs.get(i);
+            if (job.getInternal() != null
+                    && job.getInternal().getStatus() != null
+                    && Enums.ExecutionStatus.RUNNING.equals(job.getInternal().getStatus().getName())) {
+                i++;
+            } else {
+                jobs.remove(i);
+                while (jobs.size() > i && jobs.get(i).getId().startsWith("├") || jobs.get(i).getId().startsWith("└")) {
+                    jobs.remove(i);
+                }
+            }
+        }
+        return jobs;
     }
 
     private static Date getStart(Job job) {
