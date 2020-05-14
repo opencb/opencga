@@ -171,8 +171,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
     OpenCGAResult<Project> get(Query query, QueryOptions options) throws CatalogDBException;
 
-    OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+    OpenCGAResult<Project> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogParameterException;
 
     default List<OpenCGAResult<Project>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
