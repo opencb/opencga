@@ -24,6 +24,7 @@ import ga4gh.Reads;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.AlignmentStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
@@ -315,15 +316,15 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
 
-        return openCGAClient.getAlignmentClient().runStats(cliOptions.file, params);
+        return openCGAClient.getAlignmentClient().runStats(new AlignmentStatsParams(cliOptions.file), params);
     }
 
-    private RestResponse<String> statsInfo() throws ClientException {
+    private RestResponse<AlignmentStats> statsInfo() throws ClientException {
         AlignmentCommandOptions.StatsInfoAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsInfoAlignmentCommandOptions;
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
 
-        return openCGAClient.getAlignmentClient().infoStats(cliOptions.study, params);
+        return openCGAClient.getAlignmentClient().infoStats(cliOptions.file, params);
     }
 
     //-------------------------------------------------------------------------
@@ -333,10 +334,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> coverageRun() throws ClientException {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study)
-                .append("windowSize", cliOptions.windowSize);
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
 
-        return openCGAClient.getAlignmentClient().runCoverageIndex(cliOptions.file, params);
+        return openCGAClient.getAlignmentClient().runCoverageIndex(new CoverageIndexParams(cliOptions.file, cliOptions.windowSize), params);
     }
 
     private RestResponse<RegionCoverage> coverageQuery() throws ClientException {
@@ -388,7 +388,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // BWA
 
     private RestResponse<Job> bwa() throws ClientException {
-        ObjectMap params = new BwaWrapperParams(
+        BwaWrapperParams wrapperParams = new BwaWrapperParams(
                 alignmentCommandOptions.bwaCommandOptions.command,
                 alignmentCommandOptions.bwaCommandOptions.fastaFile,
                 alignmentCommandOptions.bwaCommandOptions.indexBaseFile,
@@ -397,16 +397,16 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.bwaCommandOptions.samFilename,
                 alignmentCommandOptions.bwaCommandOptions.outdir,
                 alignmentCommandOptions.bwaCommandOptions.commonOptions.params
-        ).toObjectMap();
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.bwaCommandOptions.study);
+        );
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.bwaCommandOptions.study);
 
-        return openCGAClient.getAlignmentClient().runBwa(params);
+        return openCGAClient.getAlignmentClient().runBwa(wrapperParams, params);
     }
 
     // Samtools
 
     private RestResponse<Job> samtools() throws ClientException {
-        ObjectMap params = new SamtoolsWrapperParams(
+        SamtoolsWrapperParams wrapperParams = new SamtoolsWrapperParams(
                 alignmentCommandOptions.samtoolsCommandOptions.command,
                 alignmentCommandOptions.samtoolsCommandOptions.inputFile,
                 alignmentCommandOptions.samtoolsCommandOptions.outputFilename,
@@ -419,35 +419,35 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.samtoolsCommandOptions.readsNotSelectedFilename,
                 alignmentCommandOptions.samtoolsCommandOptions.outdir,
                 alignmentCommandOptions.samtoolsCommandOptions.commonOptions.params
-        ).toObjectMap();
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.samtoolsCommandOptions.study);
+        );
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.samtoolsCommandOptions.study);
 
-        return openCGAClient.getAlignmentClient().runSamtools(params);
+        return openCGAClient.getAlignmentClient().runSamtools(wrapperParams, params);
     }
 
     // Deeptools
 
     private RestResponse<Job> deeptools() throws ClientException {
-        ObjectMap params = new DeeptoolsWrapperParams(
+        DeeptoolsWrapperParams deeptoolsWrapperParams = new DeeptoolsWrapperParams(
                 alignmentCommandOptions.deeptoolsCommandOptions.executable,
                 alignmentCommandOptions.deeptoolsCommandOptions.bamFile,
                 alignmentCommandOptions.deeptoolsCommandOptions.outdir,
                 alignmentCommandOptions.deeptoolsCommandOptions.commonOptions.params
-        ).toObjectMap();
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.deeptoolsCommandOptions.study);
-        return openCGAClient.getAlignmentClient().runDeeptools(params);
+        );
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.deeptoolsCommandOptions.study);
+        return openCGAClient.getAlignmentClient().runDeeptools(deeptoolsWrapperParams, params);
     }
 
     // FastQC
 
     private RestResponse<Job> fastqc() throws ClientException {
-        ObjectMap params = new FastQcWrapperParams(
+        FastQcWrapperParams fastQcWrapperParams = new FastQcWrapperParams(
                 alignmentCommandOptions.fastqcCommandOptions.file,
                 alignmentCommandOptions.fastqcCommandOptions.outdir,
                 alignmentCommandOptions.fastqcCommandOptions.commonOptions.params
-        ).toObjectMap();
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.fastqcCommandOptions.study);
-        return openCGAClient.getAlignmentClient().runFastqc(params);
+        );
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.fastqcCommandOptions.study);
+        return openCGAClient.getAlignmentClient().runFastqc(fastQcWrapperParams, params);
     }
 
     //-------------------------------------------------------------------------
