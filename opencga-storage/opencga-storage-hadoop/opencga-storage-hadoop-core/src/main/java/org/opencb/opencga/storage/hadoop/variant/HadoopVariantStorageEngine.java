@@ -885,7 +885,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         List<VariantAggregationExecutor> executors = new ArrayList<>(3);
         try {
             executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager(), getDBName()));
-            executors.set(0, new SampleIndexVariantAggregationExecutor(getMetadataManager(), getSampleIndexDBAdaptor()));
+            executors.add(new SampleIndexVariantAggregationExecutor(getMetadataManager(), getSampleIndexDBAdaptor()));
             executors.add(new ChromDensityVariantAggregationExecutor(this, getMetadataManager()));
         } catch (Exception e) {
             throw VariantQueryException.internalException(e);

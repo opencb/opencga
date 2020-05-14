@@ -177,7 +177,7 @@ public class JobCommandOptions {
         public Integer iterations;
 
         @Parameter(names = {"-n", "--jobs"}, description = "Number of jobs to print", required = false, arity = 1)
-        public int jobsLimit = 20;
+        public Integer jobsLimit;
     }
 
     @Parameters(commandNames = {"log"}, commandDescription = "Provide a view of jobs activity in real time.")

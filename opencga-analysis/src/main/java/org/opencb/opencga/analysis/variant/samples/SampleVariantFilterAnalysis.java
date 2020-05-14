@@ -83,8 +83,9 @@ public class SampleVariantFilterAnalysis extends OpenCgaToolScopeStudy {
         super.check();
         toolParams.updateParams(params);
 //            VariantStorageManager.getVariantQuery(params);
-        query = toolParams.toQuery();
         studyFqn = getStudyFqn();
+        query = toolParams.toQuery();
+        query.put(VariantQueryParam.STUDY.key(), studyFqn);
 
         if (toolParams.getMaxVariants() > 1000) {
             throw new ToolException("Number of max variants can not be larger than 1000");

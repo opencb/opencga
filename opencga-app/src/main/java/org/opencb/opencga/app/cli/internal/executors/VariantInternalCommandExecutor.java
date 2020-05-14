@@ -613,7 +613,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params);
 
         toolRunner.execute(SampleVariantFilterAnalysis.class,
-                cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params),
+                cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params)
+                        .append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir), token);
     }
 
