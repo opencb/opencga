@@ -1,6 +1,7 @@
 import argparse
 import sys
 import re
+import os
 
 from rest_client_generator import RestClientGenerator
 
@@ -22,7 +23,7 @@ class RClientGenerator(RestClientGenerator):
             'Disease Panels': 'Panel',
             'Analysis - Alignment': 'AnalysisAlignment',
             'Analysis - Variant': 'AnalysisVariant',
-            'Analysis - Clinical Interpretation': 'AnalysisClinicalInterpretation',
+            'Analysis - Clinical': 'AnalysisClinical',
             'Operations - Variant Storage': 'Operation',
             'Meta': 'Meta',
             'GA4GH': 'GA4GH',
@@ -71,22 +72,56 @@ class RClientGenerator(RestClientGenerator):
         # return '\n'.join(headers) + '\n' + '\n'.join(['import ' + i for i in imports])
 
     def get_class_definition(self, category):
-        text = []
-        text.append('setMethod("{}Client", "OpencgaR", function(OpencgaR, {}, action, params=NULL, ...) {{'.format(
+        class_path_params = []
+        for endpoints in category["endpoints"]:
+            if "parameters" in endpoints:
+                for param in endpoints["parameters"]:
+                    if param["param"] == "path":
+                        class_path_params.append(param["name"])
+        path_params = set(class_path_params)
+
+        print (path_params)
+
+        # Create AllGenerics
+        allgenerics_file = os.path.join(self.output_dir, get_file_name_allgenerics())
+        allgenerics = open(allgenerics_file, 'a')
+        text_allgenerics = []
+        text_allgenerics.append('#' * 80)
+        text_allgenerics.append('## {}Client'.format(self.categories[self.get_category_name(category)]))
+        text_allgenerics.append('setGeneric("{}Client", function(OpencgaR, {}action, params=NULL, ...)'.format(
             self.categories[self.get_category_name(category)].lower(),
-            self.categories[self.get_category_name(category)].lower()))
+            ', '.join(path_params) + ', ' if len(path_params) > 0 else ''))
+        text_allgenerics.append('{}standardGeneric("{}Client"))'.format(
+            ' ' * 4, self.categories[self.get_category_name(category)].lower()))
+        allgenerics.write('\n'.join(text_allgenerics) + '\n\n')
+        allgenerics.close()
+
+        # Print class description
+        text = []
+        text.append('#' * 80)
+        text.append("#' {}Client methods".format(self.categories[self.get_category_name(category)]))
+        text.append("#' @include commons.R\n")
+        text.append("#' @description This function implements the OpenCGA calls for managing {}".format(self.categories[self.get_category_name(category)]))
+        text.append("#' @param OpencgaR an object OpencgaR generated using initOpencgaR and/or opencgaLogin")
+        text.append("#' @seealso \\url{https://github.com/opencb/opencga/wiki} and the RESTful API documentation")
+        text.append("#' \\url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}")
+        text.append("#' @export\n\n")
+
+        # Print method
+        text.append('setMethod("{}Client", "OpencgaR", function(OpencgaR, {}action, params=NULL, ...) {{'.format(
+            self.categories[self.get_category_name(category)].lower(),
+            ', '.join(path_params) + ', ' if len(path_params) > 0 else ''))
         text.append('{}category <- "{}"'.format(' ' * 4, self.get_category_path(category)))
         text.append('{}switch(action,'.format(' ' * 4))
         return '\n'.join(text)
 
     def get_class_end(self):
-        return '}'
+        return ' ' * 4 + ")\n" + \
+               "})"
 
     def get_method_definition(self, category, endpoint):
 
         print("Processing " + self.get_endpoint_path(endpoint))
-
-        # Getting parameters
 
         # Getting parameters description
         comments_text = '# Endpoint: {}'.format(endpoint['path'])
@@ -95,14 +130,8 @@ class RClientGenerator(RestClientGenerator):
             desc = self.get_parameter_description(param)
             if self.parameters[param]['allowedValues']:
                 desc += ' Allowed values: {}'.format(
-                    self.get_parameter_allowed_values(param).split(',')
-                )
-
-            params_descriptions.append('{}# @param {}: {}'.format(
-                        ' ' * 8,
-                        param,
-                        desc)
-                )
+                    self.get_parameter_allowed_values(param).split(','))
+            params_descriptions.append('{}# @param {}: {}'.format(' ' * 8, param, desc))
         params_descriptions = '\n'.join(params_descriptions)
 
         # Get query params
@@ -114,7 +143,9 @@ class RClientGenerator(RestClientGenerator):
         # Method text
         text = ['{}{}'.format(' ' * 8, comments_text)]
         text.append(params_descriptions)
-        append_text(text, '{}{}=fetchOpenCGA(object=OpencgaR, category=category, categoryId={}, subcategory={}, subcategoryId={}, action="{}", params=params, httpMethod="{}", as.queryParam={}, ...)'.format(' ' * 8,
+        append_text(text, '{}{}=fetchOpenCGA(object=OpencgaR, category=category, categoryId={}, subcategory={}, '
+                          'subcategoryId={}, action="{}", params=params, httpMethod="{}", as.queryParam={}, ...),'.format(
+                   ' ' * 8,
                    self.get_method_name(endpoint, category),
                    self.get_endpoint_id1() if self.get_endpoint_id1() else 'NULL',
                    '"{0}"'.format(self.get_endpoint_subcategory()) if self.get_endpoint_subcategory() else 'NULL',
@@ -136,8 +167,7 @@ class RClientGenerator(RestClientGenerator):
         #     text += method_body
         # text.append('{}return self.{}({})'.format(' ' * 8, '_' + endpoint['method'].lower(), call_args))
         # text.append('')
-        return ',\n'.join(text)
-
+        return '\n'.join(text)
 
     def get_file_name(self, category):
         return self.categories[self.get_category_name(category)] + "-methods.R"
@@ -166,6 +196,10 @@ class RClientGenerator(RestClientGenerator):
             return super().get_parameter_description(parameter)
         else:
             return 'Map containing any additional optional parameters.'
+
+
+def get_file_name_allgenerics():
+    return "AllGenerics.R"
 
 
 def append_text(array, string, sep):
