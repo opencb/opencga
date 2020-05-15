@@ -107,25 +107,33 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
     @Override
     protected void run() throws ToolException {
         step("download-ref-genomes", () -> {
-            // FIXME to make URLs dependent on assembly (and Ensembl/NCBI ?)
-            ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(ResourceUtils.Species.hsapiens,
-                    ResourceUtils.Assembly.GRCh38, ResourceUtils.Authority.Ensembl, getScratchDir());
+            if (getOutDir().resolve("Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz").toFile().exists()) {
+                refGenomePath = getOutDir().resolve("Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz");
+            } else {
+                // FIXME to make URLs dependent on assembly (and Ensembl/NCBI ?)
+                ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(ResourceUtils.Species.hsapiens,
+                        ResourceUtils.Assembly.GRCh38, ResourceUtils.Authority.Ensembl, getOutDir());
 
-            if (refGenome == null) {
-                throw new ToolException("Something wrong happened downloading reference genome from " + ResourceUtils.URL);
+                if (refGenome == null) {
+                    throw new ToolException("Something wrong happened downloading reference genome from " + ResourceUtils.URL);
+                }
+
+                refGenomePath = refGenome.getGzFile().toPath();
             }
-
-            refGenomePath = refGenome.getGzFile().toPath();
         });
 
         step("download-mutational-signatures", () -> {
             // To compare, downloadAnalysis signatures probabilities at
-            File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
-            if (signatureFile == null) {
-                throw new ToolException("Error downloading mutational signatures file from " + ResourceUtils.URL);
-            }
+            if (getOutDir().resolve(SIGNATURES_FILENAME).toFile().exists()) {
+                mutationalSignaturePath = getOutDir().resolve(SIGNATURES_FILENAME);
+            } else {
+                File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
+                if (signatureFile == null) {
+                    throw new ToolException("Error downloading mutational signatures file from " + ResourceUtils.URL);
+                }
 
-            mutationalSignaturePath = signatureFile.toPath();
+                mutationalSignaturePath = signatureFile.toPath();
+            }
         });
 
         step(getId(), () -> {
