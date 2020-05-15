@@ -1,46 +1,122 @@
+
 ################################################################################
 #' JobClient methods
 #' @include commons.R
-#' 
-#' @description This function implements the OpenCGA calls for managing Jobs
-#' @param OpencgaR an object OpencgaR generated using initOpencgaR and/or opencgaLogin 
-#' where the connection and session details are stored
-#' @param jobId a character string or a vector containing job ids.
-#' @param memberId a character or a vector contaning user or group ids to 
-#' work on. Mandatory when using jobAclClient
-#' @param action action to be performed on the jobs
-#' @param params list containing additional query or body params
-#' @seealso \url{https://github.com/opencb/opencga/wiki} and the RESTful API documentation 
+
+#' @description This function implements the OpenCGA calls for managing Job
+#' @param OpencgaR an object OpencgaR generated using initOpencgaR and/or opencgaLogin
+#' @seealso \url{https://github.com/opencb/opencga/wiki} and the RESTful API documentation
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
 #' @export
 
-setMethod("jobClient", "OpencgaR", function(OpencgaR, jobId, action, params=NULL, ...) {
+
+setMethod("jobClient", "OpencgaR", function(OpencgaR, members, jobs, job, action, params=NULL, ...) {
     category <- "jobs"
     switch(action,
-           search=fetchOpenCGA(object=OpencgaR, category=category, 
-                               action=action, params=params, httpMethod="GET", ...),
-           acl=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
-                            action=action, params=params, httpMethod="GET", ...),
-           info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
-                             action=action, params=params, httpMethod="GET", ...),
-           visit=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
-                              action=action, params=params, httpMethod="GET", ...),
-           create=fetchOpenCGA(object=OpencgaR, category=category, 
-                               action=action, params=params, httpMethod="POST", ...)
-           # groupBy=fetchOpenCGA(object=OpencgaR, category=category,  
-           #                      action="groupBy", params=params, httpMethod="GET", ...),
-           # delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
-           #                     action="delete", params=params, httpMethod="GET", ...)
+        # Endpoint: /{apiVersion}/jobs/acl/{members}/update
+        # @param members: Comma separated list of user or group ids.
+        # @param data: JSON containing the parameters to add ACLs.
+        updateAcl=fetchOpenCGA(object=OpencgaR, category=category, categoryId=members, subcategory=NULL,
+                subcategoryId=NULL, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+        # Endpoint: /{apiVersion}/jobs/aggregationStats
+        # @param study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+        # @param toolId: Tool id.
+        # @param toolScope: Tool scope.
+        # @param toolType: Tool type.
+        # @param toolResource: Tool resource.
+        # @param userId: User id.
+        # @param priority: Priority.
+        # @param tags: Tags.
+        # @param executorId: Executor id.
+        # @param executorFramework: Executor framework.
+        # @param creationYear: Creation year.
+        # @param creationMonth: Creation month (JANUARY, FEBRUARY...).
+        # @param creationDay: Creation day.
+        # @param creationDayOfWeek: Creation day of week (MONDAY, TUESDAY...).
+        # @param status: Status.
+        # @param release: Release.
+        # @param default: Calculate default stats.
+        # @param field: List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1.
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category=category, categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
+                ...),
+        # Endpoint: /{apiVersion}/jobs/create
+        # @param study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+        # @param data: job.
+        create=fetchOpenCGA(object=OpencgaR, category=category, categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
+                action="create", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+        # Endpoint: /{apiVersion}/jobs/search
+        # @param include: Fields included in the response, whole JSON path must be provided.
+        # @param exclude: Fields excluded in the response, whole JSON path must be provided.
+        # @param limit: Number of results to be returned.
+        # @param skip: Number of results to skip.
+        # @param count: Get the total number of results matching the query. Deactivated by default.
+        # @param study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+        # @param otherStudies: Flag indicating the entries being queried can belong to any related study, not just the primary one.
+        # @param id: Job ID. It must be a unique string within the study. An id will be autogenerated automatically if not provided.
+        # @param tool: Tool executed by the job.
+        # @param userId: User that created the job.
+        # @param priority: Priority of the job.
+        # @param internal.status.name: Job internal status.
+        # @param creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        # @param modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        # @param visited: Visited status of job.
+        # @param tags: Job tags.
+        # @param input: Comma separated list of file ids used as input.
+        # @param output: Comma separated list of file ids used as output.
+        # @param acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
+        # @param release: Release when it was created.
+        # @param deleted: Boolean to retrieve deleted jobs.
+        search=fetchOpenCGA(object=OpencgaR, category=category, categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
+                action="search", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+        # Endpoint: /{apiVersion}/jobs/top
+        # @param limit: Maximum number of jobs to be returned.
+        # @param study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+        # @param internal.status.name: Job internal status.
+        # @param priority: Priority of the job.
+        # @param userId: User that created the job.
+        # @param tool: Tool executed by the job.
+        top=fetchOpenCGA(object=OpencgaR, category=category, categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
+                action="top", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+        # Endpoint: /{apiVersion}/jobs/{jobs}/acl
+        # @param jobs: Comma separated list of job IDs or UUIDs up to a maximum of 100.
+        # @param member: User or group id.
+        # @param silent: Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason.
+        acl=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobs, subcategory=NULL, subcategoryId=NULL,
+                action="acl", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+        # Endpoint: /{apiVersion}/jobs/{jobs}/delete
+        # @param study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+        # @param jobs: Comma separated list of job ids.
+        delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobs, subcategory=NULL, subcategoryId=NULL,
+                action="delete", params=params, httpMethod="DELETE", as.queryParam=NULL, ...),
+        # Endpoint: /{apiVersion}/jobs/{jobs}/info
+        # @param include: Fields included in the response, whole JSON path must be provided.
+        # @param exclude: Fields excluded in the response, whole JSON path must be provided.
+        # @param jobs: Comma separated list of job IDs or UUIDs up to a maximum of 100.
+        # @param study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+        # @param deleted: Boolean to retrieve deleted jobs.
+        info=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobs, subcategory=NULL, subcategoryId=NULL,
+                action="info", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+        # Endpoint: /{apiVersion}/jobs/{jobs}/update
+        # @param jobs: Comma separated list of job IDs or UUIDs up to a maximum of 100.
+        # @param study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+        # @param data: body.
+        update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobs, subcategory=NULL, subcategoryId=NULL,
+                action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+        # Endpoint: /{apiVersion}/jobs/{job}/log/head
+        # @param job: Job ID or UUID.
+        # @param study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+        # @param offset: Starting byte from which the file will be read.
+        # @param lines: Maximum number of lines to be returned.
+        # @param type: Log file to be shown (stdout or stderr).
+        headLog=fetchOpenCGA(object=OpencgaR, category=category, categoryId=job, subcategory="log", subcategoryId=NULL,
+                action="head", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+        # Endpoint: /{apiVersion}/jobs/{job}/log/tail
+        # @param job: Job ID or UUID.
+        # @param study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+        # @param lines: Maximum number of lines to be returned.
+        # @param type: Log file to be shown (stdout or stderr).
+        tailLog=fetchOpenCGA(object=OpencgaR, category=category, categoryId=job, subcategory="log", subcategoryId=NULL,
+                action="tail", params=params, httpMethod="GET", as.queryParam=NULL, ...),
     )
 })
-
-#' @export
-setMethod("jobAclClient", "OpencgaR", function(OpencgaR, jobId, memberId, action, params=NULL, ...){
-    category <- "jobs"
-    switch(action,
-           update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=jobId, 
-                               subcategory="acl", subcategoryId=memberId, 
-                               action=action, params=params, httpMethod="POST", ...)
-    )
-})
-

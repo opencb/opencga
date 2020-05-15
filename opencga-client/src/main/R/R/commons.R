@@ -113,7 +113,7 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
             expirationTime <- sessionTable[sessionTableMatch, "expirationTime"]
         }else{
             stop(paste("There is more than one connection to this host in your rsession file. Please, remove any duplicated entries in", 
-                       sessionFile))
+                       object@sessionFile))
         }
         timeNow <- Sys.time()
         timeLeft <- as.numeric(difftime(as.POSIXct(expirationTime, format="%Y%m%d%H%M%S"), timeNow, units="mins"))

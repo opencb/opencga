@@ -391,6 +391,7 @@ opencgaHelp <- function(opencga, client=NULL, action=NULL){
 }
 
 #' @importFrom utils tail
+#' @importFrom rlang .data
 getMethodInfo <- function(opencga, categ, subcat, action){
     allApis <- names(opencga@swagger$paths)
     methodsInCategoryLogic <- sapply(strsplit(x = allApis, split = "/"), "[", 3) == categ
@@ -398,7 +399,7 @@ getMethodInfo <- function(opencga, categ, subcat, action){
     lenParams <- unlist(lapply(X = strsplit(x = allApis, split = "/"), FUN = length))
 
     filterParams <- function(x){
-        x <- subset(x, !name %in% c("apiVersion", "version", "sid", "Authorization"))
+        x <- subset(x, !.data$name %in% c("apiVersion", "version", "sid", "Authorization"))
         x <- x[, c("name", "in", "required", "type", "description")]
         return(x)
     }
