@@ -248,7 +248,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.penetrance,
                         cliOptions.secondary,
                         cliOptions.index),
-                getParams(clinicalCommandOptions.tieringCommandOptions.study)
+                getCommonParamsFromClinicalOptions(clinicalCommandOptions.tieringCommandOptions.study)
         );
     }
 
@@ -261,7 +261,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.familySeggregation,
                         cliOptions.secondary,
                         cliOptions.index),
-                getParams(clinicalCommandOptions.teamCommandOptions.study)
+                getCommonParamsFromClinicalOptions(clinicalCommandOptions.teamCommandOptions.study)
         );
     }
 
@@ -318,7 +318,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         .setTrait(cliOptions.trait)
                         .setSecondary(cliOptions.secondary)
                         .setIndex(cliOptions.index),
-                getParams(clinicalCommandOptions.teamCommandOptions.study)
+                getCommonParamsFromClinicalOptions(clinicalCommandOptions.teamCommandOptions.study)
         );
     }
 
@@ -331,35 +331,39 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         .setDiscardedVariants(cliOptions.discardedVariants)
                         .setSecondary(cliOptions.secondary)
                         .setIndex(cliOptions.index),
-                getParams(clinicalCommandOptions.cancerTieringCommandOptions.study)
+                getCommonParamsFromClinicalOptions(clinicalCommandOptions.cancerTieringCommandOptions.study)
         );
     }
 
-    private ObjectMap getParams(String study) {
-        return getParams(null, study);
-    }
 
-    private ObjectMap getParams(String project, String study) {
-        ObjectMap params = new ObjectMap(clinicalCommandOptions.commonCommandOptions.params);
-        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
-        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
-        params.putIfNotEmpty(ParamConstants.JOB_ID, clinicalCommandOptions.commonJobOptions.jobId);
-        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, clinicalCommandOptions.commonJobOptions.jobDescription);
-        if (clinicalCommandOptions.commonJobOptions.jobDependsOn != null) {
-            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", clinicalCommandOptions.commonJobOptions.jobDependsOn));
-        }
-        if (clinicalCommandOptions.commonJobOptions.jobTags != null) {
-            params.put(ParamConstants.JOB_TAGS, String.join(",", clinicalCommandOptions.commonJobOptions.jobTags));
-        }
-        if (clinicalCommandOptions.commonNumericOptions.limit > 0) {
-            params.put(QueryOptions.LIMIT, clinicalCommandOptions.commonNumericOptions.limit);
-        }
-        if (clinicalCommandOptions.commonNumericOptions.skip > 0) {
-            params.put(QueryOptions.SKIP, clinicalCommandOptions.commonNumericOptions.skip);
-        }
-        if (clinicalCommandOptions.commonNumericOptions.count) {
-            params.put(QueryOptions.COUNT, clinicalCommandOptions.commonNumericOptions.count);
-        }
+    private ObjectMap getCommonParamsFromClinicalOptions(String study) {
+        ObjectMap params = getCommonParams(study, clinicalCommandOptions.commonCommandOptions.params);
+        addJobParams(clinicalCommandOptions.commonJobOptions, params);
+        addNumericParams(clinicalCommandOptions.commonNumericOptions, params);
         return params;
     }
+
+//    private ObjectMap getParams(String project, String study) {
+//        ObjectMap params = new ObjectMap();
+//        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
+//        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
+//        params.putIfNotEmpty(ParamConstants.JOB_ID, clinicalCommandOptions.commonJobOptions.jobId);
+//        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, clinicalCommandOptions.commonJobOptions.jobDescription);
+//        if (clinicalCommandOptions.commonJobOptions.jobDependsOn != null) {
+//            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", clinicalCommandOptions.commonJobOptions.jobDependsOn));
+//        }
+//        if (clinicalCommandOptions.commonJobOptions.jobTags != null) {
+//            params.put(ParamConstants.JOB_TAGS, String.join(",", clinicalCommandOptions.commonJobOptions.jobTags));
+//        }
+//        if (clinicalCommandOptions.commonNumericOptions.limit > 0) {
+//            params.put(QueryOptions.LIMIT, clinicalCommandOptions.commonNumericOptions.limit);
+//        }
+//        if (clinicalCommandOptions.commonNumericOptions.skip > 0) {
+//            params.put(QueryOptions.SKIP, clinicalCommandOptions.commonNumericOptions.skip);
+//        }
+//        if (clinicalCommandOptions.commonNumericOptions.count) {
+//            params.put(QueryOptions.COUNT, clinicalCommandOptions.commonNumericOptions.count);
+//        }
+//        return params;
+//    }
 }

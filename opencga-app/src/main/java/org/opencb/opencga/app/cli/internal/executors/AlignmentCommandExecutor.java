@@ -55,8 +55,8 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
-            case "index":
-                index();
+            case "index-run":
+                indexRun();
                 break;
             case "stats-run":
                 statsRun();
@@ -86,7 +86,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void index() throws Exception {
+    private void indexRun() throws Exception {
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
         AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);

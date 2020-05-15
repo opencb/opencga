@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -10,7 +11,10 @@ public class CancerTieringInterpretationAnalysisParams extends ToolParams {
     private String clinicalAnalysis;
     private List<String> discardedVariants;
 
+    @JsonProperty(defaultValue = "false")
     private boolean secondary; // secondary interpretation (vs primary interpretation)
+
+    @JsonProperty(defaultValue = "true")
     private boolean index;     // save interpretation in catalog DB
 
     public CancerTieringInterpretationAnalysisParams() {

@@ -89,6 +89,9 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantExportCommandOptions.EXPORT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantExportStatsCommandOptions.STATS_EXPORT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantIndexCommandOptions.INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
@@ -132,19 +135,19 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             case VARIANT_DELETE_COMMAND:
                 fileDelete();
                 break;
-            case "export":
+            case EXPORT_RUN_COMMAND:
                 export();
                 break;
             case "query":
                 query();
                 break;
-            case "stats-export":
+            case STATS_EXPORT_RUN_COMMAND:
                 exportFrequencies();
                 break;
             case "import":
                 importData();
                 break;
-            case "index":
+            case INDEX_RUN_COMMAND:
                 index();
                 break;
             case SECONDARY_INDEX_COMMAND:
@@ -343,6 +346,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.normalizationSkip,
                 cliOptions.genericVariantIndexOptions.referenceGenome,
                 cliOptions.genericVariantIndexOptions.family,
+                cliOptions.genericVariantIndexOptions.somatic,
                 cliOptions.genericVariantIndexOptions.load,
                 cliOptions.genericVariantIndexOptions.loadSplitData,
                 cliOptions.genericVariantIndexOptions.loadMultiFileData,
@@ -609,7 +613,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params);
 
         toolRunner.execute(SampleVariantFilterAnalysis.class,
-                cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params),
+                cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params)
+                        .append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir), token);
     }
 

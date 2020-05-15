@@ -37,8 +37,7 @@ import java.util.List;
 @Parameters(commandNames = {"files"}, commandDescription = "File commands")
 public class FileCommandOptions {
 
-//    public CopyCommandOptions copyCommandOptions;
-    public CreateFolderCommandOptions createFolderCommandOptions;
+    public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public DownloadCommandOptions downloadCommandOptions;
     public GrepCommandOptions grepCommandOptions;
@@ -79,8 +78,7 @@ public class FileCommandOptions {
         this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
-//        this.copyCommandOptions = new CopyCommandOptions();
-        this.createFolderCommandOptions = new CreateFolderCommandOptions();
+        this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.downloadCommandOptions = new DownloadCommandOptions();
         this.grepCommandOptions = new GrepCommandOptions();
@@ -119,46 +117,20 @@ public class FileCommandOptions {
 
     }
 
-    @Deprecated
-    @Parameters(commandNames = {"copy"}, commandDescription = "(DEPRECATED) Copy a file or folder")
-    public class CopyCommandOptions extends StudyOption {
+    @Parameters(commandNames = {"create"}, commandDescription = "Create file or folder")
+    public class CreateCommandOptions extends StudyOption {
 
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--path"}, description = "Directory where to create the file", required = false, arity = 1)
-        public String path;
-
-        @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
-        public String inputFile;
-
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        public String description;
-
-        @Parameter(names = {"-f", "--format"}, description = "one of {PLAIN, GZIP, BINARY, EXECUTABLE, IMAGE}. See File.Format", arity = 1)
-        public File.Format format = File.Format.PLAIN;
-
-        @Parameter(names = {"-b", "--bioformat"}, description = "See File.Bioformat for more info", required = false, arity = 1)
-        public File.Bioformat bioformat = File.Bioformat.NONE;
-
-        @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
-        public boolean parents;
-
-        @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
-        public boolean move;
-
-        @Parameter(names = {"--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        public boolean calculateChecksum;
-    }
-
-    @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
-    public class CreateFolderCommandOptions extends StudyOption {
-
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--path"}, description = "Path where the folder will be created", required = true, arity = 1)
+        @Parameter(names = {"--path"}, description = "Path where the file or folder will be created", required = true, arity = 1)
         public String folder = "";
+
+        @Parameter(names = {"--description"}, description = "File or folder description", arity = 1)
+        public String description = "";
+
+        @Parameter(names = {"--content"}, description = "File content. If not provided, a folder will be created.", arity = 1)
+        public String content = "";
 
         @Parameter(names = {"-P", "--parents"}, description = "Create the parent directories if they do not exist. Default: false",
                 arity = 0)
@@ -177,8 +149,8 @@ public class FileCommandOptions {
         @Parameter(names = {"--file"}, description = "Comma separated list of file ids", required = true, arity = 1)
         public String files;
 
-        @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
-        public boolean noLazy;
+        @Parameter(names = {"--deleted"}, description = "Flag to retrieve only deleted files", arity = 0)
+        public boolean deleted;
 
         @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
                 arity = 0)
@@ -197,12 +169,11 @@ public class FileCommandOptions {
         @Parameter(names = {"--pattern"}, description = "String pattern", arity = 1)
         public String pattern = "";
 
-        @Parameter(names = {"-i", "--ignore-case"}, description = "Do a case insensitive search", arity = 0)
+        @Parameter(names = {"-i", "--ignore-case"}, description = "Flag to perform a case insensitive search", arity = 0)
         public boolean ignoreCase;
 
         @Parameter(names = {"-m", "--max-count"}, description = "Stop reading a file after 'n' matching lines. 0 means no limit.", arity = 0)
-        public int maxCount;
-
+        public Integer maxCount;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search files")
@@ -217,65 +188,65 @@ public class FileCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of file names", required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = ParamConstants.FILE_NAMES_DESCRIPTION, arity = 1)
         public String name;
 
-        @Parameter(names = {"--path"}, description = "Comma separated list of paths", required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = ParamConstants.FILE_PATHS_DESCRIPTION, arity = 1)
         public String path;
 
-        @Parameter(names = {"--type"}, description = "File type. CSV", required = false, arity = 1)
-        public List<File.Type> type;
+        @Parameter(names = {"--type"}, description = ParamConstants.FILE_TYPE_DESCRIPTION, arity = 1)
+        public String type;
 
-        @Parameter(names = {"--bioformat"}, description = "File bioformat. CSV", required = false, arity = 1)
+        @Parameter(names = {"--bioformat"}, description = ParamConstants.FILE_BIOFORMAT_DESCRIPTION, arity = 1)
         public List<File.Bioformat> bioformat;
 
-        @Parameter(names = {"--format"}, description = "Comma separated Format values.", required = false, arity = 1)
-        public String format;
+        @Parameter(names = {"--format"}, description = ParamConstants.FILE_FORMAT_DESCRIPTION, arity = 1)
+        public List<File.Format> format;
 
-        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
+        @Parameter(names = {"--status"}, description = ParamConstants.FILE_STATUS_DESCRIPTION, arity = 1)
         public String status;
 
-        @Parameter(names = {"--folder"}, description = "Directory under which we want to look for files or folders.", arity = 1)
+        @Parameter(names = {"--directory"}, description = ParamConstants.FILE_DIRECTORY_DESCRIPTION, arity = 1)
         public String folder;
 
-        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
-        public String ownerId;
-
-        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
+        @Parameter(names = {"--creation-date"}, description = ParamConstants.CREATION_DATE_DESCRIPTION, arity = 1)
         public String creationDate;
 
-        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
+        @Parameter(names = {"--modification-date"}, description = ParamConstants.MODIFICATION_DATE_DESCRIPTION, arity = 1)
         public String modificationDate;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = ParamConstants.FILE_DESCRIPTION_DESCRIPTION, arity = 1)
         public String description;
 
-        @Parameter(names = {"--size"}, description = "Size.", required = false, arity = 1)
+        @Parameter(names = {"--tags"}, description = ParamConstants.FILE_TAGS_DESCRIPTION, arity = 1)
+        public String tags;
+
+        @Parameter(names = {"--size"}, description = ParamConstants.FILE_SIZE_DESCRIPTION, arity = 1)
         public String size;
 
-        @Parameter(names = {"--samples"}, description = "Comma separated list of sample ids or names", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = ParamConstants.SAMPLES_DESCRIPTION, arity = 1)
         public String samples;
 
-        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
+        @Parameter(names = {"--job-id"}, description = ParamConstants.FILE_JOB_ID_DESCRIPTION, arity = 1)
         public String jobId;
 
-        @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
+        @Parameter(names = {"--attributes"}, description = ParamConstants.ATTRIBUTES_DESCRIPTION, arity = 1)
         public String attributes;
 
-        @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
-        public String nattributes;
-
-        @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
-        public boolean noLazy;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
-                "please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", arity = 1)
+        @Parameter(names = {"--annotation"}, description = ParamConstants.ANNOTATION_DESCRIPTION, arity = 1)
         public String annotation;
 
-        @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
-                arity = 0)
-        public boolean flattenAnnotations;
+        @Parameter(names = {"--acl"}, description = ParamConstants.ACL_DESCRIPTION, arity = 1)
+        public String acl;
 
+        @Parameter(names = {"--deleted"}, description = ParamConstants.DELETED_DESCRIPTION, arity = 1)
+        public boolean deleted;
+
+        @Parameter(names = {"--release"}, description = ParamConstants.RELEASE_DESCRIPTION, arity = 1)
+        public Integer release;
+
+        @Parameter(names = {"--flatten-annotations"}, description = ParamConstants.FLATTEN_ANNOTATION_DESCRIPTION, arity = 0)
+        public boolean flattenAnnotations;
     }
 
     @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
@@ -290,119 +261,59 @@ public class FileCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", arity = 1, required = false)
+        @Parameter(names = {"--" + ParamConstants.FILE_FOLDER}, description = ParamConstants.FILE_FOLDER_DESCRIPTION, arity = 1, required = true)
         public String folderId;
 
-    }
-
-    @Deprecated
-    @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
-    public class IndexCommandOptions extends BaseFileCommand {
-
-        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-        public boolean transform;
-
-        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-        public boolean load;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Catalog directory where transformed index files will be stored", arity = 1)
-        public String outdir;
-
-        @Parameter(names = {"--include-extra-fields"}, description = "Index including other genotype fields [CSV]")
-        public String extraFields;
-
-        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
-        public String aggregated = "NONE";
-
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF "
-                + "file", arity = 1)
-        public String aggregationMappingFile;
-//
-//        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
-//        public boolean gvcf;
-//
-//        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
-//        public boolean bgzip;
-
-        @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step")
-        public boolean calculateStats;
-
-        @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
-        public boolean annotate;
-//
-//        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-//        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
-
-        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations already present in variants")
-        public boolean overwriteAnnotations;
-
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
-        public boolean resume;
-//
-//    //     @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-//    //    public List<String> dashDashParameters;
-//
-//        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
-//        public String outdir = "";
-//
-//    //     @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-//    //    public boolean enqueue;
-//
-//    //    @Parameter(names = "--transform", description = "Run only the transform phase")
-//    //    public boolean transform = false;
-//
-//    //    @Parameter(names = "--load", description = "Run only the load phase")
-//    //    public boolean load = false;
-//
-//        @Parameter(names = "--calculate-stats", description = "Calculate stats for cohort ALL", arity = 0)
-//        public boolean calculateStats;
-//
-//        @Parameter(names = "--annotate", description = "Annotate new variants", arity = 0)
-//        public boolean annotate;
     }
 
     @Parameters(commandNames = {"head"}, commandDescription = "Show the first lines of a file (up to a limit)")
     public class HeadCommandOptions extends BaseFileCommand{
 
         @Parameter(names = {"--offset"}, description = "Starting byte from which the file will be read", arity = 1)
-        public int offset;
+        public long offset;
 
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
-        public int lines = 10;
+        public Integer lines;
     }
 
     @Parameters(commandNames = {"tail"}, commandDescription = "Show the last lines of a file (up to a limit)")
     public class TailCommandOptions extends BaseFileCommand{
 
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
-        public int lines = 10;
+        public Integer lines;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
     public class UpdateCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"--name"}, description = "Name", required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "New file name", arity = 1)
         public String name;
 
-        @Parameter(names = {"--format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
-                required = false, arity = 1)
+        @Parameter(names = {"--format"}, description = "New format (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
+                arity = 1)
         public File.Format format;
 
-        @Parameter(names = {"--bioformat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)",
-                required = false, arity = 1)
+        @Parameter(names = {"--bioformat"}, description = "New bioformat (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)",
+                arity = 1)
         public File.Bioformat bioformat;
 
-        @Parameter(names = {"--description"}, description = "Description of the file", required = false, arity = 1)
+        @Parameter(names = {"--description"}, description = "New description", arity = 1)
         public String description;
 
-        @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        public String attributes;
+        @Parameter(names = {"--samples-action"}, description = "Action to be performed if the array of samples is being updated (ADD, SET or REMOVE).",
+                arity = 1)
+        public String samplesAction;
 
-        @Parameter(names = {"--stats"}, description = "Stats", required = false, arity = 1)
-        public String stats;
-
-        @Parameter(names = {"--samples"}, description = "Comma separated list of sample names or ids", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = "Comma separated list of sample names or ids", arity = 1)
         public List<String> sampleIds;
+
+        @Parameter(names = {"--tags-action"}, description = "Action to be performed if the array of tags is being updated (ADD, SET or REMOVE).",
+                arity = 1)
+        public String tagsAction;
+
+        @Parameter(names = {"--tags"}, description = "Comma separated list of sample names or ids", arity = 1)
+        public List<String> tags;
+
     }
 
 //    @Parameters(commandNames = {"relink"}, commandDescription = "Change location of linked or STAGED file.")
@@ -411,21 +322,16 @@ public class FileCommandOptions {
 //        @Parameter(names = {"--uri"}, description = "New URI", required = true, arity = 1)
 //        public String uri;
 //
-//        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+//        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", arity = 0)
 //        public boolean calculateChecksum;
 //    }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file")
     public class DeleteCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"--delete-external"}, description = "Boolean indicating whether to delete external files from disk as well"
-                + " (only applicable for linked files/folders)", required = false, arity = 0)
-        public boolean deleteExternal;
-
         @Parameter(names = {"--skip-trash"}, description = "Boolean indicating whether to skip sending the files to the trash first. "
-                + "If set, it will not be possible to recover them!", required = false, arity = 0)
+                + "If set, it will not be possible to recover them!", arity = 0)
         public boolean skipTrash;
-
     }
 
     @Parameters(commandNames = {"tree"}, commandDescription = "Obtain a tree view of the files and folders within a folder")
@@ -437,20 +343,11 @@ public class FileCommandOptions {
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = false, arity = 1)
+        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", arity = 1)
         public String folderId = ".";
 
         @Parameter(names = {"-n", "--max-depth"}, description = "Descend only 'level' directories deep. Default: 5", arity = 1)
-        public Integer maxDepth = 5;
-
-        @Parameter(names = {"--max-Depth"}, hidden = true)
-        public void setMaxDepth(int maxDepth) {
-            this.maxDepth = maxDepth;
-        }
-
-        @Parameter(names = {"--limit"}, description = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", arity = 1)
-        public String limit;
-
+        public Integer maxDepth;
     }
 
     @Parameters(commandNames = {"refresh"}, commandDescription = "Refresh metadata from the selected file or folder. Print updated files.")
@@ -485,7 +382,7 @@ public class FileCommandOptions {
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
         public boolean parents;
     }
-    //---- POST ---//
+
     @Parameters(commandNames = {"upload"}, commandDescription = "Upload a physical local file to catalog.")
     public class UploadCommandOptions extends StudyOption {
 
@@ -504,10 +401,10 @@ public class FileCommandOptions {
         public String bioformat;
 
         @Parameter(names = {"--catalog-path"}, description = "Path within catalog where the file will be located (Default: root folder)",
-                required = false, arity = 1)
+                arity = 1)
         public String catalogPath;
 
-        @Parameter(names = {"--description"}, description = "Description of the file", required = false, arity = 1)
+        @Parameter(names = {"--description"}, description = "Description of the file", arity = 1)
         public String description;
 
         @Parameter(names = {"--file-name"}, description = "Name of the file by which it will be stored in catalog", required = false,
@@ -518,10 +415,10 @@ public class FileCommandOptions {
         public boolean parents;
 
         @Parameter(names = {"--replace"}, description = "[PENDING] Replace the existing attached file. ALERT: The existing file will be "
-                + "removed", required = false, arity = 0)
+                + "removed", arity = 0)
         public boolean replace;
 
-        @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", required = false, arity = 0)
+        @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", arity = 0)
         public boolean calculateChecksum;
     }
 

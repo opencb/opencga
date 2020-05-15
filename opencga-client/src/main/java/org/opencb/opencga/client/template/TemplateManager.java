@@ -461,7 +461,7 @@ public class TemplateManager {
             variantIndexParams.updateParams(new HashMap<>(study.getAttributes()));
         }
         return checkJob(openCGAClient.getVariantClient()
-                .index(variantIndexParams, params));
+                .runIndex(variantIndexParams, params));
     }
 
     private void postIndex(Project project, List<String> indexVcfJobIds, List<String> statsJobIds) throws ClientException {

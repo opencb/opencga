@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.opencga.core.tools.ToolParams;
 
@@ -12,7 +13,10 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
     private List<String> panels;
     private ClinicalProperty.Penetrance penetrance;
 
+    @JsonProperty(defaultValue = "false")
     private boolean secondary; // secondary interpretation (vs primary interpretation)
+
+    @JsonProperty(defaultValue = "true")
     private boolean index;     // save interpretation in catalog DB
 
     public TieringInterpretationAnalysisParams() {

@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.io;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -207,6 +208,16 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     private void printProject(List<DataResult<Project>> queryResultList) {
+        new Table<Project>()
+                .addColumn("ID", Project::getId)
+                .addColumn("NAME", Project::getName)
+                .addColumn("ORGANISM", p -> StringUtils.defaultIfEmpty(p.getOrganism().getScientificName(), p.getOrganism().getCommonName()), "NA")
+                .addColumn("ASSEMBLY", p -> p.getOrganism().getAssembly(), "NA")
+                .addColumn("DESCRIPTION", Project::getDescription)
+                .addColumnNumber("#STUDIES", p -> p.getStudies().size())
+                .addColumn("STATUS", p -> p.getInternal().getStatus().getName())
+                .printTable(unwind(queryResultList));
+
         StringBuilder sb = new StringBuilder();
         for (DataResult<Project> queryResult : queryResultList) {
             // Write header
@@ -239,29 +250,21 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     private void printStudy(List<DataResult<Study>> queryResultList) {
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<Study> queryResult : queryResultList) {
-            // Write header
-            sb.append("#ID\tNAME\tDESCRIPTION\t#GROUPS\tSIZE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
-                    .append("#VARIABLE_SETS\tSTATUS\n");
+        Table<Study> table = new Table<Study>(tableType)
+                .addColumn("ID", Study::getId)
+                .addColumn("NAME", Study::getName)
+                .addColumn("DESCRIPTION", Study::getDescription)
+                .addColumnNumber("#GROUPS", s -> s.getGroups().size())
+                .addColumnNumber("SIZE", Study::getSize)
+                .addColumnNumber("#FILES", s -> s.getFiles().size())
+                .addColumnNumber("#SAMPLES", s -> s.getSamples().size())
+                .addColumnNumber("#COHORTS", s -> s.getCohorts().size())
+                .addColumnNumber("#INDIVIDUALS", s -> s.getIndividuals().size())
+                .addColumnNumber("#JOBS", s -> s.getJobs().size())
+                .addColumnNumber("#VARIABLE_SETS", s -> s.getVariableSets().size())
+                .addColumn("STATUS", s -> s.getInternal().getStatus().getName());
 
-            for (Study study : queryResult.getResults()) {
-                sb.append(String.format("%s\t%s\t%s\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n",
-                        StringUtils.defaultIfEmpty(study.getId(), "-"), StringUtils.defaultIfEmpty(study.getName(), "-"),
-                        StringUtils.defaultIfEmpty(study.getDescription(), "-"),
-                        study.getGroups() != null ? study.getGroups().size() : -1, study.getSize(),
-                        study.getFiles() != null ? study.getFiles().size() : -1,
-                        study.getSamples() != null ? study.getSamples().size() : -1,
-                        study.getCohorts() != null ? study.getCohorts().size() : -1,
-                        study.getIndividuals() != null ? study.getIndividuals().size() : -1,
-                        study.getJobs() != null ? study.getJobs().size() : -1,
-                        study.getVariableSets() != null ? study.getVariableSets().size() : -1,
-                        study.getInternal() != null && study.getInternal().getStatus() != null
-                                ? StringUtils.defaultIfEmpty(study.getInternal().getStatus().getName(), "-") : "-"));
-            }
-        }
-
-        ps.println(sb.toString());
+        table.printTable(queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList()));
     }
 
     private void printGroup(Group group, StringBuilder sb, String prefix) {
@@ -288,8 +291,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumn("RELATED_FILES", f -> f.getRelatedFiles().stream().map(rf -> rf.getFile().getName()).collect(Collectors.joining(",")))
                 .addColumn("SAMPLES", f -> f.getSamples().stream().map(Sample::getId).collect(Collectors.joining(",")));
 
-        table.updateTable(queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList()));
-        table.printTable();
+        table.printTable(unwind(queryResultList));
     }
 
     private void printSamples(List<DataResult<Sample>> queryResultList) {
@@ -299,8 +301,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumn("STATUS", s -> s.getInternal().getStatus().getName())
                 .addColumn("INDIVIDUAL_ID", Sample::getIndividualId);
 
-        table.updateTable(queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList()));
-        table.printTable();
+        table.printTable(unwind(queryResultList));
     }
 
     private void printCohorts(List<DataResult<Cohort>> queryResultList) {
@@ -312,8 +313,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumnNumber("TOTAL_SAMPLES", c -> c.getSamples().size())
                 .addColumn("SAMPLES", c -> c.getSamples().stream().map(Sample::getId).collect(Collectors.joining(",")));
 
-        table.updateTable(queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList()));
-        table.printTable();
+        table.printTable(unwind(queryResultList));
     }
 
     private void printIndividual(List<DataResult<Individual>> queryResultList) {
@@ -331,8 +331,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumn("MOTHER_ID", i -> i.getMother().getId())
                 .addColumn("CREATION_DATE", Individual::getCreationDate);
 
-        table.updateTable(queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList()));
-        table.printTable();
+        table.printTable(unwind(queryResultList));
     }
 
 //    private void printFamily(List<DataResult<Family>> queryResultList) {
@@ -368,54 +367,33 @@ public class TextOutputWriter extends AbstractOutputWriter {
 //    }
 
     private void printJob(List<DataResult<Job>> queryResultList) {
-        Table<Job> table = new Table<Job>(tableType)
+        new Table<Job>(tableType)
                 .addColumn("ID", Job::getId, 50)
                 .addColumn("TOOL_ID", j -> j.getTool().getId())
                 .addColumn("CREATION_DATE", Job::getCreationDate)
                 .addColumn("STATUS", j -> j.getInternal().getStatus().getName())
-                .addColumn("INPUT", j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")))
-                .addColumn("OUTPUT", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")))
-                .addColumn("OUTPUT_DIRECTORY", j -> j.getOutDir().getPath());
-
-        table.updateTable(queryResultList.stream().flatMap(r->r.getResults().stream()).collect(Collectors.toList()));
-        table.printTable();
+                .addColumnNumber("WARNS", j -> j.getExecution().getEvents().stream().filter(e -> e.getType().equals(Event.Type.WARNING)).count())
+                .addColumnNumber("ERRORS", j -> j.getExecution().getEvents().stream().filter(e -> e.getType().equals(Event.Type.ERROR   )).count())
+                .addColumn("INPUT", j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)
+                .addColumn("OUTPUT", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")), 45)
+                .addColumn("OUTPUT_DIRECTORY", j -> j.getOutDir().getPath(), 45)
+                .printTable(unwind(queryResultList));
     }
 
     private void printVariableSet(List<DataResult<VariableSet>> queryResultList) {
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<VariableSet> queryResult : queryResultList) {
-            // Write header
-            if (writerConfiguration.isHeader()) {
-                sb.append("#ID\tNAME\tDESCRIPTION\tVARIABLES\n");
-            }
-
-            for (VariableSet variableSet : queryResult.getResults()) {
-                sb.append(String.format("%s\t%s\t%s\t%s\n", StringUtils.defaultIfEmpty(variableSet.getId(), "-"),
-                        StringUtils.defaultIfEmpty(variableSet.getName(), "-"),
-                        StringUtils.defaultIfEmpty(variableSet.getDescription(), "-"),
-                        variableSet.getVariables().stream().map(Variable::getId).collect(Collectors.joining(", "))));
-            }
-        }
-
-        ps.println(sb.toString());
+        new Table<VariableSet>(tableType)
+                .addColumn("ID", VariableSet::getId)
+                .addColumn("NAME", VariableSet::getName)
+                .addColumn("DESCRIPTION", VariableSet::getDescription)
+                .addColumn("VARIABLES", v -> v.getVariables().stream().map(Variable::getId).collect(Collectors.joining(",")))
+                .printTable(unwind(queryResultList));
     }
 
     private void printAnnotationSet(List<DataResult<AnnotationSet>> queryResultList) {
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<AnnotationSet> queryResult : queryResultList) {
-            for (AnnotationSet annotationSet : queryResult.getResults()) {
-                // Write header
-                if (writerConfiguration.isHeader()) {
-                    sb.append("#KEY\tVALUE\n");
-                }
-
-                for (Map.Entry<String, Object> annotation : annotationSet.getAnnotations().entrySet()) {
-                    sb.append(String.format("%s\t%s\n", annotation.getKey(), annotation.getValue()));
-                }
-            }
-        }
-
-        ps.println(sb.toString());
+        new Table<Map.Entry<String, Object>>(tableType)
+                .addColumn("KEY", Map.Entry::getKey)
+                .addColumn("VALUE", e -> e.getValue().toString())
+                .printTable(queryResultList.stream().flatMap(r -> r.getResults().stream().flatMap(a -> a.getAnnotations().entrySet().stream())).collect(Collectors.toList()));
     }
 
     private void printTreeFile(RestResponse<FileTree> queryResponse) {
@@ -448,6 +426,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
     }
 
+    private <T> List<T> unwind(List<DataResult<T>> queryResultList) {
+        return queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList());
+    }
 
     private String getId(Annotable annotable) {
         return getId(annotable, "-");

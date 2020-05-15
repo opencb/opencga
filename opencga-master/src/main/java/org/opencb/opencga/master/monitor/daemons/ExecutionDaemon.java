@@ -167,7 +167,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             put(JobIndexTask.ID, "jobs secondary-index");
 
-            put("alignment-index", "alignment index");
+            put("alignment-index-run", "alignment index-run");
             put("alignment-coverage-run", "alignment coverage-run");
             put("alignment-stats-run", "alignment stats-run");
             put(BwaWrapperAnalysis.ID, "alignment " + BwaWrapperAnalysis.ID + "-run");
@@ -175,10 +175,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID + "-run");
             put(FastqcWrapperAnalysis.ID, "alignment " + FastqcWrapperAnalysis.ID + "-run");
 
-            put(VariantIndexOperationTool.ID, "variant index");
-            put(VariantExportTool.ID, "variant export");
+            put(VariantIndexOperationTool.ID, "variant index-run");
+            put(VariantExportTool.ID, "variant export-run");
             put(VariantStatsAnalysis.ID, "variant stats-run");
-            put("variant-stats-export", "variant stats-export");
+            put("variant-stats-export", "variant stats-export-run");
             put(SampleVariantStatsAnalysis.ID, "variant sample-stats-run");
             put(CohortVariantStatsAnalysis.ID, "variant cohort-stats-run");
             put(GwasAnalysis.ID, "variant gwas-run");

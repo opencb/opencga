@@ -278,7 +278,7 @@ public class SampleIndexVariantBiConverter {
 
             if (gtEntry.getAnnotationIndex() != null) {
                 annotationIndexEntry.setSummaryIndex(gtEntry.getAnnotationIndex(idx));
-                boolean nonIntergenic = SampleIndexEntryFilter.isNonIntergenic(annotationIndexEntry.getSummaryIndex());
+                boolean nonIntergenic = AbstractSampleIndexEntryFilter.isNonIntergenic(annotationIndexEntry.getSummaryIndex());
                 annotationIndexEntry.setIntergenic(!nonIntergenic);
 
                 if (nonIntergenic) {
@@ -309,7 +309,7 @@ public class SampleIndexVariantBiConverter {
             annotationIndexEntry.setPopFreqIndex(popFreqIndex);
 
             if (gtEntry.getClinicalIndex() != null) {
-                boolean clinical = SampleIndexEntryFilter.isClinical(annotationIndexEntry.getSummaryIndex());
+                boolean clinical = AbstractSampleIndexEntryFilter.isClinical(annotationIndexEntry.getSummaryIndex());
                 annotationIndexEntry.setClinical(clinical);
                 if (clinical) {
                     int nextClinical = nextClinicalIndex();
@@ -325,7 +325,7 @@ public class SampleIndexVariantBiConverter {
         public int nextNonIntergenicIndex() {
             if (gtEntry.getAnnotationIndex() == null) {
                 return -1;
-            } else if (SampleIndexEntryFilter.isNonIntergenic(gtEntry.getAnnotationIndex(nextIndex()))) {
+            } else if (AbstractSampleIndexEntryFilter.isNonIntergenic(gtEntry.getAnnotationIndex(nextIndex()))) {
                 return nonIntergenicCount;
             } else {
                 throw new IllegalStateException("Next variant is not intergenic!");
@@ -336,7 +336,7 @@ public class SampleIndexVariantBiConverter {
         public int nextClinicalIndex() {
             if (gtEntry.getAnnotationIndex() == null) {
                 return -1;
-            } else if (SampleIndexEntryFilter.isClinical(gtEntry.getAnnotationIndex(nextIndex()))) {
+            } else if (AbstractSampleIndexEntryFilter.isClinical(gtEntry.getAnnotationIndex(nextIndex()))) {
                 return clinicalCount;
             } else {
                 throw new IllegalStateException("Next variant is not clinical!");
@@ -346,13 +346,13 @@ public class SampleIndexVariantBiConverter {
         protected void increaseCounters() {
             // If the variant to be returned is non-intergenic, increase the number of non-intergenic variants.
             if (gtEntry.getAnnotationIndex() != null) {
-                if (SampleIndexEntryFilter.isNonIntergenic(gtEntry.getAnnotationIndex(nextIndex()))) {
+                if (AbstractSampleIndexEntryFilter.isNonIntergenic(gtEntry.getAnnotationIndex(nextIndex()))) {
                     nonIntergenicCount++;
                 }
             }
             // If the variant to be returned is clinical, increase the number of clinical variants.
             if (gtEntry.getAnnotationIndex() != null) {
-                if (SampleIndexEntryFilter.isClinical(gtEntry.getAnnotationIndex(nextIndex()))) {
+                if (AbstractSampleIndexEntryFilter.isClinical(gtEntry.getAnnotationIndex(nextIndex()))) {
                     clinicalCount++;
                 }
             }
@@ -581,6 +581,16 @@ public class SampleIndexVariantBiConverter {
             }
         }
 
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("ByteSampleIndexGtEntryIterator{");
+            sb.append("chromosome='").append(chromosome).append('\'');
+            sb.append(", batchStart=").append(batchStart);
+            sb.append(", gt='").append(gtEntry.getGt()).append('\'');
+            sb.append(", SampleIndexGtEntry='").append(gtEntry.toString()).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
     }
 
     private static boolean hasEncodedAlleles(byte[] bytes, int offset) {

@@ -10,12 +10,13 @@ class JavaScriptClientGenerator(RestClientGenerator):
     def __init__(self, server_url, output_dir):
         super().__init__(server_url, output_dir)
 
-        self.text_wrap_limit = 134  # 140 columns max (6 cols for indentation)
+        self.text_wrap_limit = 140  # 140 columns max
 
         self.param_types = {
             'string': 'String',
             'integer': 'Number',
             'int': 'Number',
+            'long': "Number",
             'object': 'Object',
             'list': 'Object',
             'boolean': 'Boolean',
@@ -37,12 +38,12 @@ class JavaScriptClientGenerator(RestClientGenerator):
                 f' * limitations under the License.\n'
                 f' * {auto_msg}'
                 f' \n *\n**/\n\n'
-                f'import OpenCGAParentClass from "./OpenCGAParentClass.js"\n\n')
+                f'import OpenCGAParentClass from "./../opencga-parent-class.js";\n\n')
 
     def get_class_definition(self, category):
         name = self.categories[self.get_category_name(category)]
         return (f'/**\n * This class contains the methods for the "{name}" resource\n */\n\n'
-                f'class {name} extends OpenCGAParentClass {{\n\n'
+                f'export default class {name} extends OpenCGAParentClass {{\n\n'
                 f'    constructor(config) {{\n'
                 f'        super(config);\n'
                 f'    }}\n')
@@ -50,7 +51,7 @@ class JavaScriptClientGenerator(RestClientGenerator):
     def get_class_end(self):
         return "}"
 
-    # The params_object stands for the query string of the HTTP [GET] Request (excluding mandatory params).
+    # The params_object stands for the query string of an HTTP GET Request (excluding mandatory params).
     def has_params_object(self, endpoint):
         path_params = self.get_path_params(endpoint)
         # get_optional_parameters() doesn't filter out path_params
@@ -84,7 +85,7 @@ class JavaScriptClientGenerator(RestClientGenerator):
         # text wrapping
         params = "\n    * ".join(self.text_wrap(line, "\n    *     ") for line in path_params + mandatory_params + params_props)
 
-        return (f'    /** {description}\n    * '
+        return (f'   /** {description}\n    * '
                 f'{params}\n    * '
                 f'@returns {{Promise}} Promise object in the form of RestResponse instance.\n'
                 f'    */\n')
@@ -127,7 +128,7 @@ class JavaScriptClientGenerator(RestClientGenerator):
         return self.categories[self.get_category_name(category)] + ".js"
 
     def text_wrap(self, string, separator):
-        w = textwrap.TextWrapper(width=self.text_wrap_limit, break_long_words=True, replace_whitespace=False)
+        w = textwrap.TextWrapper(width=self.text_wrap_limit - 6, break_long_words=True, replace_whitespace=False) # text_wrap_limit - 6 (6 cols for indentation)
         return separator.join(w.wrap(string))
 
     def camelCase(self, st):

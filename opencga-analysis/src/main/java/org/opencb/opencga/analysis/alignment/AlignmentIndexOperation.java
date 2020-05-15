@@ -36,7 +36,7 @@ import java.util.Collections;
 @Tool(id = AlignmentIndexOperation.ID, resource = Enums.Resource.ALIGNMENT, description = "Index alignment.")
 public class AlignmentIndexOperation extends OpenCgaTool {
 
-    public final static String ID = "alignment-index";
+    public final static String ID = "alignment-index-run";
     public final static String DESCRIPTION = "Index a given alignment file, e.g., create a .bai file from a .bam file";
 
     private String study;
@@ -81,7 +81,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
     @Override
     protected void run() throws Exception {
 
-        step(() -> {
+        step(ID, () -> {
             BamManager bamManager = new BamManager(inputPath);
             bamManager.createIndex(outputPath);
             bamManager.close();
@@ -90,8 +90,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
                 throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
             } else {
                 String catalogPath = Paths.get(new java.io.File(inputCatalogFile.getPath()).getParent()).toString();
-                moveFile(study, outputPath, Paths.get(inputPath.toFile().getParent()),
-                        catalogPath + "/" + outputPath.getFileName(), token);
+                moveFile(study, outputPath, Paths.get(inputPath.toFile().getParent()), catalogPath, token);
 
                 FileUpdateParams updateParams = new FileUpdateParams()
                         .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(catalogPath + "/"

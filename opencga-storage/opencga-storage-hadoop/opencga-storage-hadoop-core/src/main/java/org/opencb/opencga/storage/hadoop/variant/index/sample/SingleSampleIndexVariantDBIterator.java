@@ -28,7 +28,7 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
     private final Iterator<Variant> iterator;
     protected int count = 0;
 
-    public SingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, byte[] family, SampleIndexDBAdaptor dbAdaptor) {
+    public SingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, SampleIndexDBAdaptor dbAdaptor) {
         List<Region> regions;
         if (CollectionUtils.isEmpty(query.getRegions())) {
             // If no regions are defined, get a list of one null element to initialize the stream.

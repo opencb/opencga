@@ -1,8 +1,8 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import com.google.common.base.Stopwatch;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.io.Table;
 import org.opencb.opencga.app.cli.main.io.Table.TableColumnSchema;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -12,13 +12,17 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.response.RestResponse;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.app.cli.main.executors.catalog.JobsTopManager.Columns.*;
 
@@ -32,14 +36,11 @@ public class JobsTopManager {
     private final int iterations;
     private final int jobsLimit;
     private final long delay;
-    private final QueryOptions queryOptions = new QueryOptions()
-            .append(QueryOptions.INCLUDE, "id,name,status,execution,creationDate")
-            .append(QueryOptions.COUNT, true)
-            .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
-    private final QueryOptions countOptions = new QueryOptions()
-            .append(QueryOptions.COUNT, true)
-            .append(QueryOptions.LIMIT, 0);
+
+    // FIXME: Use an intermediate buffer to prepare the table, and print in one system call to avoid flashes
+    private final ByteArrayOutputStream buffer;
     private final Table<Job> jobTable;
+    private PrintStream bufferStream;
 
     public enum Columns {
         ID,
@@ -53,17 +54,27 @@ public class JobsTopManager {
         END
     }
 
-    public JobsTopManager(OpenCGAClient openCGAClient, String study, Integer iterations, int jobsLimit, long delay) {
-        this(openCGAClient, study, Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END), iterations,
+    public JobsTopManager(OpenCGAClient openCGAClient, Query query, Integer iterations, Integer jobsLimit, long delay) {
+        this(openCGAClient, query, Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END), iterations,
                 jobsLimit, delay);
     }
 
-    public JobsTopManager(OpenCGAClient openCGAClient, String study, List<Columns> columns, Integer iterations, int jobsLimit, long delay) {
+    public JobsTopManager(OpenCGAClient openCGAClient, Query query, List<Columns> columns, Integer iterations, Integer jobsLimit, long delay) {
         this.openCGAClient = openCGAClient;
-        this.baseQuery = new Query();
-        baseQuery.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), study);
+        this.baseQuery = new Query(query);
+        this.buffer = new ByteArrayOutputStream();
         this.iterations = iterations == null || iterations <= 0 ? -1 : iterations;
-        this.jobsLimit = jobsLimit <= 0 ? 20 : jobsLimit;
+        if (jobsLimit == null || jobsLimit <= 0) {
+            String lines = System.getenv("LINES");
+            if (StringUtils.isNumeric(lines)) {
+                int HEADER_SIZE = 9;
+                this.jobsLimit = Integer.parseInt(lines) - HEADER_SIZE;
+            } else {
+                this.jobsLimit = 20;
+            }
+        } else {
+            this.jobsLimit = jobsLimit;
+        }
         this.delay = delay < 0 ? 2 : delay;
 
         List<TableColumnSchema<Job>> tableColumnList = new ArrayList<>(columns.size());
@@ -106,9 +117,13 @@ public class JobsTopManager {
             }
         }
 
-        Table.TablePrinter tablePrinter = new Table.JAnsiTablePrinter();
+        buffer.reset();
+        bufferStream = new PrintStream(buffer);
+
+        Table.TablePrinter tablePrinter = new Table.JAnsiTablePrinter(bufferStream);
         jobTable = new Table<>(tablePrinter);
         jobTable.addColumns(tableColumnList);
+        jobTable.setMultiLine(false);
 
     }
 
@@ -135,11 +150,11 @@ public class JobsTopManager {
     }
 
     public void print(JobTop top) {
+        buffer.reset();
         List<Job> jobList = processJobs(top.getJobs());
         jobTable.updateTable(jobList);
 
         jobTable.restoreCursorPosition();
-        jobTable.println();
         jobTable.println("OpenCGA jobs TOP");
         jobTable.println("  Version " + GitRepositoryState.get().getBuildVersion());
         jobTable.println("  " + SIMPLE_DATE_FORMAT.format(Date.from(Instant.now())));
@@ -153,28 +168,56 @@ public class JobsTopManager {
         jobTable.println();
         jobTable.println();
         jobTable.printTable();
+
+        bufferStream.flush();
+        System.out.print(buffer);
     }
 
     private List<Job> processJobs(List<Job> jobs) {
         List<Job> jobList = new LinkedList<>();
+        jobs.sort(Comparator.comparing(Job::getCreationDate));
+        if (jobs.size() > jobsLimit) {
+            jobs = jobs.subList(jobs.size() - jobsLimit, jobs.size());
+        }
 
+        int jobDependsMax = 5;
         for (Job job : jobs) {
             jobList.add(job);
             if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
                 List<Job> dependsOn = job.getDependsOn();
+                dependsOn.removeIf(Objects::isNull);
+                if (dependsOn.size() > jobDependsMax) {
+                    int size = dependsOn.size();
+                    TreeMap<String, Integer> byType = dependsOn
+                            .stream()
+                            .collect(Collectors.groupingBy(
+                                    j -> j.getInternal().getStatus().getName(),
+                                    TreeMap::new,
+                                    Collectors.summingInt(j -> 1)));
+                    int maxStatus = byType.keySet().stream().mapToInt(String::length).max().orElse(0);
+                    dependsOn = new ArrayList<>(byType.size());
+                    for (Map.Entry<String, Integer> entry : byType.entrySet()) {
+                        dependsOn.add(new Job()
+                                .setId(StringUtils.rightPad(entry.getKey(), maxStatus) + " : " + entry.getValue() + "/" + size)
+                                .setInternal(new JobInternal(new Enums.ExecutionStatus(entry.getKey()))));
+                    }
+                }
                 for (int i = 0; i < dependsOn.size(); i++) {
                     Job auxJob = dependsOn.get(i);
-                    if (auxJob == null) {
-                        continue;
-                    }
                     if (i + 1 < dependsOn.size()) {
                         auxJob.setId("├── " + auxJob.getId());
                     } else {
                         auxJob.setId("└── " + auxJob.getId());
                     }
-
                     jobList.add(auxJob);
                 }
+            }
+        }
+
+        while (jobList.size() > jobsLimit) {
+            jobList.remove(0);
+            while (jobList.get(0).getId().startsWith("├") || jobList.get(0).getId().startsWith("└")) {
+                jobList.remove(0);
             }
         }
 

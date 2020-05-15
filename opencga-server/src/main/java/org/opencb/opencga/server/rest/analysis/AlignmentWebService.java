@@ -21,14 +21,15 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.AlignmentStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
-import org.opencb.biodata.models.alignment.LowCoverageRegion;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
@@ -39,11 +40,10 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.alignment.*;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.ToolParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -51,6 +51,7 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 
+import static org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis.INDEX_STATS_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
@@ -76,23 +77,16 @@ public class AlignmentWebService extends AnalysisWebService {
     //-------------------------------------------------------------------------
 
     @POST
-    @Path("/index")
+    @Path("/index/run")
     @ApiOperation(value = ALIGNMENT_INDEX_DESCRIPTION, response = Job.class)
-    public Response index(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(value = FILE_ID_PARAM) String inputFile,
-                          @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
-
-        Map<String, Object> params = new LinkedHashMap<>();
-        params.put(FILE_ID_PARAM, inputFile);
-
-        logger.info("ObjectMap: {}", params);
-
-        try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(study, "alignment-index", Enums.Priority.HIGH,
-                    params, token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+    public Response indexRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = AlignmentIndexParams.DESCRIPTION, required = true) AlignmentIndexParams params) {
+        return submitJob(AlignmentIndexOperation.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     //-------------------------------------------------------------------------
@@ -179,20 +173,28 @@ public class AlignmentWebService extends AnalysisWebService {
     @POST
     @Path("/coverage/index/run")
     @ApiOperation(value = "Compute coverage for a list of alignment files", response = Job.class)
-    public Response coverageRun(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(value = FILE_ID_PARAM) String file,
-                                @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
-                                @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue(COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize) {
-        Map<String, Object> params = new LinkedHashMap<>();
-        params.put(FILE_ID_PARAM, file);
-        params.put(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
+    public Response coverageRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = CoverageIndexParams.DESCRIPTION, required = true) CoverageIndexParams params) {
+
         logger.debug("ObjectMap: {}", params);
-        try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager()
-                    .submit(study, "alignment-coverage-run", Enums.Priority.HIGH, params, token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+
+        DeeptoolsWrapperParams deeptoolsParams = new DeeptoolsWrapperParams();
+        deeptoolsParams.setCommand("bamCoverage");
+        deeptoolsParams.setBamFile(params.getFile());
+
+        Map<String, String> bamCoverageParams = new HashMap<>();
+        bamCoverageParams.put("bs", String.valueOf(params.getWindowSize()));
+        bamCoverageParams.put("of", "bigwig");
+        deeptoolsParams.setDeeptoolsParams(bamCoverageParams);
+
+        logger.debug("ObjectMap (DeepTools) : {}", bamCoverageParams);
+
+        return submitJob(DeeptoolsWrapperAnalysis.ID, study, deeptoolsParams, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @GET
@@ -377,26 +379,36 @@ public class AlignmentWebService extends AnalysisWebService {
     //-------------------------------------------------------------------------
     // STATS: run, info and query
     //-------------------------------------------------------------------------
+
     @POST
     @Path("/stats/run")
     @ApiOperation(value = ALIGNMENT_STATS_DESCRIPTION, response = Job.class)
-    public Response statsRun(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(value = FILE_ID_PARAM) String inputFile,
-                             @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
-        Map<String, Object> params = new LinkedHashMap<>();
-        params.put(FILE_ID_PARAM, inputFile);
+    public Response statsRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = AlignmentStatsParams.DESCRIPTION, required = true) AlignmentStatsParams params) {
+
         logger.debug("ObjectMap: {}", params);
-        try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager()
-                    .submit(study, "alignment-stats-run", Enums.Priority.HIGH, params, token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+
+        SamtoolsWrapperParams samtoolsParams = new SamtoolsWrapperParams();
+        samtoolsParams.setCommand("stats");
+        samtoolsParams.setInputFile(params.getFile());
+
+        Map<String, String> statsParams = new HashMap<>();
+        statsParams.put(INDEX_STATS_PARAM, "true");
+        samtoolsParams.setSamtoolsParams(statsParams);
+
+        logger.debug("ObjectMap (Samtools) : {}", samtoolsParams);
+
+        return submitJob(SamtoolsWrapperAnalysis.ID, study, samtoolsParams, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @GET
     @Path("/stats/info")
-    @ApiOperation(value = ALIGNMENT_STATS_INFO_DESCRIPTION, response = String.class)
+    @ApiOperation(value = ALIGNMENT_STATS_INFO_DESCRIPTION, response = AlignmentStats.class)
     public Response statsInfo(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(FILE_ID_PARAM) String inputFile,
                               @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
         AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
@@ -470,33 +482,6 @@ public class AlignmentWebService extends AnalysisWebService {
     // W R A P P E R S
     //-------------------------------------------------------------------------
 
-    // BWA
-    public static class BwaRunParams extends ToolParams {
-        public BwaRunParams() {
-        }
-
-        public BwaRunParams(String command, String fastaFile, String indexBaseFile, String fastq1File, String fastq2File,
-                            String samFilename, String outdir, Map<String, String> bwaParams) {
-            this.command = command;
-            this.fastaFile = fastaFile;
-            this.indexBaseFile = indexBaseFile;
-            this.fastq1File = fastq1File;
-            this.fastq2File = fastq2File;
-            this.samFilename = samFilename;
-            this.outdir = outdir;
-            this.bwaParams = bwaParams;
-        }
-
-        public String command;       // Valid values: index or mem
-        public String fastaFile;     //  Fasta file
-        public String indexBaseFile; // Index base file
-        public String fastq1File;    // FastQ #1 file
-        public String fastq2File;    // FastQ #2 file
-        public String samFilename;   // SAM file name
-        public String outdir;
-        public Map<String, String> bwaParams;
-    }
-
     @POST
     @Path("/bwa/run")
     @ApiOperation(value = BwaWrapperAnalysis.DESCRIPTION, response = Job.class)
@@ -506,44 +491,8 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            AlignmentWebService.BwaRunParams params) {
+            @ApiParam(value = BwaWrapperParams.DESCRIPTION, required = true) BwaWrapperParams params) {
         return submitJob(BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
-    }
-
-    // Samtools
-    public static class SamtoolsRunParams extends ToolParams {
-        public SamtoolsRunParams() {
-        }
-
-        public SamtoolsRunParams(String command, String inputFile, String outputFilename, String referenceFile, String readGroupFile,
-                                 String bedFile, String refSeqFile, String referenceNamesFile, String targetRegionFile,
-                                 String readsNotSelectedFilename, String outdir, Map<String, String> samtoolsParams) {
-            this.command = command;
-            this.inputFile = inputFile;
-            this.outputFilename = outputFilename;
-            this.referenceFile = referenceFile;
-            this.readGroupFile = readGroupFile;
-            this.bedFile = bedFile;
-            this.refSeqFile = refSeqFile;
-            this.referenceNamesFile = referenceNamesFile;
-            this.targetRegionFile = targetRegionFile;
-            this.readsNotSelectedFilename = readsNotSelectedFilename;
-            this.outdir = outdir;
-            this.samtoolsParams = samtoolsParams;
-        }
-
-        public String command;          // Valid values: view, index, sort, stats
-        public String inputFile;        // Input file
-        public String outputFilename;   // Output filename
-        public String referenceFile;
-        public String readGroupFile;
-        public String bedFile;
-        public String refSeqFile;
-        public String referenceNamesFile;
-        public String targetRegionFile;
-        public String readsNotSelectedFilename;
-        public String outdir;
-        public Map<String, String> samtoolsParams;
     }
 
     @POST
@@ -555,26 +504,8 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            AlignmentWebService.SamtoolsRunParams params) {
+            @ApiParam(value = SamtoolsWrapperParams.DESCRIPTION, required = true) SamtoolsWrapperParams params) {
         return submitJob(SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
-    }
-
-    // Deeptools
-    public static class DeeptoolsRunParams extends ToolParams {
-        public DeeptoolsRunParams() {
-        }
-
-        public DeeptoolsRunParams(String command, String bamFile, String outdir, Map<String, String> deeptoolsParams) {
-            this.command = command;
-            this.bamFile = bamFile;
-            this.outdir = outdir;
-            this.deeptoolsParams = deeptoolsParams;
-        }
-
-        public String command;     // Valid values: bamCoverage
-        public String bamFile;        // BAM file
-        public String outdir;
-        public Map<String, String> deeptoolsParams;
     }
 
     @POST
@@ -586,24 +517,8 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            AlignmentWebService.DeeptoolsRunParams params) {
+            @ApiParam(value = DeeptoolsWrapperParams.DESCRIPTION, required = true) DeeptoolsWrapperParams params) {
         return submitJob(DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
-    }
-
-    // FastQC
-    public static class FastqcRunParams extends ToolParams {
-        public FastqcRunParams() {
-        }
-
-        public FastqcRunParams(String file, String outdir, Map<String, String> fastqcParams) {
-            this.file = file;
-            this.outdir = outdir;
-            this.fastqcParams = fastqcParams;
-        }
-
-        public String file;        // Input file
-        public String outdir;
-        public Map<String, String> fastqcParams;
     }
 
     @POST
@@ -615,7 +530,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            AlignmentWebService.FastqcRunParams params) {
+            @ApiParam(value = FastQcWrapperParams.DESCRIPTION, required = true) FastQcWrapperParams params) {
         return submitJob(FastqcWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 

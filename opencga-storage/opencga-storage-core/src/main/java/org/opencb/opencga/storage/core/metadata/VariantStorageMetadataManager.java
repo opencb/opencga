@@ -1332,7 +1332,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             sampleMetadata = getSampleMetadata(studyId, sampleId);
         }
         if (fileId != null) {
-            sampleMetadata.getFiles().add(fileId);
+            if (!sampleMetadata.getFiles().contains(fileId)) {
+                sampleMetadata.getFiles().add(fileId);
+            }
             update = true;
         }
         if (update) {

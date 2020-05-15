@@ -57,10 +57,13 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.query.executors.ChromDensityVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.DBAdaptorVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
@@ -83,6 +86,7 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHeterozygousQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianErrorQueryExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
@@ -874,6 +878,19 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         convertGenesToRegionsQuery(query, cellBaseUtils);
         return query;
+    }
+
+    @Override
+    protected List<VariantAggregationExecutor> initVariantAggregationExecutors() {
+        List<VariantAggregationExecutor> executors = new ArrayList<>(3);
+        try {
+            executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager(), getDBName()));
+            executors.add(new SampleIndexVariantAggregationExecutor(getMetadataManager(), getSampleIndexDBAdaptor()));
+            executors.add(new ChromDensityVariantAggregationExecutor(this, getMetadataManager()));
+        } catch (Exception e) {
+            throw VariantQueryException.internalException(e);
+        }
+        return executors;
     }
 
     @Override

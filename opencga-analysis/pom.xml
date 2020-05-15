@@ -36,6 +36,10 @@
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.bionetdb</groupId>
             <artifactId>bionetdb-core</artifactId>
         </dependency>

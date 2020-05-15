@@ -213,8 +213,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<User> update() throws ClientException, CatalogException {
         logger.debug("Updating user");
 
-        UserUpdateParams params = loadFile(usersCommandOptions.updateCommandOptions.json, UserUpdateParams.class);
-
+        UserCommandOptions.UpdateCommandOptions options = usersCommandOptions.updateCommandOptions;
+        UserUpdateParams params = new UserUpdateParams(options.name, options.email, options.organization, null);
         return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, params);
     }
 

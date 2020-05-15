@@ -46,6 +46,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
+        ORGANIZATION("organization", TEXT, ""),
         ORGANISM("organism", TEXT_ARRAY, ""),
         ORGANISM_SCIENTIFIC_NAME("organism.scientificName", TEXT, ""),
         ORGANISM_COMMON_NAME("organism.commonName", TEXT, ""),
@@ -170,8 +171,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
     OpenCGAResult<Project> get(Query query, QueryOptions options) throws CatalogDBException;
 
-    OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+    OpenCGAResult<Project> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogParameterException;
 
     default List<OpenCGAResult<Project>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);

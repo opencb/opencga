@@ -20,6 +20,7 @@ public class Table<T> {
     private final List<TableColumnSchema<T>> schema = new ArrayList<>();
     private List<TableColumn<T>> columns = new ArrayList<>();
     private final TablePrinter tablePrinter;
+    private boolean multiLine = true;
 
     public enum PrinterType {
         ASCII, JANSI, TSV,
@@ -91,6 +92,11 @@ public class Table<T> {
         return this;
     }
 
+    public Table<T> setMultiLine(boolean multiLine) {
+        this.multiLine = multiLine;
+        return this;
+    }
+
     public void print(String content) {
         tablePrinter.print(content);
     }
@@ -103,15 +109,24 @@ public class Table<T> {
         tablePrinter.println(content);
     }
 
+    public void printTable(List<T> rows) {
+        updateTable(rows);
+        printTable();
+    }
+
     public void printTable() {
-//        printFullLine();
+        tablePrinter.printFullLine(columns);
         tablePrinter.printHeader(columns);
         tablePrinter.printLine(columns);
-
         for (int i = 0; i < columns.get(0).values.size(); i++) {
-            tablePrinter.printRow(columns, i);
+            if (multiLine) {
+                tablePrinter.printRowMultiLine(columns, i);
+            } else {
+                tablePrinter.printRow(columns, i);
+            }
         }
-        printFullLine();
+        tablePrinter.printFooter(columns);
+        tablePrinter.printFullLine(columns);
     }
 
     public void restoreCursorPosition() {
@@ -161,6 +176,35 @@ public class Table<T> {
 
         public String getValue(int idx) {
             return values.get(idx);
+        }
+
+        public List<String> getMultiLineValue(int idx) {
+            return getMultiLineValue(idx, "  ");
+        }
+
+        public List<String> getMultiLineValue(int idx, String indent) {
+            String value = getValue(idx);
+            List<String> lines = new ArrayList<>();
+            while (value.length() > getMaxWidth()) {
+                int splitPosition = getMultiLineSplitPosition(value, indent.length(), '\n', '\t', ' ', ',', ':', '/', '.', '_', '-');
+                lines.add(StringUtils.rightPad(value.substring(0, splitPosition), width));
+                value = indent + value.substring(splitPosition);
+            }
+            lines.add(StringUtils.rightPad(value, width));
+            return lines;
+        }
+
+        private int getMultiLineSplitPosition(String value, int indentLength, char... splitPoints) {
+            for (char splitPoint : splitPoints) {
+                int splitPosition = Math.min(1 + value.lastIndexOf(splitPoint, getMaxWidth() - 1), value.length());
+                if (splitPosition <= indentLength) {
+                    splitPosition = Math.min(1 + value.indexOf(splitPoint, getMaxWidth() - 1), value.length());
+                }
+                if (splitPosition > 0 && splitPosition <= getMaxWidth()) {
+                    return splitPosition;
+                }
+            }
+            return width - indentLength;
         }
 
         public String getPrintValue(int idx) {
@@ -278,11 +322,19 @@ public class Table<T> {
 
         <T> void printHeader(List<Table.TableColumn<T>> columns);
 
+        default <T> void printFooter(List<TableColumn<T>> columns) {
+            printFullLine(columns);
+        }
+
         <T> void printLine(List<Table.TableColumn<T>> columns);
 
         <T> void printFullLine(List<Table.TableColumn<T>> columns);
 
         <T> void printRow(List<TableColumn<T>> columns, int i);
+
+        default <T> void printRowMultiLine(List<TableColumn<T>> columns, int i) {
+            printRow(columns, i);
+        }
     }
 
     public static class JAnsiTablePrinter implements TablePrinter {
@@ -291,17 +343,24 @@ public class Table<T> {
         private String sep = " ";
         private String pad = " ";
         private int numLines = 0;
+        private boolean colour;
 
         public JAnsiTablePrinter() {
+            this(AnsiConsole.out);
+        }
+
+        public JAnsiTablePrinter(PrintStream out) {
             AnsiConsole.systemInstall();
-            out = AnsiConsole.out;
+            this.out = out == null ? System.out : out;
+            colour = true;
         }
 
         @Override
         public void restorePosition() {
             if (numLines > 0) {
                 Ansi ansi = Ansi.ansi();
-                out.print(ansi.cursorUpLine(numLines).eraseScreen(Erase.FORWARD).reset());
+//                out.print(ansi.cursorUpLine(numLines).eraseScreen(Erase.BACKWARD).reset());
+                out.print(ansi.cursorUpLine(numLines).reset());
                 numLines = 0;
             }
         }
@@ -315,69 +374,133 @@ public class Table<T> {
             for (TableColumn<T> column : columns) {
                 ansi.a(pad).a(column.getPrintName()).a(pad + sep);
             }
-            ansi.reset();
+            ansi.reset().eraseLine(Erase.FORWARD);
             out.println(ansi);
             numLines++;
+        }
+
+        @Override
+        public <T> void printFooter(List<TableColumn<T>> tableColumns) {
+            Ansi ansi = ansi();
+            out.print(ansi.eraseScreen(Erase.FORWARD));
         }
 
         @Override
         public void println(String content) {
             if (content == null) {
-                out.println();
+                out.println(ansi().eraseLine(Erase.FORWARD));
                 numLines++;
             } else {
-                long count = content.chars().filter(ch -> ch == '\n').count();
-                out.println(content);
-                numLines = numLines + (int) count + 1;
+                for (String s : content.split("\n")) {
+                    numLines++;
+                    out.println(ansi().a(s).eraseLine(Erase.FORWARD));
+                }
             }
         }
 
         @Override
         public void print(String content) {
-            long count = content.chars().filter(ch -> ch == '\n').count();
+            if (content == null) {
+                return;
+            }
+            if (content.contains("\n")) {
+                int idx = content.lastIndexOf("\n");
+                println(content.substring(0, idx));
+                content = content.substring(idx + 1);
+            }
             out.print(content);
-            numLines = numLines + (int) count;
         }
 
         @Override
         public <T> void printLine(List<TableColumn<T>> columns) {
-            Ansi ansi = new Ansi();
-            ansi.a(sep);
-            for (TableColumn<T> column : columns) {
-                ansi.a(column.getLine(pad.length() * 2)).a(sep);
-            }
-            ansi.reset();
-            out.println(ansi);
-            numLines++;
+//            Ansi ansi = new Ansi();
+//            ansi.a(sep);
+//            for (TableColumn<T> column : columns) {
+//                ansi.a(column.getLine(pad.length() * 2)).a(sep);
+//            }
+//            ansi.reset();
+//            out.println(ansi);
+//            numLines++;
         }
 
         @Override
         public <T> void printFullLine(List<TableColumn<T>> columns) {
-            for (TableColumn<T> column : columns) {
-                out.print(column.getLine());
-                out.print(StringUtils.repeat("-", pad.length() * 2 + sep.length()));
-            }
-            out.println("-");
-            numLines++;
+//            for (TableColumn<T> column : columns) {
+//                out.print(column.getLine());
+//                out.print(StringUtils.repeat("-", pad.length() * 2 + sep.length()));
+//            }
+//            out.println("-");
+//            numLines++;
         }
 
         @Override
         public <T> void printRow(List<TableColumn<T>> columns, int i) {
             Ansi ansi = ansi();
             ansi.a(sep);
-//            boolean colour = false;
             for (TableColumn<T> column : columns) {
-//                if (colour) {
-//                    ansi.bg(Ansi.Color.BLACK);
-//                } else {
-//                    ansi.bg(Ansi.Color.DEFAULT);
-//                }
-//                colour = !colour;
-                ansi.a(pad).a(column.getPrintValue(i)).a(pad + sep);
+                if (colour) {
+                    if (i % 2 == 0) {
+                        ansi.bg(Ansi.Color.BLACK);
+                    } else {
+                        ansi.bg(Ansi.Color.DEFAULT);
+                    }
+                }
+                String printValue = column.getPrintValue(i);
+                Ansi.Color fg = getColor(printValue);
+                ansi.a(pad).fg(fg).a(printValue).a(pad + sep);
             }
-            ansi.reset();
+            ansi.reset().eraseLine(Erase.FORWARD);
             out.println(ansi);
             numLines++;
+        }
+
+        private Ansi.Color getColor(String printValue) {
+            Ansi.Color fg = Ansi.Color.DEFAULT;
+            if (printValue.startsWith("RUNNING")) {
+                fg = Ansi.Color.GREEN;
+            } else if (printValue.startsWith("DONE")) {
+                fg = Ansi.Color.BLUE;
+            } else if (printValue.startsWith("ERROR")) {
+                fg = Ansi.Color.RED;
+            } else if (printValue.startsWith("ABORTED")) {
+                fg = Ansi.Color.YELLOW;
+            }
+            return fg;
+        }
+
+        @Override
+        public <T> void printRowMultiLine(List<TableColumn<T>> columns, int i) {
+            List<List<String>> columnLines = columns.stream().map(c -> c.getMultiLineValue(i)).collect(Collectors.toList());
+            int lines = columnLines.stream().mapToInt(Collection::size).max().orElse(1);
+
+            for (int lineIdx = 0; lineIdx < lines; lineIdx++) {
+                Ansi ansi = ansi();
+                ansi.a(sep);
+                int columnIdx = -1;
+                for (TableColumn<T> column : columns) {
+                    columnIdx++;
+                    if (colour) {
+                        if (i % 2 == 0) {
+                            ansi.bg(Ansi.Color.BLACK);
+                        } else {
+                            ansi.bg(Ansi.Color.DEFAULT);
+                        }
+                    }
+                    List<String> multiLines = columnLines.get(columnIdx);
+                    Ansi.Color fg = getColor(multiLines.get(0));
+                    ansi.a(pad).fg(fg);
+
+                    if (multiLines.size() > lineIdx) {
+                        ansi.a(multiLines.get(lineIdx));
+                    } else {
+                        ansi.a(StringUtils.repeat(' ', column.width));
+                    }
+                    ansi.a(pad + sep);
+                }
+                ansi.reset().eraseLine(Erase.FORWARD);
+                out.println(ansi);
+                numLines++;
+            }
         }
     }
 
@@ -392,17 +515,18 @@ public class Table<T> {
 
         @Override
         public void restorePosition() {
+            // no op
             return;
         }
 
         @Override
         public void println(String content) {
-
+            out.println(content);
         }
 
         @Override
         public void print(String content) {
-
+            out.print(content);
         }
 
         @Override
@@ -444,6 +568,29 @@ public class Table<T> {
                 out.print(pad + sep);
             }
             out.println();
+        }
+
+        @Override
+        public <T> void printRowMultiLine(List<TableColumn<T>> columns, int i) {
+            List<List<String>> columnLines = columns.stream().map(c -> c.getMultiLineValue(i)).collect(Collectors.toList());
+            int lines = columnLines.stream().mapToInt(Collection::size).max().orElse(1);
+
+            for (int lineIdx = 0; lineIdx < lines; lineIdx++) {
+                out.print(sep);
+                int columnIdx = -1;
+                for (TableColumn<T> column : columns) {
+                    columnIdx++;
+                    out.print(pad);
+                    List<String> multiLines = columnLines.get(columnIdx);
+                    if (multiLines.size() > lineIdx) {
+                        out.print(multiLines.get(lineIdx));
+                    } else {
+                        out.print(StringUtils.repeat(' ', column.width));
+                    }
+                    out.print(pad + sep);
+                }
+                out.println();
+            }
         }
     }
 

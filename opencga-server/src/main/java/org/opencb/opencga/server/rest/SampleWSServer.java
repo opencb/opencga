@@ -41,7 +41,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -64,16 +67,15 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "includeIndividual", value = "Include Individual object as an attribute (this replaces old lazy parameter)",
-                    defaultValue = "false", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "includeIndividual", value = "Include Individual object as an attribute", defaultValue = "false", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
     public Response infoSample(
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @PathParam("samples") String samplesStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Sample version") @QueryParam("version") Integer version,
-            @ApiParam(value = "Boolean to retrieve deleted samples", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
+            @ApiParam(value = ParamConstants.SAMPLE_VERSION_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VERSION_PARAM) Integer version,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("samples");
@@ -94,16 +96,11 @@ public class SampleWSServer extends OpenCGAWSServer {
                     + "use the individual/create web service, this web service allows now to create a new individual with its samples. "
                     + "This web service now allows to create a new sample and associate it to an existing individual.")
     public Response createSamplePOST(
-            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "DEPRECATED: It should be passed in the body.") @QueryParam("individual") String individual,
             @ApiParam(value = "JSON containing sample information", required = true) SampleCreateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new SampleCreateParams());
-
-            if (StringUtils.isNotEmpty(studyIdStr)) {
-                studyStr = studyIdStr;
-            }
 
             Sample sample = params.toSample();
             if (StringUtils.isNotEmpty(individual) && StringUtils.isNotEmpty(sample.getIndividualId())) {
@@ -146,64 +143,26 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "includeIndividual", value = "Include Individual object as an attribute (this replaces old lazy parameter)",
-                    defaultValue = "false", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "includeIndividual", value = "Include Individual object as an attribute", defaultValue = "false", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
     public Response search(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
-            @ApiParam(value = "DEPRECATED: name") @QueryParam("name") String name,
-            @ApiParam(value = "source") @QueryParam("source") String source,
-            @ApiParam(value = "type") @QueryParam("type") String type,
-            @ApiParam(value = "somatic") @QueryParam("somatic") Boolean somatic,
-            @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION, hidden = true) @QueryParam("individual.id") String individualId,
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_SOMATIC_PARAM) Boolean somatic,
             @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION) @QueryParam("individual") String individual,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
-                @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
-                @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = "Boolean to retrieve deleted samples", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-            @QueryParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-            @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.PHENOTYPES_PARAM) String phenotypes,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
-            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
-            @QueryParam("nattributes") String nattributes,
-            @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
-            @QueryParam("release") String release,
-            @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
-                    int snapshot) {
+            @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.ATTRIBUTES_PARAM) String attributes,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
+            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-
-            List<String> annotationList = new ArrayList<>();
-            if (StringUtils.isNotEmpty(annotation)) {
-                annotationList.add(annotation);
-            }
-            if (StringUtils.isNotEmpty(variableSet)) {
-                annotationList.add(Constants.VARIABLE_SET + "=" + variableSet);
-            }
-            if (StringUtils.isNotEmpty(annotationsetName)) {
-                annotationList.add(Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
-            }
-            if (!annotationList.isEmpty()) {
-                query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
-            }
-
-            // TODO: individualId is deprecated. Remember to remove this if after next release
-            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key())) {
-                if (!query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
-                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key()));
-                }
-                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
-            }
-
             return createOkResponse(sampleManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -330,14 +289,12 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{samples}/delete")
     @ApiOperation(value = "Delete samples", response = Sample.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = Constants.FORCE, value = "Force the deletion of samples even if they are associated to files, "
-                    + "individuals or cohorts.", dataType = "boolean", defaultValue = "false", paramType = "query"),
-            @ApiImplicitParam(name = Constants.EMPTY_FILES_ACTION, value = "Action to be performed over files that were associated only to"
-                    + " the sample to be deleted. Possible actions are NONE, TRASH, DELETE.", dataType = "string",
-                    defaultValue = "NONE", paramType = "query"),
-            @ApiImplicitParam(name = Constants.DELETE_EMPTY_COHORTS, value = "Boolean indicating if the cohorts associated only to the "
-                    + "sample to be deleted should be also deleted.", dataType = "boolean", defaultValue = "false",
-                    paramType = "query")
+            @ApiImplicitParam(name = Constants.FORCE, value = ParamConstants.SAMPLE_FORCE_DELETE_DESCRIPTION, dataType = "boolean",
+                    defaultValue = "false", paramType = "query"),
+            @ApiImplicitParam(name = Constants.EMPTY_FILES_ACTION, value = ParamConstants.SAMPLE_EMPTY_FILES_ACTION_DESCRIPTION,
+                    dataType = "string", defaultValue = "NONE", paramType = "query"),
+            @ApiImplicitParam(name = Constants.DELETE_EMPTY_COHORTS, value = ParamConstants.SAMPLE_DELETE_EMPTY_COHORTS_DESCRIPTION,
+                    dataType = "boolean", defaultValue = "false", paramType = "query")
     })
     public Response delete(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
