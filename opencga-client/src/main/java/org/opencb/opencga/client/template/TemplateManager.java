@@ -202,7 +202,6 @@ public class TemplateManager {
         if (resume) {
             existing = openCGAClient.getStudyClient()
                     .variableSets(study.getFqn(), new ObjectMap()
-                            .append("id", study.getVariableSets().stream().map(VariableSet::getId).collect(Collectors.toList()))
                             .append(QueryOptions.INCLUDE, "name,id")
                             .append(QueryOptions.LIMIT, study.getVariableSets().size()))
                     .allResults()

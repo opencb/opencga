@@ -66,7 +66,7 @@ public abstract class AbstractManager {
     protected final InterpretationDBAdaptor interpretationDBAdaptor;
 
     protected static final String OPENCGA = "opencga";
-    protected static final String ANONYMOUS = "*";
+    public static final String ANONYMOUS = "*";
 
     public static final int BATCH_OPERATION_SIZE = 100;
     public static final int DEFAULT_LIMIT = 2000;

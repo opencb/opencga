@@ -228,7 +228,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(FileDBAdaptor.QueryParams.RELEASE.key(), commandOptions.release);
         params.put(ParamConstants.FLATTEN_ANNOTATIONS, commandOptions.flattenAnnotations);
         params.put(ParamConstants.DELETED_PARAM, commandOptions.deleted);
-        params.put(ParamConstants.ACL_PARAM, commandOptions.acl);
+        params.putIfNotEmpty(ParamConstants.ACL_PARAM, commandOptions.acl);
         params.putAll(commandOptions.commonOptions.params);
 
         params.put(QueryOptions.COUNT, commandOptions.numericOptions.count);

@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclUpdateParams;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
@@ -133,8 +134,9 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(SampleDBAdaptor.QueryParams.STUDY.key(), c.study);
         params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
-        params.put("flattenAnnotations", c.flattenAnnotations);
-        params.put("lazy", !c.noLazy);
+        params.putIfNotNull(ParamConstants.FLATTEN_ANNOTATIONS, c.flattenAnnotations);
+        params.putIfNotNull(ParamConstants.SAMPLE_VERSION_PARAM, c.version);
+        params.putIfNotNull(ParamConstants.DELETED_PARAM, c.deleted);
 
         return openCGAClient.getSampleClient().info(c.sample, params);
     }
@@ -146,10 +148,19 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), c.study);
-        params.putIfNotNull(SampleDBAdaptor.QueryParams.SOMATIC.key(), c.somatic);
+        params.putIfNotEmpty(ParamConstants.SAMPLE_ID_PARAM, c.sampleId);
+        params.putIfNotEmpty(ParamConstants.CREATION_DATE_PARAM, c.creationDate);
+        params.putIfNotEmpty(ParamConstants.MODIFICATION_DATE_PARAM, c.modificationDate);
+        params.putIfNotEmpty(ParamConstants.PHENOTYPES_PARAM, c.phenotypes);
+        params.putIfNotEmpty(ParamConstants.ACL_PARAM, c.acl);
+        params.putIfNotEmpty(ParamConstants.ATTRIBUTES_PARAM, c.attributes);
+        params.putIfNotNull(ParamConstants.SAMPLE_SOMATIC_PARAM, c.somatic);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), c.individual);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), c.annotation);
-        params.put("flattenAnnotations", c.flattenAnnotations);
+        params.putIfNotNull(ParamConstants.DELETED_PARAM, c.deleted);
+        params.putIfNotNull(ParamConstants.RELEASE_PARAM, c.release);
+        params.putIfNotNull(ParamConstants.SNAPSHOT_PARAM, c.snapshot);
+        params.putIfNotNull(ParamConstants.FLATTEN_ANNOTATIONS, c.flattenAnnotations);
         params.putAll(c.commonOptions.params);
 
         params.put(QueryOptions.COUNT, c.numericOptions.count);
@@ -180,10 +191,15 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Sample> delete() throws ClientException {
         logger.debug("Deleting the selected sample");
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), samplesCommandOptions.deleteCommandOptions.study);
+        SampleCommandOptions.DeleteCommandOptions c = samplesCommandOptions.deleteCommandOptions;
 
-        return openCGAClient.getSampleClient().delete(samplesCommandOptions.deleteCommandOptions.sample, params);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), c.study);
+        params.putIfNotNull(Constants.FORCE, c.force);
+        params.putIfNotEmpty(ParamConstants.SAMPLE_EMPTY_FILES_ACTION_PARAM, c.emptyFilesAction);
+        params.putIfNotNull(ParamConstants.SAMPLE_DELETE_EMPTY_COHORTS_PARAM, c.deleteEmptyCohorts);
+
+        return openCGAClient.getSampleClient().delete(c.sample, params);
     }
 
     private RestResponse<ObjectMap> updateAcl() throws CatalogException, ClientException {

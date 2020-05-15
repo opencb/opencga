@@ -162,8 +162,6 @@ public class File extends Annotable {
         IMAGE,
         PLAIN,
         BINARY,
-        EXECUTABLE,
-        @Deprecated GZIP,
         NONE,
         UNKNOWN,
     }

@@ -126,10 +126,10 @@ public class FileCommandOptions {
         @Parameter(names = {"--path"}, description = "Path where the file or folder will be created", required = true, arity = 1)
         public String folder = "";
 
-        @Parameter(names = {"--description"}, description = "File or folder description", required = false, arity = 1)
+        @Parameter(names = {"--description"}, description = "File or folder description", arity = 1)
         public String description = "";
 
-        @Parameter(names = {"--content"}, description = "File content. If not provided, a folder will be created.", required = false, arity = 1)
+        @Parameter(names = {"--content"}, description = "File content. If not provided, a folder will be created.", arity = 1)
         public String content = "";
 
         @Parameter(names = {"-P", "--parents"}, description = "Create the parent directories if they do not exist. Default: false",
@@ -188,49 +188,49 @@ public class FileCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--name"}, description = ParamConstants.FILE_NAMES_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = ParamConstants.FILE_NAMES_DESCRIPTION, arity = 1)
         public String name;
 
-        @Parameter(names = {"--path"}, description = ParamConstants.FILE_PATHS_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = ParamConstants.FILE_PATHS_DESCRIPTION, arity = 1)
         public String path;
 
-        @Parameter(names = {"--type"}, description = ParamConstants.FILE_TYPE_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--type"}, description = ParamConstants.FILE_TYPE_DESCRIPTION, arity = 1)
         public String type;
 
-        @Parameter(names = {"--bioformat"}, description = ParamConstants.FILE_BIOFORMAT_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--bioformat"}, description = ParamConstants.FILE_BIOFORMAT_DESCRIPTION, arity = 1)
         public List<File.Bioformat> bioformat;
 
-        @Parameter(names = {"--format"}, description = ParamConstants.FILE_FORMAT_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--format"}, description = ParamConstants.FILE_FORMAT_DESCRIPTION, arity = 1)
         public List<File.Format> format;
 
-        @Parameter(names = {"--status"}, description = ParamConstants.FILE_STATUS_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--status"}, description = ParamConstants.FILE_STATUS_DESCRIPTION, arity = 1)
         public String status;
 
         @Parameter(names = {"--directory"}, description = ParamConstants.FILE_DIRECTORY_DESCRIPTION, arity = 1)
         public String folder;
 
-        @Parameter(names = {"--creation-date"}, description = ParamConstants.CREATION_DATE_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--creation-date"}, description = ParamConstants.CREATION_DATE_DESCRIPTION, arity = 1)
         public String creationDate;
 
-        @Parameter(names = {"--modification-date"}, description = ParamConstants.MODIFICATION_DATE_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--modification-date"}, description = ParamConstants.MODIFICATION_DATE_DESCRIPTION, arity = 1)
         public String modificationDate;
 
-        @Parameter(names = {"-d", "--description"}, description = ParamConstants.FILE_DESCRIPTION_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = ParamConstants.FILE_DESCRIPTION_DESCRIPTION, arity = 1)
         public String description;
 
-        @Parameter(names = {"--tags"}, description = ParamConstants.FILE_TAGS_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--tags"}, description = ParamConstants.FILE_TAGS_DESCRIPTION, arity = 1)
         public String tags;
 
-        @Parameter(names = {"--size"}, description = ParamConstants.FILE_SIZE_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--size"}, description = ParamConstants.FILE_SIZE_DESCRIPTION, arity = 1)
         public String size;
 
-        @Parameter(names = {"--samples"}, description = ParamConstants.SAMPLES_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = ParamConstants.SAMPLES_DESCRIPTION, arity = 1)
         public String samples;
 
-        @Parameter(names = {"--job-id"}, description = ParamConstants.FILE_JOB_ID_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--job-id"}, description = ParamConstants.FILE_JOB_ID_DESCRIPTION, arity = 1)
         public String jobId;
 
-        @Parameter(names = {"--attributes"}, description = ParamConstants.FILE_ATTRIBUTES_DESCRIPTION, required = false, arity = 1)
+        @Parameter(names = {"--attributes"}, description = ParamConstants.ATTRIBUTES_DESCRIPTION, arity = 1)
         public String attributes;
 
         @Parameter(names = {"--annotation"}, description = ParamConstants.ANNOTATION_DESCRIPTION, arity = 1)
@@ -239,10 +239,10 @@ public class FileCommandOptions {
         @Parameter(names = {"--acl"}, description = ParamConstants.ACL_DESCRIPTION, arity = 1)
         public String acl;
 
-        @Parameter(names = {"--deleted"}, description = ParamConstants.FILE_DELETED_DESCRIPTION, arity = 1)
+        @Parameter(names = {"--deleted"}, description = ParamConstants.DELETED_DESCRIPTION, arity = 1)
         public boolean deleted;
 
-        @Parameter(names = {"--release"}, description = ParamConstants.FILE_RELEASE_DESCRIPTION, arity = 1)
+        @Parameter(names = {"--release"}, description = ParamConstants.RELEASE_DESCRIPTION, arity = 1)
         public Integer release;
 
         @Parameter(names = {"--flatten-annotations"}, description = ParamConstants.FLATTEN_ANNOTATION_DESCRIPTION, arity = 0)
@@ -286,32 +286,32 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
     public class UpdateCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"--name"}, description = "New file name", required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "New file name", arity = 1)
         public String name;
 
         @Parameter(names = {"--format"}, description = "New format (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
-                required = false, arity = 1)
+                arity = 1)
         public File.Format format;
 
         @Parameter(names = {"--bioformat"}, description = "New bioformat (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)",
-                required = false, arity = 1)
+                arity = 1)
         public File.Bioformat bioformat;
 
-        @Parameter(names = {"--description"}, description = "New description", required = false, arity = 1)
+        @Parameter(names = {"--description"}, description = "New description", arity = 1)
         public String description;
 
         @Parameter(names = {"--samples-action"}, description = "Action to be performed if the array of samples is being updated (ADD, SET or REMOVE).",
-                required = false, arity = 1)
+                arity = 1)
         public String samplesAction;
 
-        @Parameter(names = {"--samples"}, description = "Comma separated list of sample names or ids", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = "Comma separated list of sample names or ids", arity = 1)
         public List<String> sampleIds;
 
         @Parameter(names = {"--tags-action"}, description = "Action to be performed if the array of tags is being updated (ADD, SET or REMOVE).",
-                required = false, arity = 1)
+                arity = 1)
         public String tagsAction;
 
-        @Parameter(names = {"--tags"}, description = "Comma separated list of sample names or ids", required = false, arity = 1)
+        @Parameter(names = {"--tags"}, description = "Comma separated list of sample names or ids", arity = 1)
         public List<String> tags;
 
     }
@@ -322,7 +322,7 @@ public class FileCommandOptions {
 //        @Parameter(names = {"--uri"}, description = "New URI", required = true, arity = 1)
 //        public String uri;
 //
-//        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+//        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", arity = 0)
 //        public boolean calculateChecksum;
 //    }
 
@@ -330,7 +330,7 @@ public class FileCommandOptions {
     public class DeleteCommandOptions extends BaseFileCommand {
 
         @Parameter(names = {"--skip-trash"}, description = "Boolean indicating whether to skip sending the files to the trash first. "
-                + "If set, it will not be possible to recover them!", required = false, arity = 0)
+                + "If set, it will not be possible to recover them!", arity = 0)
         public boolean skipTrash;
     }
 
@@ -343,7 +343,7 @@ public class FileCommandOptions {
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = false, arity = 1)
+        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", arity = 1)
         public String folderId = ".";
 
         @Parameter(names = {"-n", "--max-depth"}, description = "Descend only 'level' directories deep. Default: 5", arity = 1)
@@ -401,10 +401,10 @@ public class FileCommandOptions {
         public String bioformat;
 
         @Parameter(names = {"--catalog-path"}, description = "Path within catalog where the file will be located (Default: root folder)",
-                required = false, arity = 1)
+                arity = 1)
         public String catalogPath;
 
-        @Parameter(names = {"--description"}, description = "Description of the file", required = false, arity = 1)
+        @Parameter(names = {"--description"}, description = "Description of the file", arity = 1)
         public String description;
 
         @Parameter(names = {"--file-name"}, description = "Name of the file by which it will be stored in catalog", required = false,
@@ -415,10 +415,10 @@ public class FileCommandOptions {
         public boolean parents;
 
         @Parameter(names = {"--replace"}, description = "[PENDING] Replace the existing attached file. ALERT: The existing file will be "
-                + "removed", required = false, arity = 0)
+                + "removed", arity = 0)
         public boolean replace;
 
-        @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", required = false, arity = 0)
+        @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", arity = 0)
         public boolean calculateChecksum;
     }
 

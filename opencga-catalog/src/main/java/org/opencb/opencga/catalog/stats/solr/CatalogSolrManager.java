@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.DatabaseCredentials;
@@ -225,7 +226,7 @@ public class CatalogSolrManager implements AutoCloseable {
             // We need to add an acl query to perform the facet query
             List<String> groups = new ArrayList<>();
             study.getGroups().forEach(group -> {
-                if (group.getUserIds().contains(userId)) {
+                if (group.getUserIds().contains(userId) || group.getUserIds().contains(AbstractManager.ANONYMOUS)) {
                     groups.add(group.getId());
                 }
             });
@@ -237,8 +238,16 @@ public class CatalogSolrManager implements AutoCloseable {
                 suffixPermission = "__VIEW";
             }
             List<String> aclList = new ArrayList<>();
-            aclList.add(userId + suffixPermission);
-            groups.forEach(group -> aclList.add("(*:* -" + userId + "__NONE AND " + group + suffixPermission + ")"));
+            if (AbstractManager.ANONYMOUS.equals(userId)) {
+                // We need to escape that user ( * )
+                aclList.add("\\" + userId + suffixPermission);
+                groups.forEach(group -> aclList.add("(*:* -\\" + userId + "__NONE AND " + group + suffixPermission + ")"));
+            } else {
+                aclList.add(userId + suffixPermission);
+                groups.forEach(group -> aclList.add("(*:* -" + userId + "__NONE AND " + group + suffixPermission + ")"));
+                // Add anonymous user as well. If anonymous user can see, userId should be able to see
+                aclList.add("\\" + AbstractManager.ANONYMOUS + suffixPermission);
+            }
 
             queryCopy.put(CatalogSolrQueryParser.QueryParams.ACL.key(), "(" + StringUtils.join(aclList, " OR ") + ")");
         }

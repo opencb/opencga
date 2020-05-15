@@ -235,7 +235,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> sampleRun() throws ClientException {
         return openCGAClient.getVariantClient().runSample(
                 variantCommandOptions.samplesFilterCommandOptions.toolParams,
-                getParams(variantCommandOptions.samplesFilterCommandOptions.toolParams.getStudy())
+                getParams(variantCommandOptions.samplesFilterCommandOptions.study)
         );
     }
 

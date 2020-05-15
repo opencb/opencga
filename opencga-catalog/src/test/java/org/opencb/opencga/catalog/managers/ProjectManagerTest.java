@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -94,6 +95,14 @@ public class ProjectManagerTest extends GenericTest {
     public void getOwnProjectNoStudies() throws CatalogException {
         DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
         assertEquals(1, projectDataResult.getNumResults());
+    }
+
+    @Test
+    public void getOtherUsersProject() throws CatalogException {
+        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), project1);
+        DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(query, null, sessionIdUser3);
+        assertEquals(0, projectDataResult.getNumResults());
+        assertEquals(1, projectDataResult.getEvents().size());
     }
 
     @Test

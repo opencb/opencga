@@ -22,6 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -48,8 +49,6 @@ public class SampleCommandOptions {
     public CommonCommandOptions commonCommandOptions;
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
-
-    protected static final String DEPRECATED = "[DEPRECATED] ";
 
     public SampleCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
                                 JCommander jCommander) {
@@ -91,12 +90,15 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
-        public boolean noLazy;
-
         @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
                 arity = 0)
-        public boolean flattenAnnotations;
+        public Boolean flattenAnnotations;
+
+        @Parameter(names = {"--version"}, description = ParamConstants.SAMPLE_VERSION_DESCRIPTION, arity = 1)
+        public Integer version;
+
+        @Parameter(names = {"--deleted"}, description = ParamConstants.DELETED_DESCRIPTION, arity = 1)
+        public Boolean deleted;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a sample")
@@ -111,11 +113,11 @@ public class SampleCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Description of the sample", arity = 1)
         public String description;
 
-        @Parameter(names = {"--individual"}, description = "Individual name or id to whom the sample belongs to", arity = 1)
+        @Parameter(names = {"--individual-id"}, description = "Individual id to whom the sample belongs to", arity = 1)
         public String individual;
 
         @Parameter(names = {"--somatic"}, description = "Flag indicating that the sample comes from somatic cells", arity = 0)
-        public boolean somatic;
+        public Boolean somatic;
     }
 
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
@@ -124,7 +126,7 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--ped-file"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
+        @Parameter(names = {"--file"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
         public String pedFile;
 
         @Parameter(names = {"--variable-set"}, description = "VariableSetId that represents the pedigree file", arity = 1)
@@ -135,7 +137,6 @@ public class SampleCommandOptions {
     @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
     public class SearchCommandOptions extends StudyOption {
 
-        public static final String ANNOTATION_DOC_URL = "http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0";
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -145,19 +146,44 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--individual"}, description = "Filter by id or name of the individual", arity = 1)
+        @Parameter(names = {"--id"}, description = ParamConstants.SAMPLES_DESCRIPTION, arity = 1)
+        public String sampleId;
+        
+        @Parameter(names = {"--individual"}, description = ParamConstants.INDIVIDUAL_DESCRIPTION, arity = 1)
         public String individual;
 
-        @Parameter(names = {"--somatic"}, description = "Flag indicating if the sample comes from somatic cells", arity = 1)
+        @Parameter(names = {"--somatic"}, description = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION, arity = 1)
         public Boolean somatic;
 
-        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
-                "please visit " + ANNOTATION_DOC_URL, arity = 1)
+        @Parameter(names = {"--creation-date"}, description = ParamConstants.CREATION_DATE_DESCRIPTION, arity = 1)
+        public String creationDate;
+
+        @Parameter(names = {"--modification-date"}, description = ParamConstants.MODIFICATION_DATE_DESCRIPTION, arity = 1)
+        public String modificationDate;
+        
+        @Parameter(names = {"--annotation"}, description = ParamConstants.ANNOTATION_DESCRIPTION, arity = 1)
         public String annotation;
 
-        @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
-                arity = 0)
-        public boolean flattenAnnotations;
+        @Parameter(names = {"--phenotypes"}, description = ParamConstants.PHENOTYPES_DESCRIPTION, arity = 1)
+        public String phenotypes;
+
+        @Parameter(names = {"--acl"}, description = ParamConstants.ACL_DESCRIPTION, arity = 1)
+        public String acl;
+
+        @Parameter(names = {"--attributes"}, description = ParamConstants.ATTRIBUTES_DESCRIPTION, arity = 1)
+        public String attributes;
+
+        @Parameter(names = {"--deleted"}, description = ParamConstants.DELETED_DESCRIPTION, arity = 0)
+        public Boolean deleted;
+
+        @Parameter(names = {"--release"}, description = ParamConstants.RELEASE_DESCRIPTION, arity = 1)
+        public Integer release;
+
+        @Parameter(names = {"--snapshot"}, description = ParamConstants.SNAPSHOT_DESCRIPTION, arity = 1)
+        public Integer snapshot;
+
+        @Parameter(names = {"--flatten-annotations"}, description = ParamConstants.FLATTEN_ANNOTATION_DESCRIPTION, arity = 0)
+        public Boolean flattenAnnotations;
     }
 
 
@@ -173,14 +199,22 @@ public class SampleCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
         public String description;
 
-        @Parameter(names = {"--somatic"}, description = "Boolean indicating whether the sample comes from somatic cells or not", arity = 1)
+        @Parameter(names = {"--somatic"}, description = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION, arity = 1)
         public Boolean somatic;
 
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription = "Delete the selected sample")
+    @Parameters(commandNames = {"delete"}, commandDescription = "Delete a sample")
     public class DeleteCommandOptions extends BaseSampleCommand {
 
+        @Parameter(names = {"--force"}, description = ParamConstants.SAMPLE_FORCE_DELETE_DESCRIPTION, arity = 0)
+        public Boolean force;
+
+        @Parameter(names = {"--empty-files-action"}, description = ParamConstants.SAMPLE_EMPTY_FILES_ACTION_DESCRIPTION, arity = 1)
+        public String emptyFilesAction;
+
+        @Parameter(names = {"--delete-empty-cohorts"}, description = ParamConstants.SAMPLE_DELETE_EMPTY_COHORTS_DESCRIPTION, arity = 0)
+        public Boolean deleteEmptyCohorts;
     }
 
     public class SampleAclCommandOptions extends AclCommandOptions {

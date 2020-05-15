@@ -82,7 +82,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     this.writer = new YamlOutputWriter(writerConfiguration);
                     break;
                 case "table":
-                    this.writer = new TextOutputWriter(writerConfiguration, Table.PrinterType.ASCII);
+                    this.writer = new TextOutputWriter(writerConfiguration, Table.PrinterType.JANSI);
                     break;
                 case "text":
                 default:

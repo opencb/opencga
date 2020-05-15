@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
@@ -26,6 +27,7 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
 import org.opencb.opencga.core.models.job.JobCreateParams;
@@ -134,14 +136,23 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.ID.key(), commandOptions.id);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), commandOptions.toolName);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), commandOptions.status);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.USER_ID.key(), commandOptions.ownerId);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.date);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.INPUT.key(), commandOptions.inputFiles);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUTPUT.key(), commandOptions.outputFiles);
+        params.putIfNotEmpty(ParamConstants.JOB_ID_PARAM, commandOptions.id);
+        params.putIfNotEmpty(ParamConstants.JOB_TOOL_ID_PARAM, commandOptions.toolId);
+        params.putIfNotEmpty(ParamConstants.JOB_INTERNAL_STATUS_PARAM, commandOptions.internalStatus);
+        params.putIfNotEmpty(ParamConstants.JOB_USER_PARAM, commandOptions.userId);
+        params.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, commandOptions.priority);
+        params.putIfNotEmpty(ParamConstants.CREATION_DATE_PARAM, commandOptions.creationDate);
+        params.putIfNotEmpty(ParamConstants.MODIFICATION_DATE_PARAM, commandOptions.modificationDate);
+        params.putIfNotEmpty(ParamConstants.JOB_TAGS_PARAM, commandOptions.tags);
+        params.putIfNotEmpty(ParamConstants.ACL_PARAM, commandOptions.acl);
+        params.putIfNotEmpty(ParamConstants.JOB_INPUT_FILES_PARAM, commandOptions.inputFiles);
+        params.putIfNotEmpty(ParamConstants.JOB_OUTPUT_FILES_PARAM, commandOptions.outputFiles);
         params.putAll(commandOptions.commonOptions.params);
+
+        params.putIfNotNull(ParamConstants.RELEASE_PARAM, commandOptions.release);
+        params.putIfNotNull(ParamConstants.OTHER_STUDIES_FLAG, commandOptions.otherStudies);
+        params.putIfNotNull(ParamConstants.JOB_VISITED_PARAM, commandOptions.visited);
+        params.putIfNotNull(ParamConstants.DELETED_PARAM, commandOptions.deleted);
 
         params.put(QueryOptions.COUNT, commandOptions.numericOptions.count);
         params.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
@@ -154,13 +165,20 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
 
     private void top() throws Exception {
         JobCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
-        String study = c.study;
-        new JobsTopManager(openCGAClient, study, c.iterations, c.jobsLimit, c.delay).run();
+
+        Query query = new Query();
+        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), c.study);
+        query.putIfNotEmpty(ParamConstants.JOB_TOOL_ID_PARAM, c.toolId);
+        query.putIfNotEmpty(ParamConstants.JOB_INTERNAL_STATUS_PARAM, c.internalStatus);
+        query.putIfNotEmpty(ParamConstants.JOB_USER_PARAM, c.userId);
+        query.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, c.priority);
+        query.putAll(c.commonOptions.params);
+
+        new JobsTopManager(openCGAClient, query, c.iterations, c.jobsLimit, c.delay).run();
     }
 
     private void log() throws Exception {
         JobCommandOptions.LogCommandOptions c = jobsCommandOptions.logCommandOptions;
-        c.study = c.study;
         new JobsLog(openCGAClient, c, System.out).run();
     }
 
@@ -171,7 +189,6 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
-        params.put("deleteFiles", commandOptions.deleteFiles);
         return openCGAClient.getJobClient().delete(commandOptions.job, params);
     }
 

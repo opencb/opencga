@@ -256,7 +256,6 @@ public class FileUtils {
                     break;
                 case IMAGE:
                 case BINARY:
-                case EXECUTABLE:
                 case UNKNOWN:
                 case XML:
                     return File.Bioformat.NONE;

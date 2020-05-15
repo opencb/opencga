@@ -45,7 +45,7 @@ import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.*;
  */
 public class SGEManager {
 
-    protected static Logger logger = LoggerFactory.getLogger(SgeManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(SGEManager.class);
     private static final Map<String, String> STATE_DIC;
     private Execution execution;
 
