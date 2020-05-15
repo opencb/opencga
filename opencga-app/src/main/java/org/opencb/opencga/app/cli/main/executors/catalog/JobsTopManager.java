@@ -55,15 +55,14 @@ public class JobsTopManager {
         END
     }
 
-    public JobsTopManager(OpenCGAClient openCGAClient, String study, Integer iterations, Integer jobsLimit, long delay) {
-        this(openCGAClient, study, Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END), iterations,
+    public JobsTopManager(OpenCGAClient openCGAClient, Query query, Integer iterations, Integer jobsLimit, long delay) {
+        this(openCGAClient, query, Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END), iterations,
                 jobsLimit, delay);
     }
 
-    public JobsTopManager(OpenCGAClient openCGAClient, String study, List<Columns> columns, Integer iterations, Integer jobsLimit, long delay) {
+    public JobsTopManager(OpenCGAClient openCGAClient, Query query, List<Columns> columns, Integer iterations, Integer jobsLimit, long delay) {
         this.openCGAClient = openCGAClient;
-        this.baseQuery = new Query();
-        baseQuery.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), study);
+        this.baseQuery = new Query(query);
         this.buffer = new ByteArrayOutputStream();
         this.iterations = iterations == null || iterations <= 0 ? -1 : iterations;
         if (jobsLimit == null || jobsLimit <= 0) {

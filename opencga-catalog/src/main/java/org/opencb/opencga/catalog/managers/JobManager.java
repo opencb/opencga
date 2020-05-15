@@ -514,6 +514,14 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
+        if (query.containsKey(ParamConstants.JOB_INTERNAL_STATUS_PARAM)) {
+            query.put(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), query.get(ParamConstants.JOB_INTERNAL_STATUS_PARAM));
+            query.remove(ParamConstants.JOB_INTERNAL_STATUS_PARAM);
+        }
+        if (query.containsKey(ParamConstants.JOB_TOOL_ID_PARAM)) {
+            query.put(JobDBAdaptor.QueryParams.TOOL_ID.key(), query.get(ParamConstants.JOB_TOOL_ID_PARAM));
+            query.remove(ParamConstants.JOB_TOOL_ID_PARAM);
+        }
         if (query.containsKey(ParamConstants.JOB_INPUT_FILES_PARAM)) {
             List<File> inputFiles = catalogManager.getFileManager().internalGet(study.getUid(),
                     query.getAsStringList(ParamConstants.JOB_INPUT_FILES_PARAM), FileManager.INCLUDE_FILE_IDS, userId, true).getResults();

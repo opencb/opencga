@@ -37,9 +37,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Status;
@@ -582,12 +580,15 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+    public OpenCGAResult<Project> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogParameterException {
         long startTime = startQuery();
         OpenCGAResult<Project> queryResult;
         try (DBIterator<Project> dbIterator = iterator(query, options, user)) {
             queryResult = endQuery(startTime, dbIterator);
+        } catch (CatalogAuthorizationException e) {
+            // We don't want to raise permission exceptions in methods where general lookups are done. That should only apply if you specify
+            queryResult = OpenCGAResult.empty(Project.class);
+            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, e.getMessage())));
         }
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
@@ -598,8 +599,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 try {
                     OpenCGAResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options, user);
                     project.setStudies(studyDataResult.getResults());
-                } catch (CatalogDBException e) {
+                } catch (CatalogDBException | CatalogAuthorizationException e) {
                     logger.error("{}", e.getMessage(), e);
+                    queryResult.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, e.getMessage())));
                 }
             }
         }

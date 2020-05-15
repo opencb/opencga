@@ -333,9 +333,9 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_JOB_ID_DESCRIPTION) @QueryParam("jobId") String jobId,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = ParamConstants.FILE_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = ParamConstants.FILE_ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam("attributes") String attributes,
-            @ApiParam(value = ParamConstants.FILE_RELEASE_DESCRIPTION) @QueryParam("release") String release) {
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam("attributes") String attributes,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam("release") String release) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
 
