@@ -138,17 +138,24 @@ public class SampleIndexVariantAggregationExecutor extends AbstractLocalVariantA
                 case "consequenceType":
                 case "ct":
                     thisAccumulator = new CategoricalAccumulator<>(
-                            s -> AnnotationIndexConverter.getSoNamesFromMask(s.getAnnotationIndexEntry().getCtIndex()),
+                            s -> s.getAnnotationIndexEntry() == null
+                                    ? Collections.emptyList()
+                                    : AnnotationIndexConverter.getSoNamesFromMask(s.getAnnotationIndexEntry().getCtIndex()),
                             "consequenceType");
                     break;
                 case "biotype":
                     thisAccumulator = new CategoricalAccumulator<>(
-                            s -> AnnotationIndexConverter.getBiotypesFromMask(s.getAnnotationIndexEntry().getBtIndex()),
+                            s -> s.getAnnotationIndexEntry() == null
+                                    ? Collections.emptyList()
+                                    : AnnotationIndexConverter.getBiotypesFromMask(s.getAnnotationIndexEntry().getBtIndex()),
                             "biotype");
                     break;
                 case "clinicalSignificance":
                     thisAccumulator = new CategoricalAccumulator<>(
                             s -> {
+                                if (s.getAnnotationIndexEntry() == null) {
+                                    return Collections.emptyList();
+                                }
                                 List<ClinicalSignificance> values = AnnotationIndexConverter
                                         .getClinicalsFromMask(s.getAnnotationIndexEntry().getClinicalIndex());
                                 if (values.isEmpty()) {

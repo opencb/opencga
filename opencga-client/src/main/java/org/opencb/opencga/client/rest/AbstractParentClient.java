@@ -38,6 +38,7 @@ import org.opencb.opencga.core.response.VariantQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.*;
 import javax.ws.rs.client.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -45,31 +46,33 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.*;
 
 /**
  * Created by imedina on 04/05/16.
  */
 public abstract class AbstractParentClient {
 
-    protected Client client;
+    protected final Client client;
 
     private String token;
-    private ClientConfiguration configuration;
+    private final ClientConfiguration configuration;
     private boolean throwExceptionOnError = false;
 
-    protected ObjectMapper jsonObjectMapper;
+    protected final ObjectMapper jsonObjectMapper;
 
-    private static int timeout = 10000;
-    private static int batchSize = 2000;
-    private static int defaultLimit = 2000;
+    private int timeout = 10000;
+    private int batchSize = 2000;
+    private int defaultLimit = 2000;
     private static final int DEFAULT_SKIP = 0;
     protected static final String GET = "GET";
     protected static final String POST = "POST";
@@ -78,25 +81,67 @@ public abstract class AbstractParentClient {
     protected Logger logger;
 
     protected AbstractParentClient(String token, ClientConfiguration configuration) {
+        Objects.requireNonNull(configuration);
+        Objects.requireNonNull(configuration.getRest());
+        this.logger = LoggerFactory.getLogger(this.getClass().toString());
         this.token = token;
         this.configuration = configuration;
+        this.client = newClient(configuration);
 
-        init();
-    }
-
-    private void init() {
-        this.logger = LoggerFactory.getLogger(this.getClass().toString());
-        this.client = ClientBuilder.newClient();
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        if (configuration.getRest() != null) {
-            if (configuration.getRest().getQuery().getBatchSize() > 0) {
-                batchSize = configuration.getRest().getQuery().getBatchSize();
+        if (configuration.getRest().getQuery().getBatchSize() > 0) {
+            batchSize = configuration.getRest().getQuery().getBatchSize();
+        }
+        if (configuration.getRest().getQuery().getLimit() > 0) {
+            defaultLimit = configuration.getRest().getQuery().getLimit();
+        }
+
+    }
+
+    private Client newClient(ClientConfiguration configuration) {
+        if (configuration.getRest().isTlsAllowInvalidCertificates()) {
+            logger.debug("Using custom SSLContext to allow invalid certificates");
+            try {
+                TrustManager[] trustAllCerts = new TrustManager[] {
+                        new X509TrustManager() {
+                            @Override
+                            public X509Certificate[] getAcceptedIssuers() {
+                                return new X509Certificate[0];
+                            }
+
+                            @Override
+                            public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                            }
+
+                            @Override
+                            public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                            }
+                        },
+                };
+
+                SSLContext sc = SSLContext.getInstance("TLS");
+                sc.init(null, trustAllCerts, new SecureRandom());
+
+                HostnameVerifier verifier = new HostnameVerifier() {
+                    private String hostname = URI.create(configuration.getRest().getHost()).getHost();
+
+                    @Override
+                    public boolean verify(String hostname, SSLSession sslSession) {
+                        logger.debug("Verify hostname = " + hostname);
+                        return this.hostname.equals(hostname);
+                    }
+                };
+                return ClientBuilder.newBuilder()
+                        .sslContext(sc)
+                        .hostnameVerifier(verifier)
+                        .build();
+            } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                throw new RuntimeException(e);
             }
-            if (configuration.getRest().getQuery().getLimit() > 0) {
-                defaultLimit = configuration.getRest().getQuery().getLimit();
-            }
+        } else {
+            return ClientBuilder.newClient();
         }
     }
 
@@ -151,7 +196,7 @@ public abstract class AbstractParentClient {
         if (CollectionUtils.isEmpty(id1)) {
             skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
             limit = params.getInt(QueryOptions.LIMIT, defaultLimit);
-            batchSize = AbstractParentClient.batchSize;
+            batchSize = this.batchSize;
         } else {
             // Ignore input SKIP and LIMIT from Params
             skip = 0;
@@ -419,11 +464,6 @@ public abstract class AbstractParentClient {
 
     public AbstractParentClient setToken(String token) {
         this.token = token;
-        return this;
-    }
-
-    public AbstractParentClient setConfiguration(ClientConfiguration configuration) {
-        this.configuration = configuration;
         return this;
     }
 }

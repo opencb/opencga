@@ -1,0 +1,17 @@
+
+# https://github.com/helm/charts/tree/master/stable/nginx-ingress
+# https://docs.microsoft.com/en-gb/azure/dev-spaces/how-to/ingress-https-nginx
+# https://docs.microsoft.com/en-gb/azure/aks/ingress-own-tls
+
+controller:
+  replicaCount: 2
+  nodeSelector:
+    beta.kubernetes.io/os: linux
+  service:
+    annotations:
+      # Use a private endpoint instead of a public IP
+      service.beta.kubernetes.io/azure-load-balancer-internal: true
+
+defaultBackend:
+  nodeSelector:
+    beta.kubernetes.io/os: linux

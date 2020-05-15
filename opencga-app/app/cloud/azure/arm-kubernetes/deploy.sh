@@ -68,41 +68,41 @@ blob_base_url="$(az storage account show -n $storageAccountName  --query primary
 container_base_url=${blob_base_url//\"/}$templateContainer
 
 # deploy infra
-deployment_details=$(az deployment sub create -n $deployID  -l uksouth --template-uri $template_url --parameters @azuredeploy.parameters.private.json  \
-    --parameters _artifactsLocation=$container_base_url   --parameters _artifactsLocationSasToken="?$token"  \
+az deployment sub create -n $deployID  -l ${location} --template-uri $template_url \
+    --parameters @azuredeploy.parameters.private.json  \
+    --parameters _artifactsLocation=$container_base_url   \
+    --parameters _artifactsLocationSasToken="?$token"  \
     --parameters aksServicePrincipalAppId=$aksServicePrincipalAppId \
     --parameters aksServicePrincipalClientSecret=$aksServicePrincipalClientSecret \
-    --parameters aksServicePrincipalObjectId=$aksServicePrincipalObjectId)
+    --parameters aksServicePrincipalObjectId=$aksServicePrincipalObjectId > "deployment-outputs.json"
 
-
-echo $deployment_details > "deployment-outputs.json"
+# deploy opencga
+deployment_details=`cat deployment-outputs.json`
 
 az aks get-credentials -n $(echo $deployment_details | jq -r '.properties.outputs.aksClusterName.value') -g $(echo $deployment_details | jq -r '.properties.outputs.aksResourceGroupName.value')
 
-# Create a namespace for your ingress resources
-if ! kubectl get namespace ingress-basic; then
-    kubectl create namespace ingress-basic
-fi
-
-# Use Helm to deploy an NGINX ingress controller
-helm upgrade nginx-ingress stable/nginx-ingress \
-    --namespace ingress-basic \
-    --set controller.replicaCount=2 \
-    --set controller.nodeSelector."beta\.kubernetes\.io/os"=linux \
-    --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux \
-    --install --wait --timeout 10m
-
-# deploy opencga
-# deployment_details=`cat deployment-outputs.json`
-
-K8S_NAMESPACE=default
+K8S_NAMESPACE=${rgName}
 # Create a namespace for opencga
 if ! kubectl get namespace $K8S_NAMESPACE; then
     kubectl create namespace $K8S_NAMESPACE
 fi
 
-if ! kubectl get secret azure-files-secret; then
-   kubectl create secret generic azure-files-secret --from-literal=azurestorageaccountname=$(echo $deployment_details | jq -r '.properties.outputs.storageAccountName.value') --from-literal=azurestorageaccountkey=$(echo $deployment_details | jq -r '.properties.outputs.storageAccountKey.value')
+kubectl config set-context --current --namespace=$K8S_NAMESPACE
+
+# Use Helm to deploy an NGINX ingress controller
+## Deploy in the same namespace
+
+helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+helm repo update
+
+helm install opencga-nginx stable/nginx-ingress \
+    --namespace ${K8S_NAMESPACE} --version 1.27.0 \
+    -f ../../kubernetes/charts/nginx/values.yaml \
+     --wait --timeout 10m
+
+
+if ! kubectl get secret azure-files-secret -n ${K8S_NAMESPACE}; then
+   kubectl create secret generic azure-files-secret -n ${K8S_NAMESPACE} --from-literal=azurestorageaccountname=$(echo $deployment_details | jq -r '.properties.outputs.storageAccountName.value') --from-literal=azurestorageaccountkey=$(echo $deployment_details | jq -r '.properties.outputs.storageAccountKey.value')
 fi
 
 

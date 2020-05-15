@@ -41,7 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class SgeManager {
+public class SgeManagerOld {
 
     private static final Map<String, String> STATE_DIC;
     public static final String UNKNOWN = "unknown";
@@ -52,7 +52,7 @@ public class SgeManager {
     public static final String FINISHED = "finished";
     public static final String EXECUTION_ERROR = "execution error";
 
-    protected static Logger logger = LoggerFactory.getLogger(SgeManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(SgeManagerOld.class);
 //    @Deprecated
 //    private static Properties analysisProperties = Config.getAnalysisProperties();
     private static Configuration configuration;
@@ -65,7 +65,7 @@ public class SgeManager {
         STATE_DIC.put("Eqw", ERROR);
     }
 
-    public SgeManager(Configuration configuration) {
+    public SgeManagerOld(Configuration configuration) {
         this.configuration = Objects.requireNonNull(configuration, "Configuration object cannot be null");
     }
 

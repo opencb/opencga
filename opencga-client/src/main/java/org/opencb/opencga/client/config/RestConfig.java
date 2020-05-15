@@ -23,6 +23,7 @@ public class RestConfig {
 
     private String host;
     private boolean tokenAutoRefresh;
+    private boolean tlsAllowInvalidCertificates;
     private QueryRestConfig query;
 
     public RestConfig() {
@@ -39,6 +40,7 @@ public class RestConfig {
         final StringBuilder sb = new StringBuilder("RestConfig{");
         sb.append("host='").append(host).append('\'');
         sb.append(", tokenAutoRefresh=").append(tokenAutoRefresh);
+        sb.append(", tlsAllowInvalidCertificates=").append(tlsAllowInvalidCertificates);
         sb.append(", query=").append(query);
         sb.append('}');
         return sb.toString();
@@ -59,6 +61,15 @@ public class RestConfig {
 
     public RestConfig setTokenAutoRefresh(boolean tokenAutoRefresh) {
         this.tokenAutoRefresh = tokenAutoRefresh;
+        return this;
+    }
+
+    public boolean isTlsAllowInvalidCertificates() {
+        return tlsAllowInvalidCertificates;
+    }
+
+    public RestConfig setTlsAllowInvalidCertificates(boolean tlsAllowInvalidCertificates) {
+        this.tlsAllowInvalidCertificates = tlsAllowInvalidCertificates;
         return this;
     }
 
