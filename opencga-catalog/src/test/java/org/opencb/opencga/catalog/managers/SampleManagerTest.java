@@ -388,7 +388,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("not an accepted id");
+        thrown.expectMessage("not an accepted key");
         catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation2", vs2.getId(), annotations))),
                 QueryOptions.empty(), token);
