@@ -18,12 +18,13 @@ package org.opencb.opencga.analysis.variant.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.tools.ToolParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.util.List;
@@ -56,6 +57,9 @@ public class VariantAnnotationIndexOperationTool extends OperationTool {
 
         params.putIfNotEmpty(VariantStorageOptions.ANNOTATOR.key(), annotationParams.getAnnotator());
         params.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotationParams.getCustomName());
+        params.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), annotationParams.isOverwriteAnnotations());
+        params.put(DefaultVariantAnnotationManager.FILE_NAME, annotationParams.getOutputFileName());
+        params.put(VariantQueryParam.REGION.key(), annotationParams.getRegion());
     }
 
     @Override

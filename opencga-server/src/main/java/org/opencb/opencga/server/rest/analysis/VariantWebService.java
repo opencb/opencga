@@ -17,13 +17,17 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -36,6 +40,8 @@ import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureResult;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -47,9 +53,11 @@ import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -60,14 +68,17 @@ import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.WebServiceException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
@@ -587,7 +598,7 @@ public class VariantWebService extends AnalysisWebService {
     @Path("/sample/stats/info")
     @ApiOperation(value = "Read sample variant stats from list of samples.", response = SampleVariantStats.class)
     public Response sampleStatsInfo(@ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                     @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
+                                    @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
         return run(() -> {
             ParamUtils.checkParameter(sample, "sample");
             ParamUtils.checkParameter(studyStr, ParamConstants.STUDY_PARAM);
@@ -826,6 +837,60 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = MutationalSignatureAnalysisParams.DESCRIPTION, required = true) MutationalSignatureAnalysisParams params) {
         return submitJob(MutationalSignatureAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @GET
+    @Path("/mutationalSignature/query")
+    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION + " Use context index.",
+            response = MutationalSignatureAnalysisParams.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query")
+    })
+    public Response mutationalSignatureQuery(
+            @ApiParam(value = "Compute mutational signature summary image", defaultValue = "false") @QueryParam("image") boolean image) {
+        try {
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = getVariantQuery(queryOptions);
+
+            if (!query.containsKey(SAMPLE.key())) {
+                return createErrorResponse(new Exception("Missing sample name"));
+            }
+
+            // Create temporal directory
+            File outDir = Paths.get("/tmp/mutational-signature-" + System.nanoTime()).toFile();
+            outDir.mkdir();
+            if (!outDir.exists()) {
+                return createErrorResponse(new Exception("Error creating temporal directory for mutational-signature/query analysis"));
+            }
+            System.out.println(">>> outDir = " + outDir);
+
+            MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor();
+            ObjectMap executorParams = new ObjectMap();
+            executorParams.put("opencgaHome", opencgaHome);
+            executorParams.put("token", token);
+            executorParams.put("image", image);
+            executor.setUp(null, executorParams, outDir.toPath());
+            executor.setStudy(query.getString(STUDY.key()));
+            executor.setSampleName(query.getString(SAMPLE.key()));
+
+            StopWatch watch = StopWatch.createStarted();
+            MutationalSignatureResult signatureResult = executor.query(query, queryOptions);
+            watch.stop();
+            OpenCGAResult<MutationalSignatureResult> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+                    Collections.singletonList(signatureResult), 1);
+
+            // Delete temporal directory
+            FileUtils.deleteDirectory(outDir);
+
+            return createOkResponse(result);
+        } catch (CatalogException | ToolException | IOException | StorageEngineException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @POST

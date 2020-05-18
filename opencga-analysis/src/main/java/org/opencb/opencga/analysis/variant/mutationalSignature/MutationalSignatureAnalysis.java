@@ -119,7 +119,6 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
         });
 
         step("download-mutational-signatures", () -> {
-            // To compare, downloadAnalysis signatures probabilities at
             File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
             if (signatureFile == null) {
                 throw new ToolException("Error downloading mutational signatures file from " + ResourceUtils.URL);
