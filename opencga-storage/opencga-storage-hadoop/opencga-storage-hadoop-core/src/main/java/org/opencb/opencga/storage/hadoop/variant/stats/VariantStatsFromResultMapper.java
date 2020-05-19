@@ -1,11 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -44,6 +46,12 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
     protected void setup(Context context) throws IOException, InterruptedException {
         helper = new VariantTableHelper(context.getConfiguration());
         Collection<Integer> cohorts;
+        String unknownGenotype = context.getConfiguration().get(
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.defaultValue());
+        boolean statsMultiAllelic = context.getConfiguration().getBoolean(
+                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
+                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
             studyMetadata = metadataManager.getStudyMetadata(helper.getStudyId());
@@ -65,30 +73,35 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
             });
             converter = new VariantStatsToHBaseConverter(studyMetadata, cohortIds);
 
-        }
-
-        calculators = new HashMap<>(cohorts.size());
-        String unknownGenotype = context.getConfiguration().get(
-                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),
-                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.defaultValue());
-        boolean statsMultiAllelic = context.getConfiguration().getBoolean(
-                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
-                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
-        try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
-                new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
-            samples.forEach((cohort, samples) -> calculators.put(cohort, new HBaseVariantStatsCalculator(
-                    metadataManager, studyMetadata, samples, statsMultiAllelic, unknownGenotype)));
+            calculators = new HashMap<>(cohorts.size());
+            for (Map.Entry<String, List<Integer>> entry : samples.entrySet()) {
+                context.progress();
+                String cohort = entry.getKey();
+                List<Integer> value = entry.getValue();
+                calculators.put(cohort, new HBaseVariantStatsCalculator(
+                        metadataManager, studyMetadata, value, statsMultiAllelic, unknownGenotype));
+            }
         }
     }
 
 
     @Override
     public void run(Context context) throws IOException, InterruptedException {
+        StopWatch stopWatch = StopWatch.createStarted();
         setup(context);
+        logger.info("Setup AttemptID:" + context.getTaskAttemptID() + " in " + TimeUtils.durationToString(stopWatch));
+
+        StopWatch mapStopWatch = StopWatch.createStarted();
+        StopWatch nextKeyValueStopWatch = StopWatch.createStarted();
+        context.progress();
         try {
             while (context.nextKeyValue()) {
+                nextKeyValueStopWatch.stop();
                 context.progress();
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
+
+
+                mapStopWatch = StopWatch.createStarted();
                 if (context.getCurrentValue().isPartial()) {
                     // TODO: Allow partial results
 //                    mapPartialResult(context.getCurrentKey(), context);
@@ -97,10 +110,28 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
                 } else {
                     map(context.getCurrentKey(), context.getCurrentValue(), context);
                 }
+
+                logger.info("AttemptID:" + context.getTaskAttemptID()
+                        + " variant: " + VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(context.getCurrentKey().get())
+                        + " read in " + TimeUtils.durationToString(nextKeyValueStopWatch)
+                        + " map in " + TimeUtils.durationToString(mapStopWatch));
+                nextKeyValueStopWatch = StopWatch.createStarted();
             }
+        } catch (Exception e) {
+            logger.error("Catch exception " + e);
+            Variant variant = context.getCurrentKey() == null
+                    ? null
+                    : VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(context.getCurrentKey().get());
+
+            logger.warn("AttemptID:" + context.getTaskAttemptID()
+                    + " variant: " + variant
+                    + " read in " + TimeUtils.durationToString(nextKeyValueStopWatch)
+                    + " map in " + TimeUtils.durationToString(mapStopWatch));
+            throw e;
         } finally {
             cleanup(context);
         }
+        logger.info("Run AttemptID:" + context.getTaskAttemptID() + " in " + TimeUtils.durationToString(stopWatch));
     }
 
 //    protected void mapPartialResult(ImmutableBytesWritable key, Context context) throws IOException, InterruptedException {
