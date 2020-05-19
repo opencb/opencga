@@ -6,7 +6,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.app.cli.main.io.Table;
 import org.opencb.opencga.app.cli.main.io.Table.TableColumnSchema;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -15,7 +14,8 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobTop;
-import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -31,6 +31,8 @@ public class JobsTopManager {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(DATE_PATTERN);
+    public static final int MAX_ERRORS = 4;
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final OpenCGAClient openCGAClient;
     private final Query baseQuery;
@@ -91,7 +93,14 @@ public class JobsTopManager {
                     tableColumnList.add(new TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getName()));
                     break;
                 case STUDY:
-                    tableColumnList.add(new TableColumnSchema<>("Study", job -> job.getStudy().getId(), 25));
+                    tableColumnList.add(new TableColumnSchema<>("Study", job -> {
+                        String id = job.getStudy().getId();
+                        if (id.contains(":")) {
+                            return id.split(":")[1];
+                        } else {
+                            return id;
+                        }
+                    }, 25));
                     break;
                 case SUBMISSION:
                     tableColumnList.add(new TableColumnSchema<>("Submission date", job -> job.getCreationDate() != null
@@ -113,8 +122,7 @@ public class JobsTopManager {
                             ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : ""));
                     break;
                 default:
-                    // TODO: logger
-                    break;
+                    throw new IllegalArgumentException("Unknown column " + column);
             }
         }
 
@@ -131,22 +139,31 @@ public class JobsTopManager {
     public void run() throws ClientException, InterruptedException {
         Stopwatch timer = Stopwatch.createStarted();
         int iteration = 0;
+        int errors = 0;
+        openCGAClient.setThrowExceptionOnError(true);
         while (iterations != iteration) {
-            iteration++;
-            if (timer.elapsed(TimeUnit.MINUTES) > 5) {
-                openCGAClient.refresh();
-                timer.reset().start();
-            }
-
-            RestResponse<JobTop> response = openCGAClient.getJobClient().top(baseQuery);
-            if (response.first().getNumResults() == 0) {
-                if (response.getEvents() != null && response.getEvents().size() > 0) {
-                    System.out.println(response.getEvents().get(0).getType() + ": " + response.getEvents().get(0).getMessage());
+            try {
+                iteration++;
+                if (timer.elapsed(TimeUnit.MINUTES) > 5) {
+                    openCGAClient.refresh();
+                    timer.reset().start();
                 }
-                return;
+
+                print(openCGAClient.getJobClient().top(baseQuery).firstResult());
+
+                Thread.sleep(TimeUnit.SECONDS.toMillis(this.delay));
+                // Reset errors counter
+                errors = 0;
+            } catch (InterruptedException e) {
+                // Do not ignore InterruptedException!!
+                throw e;
+            } catch (Exception e) {
+                errors++;
+                if (errors > MAX_ERRORS) {
+                    logger.error("Got " + errors + " consecutive errors trying to print Jobs Top");
+                    throw e;
+                }
             }
-            print(openCGAClient.getJobClient().top(baseQuery).firstResult());
-            Thread.sleep(TimeUnit.SECONDS.toMillis(this.delay));
         }
     }
 
