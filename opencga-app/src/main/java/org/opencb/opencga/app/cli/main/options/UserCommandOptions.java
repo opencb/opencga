@@ -182,6 +182,9 @@ public class UserCommandOptions {
         @Parameter(names = {"-f", "--file"}, arity = 1, required = true, description = "Template file")
         public String file;
 
+        @Parameter(names = {"--study"}, arity = 1, required = true, description = "List of studies to load from the template")
+        public String study;
+
         @Parameter(names = {"--validate"}, arity = 0, description = "Only validate template file")
         public boolean validate;
 

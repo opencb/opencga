@@ -36,7 +36,9 @@ import org.opencb.opencga.core.response.RestResponse;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -230,10 +232,14 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 
         TemplateConfiguration template = TemplateConfiguration.load(Paths.get(options.file));
         TemplateManager templateManager = new TemplateManager(clientConfiguration, options.resume, cliSession.getToken());
+        Set<String> studies = null;
+        if (StringUtils.isNotEmpty(options.study)) {
+            studies = Arrays.stream(options.study.split(",")).collect(Collectors.toSet());
+        }
         if (options.validate) {
-            templateManager.validate(template);
+            templateManager.validate(template, studies);
         } else {
-            templateManager.execute(template);
+            templateManager.execute(template, studies);
         }
     }
 
