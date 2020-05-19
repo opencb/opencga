@@ -50,6 +50,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         INDIVIDUAL_UID("individual.uid", INTEGER_ARRAY, ""),
         INDIVIDUAL_ID("individualId", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
+        FILE_IDS("fileIds", TEXT_ARRAY, ""),
         SOMATIC("somatic", BOOLEAN, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

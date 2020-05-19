@@ -189,6 +189,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::new));
         sample.getInternal().setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
+        sample.setFileIds(ParamUtils.defaultObject(sample.getFileIds(), Collections.emptyList()));
         sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
         sample.setVersion(1);
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));

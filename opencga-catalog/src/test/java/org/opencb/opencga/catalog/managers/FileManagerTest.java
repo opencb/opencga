@@ -123,6 +123,7 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(File.Bioformat.ALIGNMENT, link.first().getBioformat());
         assertEquals(referenceFile.getId(), link.first().getRelatedFiles().get(0).getFile().getId());
         assertEquals(FileRelatedFile.Relation.REFERENCE_GENOME, link.first().getRelatedFiles().get(0).getRelation());
+        assertEquals("cram_with_crai_index.cram", link.first().getSamples().get(0).getFileIds().get(0));
     }
 
     @Test
@@ -647,6 +648,11 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdateSamples() throws CatalogException {
         // Update the same sample twice to the file
+        Sample sample1 = catalogManager.getSampleManager().get(studyFqn, "s_1", QueryOptions.empty(), token).first();
+        Sample sample2 = catalogManager.getSampleManager().get(studyFqn, "s_2", QueryOptions.empty(), token).first();
+        assertFalse(sample1.getFileIds().contains("data:test:folder:test_1K.txt.gz"));
+        assertFalse(sample2.getFileIds().contains("data:test:folder:test_1K.txt.gz"));
+
         FileUpdateParams updateParams = new FileUpdateParams().setSamples(Arrays.asList("s_1", "s_1", "s_2", "s_1"));
         DataResult<File> updateResult = fileManager.update(studyFqn, "test_1K.txt.gz", updateParams, null, token);
         assertEquals(1, updateResult.getNumUpdated());
@@ -654,6 +660,13 @@ public class FileManagerTest extends AbstractManagerTest {
         File file = fileManager.get(studyFqn, "test_1K.txt.gz", QueryOptions.empty(), token).first();
         assertEquals(2, file.getSamples().size());
         assertTrue(file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("s_1", "s_2")));
+        assertTrue(file.getSamples().get(0).getFileIds().contains(file.getId()));
+        assertTrue(file.getSamples().get(1).getFileIds().contains(file.getId()));
+        System.out.println(file.getId());
+        sample1 = catalogManager.getSampleManager().get(studyFqn, "s_1", QueryOptions.empty(), token).first();
+        sample2 = catalogManager.getSampleManager().get(studyFqn, "s_2", QueryOptions.empty(), token).first();
+        assertTrue(sample1.getFileIds().contains(file.getId()));
+        assertTrue(sample2.getFileIds().contains(file.getId()));
     }
 
     @Test
