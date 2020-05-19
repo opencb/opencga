@@ -285,9 +285,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         DataResult<Project> projects = catalogManager.getProjectManager().get(query, null, token);
         assertEquals(1, projects.getNumResults());
 
-        thrown.expect(CatalogAuthorizationException.class);
-        thrown.expectMessage("Permission denied");
-        catalogManager.getProjectManager().get(query, null, sessionIdUser2);
+        projects = catalogManager.getProjectManager().get(query, null, sessionIdUser2);
+        assertEquals(0, projects.getNumResults());
     }
 
     @Test

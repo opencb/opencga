@@ -120,7 +120,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.add(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
-                SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.INDIVIDUAL.key() + ".id"));
+                SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
         //queryOptions.add("nativeQuery", true);
         queryOptions.add("lazy", false);
 
@@ -188,7 +188,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, true);
         queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UUID.key(),
                 SampleDBAdaptor.QueryParams.STUDY_UID.key(),
-                SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
+                SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
                 SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
                 SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
@@ -223,7 +223,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, true);
         queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UUID.key(),
                 SampleDBAdaptor.QueryParams.STUDY_UID.key(),
-                SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
+                SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
                 SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
                 SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
@@ -291,7 +291,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, true);
         queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UUID.key(),
                 SampleDBAdaptor.QueryParams.STUDY_UID.key(),
-                SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
+                SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
                 SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
                 SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
