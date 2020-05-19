@@ -312,7 +312,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         // Perform the update
         DataResult result = updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
 
-        UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, tmpQuery, parameters);
+        UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery);
         Document sampleUpdate = updateParams.toFinalUpdateDocument();
 
         if (sampleUpdate.isEmpty() && result.getNumUpdated() == 0) {
@@ -395,7 +395,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         createNewVersion(clientSession, sampleCollection, queryResult.first());
     }
 
-    UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, Query query, ObjectMap parameters)
+    UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
 
@@ -480,6 +480,34 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             Date date = TimeUtils.toDate(time);
             document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
+        return document;
+    }
+
+    UpdateDocument updateFileReferences(ObjectMap parameters, QueryOptions queryOptions) {
+        UpdateDocument document = new UpdateDocument();
+
+        // Check if the tags exist.
+        if (parameters.containsKey(QueryParams.FILE_IDS.key())) {
+            List<String> fileIdList = parameters.getAsStringList(QueryParams.FILE_IDS.key());
+
+            if (!fileIdList.isEmpty()) {
+                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+                String operation = (String) actionMap.getOrDefault(QueryParams.FILE_IDS.key(), "ADD");
+                switch (operation) {
+                    case "SET":
+                        document.getSet().put(QueryParams.FILE_IDS.key(), fileIdList);
+                        break;
+                    case "REMOVE":
+                        document.getPullAll().put(QueryParams.FILE_IDS.key(), fileIdList);
+                        break;
+                    case "ADD":
+                    default:
+                        document.getAddToSet().put(QueryParams.FILE_IDS.key(), fileIdList);
+                        break;
+                }
+            }
         }
 
         return document;
@@ -1073,6 +1101,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case ID:
                     case UUID:
                     case RELEASE:
+                    case FILE_IDS:
                     case VERSION:
                     case DESCRIPTION:
                     case INDIVIDUAL_ID:
