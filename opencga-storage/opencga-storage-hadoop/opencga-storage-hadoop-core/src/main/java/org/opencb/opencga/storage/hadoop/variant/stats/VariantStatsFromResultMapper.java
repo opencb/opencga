@@ -87,6 +87,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
         setup(context);
         try {
             while (context.nextKeyValue()) {
+                context.progress();
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
                 if (context.getCurrentValue().isPartial()) {
                     // TODO: Allow partial results
