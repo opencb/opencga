@@ -136,28 +136,6 @@ public class AnnotationUtils {
                     throw new CatalogException("Variable " + variable.getId() + " of type " + variable.getType().name() + " cannot "
                             + "have an internal array of VariableSets");
                 }
-                if (variable.getAllowedKeys() != null && !variable.getAllowedKeys().isEmpty()) {
-                    // We edit the current variable because the allowedKeys field is populated
-                    Set<Variable> variables = new HashSet<>(variable.getAllowedKeys().size());
-                    for (String allowedKey : variable.getAllowedKeys()) {
-                        Variable.VariableType type;
-                        if (variable.getType() == Variable.VariableType.MAP_BOOLEAN) {
-                            type = Variable.VariableType.BOOLEAN;
-                        } else if (variable.getType() == Variable.VariableType.MAP_INTEGER) {
-                            type = Variable.VariableType.INTEGER;
-                        } else if (variable.getType() == Variable.VariableType.MAP_DOUBLE) {
-                            type = Variable.VariableType.DOUBLE;
-                        } else {
-                            type = Variable.VariableType.STRING;
-                        }
-                        variables.add(new Variable(allowedKey, allowedKey, "", type, variable.getDefaultValue(), false, false,
-                                variable.getAllowedValues(), null, variable.getRank(), variable.getDependsOn(),
-                                "Dynamically created variable '" + allowedKey + "'.", null, null));
-                    }
-                    // Edit current variable
-                    variable.setVariableSet(variables)
-                            .setType(Variable.VariableType.OBJECT);
-                }
                 break;
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
@@ -276,6 +254,28 @@ public class AnnotationUtils {
                 throw new CatalogException("Annotation id '" + id + "' is not an accepted id");
             } else {
                 Variable variable = variableMap.get(id);
+                if (variable.getType() == Variable.VariableType.MAP_BOOLEAN || variable.getType() == Variable.VariableType.MAP_STRING
+                        || variable.getType() == Variable.VariableType.MAP_INTEGER
+                        || variable.getType() == Variable.VariableType.MAP_DOUBLE) {
+                    if (variable.getAllowedKeys() != null && !variable.getAllowedKeys().isEmpty()) {
+                        List values;
+                        if (entry.getValue() instanceof Collection) {
+                            values = ((List) entry.getValue());
+                        } else {
+                            values = Collections.singletonList(entry.getValue());
+                        }
+                        for (Object value : values) {
+                            Map<String, Object> valueMap = getMapValue(value);
+                            Set<String> allowedKeys = new HashSet<>(variable.getAllowedKeys());
+                            for (String key : valueMap.keySet()) {
+                                if (!allowedKeys.contains(key)) {
+                                    throw new CatalogException("Annotation id '" + key + "' is not an accepted key in the variable '"
+                                            + variable.getId() + "'");
+                                }
+                            }
+                        }
+                    }
+                }
                 annotations.put(id, getValue(variable.getType(), entry.getValue()));
                 checkAllowedValue(variable, entry.getValue(), "Annotation");
             }

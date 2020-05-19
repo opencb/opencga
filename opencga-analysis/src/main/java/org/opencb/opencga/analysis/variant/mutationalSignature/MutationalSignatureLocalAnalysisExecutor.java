@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -65,7 +66,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         PrintWriter pw = new PrintWriter(indexFile);
 
         try {
-            long faiTime = 0;
+            long start, faiTime = 0;
             StopWatch prepIteratorWatch = new StopWatch();
             StopWatch rWatch = new StopWatch();
             StopWatch loopWatch = new StopWatch();
@@ -107,18 +108,14 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 if (countMap.containsKey(key)) {
                     contextCount++;
                     try {
-                        // Read index
-//                        String sequence = indexMap.get(variant.getId());
-
-
-//                        start = System.currentTimeMillis(); // System.nanoTime();
+                        start = System.currentTimeMillis();
                         ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
                                 variant.getEnd() + 1);
                         String sequence = new String(refSeq.getBases());
-//                        faiTime += (System.currentTimeMillis() - start);
+                        faiTime += (System.currentTimeMillis() - start);
 
                         // Write context index
-                        pw.println(variant.getId() + "\t" + sequence);
+                        pw.println(variant.toString() + "\t" + sequence);
 
                         // Update context counts
                         if (countMap.get(key).containsKey(sequence)) {
@@ -169,17 +166,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     public MutationalSignatureResult query(Query query, QueryOptions queryOptions)
             throws CatalogException, ToolException, StorageEngineException, IOException {
 
-        Path mutationalSignaturePath;
-        if (getOutDir().resolve(SIGNATURES_FILENAME).toFile().exists()) {
-            mutationalSignaturePath = getOutDir().resolve(SIGNATURES_FILENAME);
-        } else {
-            File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
-            if (signatureFile == null) {
-                throw new ToolException("Error downloading mutational signatures file from " + ResourceUtils.URL);
-            }
-            mutationalSignaturePath = signatureFile.toPath();
+        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
+        if (signatureFile == null) {
+            throw new ToolException("Error downloading mutational signatures file from " + ResourceUtils.URL);
         }
-        setMutationalSignaturePath(mutationalSignaturePath);
+        setMutationalSignaturePath(signatureFile.toPath());
 
         StopWatch prepIteratorWatch = new StopWatch();
         StopWatch rWatch = new StopWatch();
@@ -188,8 +179,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         totalWatch.start();
 
         // Get context index filename
+        String name = getContextIndexFilename(getSampleName());
+        Query fileQuery = new Query("name", name);
+        QueryOptions fileQueryOptions = new QueryOptions("include", "uri");
         OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getVariantStorageManager().getCatalogManager()
-                .getFileManager().get(getStudy(), getContextIndexFilename(getSampleName()), QueryOptions.empty(), getToken());
+                .getFileManager().search(getStudy(), fileQuery, fileQueryOptions, getToken());
 
         if (CollectionUtils.isEmpty(fileResult.getResults())) {
             throw new ToolException("Missing mutational signature context index file for sample " + getSampleName() + " in catalog");
@@ -243,7 +237,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 contextCount++;
                 try {
                     // Read context index
-                    String sequence = indexMap.get(variant.getId());
+                    String sequence = indexMap.get(variant.toString());
 
                     // Update context counts
                     if (countMap.get(key).containsKey(sequence)) {

@@ -865,31 +865,31 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
 
-        if (isQueryingIndividualFields(finalQuery)) {
-            OpenCGAResult<Individual> individualDataResult;
-            if (StringUtils.isEmpty(user)) {
-                individualDataResult = individualDBAdaptor.get(clientSession, getIndividualQueryFields(finalQuery),
-                        new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
-            } else {
-                individualDataResult = individualDBAdaptor.get(clientSession, query.getLong(QueryParams.STUDY_UID.key()),
-                        getIndividualQueryFields(finalQuery),
-                        new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()), user);
-            }
-            finalQuery = getSampleQueryFields(finalQuery);
-
-            // Process the whole list of sampleUids recovered from the individuals
-            Set<Long> sampleUids = new HashSet<>();
-            individualDataResult.getResults().forEach(individual ->
-                    sampleUids.addAll(individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()))
-            );
-
-            if (sampleUids.isEmpty()) {
-                // We want not to get any result
-                finalQuery.append(QueryParams.UID.key(), -1);
-            } else {
-                finalQuery.append(QueryParams.UID.key(), sampleUids);
-            }
-        }
+//        if (isQueryingIndividualFields(finalQuery)) {
+//            OpenCGAResult<Individual> individualDataResult;
+//            if (StringUtils.isEmpty(user)) {
+//                individualDataResult = individualDBAdaptor.get(clientSession, getIndividualQueryFields(finalQuery),
+//                        new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
+//            } else {
+//                individualDataResult = individualDBAdaptor.get(clientSession, query.getLong(QueryParams.STUDY_UID.key()),
+//                        getIndividualQueryFields(finalQuery),
+//                        new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()), user);
+//            }
+//            finalQuery = getSampleQueryFields(finalQuery);
+//
+//            // Process the whole list of sampleUids recovered from the individuals
+//            Set<Long> sampleUids = new HashSet<>();
+//            individualDataResult.getResults().forEach(individual ->
+//                    sampleUids.addAll(individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()))
+//            );
+//
+//            if (sampleUids.isEmpty()) {
+//                // We want not to get any result
+//                finalQuery.append(QueryParams.UID.key(), -1);
+//            } else {
+//                finalQuery.append(QueryParams.UID.key(), sampleUids);
+//            }
+//        }
 
         Bson bson = parseQuery(finalQuery, user);
         logger.debug("Sample query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -1075,6 +1075,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case RELEASE:
                     case VERSION:
                     case DESCRIPTION:
+                    case INDIVIDUAL_ID:
                     case INTERNAL_STATUS_DATE:
                     case SOMATIC:
                     case PHENOTYPES_ID:

@@ -388,7 +388,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("not an accepted id");
+        thrown.expectMessage("not an accepted key");
         catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation2", vs2.getId(), annotations))),
                 QueryOptions.empty(), token);
@@ -1259,7 +1259,8 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
 
-        sample = catalogManager.getSampleManager().search(studyFqn, new Query("individual", "Individual1"), new QueryOptions("lazy", false), sessionIdUser2).first();
+        sample = catalogManager.getSampleManager().search(studyFqn, new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual1"),
+                new QueryOptions("lazy", false), sessionIdUser2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
 
@@ -1271,18 +1272,18 @@ public class SampleManagerTest extends AbstractManagerTest {
                 .setSamples(Arrays.asList(new Sample().setId("sample1"), new Sample().setId("sample2"))), new QueryOptions(), token);
 
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
-                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "Individual1"), QueryOptions.empty(), token);
+                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual1"), QueryOptions.empty(), token);
 
         assertEquals(2, sampleDataResult.getNumResults());
 
         sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
-                new Query().append(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "Individual1")
+                new Query().append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual1")
                         .append(SampleDBAdaptor.QueryParams.ID.key(), "sample1"), QueryOptions.empty(), token);
         assertEquals(1, sampleDataResult.getNumResults());
 
         catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual2"), new QueryOptions(), token);
         sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
-                new Query().append(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "Individual2"), QueryOptions.empty(), token);
+                new Query().append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual2"), QueryOptions.empty(), token);
         assertEquals(0, sampleDataResult.getNumResults());
     }
 
