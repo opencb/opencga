@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -14,6 +15,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
@@ -66,6 +68,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
             cohortIds = new HashMap<>(cohorts.size());
             samples = new HashMap<>(cohorts.size());
             cohorts.forEach(cohortId -> {
+                context.progress();
                 CohortMetadata cohort = metadataManager.getCohortMetadata(studyMetadata.getId(), cohortId);
                 cohortIds.put(cohort.getName(), cohortId);
                 List<Integer> samplesInCohort = cohort.getSamples();
@@ -91,43 +94,30 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
         setup(context);
         logger.info("Setup AttemptID:" + context.getTaskAttemptID() + " in " + TimeUtils.durationToString(stopWatch));
 
-        StopWatch mapStopWatch = StopWatch.createStarted();
-        StopWatch nextKeyValueStopWatch = StopWatch.createStarted();
-        context.progress();
         try {
             while (context.nextKeyValue()) {
-                nextKeyValueStopWatch.stop();
                 context.progress();
-                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
+                Result currentValue = context.getCurrentValue();
+                if (currentValue.rawCells().length == 1
+                        && CellUtil.matchingQualifier(currentValue.rawCells()[0], VariantPhoenixHelper.VariantColumn.TYPE.bytes())) {
+                    context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants_extra").increment(1);
+                    if (!currentValue.isPartial()) {
+                        continue;
+                    }
+                } else {
+                    context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
+                }
 
-
-                mapStopWatch = StopWatch.createStarted();
-                if (context.getCurrentValue().isPartial()) {
+                if (currentValue.isPartial()) {
                     // TODO: Allow partial results
 //                    mapPartialResult(context.getCurrentKey(), context);
 //                    context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "partialVariant").increment(1);
                     throw new IllegalArgumentException("Invalid partial results. Pending.");
                 } else {
-                    map(context.getCurrentKey(), context.getCurrentValue(), context);
+                    map(context.getCurrentKey(), currentValue, context);
                 }
 
-                logger.info("AttemptID:" + context.getTaskAttemptID()
-                        + " variant: " + VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(context.getCurrentKey().get())
-                        + " read in " + TimeUtils.durationToString(nextKeyValueStopWatch)
-                        + " map in " + TimeUtils.durationToString(mapStopWatch));
-                nextKeyValueStopWatch = StopWatch.createStarted();
             }
-        } catch (Exception e) {
-            logger.error("Catch exception " + e);
-            Variant variant = context.getCurrentKey() == null
-                    ? null
-                    : VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(context.getCurrentKey().get());
-
-            logger.warn("AttemptID:" + context.getTaskAttemptID()
-                    + " variant: " + variant
-                    + " read in " + TimeUtils.durationToString(nextKeyValueStopWatch)
-                    + " map in " + TimeUtils.durationToString(mapStopWatch));
-            throw e;
         } finally {
             cleanup(context);
         }
@@ -180,8 +170,10 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
 
         calculators.forEach((cohort, calculator) -> {
             VariantStats stats = calculator.apply(value);
-            stats.setCohortId(cohort);
-            wrapper.getCohortStats().add(stats);
+            if (stats != null) {
+                stats.setCohortId(cohort);
+                wrapper.getCohortStats().add(stats);
+            }
         });
 
         write(context, wrapper);

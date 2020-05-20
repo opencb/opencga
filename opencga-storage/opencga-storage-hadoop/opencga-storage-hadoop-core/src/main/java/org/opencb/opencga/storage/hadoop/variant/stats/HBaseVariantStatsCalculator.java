@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEn
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -62,8 +63,10 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         Variant variant = result.getVariant();
 
         VariantStatsPartial partial = new VariantStatsPartial();
-        convert(result, variant, partial);
-
+        boolean valid = convert(result, variant, partial);
+        if (!valid) {
+            return null;
+        }
         return calculate(variant, partial);
     }
 
@@ -71,8 +74,8 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         convert(new VariantRow(result), variant, partial);
     }
 
-    protected void convert(VariantRow result, Variant variant, VariantStatsPartial partial) {
-        converter.apply(variant, result, partial);
+    protected boolean convert(VariantRow result, Variant variant, VariantStatsPartial partial) {
+        return converter.apply(variant, result, partial);
     }
 
     protected VariantStats calculate(Variant variant, VariantStatsPartial partial) {
@@ -141,14 +144,19 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
             defaultGenotype = getDefaultGenotype(sm);
         }
 
-        public VariantStatsPartial apply(Variant variant, VariantRow result, VariantStatsPartial partial) {
+        public boolean apply(Variant variant, VariantRow result, VariantStatsPartial partial) {
             Set<Integer> processedSamples = new HashSet<>();
             Set<Integer> filesInThisVariant = new HashSet<>();
             AtomicInteger fillMissingColumnValue = new AtomicInteger(-1);
             Map<Integer, String> sampleToGT = new HashMap<>();
             Map<String, List<Integer>> alternateFileMap = new HashMap<>();
-
+            AtomicBoolean withStudy = new AtomicBoolean(false);
             result.walker()
+                    .onStudy(studyId -> {
+                        if (studyId == sm.getId()) {
+                            withStudy.set(true);
+                        }
+                    })
                     .onSample(sample -> {
                         int sampleId = sample.getSampleId();
                         // Exclude other samples
@@ -193,6 +201,10 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                     })
                     .onFillMissing((studyId, value) -> fillMissingColumnValue.set(value))
                     .walk();
+
+            if (!withStudy.get()) {
+                return false;
+            }
 
             // If there are multiple different alternates, rearrange genotype
             if (statsMultiAllelic && alternateFileMap.size() > 1) {
@@ -241,7 +253,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
 
             gtStrCount.forEach((str, count) -> partial.gtCountMap.merge(new Genotype(str), count, Integer::sum));
 
-            return partial;
+            return true;
         }
 
         private void rearrangeGenotypes(Variant variant, Map<Integer, String> sampleToGT, Map<String, List<Integer>> alternateFileMap) {

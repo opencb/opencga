@@ -59,10 +59,14 @@ public class VariantStatsFromVariantRowTsvMapper extends VariantRowMapper<NullWr
             String cohort = entry.getKey();
             HBaseVariantStatsCalculator calculator = entry.getValue();
             VariantStats stats = calculator.apply(result);
-            stats.setCohortId(cohort);
-            statsList.add(stats);
+            if (stats != null) {
+                stats.setCohortId(cohort);
+                statsList.add(stats);
+            }
         }
-        context.write(NullWritable.get(), new Text(converter.convert(variant, statsList, variantAnnotation)));
+        if (!statsList.isEmpty()) {
+            context.write(NullWritable.get(), new Text(converter.convert(variant, statsList, variantAnnotation)));
+        }
     }
 
 }
