@@ -23,13 +23,14 @@ import htsjdk.samtools.util.GZIIndex;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.MutationalSignature;
+import org.opencb.biodata.models.clinical.MutationalSignature.Fitting.Score;
+import org.opencb.biodata.models.clinical.MutationalSignature.Signature.Count;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
-import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -137,7 +138,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             // Execute R script in docker
             rWatch.start();
-            executeRScript(true);
+            executeRScript();
             rWatch.stop();
 
             totalWatch.stop();
@@ -163,7 +164,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
-    public MutationalSignatureResult query(Query query, QueryOptions queryOptions)
+    public MutationalSignature query(Query query, QueryOptions queryOptions)
             throws CatalogException, ToolException, StorageEngineException, IOException {
 
         File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
@@ -255,7 +256,9 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
         // Run R script
         rWatch.start();
-        executeRScript(getExecutorParams().getBoolean("image"));
+        if (getExecutorParams().getBoolean("fitting")) {
+            executeRScript();
+        }
         rWatch.stop();
 
         totalWatch.stop();
@@ -281,14 +284,14 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         return storageManager.iterator(query, queryOptions, getToken());
     }
 
-    private String executeRScript(boolean computeImage) throws IOException {
+    private String executeRScript() throws IOException {
         String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/" + getToolId();
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
         inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, "/data/input"));
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
                 "/data/output");
         String scriptParams = "R CMD Rscript --vanilla /data/input/mutational-signature.r /data/output/" + CONTEXT_FILENAME + " "
-                + "/data/output/" + SIGNATURES_FILENAME + " /data/output " + (computeImage ? "1" : "0");
+                + "/data/output/" + SIGNATURES_FILENAME + " /data/output ";
 
         String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
         System.out.println("Docker command line: " + cmdline);
@@ -296,42 +299,52 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         return cmdline;
     }
 
-    private MutationalSignatureResult parse(Path dir) throws IOException {
-        MutationalSignatureResult result = new MutationalSignatureResult();
+    private MutationalSignature parse(Path dir) throws IOException {
+        MutationalSignature result = new MutationalSignature();
 
         // Context counts
-        Map<String, Integer> counts = new HashMap<>();
         File contextFile = dir.resolve("context.txt").toFile();
         if (contextFile.exists()) {
             List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
+            Count[] sigCounts = new Count[lines.size()];
             for (int i = 1; i < lines.size(); i++) {
                 String[] fields = lines.get(i).split("\t");
-                counts.put(fields[2], Math.round(Float.parseFloat((fields[3]))));
+                sigCounts[i-1] = new Count(fields[2], Math.round(Float.parseFloat((fields[3]))));
             }
-            result.setCounts(counts);
+            result.setSignature(new MutationalSignature.Signature("SNV", sigCounts));
         }
 
+        
         // Signatures coefficients
         File coeffsFile = dir.resolve("signature_coefficients.json").toFile();
         if (coeffsFile.exists()) {
+            MutationalSignature.Fitting fitting = new MutationalSignature.Fitting()
+                    .setMethod("GEL")
+                    .setSignatureSource("Cosmic")
+                    .setSignatureVersion("2.0");
+
             Map content = JacksonUtils.getDefaultObjectMapper().readValue(coeffsFile, Map.class);
             Map coefficients = (Map) content.get("coefficients");
-            Map<String, Double> coeffs = new HashMap<>();
+            Score[] scores = new Score[coefficients.size()];
+            int i = 0;
             for (Object key : coefficients.keySet()) {
                 Number coeff = (Number) coefficients.get(key);
-                coeffs.put((String) key, coeff.doubleValue());
+                scores[i++] = new Score((String) key, coeff.doubleValue());
             }
-            result.setCoeffs(coeffs);
-            result.setRss((Double) content.get("rss"));
-        }
+            fitting.setScores(scores);
+            fitting.setCoeff((Double) content.get("rss"));
 
-        // Signature summary image
-        File imgFile = dir.resolve("signature_summary.png").toFile();
-        if (imgFile.exists()) {
-            FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
-            byte[] bytes = new byte[(int) imgFile.length()];
-            fileInputStreamReader.read(bytes);
-            result.setSummaryImg(new String(Base64.getEncoder().encode(bytes), "UTF-8"));
+            // Signature summary image
+            File imgFile = dir.resolve("signature_summary.png").toFile();
+            if (imgFile.exists()) {
+                FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
+                byte[] bytes = new byte[(int) imgFile.length()];
+                fileInputStreamReader.read(bytes);
+
+                fitting.setImage(new String(Base64.getEncoder().encode(bytes), "UTF-8"));
+            }
+
+            result.setFitting(fitting);
         }
 
         return result;

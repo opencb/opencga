@@ -12,12 +12,10 @@ args <- commandArgs(trailingOnly = TRUE)
 context <- args[1]
 signatures <- args[2]
 outdir <- args[3]
-img <- args[4]
 
 context
 signatures
 outdir
-img
 
 
 # Getting absolute counts for each SNV trinucleotide context
@@ -97,7 +95,6 @@ df$rss <- RSS
 j <- gsub("\\[|\\]", "", toJSON(df))
 write(j, paste0(outdir, "/signature_coefficients.json"))
 
-if (img > 0) {
 
 ############
 # Plotting #
@@ -167,5 +164,5 @@ ggplot() +
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         plot.background = element_blank())
-}
+
 garbage <- dev.off()

@@ -18,9 +18,9 @@ package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.MutationalSignature;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -41,7 +41,6 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureResult;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -841,18 +840,21 @@ public class VariantWebService extends AnalysisWebService {
 
     @GET
     @Path("/mutationalSignature/query")
-    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION + " Use context index.",
-            response = MutationalSignatureAnalysisParams.class)
+    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION + " Use context index.", response = MutationalSignature.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query")
     })
     public Response mutationalSignatureQuery(
-            @ApiParam(value = "Compute mutational signature summary image", defaultValue = "false") @QueryParam("image") boolean image) {
+            @ApiParam(value = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour",
+                    defaultValue = "false") @QueryParam("fitting") boolean fitting) {
         try {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
@@ -873,15 +875,15 @@ public class VariantWebService extends AnalysisWebService {
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);
-            executorParams.put("image", image);
+            executorParams.put("fitting", fitting);
             executor.setUp(null, executorParams, outDir.toPath());
             executor.setStudy(query.getString(STUDY.key()));
             executor.setSampleName(query.getString(SAMPLE.key()));
 
             StopWatch watch = StopWatch.createStarted();
-            MutationalSignatureResult signatureResult = executor.query(query, queryOptions);
+            MutationalSignature signatureResult = executor.query(query, queryOptions);
             watch.stop();
-            OpenCGAResult<MutationalSignatureResult> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+            OpenCGAResult<MutationalSignature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                     Collections.singletonList(signatureResult), 1);
 
             // Delete temporal directory
