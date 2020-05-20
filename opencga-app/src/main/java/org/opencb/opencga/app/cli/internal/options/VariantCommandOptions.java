@@ -1308,6 +1308,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--cohort"}, description = "List of cohorts from multiple studies with {study}:{cohort}")
         public String cohort;
 
+        @Parameter(names = {"--overwrite"}, description = "Overwrite all population frequencies.")
+        public boolean overwrite;
+
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
     }

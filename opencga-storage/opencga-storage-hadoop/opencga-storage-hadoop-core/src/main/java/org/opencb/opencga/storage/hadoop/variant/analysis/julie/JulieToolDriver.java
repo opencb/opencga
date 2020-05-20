@@ -24,12 +24,15 @@ public class JulieToolDriver extends AbstractVariantsTableDriver {
     private final Logger logger = LoggerFactory.getLogger(JulieToolDriver.class);
 
     public static final String COHORTS = "cohorts";
+    public static final String OVERWRITE = "overwrite";
     private String region;
+    private boolean overwrite;
 
     @Override
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("--" + COHORTS, "<studyId:cohortId>");
+        params.put("--" + OVERWRITE, "<true|false>");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
         return params;
     }
@@ -40,6 +43,8 @@ public class JulieToolDriver extends AbstractVariantsTableDriver {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
 
         region = getParam(VariantQueryParam.REGION.key());
+        String overwrite = getParam(OVERWRITE, "false");
+        this.overwrite = Boolean.parseBoolean(overwrite);
 
         String param = getParam(COHORTS);
         if (StringUtils.isNotEmpty(param)) {
@@ -85,6 +90,8 @@ public class JulieToolDriver extends AbstractVariantsTableDriver {
         }
         VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
         logger.info("Scan: " + scan);
+
+        job.getConfiguration().setBoolean(OVERWRITE, overwrite);
 
         VariantMapReduceUtil.initVariantRowMapperJobFromHBase(job, variantTable, scan, JulieToolMapper.class, false);
         VariantMapReduceUtil.setOutputHBaseTable(job, variantTable);

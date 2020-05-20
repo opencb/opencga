@@ -33,6 +33,7 @@ public class JulieHBaseMapReduceToolExecutor extends JulieToolExecutor implement
                         .collect(Collectors.joining(","));
                 params.append(JulieToolDriver.COHORTS, cohorts);
             }
+            params.append(JulieToolDriver.OVERWRITE, getOverwrite());
 
             engine.getMRExecutor().run(JulieToolDriver.class, JulieToolDriver.buildArgs(
                     dbAdaptor.getVariantTable(),

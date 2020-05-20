@@ -25,6 +25,7 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
 
     private HBaseToVariantAnnotationConverter fromHBaseConverter;
     private VariantAnnotationToHBaseConverter toHBaseConverter;
+    private boolean overwrite;
     private Map<Integer, String> studyIdMap;
     private Map<Integer, Map<Integer, String>> cohortIdMap;
 
@@ -33,7 +34,7 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
         super.setup(context);
         fromHBaseConverter = new HBaseToVariantAnnotationConverter();
         toHBaseConverter = new VariantAnnotationToHBaseConverter();
-
+        overwrite = context.getConfiguration().getBoolean(JulieToolDriver.OVERWRITE, false);
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper()))) {
             studyIdMap = new HashMap<>();
@@ -88,14 +89,26 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
         if (annotation == null) {
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "empty_annotation").increment(1);
         }
-        if (populationFrequencies.isEmpty() || annotation == null) {
-            return;
-        }
 
-        if (annotation.getPopulationFrequencies() == null || annotation.getPopulationFrequencies().isEmpty()) {
+        if (overwrite) {
+            if (annotation == null) {
+                return;
+            }
             annotation.setPopulationFrequencies(populationFrequencies);
         } else {
-            annotation.getPopulationFrequencies().addAll(populationFrequencies);
+            if (populationFrequencies.isEmpty() || annotation == null) {
+                return;
+            }
+            if (annotation.getPopulationFrequencies() == null || annotation.getPopulationFrequencies().isEmpty()) {
+                annotation.setPopulationFrequencies(populationFrequencies);
+            } else {
+                for (PopulationFrequency populationFrequency : populationFrequencies) {
+                    annotation.getPopulationFrequencies()
+                            .removeIf(p -> p.getStudy().equals(populationFrequency.getStudy())
+                                    && p.getPopulation().equals(populationFrequency.getPopulation()));
+                }
+                annotation.getPopulationFrequencies().addAll(populationFrequencies);
+            }
         }
 
         context.write(((ImmutableBytesWritable) key), toHBaseConverter.convert(annotation));

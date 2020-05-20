@@ -83,6 +83,7 @@ public class JulieTool extends OpenCgaTool {
             if (!cohorts.isEmpty()) {
                 toolExecutor.setCohorts(cohorts);
             }
+            toolExecutor.setOverwrite(params.getOverwrite());
             toolExecutor.execute();
         });
     }
