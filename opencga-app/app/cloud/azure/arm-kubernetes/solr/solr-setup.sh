@@ -53,9 +53,6 @@ formatAndMountDisk() {
 
 scanForNewDisks
 
-# Add OpenCGA Configuration Set 
-tar zxfv OpenCGAConfSet-1.4.0.tar.gz
-
 # create a directory to store the server/solr directory
 mkdir /datadrive/solr-volume
 
@@ -64,9 +61,6 @@ sudo chown 8983:8983 /datadrive/solr-volume
 
 # copy the solr directory from a temporary container to the volume
 docker run --rm -v /datadrive/solr-volume:/target solr:${SOLR_VERSION} cp -r server/solr /target/
-
-# copy configset to volume ready to mount
-cp -r OpenCGAConfSet-1.4.0 /datadrive/solr-volume/solr/configsets/OpenCGAConfSet-1.4.0
 
 # get script
 docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh > /opt/solr.in.sh
@@ -109,7 +103,15 @@ echo 'SOLR_MODE="solrcloud"' >> /opt/solr.in.sh
 TOTAL_RAM=$(sed 's/ kB//g'  <<< $(grep -oP '^MemTotal:\s+\K.*' /proc/meminfo))
 SOLR_HEAP=$(echo "$TOTAL_RAM/1024/1024/2" | bc )
 
-docker run --name ${DOCKER_NAME} --restart always -p 8983:8983 -d -v /datadrive/solr-volume/solr:/opt/solr/server/solr -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh -e SOLR_HEAP=${SOLR_HEAP}g  solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground -h $(hostname) 
+docker run --name ${DOCKER_NAME}                                  \
+    --restart always                                              \
+    -h $(hostname)                                                \
+    -p 8983:8983 -d                                               \
+    -v /datadrive/solr-volume/solr:/opt/solr/server/solr          \
+    -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh                   \
+    -e SOLR_INCLUDE=/opt/solr/bin/solr.in.sh                      \
+    -e SOLR_HEAP=${SOLR_HEAP}g                                    \
+     solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground
 
 
 until $(curl --output /dev/null --silent --head --fail  "http://$(hostname):8983/solr/#/offers"); do
@@ -117,4 +119,10 @@ until $(curl --output /dev/null --silent --head --fail  "http://$(hostname):8983
     sleep 5
 done
 
-docker exec ${DOCKER_NAME} /opt/solr/bin/solr zk upconfig -n OpenCGAConfSet-1.4.0 -d /opt/solr/server/solr/configsets/OpenCGAConfSet-1.4.0 $ZK_CLI
+# Add OpenCGA Configuration Sets
+# copy configset to volume ready to mount
+docker run --rm -v /datadrive/solr-volume/solr/configsets:/target opencb/opencga-base:2.0.0-dev cp -r /opt/opencga/misc/solr/* /target/
+
+for i in `ls  /datadrive/solr-volume/solr/configsets/opencga/ | grep -v INSTALL.md` ; do
+  docker exec ${DOCKER_NAME} /opt/solr/bin/solr zk upconfig -n $i -d /opt/solr/server/solr/configsets/opencga/$i $ZK_CLI
+done
