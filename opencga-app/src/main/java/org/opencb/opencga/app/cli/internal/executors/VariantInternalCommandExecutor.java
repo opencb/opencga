@@ -745,7 +745,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         JulieParams toolParams = new JulieParams(StringUtils.isEmpty(cliOptions.cohort)
                 ? Collections.emptyList()
-                : Arrays.asList(cliOptions.cohort.split(",")), cliOptions.overwrite);
+                : Arrays.asList(cliOptions.cohort.split(",")), cliOptions.region, cliOptions.overwrite);
 
         Path outdir = Paths.get(cliOptions.outdir);
 

@@ -6,6 +6,7 @@ import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.JulieToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
@@ -33,6 +34,7 @@ public class JulieHBaseMapReduceToolExecutor extends JulieToolExecutor implement
                         .collect(Collectors.joining(","));
                 params.append(JulieToolDriver.COHORTS, cohorts);
             }
+            params.append(VariantQueryParam.REGION.key(), getRegion());
             params.append(JulieToolDriver.OVERWRITE, getOverwrite());
 
             engine.getMRExecutor().run(JulieToolDriver.class, JulieToolDriver.buildArgs(

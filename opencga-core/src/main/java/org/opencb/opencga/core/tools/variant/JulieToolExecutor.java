@@ -8,6 +8,7 @@ import java.util.Map;
 public abstract class JulieToolExecutor extends OpenCgaToolExecutor {
 
     private Map<String, List<String>> cohorts;
+    private String region;
     private Boolean overwrite;
 
     public Map<String, List<String>> getCohorts() {
@@ -25,5 +26,13 @@ public abstract class JulieToolExecutor extends OpenCgaToolExecutor {
 
     public Boolean getOverwrite() {
         return overwrite;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
     }
 }

@@ -13,15 +13,18 @@ public class JulieParams extends ToolParams {
      */
     private List<String> cohorts;
 
+    private String region;
+
     /**
      * Overwrite all population frequencies.
      */
     private boolean overwrite;
 
+
     public JulieParams() {
     }
 
-    public JulieParams(List<String> cohorts, boolean overwrite) {
+    public JulieParams(List<String> cohorts, String region, boolean overwrite) {
         this.cohorts = cohorts;
         this.overwrite = overwrite;
     }
@@ -41,6 +44,15 @@ public class JulieParams extends ToolParams {
 
     public JulieParams setOverwrite(boolean overwrite) {
         this.overwrite = overwrite;
+        return this;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public JulieParams setRegion(String region) {
+        this.region = region;
         return this;
     }
 }

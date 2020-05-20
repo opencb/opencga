@@ -237,6 +237,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         JulieParams toolParams = new JulieParams(StringUtils.isEmpty(cliOptions.julieCommandOptions.cohort)
                 ? Collections.emptyList()
                 : Arrays.asList(cliOptions.julieCommandOptions.cohort.split(",")),
+                cliOptions.julieCommandOptions.region,
                 cliOptions.julieCommandOptions.overwrite);
 
         return openCGAClient.getVariantOperationClient().runJulie(toolParams, params);
