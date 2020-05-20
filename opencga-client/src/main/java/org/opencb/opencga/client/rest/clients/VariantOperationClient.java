@@ -21,14 +21,7 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
-import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
-import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
+import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -272,5 +265,12 @@ public class VariantOperationClient extends AbstractParentClient {
     public RestResponse<Job> deleteVariantSecondaryIndex(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("operation", null, "variant/secondaryIndex", null, "delete", params, DELETE, Job.class);
+    }
+
+
+    public RestResponse<Job> runJulie(JulieParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("operation", null, "variant/julie", null, "run", params, POST, Job.class);
     }
 }

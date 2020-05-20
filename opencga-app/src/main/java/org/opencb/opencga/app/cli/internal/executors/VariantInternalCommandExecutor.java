@@ -34,6 +34,8 @@ import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
+import org.opencb.opencga.core.models.operations.variant.JulieParams;
+import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -69,8 +71,10 @@ import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJs
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -233,6 +237,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case COHORT_VARIANT_STATS_RUN_COMMAND:
                 cohortStats();
+                break;
+            case VariantCommandOptions.JulieRunCommandOptions.JULIE_RUN_COMMAND:
+                julie();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -728,6 +735,21 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setSamplesQuery(query)
                 .setSampleNames(sampleNames)
                 .start();
+    }
+
+    private void julie() throws Exception {
+        VariantCommandOptions.JulieRunCommandOptions cliOptions = variantCommandOptions.julieRunCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.put(ParamConstants.PROJECT_PARAM, cliOptions.project);
+        params.putAll(cliOptions.commonOptions.params);
+
+        JulieParams toolParams = new JulieParams(StringUtils.isEmpty(cliOptions.cohort)
+                ? Collections.emptyList()
+                : Arrays.asList(cliOptions.cohort.split(",")));
+
+        Path outdir = Paths.get(cliOptions.outdir);
+
+        toolRunner.execute(JulieTool.class, toolParams, params, outdir, token);
     }
 
     private void mutationalSignature() throws Exception {

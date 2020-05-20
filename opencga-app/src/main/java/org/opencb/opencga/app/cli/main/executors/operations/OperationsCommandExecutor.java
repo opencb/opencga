@@ -1,7 +1,10 @@
 package org.opencb.opencga.app.cli.main.executors.operations;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -9,6 +12,9 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 import static org.opencb.opencga.app.cli.main.options.OperationsCommandOptions.*;
 
@@ -64,6 +70,9 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case VARIANT_FAMILY_AGGREGATE:
                 queryResponse = variantAggregateFamily();
+                break;
+            case VariantCommandOptions.JulieRunCommandOptions.JULIE_RUN_COMMAND:
+                queryResponse = julie();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -218,6 +227,18 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 new VariantAggregateFamilyParams(
                         cliOptions.genericAggregateFamilyOptions.samples, cliOptions.genericAggregateFamilyOptions.resume
                 ), params);
+    }
+
+    private RestResponse<Job> julie() throws ClientException {
+        OperationsCommandOptions.JulieRunCommandOptions cliOptions = operationsCommandOptions.julieRun;
+
+        ObjectMap params = getParams(cliOptions.julieCommandOptions.project, null);
+
+        JulieParams toolParams = new JulieParams(StringUtils.isEmpty(cliOptions.julieCommandOptions.cohort)
+                ? Collections.emptyList()
+                : Arrays.asList(cliOptions.julieCommandOptions.cohort.split(",")));
+
+        return openCGAClient.getVariantOperationClient().runJulie(toolParams, params);
     }
 
 

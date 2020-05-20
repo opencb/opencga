@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.variant.julie;
+package org.opencb.opencga.core.models.operations.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
@@ -6,6 +6,7 @@ import java.util.List;
 
 public class JulieParams extends ToolParams {
 
+    public static final String DESCRIPTION = "Julie tool params. Specify list of cohorts from multiple studies with {study}:{cohort}";
     private List<String> cohorts;
 
     public JulieParams() {

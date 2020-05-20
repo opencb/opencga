@@ -11,6 +11,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.core.tools.variant.JulieToolExecutor;
 
 import java.util.HashMap;
