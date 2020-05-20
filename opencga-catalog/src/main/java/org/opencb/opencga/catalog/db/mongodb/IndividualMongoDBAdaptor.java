@@ -202,7 +202,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         SampleMongoDBAdaptor sampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
-        Document update = sampleDBAdaptor.parseAndValidateUpdateParams(clientSession, null, params).toFinalUpdateDocument();
+        Document update = sampleDBAdaptor.parseAndValidateUpdateParams(clientSession, params, null).toFinalUpdateDocument();
         Bson query = sampleDBAdaptor.parseQuery(new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleUid), null);

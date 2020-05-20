@@ -188,7 +188,13 @@ public class ProjectManager extends AbstractManager {
      * @throws CatalogException CatalogException
      */
     public OpenCGAResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        return get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
+        OpenCGAResult<Project> result = get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
+        for (Event event : result.getEvents()) {
+            if (event.getType() == Event.Type.ERROR) {
+                throw new CatalogAuthorizationException(event.getMessage());
+            }
+        }
+        return result;
     }
 
     public OpenCGAResult<Project> create(String id, String name, String description, String scientificName, String commonName,

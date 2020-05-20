@@ -357,13 +357,13 @@ public class SampleMongoDBAdaptorTest {
         // Get the sample
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "individualName");
+                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "individualName");
         DataResult<Sample> individualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
         assertEquals("sample1", individualQuery.first().getId());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "non-existing");
+                .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "non-existing");
         DataResult<Sample> inexistentIndividualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
         assertEquals(0, inexistentIndividualQuery.getNumResults());
     }

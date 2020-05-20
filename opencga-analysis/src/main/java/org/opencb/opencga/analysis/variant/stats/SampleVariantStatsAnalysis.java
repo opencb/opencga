@@ -150,7 +150,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
                         .forEach(allSamples::add);
             }
             if (StringUtils.isNotEmpty(individual)) {
-                Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individual);
+                Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individual);
                 catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
                         .getResults()
                         .stream()
@@ -163,7 +163,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
                 for (Individual member : family.getMembers()) {
                     individualIds.add(member.getId());
                 }
-                Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualIds);
+                Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualIds);
                 catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
                         .getResults()
                         .stream()

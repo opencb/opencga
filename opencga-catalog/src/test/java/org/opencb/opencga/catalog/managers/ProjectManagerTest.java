@@ -108,8 +108,7 @@ public class ProjectManagerTest extends GenericTest {
     @Test
     public void getSharedProjects() throws CatalogException {
         try {
-            catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
-            fail("User should not have permissions oveer this project yet");
+            OpenCGAResult<Project> user = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         } catch (CatalogAuthorizationException e) {
             // Correct
         }

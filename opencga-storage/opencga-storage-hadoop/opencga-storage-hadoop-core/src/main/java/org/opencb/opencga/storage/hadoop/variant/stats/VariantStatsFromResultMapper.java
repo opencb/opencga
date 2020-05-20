@@ -1,17 +1,21 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
+import org.apache.commons.lang3.time.StopWatch;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
@@ -44,6 +48,12 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
     protected void setup(Context context) throws IOException, InterruptedException {
         helper = new VariantTableHelper(context.getConfiguration());
         Collection<Integer> cohorts;
+        String unknownGenotype = context.getConfiguration().get(
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.defaultValue());
+        boolean statsMultiAllelic = context.getConfiguration().getBoolean(
+                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
+                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
             studyMetadata = metadataManager.getStudyMetadata(helper.getStudyId());
@@ -58,6 +68,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
             cohortIds = new HashMap<>(cohorts.size());
             samples = new HashMap<>(cohorts.size());
             cohorts.forEach(cohortId -> {
+                context.progress();
                 CohortMetadata cohort = metadataManager.getCohortMetadata(studyMetadata.getId(), cohortId);
                 cohortIds.put(cohort.getName(), cohortId);
                 List<Integer> samplesInCohort = cohort.getSamples();
@@ -65,41 +76,52 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
             });
             converter = new VariantStatsToHBaseConverter(studyMetadata, cohortIds);
 
-        }
-
-        calculators = new HashMap<>(cohorts.size());
-        String unknownGenotype = context.getConfiguration().get(
-                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),
-                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.defaultValue());
-        boolean statsMultiAllelic = context.getConfiguration().getBoolean(
-                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
-                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
-        try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
-                new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
-            samples.forEach((cohort, samples) -> calculators.put(cohort, new HBaseVariantStatsCalculator(
-                    metadataManager, studyMetadata, samples, statsMultiAllelic, unknownGenotype)));
+            calculators = new HashMap<>(cohorts.size());
+            for (Map.Entry<String, List<Integer>> entry : samples.entrySet()) {
+                context.progress();
+                String cohort = entry.getKey();
+                List<Integer> value = entry.getValue();
+                calculators.put(cohort, new HBaseVariantStatsCalculator(
+                        metadataManager, studyMetadata, value, statsMultiAllelic, unknownGenotype));
+            }
         }
     }
 
 
     @Override
     public void run(Context context) throws IOException, InterruptedException {
+        StopWatch stopWatch = StopWatch.createStarted();
         setup(context);
+        logger.info("Setup AttemptID:" + context.getTaskAttemptID() + " in " + TimeUtils.durationToString(stopWatch));
+
         try {
             while (context.nextKeyValue()) {
-                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
-                if (context.getCurrentValue().isPartial()) {
+                context.progress();
+                Result currentValue = context.getCurrentValue();
+                if (currentValue.rawCells().length == 1
+                        && CellUtil.matchingQualifier(currentValue.rawCells()[0], VariantPhoenixHelper.VariantColumn.TYPE.bytes())) {
+                    context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants_extra").increment(1);
+                    if (!currentValue.isPartial()) {
+                        continue;
+                    }
+                } else {
+                    context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
+                }
+
+                if (currentValue.isPartial()) {
                     // TODO: Allow partial results
 //                    mapPartialResult(context.getCurrentKey(), context);
 //                    context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "partialVariant").increment(1);
                     throw new IllegalArgumentException("Invalid partial results. Pending.");
                 } else {
-                    map(context.getCurrentKey(), context.getCurrentValue(), context);
+                    map(context.getCurrentKey(), currentValue, context);
                 }
+
             }
         } finally {
             cleanup(context);
         }
+        logger.info("Run AttemptID:" + context.getTaskAttemptID() + " in " + TimeUtils.durationToString(stopWatch));
     }
 
 //    protected void mapPartialResult(ImmutableBytesWritable key, Context context) throws IOException, InterruptedException {
@@ -148,8 +170,10 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
 
         calculators.forEach((cohort, calculator) -> {
             VariantStats stats = calculator.apply(value);
-            stats.setCohortId(cohort);
-            wrapper.getCohortStats().add(stats);
+            if (stats != null) {
+                stats.setCohortId(cohort);
+                wrapper.getCohortStats().add(stats);
+            }
         });
 
         write(context, wrapper);

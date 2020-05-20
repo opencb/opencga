@@ -280,6 +280,7 @@ migrateCollection("sample", {"internal": {"$exists": false}}, {}, function(bulk,
         "internal": {
             "status": doc['status']
         },
+        "fileIds": [],
         "status": customStatus
     };
     var unset = {
@@ -291,6 +292,21 @@ migrateCollection("sample", {"internal": {"$exists": false}}, {}, function(bulk,
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
 });
+
+// # Add fileIds to samples
+var sampleMap = {};
+db.file.find({samples:{$ne:[]}}, {id:1, samples:1}).forEach(function(doc) {
+    doc.samples.forEach(function(sample) {
+        var sampleUid = Number(sample['uid']);
+        if (!(sampleUid in sampleMap)) {
+            sampleMap[sampleUid] = [];
+        }
+        sampleMap[sampleUid].push(doc.id);
+    });
+});
+for (var sampleUid in sampleMap) {
+    db.getCollection("sample").update({"uid": Number(sampleUid)}, {"$set": {"fileIds": sampleMap[sampleUid]}});
+}
 
 // #1539
 migrateCollection("cohort", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
@@ -345,6 +361,23 @@ migrateCollection("interpretation", {"internal": {"$exists": false}}, {}, functi
     };
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set});
+});
+
+// #1601
+migrateCollection("study", {}, {_acl: 1}, function(bulk, doc) {
+    if (isNotEmptyArray(doc._acl)) {
+        var acl = [];
+        for (var auxAcl of doc._acl) {
+            if (auxAcl.endsWith("VIEW_FILE_HEADERS")) {
+                acl.push(auxAcl.replace("VIEW_FILE_HEADERS", "VIEW_FILE_HEADER"));
+            } else if (auxAcl.endsWith("VIEW_FILE_CONTENTS")) {
+                acl.push(auxAcl.replace("VIEW_FILE_CONTENTS", "VIEW_FILE_CONTENT"));
+            } else {
+                acl.push(auxAcl);
+            }
+        }
+        bulk.find({"_id": doc._id}).updateOne({"$set": {"_acl": acl}});
+    }
 });
 
 // migrateCollection("panel", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
@@ -485,6 +518,7 @@ db.sample.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": 
 db.sample.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
 db.sample.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
 db.sample.createIndex({"phenotypes.id": 1, "studyUid": 1}, {"background": true});
+db.sample.createIndex({"fileIds": 1, "studyUid": 1}, {"background": true});
 db.sample.createIndex({"individualId": 1, "studyUid": 1}, {"background": true});
 db.sample.createIndex({"_creationDate": 1, "studyUid": 1}, {"background": true});
 db.sample.createIndex({"_modificationDate": 1, "studyUid": 1}, {"background": true});
