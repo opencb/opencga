@@ -25,6 +25,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PhoenixArray;
@@ -289,6 +290,10 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         }
 
         return post(variantAnnotation, releases, syncStatus, studies, annotationId);
+    }
+
+    public VariantAnnotation convert(ImmutableBytesWritable bytes) {
+        return convert(bytes.get(), bytes.getOffset(), bytes.getLength());
     }
 
     public VariantAnnotation convert(byte[] valueArray, int valueOffset, int valueLength) {

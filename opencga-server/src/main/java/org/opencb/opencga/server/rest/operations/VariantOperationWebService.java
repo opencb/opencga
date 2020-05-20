@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
@@ -310,6 +311,9 @@ public class VariantOperationWebService extends OpenCGAWSServer {
                         .stream()
                         .map(Study::getFqn)
                         .collect(Collectors.toList());
+                if (studies.isEmpty()) {
+                    throw new CatalogException("Project '" + project + "' not found!");
+                }
                 return submitJobRaw(toolId, studies.get(0), paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
             } else {
                 return submitJobRaw(toolId, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags);

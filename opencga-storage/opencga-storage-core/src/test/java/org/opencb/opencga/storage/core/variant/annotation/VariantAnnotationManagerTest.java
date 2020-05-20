@@ -1,33 +1,21 @@
 package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.junit.Test;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 
 /**
  * Created on 24/04/18.
@@ -43,20 +31,20 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), TestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         // First annotation. Should run ok.
-        variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v1"));
+        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1"));
         assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Second annotation. New annotator. Overwrite. Should run ok.
-        variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         assertEquals("v2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Third annotation. New annotator. Do not overwrite. Should fail.
         thrown.expect(VariantAnnotatorException.class);
-        variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
+        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
     }
 
     @Test
@@ -66,16 +54,16 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), TestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         // First annotation. Should run ok.
-        variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v1"));
+        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1"));
 
         try {
             // Second annotation. New annotator. Overwrite. Fail annotation
-            variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v2")
-                    .append(TestAnnotator.FAIL, true)
+            variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2")
+                    .append(DummyTestAnnotator.FAIL, true)
                     .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
             fail("Expected to fail!");
         } catch (VariantAnnotatorException e) {
@@ -86,8 +74,8 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
 
         // Second annotation bis. New annotator. Overwrite.
-        variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v2")
-                .append(TestAnnotator.FAIL, false)
+        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2")
+                .append(DummyTestAnnotator.FAIL, false)
                 .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         assertEquals("v2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
     }
@@ -100,15 +88,15 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), TestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         variantStorageEngine.saveAnnotation("v0", new ObjectMap());
-        variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         variantStorageEngine.saveAnnotation("v1", new ObjectMap());
-        variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(new Query(), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         variantStorageEngine.saveAnnotation("v2", new ObjectMap());
-        variantStorageEngine.annotate(new Query(VariantQueryParam.REGION.key(), "1"), new ObjectMap(TestAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(new Query(VariantQueryParam.REGION.key(), "1"), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
 
         assertEquals(0, variantStorageEngine.getAnnotation("v0", null, null).getResults().size());
         checkAnnotationSnapshot(variantStorageEngine, "v1", "v1");
@@ -167,56 +155,6 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
             count++;
         }
         assertEquals(count, variantStorageEngine.count(query).first().intValue());
-    }
-
-    public static class TestAnnotator extends VariantAnnotator {
-
-        public static final String ANNOT_KEY = "ANNOT_KEY";
-        public static final String FAIL = "ANNOT_FAIL";
-        private final boolean fail;
-        private String key;
-
-        public TestAnnotator(StorageConfiguration configuration, ProjectMetadata projectMetadata, ObjectMap options) throws VariantAnnotatorException {
-            super(configuration, projectMetadata, options);
-            key = options.getString(ANNOT_KEY);
-            fail = options.getBoolean(FAIL, false);
-        }
-
-        @Override
-        public List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {
-            if (fail) {
-                throw new VariantAnnotatorException("Fail because reasons");
-            }
-            return variants.stream().map(v -> {
-                VariantAnnotation a = new VariantAnnotation();
-                a.setChromosome(v.getChromosome());
-                a.setStart(v.getStart());
-                a.setEnd(v.getEnd());
-                a.setReference(v.getReference());
-                a.setAlternate(v.getAlternate());
-                a.setId("an id -- " + key);
-                ConsequenceType ct = new ConsequenceType();
-                ct.setGeneName("a gene");
-                ct.setSequenceOntologyTerms(Collections.emptyList());
-                ct.setExonOverlap(Collections.emptyList());
-                ct.setTranscriptAnnotationFlags(Collections.emptyList());
-                a.setConsequenceTypes(Collections.singletonList(ct));
-                a.setAdditionalAttributes(
-                        Collections.singletonMap(GROUP_NAME.key(),
-                                new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), v.toString()))));
-                return a;
-            }).collect(Collectors.toList());
-        }
-
-        @Override
-        public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException {
-            return new ProjectMetadata.VariantAnnotatorProgram("MyAnnotator", key, null);
-        }
-
-        @Override
-        public List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException {
-            return Collections.singletonList(new ObjectMap("data", "genes"));
-        }
     }
 
 }
