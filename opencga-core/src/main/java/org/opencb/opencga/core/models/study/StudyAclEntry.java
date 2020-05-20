@@ -78,8 +78,8 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
         // FILES
         VIEW_FILES(Collections.emptyList(), FileAclEntry.FilePermissions.VIEW.name(), FILE),
-        VIEW_FILE_HEADERS(Collections.singletonList(VIEW_FILES), FileAclEntry.FilePermissions.VIEW_HEADER.name(), FILE),
-        VIEW_FILE_CONTENTS(Collections.singletonList(VIEW_FILES), FileAclEntry.FilePermissions.VIEW_CONTENT.name(), FILE),
+        VIEW_FILE_HEADER(Collections.singletonList(VIEW_FILES), FileAclEntry.FilePermissions.VIEW_HEADER.name(), FILE),
+        VIEW_FILE_CONTENT(Collections.singletonList(VIEW_FILES), FileAclEntry.FilePermissions.VIEW_CONTENT.name(), FILE),
         WRITE_FILES(Collections.singletonList(VIEW_FILES), FileAclEntry.FilePermissions.WRITE.name(), FILE),
         DELETE_FILES(Arrays.asList(VIEW_FILES, WRITE_FILES), FileAclEntry.FilePermissions.DELETE.name(), FILE),
         DOWNLOAD_FILES(Collections.singletonList(VIEW_FILES), FileAclEntry.FilePermissions.DOWNLOAD.name(), FILE),

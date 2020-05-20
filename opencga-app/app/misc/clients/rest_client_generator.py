@@ -238,35 +238,34 @@ class RestClientGenerator(ABC):
                 fhand.write('\n'.join(text))
 
     def parse_resources(self, category, endpoint):
-        self.category = self.get_category_path(category)
-        self.subcategory = None
-        self.action = None
-        self.id1 = None
-        self.id2 = None
-
-        path_params = self.get_path_params(endpoint)
-        endpoint_subpath = endpoint['path'].replace(category['path'] + '/', '')
-
-        if path_params:
-            regex = ''.join(['{' + i + '}(.+)' for i in path_params])
-            resources = re.findall(regex, endpoint_subpath)
-            if resources:
-                resources = resources if type(resources[0]) != tuple else list(resources[0])
+        if endpoint['path'] == '/{apiVersion}/ga4gh/reads/{study}/{file}':
+            self.category = 'ga4gh/reads'
+            self.id1 = 'study'
+            self.id2 = 'file'
+            self.subcategory = ''
+            self.action = ''
         else:
-            resources = [endpoint_subpath]
-        resources = [i.strip('/') for i in resources]
+            subpath = endpoint['path'].replace('/{apiVersion}/', '')
+            resources = re.findall('([a-zA-Z0-9\/]+)(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9]+)?(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9\/]+)', subpath)
+            if resources:
+                [self.category, self.id1, self.subcategory, self.id2, self.action] = resources if type(resources[0]) != tuple else list(resources[0])
 
-        if len(resources) == 1:
-            if '/' in resources[0]:
-                splitted = resources[0].split('/')
-                self.subcategory = '/'.join(splitted[:(len(splitted) - 1)])
-                self.action = splitted[-1]
-            else:
-                self.action = resources[0]
-        elif len(resources) > 1:
-            self.subcategory = resources[0]
-            self.action = resources[1]
-        if path_params:
-            self.id1 = path_params[0]
-        if len(path_params) > 1:
-            self.id2 = path_params[1]
+            if self.id1.startswith("/"):
+                self.id1 = self.id1[2:-1]
+            if self.id2.startswith("/"):
+                self.id2 = self.id2[2:-1]
+            if self.subcategory.startswith("/"):
+                self.subcategory = self.subcategory[1:]
+            if self.action.startswith("/"):
+                self.action = self.action[1:]
+
+            if self.subcategory == '' and self.id1 == '' and '/' in self.category:
+                self.subcategory = self.category.split('/', 1)[1]
+                self.category = self.category.split('/', 1)[0]
+
+            if self.subcategory == '' and self.id2 == '' and self.id1 != '' and '/' in self.category:
+                # Move to subcategory and id2
+                self.id2 = self.id1
+                self.id1 = ''
+                self.subcategory = self.category.split('/', 1)[1]
+                self.category = self.category.split('/', 1)[0]
