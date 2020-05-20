@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 
 public class JulieToolDriver extends AbstractVariantsTableDriver {
@@ -103,5 +104,11 @@ public class JulieToolDriver extends AbstractVariantsTableDriver {
     @Override
     protected String getJobOperationName() {
         return "julie-tool";
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) {
+        main(args, (Class<? extends AbstractVariantsTableDriver>) MethodHandles.lookup().lookupClass());
     }
 }

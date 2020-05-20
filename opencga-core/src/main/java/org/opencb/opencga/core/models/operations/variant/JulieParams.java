@@ -16,12 +16,12 @@ public class JulieParams extends ToolParams {
     /**
      * Overwrite all population frequencies.
      */
-    private Boolean overwrite;
+    private boolean overwrite;
 
     public JulieParams() {
     }
 
-    public JulieParams(List<String> cohorts, Boolean overwrite) {
+    public JulieParams(List<String> cohorts, boolean overwrite) {
         this.cohorts = cohorts;
         this.overwrite = overwrite;
     }
@@ -35,11 +35,11 @@ public class JulieParams extends ToolParams {
         return this;
     }
 
-    public Boolean getOverwrite() {
+    public boolean getOverwrite() {
         return overwrite;
     }
 
-    public JulieParams setOverwrite(Boolean overwrite) {
+    public JulieParams setOverwrite(boolean overwrite) {
         this.overwrite = overwrite;
         return this;
     }
