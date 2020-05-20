@@ -363,6 +363,23 @@ migrateCollection("interpretation", {"internal": {"$exists": false}}, {}, functi
     bulk.find({"_id": doc._id}).updateOne({"$set": set});
 });
 
+// #1601
+migrateCollection("study", {}, {_acl: 1}, function(bulk, doc) {
+    if (isNotEmptyArray(doc._acl)) {
+        var acl = [];
+        for (var auxAcl of doc._acl) {
+            if (auxAcl.endsWith("VIEW_FILE_HEADERS")) {
+                acl.push(auxAcl.replace("VIEW_FILE_HEADERS", "VIEW_FILE_HEADER"));
+            } else if (auxAcl.endsWith("VIEW_FILE_CONTENTS")) {
+                acl.push(auxAcl.replace("VIEW_FILE_CONTENTS", "VIEW_FILE_CONTENT"));
+            } else {
+                acl.push(auxAcl);
+            }
+        }
+        bulk.find({"_id": doc._id}).updateOne({"$set": {"_acl": acl}});
+    }
+});
+
 // migrateCollection("panel", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
 //     var set = {
 //         "uuid": generateOpenCGAUUID("PANEL", doc['_creationDate'])

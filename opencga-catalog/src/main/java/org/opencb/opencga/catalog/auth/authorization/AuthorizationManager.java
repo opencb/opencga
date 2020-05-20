@@ -53,8 +53,8 @@ public interface AuthorizationManager {
 
     static EnumSet<StudyAclEntry.StudyPermissions> getAnalystAcls() {
         return EnumSet.of(
-                StudyAclEntry.StudyPermissions.WRITE_FILES, StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS,
-                StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS, StudyAclEntry.StudyPermissions.VIEW_FILES,
+                StudyAclEntry.StudyPermissions.WRITE_FILES, StudyAclEntry.StudyPermissions.VIEW_FILE_HEADER,
+                StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENT, StudyAclEntry.StudyPermissions.VIEW_FILES,
                 StudyAclEntry.StudyPermissions.DOWNLOAD_FILES, StudyAclEntry.StudyPermissions.UPLOAD_FILES,
                 StudyAclEntry.StudyPermissions.WRITE_JOBS, StudyAclEntry.StudyPermissions.VIEW_JOBS,
                 StudyAclEntry.StudyPermissions.WRITE_SAMPLES, StudyAclEntry.StudyPermissions.VIEW_SAMPLES,
@@ -71,7 +71,7 @@ public interface AuthorizationManager {
 
     static EnumSet<StudyAclEntry.StudyPermissions> getViewOnlyAcls() {
         return EnumSet.of(
-                StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS, StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS,
+                StudyAclEntry.StudyPermissions.VIEW_FILE_HEADER, StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENT,
                 StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.DOWNLOAD_FILES,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.VIEW_SAMPLES,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS,
