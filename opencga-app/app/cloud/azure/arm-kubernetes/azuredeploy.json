@@ -126,6 +126,30 @@
             "metadata": {
                 "description": "Optionally deploy a login node named {rgPrefix}-login01"
             }
+        },
+        "networkCIDR": {
+            "type": "object",
+            "metadata": {
+                "description": "Object containing all the hardcoded IPs and CIDRs required for the deployment"
+            },
+            "defaultValue": {
+                "vnet": {
+                    "addressPrefixes": "10.0.0.0/16",
+                    "subnets": {
+                        "kubernetes": "10.0.0.0/22",
+                        "aci": "10.0.4.0/22",
+                        "hdinsight": "10.0.8.0/24",
+                        "mongo": "10.0.9.0/24",
+                        "solr": "10.0.10.0/24",
+                        "login": "10.0.12.0/24"
+                    }
+                },
+                "aks": {
+                    "serviceCIDR": "10.0.100.0/24",
+                    "dnsServiceIP" : "10.0.100.10",
+                    "dockerBridgeCIDR" : "172.17.0.1/16"
+                }
+            }
         }
     },
     "variables": {
@@ -264,6 +288,11 @@
                 "templateLink": {
                     "uri": "[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "cidr": {
+                        "value" : "[parameters('networkCIDR').vnet]"
+                    }
                 }
             }
         },
@@ -460,6 +489,15 @@
                     "vnetId": {
                         "value": "[reference('vnet').outputs.vnetId.value]"
                     },
+                    "aksServiceCIDR": {
+                        "value": "[parameters('networkCIDR').aks.serviceCIDR]"
+                    },
+                    "aksDnsServiceIP": {
+                        "value": "[parameters('networkCIDR').aks.dnsServiceIP]"
+                    },
+                    "aksDockerBridgeCIDR": {
+                        "value": "[parameters('networkCIDR').aks.dockerBridgeCIDR]"
+                    },
                     "kubernetesSubnetId": {
                         "value": "[reference('vnet').outputs.kubernetesSubnetId.value]"
                     },
@@ -497,7 +535,7 @@
                         "value": "[parameters('sshAdminKeyData')]"
                     },
                     "subnetId" : {
-                        "value" : "[reference('vnet').outputs.login.value]"
+                        "value" : "[reference('vnet').outputs.loginSubnetId.value]"
                     },
                     "LogAnalyticsWorkspaceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
