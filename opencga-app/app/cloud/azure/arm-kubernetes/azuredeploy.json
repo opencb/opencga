@@ -42,6 +42,13 @@
                 "description": "Location for deployment"
             }
         },
+        "privateDnsZonesName": {
+            "type": "string",
+            "defaultValue": "opencga.zone",
+            "metadata": {
+                "description": "Private internal DNS name"
+            }
+        },
         "aksServicePrincipalAppId": {
             "type": "string"
         },
@@ -272,6 +279,31 @@
                 "templateLink": {
                     "uri": "[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "dns",
+            "dependsOn": [
+                "vnet",
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/dns/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "privateDnsZonesName" : {
+                        "value": "[parameters('privateDnsZonesName')]"
+                    },
+                    "vnetId": {
+                        "value": "[reference('vnet').outputs.vnetId.value]"
+                    }
                 }
             }
         },
