@@ -53,11 +53,17 @@ az storage container create \
     --connection-string $connection \
     --public-access blob
 
+mkdir -p ARTIFACTS_BLOB_UPDATE/foo
+rm -rf ARTIFACTS_BLOB_UPDATE/*
+cp -r `ls | grep -v "ARTIFACTS_BLOB_UPDATE\|parameters\|deployment-outputs.json"` ARTIFACTS_BLOB_UPDATE
+
 az storage blob upload-batch \
     --destination $templateContainer \
     --connection-string $connection \
-    --source . \
-    --no-progress 
+    --source ARTIFACTS_BLOB_UPDATE \
+    --no-progress
+
+rm -rf ARTIFACTS_BLOB_UPDATE
 
 echo "Files uploaded"
 
