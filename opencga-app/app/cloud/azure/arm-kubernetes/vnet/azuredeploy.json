@@ -10,7 +10,7 @@
                     "kubernetes": "10.0.0.0/22",
                     "aci": "10.0.4.0/22",
                     "hdinsight": "10.0.8.0/24",
-                    "mongo": "10.0.9.0/24",
+                    "mongodb": "10.0.9.0/24",
                     "solr": "10.0.10.0/24",
                     "login": "10.0.12.0/24"
                 }
@@ -35,7 +35,7 @@
                     {
                         "name": "kubernetes",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').kubernetes]",
+                            "addressPrefix": "[parameters('cidr').subnets.kubernetes]",
                             "ipConfigurations": [
                             ],
                             "delegations": [
@@ -49,7 +49,7 @@
                     {
                         "name": "aci",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').aci]",
+                            "addressPrefix": "[parameters('cidr').subnets.aci]",
                             "ipConfigurations": [
                             ],
                             "delegations": [
@@ -70,7 +70,7 @@
                     {
                         "name": "hdinsight",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').hdinsight]",
+                            "addressPrefix": "[parameters('cidr').subnets.hdinsight]",
                             "ipConfigurations": [
                             ],
                             "delegations": [
@@ -84,9 +84,9 @@
                         "type": "Microsoft.Network/virtualNetworks/subnets"
                     },
                     {
-                        "name": "mongo",
+                        "name": "mongodb",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').mongo]",
+                            "addressPrefix": "[parameters('cidr').subnets.mongodb]",
                             "ipConfigurations": [
                             ],
                             "delegations": [
@@ -99,7 +99,7 @@
                     {
                         "name": "solr",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').solr]",
+                            "addressPrefix": "[parameters('cidr').subnets.solr]",
                             "ipConfigurations": [
                             ],
                             "delegations": [
@@ -112,7 +112,7 @@
                     {
                         "name": "login",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').login]",
+                            "addressPrefix": "[parameters('cidr').subnets.login]",
                             "ipConfigurations": [
                             ],
                             "delegations": [
@@ -151,9 +151,9 @@
             "type": "string",
             "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','hdinsight')]"
         },
-        "mongoSubnetId": {
+        "mongodbSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','mongo')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','mongodb')]"
         },
         "solrSubnetId": {
             "type": "string",

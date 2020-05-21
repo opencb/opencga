@@ -652,7 +652,7 @@
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
                     "subnetId": {
-                        "value": "[reference('vnet').outputs.mongoSubnetId.value]"
+                        "value": "[reference('vnet').outputs.mongodbSubnetId.value]"
                     },
                     "location": {
                         "value": "[parameters('rgLocation')]"
