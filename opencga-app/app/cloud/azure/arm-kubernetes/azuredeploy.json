@@ -621,11 +621,20 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
                     "subnetId": {
                         "value": "[reference('vnet').outputs.mongoSubnetId.value]"
                     },
                     "location": {
                         "value": "[parameters('rgLocation')]"
+                    },
+                    "clusterName": {
+                        "value": "[parameters('rgPrefix')]"
                     },
                     "vmSize": {
                         "value": "[variables('selectedSize').mongo.nodeSize]"
