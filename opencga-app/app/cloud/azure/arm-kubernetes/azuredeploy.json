@@ -77,12 +77,6 @@
                 "description": "This Data is used to derive unique passwords for several different services. Select a unique and random combination of data, the longer the better, and do not disclose it."
             }
         },
-        "sslCertificateEmail": {
-            "type": "string",
-            "metadata": {
-                "description": "Email address used for mongoDB letsencrypt certificates"
-            }
-        },
         "solrDiskSizeGB": {
             "type": "int",
             "defaultValue": 512,
@@ -502,8 +496,8 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "name" : {
-                        "value" : "[parameters('rgPrefix')]"
+                    "VMName" : {
+                        "value" : "[concat(parameters('rgPrefix'), '-login01')]"
                     },
                     "adminUsername" : {
                         "value": "[parameters('adminUsername')]"
@@ -550,7 +544,7 @@
                 },
                 "parameters": {
                     "clusterName": {
-                        "value": "opencga"
+                        "value": "[parameters('rgPrefix')]"
                     },
                     "subnetId": {
                         "value": "[reference('vnet').outputs.solrSubnetId.value]"
@@ -612,7 +606,8 @@
             "name": "mongodb",
             "dependsOn": [
                 "vnet",
-                "[parameters('rgPrefix')]"
+                "[parameters('rgPrefix')]",
+                "dns"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -642,8 +637,8 @@
                     "clusterSize": {
                         "value": "[variables('selectedSize').mongo.nodeCount]"
                     },
-                    "certificateEmail": {
-                        "value": "[parameters('sslCertificateEmail')]"
+                    "dnsZonesName": {
+                        "value": "[parameters('privateDnsZonesName')]"
                     },
                     "adminUsername": {
                         "value": "[parameters('adminUsername')]"
