@@ -315,24 +315,6 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         if (dynamicParamsMap.size() > 0) {
             paramsMap.put("dynamicParams", dynamicParamsMap);
         }
-        return run(() -> {
-            if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {
-                // Project job
-                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
-                // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
-                List<String> studies = catalogManager.getStudyManager()
-                        .get(project, new Query(), options, token)
-                        .getResults()
-                        .stream()
-                        .map(Study::getFqn)
-                        .collect(Collectors.toList());
-                if (studies.isEmpty()) {
-                    throw new CatalogException("Project '" + project + "' not found!");
-                }
-                return submitJobRaw(toolId, studies.get(0), paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
-            } else {
-                return submitJobRaw(toolId, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
-            }
-        });
+        return submitJob(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
     }
 }
