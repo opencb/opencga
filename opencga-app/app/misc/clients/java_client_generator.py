@@ -138,7 +138,7 @@ class JavaClientGenerator(RestClientGenerator):
             append_text(text, '{}params.put("body", data);'.format(' ' * 8), 8)
 
         append_text(text, '{}return execute("{}", {}, {}, {}, {}, params, {}, {}.class);'.format((' ' * 8),
-            self.get_category_path(category),
+            self.get_endpoint_category(),
             self.get_endpoint_id1() if self.get_endpoint_id1() else 'null',
             '"' + self.get_endpoint_subcategory() + '"' if self.get_endpoint_subcategory() else 'null',
             self.get_endpoint_id2() if self.get_endpoint_id2() else 'null',

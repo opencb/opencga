@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;
@@ -91,6 +92,27 @@ public class ToolRunner {
      * @throws ToolException if the execution fails
      */
     public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ObjectMap params, Path outDir, String token) throws ToolException {
+        return toolFactory
+                .createTool(tool)
+                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, token)
+                .start();
+    }
+
+    /**
+     * Execute a tool
+     * @param tool Tool class
+     * @param toolParams Specific ToolParams for the execution.
+     * @param params Params for the execution.
+     * @param outDir Output directory. Mandatory
+     * @param token session id of the user that will execute the tool.
+     * @return Execution result
+     * @throws ToolException if the execution fails
+     */
+    public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ToolParams toolParams, ObjectMap params, Path outDir, String token)
+            throws ToolException {
+        if (toolParams != null) {
+            params = toolParams.toObjectMap(params);
+        }
         return toolFactory
                 .createTool(tool)
                 .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, token)

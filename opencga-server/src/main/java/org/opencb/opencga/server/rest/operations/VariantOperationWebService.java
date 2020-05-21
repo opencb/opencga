@@ -25,9 +25,12 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.models.operations.variant.JulieParams;
+import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
@@ -249,6 +252,19 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         return submitOperation(VariantAggregateOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @POST
+    @Path("/variant/julie/run")
+    @ApiOperation(value = JulieTool.DESCRIPTION, response = Job.class)
+    public Response julie(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.PROJECT_PARAM) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+            @ApiParam(value = JulieParams.DESCRIPTION, required = true) JulieParams params) {
+        return submitOperationToProject(JulieTool.ID, project, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
     public Response submitOperation(String toolId, String study, ToolParams params,
                                     String jobName, String jobDescription, String jobDependsOn, String jobTags) {
         return submitOperation(toolId, null, study, params, jobName, jobDescription, jobDependsOn, jobTags);
@@ -299,21 +315,6 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         if (dynamicParamsMap.size() > 0) {
             paramsMap.put("dynamicParams", dynamicParamsMap);
         }
-        return run(() -> {
-            if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {
-                // Project job
-                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
-                // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
-                List<String> studies = catalogManager.getStudyManager()
-                        .get(project, new Query(), options, token)
-                        .getResults()
-                        .stream()
-                        .map(Study::getFqn)
-                        .collect(Collectors.toList());
-                return submitJobRaw(toolId, studies.get(0), paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
-            } else {
-                return submitJobRaw(toolId, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
-            }
-        });
+        return submitJob(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
     }
 }

@@ -181,7 +181,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             int currentAnnotationId = dbAdaptor.getMetadataManager().getProjectMetadata()
                     .getAnnotation().getCurrent().getId();
             VariantAnnotationToHBaseConverter hBaseConverter =
-                    new VariantAnnotationToHBaseConverter(progressLogger, currentAnnotationId);
+                    new VariantAnnotationToHBaseConverter(currentAnnotationId, progressLogger);
             AnnotationIndexDBLoader annotationIndexDBLoader = new AnnotationIndexDBLoader(
                     dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator().getAnnotationIndexTableName());
 

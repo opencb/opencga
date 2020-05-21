@@ -232,6 +232,12 @@ public class VariantMapReduceUtil {
     }
 
     public static void initVariantRowMapperJob(Job job, Class<? extends VariantRowMapper> mapperClass, String variantTable,
+                                               VariantStorageMetadataManager metadataManager)
+            throws IOException {
+        initVariantRowMapperJob(job, mapperClass, variantTable, metadataManager, new Query(), new QueryOptions());
+    }
+
+    public static void initVariantRowMapperJob(Job job, Class<? extends VariantRowMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions)
             throws IOException {
         initVariantRowMapperJob(job, mapperClass, variantTable, metadataManager, query, queryOptions,

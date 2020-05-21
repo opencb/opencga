@@ -436,10 +436,23 @@ public abstract class OpenCgaTool {
     }
 
     protected final void setUpStorageEngineExecutor(String study) throws ToolException {
+        setUpStorageEngineExecutor(null, study);
+    }
+
+    protected final void setUpStorageEngineExecutorByProjectId(String projectId) throws ToolException {
+        setUpStorageEngineExecutor(projectId, null);
+    }
+
+    private final void setUpStorageEngineExecutor(String projectId, String study) throws ToolException {
         executorParams.put("opencgaHome", opencgaHome);
         executorParams.put("token", token);
         try {
-            DataStore dataStore = variantStorageManager.getDataStore(study, token);
+            DataStore dataStore;
+            if (study == null) {
+                dataStore = variantStorageManager.getDataStoreByProjectId(projectId, token);
+            } else {
+                dataStore = variantStorageManager.getDataStore(study, token);
+            }
 
             executorParams.put("storageEngineId", dataStore.getStorageEngine());
             executorParams.put("dbName", dataStore.getDbName());

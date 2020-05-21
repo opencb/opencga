@@ -5,6 +5,8 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenericJulieRunCommandOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -61,6 +63,8 @@ public class OperationsCommandOptions {
     public final VariantFamilyAggregateCommandOptions variantAggregateFamily;
     public final VariantAggregateCommandOptions variantAggregate;
 
+    public final JulieRunCommandOptions julieRun;
+
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -91,6 +95,7 @@ public class OperationsCommandOptions {
         variantFamilyIndex = new VariantFamilyGenotypeIndexCommandOptions();
         variantAggregateFamily = new VariantFamilyAggregateCommandOptions();
         variantAggregate = new VariantAggregateCommandOptions();
+        julieRun = new JulieRunCommandOptions();
     }
 
     @Parameters(commandNames = {VARIANT_CONFIGURE}, commandDescription = "Modify variant storage configuration")
@@ -284,4 +289,16 @@ public class OperationsCommandOptions {
 
     }
 
+    @Parameters(commandNames = VariantCommandOptions.JulieRunCommandOptions.JULIE_RUN_COMMAND,
+            commandDescription = VariantCommandOptions.JulieRunCommandOptions.DESCRIPTION)
+    public class JulieRunCommandOptions {
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GenericJulieRunCommandOptions julieCommandOptions = new GenericJulieRunCommandOptions();
+    }
 }

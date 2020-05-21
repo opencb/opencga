@@ -24,6 +24,7 @@ import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
+import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
@@ -39,10 +40,8 @@ import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
-import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.AbstractBasicVariantQueryParams;
-import org.opencb.opencga.core.models.variant.BasicVariantQueryParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -106,6 +105,7 @@ public class VariantCommandOptions {
     public final VariantSampleQueryCommandOptions sampleQueryCommandOptions;
     public final VariantSamplesFilterCommandOptions samplesFilterCommandOptions;
     public final VariantHistogramCommandOptions histogramCommandOptions;
+    public final JulieRunCommandOptions julieRunCommandOptions;
 
     // Analysis
     public final GwasCommandOptions gwasCommandOptions;
@@ -166,6 +166,7 @@ public class VariantCommandOptions {
         this.sampleQueryCommandOptions = new VariantSampleQueryCommandOptions();
         this.samplesFilterCommandOptions = new VariantSamplesFilterCommandOptions();
         this.histogramCommandOptions = new VariantHistogramCommandOptions();
+        this.julieRunCommandOptions = new JulieRunCommandOptions();
         this.gwasCommandOptions = new GwasCommandOptions();
         this.sampleVariantStatsCommandOptions = new SampleVariantStatsCommandOptions();
         this.sampleVariantStatsQueryCommandOptions = new SampleVariantStatsQueryCommandOptions();
@@ -1286,6 +1287,34 @@ public class VariantCommandOptions {
         public String vcfFilename;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+
+    @Parameters(commandNames = JulieRunCommandOptions.JULIE_RUN_COMMAND, commandDescription = JulieRunCommandOptions.DESCRIPTION)
+    public class JulieRunCommandOptions extends GenericJulieRunCommandOptions {
+        public static final String JULIE_RUN_COMMAND = JulieTool.ID + "-run";
+        public static final String DESCRIPTION = JulieTool.DESCRIPTION;
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+    }
+
+    public static class GenericJulieRunCommandOptions {
+        @Parameter(names = {"--project"}, description = PROJECT_DESC)
+        public String project;
+
+        @Parameter(names = {"--cohort"}, description = "List of cohorts from multiple studies with {study}:{cohort}")
+        public String cohort;
+
+        @Parameter(names = {"--region"}, description = "Region to process")
+        public String region;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite all population frequencies.")
+        public boolean overwrite;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
     }
 }

@@ -405,16 +405,12 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> export() throws ClientException, IOException {
         VariantCommandOptions.VariantExportCommandOptions c = variantCommandOptions.exportVariantCommandOptions;
 
-        c.study = c.study;
-        c.genericVariantQueryOptions.includeStudy = c.genericVariantQueryOptions.includeStudy;
-
         List<String> studies = new ArrayList<>();
         if (cliSession != null && ListUtils.isNotEmpty(cliSession.getStudies())) {
             studies = cliSession.getStudies();
         }
         Query query = VariantQueryCommandUtils.parseQuery(c, studies, clientConfiguration);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(c);
-        String study = query.getString(VariantQueryParam.STUDY.key());
 
         return openCGAClient.getVariantClient()
                 .runExport(new VariantExportParams(
@@ -423,7 +419,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         c.outputFileName,
                         c.commonOptions.outputFormat,
                         c.compress,
-                        c.variantsFile), getParams(study).appendAll(options));
+                        c.variantsFile), getParams(c.project, c.study).appendAll(options));
     }
 
     private RestResponse<Job> index() throws ClientException {

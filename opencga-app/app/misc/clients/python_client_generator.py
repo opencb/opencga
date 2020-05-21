@@ -67,8 +67,7 @@ class PythonClientGenerator(RestClientGenerator):
         text.append('{}def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):'.format(
             ' ' * 4, self.get_category_name(category), category['path'])
         )
-        text.append('{}_category = \'{}\''.format(' ' * 8, self.get_category_path(category)))
-        text.append('{}super({}, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)'.format(
+        text.append('{}super({}, self).__init__(configuration, token, login_handler, *args, **kwargs)'.format(
             ' ' * 8, self.categories[self.get_category_name(category)])
         )
         text.append('')
@@ -119,13 +118,15 @@ class PythonClientGenerator(RestClientGenerator):
 
         # Call arguments
         call_args = []
-        if self.action is not None:
-            call_args = ['\'{}\''.format(self.action)]
-        if self.id1 is not None:
+        if self.category:
+            call_args.append('category=\'{}\''.format(self.to_snake_case(self.category)))
+        if self.action:
+            call_args.append('resource=\'{}\''.format(self.to_snake_case(self.action)))
+        if self.id1:
             call_args.append('query_id={}'.format(self.to_snake_case(self.id1)))
-        if self.subcategory is not None:
+        if self.subcategory:
             call_args.append('subcategory=\'{}\''.format(self.subcategory))
-        if self.id2 is not None:
+        if self.id2:
             call_args.append('second_query_id={}'.format(self.to_snake_case(self.id2)))
         if endpoint['method'] == 'POST' and 'data' in self.parameters:
             call_args.append('data=data')

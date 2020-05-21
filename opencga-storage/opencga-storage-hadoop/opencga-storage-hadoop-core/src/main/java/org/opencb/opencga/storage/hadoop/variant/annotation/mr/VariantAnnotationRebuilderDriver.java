@@ -97,7 +97,7 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
-            converter = new VariantAnnotationToHBaseConverter(null, -1);
+            converter = new VariantAnnotationToHBaseConverter();
             toAnnotationConverter = new HBaseToVariantAnnotationConverter(0);
         }
 
