@@ -35,6 +35,25 @@
             },
             "defaultValue": "Standard_D1_v2"
         },
+        "diskType": {
+            "type": "string",
+            "defaultValue": "StandardSSD_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Premium_LRS",
+                "StandardSSD_LRS"
+            ],
+            "metadata": {
+                "description": "Storage Account type"
+            }
+        },
+        "diskSizeGB": {
+            "type": "int",
+            "defaultValue": 2049,
+            "metadata": {
+                "description": "Size of the data disk for MongoDB."
+            }
+        },
         "dnsZonesName": {
             "type": "string",
             "metadata": {
@@ -219,17 +238,18 @@
                     "osDisk": {
                         "osType": "Linux",
                         "createOption": "FromImage",
+                        "diskSizeGB": 64,
                         "managedDisk": {
-                            "storageAccountType": "Premium_LRS"
+                            "storageAccountType": "StandardSSD_LRS"
                         }
                     },
                     "dataDisks": [
                         {
-                            "diskSizeGB": 2049,
+                            "diskSizeGB": "[parameters('diskSizeGB')]",
                             "lun": 0,
                             "createOption": "Empty",
                             "managedDisk": {
-                                "storageAccountType": "Premium_LRS"
+                                "storageAccountType": "[parameters('diskType')]"
                             }
                         }
                     ],

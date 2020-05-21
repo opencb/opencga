@@ -77,32 +77,6 @@
                 "description": "This Data is used to derive unique passwords for several different services. Select a unique and random combination of data, the longer the better, and do not disclose it."
             }
         },
-        "solrDiskSizeGB": {
-            "type": "int",
-            "defaultValue": 512,
-            "metadata": {
-                "description": "Size of the data disk for Solr."
-            }
-        },
-        "zookeeperVMSize": {
-            "type": "string",
-            "defaultValue": "Standard_D2_v2",
-            "metadata": {
-                "description": "Size of the zookeeper VM"
-            }
-        },
-        "solrDiskType": {
-            "type": "string",
-            "defaultValue": "StandardSSD_LRS",
-            "allowedValues": [
-                "Standard_LRS",
-                "Premium_LRS",
-                "StandardSSD_LRS"
-            ],
-            "metadata": {
-                "description": "Storage Account type"
-            }
-        },
         "catalogSecretKey": {
             "type": "securestring",
             "metadata": {
@@ -162,18 +136,24 @@
                 "aks": {
                     "nodeCount": 3,
                     "nodeSize": "Standard_D2s_v3",
-                    "maxJobsPoolAgents": 10,
+                    "maxJobsPoolAgents": 3,
                     "aksJobsAgentVMSize": "Standard_D4s_v3"
                 },
                 "solr": {
                     "ha": false,
                     "nodeSize": "Standard_E4_v3",
-                    "nodeCount": 1
+                    "nodeCount": 1,
+                    "diskType": "StandardSSD_LRS",
+                    "diskSizeGB": 512,
+                    "zookeeper": {
+                        "nodeSize": "Standard_D2_v2"
+                    }
                 },
                 "mongo": {
                     "nodeCount": 1,
                     "nodeSize": "Standard_D4s_v3",
-                    "diskType": "E10"
+                    "diskType": "StandardSSD_LRS",
+                    "diskSizeGB": 512
                 },
                 "hdInsight": {
                     "head": {
@@ -198,13 +178,18 @@
                 "solr": {
                     "ha": true,
                     "nodeSize": "Standard_E8_v3",
-                    "nodeCount": 2
+                    "nodeCount": 2,
+                    "diskType": "StandardSSD_LRS",
+                    "diskSizeGB": 1028,
+                    "zookeeper": {
+                        "nodeSize": "Standard_D2_v2"
+                    }
                 },
-
                 "mongo": {
                     "nodeCount": 3,
                     "nodeSize": "Standard_E8s_v3",
-                    "diskType": "P20"
+                    "diskType": "StandardSSD_LRS",
+                    "diskSizeGB": 1028
                 },
                 "hdInsight": {
                     "head": {
@@ -229,12 +214,18 @@
                 "solr": {
                     "ha": true,
                     "nodeSize": "Standard_E16_v3",
-                    "nodeCount": 2
+                    "nodeCount": 2,
+                    "diskType": "Premium_LRS",
+                    "diskSizeGB": 2018,
+                    "zookeeper": {
+                        "nodeSize": "Standard_D2_v2"
+                    }
                 },
                 "mongo": {
                     "nodeCount": 5,
                     "nodeSize": "Standard_E16s_v3",
-                    "diskType": "P20"
+                    "diskType": "Premium_LRS",
+                    "diskSizeGB": 1028
                 },
                 "hdInsight": {
                     "head": {
@@ -567,17 +558,17 @@
                     "highAvailability": {
                         "value": "[variables('selectedSize').solr.ha]"
                     },
+                    "solrDiskType": {
+                        "value": "[variables('selectedSize').solr.diskType]"
+                    },
                     "solrDiskSizeGB": {
-                        "value": "[parameters('solrDiskSizeGB')]"
+                        "value": "[variables('selectedSize').solr.diskSizeGB]"
                     },
                     "solrVMSize": {
                         "value": "[variables('selectedSize').solr.nodeSize]"
                     },
                     "zookeeperVMSize": {
-                        "value": "[parameters('zookeeperVMSize')]"
-                    },
-                    "diskType": {
-                        "value": "[parameters('solrDiskType')]"
+                        "value": "[variables('selectedSize').solr.zookeeper.nodeSize]"
                     },
                     "LogAnalyticsWorkspaceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
