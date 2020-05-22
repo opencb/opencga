@@ -20,7 +20,15 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
     private final VariantAnnotationToPhoenixConverter converter;
     protected static Logger logger = LoggerFactory.getLogger(VariantAnnotationToHBaseConverter.class);
 
-    public VariantAnnotationToHBaseConverter(ProgressLogger progressLogger, int annotationId) {
+    public VariantAnnotationToHBaseConverter() {
+        this(-1);
+    }
+
+    public VariantAnnotationToHBaseConverter(int annotationId) {
+        this(annotationId, null);
+    }
+
+    public VariantAnnotationToHBaseConverter(int annotationId, ProgressLogger progressLogger) {
         super(GenomeHelper.COLUMN_FAMILY_BYTES);
         this.progressLogger = progressLogger;
         this.converter = new VariantAnnotationToPhoenixConverter(GenomeHelper.COLUMN_FAMILY_BYTES, annotationId);

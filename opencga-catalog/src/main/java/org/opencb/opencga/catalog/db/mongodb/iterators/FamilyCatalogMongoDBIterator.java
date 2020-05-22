@@ -30,7 +30,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -256,8 +256,8 @@ public class FamilyCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
                 queryOptions.remove(QueryOptions.EXCLUDE);
             }
         }
-        if (options.containsKey(Constants.FLATTENED_ANNOTATIONS)) {
-            queryOptions.put(Constants.FLATTENED_ANNOTATIONS, options.getBoolean(Constants.FLATTENED_ANNOTATIONS));
+        if (options.containsKey(ParamConstants.FLATTEN_ANNOTATIONS)) {
+            queryOptions.put(ParamConstants.FLATTEN_ANNOTATIONS, options.getBoolean(ParamConstants.FLATTEN_ANNOTATIONS));
         }
 
         return queryOptions;

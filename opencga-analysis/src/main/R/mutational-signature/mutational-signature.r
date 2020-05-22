@@ -95,6 +95,7 @@ df$rss <- RSS
 j <- gsub("\\[|\\]", "", toJSON(df))
 write(j, paste0(outdir, "/signature_coefficients.json"))
 
+
 ############
 # Plotting #
 ############

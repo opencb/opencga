@@ -2,18 +2,6 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "diskType": {
-      "type": "string",
-      "defaultValue": "StandardSSD_LRS",
-      "allowedValues": [
-        "Standard_LRS",
-        "Premium_LRS",
-        "StandardSSD_LRS"
-      ],
-      "metadata": {
-        "description": "Storage Account type"
-      }
-    },
     "clusterName": {
       "type": "string",
       "defaultValue": "opencga",
@@ -26,6 +14,25 @@
       "defaultValue": "Standard_E8_v3",
       "metadata": {
         "description": "Size of the VM"
+      }
+    },
+    "solrDiskType": {
+      "type": "string",
+      "defaultValue": "StandardSSD_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Premium_LRS",
+        "StandardSSD_LRS"
+      ],
+      "metadata": {
+        "description": "Storage Account type"
+      }
+    },
+    "solrDiskSizeGB": {
+      "type": "int",
+      "defaultValue": 512,
+      "metadata": {
+        "description": "Size of the data disk for Solr."
       }
     },
     "zookeeperVMSize": {
@@ -70,16 +77,9 @@
     },
     "solrVersion": {
       "type": "string",
-      "defaultValue": "6.6",
+      "defaultValue": "8.4",
       "metadata": {
         "description": "Version of Apache Solr."
-      }
-    },
-    "solrDiskSizeGB": {
-      "type": "int",
-      "defaultValue": 512,
-      "metadata": {
-        "description": "Size of the data disk for Solr."
       }
     },
     "_artifactsLocation": {
@@ -120,7 +120,6 @@
     "scaleNumber": "[if(parameters('highAvailability'), 2, 1)]",
     "zookeeperScaleNumber": "[if(parameters('highAvailability'), 3, 0)]",
     "customScriptFilePath": "[concat(parameters('_artifactsLocation'), '/solr/solr-setup.sh')]",
-    "configSetLocation": "http://docs.opencb.org/download/attachments/9240577/OpenCGAConfSet-1.4.0.tar.gz",
     "imagePublisher": "Canonical",
     "imageOffer": "UbuntuServer",
     "imageSKU": "18.04-LTS",
@@ -161,7 +160,6 @@
       "- curl -fsSL https://get.docker.com/ | sh",
       "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
       "[concat('- ', variables('logAnalyticsAgent'))]",
-      "[concat('- curl -fsSL ',variables('configSetLocation'), ' -o OpenCGAConfSet-1.4.0.tar.gz')]",
       "[concat('- curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- ', parameters('clusterName'), '-zookeeper', ' ', variables('zookeeperScaleNumber'), ' ', parameters('solrVersion'))]"
     ]
   },
@@ -327,18 +325,18 @@
             "name": "[variables('vmNames')[copyIndex()].diskName]",
             "caching": "ReadWrite",
             "createOption": "FromImage",
-            "diskSizeGB": "[parameters('solrDiskSizeGB')]",
+            "diskSizeGB": 64,
             "managedDisk": {
-              "storageAccountType": "[parameters('diskType')]"
+              "storageAccountType": "StandardSSD_LRS"
             }
           },
           "dataDisks": [
             {
-                "diskSizeGB": 1023,
+                "diskSizeGB": "[parameters('solrDiskSizeGB')]",
                 "lun": 0,
                 "createOption": "Empty",
                 "managedDisk": {
-                    "storageAccountType": "StandardSSD_LRS"
+                    "storageAccountType": "[parameters('solrDiskType')]"
                 }
             }
           ]

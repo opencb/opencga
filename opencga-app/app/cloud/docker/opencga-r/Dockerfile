@@ -7,6 +7,7 @@ LABEL org.label-schema.vendor="OpenCB" \
       maintainer="Joaquin Tarraga <joaquintarraga@gmail.com>" \
       org.label-schema.schema-version="1.0"
 
-RUN R -e "install.packages(c('nnls', 'ggplot2', 'jsonlite'))"
+RUN apt-get update && apt-get install -y curl libssl-dev libcurl4-openssl-dev libxml2-dev
 
-
+RUN R -e "install.packages(c('nnls', 'ggplot2', 'jsonlite', 'optparse', 'BiocManager', 'RCircos'))"
+RUN R -e "BiocManager::install('BSgenome.Hsapiens.1000genomes.hs37d5')"

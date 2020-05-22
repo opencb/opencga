@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogCohortToSolrCohortConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -88,7 +89,7 @@ public class CohortIndexTask extends OpenCgaTool {
                         CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true)
-                .append(Constants.FLATTENED_ANNOTATIONS, true);
+                .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
         catalogSolrManager.insertCatalogCollection(catalogManager.getCohortManager().iterator(study.getFqn(), query,
                 cohortQueryOptions, token), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);

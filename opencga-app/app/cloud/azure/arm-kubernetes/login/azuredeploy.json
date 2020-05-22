@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "vmName": {
+    "VMName": {
       "type": "string",
       "defaultValue": "[concat(resourceGroup().name, '-login01')]"
     },
@@ -75,11 +75,11 @@
     "imagePublisher": "Canonical",
     "imageOffer": "UbuntuServer",
     "imageSKU": "18.04-LTS",
-    "nicName": "[concat(parameters('vmName'), '-nic')]",
-    "diskName": "[concat(parameters('vmName'), '-disk')]",
-    "publicIPAddressName": "[concat(parameters('vmName'), '-ip')]",
+    "nicName": "[concat(parameters('VMName'), '-nic')]",
+    "diskName": "[concat(parameters('VMName'), '-disk')]",
+    "publicIPAddressName": "[concat(parameters('VMName'), '-ip')]",
     "publicIPAddressType": "Dynamic",
-    "publicIPAddressDNS": "[concat(resourceGroup().name, '-', uniquestring(resourceGroup().id) )]",
+    "publicIPAddressDNS": "[concat(resourceGroup().name, '-', uniquestring(concat(resourceGroup().id, parameters('VMName'))) )]",
     "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('LogAnalyticsWorkSpaceID'),' -e KEY=',parameters('LogAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
     "cloudInitArray": [
       "#cloud-config",
@@ -163,7 +163,7 @@
     {
       "apiVersion": "2018-06-01",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[parameters('vmName')]",
+      "name": "[parameters('VMName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
@@ -173,10 +173,10 @@
           "vmSize": "[parameters('VMSize')]"
         },
         "osProfile": {
-          "computerName": "[parameters('vmName')]",
+          "computerName": "[parameters('VMName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "linuxConfiguration": {
-            "disablePasswordAuthentication": "true",
+            "disablePasswordAuthentication": true,
             "ssh": {
               "publicKeys": [
                 {
@@ -220,8 +220,8 @@
       "value": "[variables('cloudInit')]",
       "type": "string"
     },
-    "vmName": {
-      "value": "[parameters('vmName')]",
+    "VMName": {
+      "value": "[parameters('VMName')]",
       "type": "string"
     },
     "connect": {

@@ -37,6 +37,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.JulieRunCommandOptions.JULIE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
@@ -313,6 +314,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         operationsSubCommands.addCommand(VARIANT_SAMPLE_GENOTYPE_INDEX, operationsCommandOptions.variantSampleIndex);
         operationsSubCommands.addCommand(VARIANT_AGGREGATE, operationsCommandOptions.variantAggregate);
         operationsSubCommands.addCommand(VARIANT_FAMILY_AGGREGATE, operationsCommandOptions.variantAggregateFamily);
+        operationsSubCommands.addCommand(JULIE_RUN_COMMAND, operationsCommandOptions.julieRun);
     }
 
     @Override

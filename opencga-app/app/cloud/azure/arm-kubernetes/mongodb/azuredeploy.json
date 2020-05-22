@@ -2,9 +2,28 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": "Artifacts location."
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Artifacts location SAS token."
+            }
+        },
         "location": {
             "type": "string",
             "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Location for all resources."
+            }
+        },
+        "clusterName" : {
+            "type": "string",
             "metadata": {
                 "description": "Location for all resources."
             }
@@ -16,17 +35,29 @@
             },
             "defaultValue": "Standard_D1_v2"
         },
-        "dnsLabelPrefix": {
+        "diskType": {
             "type": "string",
-            "defaultValue": "mongocga",
+            "defaultValue": "StandardSSD_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Premium_LRS",
+                "StandardSSD_LRS"
+            ],
             "metadata": {
-                "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
+                "description": "Storage Account type"
             }
         },
-        "certificateEmail": {
+        "diskSizeGB": {
+            "type": "int",
+            "defaultValue": 2049,
+            "metadata": {
+                "description": "Size of the data disk for MongoDB."
+            }
+        },
+        "dnsZonesName": {
             "type": "string",
             "metadata": {
-                "description": "Email address used for mongoDB letsencrypt certificates"
+                "description": "DNS Zones name."
             }
         },
         "clusterSize": {
@@ -102,53 +133,41 @@
         }
     },
     "variables": {
-        "vmName": "mongo-vm",
-        "nicName": "mongo-nic",
-        "publicIPAddressName": "mongo-publicip",
-        "publicIPAddressType": "Static",
-        "dnsPrefix": "[concat(parameters('dnsLabelPrefix'), uniquestring(resourceGroup().id))]",
-        "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+        "namingPrefix":"[concat(parameters('clusterName'), '-mongodb')]",
+        "vmName": "[concat(variables('namingPrefix'))]",
+        "nicName": "[concat(variables('namingPrefix'), '-nic')]",
+
         "copy": [
             {
                 "name": "dnsNames",
                 "count": "[parameters('clusterSize')]",
                 "input": {
-                    "fqdn": "[concat(variables('dnsPrefix'),copyIndex('dnsNames'),'.',parameters('location'),'.cloudapp.azure.com')]"
+                    "fqdn": "[concat(variables('vmName'), copyIndex('dnsNames'), '.', parameters('dnsZonesName'))]"
                 }
             }
         ],
+        "fqdn": "[concat(variables('vmName'), '#VM_INDEX#', '.', parameters('dnsZonesName'))]",
+        "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
         "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('LogAnalyticsWorkSpaceID'),' -e KEY=',parameters('LogAnalyticsWorkspaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
-        "fqdn": "[concat(variables('dnsPrefix'),'#VM_INDEX#','.',parameters('location'),'.cloudapp.azure.com')]",
-        "postDeployShEncoded": "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",
-        "renewMongoCertShEncoded": "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",
         "_comment": "we need a single quote around the url to avoid & breaking out of the script https://stackoverflow.com/questions/33986180/how-to-escape-single-quote-in-arm-template",
         "singleQuote": "'",
-        "cloudInit": [
+        "cloudInitArray": [
             "#cloud-config",
             "",
             "package_upgrade: true",
             "package_reboot_if_required: true",
             "",
-            "write_files:",
-            "- encoding: gzip",
-            "  path: /opt/installmongodb.sh",
-            "  permissions: \"0744\"",
-            "  content: !!binary |",
-            "[concat('    ', variables('postDeployShEncoded'))]",
-            "",
-            "- encoding: gzip",
-            "  content: !!binary |",
-            "[concat('    ', variables('renewMongoCertShEncoded'))]",
-            "  path: /opt/renew_mongo_cert.sh",
-            "  permissions: \"0744\"",
-            "",
             "runcmd:",
             "- export DEBIAN_FRONTEND='noninteractive'",
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
+            "[concat('- curl -fsSL ', concat(parameters('_artifactsLocation'), '/mongodb/installmongodb.sh'), ' -o /opt/installmongodb.sh')]",
+            "[concat('- curl -fsSL ', concat(parameters('_artifactsLocation'), '/mongodb/renew_mongo_cert.sh'), ' -o /opt/renew_mongo_cert.sh')]",
+            "- chmod +x /opt/installmongodb.sh /opt/renew_mongo_cert.sh",
             "[concat('- ', variables('logAnalyticsAgent'))]",
-            "[concat('- VM_INDEX=#VM_INDEX# CLUSTER_SIZE=', parameters('clusterSize'), ' MONGODB_DUMP_URL=', variables('singleQuote'), parameters('mongoDbDumpUrl'), variables('singleQuote'), ' CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', variables('fqdn'), ' /bin/bash /opt/installmongodb.sh')]"
-        ]
+            "[concat('- VM_INDEX=#VM_INDEX# CLUSTER_SIZE=', parameters('clusterSize'), ' MONGODB_DUMP_URL=', variables('singleQuote'), parameters('mongoDbDumpUrl'), variables('singleQuote'), ' MONGODB_USERNAME=', parameters('mongoDBUsername'), ' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', variables('fqdn'), ' /bin/bash /opt/installmongodb.sh')]"
+        ],
+        "cloudInit": "[replace(replace(replace(string(variables('cloudInitArray')),'\",\"','\n'),'[\"',''),'\"]','')]"
     },
     "resources": [
         {
@@ -160,18 +179,12 @@
                 "name": "mongo-ip",
                 "count": "[parameters('clusterSize')]"
             },
-            "dependsOn": [
-                "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'), copyIndex())]"
-            ],
             "properties": {
                 "ipConfigurations": [
                     {
                         "name": "ipconfig1",
                         "properties": {
                             "privateIPAllocationMethod": "Dynamic",
-                            "publicIPAddress": {
-                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('publicIPAddressName'), copyIndex()))]"
-                            },
                             "subnet": {
                                 "id": "[parameters('subnetId')]"
                             }
@@ -206,22 +219,6 @@
             ]
         },
         {
-            "apiVersion": "2017-10-01",
-            "type": "Microsoft.Network/publicIPAddresses",
-            "name": "[concat(variables('publicIPAddressName'), copyIndex())]",
-            "location": "[parameters('location')]",
-            "copy": {
-                "name": "mongo-ip",
-                "count": "[parameters('clusterSize')]"
-            },
-            "properties": {
-                "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
-                "dnsSettings": {
-                    "domainNameLabel": "[concat(variables('dnsPrefix'), copyIndex())]"
-                }
-            }
-        },
-        {
             "name": "[concat(variables('vmName'), copyIndex())]",
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2018-06-01",
@@ -241,17 +238,18 @@
                     "osDisk": {
                         "osType": "Linux",
                         "createOption": "FromImage",
+                        "diskSizeGB": 64,
                         "managedDisk": {
-                            "storageAccountType": "Premium_LRS"
+                            "storageAccountType": "StandardSSD_LRS"
                         }
                     },
                     "dataDisks": [
                         {
-                            "diskSizeGB": 2049,
+                            "diskSizeGB": "[parameters('diskSizeGB')]",
                             "lun": 0,
                             "createOption": "Empty",
                             "managedDisk": {
-                                "storageAccountType": "Premium_LRS"
+                                "storageAccountType": "[parameters('diskType')]"
                             }
                         }
                     ],

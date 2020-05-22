@@ -195,6 +195,12 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
                 NavigableSet<byte[]> columns = scan.getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES);
                 columns.removeIf(column -> endsWith(column, VariantPhoenixHelper.FILE_SUFIX_BYTES));
             }
+            // See #1600
+            // Add TYPE column to force scan ALL rows to avoid unlikely but possible timeouts fetching new variants
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+            // Remove STUDY filter
+            scan.setFilter(null);
+
             VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
             logger.info(scan.toString());
 

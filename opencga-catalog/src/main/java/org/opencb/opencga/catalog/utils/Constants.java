@@ -105,13 +105,6 @@ public class Constants {
      */
     public static final String PRIVATE_ANNOTATION_PARAM_TYPES = "_annotationTypes";
 
-    /**
-     * Boolean indicating if the annotations have to be returned flattened or not. Default: false
-     */
-    // Use ParamConstants.FLATTEN_ANNOTATIONS instead
-    @Deprecated
-    public static final String FLATTENED_ANNOTATIONS = "flattenAnnotations";
-
     /* ****************************************    Private attributes       ********************************************/
     /**
      * Reserved key in attributes for OpenCGA attributes.

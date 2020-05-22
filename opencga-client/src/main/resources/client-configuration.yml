@@ -9,6 +9,7 @@ cliSessionDuration: 600
 rest:
   host: "${OPENCGA.CLIENT.REST.HOST}"
   tokenAutoRefresh: true
+  tlsAllowInvalidCertificates: false
   query:
     batchSize: 200
     limit: 2000

@@ -149,7 +149,7 @@ public class SampleCommandOptions {
         @Parameter(names = {"--id"}, description = ParamConstants.SAMPLES_DESCRIPTION, arity = 1)
         public String sampleId;
         
-        @Parameter(names = {"--individual"}, description = ParamConstants.INDIVIDUAL_DESCRIPTION, arity = 1)
+        @Parameter(names = {"--individual-id"}, description = ParamConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION, arity = 1)
         public String individual;
 
         @Parameter(names = {"--somatic"}, description = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION, arity = 1)

@@ -48,6 +48,7 @@ import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
+import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
@@ -210,6 +211,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(TieringInterpretationAnalysis.ID, "clinical " + TieringInterpretationAnalysis.ID + "-run");
             put(ZettaInterpretationAnalysis.ID, "clinical " + ZettaInterpretationAnalysis.ID + "-run");
             put(CancerTieringInterpretationAnalysis.ID, "clinical " + CancerTieringInterpretationAnalysis.ID + "-run");
+
+            put(JulieTool.ID, "variant julie-run");
         }};
     }
 

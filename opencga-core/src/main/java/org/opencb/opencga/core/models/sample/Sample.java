@@ -23,11 +23,9 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.common.Status;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -60,26 +58,38 @@ public class Sample extends Annotable {
     }
 
     public Sample(String id, String individualId, String description, int release) {
-        this(id, individualId, null, null, release, 1, description, false, new ArrayList<>(), new ArrayList<>(), new CustomStatus(), null,
-                new HashMap<>());
+        this(id, null, new SampleProcessing("", "", "", "", "", "", new HashMap<>()), new SampleCollection("", "", "", "", "",
+                new HashMap<>()), release, 1, "", "", description, false, new LinkedList<>(), individualId, new LinkedList<>(),
+                new CustomStatus(), new SampleInternal(new Status()), new LinkedList<>(), new HashMap<>());
     }
 
     public Sample(String id, String individualId, SampleProcessing processing, SampleCollection collection, int release, int version,
                   String description, boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets, CustomStatus status,
                   SampleInternal internal, Map<String, Object> attributes) {
+        this(id, null, processing, collection, release, version, "", "", description, somatic, phenotypes, individualId, new LinkedList<>(),
+                status, internal, annotationSets, attributes);
+    }
+
+    public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, int release, int version,
+                  String creationDate, String modificationDate, String description, boolean somatic, List<Phenotype> phenotypes,
+                  String individualId, List<String> fileIds, CustomStatus status, SampleInternal internal,
+                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
+        this.uuid = uuid;
         this.processing = processing;
         this.collection = collection;
         this.release = release;
         this.version = version;
-        this.creationDate = TimeUtils.getTime();
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.description = description;
         this.somatic = somatic;
         this.phenotypes = phenotypes;
-        this.annotationSets = annotationSets;
         this.individualId = individualId;
+        this.fileIds = fileIds;
         this.status = status;
         this.internal = internal;
+        this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
 

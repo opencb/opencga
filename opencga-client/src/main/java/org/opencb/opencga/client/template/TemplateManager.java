@@ -80,6 +80,11 @@ public class TemplateManager {
         this.logger = LoggerFactory.getLogger(TemplateManager.class);
     }
 
+    public void execute(TemplateConfiguration template, Set<String> studiesSubSet) throws ClientException {
+        filterOutTemplate(template, studiesSubSet);
+        execute(template);
+    }
+
     public void execute(TemplateConfiguration template) throws ClientException {
         validate(template);
 
@@ -134,6 +139,24 @@ public class TemplateManager {
         }
     }
 
+    private void filterOutTemplate(TemplateConfiguration template, Set<String> studiesSubSet) {
+        if (studiesSubSet != null && !studiesSubSet.isEmpty()) {
+            int studies = 0;
+            for (Project project : template.getProjects()) {
+                project.getStudies().removeIf(s -> !studiesSubSet.contains(s.getId()));
+                studies += project.getStudies().size();
+            }
+            if (studies == 0) {
+                throw new IllegalArgumentException("Studies " + studiesSubSet + " not found in template");
+            }
+        }
+    }
+
+
+    public void validate(TemplateConfiguration template, Set<String> studiesSubSet) throws ClientException {
+        filterOutTemplate(template, studiesSubSet);
+        validate(template);
+    }
 
     public void validate(TemplateConfiguration template) throws ClientException {
         // Check version
@@ -202,7 +225,6 @@ public class TemplateManager {
         if (resume) {
             existing = openCGAClient.getStudyClient()
                     .variableSets(study.getFqn(), new ObjectMap()
-                            .append("id", study.getVariableSets().stream().map(VariableSet::getId).collect(Collectors.toList()))
                             .append(QueryOptions.INCLUDE, "name,id")
                             .append(QueryOptions.LIMIT, study.getVariableSets().size()))
                     .allResults()

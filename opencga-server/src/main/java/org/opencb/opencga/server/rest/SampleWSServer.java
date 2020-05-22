@@ -68,7 +68,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeIndividual", value = "Include Individual object as an attribute", defaultValue = "false", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+            @ApiImplicitParam(name = ParamConstants.FLATTEN_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
     public Response infoSample(
@@ -144,14 +144,14 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "includeIndividual", value = "Include Individual object as an attribute", defaultValue = "false", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
+            @ApiImplicitParam(name = ParamConstants.FLATTEN_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
     public Response search(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_ID_PARAM) String id,
             @ApiParam(value = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_SOMATIC_PARAM) Boolean somatic,
-            @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION) @QueryParam("individual") String individual,
+            @ApiParam(value = ParamConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_INDIVIDUAL_ID_PARAM) String individual,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.PHENOTYPES_PARAM) String phenotypes,

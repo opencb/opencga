@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
@@ -190,6 +189,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::new));
         sample.getInternal().setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
+        sample.setFileIds(ParamUtils.defaultObject(sample.getFileIds(), Collections.emptyList()));
         sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
         sample.setVersion(1);
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
@@ -304,15 +304,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
-        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
-            OpenCGAResult<Individual> queryResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
-                    query.getAsStringList(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId,
-                    false);
-            query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), queryResult.getResults().stream().map(Individual::getUid)
-                    .collect(Collectors.toList()));
-            query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-        }
+//        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
+//        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
+//            OpenCGAResult<Individual> queryResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
+//                    query.getAsStringList(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId,
+//                    false);
+//            query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), queryResult.getResults().stream().map(Individual::getUid)
+//                    .collect(Collectors.toList()));
+//            query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+//        }
     }
 
     @Override
@@ -969,18 +969,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
-            String individualStr = query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-            if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
-                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), -1);
-            } else {
-                OpenCGAResult<Individual> queryResult = catalogManager.getIndividualManager().internalGet(study.getUid(), individualStr,
-                        IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
-                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), queryResult.first().getUid());
-            }
-            query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-        }
 
         OpenCGAResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
 

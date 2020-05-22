@@ -1,11 +1,11 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import com.google.common.base.Stopwatch;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.app.cli.main.io.Table;
 import org.opencb.opencga.app.cli.main.io.Table.TableColumnSchema;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -14,7 +14,8 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobTop;
-import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -30,6 +31,8 @@ public class JobsTopManager {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(DATE_PATTERN);
+    public static final int MAX_ERRORS = 4;
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final OpenCGAClient openCGAClient;
     private final Query baseQuery;
@@ -90,7 +93,14 @@ public class JobsTopManager {
                     tableColumnList.add(new TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getName()));
                     break;
                 case STUDY:
-                    tableColumnList.add(new TableColumnSchema<>("Study", job -> job.getStudy().getId(), 25));
+                    tableColumnList.add(new TableColumnSchema<>("Study", job -> {
+                        String id = job.getStudy().getId();
+                        if (id.contains(":")) {
+                            return id.split(":")[1];
+                        } else {
+                            return id;
+                        }
+                    }, 25));
                     break;
                 case SUBMISSION:
                     tableColumnList.add(new TableColumnSchema<>("Submission date", job -> job.getCreationDate() != null
@@ -112,8 +122,7 @@ public class JobsTopManager {
                             ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : ""));
                     break;
                 default:
-                    // TODO: logger
-                    break;
+                    throw new IllegalArgumentException("Unknown column " + column);
             }
         }
 
@@ -130,22 +139,31 @@ public class JobsTopManager {
     public void run() throws ClientException, InterruptedException {
         Stopwatch timer = Stopwatch.createStarted();
         int iteration = 0;
+        int errors = 0;
+        openCGAClient.setThrowExceptionOnError(true);
         while (iterations != iteration) {
-            iteration++;
-            if (timer.elapsed(TimeUnit.MINUTES) > 5) {
-                openCGAClient.refresh();
-                timer.reset().start();
-            }
-
-            RestResponse<JobTop> response = openCGAClient.getJobClient().top(baseQuery);
-            if (response.first().getNumResults() == 0) {
-                if (response.getEvents() != null && response.getEvents().size() > 0) {
-                    System.out.println(response.getEvents().get(0).getType() + ": " + response.getEvents().get(0).getMessage());
+            try {
+                iteration++;
+                if (timer.elapsed(TimeUnit.MINUTES) > 5) {
+                    openCGAClient.refresh();
+                    timer.reset().start();
                 }
-                return;
+
+                print(openCGAClient.getJobClient().top(baseQuery).firstResult());
+
+                Thread.sleep(TimeUnit.SECONDS.toMillis(this.delay));
+                // Reset errors counter
+                errors = 0;
+            } catch (InterruptedException e) {
+                // Do not ignore InterruptedException!!
+                throw e;
+            } catch (Exception e) {
+                errors++;
+                if (errors > MAX_ERRORS) {
+                    logger.error("Got " + errors + " consecutive errors trying to print Jobs Top");
+                    throw e;
+                }
             }
-            print(openCGAClient.getJobClient().top(baseQuery).firstResult());
-            Thread.sleep(TimeUnit.SECONDS.toMillis(this.delay));
         }
     }
 
@@ -175,10 +193,8 @@ public class JobsTopManager {
 
     private List<Job> processJobs(List<Job> jobs) {
         List<Job> jobList = new LinkedList<>();
-        jobs.sort(Comparator.comparing(Job::getCreationDate));
-        if (jobs.size() > jobsLimit) {
-            jobs = jobs.subList(jobs.size() - jobsLimit, jobs.size());
-        }
+        jobs.sort(Comparator.comparing(Job::getCreationDate).thenComparing(j -> CollectionUtils.size(j.getDependsOn())));
+        jobs = trimJobs(jobs);
 
         int jobDependsMax = 5;
         for (Job job : jobs) {
@@ -214,14 +230,34 @@ public class JobsTopManager {
             }
         }
 
-        while (jobList.size() > jobsLimit) {
-            jobList.remove(0);
-            while (jobList.get(0).getId().startsWith("├") || jobList.get(0).getId().startsWith("└")) {
-                jobList.remove(0);
-            }
-        }
+        jobList = trimJobs(jobList);
 
         return jobList;
+    }
+
+    private List<Job> trimJobs(List<Job> jobs) {
+        int i = 0;
+        while (jobs.size() > jobsLimit) {
+            if (i > jobs.size()) {
+                jobs = jobs.subList(jobs.size() - jobsLimit, jobs.size());
+                while (jobs.size() > 0 && jobs.get(0).getId().startsWith("├") || jobs.get(0).getId().startsWith("└")) {
+                    jobs.remove(0);
+                }
+                break;
+            }
+            Job job = jobs.get(i);
+            if (job.getInternal() != null
+                    && job.getInternal().getStatus() != null
+                    && Enums.ExecutionStatus.RUNNING.equals(job.getInternal().getStatus().getName())) {
+                i++;
+            } else {
+                jobs.remove(i);
+                while (jobs.size() > i && jobs.get(i).getId().startsWith("├") || jobs.get(i).getId().startsWith("└")) {
+                    jobs.remove(i);
+                }
+            }
+        }
+        return jobs;
     }
 
     private static Date getStart(Job job) {
@@ -229,7 +265,21 @@ public class JobsTopManager {
     }
 
     private static Date getEnd(Job job) {
-        return job.getExecution() == null ? null : job.getExecution().getEnd();
+        if (job.getExecution() == null) {
+            return null;
+        } else {
+            if (job.getExecution().getEnd() != null) {
+                return job.getExecution().getEnd();
+            } else {
+                if (job.getInternal() != null && job.getInternal().getStatus() != null) {
+                    if (Enums.ExecutionStatus.ERROR.equals(job.getInternal().getStatus().getName())
+                            && StringUtils.isNotEmpty(job.getInternal().getStatus().getDate())) {
+                        return TimeUtils.toDate(job.getInternal().getStatus().getDate());
+                    }
+                }
+                return null;
+            }
+        }
     }
 
     private static String getDurationString(Job job) {

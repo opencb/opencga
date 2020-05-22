@@ -33,6 +33,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -45,7 +46,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.ToolParams;
@@ -71,6 +72,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
@@ -388,8 +390,8 @@ public class OpenCGAWSServer {
                 case Constants.FORCE:
                     queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
                     break;
-                case Constants.FLATTENED_ANNOTATIONS:
-                    queryOptions.put(Constants.FLATTENED_ANNOTATIONS, Boolean.parseBoolean(value));
+                case ParamConstants.FLATTEN_ANNOTATIONS:
+                    queryOptions.put(ParamConstants.FLATTEN_ANNOTATIONS, Boolean.parseBoolean(value));
                     break;
                 case ParamConstants.OTHER_STUDIES_FLAG:
                     queryOptions.put(ParamConstants.OTHER_STUDIES_FLAG, Boolean.parseBoolean(value));
@@ -716,20 +718,47 @@ public class OpenCGAWSServer {
         }
     }
 
+    public Response submitJob(String toolId, String project, String study, Map<String, Object> paramsMap,
+                               String jobName, String jobDescription, String jobDependsOne, String jobTags) {
+        return run(() -> submitJobRaw(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags));
+    }
+
     public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobId, String jobDescription,
+                              String jobDependsOnStr, String jobTagsStr) {
+        return submitJob(toolId, null, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+    }
+
+    public Response submitJob(String toolId, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
                               String jobDependsOnStr, String jobTagsStr) {
         return run(() -> {
             Map<String, Object> paramsMap = bodyParams.toParams();
             if (StringUtils.isNotEmpty(study)) {
                 paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
             }
-            return submitJobRaw(toolId, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+            return submitJobRaw(toolId, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
         });
     }
 
-    protected DataResult<Job> submitJobRaw(String toolId, String study, Map<String, Object> paramsMap,
-                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+    private DataResult<?> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap,
+                                       String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
             throws CatalogException {
+
+        if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {
+            // Project job
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+            // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
+            List<String> studies = catalogManager.getStudyManager()
+                    .get(project, new Query(), options, token)
+                    .getResults()
+                    .stream()
+                    .map(Study::getFqn)
+                    .collect(Collectors.toList());
+            if (studies.isEmpty()) {
+                throw new CatalogException("Project '" + project + "' not found!");
+            }
+            study = studies.get(0);
+        }
+
         List<String> jobTags;
         if (StringUtils.isNotEmpty(jobTagsStr)) {
             jobTags = Arrays.asList(jobTagsStr.split(","));
