@@ -353,7 +353,7 @@
         },
         "enableMonitor": {
             "type": "string",
-            "value": "[concat('az hdinsight monitor enable --name ', variables('clusterName'), ' --resource-group ',resourceGroup().name ,' --workspace-id ',parameters('LogAnalyticsWorkspaceID') ,' --primary-key ',parameters('LogAnalyticsWorkspaceKey'))]"
+            "value": "[concat('az hdinsight monitor enable --name ', variables('clusterName'), ' --resource-group ',resourceGroup().name ,' --workspace ',parameters('LogAnalyticsWorkspaceID') ,' --primary-key ',parameters('LogAnalyticsWorkspaceKey'))]"
         }
     }
 }
