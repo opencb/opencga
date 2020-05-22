@@ -42,21 +42,34 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
     private String groupsSearch;
     private String usersSearch;
+    private String fullNameKey;
+    private String dnKey;
+    private String dnFormat;
 
     private long expiration;
 
     private static final String OPENCGA_GECOS = "opencga_gecos";
+    private Boolean ldaps;
 
     public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String secretKeyString, long expiration) {
         super();
 
         this.host = authenticationOrigin.getHost();
-        if (!this.host.startsWith("ldap://")) {
+
+        if (host.startsWith("ldaps://")) {  // use LDAPS if specified explicitly
+            this.ldaps = true;
+        } else if (!this.host.startsWith("ldap://")) {  // otherwise default to LDAP
             this.host = "ldap://" + this.host;
         }
+
         this.originId = authenticationOrigin.getId();
-        this.groupsSearch = String.valueOf(authenticationOrigin.getOptions().get(AuthenticationOrigin.GROUPS_SEARCH));
-        this.usersSearch = String.valueOf(authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
+
+        Map<String, Object> authOptions = authenticationOrigin.getOptions();
+        this.groupsSearch = String.valueOf(authOptions.get(AuthenticationOrigin.GROUPS_SEARCH));
+        this.usersSearch = String.valueOf(authOptions.get(AuthenticationOrigin.USERS_SEARCH));
+        this.fullNameKey = String.valueOf(authOptions.get(AuthenticationOrigin.FULLNAME_KEY));
+        this.dnKey = String.valueOf(authOptions.get(AuthenticationOrigin.DN_KEY));
+        this.dnFormat = String.valueOf(authOptions.get(AuthenticationOrigin.DN_FORMAT));
 
         this.expiration = expiration;
 
@@ -84,8 +97,16 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             env.put(Context.PROVIDER_URL, host);
 
             env.put(Context.SECURITY_AUTHENTICATION, "simple");
-            env.put(Context.SECURITY_PRINCIPAL, rdn);
             env.put(Context.SECURITY_CREDENTIALS, password);
+
+            if (ldaps) {
+                String uid = userInfoFromLDAP.get(0).get(dnKey).get(0).toString();
+                String dn = String.format(dnFormat, uid);
+                env.put(Context.SECURITY_PRINCIPAL, dn);
+                env.put(Context.SECURITY_PROTOCOL, "ssl");
+            } else {
+                env.put(Context.SECURITY_PRINCIPAL, rdn);
+            }
 
             // Create the initial context
             new InitialDirContext(env);
@@ -134,7 +155,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         String rdn;
         for (Attributes attrs : userAttrList) {
             try {
-                displayName = LDAPUtils.getFullName(attrs);
+                displayName = LDAPUtils.getFullName(attrs, fullNameKey);
                 mail = LDAPUtils.getMail(attrs);
                 uid = LDAPUtils.getUID(attrs);
                 rdn = LDAPUtils.getRDN(attrs);
