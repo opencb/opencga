@@ -6,11 +6,10 @@ from pyopencga.retry import retry
 class _ParentRestClient(object):
     """Queries the REST service given the different query params"""
 
-    def __init__(self, configuration, category, token=None, login_handler=None,
+    def __init__(self, configuration, token=None, login_handler=None,
                  auto_refresh=True):
         self.auto_refresh = auto_refresh
         self._cfg = configuration
-        self._category = category
         self.token = token
         self.login_handler = login_handler
         self.on_retry = None
@@ -32,7 +31,7 @@ class _ParentRestClient(object):
         else:
             return str(query_ids)
 
-    def _rest_retry(self, method, resource, query_id=None, subcategory=None,
+    def _rest_retry(self, method, category, resource, query_id=None, subcategory=None,
                     second_query_id=None, data=None, dont_retry=None,
                     **options):
 
@@ -42,7 +41,7 @@ class _ParentRestClient(object):
             return execute(host=self._cfg.host,
                            version=self._cfg.version,
                            sid=self.token,
-                           category=self._category,
+                           category=category,
                            subcategory=subcategory,
                            method=method,
                            query_id=query_ids_str,
@@ -55,7 +54,7 @@ class _ParentRestClient(object):
             if self.on_retry is not None:
                 self.on_retry(self, exc_type, exc_val, exc_tb, dict(
                     method=method, resource=resource, query_id=query_id,
-                    category=self._category, subcategory=subcategory,
+                    category=category, subcategory=subcategory,
                     second_query_id=second_query_id, data=data,
                     options=options
                 ))
@@ -70,36 +69,36 @@ class _ParentRestClient(object):
             self._refresh_token_client()
         return RestResponse(response)
 
-    def _get(self, resource, query_id=None, subcategory=None,
+    def _get(self, category, resource, query_id=None, subcategory=None,
              second_query_id=None, **options):
         """Queries the REST service and returns the result"""
         return self._rest_retry(
-            method='get', resource=resource, query_id=query_id,
+            method='get', category=category, resource=resource, query_id=query_id,
             subcategory=subcategory, second_query_id=second_query_id,
             **options
         )
 
-    def _post(self, resource, data=None, query_id=None, subcategory=None,
+    def _post(self, category, resource, data=None, query_id=None, subcategory=None,
               second_query_id=None, **options):
         """Queries the REST service and returns the result"""
         if data is not None:
             return self._rest_retry(
-                method='post', resource=resource, query_id=query_id,
+                method='post', category=category, resource=resource, query_id=query_id,
                 subcategory=subcategory, second_query_id=second_query_id,
                 data=data, **options
             )
         else:
             return self._rest_retry(
-                method='post', resource=resource, query_id=query_id,
+                method='post', category=category, resource=resource, query_id=query_id,
                 subcategory=subcategory, second_query_id=second_query_id,
                 **options
             )
 
-    def _delete(self, resource, query_id=None, subcategory=None,
+    def _delete(self, category, resource, query_id=None, subcategory=None,
                 second_query_id=None, **options):
         """Queries the REST service and returns the result"""
         return self._rest_retry(
-            method='delete', resource=resource, query_id=query_id,
+            method='delete', category=category, resource=resource, query_id=query_id,
             subcategory=subcategory, second_query_id=second_query_id,
             **options
         )

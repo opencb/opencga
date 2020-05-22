@@ -20,6 +20,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.MutationalSignature;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -31,6 +32,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
+import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
@@ -40,7 +43,6 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureResult;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -76,6 +78,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
@@ -841,18 +844,21 @@ public class VariantWebService extends AnalysisWebService {
 
     @GET
     @Path("/mutationalSignature/query")
-    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION + " Use context index.",
-            response = MutationalSignatureAnalysisParams.class)
+    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION + " Use context index.", response = MutationalSignature.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query")
     })
     public Response mutationalSignatureQuery(
-            @ApiParam(value = "Compute mutational signature summary image", defaultValue = "false") @QueryParam("image") boolean image) {
+            @ApiParam(value = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour",
+                    defaultValue = "false") @QueryParam("fitting") boolean fitting) {
         try {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
@@ -873,15 +879,15 @@ public class VariantWebService extends AnalysisWebService {
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);
-            executorParams.put("image", image);
+            executorParams.put("fitting", fitting);
             executor.setUp(null, executorParams, outDir.toPath());
             executor.setStudy(query.getString(STUDY.key()));
             executor.setSampleName(query.getString(SAMPLE.key()));
 
             StopWatch watch = StopWatch.createStarted();
-            MutationalSignatureResult signatureResult = executor.query(query, queryOptions);
+            MutationalSignature signatureResult = executor.query(query, queryOptions);
             watch.stop();
-            OpenCGAResult<MutationalSignatureResult> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+            OpenCGAResult<MutationalSignature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                     Collections.singletonList(signatureResult), 1);
 
             // Delete temporal directory
@@ -995,6 +1001,82 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = KnockoutAnalysisParams.DESCRIPTION, required = true) KnockoutAnalysisParams params) {
         return submitJob(KnockoutAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @GET
+    @Path("/circos")
+    @ApiOperation(value = CircosAnalysis.DESCRIPTION + " Use context index.", response = String.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query")
+    })
+    public Response circos(
+            @ApiParam(value = "Plot copy-number track", defaultValue = "true") @QueryParam("plotCopyNumber") boolean plotCopyNumber,
+            @ApiParam(value = "Plot INDELs track", defaultValue = "true") @QueryParam("plotIndels") boolean plotIndels,
+            @ApiParam(value = "Plot rearrangements track", defaultValue = "true") @QueryParam("plotRearrangements") boolean plotRearrangements) {
+        try {
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = getVariantQuery(queryOptions);
+
+            if (!query.containsKey(SAMPLE.key())) {
+                return createErrorResponse(new Exception("Missing sample name"));
+            }
+
+            // Create temporal directory
+            File outDir = Paths.get("/tmp/circos-" + System.nanoTime()).toFile();
+            outDir.mkdir();
+            if (!outDir.exists()) {
+                return createErrorResponse(new Exception("Error creating temporal directory for Circos analysis"));
+            }
+            System.out.println(">>> outDir = " + outDir);
+
+            CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor();
+            ObjectMap executorParams = new ObjectMap();
+            executorParams.put("opencgaHome", opencgaHome);
+            executorParams.put("token", token);
+            executorParams.put("plotCopyNumber", plotCopyNumber);
+            executorParams.put("plotIndels", plotIndels);
+            executorParams.put("plotRearrangements", plotRearrangements);
+            executor.setUp(null, executorParams, outDir.toPath());
+            executor.setStudy(query.getString(STUDY.key()));
+            executor.setQuery(query);
+
+            StopWatch watch = StopWatch.createStarted();
+            executor.run();
+            File imgFile = outDir.toPath().resolve(query.getString(SAMPLE.key()) + CircosAnalysis.SUFFIX_FILENAME).toFile();
+            if (imgFile.exists()) {
+                FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
+                byte[] bytes = new byte[(int) imgFile.length()];
+                fileInputStreamReader.read(bytes);
+
+                String img = new String(Base64.getEncoder().encode(bytes), "UTF-8");
+
+                watch.stop();
+                OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+                        Collections.singletonList(img), 1);
+
+                // Delete temporal directory
+//            FileUtils.deleteDirectory(outDir);
+
+                return createOkResponse(result);
+            } else {
+                // Delete temporal directory
+//            FileUtils.deleteDirectory(outDir);
+
+                return createErrorResponse(new Exception("Error plotting Circos graph"));
+            }
+
+
+        } catch (ToolException | IOException e) {
+            return createErrorResponse(e);
+        }
     }
 
     //    @POST
