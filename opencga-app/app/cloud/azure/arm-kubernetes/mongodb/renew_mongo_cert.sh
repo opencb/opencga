@@ -3,23 +3,15 @@
 set -e
 
 # Define variables
-DOMAIN=$1
+APP_DNS_NAME=$1
 
-# renew cert
-certbot renew
-
-# combine latest letsencrypt files for mongo
-
-# find latest fullchain*.pem
-newestFull=$(ls -v /etc/letsencrypt/archive/"$DOMAIN"/fullchain*.pem | tail -n 1)
-echo "$newestFull"
-
-# find latest privkey*.pem
-newestPriv=$(ls -v /etc/letsencrypt/archive/"$DOMAIN"/privkey*.pem | tail -n 1)
-echo "$newestPriv"
+# Generate self-signed cert
+openssl req -x509 -newkey rsa:4096 \
+    -keyout key.pem -out cert.pem -days 365 \
+    -subj "/C=GB/O=OpenCB/CN=${APP_DNS_NAME}" -nodes
 
 # combine to mongo.pem
-cat {$newestFull,$newestPriv} | tee /etc/ssl/mongo.pem
+cat key.pem cert.pem | tee /etc/ssl/mongo.pem
 
 # set rights for mongo.pem
 chmod 600 /etc/ssl/mongo.pem

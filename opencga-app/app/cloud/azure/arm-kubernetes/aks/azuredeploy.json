@@ -273,7 +273,7 @@
         },
 
         "kubernetesVersion": {
-            "defaultValue": "1.15.5",
+            "defaultValue": "1.16.7",
             "type": "string",
             "metadata": {
                 "description": "The version of Kubernetes."
@@ -556,8 +556,7 @@
         }
     },
     "variables": {
-        "resgpguid": "[substring(replace(guid(resourceGroup().id), '-', ''), 0, 4)]",
-        "aksClusterName": "[concat('aks' , variables('resgpguid'))]",
+        "aksClusterName": "aks",
         "aksClusterId": "[resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName'))]",
         "networkContributorRole": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '4d97b98b-1d4f-4787-a291-c67834d212e7')]"
     },
@@ -631,9 +630,7 @@
                         "enabled": "[equals(parameters('jobsAgentPoolOrVirtualNode'),'VirtualNode')]"
                     }
                 },
-
                 "servicePrincipalProfile": {
-
                     "clientId": "[parameters('aksServicePrincipalAppId')]",
                     "secret": "[parameters('aksServicePrincipalClientSecret')]"
                 },

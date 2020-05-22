@@ -42,6 +42,13 @@
                 "description": "Location for deployment"
             }
         },
+        "privateDnsZonesName": {
+            "type": "string",
+            "defaultValue": "opencga.zone",
+            "metadata": {
+                "description": "Private internal DNS name"
+            }
+        },
         "aksServicePrincipalAppId": {
             "type": "string"
         },
@@ -68,38 +75,6 @@
             "type": "securestring",
             "metadata": {
                 "description": "This Data is used to derive unique passwords for several different services. Select a unique and random combination of data, the longer the better, and do not disclose it."
-            }
-        },
-        "sslCertificateEmail": {
-            "type": "string",
-            "metadata": {
-                "description": "Email address used for mongoDB letsencrypt certificates"
-            }
-        },
-        "solrDiskSizeGB": {
-            "type": "int",
-            "defaultValue": 512,
-            "metadata": {
-                "description": "Size of the data disk for Solr."
-            }
-        },
-        "zookeeperVMSize": {
-            "type": "string",
-            "defaultValue": "Standard_D2_v2",
-            "metadata": {
-                "description": "Size of the zookeeper VM"
-            }
-        },
-        "solrDiskType": {
-            "type": "string",
-            "defaultValue": "StandardSSD_LRS",
-            "allowedValues": [
-                "Standard_LRS",
-                "Premium_LRS",
-                "StandardSSD_LRS"
-            ],
-            "metadata": {
-                "description": "Storage Account type"
             }
         },
         "catalogSecretKey": {
@@ -151,6 +126,30 @@
             "metadata": {
                 "description": "Optionally deploy a login node named {rgPrefix}-login01"
             }
+        },
+        "networkCIDR": {
+            "type": "object",
+            "metadata": {
+                "description": "Object containing all the hardcoded IPs and CIDRs required for the deployment"
+            },
+            "defaultValue": {
+                "vnet": {
+                    "addressPrefixes": "10.0.0.0/16",
+                    "subnets": {
+                        "kubernetes": "10.0.0.0/22",
+                        "aci": "10.0.4.0/22",
+                        "hdinsight": "10.0.8.0/24",
+                        "mongo": "10.0.9.0/24",
+                        "solr": "10.0.10.0/24",
+                        "login": "10.0.12.0/24"
+                    }
+                },
+                "aks": {
+                    "serviceCIDR": "10.0.100.0/24",
+                    "dnsServiceIP" : "10.0.100.10",
+                    "dockerBridgeCIDR" : "172.17.0.1/16"
+                }
+            }
         }
     },
     "variables": {
@@ -161,18 +160,24 @@
                 "aks": {
                     "nodeCount": 3,
                     "nodeSize": "Standard_D2s_v3",
-                    "maxJobsPoolAgents": 10,
+                    "maxJobsPoolAgents": 3,
                     "aksJobsAgentVMSize": "Standard_D4s_v3"
                 },
                 "solr": {
                     "ha": false,
                     "nodeSize": "Standard_E4_v3",
-                    "nodeCount": 1
+                    "nodeCount": 1,
+                    "diskType": "StandardSSD_LRS",
+                    "diskSizeGB": 512,
+                    "zookeeper": {
+                        "nodeSize": "Standard_D2_v2"
+                    }
                 },
                 "mongo": {
                     "nodeCount": 1,
                     "nodeSize": "Standard_D4s_v3",
-                    "diskType": "E10"
+                    "diskType": "StandardSSD_LRS",
+                    "diskSizeGB": 512
                 },
                 "hdInsight": {
                     "head": {
@@ -197,13 +202,18 @@
                 "solr": {
                     "ha": true,
                     "nodeSize": "Standard_E8_v3",
-                    "nodeCount": 2
+                    "nodeCount": 2,
+                    "diskType": "StandardSSD_LRS",
+                    "diskSizeGB": 1028,
+                    "zookeeper": {
+                        "nodeSize": "Standard_D2_v2"
+                    }
                 },
-
                 "mongo": {
                     "nodeCount": 3,
                     "nodeSize": "Standard_E8s_v3",
-                    "diskType": "P20"
+                    "diskType": "StandardSSD_LRS",
+                    "diskSizeGB": 1028
                 },
                 "hdInsight": {
                     "head": {
@@ -228,12 +238,18 @@
                 "solr": {
                     "ha": true,
                     "nodeSize": "Standard_E16_v3",
-                    "nodeCount": 2
+                    "nodeCount": 2,
+                    "diskType": "Premium_LRS",
+                    "diskSizeGB": 2018,
+                    "zookeeper": {
+                        "nodeSize": "Standard_D2_v2"
+                    }
                 },
                 "mongo": {
                     "nodeCount": 5,
                     "nodeSize": "Standard_E16s_v3",
-                    "diskType": "P20"
+                    "diskType": "Premium_LRS",
+                    "diskSizeGB": 1028
                 },
                 "hdInsight": {
                     "head": {
@@ -272,6 +288,36 @@
                 "templateLink": {
                     "uri": "[concat(parameters('_artifactsLocation'), '/vnet/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "cidr": {
+                        "value" : "[parameters('networkCIDR').vnet]"
+                    }
+                }
+            }
+        },
+        {
+            "resourceGroup": "[parameters('rgPrefix')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "dns",
+            "dependsOn": [
+                "vnet",
+                "[parameters('rgPrefix')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/dns/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "privateDnsZonesName" : {
+                        "value": "[parameters('privateDnsZonesName')]"
+                    },
+                    "vnetId": {
+                        "value": "[reference('vnet').outputs.vnetId.value]"
+                    }
                 }
             }
         },
@@ -443,6 +489,15 @@
                     "vnetId": {
                         "value": "[reference('vnet').outputs.vnetId.value]"
                     },
+                    "aksServiceCIDR": {
+                        "value": "[parameters('networkCIDR').aks.serviceCIDR]"
+                    },
+                    "aksDnsServiceIP": {
+                        "value": "[parameters('networkCIDR').aks.dnsServiceIP]"
+                    },
+                    "aksDockerBridgeCIDR": {
+                        "value": "[parameters('networkCIDR').aks.dockerBridgeCIDR]"
+                    },
                     "kubernetesSubnetId": {
                         "value": "[reference('vnet').outputs.kubernetesSubnetId.value]"
                     },
@@ -470,8 +525,8 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "name" : {
-                        "value" : "[parameters('rgPrefix')]"
+                    "VMName" : {
+                        "value" : "[concat(parameters('rgPrefix'), '-login01')]"
                     },
                     "adminUsername" : {
                         "value": "[parameters('adminUsername')]"
@@ -480,7 +535,7 @@
                         "value": "[parameters('sshAdminKeyData')]"
                     },
                     "subnetId" : {
-                        "value" : "[reference('vnet').outputs.login.value]"
+                        "value" : "[reference('vnet').outputs.loginSubnetId.value]"
                     },
                     "LogAnalyticsWorkspaceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
@@ -518,7 +573,7 @@
                 },
                 "parameters": {
                     "clusterName": {
-                        "value": "opencga"
+                        "value": "[parameters('rgPrefix')]"
                     },
                     "subnetId": {
                         "value": "[reference('vnet').outputs.solrSubnetId.value]"
@@ -541,17 +596,17 @@
                     "highAvailability": {
                         "value": "[variables('selectedSize').solr.ha]"
                     },
+                    "solrDiskType": {
+                        "value": "[variables('selectedSize').solr.diskType]"
+                    },
                     "solrDiskSizeGB": {
-                        "value": "[parameters('solrDiskSizeGB')]"
+                        "value": "[variables('selectedSize').solr.diskSizeGB]"
                     },
                     "solrVMSize": {
                         "value": "[variables('selectedSize').solr.nodeSize]"
                     },
                     "zookeeperVMSize": {
-                        "value": "[parameters('zookeeperVMSize')]"
-                    },
-                    "diskType": {
-                        "value": "[parameters('solrDiskType')]"
+                        "value": "[variables('selectedSize').solr.zookeeper.nodeSize]"
                     },
                     "LogAnalyticsWorkspaceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
@@ -580,7 +635,8 @@
             "name": "mongodb",
             "dependsOn": [
                 "vnet",
-                "[parameters('rgPrefix')]"
+                "[parameters('rgPrefix')]",
+                "dns"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -589,11 +645,20 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
                     "subnetId": {
-                        "value": "[reference('vnet').outputs.mongoSubnetId.value]"
+                        "value": "[reference('vnet').outputs.mongodbSubnetId.value]"
                     },
                     "location": {
                         "value": "[parameters('rgLocation')]"
+                    },
+                    "clusterName": {
+                        "value": "[parameters('rgPrefix')]"
                     },
                     "vmSize": {
                         "value": "[variables('selectedSize').mongo.nodeSize]"
@@ -601,8 +666,14 @@
                     "clusterSize": {
                         "value": "[variables('selectedSize').mongo.nodeCount]"
                     },
-                    "certificateEmail": {
-                        "value": "[parameters('sslCertificateEmail')]"
+                    "diskType": {
+                        "value": "[variables('selectedSize').mongo.diskType]"
+                    },
+                    "diskSizeGB": {
+                        "value": "[variables('selectedSize').mongo.diskSizeGB]"
+                    },
+                    "dnsZonesName": {
+                        "value": "[parameters('privateDnsZonesName')]"
                     },
                     "adminUsername": {
                         "value": "[parameters('adminUsername')]"

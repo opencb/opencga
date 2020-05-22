@@ -2,18 +2,6 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "diskType": {
-      "type": "string",
-      "defaultValue": "StandardSSD_LRS",
-      "allowedValues": [
-        "Standard_LRS",
-        "Premium_LRS",
-        "StandardSSD_LRS"
-      ],
-      "metadata": {
-        "description": "Storage Account type"
-      }
-    },
     "clusterName": {
       "type": "string",
       "defaultValue": "opencga",
@@ -26,6 +14,25 @@
       "defaultValue": "Standard_E8_v3",
       "metadata": {
         "description": "Size of the VM"
+      }
+    },
+    "solrDiskType": {
+      "type": "string",
+      "defaultValue": "StandardSSD_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Premium_LRS",
+        "StandardSSD_LRS"
+      ],
+      "metadata": {
+        "description": "Storage Account type"
+      }
+    },
+    "solrDiskSizeGB": {
+      "type": "int",
+      "defaultValue": 512,
+      "metadata": {
+        "description": "Size of the data disk for Solr."
       }
     },
     "zookeeperVMSize": {
@@ -73,13 +80,6 @@
       "defaultValue": "8.4",
       "metadata": {
         "description": "Version of Apache Solr."
-      }
-    },
-    "solrDiskSizeGB": {
-      "type": "int",
-      "defaultValue": 512,
-      "metadata": {
-        "description": "Size of the data disk for Solr."
       }
     },
     "_artifactsLocation": {
@@ -325,18 +325,18 @@
             "name": "[variables('vmNames')[copyIndex()].diskName]",
             "caching": "ReadWrite",
             "createOption": "FromImage",
-            "diskSizeGB": "[parameters('solrDiskSizeGB')]",
+            "diskSizeGB": 64,
             "managedDisk": {
-              "storageAccountType": "[parameters('diskType')]"
+              "storageAccountType": "StandardSSD_LRS"
             }
           },
           "dataDisks": [
             {
-                "diskSizeGB": 1023,
+                "diskSizeGB": "[parameters('solrDiskSizeGB')]",
                 "lun": 0,
                 "createOption": "Empty",
                 "managedDisk": {
-                    "storageAccountType": "StandardSSD_LRS"
+                    "storageAccountType": "[parameters('solrDiskType')]"
                 }
             }
           ]
