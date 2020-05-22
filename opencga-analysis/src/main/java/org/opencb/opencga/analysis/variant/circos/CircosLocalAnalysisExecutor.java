@@ -175,10 +175,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     if (sv != null) {
                         if (sv.getType() == StructuralVariantType.COPY_NUMBER_GAIN) {
                             pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
-                                    + sv.getCopyNumber() + "\t0");
+                                    + sv.getCopyNumber() + "\t1");
                         } else if (sv.getType() == StructuralVariantType.COPY_NUMBER_LOSS) {
                             pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
-                                    + "0\t" + sv.getCopyNumber());
+                                    + "1\t" + sv.getCopyNumber());
                         } else {
                             addWarning("Skipping variant " + v.toString() + ": invalid SV type " + sv.getType() + " for copy-number (CNV)");
                         }
@@ -275,11 +275,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         if (sv != null) {
                             if (sv.getBreakend() != null) {
                                 if (sv.getBreakend().getMate() != null) {
-                                    // To check
-                                    int length = StringUtils.length(sv.getBreakend().getInsSeq());
                                     BreakendMate mate = sv.getBreakend().getMate();
                                     pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + mate.getChromosome()
-                                            + "\t" + mate.getPosition() + "\t" + (mate.getPosition() + length) + "\t" + type);
+                                            + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
                                 } else {
                                     addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", breakend mate is empty for"
                                             + " rearrangement");
