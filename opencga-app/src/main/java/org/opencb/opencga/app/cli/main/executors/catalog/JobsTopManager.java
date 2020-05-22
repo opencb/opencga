@@ -265,7 +265,21 @@ public class JobsTopManager {
     }
 
     private static Date getEnd(Job job) {
-        return job.getExecution() == null ? null : job.getExecution().getEnd();
+        if (job.getExecution() == null) {
+            return null;
+        } else {
+            if (job.getExecution().getEnd() != null) {
+                return job.getExecution().getEnd();
+            } else {
+                if (job.getInternal() != null && job.getInternal().getStatus() != null) {
+                    if (Enums.ExecutionStatus.ERROR.equals(job.getInternal().getStatus().getName())
+                            && StringUtils.isNotEmpty(job.getInternal().getStatus().getDate())) {
+                        return TimeUtils.toDate(job.getInternal().getStatus().getDate());
+                    }
+                }
+                return null;
+            }
+        }
     }
 
     private static String getDurationString(Job job) {
