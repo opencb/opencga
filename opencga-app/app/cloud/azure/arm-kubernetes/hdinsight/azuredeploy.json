@@ -130,8 +130,11 @@
         "accountType": {
             "type": "string",
             "defaultValue": "Standard_LRS"
+        },
+        "skipRoleAssignment" : {
+            "type": "bool",
+            "defaultValue": false
         }
-     
     },
     "variables": {
         "clusterName": "[concat(parameters('clusterNamePrefix'), uniqueString(resourceGroup().id))]",
@@ -177,6 +180,7 @@
             "kind": "StorageV2",
             "resources": [
                 {
+                    "condition": "[not(parameters('skipRoleAssignment'))]",
                     "type": "Microsoft.Authorization/roleAssignments",
                     "apiVersion": "2018-01-01-preview",
                     "name": "[variables('storageRoleAssignmentId')]",

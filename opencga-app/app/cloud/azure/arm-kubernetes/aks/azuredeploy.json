@@ -548,6 +548,10 @@
                 "description": "Enable virtual node"
             }
         },
+        "skipRoleAssignment" : {
+            "type": "bool",
+            "defaultValue": false
+        },
         "LogAnalyticsWorkspaceResourceID": {
             "type": "string",
             "metadata": {
@@ -578,6 +582,7 @@
                     },
                     "resources": [
                         {
+                            "condition": "[not(parameters('skipRoleAssignment'))]",
                             "type": "Microsoft.Network/virtualNetworks/subnets/providers/roleAssignments",
                             "apiVersion": "2017-05-01",
                             "name": "[concat('vnet/kubernetes/Microsoft.Authorization/', guid(resourceGroup().id, 'aksvnetaccess'))]",
@@ -588,6 +593,7 @@
                             }
                         },
                         {
+                            "condition": "[not(parameters('skipRoleAssignment'))]",
                             "type": "Microsoft.Network/virtualNetworks/providers/roleAssignments",
                             "apiVersion": "2017-05-01",
                             "name": "[concat('vnet/Microsoft.Authorization/', guid(resourceGroup().id, 'acivnetaccess'))]",

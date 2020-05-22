@@ -150,6 +150,13 @@
                     "dockerBridgeCIDR" : "172.17.0.1/16"
                 }
             }
+        },
+        "skipRoleAssignment" : {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Do not execute role assignments. This option could be interesting in scenarios were the account does not have User Access Administrator role. In this case, the role assignments should be done manually. See README.md#(Deploy without User Access Administrator role)"
+            }
         }
     },
     "variables": {
@@ -427,6 +434,9 @@
                     "subnetId": {
                         "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
+                    "skipRoleAssignment": {
+                        "value": "[parameters('skipRoleAssignment')]"
+                    },
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
                     },
@@ -476,7 +486,6 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-
                     "aksServicePrincipalAppId": {
                         "value": "[parameters('aksServicePrincipalAppId')]"
                     },
@@ -504,6 +513,9 @@
                     "vnetId": {
                         "value": "[reference('vnet').outputs.vnetId.value]"
                     },
+                    "kubernetesSubnetId": {
+                        "value": "[reference('vnet').outputs.kubernetesSubnetId.value]"
+                    },
                     "aksServiceCIDR": {
                         "value": "[parameters('networkCIDR').aks.serviceCIDR]"
                     },
@@ -513,8 +525,8 @@
                     "aksDockerBridgeCIDR": {
                         "value": "[parameters('networkCIDR').aks.dockerBridgeCIDR]"
                     },
-                    "kubernetesSubnetId": {
-                        "value": "[reference('vnet').outputs.kubernetesSubnetId.value]"
+                    "skipRoleAssignment": {
+                        "value": "[parameters('skipRoleAssignment')]"
                     },
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
@@ -578,7 +590,8 @@
             "apiVersion": "2018-05-01",
             "name": "solr",
             "dependsOn": [
-                "vnet"
+                "vnet",
+                "dns"
             ],
             "properties": {
                 "mode": "Incremental",
