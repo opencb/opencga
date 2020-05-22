@@ -306,7 +306,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         File contextFile = dir.resolve("context.txt").toFile();
         if (contextFile.exists()) {
             List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
-            Count[] sigCounts = new Count[lines.size()];
+            Count[] sigCounts = new Count[lines.size() - 1];
             for (int i = 1; i < lines.size(); i++) {
                 String[] fields = lines.get(i).split("\t");
                 sigCounts[i-1] = new Count(fields[2], Math.round(Float.parseFloat((fields[3]))));
