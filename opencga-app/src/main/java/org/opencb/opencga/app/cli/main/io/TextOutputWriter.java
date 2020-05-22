@@ -208,7 +208,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     private void printProject(List<DataResult<Project>> queryResultList) {
-        new Table<Project>()
+        new Table<Project>(tableType)
                 .addColumn("ID", Project::getId)
                 .addColumn("NAME", Project::getName)
                 .addColumn("ORGANISM", p -> StringUtils.defaultIfEmpty(p.getOrganism().getScientificName(), p.getOrganism().getCommonName()), "NA")
@@ -217,36 +217,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumnNumber("#STUDIES", p -> p.getStudies().size())
                 .addColumn("STATUS", p -> p.getInternal().getStatus().getName())
                 .printTable(unwind(queryResultList));
-
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<Project> queryResult : queryResultList) {
-            // Write header
-            sb.append("#ID\tNAME\tORGANISM\tASSEMBLY\tDESCRIPTION\t#STUDIES\tSTATUS\n");
-
-            for (Project project : queryResult.getResults()) {
-                String organism = "NA";
-                String assembly = "NA";
-                if (project.getOrganism() != null) {
-                    organism = StringUtils.isNotEmpty(project.getOrganism().getScientificName())
-                            ? project.getOrganism().getScientificName()
-                            : (StringUtils.isNotEmpty(project.getOrganism().getCommonName())
-                            ? project.getOrganism().getCommonName() : "NA");
-                    if (StringUtils.isNotEmpty(project.getOrganism().getAssembly())) {
-                        assembly = project.getOrganism().getAssembly();
-                    }
-                }
-
-                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%d\t%s\n", StringUtils.defaultIfEmpty(project.getId(), "-"),
-                        StringUtils.defaultIfEmpty(project.getName(), ","),
-                        organism, assembly, StringUtils.defaultIfEmpty(project.getDescription(), "-"),
-                        project.getStudies() != null ? project.getStudies().size() : -1,
-                        project.getInternal().getStatus() != null
-                                ? StringUtils.defaultIfEmpty(project.getInternal().getStatus().getName(), "-")
-                                : "-")
-                );
-            }
-        }
-        ps.println(sb.toString());
     }
 
     private void printStudy(List<DataResult<Study>> queryResultList) {
