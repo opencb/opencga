@@ -25,7 +25,7 @@
         "clusterName" : {
             "type": "string",
             "metadata": {
-                "description": "Location for all resources."
+                "description": "Cluster name."
             }
         },
         "vmSize": {

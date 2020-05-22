@@ -382,6 +382,9 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "clusterNamePrefix": {
+                        "value": "[replace(parameters('rgPrefix'), '-', '')]"
+                    },
                     "clusterLoginUserName": {
                         "value": "[parameters('adminUsername')]"
                     },
@@ -749,6 +752,10 @@
         "hdInsightSshPassword": {
             "type": "string",
             "value": "[reference('hdinsight').outputs.clusterSshPassword.value]"
+        },
+        "hdInsightEnableMonitor": {
+            "type": "string",
+            "value": "[reference('hdinsight').outputs.enableMonitor.value]"
         },
         "mongoDbHostsCSV": {
             "type": "string",
