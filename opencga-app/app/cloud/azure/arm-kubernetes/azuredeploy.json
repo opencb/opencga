@@ -327,13 +327,25 @@
             "apiVersion": "2018-05-01",
             "name": "storageaccount",
             "dependsOn": [
-                "[parameters('rgPrefix')]"
+                "[parameters('rgPrefix')]",
+                "vnet"
             ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
                     "uri": "[concat(parameters('_artifactsLocation'), '/storageaccount/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "storageNamePrefix": {
+                        "value": "[replace(parameters('rgPrefix'), '-', '')]"
+                    },
+                    "vnetId": {
+                        "value" : "[reference('vnet').outputs.vnetId.value]"
+                    },
+                    "subnetId": {
+                        "value" : "[reference('vnet').outputs.loginSubnetId.value]"
+                    }
                 }
             }
         },
@@ -704,7 +716,6 @@
         }
     ],
     "outputs": {
-
         "aksApiServerAddress": {
             "type": "string",
             "value": "[reference('aks').outputs.aksApiServerAddress.value]"

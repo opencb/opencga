@@ -35,6 +35,7 @@ deployID=${rgName}-`date "+%Y-%m-%d-%H.%M.%S"`-R${RANDOM}
 az account set --subscription "${subscriptionName}"
 az group create --name "${rgName}" --location "${location}"
 
+echo "# Uploading file templates"
 
 az storage account create \
     --resource-group "${rgName}" \
@@ -73,6 +74,8 @@ template_url="$(az storage blob url --container-name $templateContainer --name a
 blob_base_url="$(az storage account show -n $storageAccountName  --query primaryEndpoints.blob)"
 container_base_url=${blob_base_url//\"/}$templateContainer
 
+echo "# Deploy infrastructure"
+echo "az deployment sub create -n $deployID ... "
 DEPLOYMENT_OUT=deployment-outputs.json
 # deploy infra
 az deployment sub create -n $deployID  -l ${location} --template-uri $template_url \
@@ -86,6 +89,8 @@ az deployment sub create -n $deployID  -l ${location} --template-uri $template_u
 
 # Enable HDInsight monitor
 `jq -r '.properties.outputs.hdInsightEnableMonitor.value' ${DEPLOYMENT_OUT}`
+
+echo "# Deploy kubernetes"
 
 # deploy opencga
 az aks get-credentials -n $(jq -r '.properties.outputs.aksClusterName.value' ${DEPLOYMENT_OUT}) -g $(jq -r '.properties.outputs.aksResourceGroupName.value' ${DEPLOYMENT_OUT})

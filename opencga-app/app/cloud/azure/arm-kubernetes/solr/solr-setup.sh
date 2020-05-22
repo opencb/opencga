@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+#set -x
 set -e
 export DEBIAN_FRONTEND='noninteractive'
 # Wait for network
@@ -63,7 +63,7 @@ sudo chown 8983:8983 /datadrive/solr-volume
 docker run --rm -v /datadrive/solr-volume:/target solr:${SOLR_VERSION} cp -r server/solr /target/
 
 # get script
-docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh > /opt/solr.in.sh
+docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh.orig > /opt/solr.in.sh
 
 
 ZK_CLI=

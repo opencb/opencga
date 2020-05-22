@@ -126,12 +126,11 @@
                         "name": "login",
                         "properties": {
                             "addressPrefix": "[parameters('cidr').subnets.login]",
-                            "ipConfigurations": [
-                            ],
-                            "delegations": [
-                            ],
-                            "serviceEndpoints": [
-                            ],
+                            "ipConfigurations": [],
+                            "delegations": [],
+                            "serviceEndpoints": [],
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('loginNetworkSecurityGroupName'))]"
                             }

@@ -1,8 +1,6 @@
 #!/bin/bash
 
-#this script is wrapped into the mongodb template in base64
-#just here for reference
-
+#set -x
 set -e
 
 # echo $APP_DNS_NAME
@@ -101,7 +99,7 @@ generateCertificate() {
     crontab -l | { cat; echo "0 0 1 * * /opt/renew_mongo_cert.sh ${APP_DNS_NAME}"; } | crontab -
 }
 
-configureDataDrive() {}
+configureDataDrive() {
     #configure mongodb to use /datadrive for storage
     mkdir /datadrive/mongodb
     setfacl -R -m u:mongodb:rwx /datadrive/mongodb
@@ -167,7 +165,7 @@ configureSlaveNodes() {
 
 createReplicaSet() {
     echo "initiating replicaset"
-    mongo admin -u ${MONGODB_USERNAME} -p ${MONGODB_PASSWORD} --eval 'rs.initiate({_id: "rs0",members: [{_id: 0,host:"'${APP_DNS_NAME}':27017"}]})'
+    mongo admin -u ${MONGODB_USERNAME} -p ${MONGODB_PASSWORD} --tls --tlsAllowInvalidCertificates --eval 'rs.initiate({_id: "rs0",members: [{_id: 0,host:"'${APP_DNS_NAME}':27017"}]})'
 
     sleep 10
 
@@ -177,7 +175,7 @@ createReplicaSet() {
         #replacing 0. with 1., 2. etc
         VM_DNS=$(sed -e "s/0\./$c\./g" <<< $APP_DNS_NAME)
 
-        mongo admin -u ${MONGODB_USERNAME} -p ${MONGODB_PASSWORD} --eval 'rs.add("'${VM_DNS}':27017")'
+        mongo admin -u ${MONGODB_USERNAME} -p ${MONGODB_PASSWORD} --tls --tlsAllowInvalidCertificates --eval 'rs.add("'${VM_DNS}':27017")'
         sleep 5
     done
 
