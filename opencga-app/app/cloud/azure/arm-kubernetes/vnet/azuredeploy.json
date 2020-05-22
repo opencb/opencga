@@ -18,13 +18,26 @@
         }
     },
     "variables": {
+        "loginNetworkSecurityGroupName": "login-nsg"
     },
     "resources": [
+        {
+            "apiVersion": "2015-06-15",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('loginNetworkSecurityGroupName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": []
+            }
+        },
         {
             "apiVersion": "2018-08-01",
             "name": "vnet",
             "type": "Microsoft.Network/virtualNetworks",
             "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkSecurityGroups/', variables('loginNetworkSecurityGroupName'))]"
+            ],
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
@@ -118,7 +131,10 @@
                             "delegations": [
                             ],
                             "serviceEndpoints": [
-                            ]
+                            ],
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('loginNetworkSecurityGroupName'))]"
+                            }
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
                     }
