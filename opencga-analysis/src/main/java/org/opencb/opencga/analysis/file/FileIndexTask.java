@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -96,7 +97,7 @@ public class FileIndexTask extends OpenCgaTool {
                         FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
                         FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true)
-                .append(Constants.FLATTENED_ANNOTATIONS, true);
+                .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
         catalogSolrManager.insertCatalogCollection(catalogManager.getFileManager().iterator(study.getFqn(), query,
                 fileQueryOptions, token), new CatalogFileToSolrFileConverter(study), CatalogSolrManager.FILE_SOLR_COLLECTION);
