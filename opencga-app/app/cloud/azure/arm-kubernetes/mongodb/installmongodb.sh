@@ -33,9 +33,10 @@ installDeps () {
     apt-get install -y mongodb-org
     systemctl enable mongod.service
     add-apt-repository -y universe
-    add-apt-repository -y ppa:certbot/certbot
+    #add-apt-repository -y ppa:certbot/certbot
     apt-get update
-    apt-get install -y nginx certbot python-certbot-nginx
+    apt-get install -y nginx
+    #apt-get install -y certbot python-certbot-nginx
 
     #wait until nginx is available
     sleep 15
@@ -78,14 +79,29 @@ formatAndMountDisk() {
     echo "UUID=${fs_uuid}   /datadrive   xfs   defaults,nofail   1   2" >> /etc/fstab
 }
 
+#generateCertificate() {
+#    echo "generating certs"
+#    sed -i -e 's/# server_names_hash_bucket_size 64/server_names_hash_bucket_size 128/g' /etc/nginx/nginx.conf
+#    certbot --nginx -d ${APP_DNS_NAME} -m ${CERT_EMAIL} --agree-tos -q
+#    nginx -t && nginx -s reload
+#    cat /etc/letsencrypt/live/${APP_DNS_NAME}/privkey.pem /etc/letsencrypt/live/${APP_DNS_NAME}/cert.pem > /etc/ssl/mongo.pem
+#    cat /etc/letsencrypt/live/${APP_DNS_NAME}/chain.pem >> /etc/ssl/ca.pem
+#
+#
+#    #add cronjob to renew certificate
+#    crontab -l | { cat; echo "0 0 1 * * /opt/renew_mongo_cert.sh ${APP_DNS_NAME}"; } | crontab -
+#}
+
 generateCertificate() {
     echo "generating certs"
-    sed -i -e 's/# server_names_hash_bucket_size 64/server_names_hash_bucket_size 128/g' /etc/nginx/nginx.conf
-    certbot --nginx -d ${APP_DNS_NAME} -m ${CERT_EMAIL} --agree-tos -q
-    nginx -t && nginx -s reload
-    cat /etc/letsencrypt/live/${APP_DNS_NAME}/privkey.pem /etc/letsencrypt/live/${APP_DNS_NAME}/cert.pem > /etc/ssl/mongo.pem
-    cat /etc/letsencrypt/live/${APP_DNS_NAME}/chain.pem >> /etc/ssl/ca.pem
+    /opt/renew_mongo_cert.sh ${APP_DNS_NAME}
+    sleep 10
 
+    #add cronjob to renew certificate
+    crontab -l | { cat; echo "0 0 1 * * /opt/renew_mongo_cert.sh ${APP_DNS_NAME}"; } | crontab -
+}
+
+configureDataDrive() {}
     #configure mongodb to use /datadrive for storage
     mkdir /datadrive/mongodb
     setfacl -R -m u:mongodb:rwx /datadrive/mongodb
@@ -103,12 +119,9 @@ configureMongoDB() {
         echo "Waiting for Mongo DB"
         sleep 5
     done
-    
-    sed -i '/#security/csecurity:\n  authorization: "enabled"\n' /etc/mongod.conf
-    sed -i -e '/bindIp/ s/: .*/: ::,0.0.0.0\n  ssl:\n    mode: allowSSL\n    PEMKeyFile: \/etc\/ssl\/mongo.pem\n    CAFile: \/etc\/ssl\/ca.pem\n    allowConnectionsWithoutCertificates: true /' /etc/mongod.conf
 
-    #add cronjob to renew certificate
-    crontab -l | { cat; echo "0 0 1 * * /opt/renew_mongo_cert.sh ${APP_DNS_NAME}"; } | crontab -
+    sed -i '/#security/csecurity:\n  authorization: "enabled"\n' /etc/mongod.conf
+    sed -i -e '/bindIp/ s/: .*/: ::,0.0.0.0\n  ssl:\n    mode: requireTLS\n    PEMKeyFile: \/etc\/ssl\/mongo.pem\n    allowConnectionsWithoutCertificates: true\n    allowInvalidCertificates: true /' /etc/mongod.conf
 
     systemctl restart mongod
 }
@@ -203,6 +216,7 @@ configureTCPTimeout
 installDeps
 scanForNewDisks
 generateCertificate
+configureDataDrive
 
 # Generate a key for use by the cluster. We want to do this before the restore so the slave nodes can be configured correctly
 generateMongoKeyFile

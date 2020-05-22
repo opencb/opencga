@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -91,7 +92,7 @@ public class SampleIndexTask extends OpenCgaTool {
                         SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         SampleDBAdaptor.QueryParams.UID.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true)
-                .append(Constants.FLATTENED_ANNOTATIONS, true);
+                .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
         catalogSolrManager.insertCatalogCollection(catalogManager.getSampleManager().iterator(study.getFqn(), query, sampleQueryOptions,
                 token), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
