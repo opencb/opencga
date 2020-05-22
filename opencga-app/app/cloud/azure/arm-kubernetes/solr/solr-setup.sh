@@ -121,7 +121,7 @@ done
 
 # Add OpenCGA Configuration Sets
 # copy configset to volume ready to mount
-docker run --rm -v /datadrive/solr-volume/solr/configsets:/target opencb/opencga-base:2.0.0-dev cp -r /opt/opencga/misc/solr/* /target/
+docker run --rm -v /datadrive/solr-volume/solr/configsets:/target opencb/opencga-base:2.0.0-dev cp -r /opt/opencga/misc/solr/ /target/opencga/
 
 for i in `ls  /datadrive/solr-volume/solr/configsets/opencga/ | grep -v INSTALL.md` ; do
   docker exec ${DOCKER_NAME} /opt/solr/bin/solr zk upconfig -n $i -d /opt/solr/server/solr/configsets/opencga/$i $ZK_CLI

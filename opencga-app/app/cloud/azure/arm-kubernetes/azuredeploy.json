@@ -666,6 +666,12 @@
                     "clusterSize": {
                         "value": "[variables('selectedSize').mongo.nodeCount]"
                     },
+                    "diskType": {
+                        "value": "[variables('selectedSize').mongo.diskType]"
+                    },
+                    "diskSizeGB": {
+                        "value": "[variables('selectedSize').mongo.diskSizeGB]"
+                    },
                     "dnsZonesName": {
                         "value": "[parameters('privateDnsZonesName')]"
                     },

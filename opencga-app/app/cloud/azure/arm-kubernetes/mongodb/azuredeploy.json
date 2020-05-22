@@ -134,7 +134,7 @@
     },
     "variables": {
         "namingPrefix":"[concat(parameters('clusterName'), '-mongodb')]",
-        "vmName": "[concat(variables('namingPrefix'), '-vm')]",
+        "vmName": "[concat(variables('namingPrefix'))]",
         "nicName": "[concat(variables('namingPrefix'), '-nic')]",
 
         "copy": [
