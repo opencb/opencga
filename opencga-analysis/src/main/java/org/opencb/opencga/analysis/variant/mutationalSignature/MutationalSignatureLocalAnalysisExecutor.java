@@ -23,9 +23,9 @@ import htsjdk.samtools.util.GZIIndex;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.MutationalSignature;
-import org.opencb.biodata.models.clinical.MutationalSignature.Fitting.Score;
-import org.opencb.biodata.models.clinical.MutationalSignature.Signature.Count;
+import org.opencb.biodata.models.clinical.qc.MutationalSignature;
+import org.opencb.biodata.models.clinical.qc.Signature;
+import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -306,30 +306,30 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         File contextFile = dir.resolve("context.txt").toFile();
         if (contextFile.exists()) {
             List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
-            Count[] sigCounts = new Count[lines.size() - 1];
+            Signature.Count[] sigCounts = new Signature.Count[lines.size() - 1];
             for (int i = 1; i < lines.size(); i++) {
                 String[] fields = lines.get(i).split("\t");
-                sigCounts[i-1] = new Count(fields[2], Math.round(Float.parseFloat((fields[3]))));
+                sigCounts[i-1] = new Signature.Count(fields[2], Math.round(Float.parseFloat((fields[3]))));
             }
-            result.setSignature(new MutationalSignature.Signature("SNV", sigCounts));
+            result.setSignature(new Signature("SNV", sigCounts));
         }
 
         
         // Signatures coefficients
         File coeffsFile = dir.resolve("signature_coefficients.json").toFile();
         if (coeffsFile.exists()) {
-            MutationalSignature.Fitting fitting = new MutationalSignature.Fitting()
+            SignatureFitting fitting = new SignatureFitting()
                     .setMethod("GEL")
                     .setSignatureSource("Cosmic")
                     .setSignatureVersion("2.0");
 
             Map content = JacksonUtils.getDefaultObjectMapper().readValue(coeffsFile, Map.class);
             Map coefficients = (Map) content.get("coefficients");
-            Score[] scores = new Score[coefficients.size()];
+            SignatureFitting.Score[] scores = new SignatureFitting.Score[coefficients.size()];
             int i = 0;
             for (Object key : coefficients.keySet()) {
                 Number coeff = (Number) coefficients.get(key);
-                scores[i++] = new Score((String) key, coeff.doubleValue());
+                scores[i++] = new SignatureFitting.Score((String) key, coeff.doubleValue());
             }
             fitting.setScores(scores);
             fitting.setCoeff((Double) content.get("rss"));

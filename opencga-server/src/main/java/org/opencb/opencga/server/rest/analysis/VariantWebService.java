@@ -20,8 +20,8 @@ import io.swagger.annotations.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.MutationalSignature;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -72,8 +72,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;

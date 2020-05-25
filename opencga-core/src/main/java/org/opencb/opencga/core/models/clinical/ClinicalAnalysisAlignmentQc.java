@@ -8,9 +8,9 @@ import java.util.List;
 
 public class ClinicalAnalysisAlignmentQc {
 
-    List<AlignmentStats> stats;
-    List<GeneCoverageStats> geneCoverageStats;
-    List<File> files;
+    private List<AlignmentStats> stats;
+    private List<GeneCoverageStats> geneCoverageStats;
+    private List<File> files;
 
     public ClinicalAnalysisAlignmentQc() {
     }
