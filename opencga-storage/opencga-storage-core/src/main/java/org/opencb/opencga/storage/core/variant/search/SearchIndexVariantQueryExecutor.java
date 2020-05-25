@@ -271,11 +271,15 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 || VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_TRAIT)) {
             intersect = true;
         } else {
-            // TODO: Improve this heuristic
-            // Count only real params
-            Collection<VariantQueryParam> coveredParams = coveredParams(query);
-            coveredParams.removeAll(MODIFIER_QUERY_PARAMS);
-            intersect = coveredParams.size() >= intersectParamsThreshold;
+            if (options.getBoolean(QueryOptions.COUNT)) {
+                intersect = true;
+            } else {
+                // TODO: Improve this heuristic
+                // Count only real params
+                Collection<VariantQueryParam> coveredParams = coveredParams(query);
+                coveredParams.removeAll(MODIFIER_QUERY_PARAMS);
+                intersect = coveredParams.size() >= intersectParamsThreshold;
+            }
         }
 
         if (!intersect) {
