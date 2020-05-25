@@ -1419,34 +1419,38 @@ public class JobManager extends ResourceManager<Job> {
         allJobs.addAll(queued);
         allJobs.addAll(pending);
 
-        OpenCGAResult result = jobDBAdaptor.groupBy(new Query(baseQuery),
-                Collections.singletonList(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()), new QueryOptions(QueryOptions.COUNT, true),
-                userId);
         JobTopStats stats = new JobTopStats();
-        for (Object o : result.getResults()) {
-            String status = ((Map) ((Map) o).get("_id")).get(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()).toString();
-            int count = ((Number) ((Map) o).get("count")).intValue();
-            switch (status) {
-                case Enums.ExecutionStatus.RUNNING:
-                    stats.setRunning(count);
-                    break;
-                case Enums.ExecutionStatus.QUEUED:
-                    stats.setQueued(count);
-                    break;
-                case Enums.ExecutionStatus.PENDING:
-                    stats.setPending(count);
-                    break;
-                case Enums.ExecutionStatus.DONE:
-                    stats.setDone(count);
-                    break;
-                case Enums.ExecutionStatus.ERROR:
-                    stats.setError(count);
-                    break;
-                case Enums.ExecutionStatus.ABORTED:
-                    stats.setAborted(count);
-                    break;
-                default:
-                    break;
+        for (Study study : studies) {
+            OpenCGAResult result = jobDBAdaptor.groupBy(new Query(baseQuery)
+                            .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()),
+                    Collections.singletonList(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()),
+                    new QueryOptions(QueryOptions.COUNT, true),
+                    userId);
+            for (Object o : result.getResults()) {
+                String status = ((Map) ((Map) o).get("_id")).get(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()).toString();
+                int count = ((Number) ((Map) o).get("count")).intValue();
+                switch (status) {
+                    case Enums.ExecutionStatus.RUNNING:
+                        stats.setRunning(stats.getRunning() + count);
+                        break;
+                    case Enums.ExecutionStatus.QUEUED:
+                        stats.setQueued(stats.getQueued() + count);
+                        break;
+                    case Enums.ExecutionStatus.PENDING:
+                        stats.setPending(stats.getPending() + count);
+                        break;
+                    case Enums.ExecutionStatus.DONE:
+                        stats.setDone(stats.getDone() + count);
+                        break;
+                    case Enums.ExecutionStatus.ERROR:
+                        stats.setError(stats.getError() + count);
+                        break;
+                    case Enums.ExecutionStatus.ABORTED:
+                        stats.setAborted(stats.getAborted() + count);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
         JobTop top = new JobTop(Date.from(Instant.now()), stats, allJobs);
