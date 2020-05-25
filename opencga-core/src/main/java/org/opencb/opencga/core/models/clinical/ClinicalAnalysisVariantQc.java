@@ -1,18 +1,19 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.biodata.models.variant.stats.SampleQcVariantStats;
 import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
 
 public class ClinicalAnalysisVariantQc {
-    List<SampleVariantStats> stats;
+    List<SampleQcVariantStats> stats;
     List<File> files;
 
     public ClinicalAnalysisVariantQc() {
     }
 
-    public ClinicalAnalysisVariantQc(List<SampleVariantStats> stats, List<File> files) {
+    public ClinicalAnalysisVariantQc(List<SampleQcVariantStats> stats, List<File> files) {
         this.stats = stats;
         this.files = files;
     }
@@ -26,11 +27,11 @@ public class ClinicalAnalysisVariantQc {
         return sb.toString();
     }
 
-    public List<SampleVariantStats> getStats() {
+    public List<SampleQcVariantStats> getStats() {
         return stats;
     }
 
-    public ClinicalAnalysisVariantQc setStats(List<SampleVariantStats> stats) {
+    public ClinicalAnalysisVariantQc setStats(List<SampleQcVariantStats> stats) {
         this.stats = stats;
         return this;
     }
