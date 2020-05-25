@@ -106,6 +106,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
 
     private Object getOrIteratorFullyCovered(QueryOptions options, boolean iterator, Query query, SampleIndexQuery sampleIndexQuery) {
         VariantDBIterator variantIterator = sampleIndexDBAdaptor.iterator(sampleIndexQuery, options);
+        variantIterator = variantIterator.map(v -> v.setId(v.toString()));
         if (iterator) {
             return variantIterator;
         } else {
