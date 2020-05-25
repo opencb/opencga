@@ -27,10 +27,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
 import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
@@ -76,6 +73,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -581,6 +579,52 @@ public class VariantWebService extends AnalysisWebService {
         return run(() -> {
             queryOptions.putAll(query);
             return variantManager.getSampleData(variant, studyStr, queryOptions, token);
+        });
+    }
+
+    @GET
+    @Path("/sample/aggregationStats")
+    @ApiOperation(value = "Calculate and fetch sample aggregation stats", response = FacetField.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "savedFilter", value = SAVED_FILTER_DESCR, dataType = "string", paramType = "query"),
+
+            // Variant filters
+            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
+
+            // Study filters
+            @ApiImplicitParam(name = ParamConstants.PROJECT_PARAM, value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyDisorder", value = VariantCatalogQueryUtils.FAMILY_DISORDER_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familySegregation", value = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyMembers", value = VariantCatalogQueryUtils.FAMILY_MEMBERS_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyProband", value = VariantCatalogQueryUtils.FAMILY_PROBAND_DESC, dataType = "string", paramType = "query"),
+
+            // Annotation filters
+            @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
+    })
+    public Response sampleAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type") @QueryParam("fields") String fields) {
+        return run(() -> {
+            // Get all query options
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            queryOptions.put(QueryOptions.FACET, fields);
+            Query query = getVariantQuery(queryOptions);
+            return variantManager.facet(query, queryOptions, token);
         });
     }
 

@@ -21,6 +21,7 @@ public abstract class VariantAggregationExecutor {
 
     protected static final Pattern CHROM_DENSITY_PATTERN = Pattern.compile("^" + CHROM_DENSITY + "\\[([a-zA-Z0-9:\\-,*]+)](:(\\d+))?$");
     protected static final String NESTED_FACET_SEPARATOR = ">>"; // FacetQueryParser.NESTED_FACET_SEPARATOR
+    protected static final String FACET_SEPARATOR = ";";
     private Logger logger = LoggerFactory.getLogger(VariantAggregationExecutor.class);
 
     public final boolean canUseThisExecutor(Query query, QueryOptions options) {

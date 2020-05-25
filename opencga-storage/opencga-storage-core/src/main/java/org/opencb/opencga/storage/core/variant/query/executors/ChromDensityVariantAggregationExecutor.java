@@ -15,6 +15,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.executors.accumulators.FieldVariantAccumulator;
+import org.opencb.opencga.storage.core.variant.query.executors.accumulators.VariantChromDensityAccumulator;
+import org.opencb.opencga.storage.core.variant.query.executors.accumulators.VariantTypeAccumulator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +27,7 @@ import java.util.regex.Matcher;
 
 import static org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser.CHROM_DENSITY;
 
-public class ChromDensityVariantAggregationExecutor extends AbstractLocalVariantAggregationExecutor {
+public class ChromDensityVariantAggregationExecutor extends VariantAggregationExecutor {
 
     protected static final Set<String> ACCEPTED_CHROM_DENSITY_NESTED = new HashSet<>(Arrays.asList("type"));
 

@@ -443,6 +443,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         testAggregation(executor, "chromosome>>type>>ct");
         testAggregation(executor, "type>>ct");
+        testAggregation(executor, "type;gt>>ct");
         testAggregation(executor, "gt>>type>>ct>>biotype");
         testAggregation(executor, "clinicalSignificance>>gt>>type>>ct>>biotype");
     }
