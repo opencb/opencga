@@ -32,7 +32,7 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.job.JobTop;
+import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -41,9 +41,6 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobInternal;
-import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
@@ -749,16 +746,36 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testJobsTop() throws CatalogException {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
-        String studyId = catalogManager.getStudyManager().get(query, null, token).first().getId();
+        List<Study> studies = catalogManager.getStudyManager().get(query, null, token).getResults();
+        System.out.println(studies.size());
 
-        catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob"), null, token);
+        for (int i = 99; i > 0; i--) {
+            String studyId = studies.get(i % studies.size()).getId();
+            String id = catalogManager.getJobManager().create(studyId, new Job().setId("myJob-" + i), null, token).first().getId();
+            String status;
+            switch (i % 3) {
+                case 0:
+                    status = Enums.ExecutionStatus.RUNNING;
+                    break;
+                case 1:
+                    status = Enums.ExecutionStatus.DONE;
+                    break;
+                case 2:
+                    status = Enums.ExecutionStatus.ERROR;
+                    break;
+                default:
+                    throw new IllegalArgumentException();
+            }
+            catalogManager.getJobManager().update(studyId, id, new ObjectMap("internal", new JobInternal(new Enums.ExecutionStatus(status))), new QueryOptions(), token);
+        }
 
-        DataResult<JobTop> top = catalogManager.getJobManager().top(studyId, new Query(), 10, token);
-
-        System.out.println("top = " + top);
+        int limit = 20;
+        DataResult<JobTop> top = catalogManager.getJobManager().top(new Query(), limit, token);
 
         assertEquals(1, top.getNumMatches());
-        assertEquals(1, top.getNumResults());
+        assertEquals(limit, top.first().getJobs().size());
+        assertEquals(studies.size(), top.first().getJobs().stream().map(job -> job.getStudy().getId()).collect(Collectors.toSet()).size());
+        assertEquals(new JobTopStats(33, 0, 0, 33, 0, 33), top.first().getStats());
     }
 
     @Test

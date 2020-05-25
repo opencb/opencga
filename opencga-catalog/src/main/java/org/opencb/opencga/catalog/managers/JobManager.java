@@ -1299,11 +1299,32 @@ public class JobManager extends ResourceManager<Job> {
         return endResult(result, ignoreException);
     }
 
-    public OpenCGAResult<JobTop> top(String studyStr, Query baseQuery, int limit, String token) throws CatalogException {
+    public OpenCGAResult<JobTop> top(Query baseQuery, int limit, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        List<String> studies = studyManager.get(new Query(StudyDBAdaptor.QueryParams.OWNER.key(), userId),
+                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UUID.key()), token).getResults()
+                .stream()
+                .map(Study::getUuid)
+                .collect(Collectors.toList());
+        return top(studies, baseQuery, limit, token);
+    }
 
-        authorizationManager.checkCanViewStudy(study.getUid(), userId);
+    public OpenCGAResult<JobTop> top(String studyStr, Query baseQuery, int limit, String token) throws CatalogException {
+        if (StringUtils.isEmpty(studyStr)) {
+            return top(baseQuery, limit, token);
+        } else {
+            return top(Collections.singletonList(studyStr), baseQuery, limit, token);
+        }
+    }
+
+    public OpenCGAResult<JobTop> top(List<String> studiesStr, Query baseQuery, int limit, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        List<Study> studies = new ArrayList<>(studiesStr.size());
+        for (String studyStr : studiesStr) {
+            Study study = studyManager.resolveId(studyStr, userId);
+            authorizationManager.checkCanViewStudy(study.getUid(), userId);
+            studies.add(study);
+        }
 
         StopWatch stopWatch = StopWatch.createStarted();
         QueryOptions queryOptions = new QueryOptions()
@@ -1314,57 +1335,89 @@ public class JobManager extends ResourceManager<Job> {
                 .append(QueryOptions.COUNT, false)
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
-        baseQuery.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         int jobsLimit = limit;
-        OpenCGAResult<Job> running = jobDBAdaptor.get(
-                study.getUid(),
-                new Query(baseQuery)
-                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING),
-                new QueryOptions(queryOptions)
-                        .append(QueryOptions.LIMIT, jobsLimit)
-                        .append(QueryOptions.SORT, "execution.start"),
-                userId);
-        jobsLimit -= running.getResults().size();
+        final List<Job> running = new ArrayList<>(jobsLimit);
+        for (Study study : studies) {
+            if (jobsLimit == 0) {
+                break;
+            }
+            List<Job> results = jobDBAdaptor.get(
+                    study.getUid(),
+                    new Query(baseQuery)
+                            .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING),
+                    new QueryOptions(queryOptions)
+                            .append(QueryOptions.LIMIT, jobsLimit)
+                            .append(QueryOptions.SORT, "execution.start"),
+                    userId).getResults();
+            jobsLimit -= results.size();
+            running.addAll(results);
+        }
 
-        OpenCGAResult<Job> queued = jobDBAdaptor.get(
-                study.getUid(),
-                new Query(baseQuery)
-                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED),
-                new QueryOptions(queryOptions)
-                        .append(QueryOptions.LIMIT, jobsLimit)
-                        .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
-                userId);
-        jobsLimit -= queued.getResults().size();
+        final List<Job> queued = new ArrayList<>(jobsLimit);
+        for (Study study : studies) {
+            if (jobsLimit == 0) {
+                break;
+            }
+            List<Job> results = jobDBAdaptor.get(
+                    study.getUid(),
+                    new Query(baseQuery)
+                            .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED),
+                    new QueryOptions(queryOptions)
+                            .append(QueryOptions.LIMIT, jobsLimit)
+                            .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    userId).getResults();
+            jobsLimit -= results.size();
+            queued.addAll(results);
+        }
 
-        OpenCGAResult<Job> pending = jobDBAdaptor.get(
-                study.getUid(),
-                new Query(baseQuery)
-                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING),
-                new QueryOptions(queryOptions)
-                        .append(QueryOptions.LIMIT, jobsLimit)
-                        .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
-                userId);
-        jobsLimit -= pending.getResults().size();
+        final List<Job> pending = new ArrayList<>(jobsLimit);
+        for (Study study : studies) {
+            if (jobsLimit == 0) {
+                break;
+            }
+            List<Job> results = jobDBAdaptor.get(
+                    study.getUid(),
+                    new Query(baseQuery)
+                            .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING),
+                    new QueryOptions(queryOptions)
+                            .append(QueryOptions.LIMIT, jobsLimit)
+                            .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    userId).getResults();
+            jobsLimit -= results.size();
+            pending.addAll(results);
+        }
 
-        List<Job> finishedJobs = jobDBAdaptor.get(
-                study.getUid(),
-                new Query(baseQuery)
-                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.DONE + ","
-                                + Enums.ExecutionStatus.ERROR + ","
-                                + Enums.ExecutionStatus.ABORTED),
-                new QueryOptions(queryOptions)
-                        .append(QueryOptions.LIMIT, Math.max(1, jobsLimit))
-                        .append(QueryOptions.SORT, "execution.end")
-                        .append(QueryOptions.ORDER, QueryOptions.DESCENDING), // Get last n elements,
-                userId).getResults();
-        Collections.reverse(finishedJobs); // Reverse elements
+        final List<Job> finishedJobs = new ArrayList<>(jobsLimit);
+        for (Study study : studies) {
+            if (jobsLimit == 0) {
+                break;
+            }
+            List<Job> results = jobDBAdaptor.get(
+                    study.getUid(),
+                    new Query(baseQuery)
+                            .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.DONE + ","
+                                    + Enums.ExecutionStatus.ERROR + ","
+                                    + Enums.ExecutionStatus.ABORTED),
+                    new QueryOptions(queryOptions)
+                            .append(QueryOptions.LIMIT, jobsLimit)
+                            .append(QueryOptions.SORT, "execution.end")
+                            .append(QueryOptions.ORDER, QueryOptions.DESCENDING), // Get last n elements,
+                    userId).getResults();
+            Collections.reverse(results); // Reverse elements
+            jobsLimit -= results.size();
+            finishedJobs.addAll(results);
+        }
 
-        List<Job> allJobs = new ArrayList<>(running.getResults().size() + pending.getResults().size() + queued.getResults().size());
+        List<Job> allJobs = new ArrayList<>(running.size() + pending.size() + queued.size());
         allJobs.addAll(finishedJobs);
-        allJobs.addAll(running.getResults());
-        allJobs.addAll(queued.getResults());
-        allJobs.addAll(pending.getResults());
+        allJobs.addAll(running);
+        allJobs.addAll(queued);
+        allJobs.addAll(pending);
 
         OpenCGAResult result = jobDBAdaptor.groupBy(new Query(baseQuery),
                 Collections.singletonList(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()), new QueryOptions(QueryOptions.COUNT, true),

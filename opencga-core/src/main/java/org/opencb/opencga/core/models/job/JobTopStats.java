@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.job;
 
+import java.util.Objects;
+
 public class JobTopStats {
 
     private int running;
@@ -48,6 +50,28 @@ public class JobTopStats {
         sb.append(", error=").append(error);
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        JobTopStats that = (JobTopStats) o;
+        return running == that.running
+                && queued == that.queued
+                && pending == that.pending
+                && done == that.done
+                && aborted == that.aborted
+                && error == that.error;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(running, queued, pending, done, aborted, error);
     }
 
     public int getRunning() {
