@@ -67,9 +67,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         Map<String, Object> authOptions = authenticationOrigin.getOptions();
         this.groupsSearch = String.valueOf(authOptions.get(AuthenticationOrigin.GROUPS_SEARCH));
         this.usersSearch = String.valueOf(authOptions.get(AuthenticationOrigin.USERS_SEARCH));
-        this.fullNameKey = String.valueOf(authOptions.get(AuthenticationOrigin.FULLNAME_KEY));
-        this.dnKey = String.valueOf(authOptions.get(AuthenticationOrigin.DN_KEY));
-        this.dnFormat = String.valueOf(authOptions.get(AuthenticationOrigin.DN_FORMAT));
+        this.fullNameKey = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.FULLNAME_KEY, "displayname"));
+        this.dnKey = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.DN_KEY, "gecos"));
+        this.dnFormat = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.DN_FORMAT, "%s"));  // no formatting by default
 
         this.expiration = expiration;
 
