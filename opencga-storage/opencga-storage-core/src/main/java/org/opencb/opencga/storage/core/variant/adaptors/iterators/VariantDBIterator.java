@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
@@ -35,12 +36,42 @@ import java.util.function.UnaryOperator;
 public abstract class VariantDBIterator extends CloseableIterator<Variant> {
 
     public static final EmptyVariantDBIterator EMPTY_ITERATOR = new EmptyVariantDBIterator();
-    public static final Comparator<Variant> VARIANT_COMPARATOR = Comparator.comparing(Variant::getChromosome)
+    public static final Comparator<Variant> VARIANT_COMPARATOR_AUTOMATIC = Comparator.comparing(Variant::getChromosome)
             .thenComparing(Variant::getStart)
             .thenComparing(Variant::getEnd)
             .thenComparing(Variant::getReference)
             .thenComparing(Variant::getAlternate)
             .thenComparing(Variant::toString);
+    public static final Comparator<Variant> VARIANT_COMPARATOR_FAST = (o1, o2) -> {
+        VariantAvro v1 = o1.getImpl();
+        VariantAvro v2 = o2.getImpl();
+        int c = v1.getChromosome().compareTo(v2.getChromosome());
+        if (c != 0) {
+            return c;
+        }
+        c = v1.getStart().compareTo(v2.getStart());
+        if (c != 0) {
+            return c;
+        }
+        c = v1.getEnd().compareTo(v2.getEnd());
+        if (c != 0) {
+            return c;
+        }
+        c = v1.getReference().compareTo(v2.getReference());
+        if (c != 0) {
+            return c;
+        }
+        c = v1.getAlternate().compareTo(v2.getAlternate());
+        if (c != 0) {
+            return c;
+        }
+        if (o1.sameGenomicVariant(o2)) {
+            return 0;
+        } else {
+            return o1.toString().compareTo(o2.toString());
+        }
+    };
+    public static final Comparator<Variant> VARIANT_COMPARATOR = VARIANT_COMPARATOR_FAST;
     protected long timeFetching = 0;
     protected long timeConverting = 0;
     private final Logger logger = LoggerFactory.getLogger(VariantDBIterator.class);

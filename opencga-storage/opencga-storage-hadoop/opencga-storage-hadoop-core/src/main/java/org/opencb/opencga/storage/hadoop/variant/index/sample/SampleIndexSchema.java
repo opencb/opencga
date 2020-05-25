@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -30,7 +31,32 @@ import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
 public final class SampleIndexSchema {
 
     public static final int BATCH_SIZE = 1_000_000;
-    public static final Comparator<Variant> INTRA_CHROMOSOME_VARIANT_COMPARATOR =
+    public static final Comparator<Variant> INTRA_CHROMOSOME_VARIANT_COMPARATOR =  (o1, o2) -> {
+        VariantAvro v1 = o1.getImpl();
+        VariantAvro v2 = o2.getImpl();
+        int c = v1.getStart().compareTo(v2.getStart());
+        if (c != 0) {
+            return c;
+        }
+        c = v1.getEnd().compareTo(v2.getEnd());
+        if (c != 0) {
+            return c;
+        }
+        c = v1.getReference().compareTo(v2.getReference());
+        if (c != 0) {
+            return c;
+        }
+        c = v1.getAlternate().compareTo(v2.getAlternate());
+        if (c != 0) {
+            return c;
+        }
+        if (o1.sameGenomicVariant(o2)) {
+            return 0;
+        } else {
+            return o1.toString().compareTo(o2.toString());
+        }
+    };
+    public static final Comparator<Variant> INTRA_CHROMOSOME_VARIANT_COMPARATOR_AUTO =
             Comparator.comparingInt(Variant::getStart)
                     .thenComparingInt(Variant::getEnd)
                     .thenComparing(Variant::getReference)
