@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogIndividualToSolrIndividualConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -95,7 +96,7 @@ public class IndividualIndexTask extends OpenCgaTool {
                         IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
                         IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true)
-                .append(Constants.FLATTENED_ANNOTATIONS, true);
+                .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
         catalogSolrManager.insertCatalogCollection(catalogManager.getIndividualManager().iterator(study.getFqn(), query,
                 individualQueryOptions, token), new CatalogIndividualToSolrIndividualConverter(study),

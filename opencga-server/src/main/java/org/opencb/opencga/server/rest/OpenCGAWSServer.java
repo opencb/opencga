@@ -390,8 +390,8 @@ public class OpenCGAWSServer {
                 case Constants.FORCE:
                     queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
                     break;
-                case Constants.FLATTENED_ANNOTATIONS:
-                    queryOptions.put(Constants.FLATTENED_ANNOTATIONS, Boolean.parseBoolean(value));
+                case ParamConstants.FLATTEN_ANNOTATIONS:
+                    queryOptions.put(ParamConstants.FLATTEN_ANNOTATIONS, Boolean.parseBoolean(value));
                     break;
                 case ParamConstants.OTHER_STUDIES_FLAG:
                     queryOptions.put(ParamConstants.OTHER_STUDIES_FLAG, Boolean.parseBoolean(value));

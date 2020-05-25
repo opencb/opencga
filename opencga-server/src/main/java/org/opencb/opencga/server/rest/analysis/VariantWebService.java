@@ -1107,12 +1107,12 @@ public class VariantWebService extends AnalysisWebService {
                         Collections.singletonList(img), 1);
 
                 // Delete temporal directory
-//            FileUtils.deleteDirectory(outDir);
+                FileUtils.deleteDirectory(outDir);
 
                 return createOkResponse(result);
             } else {
                 // Delete temporal directory
-//            FileUtils.deleteDirectory(outDir);
+                FileUtils.deleteDirectory(outDir);
 
                 return createErrorResponse(new Exception("Error plotting Circos graph"));
             }
