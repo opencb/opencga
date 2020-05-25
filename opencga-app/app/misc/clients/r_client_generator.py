@@ -21,9 +21,9 @@ class RClientGenerator(RestClientGenerator):
             'Families': 'Family',
             'Cohorts': 'Cohort',
             'Disease Panels': 'Panel',
-            'Analysis - Alignment': 'AnalysisAlignment',
-            'Analysis - Variant': 'AnalysisVariant',
-            'Analysis - Clinical': 'AnalysisClinical',
+            'Analysis - Alignment': 'Alignment',
+            'Analysis - Variant': 'Variant',
+            'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'Operation',
             'Meta': 'Meta',
             'GA4GH': 'GA4GH',
@@ -100,11 +100,13 @@ class RClientGenerator(RestClientGenerator):
         text = []
         text.append('#' * 80)
         text.append("#' {}Client methods".format(self.categories[self.get_category_name(category)]))
+        text.append("#' @include AllClasses.R")
+        text.append("#' @include AllGenerics.R")
         text.append("#' @include commons.R\n")
         text.append("#' @description This function implements the OpenCGA calls for managing {}".format(self.categories[self.get_category_name(category)]))
         text.append("#' @param OpencgaR an object OpencgaR generated using initOpencgaR and/or opencgaLogin")
-        text.append("#' @seealso \\url{https://github.com/opencb/opencga/wiki} and the RESTful API documentation")
-        text.append("#' \\url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}")
+        text.append("#' @seealso \\url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation")
+        text.append("#' \\url{http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/}")
         text.append("#' @export\n\n")
 
         # Print method
