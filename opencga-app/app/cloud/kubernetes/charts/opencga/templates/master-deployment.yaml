@@ -31,7 +31,10 @@ spec:
           {{- toYaml .Values.init.resources | nindent 12 }}
         env:
         - name:  "INIT_OPENCGA_PASS"
-          value: {{ .Values.openCGApassword  }} 
+          valueFrom:
+            secretKeyRef:
+              name: opencga-secrets
+              key: openCgaAdminPassword
         - name:  "INIT_HEALTH_CHECK_INTERVAL"
           value: "30"
         - name: "INIT_VARIANT_DEFAULT_ENGINE"
@@ -41,7 +44,10 @@ spec:
         - name: "INIT_HADOOP_SSH_USER"
           value: {{ .Values.hadoop.sshUsername  }} 
         - name: "INIT_HADOOP_SSH_PASS"
-          value:  {{ .Values.hadoop.sshPassword  }}
+          valueFrom:
+            secretKeyRef:
+              name: opencga-secrets
+              key: hdInsightSshPassword
         - name: "INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
           value:  "/home/{{ .Values.hadoop.sshUsername  }}/opencga/" 
         - name: "INIT_SEARCH_HOSTS"
@@ -61,7 +67,10 @@ spec:
         - name: "INIT_CATALOG_DATABASE_USER"
           value:  {{ .Values.catalog.database.user  }} 
         - name: "INIT_CATALOG_DATABASE_PASSWORD"
-          value:  {{ .Values.catalog.database.password  }} 
+          valueFrom:
+            secretKeyRef:
+              name: opencga-secrets
+              key: mongoDbPassword
         - name: "INIT_CATALOG_SEARCH_HOSTS"
         {{- if .Values.deploySolr }}
           value: http://opencga-solr-svc:8983
@@ -71,13 +80,7 @@ spec:
         - name: "INIT_REST_HOST"
           value:   "http://{{ .Values.rest.name }}/opencga"
         - name: "INIT_GRPC_HOST"
-          value:   {{ .Values.grpc.name }} 
-        - name: "INIT_CELLBASE_MONGO_HOSTS"
-          value: {{ .Values.cellbase.database.hosts | toString | quote}}
-        - name: "INIT_CELLBASE_MONGO_HOSTS_USER"
-          value: {{ .Values.cellbase.database.user  }} 
-        - name: "INIT_CELLBASE_MONGO_HOSTS_PASSWORD"
-          value: {{ .Values.cellbase.database.password   }} 
+          value:   {{ .Values.grpc.name }}
         - name: "INIT_CELLBASE_REST_URLS"
           value: {{ .Values.cellbase.hosts  | toString   | quote }}
         - name: "INIT_K8S_MASTER_NODE"
@@ -118,7 +121,10 @@ spec:
           - "echo $PASSWORD | /opt/opencga/bin/opencga-admin.sh catalog daemon --start "
           env:
           - name:  "PASSWORD"
-            value: {{ .Values.openCGApassword  }} 
+            valueFrom:
+              secretKeyRef:
+                name: opencga-secrets
+                key: openCgaAdminPassword
           resources:
             {{- toYaml .Values.master.resources | nindent 12 }}
           volumeMounts:

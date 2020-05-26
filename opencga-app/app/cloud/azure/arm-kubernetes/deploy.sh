@@ -125,19 +125,23 @@ if ! kubectl get secret azure-files-secret -n ${K8S_NAMESPACE} &> /dev/null ; th
        --from-literal=azurestorageaccountkey=$(getOutput "storageAccountKey")
 fi
 
+if ! kubectl get secret opencga-secrets -n ${K8S_NAMESPACE} &> /dev/null ; then
+   kubectl create secret generic opencga-secrets -n ${K8S_NAMESPACE} \
+       --from-literal=openCgaAdminPassword=$(getOutput "openCgaAdminPassword") \
+       --from-literal=hdInsightSshPassword=$(getOutput "hdInsightSshPassword") \
+       --from-literal=mongoDbPassword=$(getOutput "mongoDbPassword")
+fi
+
 function getHelmParam() {
   # Commas must be scaped when passed as helm parameter
   getOutput ${1} | sed 's/,/\\,/g'
 }
 
 helm upgrade opencga ../../kubernetes/charts/opencga \
-    --set openCGApassword=$(getHelmParam "openCgaAdminPassword") \
     --set hadoop.sshDns=$(getHelmParam "hdInsightSshDns")  \
     --set hadoop.sshUsername=$(getHelmParam "hdInsightSshUsername") \
-    --set hadoop.sshPassword=$(getHelmParam "hdInsightSshPassword")  \
     --set catalog.database.hosts=$(getHelmParam "mongoDbHostsCSV")  \
     --set catalog.database.user=$(getHelmParam "mongoDbUser")  \
-    --set catalog.database.password=$(getHelmParam "mongoDbPassword")   \
     --set solr.hosts=$(getHelmParam "solrHostsCSV") \
     --set analysis.execution.options.k8s.masterNode=https://$(getHelmParam "aksApiServerAddress"):443 \
     --set analysis.execution.options.k8s.namespace=$K8S_NAMESPACE \

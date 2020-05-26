@@ -33,7 +33,10 @@ spec:
           - "echo $PASSWORD | /opt/opencga/bin/opencga-admin.sh server rest --start"
           env:
           - name:  "PASSWORD"
-            value: {{ .Values.openCGApassword  }} 
+            valueFrom:
+              secretKeyRef:
+                name: opencga-secrets
+                key: openCgaAdminPassword
           ports:
             - name: http
               containerPort: 9090

@@ -5,20 +5,13 @@
 deploySolr: false
 deployMongo: false
 
-openCGApassword: "FILL_ME"
-
 catalog:
   database:
     hosts: "FILL_ME"
     user: "FILL_ME"
-    password: "FILL_ME"
 
 cellbase:
   hosts: "FILL_ME"
-  database:
-    hosts:
-    user:
-    password:
 
 analysis:
   index:
@@ -37,7 +30,6 @@ solr:
 hadoop:
   sshDns: "FILL_ME"
   sshUsername: "FILL_ME"
-  sshPassword: "FILL_ME"
 
 init:
   name: init
