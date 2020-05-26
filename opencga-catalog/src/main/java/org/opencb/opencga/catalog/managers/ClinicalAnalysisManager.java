@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Analyst;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.Event;
@@ -221,12 +222,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ParamUtils.checkObj(clinicalAnalysis, "clinicalAnalysis");
             ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
             ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
-            ParamUtils.checkObj(clinicalAnalysis.getDueDate(), "dueDate");
             ParamUtils.checkObj(clinicalAnalysis.getProband(), "proband");
             clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), CustomStatus::new));
             clinicalAnalysis.setInternal(ParamUtils.defaultObject(clinicalAnalysis.getInternal(), ClinicalAnalysisInternal::new));
             clinicalAnalysis.getInternal().setStatus(ParamUtils.defaultObject(clinicalAnalysis.getInternal().getStatus(),
                     ClinicalAnalysisStatus::new));
+            clinicalAnalysis.setDisorder(ParamUtils.defaultObject(clinicalAnalysis.getDisorder(),
+                    new Disorder("", "", "", Collections.emptyMap(), "", Collections.emptyList())));
+            clinicalAnalysis.setDueDate(ParamUtils.defaultObject(clinicalAnalysis.getDueDate(),
+                    TimeUtils.getTime(TimeUtils.add1MonthtoDate(TimeUtils.getDate()))));
 
             if (clinicalAnalysis.getAnalyst() != null && StringUtils.isNotEmpty(clinicalAnalysis.getAnalyst().getAssignee())) {
                 // We obtain the users with access to the study
@@ -449,6 +453,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             validateRoleToProband(clinicalAnalysis);
             sortMembersFromFamily(clinicalAnalysis);
+            validateDisorder(clinicalAnalysis);
 
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
             OpenCGAResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
@@ -465,6 +470,28 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             auditManager.auditCreate(userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(), "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
+        }
+    }
+
+    private void validateDisorder(ClinicalAnalysis clinicalAnalysis) throws CatalogException {
+        if (clinicalAnalysis.getProband() == null) {
+            throw new CatalogException("Missing proband");
+        }
+        if (clinicalAnalysis.getProband().getDisorders() == null || clinicalAnalysis.getProband().getDisorders().isEmpty()) {
+            throw new CatalogException("Missing list of proband disorders");
+        }
+        if (clinicalAnalysis.getDisorder() != null && StringUtils.isNotEmpty(clinicalAnalysis.getDisorder().getId())) {
+            boolean found = false;
+            for (Disorder disorder : clinicalAnalysis.getProband().getDisorders()) {
+                if (clinicalAnalysis.getDisorder().getId().equals(disorder.getId())) {
+                    found = true;
+                    clinicalAnalysis.setDisorder(disorder);
+                }
+            }
+            if (!found) {
+                throw new CatalogException("Disorder '" + clinicalAnalysis.getDisorder().getId() + "' does not seem to be one of the "
+                        + "proband disorders");
+            }
         }
     }
 
@@ -1036,6 +1063,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), clinicalAnalysis.getFamily());
                 }
             }
+        }
+
+        if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.DISORDER.key())) {
+            // Assign the disorder to be updated to the clinicalAnalysis obtained from the DB so it can be checked in context
+            clinicalAnalysis.setDisorder(updateParams.getDisorder().toDisorder());
+            validateDisorder(clinicalAnalysis);
+            // Fill parameter to be updated with complete disorder information
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.DISORDER.key(), clinicalAnalysis.getDisorder());
         }
 
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS.key())) {

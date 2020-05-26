@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -35,7 +34,7 @@ public class ClinicalAnalysisCreateParams {
     private String description;
     private ClinicalAnalysis.Type type;
 
-    private Disorder disorder;
+    private DisorderReferenceParam disorder;
 
     private List<FileReferenceParam> files;
 
@@ -62,7 +61,7 @@ public class ClinicalAnalysisCreateParams {
     public ClinicalAnalysisCreateParams() {
     }
 
-    public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
+    public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
                                         Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalysisQc qualityControl,
                                         ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
@@ -95,7 +94,7 @@ public class ClinicalAnalysisCreateParams {
 
     public static ClinicalAnalysisCreateParams of(ClinicalAnalysis clinicalAnalysis) {
         return new ClinicalAnalysisCreateParams(clinicalAnalysis.getId(), clinicalAnalysis.getDescription(),
-                clinicalAnalysis.getType(), clinicalAnalysis.getDisorder(),
+                clinicalAnalysis.getType(), DisorderReferenceParam.of(clinicalAnalysis.getDisorder()),
                 clinicalAnalysis.getFiles() != null
                         ? clinicalAnalysis.getFiles().stream().map(FileReferenceParam::of).collect(Collectors.toList())
                         : null,
@@ -192,7 +191,7 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        return new ClinicalAnalysis(id, description, type, disorder, caFiles, individual, f, roleToProband, qualityControl,
+        return new ClinicalAnalysis(id, description, type, disorder.toDisorder(), caFiles, individual, f, roleToProband, qualityControl,
                 primaryInterpretation, secondaryInterpretationList, consent, new ClinicalAnalysisAnalyst(assignee, ""), priority, flags,
                 null, null,  dueDate, 1, comments, alerts, internal, attributes, status != null ? status.toCustomStatus() : null);
     }
@@ -224,11 +223,11 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public Disorder getDisorder() {
+    public DisorderReferenceParam getDisorder() {
         return disorder;
     }
 
-    public ClinicalAnalysisCreateParams setDisorder(Disorder disorder) {
+    public ClinicalAnalysisCreateParams setDisorder(DisorderReferenceParam disorder) {
         this.disorder = disorder;
         return this;
     }

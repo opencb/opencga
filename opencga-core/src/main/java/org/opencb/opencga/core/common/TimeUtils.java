@@ -119,6 +119,14 @@ public class TimeUtils {
         return new Date(cal.getTimeInMillis());
     }
 
+    public static Date add1MonthtoDate(Date date) {
+        Calendar cal = new GregorianCalendar();
+        cal.setTime(date);
+        cal.setTimeInMillis(date.getTime());
+        cal.add(Calendar.MONTH, 1);
+        return new Date(cal.getTimeInMillis());
+    }
+
     public static Date toDate(String dateStr) {
         Date date = null;
         try {

@@ -18,12 +18,10 @@ package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 
 import java.util.List;
@@ -37,7 +35,7 @@ public class ClinicalUpdateParams {
     private String description;
     private ClinicalAnalysis.Type type;
 
-    private Disorder disorder;
+    private DisorderReferenceParam disorder;
 
     private List<FileReferenceParam> files;
 
@@ -65,7 +63,7 @@ public class ClinicalUpdateParams {
     public ClinicalUpdateParams() {
     }
 
-    public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
+    public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                 List<FileReferenceParam> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
                                 ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, Interpretation interpretation,
                                 List<Interpretation> secondaryInterpretations, ClinicalAnalysisQcUpdateParams qualityControl,
@@ -183,11 +181,11 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public Disorder getDisorder() {
+    public DisorderReferenceParam getDisorder() {
         return disorder;
     }
 
-    public ClinicalUpdateParams setDisorder(Disorder disorder) {
+    public ClinicalUpdateParams setDisorder(DisorderReferenceParam disorder) {
         this.disorder = disorder;
         return this;
     }
