@@ -1,9 +1,35 @@
 #!/usr/bin/env bash
 
-# Variable BASEDIR is defined by the main script
+# Variables defined in main script
+# BASEDIR
+# PRGDIR
+# JAVA_OPTS
+# CLASSPATH_PREFIX
+
+
+# Increase Java Heap if needed
+if [ -z "$JAVA_HEAP" ]; then
+  case `basename $PRG` in
+  "opencga.sh")
+    JAVA_HEAP="2048m"
+    ;;
+  "opencga-admin.sh")
+    JAVA_HEAP="8192m"
+    ;;
+  "opencga-internal.sh")
+    JAVA_HEAP="12288m"
+    ;;
+  *)
+    JAVA_HEAP="2048m"
+    ;;
+  esac
+fi
+
 
 #Set log4j properties file
 export JAVA_OPTS="${JAVA_OPTS} -Dlog4j.configuration=file:${BASEDIR}/conf/log4j.properties"
+export JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8"
+export JAVA_OPTS="${JAVA_OPTS} -Xms256m -Xmx${JAVA_HEAP}"
 
 export COLUMNS=`tput cols`
 export LINES=`tput lines`

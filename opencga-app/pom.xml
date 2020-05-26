@@ -179,13 +179,6 @@
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
-                            <jvmSettings>
-                                <initialMemorySize>256m</initialMemorySize>
-                                <maxMemorySize>2048m</maxMemorySize>
-                                <systemProperties>
-                                    <systemProperty>file.encoding=UTF-8</systemProperty>
-                                </systemProperties>
-                            </jvmSettings>
                         </program>
                         <program>
                             <id>opencga-admin.sh</id>
@@ -193,13 +186,6 @@
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
-                            <jvmSettings>
-                                <initialMemorySize>256m</initialMemorySize>
-                                <maxMemorySize>8192m</maxMemorySize>
-                                <systemProperties>
-                                    <systemProperty>file.encoding=UTF-8</systemProperty>
-                                </systemProperties>
-                            </jvmSettings>
                         </program>
                         <program>
                             <id>opencga-internal.sh</id>
@@ -207,13 +193,6 @@
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
-                            <jvmSettings>
-                                <initialMemorySize>256m</initialMemorySize>
-                                <maxMemorySize>12288m</maxMemorySize>
-                                <systemProperties>
-                                    <systemProperty>file.encoding=UTF-8</systemProperty>
-                                </systemProperties>
-                            </jvmSettings>
                         </program>
                         <program>
                             <id>opencga-clicompletion.sh</id>
