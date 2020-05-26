@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileReferenceParam;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,7 @@ public class ClinicalUpdateParams {
 
     private Disorder disorder;
 
-    private List<File> files;
+    private List<FileReferenceParam> files;
 
 //    private ProbandParam proband;
 //    private FamilyParam family;
@@ -65,7 +66,7 @@ public class ClinicalUpdateParams {
     }
 
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
-                                List<File> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
+                                List<FileReferenceParam> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
                                 ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, Interpretation interpretation,
                                 List<Interpretation> secondaryInterpretations, ClinicalAnalysisQcUpdateParams qualityControl,
                                 ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
@@ -191,11 +192,11 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public List<File> getFiles() {
+    public List<FileReferenceParam> getFiles() {
         return files;
     }
 
-    public ClinicalUpdateParams setFiles(List<File> files) {
+    public ClinicalUpdateParams setFiles(List<FileReferenceParam> files) {
         this.files = files;
         return this;
     }

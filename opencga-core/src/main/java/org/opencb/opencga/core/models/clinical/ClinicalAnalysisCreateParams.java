@@ -22,13 +22,11 @@ import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ClinicalAnalysisCreateParams {
@@ -39,7 +37,7 @@ public class ClinicalAnalysisCreateParams {
 
     private Disorder disorder;
 
-    private List<File> files;
+    private List<FileReferenceParam> files;
 
     private ProbandParam proband;
     private FamilyParam family;
@@ -65,7 +63,7 @@ public class ClinicalAnalysisCreateParams {
     }
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, Disorder disorder,
-                                        List<File> files, ProbandParam proband, FamilyParam family,
+                                        List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
                                         Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalysisQc qualityControl,
                                         ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
                                         InterpretationCreateParams interpretation,
@@ -97,7 +95,10 @@ public class ClinicalAnalysisCreateParams {
 
     public static ClinicalAnalysisCreateParams of(ClinicalAnalysis clinicalAnalysis) {
         return new ClinicalAnalysisCreateParams(clinicalAnalysis.getId(), clinicalAnalysis.getDescription(),
-                clinicalAnalysis.getType(), clinicalAnalysis.getDisorder(), clinicalAnalysis.getFiles(),
+                clinicalAnalysis.getType(), clinicalAnalysis.getDisorder(),
+                clinicalAnalysis.getFiles() != null
+                        ? clinicalAnalysis.getFiles().stream().map(FileReferenceParam::of).collect(Collectors.toList())
+                        : null,
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
                 clinicalAnalysis.getRoleToProband(), clinicalAnalysis.getQualityControl(),
@@ -184,7 +185,14 @@ public class ClinicalAnalysisCreateParams {
 
         String assignee = analyst != null ? analyst.assignee : "";
 
-        return new ClinicalAnalysis(id, description, type, disorder, files, individual, f, roleToProband, qualityControl,
+        List<File> caFiles = new LinkedList<>();
+        if (files != null) {
+            for (FileReferenceParam file : files) {
+                caFiles.add(file.toFile());
+            }
+        }
+
+        return new ClinicalAnalysis(id, description, type, disorder, caFiles, individual, f, roleToProband, qualityControl,
                 primaryInterpretation, secondaryInterpretationList, consent, new ClinicalAnalysisAnalyst(assignee, ""), priority, flags,
                 null, null,  dueDate, 1, comments, alerts, internal, attributes, status != null ? status.toCustomStatus() : null);
     }
@@ -225,11 +233,11 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public List<File> getFiles() {
+    public List<FileReferenceParam> getFiles() {
         return files;
     }
 
-    public ClinicalAnalysisCreateParams setFiles(List<File> files) {
+    public ClinicalAnalysisCreateParams setFiles(List<FileReferenceParam> files) {
         this.files = files;
         return this;
     }

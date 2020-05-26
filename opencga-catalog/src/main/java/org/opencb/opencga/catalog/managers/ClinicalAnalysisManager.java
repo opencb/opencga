@@ -45,6 +45,7 @@ import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
@@ -539,7 +540,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     break;
             }
         }
-
     }
 
     private void obtainFiles(Study study, ClinicalAnalysis clinicalAnalysis, String userId) throws CatalogException {
@@ -607,6 +607,21 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         if (clinicalAnalysis.getFiles() == null || clinicalAnalysis.getFiles().isEmpty()) {
             throw new CatalogException("Found empty map of files");
         }
+
+        // Look for all the samples associated to the files
+        Query query = new Query(FileDBAdaptor.QueryParams.ID.key(),
+                clinicalAnalysis.getFiles().stream().map(File::getId).collect(Collectors.toList()));
+        OpenCGAResult<File> fileResults = fileDBAdaptor.get(study.getUid(), query, new QueryOptions(), userId);
+
+        if (fileResults.getNumResults() != clinicalAnalysis.getFiles().size()) {
+            Set<String> fileIds = clinicalAnalysis.getFiles().stream().map(File::getId).collect(Collectors.toSet());
+            String notFoundFiles = fileResults.getResults().stream().map(File::getId).filter(f -> !fileIds.contains(f))
+                    .collect(Collectors.joining(", "));
+            throw new CatalogException("Files '" + notFoundFiles + "' not found");
+        }
+
+        // Complete file information
+        clinicalAnalysis.setFiles(fileResults.getResults());
 
         // Validate the file ids passed are related to the samples
         for (File file : clinicalAnalysis.getFiles()) {
@@ -995,7 +1010,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
-            clinicalAnalysis.setFiles(updateParams.getFiles());
+            clinicalAnalysis.setFiles(updateParams.getFiles().stream().map(FileReferenceParam::toFile).collect(Collectors.toList()));
 
             // Validate files
             validateFiles(study, clinicalAnalysis, userId);
