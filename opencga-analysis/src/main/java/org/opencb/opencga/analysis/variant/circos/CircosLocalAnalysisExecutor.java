@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.analysis.variant.circos;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
 import org.opencb.biodata.models.variant.avro.StructuralVariantType;
@@ -130,6 +129,20 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
     private boolean snvQuery(Query query, VariantStorageManager storageManager, PrintWriter pw) {
         try {
+            int resThreshold;
+            switch ((CircosAnalysis.Resolution) getExecutorParams().get("resolution")) {
+                case HIGH:
+                    resThreshold = Integer.MAX_VALUE;
+                    break;
+                case MEDIUM:
+                    resThreshold = 250000;
+                    break;
+                case LOW:
+                default:
+                    resThreshold = 100000;
+                    break;
+            }
+
             Query snvQuery = new Query(query);
             snvQuery.put("type", "SNV");
             QueryOptions queryOptions = new QueryOptions()
@@ -149,8 +162,11 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         prevStart = 0;
                         currentChrom = v.getChromosome();
                     }
-                    pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t"
-                            + v.getReference() + "\t" + v.getAlternate() + "\t" + Math.log10(v.getStart() - prevStart));
+                    int dist = v.getStart() - prevStart;
+                    if (dist < resThreshold) {
+                        pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
+                                + v.getAlternate() + "\t" + Math.log10(dist));
+                    }
                     prevStart = v.getStart();
                 }
             }
