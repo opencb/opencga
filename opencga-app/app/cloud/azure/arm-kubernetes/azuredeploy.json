@@ -77,12 +77,6 @@
                 "description": "This Data is used to derive unique passwords for several different services. Select a unique and random combination of data, the longer the better, and do not disclose it."
             }
         },
-        "catalogSecretKey": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Secret key used when initializing the catalog."
-            }
-        },
         "openCgaAdminPassword": {
             "type": "securestring",
             "metadata": {
@@ -748,10 +742,6 @@
         "aciSubnetId": {
             "type": "string",
             "value": "[reference('vnet').outputs.aciSubnetId.value]"
-        },
-        "catalogSecretKey": {
-            "type": "string",
-            "value": "[parameters('catalogSecretKey')]"
         },
         "openCgaAdminPassword": {
             "type": "string",

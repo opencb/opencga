@@ -29,7 +29,6 @@ spec:
         imagePullPolicy: {{ .Values.init.image.pullPolicy }}
         resources:
           {{- toYaml .Values.init.resources | nindent 12 }}
-        args: [{{ .Values.init.catalogSecretKey }}]
         env:
         - name:  "INIT_OPENCGA_PASS"
           value: {{ .Values.openCGApassword  }} 

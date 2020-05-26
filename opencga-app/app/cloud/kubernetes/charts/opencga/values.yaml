@@ -8,7 +8,6 @@ deployMongo: false
 openCGApassword: "FILL_ME"
 
 catalog:
-  secretKey: "FILL_ME"
   database:
     hosts: "FILL_ME"
     user: "FILL_ME"
@@ -120,7 +119,7 @@ rest:
   service:
     type: ClusterIP
     #type: LoadBalancer
-    port: 8080
+    port: 80
 
   ingress:
     enabled: true

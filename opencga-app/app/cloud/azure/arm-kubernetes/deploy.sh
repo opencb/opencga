@@ -115,13 +115,12 @@ helm install opencga-nginx stable/nginx-ingress \
      --wait --timeout 10m
 
 
-if ! kubectl get secret azure-files-secret -n ${K8S_NAMESPACE}; then
+if ! kubectl get secret azure-files-secret -n ${K8S_NAMESPACE} &> /dev/null ; then
    kubectl create secret generic azure-files-secret -n ${K8S_NAMESPACE} --from-literal=azurestorageaccountname=$(jq -r '.properties.outputs.storageAccountName.value' ${DEPLOYMENT_OUT}) --from-literal=azurestorageaccountkey=$(echo $deployment_details | jq -r '.properties.outputs.storageAccountKey.value')
 fi
 
 
 helm upgrade opencga ../../kubernetes/charts/opencga \
-    --set init.catalogSecretKey=$(cat azuredeploy.parameters.private.json | jq -r '.parameters.catalogSecretKey.value') \
     --set openCGApassword=$(jq -r '.properties.outputs.openCgaAdminPassword.value' ${DEPLOYMENT_OUT}) \
     --set hadoop.sshDns=$(jq -r '.properties.outputs.hdInsightSshDns.value' ${DEPLOYMENT_OUT})  \
     --set hadoop.sshUsername=$(jq -r '.properties.outputs.hdInsightSshUsername.value' ${DEPLOYMENT_OUT}) \
