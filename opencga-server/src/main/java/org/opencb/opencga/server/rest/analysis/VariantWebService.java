@@ -1064,13 +1064,20 @@ public class VariantWebService extends AnalysisWebService {
     public Response circos(
             @ApiParam(value = "Plot copy-number track", defaultValue = "true") @QueryParam("plotCopyNumber") boolean plotCopyNumber,
             @ApiParam(value = "Plot INDELs track", defaultValue = "true") @QueryParam("plotIndels") boolean plotIndels,
-            @ApiParam(value = "Plot rearrangements track", defaultValue = "true") @QueryParam("plotRearrangements") boolean plotRearrangements) {
+            @ApiParam(value = "Plot rearrangements track", defaultValue = "true") @QueryParam("plotRearrangements") boolean plotRearrangements,
+            @ApiParam(value = "Resolution plot: LOW, MEDIUM or HIGH", defaultValue = "LOW") @QueryParam("resolution") String strResolution) {
         try {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
 
             if (!query.containsKey(SAMPLE.key())) {
                 return createErrorResponse(new Exception("Missing sample name"));
+            }
+            CircosAnalysis.Resolution resolution;
+            try {
+                resolution = CircosAnalysis.Resolution.valueOf(strResolution);
+            } catch (Exception e) {
+                return createErrorResponse(new Exception("Invalid resolution value: '" + strResolution + "'. Valid values:  LOW, MEDIUM or HIGH"));
             }
 
             // Create temporal directory
@@ -1088,6 +1095,7 @@ public class VariantWebService extends AnalysisWebService {
             executorParams.put("plotCopyNumber", plotCopyNumber);
             executorParams.put("plotIndels", plotIndels);
             executorParams.put("plotRearrangements", plotRearrangements);
+            executorParams.put("resolution", resolution);
             executor.setUp(null, executorParams, outDir.toPath());
             executor.setStudy(query.getString(STUDY.key()));
             executor.setQuery(query);
