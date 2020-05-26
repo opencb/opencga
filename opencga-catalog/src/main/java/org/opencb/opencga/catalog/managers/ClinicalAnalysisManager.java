@@ -274,6 +274,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     }
                 }
 
+                if (clinicalAnalysis.getFamily().getMembers() == null || clinicalAnalysis.getFamily().getMembers().isEmpty()) {
+                    // We assign the ones obtained from the db
+                    clinicalAnalysis.getFamily().setMembers(family.getMembers());
+                }
+
                 boolean found = false;
                 for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
                     if (StringUtils.isNotEmpty(member.getId()) && clinicalAnalysis.getProband().getId().equals(member.getId())) {
