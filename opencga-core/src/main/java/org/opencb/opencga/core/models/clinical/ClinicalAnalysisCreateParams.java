@@ -41,7 +41,6 @@ public class ClinicalAnalysisCreateParams {
     private ProbandParam proband;
     private FamilyParam family;
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
-    private ClinicalAnalysisQc qualityControl;
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
     private InterpretationCreateParams interpretation;
@@ -63,7 +62,7 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalysisQc qualityControl,
+                                        Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
                                         ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
                                         InterpretationCreateParams interpretation,
                                         List<InterpretationCreateParams> secondaryInterpretations, ClinicalConsent consent, String dueDate,
@@ -77,7 +76,6 @@ public class ClinicalAnalysisCreateParams {
         this.proband = proband;
         this.family = family;
         this.roleToProband = roleToProband;
-        this.qualityControl = qualityControl;
         this.analyst = analyst;
         this.internal = internal;
         this.interpretation = interpretation;
@@ -100,7 +98,7 @@ public class ClinicalAnalysisCreateParams {
                         : null,
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
-                clinicalAnalysis.getRoleToProband(), clinicalAnalysis.getQualityControl(),
+                clinicalAnalysis.getRoleToProband(),
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
                 clinicalAnalysis.getInternal(),
                 clinicalAnalysis.getInterpretation() != null
@@ -126,7 +124,6 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
-        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
         sb.append(", interpretation=").append(interpretation);
@@ -191,7 +188,7 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        return new ClinicalAnalysis(id, description, type, disorder.toDisorder(), caFiles, individual, f, roleToProband, qualityControl,
+        return new ClinicalAnalysis(id, description, type, disorder.toDisorder(), caFiles, individual, f, roleToProband, null,
                 primaryInterpretation, secondaryInterpretationList, consent, new ClinicalAnalysisAnalyst(assignee, ""), priority, flags,
                 null, null,  dueDate, 1, comments, alerts, internal, attributes, status != null ? status.toCustomStatus() : null);
     }
@@ -265,15 +262,6 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setRoleToProband(Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband) {
         this.roleToProband = roleToProband;
-        return this;
-    }
-
-    public ClinicalAnalysisQc getQualityControl() {
-        return qualityControl;
-    }
-
-    public ClinicalAnalysisCreateParams setQualityControl(ClinicalAnalysisQc qualityControl) {
-        this.qualityControl = qualityControl;
         return this;
     }
 
