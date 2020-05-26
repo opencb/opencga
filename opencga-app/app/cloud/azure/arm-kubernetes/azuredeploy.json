@@ -167,8 +167,8 @@
                 "aks": {
                     "nodeCount": 3,
                     "nodeSize": "Standard_D2s_v3",
-                    "maxJobsPoolAgents": 3,
-                    "aksJobsAgentVMSize": "Standard_D4s_v3"
+                    "maxJobsPoolAgents": 1,
+                    "aksJobsAgentVMSize": "Standard_D8s_v3"
                 },
                 "solr": {
                     "ha": false,
@@ -201,10 +201,10 @@
             {
                 "type": "2 = Medium",
                 "aks": {
-                    "nodeCount": 5,
+                    "nodeCount": 3,
                     "nodeSize": "Standard_D4s_v3",
-                    "maxJobsPoolAgents": 20,
-                    "aksJobsAgentVMSize": "Standard_D4s_v3"
+                    "maxJobsPoolAgents": 5,
+                    "aksJobsAgentVMSize": "Standard_D16s_v3"
                 },
                 "solr": {
                     "ha": true,
@@ -239,8 +239,8 @@
                 "aks": {
                     "nodeCount": 7,
                     "nodeSize": "Standard_D4s_v3",
-                    "maxJobsPoolAgents": 250,
-                    "aksJobsAgentVMSize": "Standard_D4s_v3"
+                    "maxJobsPoolAgents": 50,
+                    "aksJobsAgentVMSize": "Standard_D16s_v3"
                 },
                 "solr": {
                     "ha": true,
