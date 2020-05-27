@@ -408,7 +408,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", commandOptions.study);
 
-        return openCGAClient.getFileClient().updateAcl(commandOptions.memberId, updateParams, params);
+        return openCGAClient.getFileClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), updateParams, params);
     }
 
     private RestResponse<FacetField> stats() throws ClientException {

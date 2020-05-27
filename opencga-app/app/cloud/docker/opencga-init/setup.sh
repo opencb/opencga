@@ -46,7 +46,7 @@ echo "DB EXISTS: $DB_EXISTS"
 if [ $(($DB_EXISTS)) == -1 ]; then
 
     echo "Installing catalog"
-    echo "${INIT_OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh catalog install --secret-key ${1}
+    echo "${INIT_OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh catalog install
     echo "catalog installed"
     echo "copying session files"
     cp -r /opt/opencga/sessions/* /opt/volume/sessions

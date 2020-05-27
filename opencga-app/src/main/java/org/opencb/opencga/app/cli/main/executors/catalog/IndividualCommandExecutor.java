@@ -238,7 +238,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", commandOptions.study);
 
-        return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, updateParams, params);
+        return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), updateParams, params);
     }
 
     private RestResponse<FacetField> stats() throws ClientException {

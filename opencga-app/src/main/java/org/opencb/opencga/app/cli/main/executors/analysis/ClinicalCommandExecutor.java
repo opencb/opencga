@@ -147,7 +147,8 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                 .setClinicalAnalysis(extractIdsFromListOrFile(commandOptions.id))
                 .setPermissions(commandOptions.permissions);
 
-        return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.memberId, updateParams, queryParams);
+        return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), updateParams,
+                queryParams);
     }
 
     //-------------------------------------------------------------------------

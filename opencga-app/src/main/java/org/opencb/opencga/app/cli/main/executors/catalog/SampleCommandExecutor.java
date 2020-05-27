@@ -217,7 +217,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 .setPermissions(commandOptions.permissions)
                 .setPropagate(commandOptions.propagate);
 
-        return openCGAClient.getSampleClient().updateAcl(commandOptions.memberId, updateParams, queryParams);
+        return openCGAClient.getSampleClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), updateParams, queryParams);
     }
 
     private RestResponse<FacetField> stats() throws ClientException {

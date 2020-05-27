@@ -77,12 +77,6 @@
                 "description": "This Data is used to derive unique passwords for several different services. Select a unique and random combination of data, the longer the better, and do not disclose it."
             }
         },
-        "catalogSecretKey": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Secret key used when initializing the catalog."
-            }
-        },
         "openCgaAdminPassword": {
             "type": "securestring",
             "metadata": {
@@ -167,8 +161,8 @@
                 "aks": {
                     "nodeCount": 3,
                     "nodeSize": "Standard_D2s_v3",
-                    "maxJobsPoolAgents": 3,
-                    "aksJobsAgentVMSize": "Standard_D4s_v3"
+                    "maxJobsPoolAgents": 1,
+                    "aksJobsAgentVMSize": "Standard_D8s_v3"
                 },
                 "solr": {
                     "ha": false,
@@ -201,10 +195,10 @@
             {
                 "type": "2 = Medium",
                 "aks": {
-                    "nodeCount": 5,
+                    "nodeCount": 3,
                     "nodeSize": "Standard_D4s_v3",
-                    "maxJobsPoolAgents": 20,
-                    "aksJobsAgentVMSize": "Standard_D4s_v3"
+                    "maxJobsPoolAgents": 5,
+                    "aksJobsAgentVMSize": "Standard_D16s_v3"
                 },
                 "solr": {
                     "ha": true,
@@ -239,8 +233,8 @@
                 "aks": {
                     "nodeCount": 7,
                     "nodeSize": "Standard_D4s_v3",
-                    "maxJobsPoolAgents": 250,
-                    "aksJobsAgentVMSize": "Standard_D4s_v3"
+                    "maxJobsPoolAgents": 50,
+                    "aksJobsAgentVMSize": "Standard_D16s_v3"
                 },
                 "solr": {
                     "ha": true,
@@ -748,10 +742,6 @@
         "aciSubnetId": {
             "type": "string",
             "value": "[reference('vnet').outputs.aciSubnetId.value]"
-        },
-        "catalogSecretKey": {
-            "type": "string",
-            "value": "[parameters('catalogSecretKey')]"
         },
         "openCgaAdminPassword": {
             "type": "string",

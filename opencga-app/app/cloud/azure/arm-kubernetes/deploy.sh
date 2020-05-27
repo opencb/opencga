@@ -87,13 +87,17 @@ az deployment sub create -n $deployID  -l ${location} --template-uri $template_u
     --parameters aksServicePrincipalObjectId=$aksServicePrincipalObjectId > ${DEPLOYMENT_OUT}
 
 
+function getOutput() {
+  jq -r '.properties.outputs.'${1}'.value' ${DEPLOYMENT_OUT}
+}
+
 # Enable HDInsight monitor
-`jq -r '.properties.outputs.hdInsightEnableMonitor.value' ${DEPLOYMENT_OUT}`
+`getOutput "hdInsightEnableMonitor"`
 
 echo "# Deploy kubernetes"
 
 # deploy opencga
-az aks get-credentials -n $(jq -r '.properties.outputs.aksClusterName.value' ${DEPLOYMENT_OUT}) -g $(jq -r '.properties.outputs.aksResourceGroupName.value' ${DEPLOYMENT_OUT})
+az aks get-credentials -n $(`getOutput "aksClusterName"`) -g $(`getOutput "aksResourceGroupName"`)
 
 K8S_NAMESPACE=${rgName}
 # Create a namespace for opencga
@@ -115,22 +119,31 @@ helm install opencga-nginx stable/nginx-ingress \
      --wait --timeout 10m
 
 
-if ! kubectl get secret azure-files-secret -n ${K8S_NAMESPACE}; then
-   kubectl create secret generic azure-files-secret -n ${K8S_NAMESPACE} --from-literal=azurestorageaccountname=$(jq -r '.properties.outputs.storageAccountName.value' ${DEPLOYMENT_OUT}) --from-literal=azurestorageaccountkey=$(echo $deployment_details | jq -r '.properties.outputs.storageAccountKey.value')
+if ! kubectl get secret azure-files-secret -n ${K8S_NAMESPACE} &> /dev/null ; then
+   kubectl create secret generic azure-files-secret -n ${K8S_NAMESPACE} \
+       --from-literal=azurestorageaccountname=$(getOutput "storageAccountName") \
+       --from-literal=azurestorageaccountkey=$(getOutput "storageAccountKey")
 fi
 
+if ! kubectl get secret opencga-secrets -n ${K8S_NAMESPACE} &> /dev/null ; then
+   kubectl create secret generic opencga-secrets -n ${K8S_NAMESPACE} \
+       --from-literal=openCgaAdminPassword=$(getOutput "openCgaAdminPassword") \
+       --from-literal=hdInsightSshPassword=$(getOutput "hdInsightSshPassword") \
+       --from-literal=mongoDbPassword=$(getOutput "mongoDbPassword")
+fi
+
+function getHelmParam() {
+  # Commas must be scaped when passed as helm parameter
+  getOutput ${1} | sed 's/,/\\,/g'
+}
 
 helm upgrade opencga ../../kubernetes/charts/opencga \
-    --set init.catalogSecretKey=$(cat azuredeploy.parameters.private.json | jq -r '.parameters.catalogSecretKey.value') \
-    --set openCGApassword=$(jq -r '.properties.outputs.openCgaAdminPassword.value' ${DEPLOYMENT_OUT}) \
-    --set hadoop.sshDns=$(jq -r '.properties.outputs.hdInsightSshDns.value' ${DEPLOYMENT_OUT})  \
-    --set hadoop.sshUsername=$(jq -r '.properties.outputs.hdInsightSshUsername.value' ${DEPLOYMENT_OUT}) \
-    --set hadoop.sshPassword=$(jq -r '.properties.outputs.hdInsightSshPassword.value' ${DEPLOYMENT_OUT})  \
-    --set catalog.database.hosts=$(jq -r '.properties.outputs.mongoDbHostsCSV.value' ${DEPLOYMENT_OUT})  \
-    --set catalog.database.user=$(jq -r '.properties.outputs.mongoDbUser.value' ${DEPLOYMENT_OUT})  \
-    --set catalog.database.password=$(jq -r '.properties.outputs.mongoDbPassword.value' ${DEPLOYMENT_OUT})   \
-    --set solr.hosts=$(jq -r '.properties.outputs.solrHostsCSV.value' ${DEPLOYMENT_OUT}) \
-    --set analysis.execution.options.k8s.masterNode=https://$(jq -r '.properties.outputs.aksApiServerAddress.value' ${DEPLOYMENT_OUT}):443 \
+    --set hadoop.sshDns=$(getHelmParam "hdInsightSshDns")  \
+    --set hadoop.sshUsername=$(getHelmParam "hdInsightSshUsername") \
+    --set catalog.database.hosts=$(getHelmParam "mongoDbHostsCSV")  \
+    --set catalog.database.user=$(getHelmParam "mongoDbUser")  \
+    --set solr.hosts=$(getHelmParam "solrHostsCSV") \
+    --set analysis.execution.options.k8s.masterNode=https://$(getHelmParam "aksApiServerAddress"):443 \
     --set analysis.execution.options.k8s.namespace=$K8S_NAMESPACE \
     --set analysis.index.variant.maxConcurrentJobs="100" \
     --install --wait -n $K8S_NAMESPACE --timeout 10m

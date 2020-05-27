@@ -13,7 +13,7 @@ Once everything is successfully setup, you are able to test the configuration. A
 
 Install catalog (remember password for later use)
 ```
-sudo /opt/opencga/bin/opencga-admin.sh catalog install --secret-key SeCrEtKeY
+sudo /opt/opencga/bin/opencga-admin.sh catalog install
 ```
 
 Start daemon (for debugging) in a seperate terminal and keep it open

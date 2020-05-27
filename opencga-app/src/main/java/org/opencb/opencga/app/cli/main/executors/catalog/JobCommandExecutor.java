@@ -202,7 +202,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
                 .setJob(extractIdsFromListOrFile(commandOptions.id))
                 .setPermissions(commandOptions.permissions);
 
-        return openCGAClient.getJobClient().updateAcl(commandOptions.memberId, updateParams);
+        return openCGAClient.getJobClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), updateParams);
     }
 
     private RestResponse<ObjectMap> acl() throws ClientException {

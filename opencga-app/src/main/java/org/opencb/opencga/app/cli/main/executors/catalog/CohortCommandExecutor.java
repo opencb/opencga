@@ -224,7 +224,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", commandOptions.study);
 
-        return openCGAClient.getCohortClient().updateAcl(commandOptions.memberId, updateParams, params);
+        return openCGAClient.getCohortClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), updateParams, params);
     }
 
 
