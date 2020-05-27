@@ -59,7 +59,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1075,7 +1074,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> familyStrList, String memberList,
-                                                              AclParams aclParams, String token) throws CatalogException {
+                                                              AclParams aclParams, ParamUtils.AclAction action, String token)
+            throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1084,6 +1084,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("familyStrList", familyStrList)
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
+                .append("action", action)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -1092,7 +1093,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 throw new CatalogException("Update ACL: Missing family parameter");
             }
 
-            if (aclParams.getAction() == null) {
+            if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
 
@@ -1117,7 +1118,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             checkMembers(study.getUid(), members);
 
             OpenCGAResult<Map<String, List<String>>> aclResults;
-            switch (aclParams.getAction()) {
+            switch (action) {
                 case SET:
                     aclResults = authorizationManager.setAcls(study.getUid(), familyList.stream().map(Family::getUid)
                             .collect(Collectors.toList()), members, permissions, Enums.Resource.FAMILY);
@@ -1157,7 +1158,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
-            throws CatalogException, IOException {
+            throws CatalogException {
         ParamUtils.defaultObject(query, Query::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
 

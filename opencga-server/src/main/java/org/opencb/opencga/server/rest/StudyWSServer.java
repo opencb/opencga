@@ -29,7 +29,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -308,55 +307,19 @@ public class StudyWSServer extends OpenCGAWSServer {
         });
     }
 
-    // Temporal method used by deprecated methods. This will be removed at some point.
-    private StudyAclParams getAclParams(
-            @ApiParam(value = "Comma separated list of permissions to add") @QueryParam("add") String addPermissions,
-            @ApiParam(value = "Comma separated list of permissions to remove") @QueryParam("remove") String removePermissions,
-            @ApiParam(value = "Comma separated list of permissions to set") @QueryParam("set") String setPermissions,
-            @ApiParam(value = "Template of permissions (only to create)") @QueryParam("template") String template)
-            throws CatalogException {
-        int count = 0;
-        count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
-        count += StringUtils.isNotEmpty(addPermissions) ? 1 : 0;
-        count += StringUtils.isNotEmpty(removePermissions) ? 1 : 0;
-        if (count > 1) {
-            throw new CatalogException("Only one of add, remove or set parameters are allowed.");
-        } else if (count == 0) {
-            if (StringUtils.isNotEmpty(template)) {
-                throw new CatalogException("One of add, remove or set parameters is expected.");
-            }
-        }
-
-        String permissions = null;
-        AclParams.Action action = null;
-        if (StringUtils.isNotEmpty(addPermissions) || StringUtils.isNotEmpty(template)) {
-            permissions = addPermissions;
-            action = AclParams.Action.ADD;
-        }
-        if (StringUtils.isNotEmpty(setPermissions)) {
-            permissions = setPermissions;
-            action = AclParams.Action.SET;
-        }
-        if (StringUtils.isNotEmpty(removePermissions)) {
-            permissions = removePermissions;
-            action = AclParams.Action.REMOVE;
-        }
-        return new StudyAclParams(permissions, action, template);
-    }
-
     @POST
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @PathParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to modify ACLs. 'template' could be either 'admin', 'analyst' or 'view_only'",
                     required = true) StudyAclUpdateParams params) {
         try {
             ObjectUtils.defaultIfNull(params, new StudyAclUpdateParams());
-
-            StudyAclParams aclParams = new StudyAclParams(params.getPermissions(), params.getAction(), params.getTemplate());
+            StudyAclParams aclParams = new StudyAclParams(params.getPermissions(), params.getTemplate());
             List<String> idList = getIdList(params.getStudy(), false);
-            return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, token));
+            return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

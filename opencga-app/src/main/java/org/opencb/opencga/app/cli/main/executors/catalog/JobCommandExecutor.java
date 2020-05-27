@@ -200,8 +200,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
 
         JobAclUpdateParams updateParams = new JobAclUpdateParams()
                 .setJob(extractIdsFromListOrFile(commandOptions.id))
-                .setPermissions(commandOptions.permissions)
-                .setAction(commandOptions.action);
+                .setPermissions(commandOptions.permissions);
 
         return openCGAClient.getJobClient().updateAcl(commandOptions.memberId, updateParams);
     }

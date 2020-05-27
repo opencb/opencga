@@ -233,7 +233,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 .setIndividual(extractIdsFromListOrFile(commandOptions.id))
                 .setSample(extractIdsFromListOrFile(commandOptions.sample))
                 .setPermissions(commandOptions.permissions)
-                .setAction(commandOptions.action)
                 .setPropagate(commandOptions.propagate);
 
         ObjectMap params = new ObjectMap();

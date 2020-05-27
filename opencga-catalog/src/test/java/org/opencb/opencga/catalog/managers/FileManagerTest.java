@@ -33,9 +33,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
@@ -93,8 +91,8 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
-        StudyAclParams aclParams = new StudyAclParams("", AclParams.Action.ADD, "analyst");
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, token);
+        StudyAclParams aclParams = new StudyAclParams("", "analyst");
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, ParamUtils.AclAction.ADD, token);
         fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
                 "data/test/folder/file.txt", "My description", 0, null, null, null, true, "blabla", null, sessionIdUser2);
         assertEquals(1, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
@@ -827,8 +825,8 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void getFileIdByString() throws CatalogException {
-        StudyAclParams aclParams = new StudyAclParams("", AclParams.Action.ADD, "analyst");
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, token);
+        StudyAclParams aclParams = new StudyAclParams("", "analyst");
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, ParamUtils.AclAction.ADD, token);
         File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
                 "data/test/folder/file.txt", "My description", 0, null, null, null, true, "blabla", null,
                 sessionIdUser2).first();
@@ -1601,7 +1599,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 "", 10, null, null, null, true, "My content", null, token);
 
         DataResult<Map<String, List<String>>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
-                filePath.toString()), "user2", new FileAclParams("VIEW", AclParams.Action.SET, null), token);
+                filePath.toString()), "user2", new FileAclParams(null, "VIEW"), ParamUtils.AclAction.SET, token);
 
         assertEquals(3, dataResult.getNumResults());
         for (Map<String, List<String>> result : dataResult.getResults()) {
@@ -1689,7 +1687,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // We grant permissions to user2 to the study
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user2",
-                new StudyAclParams("", AclParams.Action.ADD, "admin"), token);
+                new StudyAclParams("", "admin"), ParamUtils.AclAction.ADD, token);
 
         // Now, instead of moving it to the user's workspace, we will move it to an external path
         try {

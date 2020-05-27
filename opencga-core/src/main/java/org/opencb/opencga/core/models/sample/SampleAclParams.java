@@ -31,16 +31,16 @@ public class SampleAclParams extends AclParams {
     public SampleAclParams() {
     }
 
-    public SampleAclParams(String permissions, Action action, String individual, String file, String cohort) {
-        super(permissions, action);
+    public SampleAclParams(String individual, String file, String cohort, String permissions) {
+        super(permissions);
         this.individual = individual;
         this.file = file;
         this.cohort = cohort;
         this.propagate = false;
     }
 
-    public SampleAclParams(String permissions, Action action, String individual, String file, String cohort, boolean propagate) {
-        super(permissions, action);
+    public SampleAclParams(String individual, String file, String cohort, String permissions, boolean propagate) {
+        super(permissions);
         this.individual = individual;
         this.file = file;
         this.cohort = cohort;
@@ -51,7 +51,6 @@ public class SampleAclParams extends AclParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleAclParams{");
         sb.append("permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append(", individual='").append(individual).append('\'');
         sb.append(", file='").append(file).append('\'');
         sb.append(", cohort='").append(cohort).append('\'');
@@ -120,8 +119,4 @@ public class SampleAclParams extends AclParams {
         return this;
     }
 
-    public SampleAclParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
 }

@@ -34,7 +34,6 @@ import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
@@ -58,6 +57,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.catalog.db.api.SampleDBAdaptor.QueryParams.ANNOTATION;
+import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
 
 public class SampleManagerTest extends AbstractManagerTest {
 
@@ -445,10 +445,10 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().createGroup(studyFqn, "myGroup", Arrays.asList("user2", "user3"), token);
         catalogManager.getStudyManager().createGroup(studyFqn, "myGroup2", Arrays.asList("user2", "user3"), token);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@myGroup",
-                new StudyAclParams("", AclParams.Action.SET, null), token);
+                new StudyAclParams("", null), SET, token);
 
-        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("s_1"), "@myGroup", new SampleAclParams("VIEW",
-                AclParams.Action.SET, null, null, null), token);
+        catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("s_1"), "@myGroup",
+                new SampleAclParams(null, null, null, "VIEW"), SET, token);
 
         DataResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(),
                 sessionIdUser2);
@@ -1246,15 +1246,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(individualId, sample.getIndividualId());
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null),
-                token);
+                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, token);
 
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
         assertEquals(null, sample.getAttributes().get("individual"));
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null, true),
-                token);
+                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name(), true), SET, token);
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
@@ -1431,8 +1429,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
         DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample"), "user2", new SampleAclParams("VIEW", AclParams.Action.SET, null, null, null, true),
-                token);
+                Arrays.asList("sample"), "user2", new SampleAclParams(null, null, null, "VIEW", true), SET, token);
         assertEquals(1, dataResult.getNumResults());
         assertEquals(1, dataResult.first().size());
         assertEquals(1, dataResult.first().get("user2").size());
@@ -1449,8 +1446,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token);
 
         DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample", "sample2"), "user2", new SampleAclParams("VIEW", AclParams.Action.SET, null, null, null,
-                        true), token);
+                Arrays.asList("sample", "sample2"), "user2", new SampleAclParams(null, null, null, "VIEW", true), SET, token);
         assertEquals(2, dataResult.getNumResults());
         assertEquals(1, dataResult.first().size());
         assertEquals(1, dataResult.first().get("user2").size());

@@ -26,8 +26,8 @@ public class FileAclParams extends AclParams {
     public FileAclParams() {
     }
 
-    public FileAclParams(String permissions, Action action, String sample) {
-        super(permissions, action);
+    public FileAclParams(String sample, String permissions) {
+        super(permissions);
         this.sample = sample;
     }
 
@@ -35,7 +35,6 @@ public class FileAclParams extends AclParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileAclParams{");
         sb.append("permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append(", sample='").append(sample).append('\'');
         sb.append('}');
         return sb.toString();
@@ -55,8 +54,4 @@ public class FileAclParams extends AclParams {
         return this;
     }
 
-    public FileAclParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
 }

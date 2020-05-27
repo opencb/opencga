@@ -1052,7 +1052,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> sampleStringList, String memberList,
-                                                              SampleAclParams sampleAclParams, String token) throws CatalogException {
+                                                              SampleAclParams sampleAclParams, ParamUtils.AclAction action, String token)
+            throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1061,6 +1062,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("sampleStringList", sampleStringList)
                 .append("memberList", memberList)
                 .append("sampleAclParams", sampleAclParams)
+                .append("action", action)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -1082,7 +1084,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         + "cohort");
             }
 
-            if (sampleAclParams.getAction() == null) {
+            if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
 
@@ -1173,7 +1175,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 }
 
                 OpenCGAResult<Map<String, List<String>>> queryResults;
-                switch (sampleAclParams.getAction()) {
+                switch (action) {
                     case SET:
                         queryResults = authorizationManager.setAcls(study.getUid(), sampleUids, individualUids, members, permissions,
                                 Enums.Resource.SAMPLE, resource2);

@@ -102,7 +102,7 @@ public class AbstractSolrManagerTest extends GenericTest {
         catalogManager.getStudyManager().createGroup(studyFqn, "@study_deny", Collections.singletonList("user2"), sessionIdAdmin);
 
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "@study_allow",
-                new StudyAclParams(null, AclParams.Action.ADD, "view_only"), sessionIdAdmin);
+                new StudyAclParams(null, "view_only"), ParamUtils.AclAction.ADD, sessionIdAdmin);
 
         study = catalogManager.getStudyManager().get("phase1", new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
 
@@ -115,9 +115,9 @@ public class AbstractSolrManagerTest extends GenericTest {
                 sessionIdAdmin).first();
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample1"), "@study_deny,user3",
-                new SampleAclParams("VIEW,VIEW_ANNOTATIONS", AclParams.Action.ADD, null, null, null), sessionIdAdmin);
+                new SampleAclParams(null, null, null, "VIEW,VIEW_ANNOTATIONS"), ParamUtils.AclAction.ADD, sessionIdAdmin);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample2"), "@study_allow",
-                new SampleAclParams("", AclParams.Action.SET, null, null, null), sessionIdAdmin);
+                new SampleAclParams(null, null, null, ""), ParamUtils.AclAction.SET, sessionIdAdmin);
 
         // Cohorts
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("cohort1").setSamples(Arrays.asList(sample1, sample2, sample3)),
@@ -128,9 +128,9 @@ public class AbstractSolrManagerTest extends GenericTest {
                 QueryOptions.empty(), sessionIdAdmin);
 
         catalogManager.getCohortManager().updateAcl(studyFqn, Collections.singletonList("cohort1"), "@study_deny,user3",
-                new AclParams("VIEW,VIEW_ANNOTATIONS", AclParams.Action.ADD), sessionIdAdmin);
+                new AclParams("VIEW,VIEW_ANNOTATIONS"), ParamUtils.AclAction.ADD, sessionIdAdmin);
         catalogManager.getCohortManager().updateAcl(studyFqn, Collections.singletonList("cohort2"), "@study_allow",
-                new AclParams("", AclParams.Action.SET), sessionIdAdmin);
+                new AclParams(""), ParamUtils.AclAction.SET, sessionIdAdmin);
     }
 
 }

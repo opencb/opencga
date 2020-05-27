@@ -283,12 +283,13 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group IDs", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @PathParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAclUpdateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAclUpdateParams());
-            AclParams clinicalAclParams = new AclParams(params.getPermissions(), params.getAction());
+            AclParams clinicalAclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getClinicalAnalysis());
-            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, token));
+            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

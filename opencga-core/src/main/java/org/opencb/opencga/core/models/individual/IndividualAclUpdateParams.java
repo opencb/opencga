@@ -27,8 +27,8 @@ public class IndividualAclUpdateParams extends AclParams {
     public IndividualAclUpdateParams() {
     }
 
-    public IndividualAclUpdateParams(String permissions, Action action, String individual, String sample, boolean propagate) {
-        super(permissions, action);
+    public IndividualAclUpdateParams(String individual, String sample, String permissions, boolean propagate) {
+        super(permissions);
         this.individual = individual;
         this.sample = sample;
         this.propagate = propagate;
@@ -41,7 +41,6 @@ public class IndividualAclUpdateParams extends AclParams {
         sb.append(", sample='").append(sample).append('\'');
         sb.append(", propagate=").append(propagate);
         sb.append(", permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append('}');
         return sb.toString();
     }
@@ -78,8 +77,4 @@ public class IndividualAclUpdateParams extends AclParams {
         return this;
     }
 
-    public IndividualAclUpdateParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
 }

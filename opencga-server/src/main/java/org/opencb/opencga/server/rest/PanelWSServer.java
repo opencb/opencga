@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
@@ -228,12 +229,13 @@ public class PanelWSServer extends OpenCGAWSServer {
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @PathParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to update the permissions.", required = true) PanelAclUpdateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new PanelAclUpdateParams());
-            AclParams panelAclParams = new AclParams(params.getPermissions(), params.getAction());
+            AclParams panelAclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getPanel(), false);
-            return createOkResponse(panelManager.updateAcl(studyStr, idList, memberId, panelAclParams, token));
+            return createOkResponse(panelManager.updateAcl(studyStr, idList, memberId, panelAclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

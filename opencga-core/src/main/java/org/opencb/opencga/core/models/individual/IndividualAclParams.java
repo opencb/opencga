@@ -28,8 +28,8 @@ public class IndividualAclParams extends AclParams {
 
     }
 
-    public IndividualAclParams(String permissions, Action action, String sample, boolean propagate) {
-        super(permissions, action);
+    public IndividualAclParams(String sample, String permissions, boolean propagate) {
+        super(permissions);
         this.sample = sample;
         this.propagate = propagate;
     }
@@ -38,7 +38,6 @@ public class IndividualAclParams extends AclParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualAclParams{");
         sb.append("permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append(", sample='").append(sample).append('\'');
         sb.append(", propagate=").append(propagate);
         sb.append('}');
@@ -67,9 +66,5 @@ public class IndividualAclParams extends AclParams {
         super.setPermissions(permissions);
         return this;
     }
-
-    public IndividualAclParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
 }
+

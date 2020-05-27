@@ -219,8 +219,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
 
         CohortAclUpdateParams updateParams = new CohortAclUpdateParams()
                 .setCohort(extractIdsFromListOrFile(commandOptions.id))
-                .setPermissions(commandOptions.permissions)
-                .setAction(commandOptions.action);
+                .setPermissions(commandOptions.permissions);
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", commandOptions.study);

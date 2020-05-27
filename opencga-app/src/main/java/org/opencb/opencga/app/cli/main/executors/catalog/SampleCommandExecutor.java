@@ -215,7 +215,6 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 .setCohort(extractIdsFromListOrFile(commandOptions.cohort))
                 .setFile(extractIdsFromListOrFile(commandOptions.file))
                 .setPermissions(commandOptions.permissions)
-                .setAction(commandOptions.action)
                 .setPropagate(commandOptions.propagate);
 
         return openCGAClient.getSampleClient().updateAcl(commandOptions.memberId, updateParams, queryParams);

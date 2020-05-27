@@ -28,11 +28,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -41,6 +42,7 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
@@ -183,15 +185,15 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Action only for admins
         Group group = new Group("ldap", Collections.emptyList()).setSyncedFrom(new Group.Sync("ldap", "bio"));
         catalogManager.getStudyManager().createGroup(studyFqn, group, token);
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new StudyAclParams("", AclParams.Action.SET,
-                "view_only"), token);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new StudyAclParams("", "view_only"),
+                ParamUtils.AclAction.SET, token);
         String token = catalogManager.getUserManager().login("user", "password").getToken();
 
         assertEquals(9, catalogManager.getSampleManager().count(studyFqn, new Query(), token).getNumTotalResults());
 
         // We remove the permissions for group ldap
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new StudyAclParams("", AclParams.Action.RESET,
-                ""), this.token);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new StudyAclParams("", ""),
+                ParamUtils.AclAction.RESET, this.token);
 
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, new Query(), token).getNumTotalResults());
     }
@@ -252,7 +254,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 Collections.singletonList("test"), token);
         DataResult<Map<String, List<String>>> permissions = catalogManager.getStudyManager().updateAcl(
                 Collections.singletonList("user@1000G:phase1"), "@group_cancer_some_thing_else",
-                new StudyAclParams("", AclParams.Action.SET, "view_only"), token);
+                new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, token);
         assertTrue(permissions.first().containsKey("@group_cancer_some_thing_else"));
 
         String token = catalogManager.getUserManager().login("test", "test").getToken();
@@ -590,12 +592,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(sampleDataResult.getNumResults() > 0);
 
         // Assign permissions to all the samples
-        SampleAclParams sampleAclParams = new SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
+        SampleAclParams sampleAclParams = new SampleAclParams(null, null, null, "VIEW,UPDATE");
         List<String> sampleIds = sampleDataResult.getResults().stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());
         DataResult<Map<String, List<String>>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                sampleIds, "user2,user3", sampleAclParams, token);
+                sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
         for (Map<String, List<String>> result : sampleAclResult.getResults()) {
             assertEquals(2, result.size());
@@ -638,11 +640,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(sampleDataResult.getNumResults() > 0);
 
         // Assign permissions to all the samples
-        SampleAclParams sampleAclParams = new SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
+        SampleAclParams sampleAclParams = new SampleAclParams(null, null, null, "VIEW,UPDATE");
         List<String> sampleIds = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
         DataResult<Map<String, List<String>>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                sampleIds, "user2,user3", sampleAclParams, token);
+                sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
         for (Map<String, List<String>> result : sampleAclResult.getResults()) {
             assertEquals(2, result.size());
@@ -827,7 +829,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams("", AclParams.Action.SET, "view-only"), token);
+                new StudyAclParams("", "view-only"), ParamUtils.AclAction.SET, token);
 
         try {
             catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
@@ -850,7 +852,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), AclParams.Action.SET, "view-only"), token);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), "view-only"), ParamUtils.AclAction.SET, token);
 
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);

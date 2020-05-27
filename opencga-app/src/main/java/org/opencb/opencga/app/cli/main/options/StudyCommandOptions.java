@@ -21,7 +21,6 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.AclParams;
 
 import java.util.List;
 
@@ -324,7 +323,7 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"-a", "--action"}, description = "Action to be applied with the permissions (SET, ADD, REMOVE or RESET)",
                 arity = 1)
-        public AclParams.Action action = AclParams.Action.SET;
+        public ParamUtils.AclAction action = ParamUtils.AclAction.SET;
 
         @Parameter(names = {"--template"}, description = "Template of permissions to be used (admin, analyst or view_only)", arity = 1)
         public String template;

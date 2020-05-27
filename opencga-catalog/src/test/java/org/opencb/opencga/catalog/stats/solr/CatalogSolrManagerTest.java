@@ -30,8 +30,8 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.stats.solr.converters.*;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
@@ -49,6 +49,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.ADD;
 
 public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
@@ -173,7 +174,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
     public void testCanViewIfAnonymousHavePermissions() throws CatalogException {
         // Grant permissions to anonymous user
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
-                new StudyAclParams(null, AclParams.Action.ADD, "view_only"), sessionIdOwner);
+                new StudyAclParams(null, "view_only"), ADD, sessionIdOwner);
 
         study = catalogManager.getStudyManager().get(studyFqn, new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
 

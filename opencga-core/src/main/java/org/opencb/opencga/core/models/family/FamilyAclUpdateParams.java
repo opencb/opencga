@@ -25,8 +25,8 @@ public class FamilyAclUpdateParams extends AclParams {
     public FamilyAclUpdateParams() {
     }
 
-    public FamilyAclUpdateParams(String permissions, Action action, String family) {
-        super(permissions, action);
+    public FamilyAclUpdateParams(String permissions, String family) {
+        super(permissions);
         this.family = family;
     }
 
@@ -35,7 +35,6 @@ public class FamilyAclUpdateParams extends AclParams {
         final StringBuilder sb = new StringBuilder("FamilyAclUpdateParams{");
         sb.append("family='").append(family).append('\'');
         sb.append(", permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append('}');
         return sb.toString();
     }
@@ -54,8 +53,4 @@ public class FamilyAclUpdateParams extends AclParams {
         return this;
     }
 
-    public FamilyAclUpdateParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
 }
