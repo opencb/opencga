@@ -31,8 +31,8 @@ export JAVA_OPTS="${JAVA_OPTS} -Dlog4j.configuration=file:${BASEDIR}/conf/log4j.
 export JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8"
 export JAVA_OPTS="${JAVA_OPTS} -Xms256m -Xmx${JAVA_HEAP}"
 
-export COLUMNS=`tput cols`
-export LINES=`tput lines`
+export COLUMNS=`tput cols 2> /dev/null`
+export LINES=`tput lines 2> /dev/null`
 
 # export OPENCGA_HOME=${BASEDIR}
 
