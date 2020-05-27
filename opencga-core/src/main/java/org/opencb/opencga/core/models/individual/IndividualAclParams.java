@@ -22,16 +22,14 @@ import org.opencb.opencga.core.models.AclParams;
 public class IndividualAclParams extends AclParams {
 
     private String sample;
-    private boolean propagate;
 
     public IndividualAclParams() {
 
     }
 
-    public IndividualAclParams(String sample, String permissions, boolean propagate) {
+    public IndividualAclParams(String sample, String permissions) {
         super(permissions);
         this.sample = sample;
-        this.propagate = propagate;
     }
 
     @Override
@@ -39,7 +37,6 @@ public class IndividualAclParams extends AclParams {
         final StringBuilder sb = new StringBuilder("IndividualAclParams{");
         sb.append("permissions='").append(permissions).append('\'');
         sb.append(", sample='").append(sample).append('\'');
-        sb.append(", propagate=").append(propagate);
         sb.append('}');
         return sb.toString();
     }
@@ -50,15 +47,6 @@ public class IndividualAclParams extends AclParams {
 
     public IndividualAclParams setSample(String sample) {
         this.sample = sample;
-        return this;
-    }
-
-    public boolean isPropagate() {
-        return propagate;
-    }
-
-    public IndividualAclParams setPropagate(boolean propagate) {
-        this.propagate = propagate;
         return this;
     }
 

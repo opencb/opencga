@@ -22,16 +22,14 @@ public class IndividualAclUpdateParams extends AclParams {
 
     private String individual;
     private String sample;
-    private boolean propagate;
 
     public IndividualAclUpdateParams() {
     }
 
-    public IndividualAclUpdateParams(String individual, String sample, String permissions, boolean propagate) {
+    public IndividualAclUpdateParams(String individual, String sample, String permissions) {
         super(permissions);
         this.individual = individual;
         this.sample = sample;
-        this.propagate = propagate;
     }
 
     @Override
@@ -39,7 +37,6 @@ public class IndividualAclUpdateParams extends AclParams {
         final StringBuilder sb = new StringBuilder("IndividualAclUpdateParams{");
         sb.append("individual='").append(individual).append('\'');
         sb.append(", sample='").append(sample).append('\'');
-        sb.append(", propagate=").append(propagate);
         sb.append(", permissions='").append(permissions).append('\'');
         sb.append('}');
         return sb.toString();
@@ -60,15 +57,6 @@ public class IndividualAclUpdateParams extends AclParams {
 
     public IndividualAclUpdateParams setSample(String sample) {
         this.sample = sample;
-        return this;
-    }
-
-    public boolean isPropagate() {
-        return propagate;
-    }
-
-    public IndividualAclUpdateParams setPropagate(boolean propagate) {
-        this.propagate = propagate;
         return this;
     }
 

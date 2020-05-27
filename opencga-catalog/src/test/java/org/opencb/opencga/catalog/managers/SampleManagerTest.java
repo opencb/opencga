@@ -448,7 +448,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 new StudyAclParams("", null), SET, token);
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("s_1"), "@myGroup",
-                new SampleAclParams(null, null, null, "VIEW"), SET, token);
+                new SampleAclParams(null, null, null, "VIEW"), SET, false, token);
 
         DataResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(),
                 sessionIdUser2);
@@ -1246,13 +1246,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(individualId, sample.getIndividualId());
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, token);
+                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, false, token);
 
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
         assertEquals(null, sample.getAttributes().get("individual"));
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name(), true), SET, token);
+                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, true, token);
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
@@ -1429,7 +1429,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
         DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample"), "user2", new SampleAclParams(null, null, null, "VIEW", true), SET, token);
+                Arrays.asList("sample"), "user2", new SampleAclParams(null, null, null, "VIEW"), SET, true, token);
         assertEquals(1, dataResult.getNumResults());
         assertEquals(1, dataResult.first().size());
         assertEquals(1, dataResult.first().get("user2").size());
@@ -1446,7 +1446,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token);
 
         DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample", "sample2"), "user2", new SampleAclParams(null, null, null, "VIEW", true), SET, token);
+                Arrays.asList("sample", "sample2"), "user2", new SampleAclParams(null, null, null, "VIEW"), SET, true, token);
         assertEquals(2, dataResult.getNumResults());
         assertEquals(1, dataResult.first().size());
         assertEquals(1, dataResult.first().get("user2").size());

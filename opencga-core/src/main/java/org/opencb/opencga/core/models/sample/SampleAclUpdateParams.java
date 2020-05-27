@@ -25,18 +25,15 @@ public class SampleAclUpdateParams extends AclParams {
     private String file;
     private String cohort;
 
-    private boolean propagate;
-
     public SampleAclUpdateParams() {
     }
 
-    public SampleAclUpdateParams(String sample, String individual, String file, String cohort, String permissions, boolean propagate) {
+    public SampleAclUpdateParams(String sample, String individual, String file, String cohort, String permissions) {
         super(permissions);
         this.sample = sample;
         this.individual = individual;
         this.file = file;
         this.cohort = cohort;
-        this.propagate = propagate;
     }
 
     @Override
@@ -46,7 +43,6 @@ public class SampleAclUpdateParams extends AclParams {
         sb.append(", individual='").append(individual).append('\'');
         sb.append(", file='").append(file).append('\'');
         sb.append(", cohort='").append(cohort).append('\'');
-        sb.append(", propagate=").append(propagate);
         sb.append(", permissions='").append(permissions).append('\'');
         sb.append('}');
         return sb.toString();
@@ -85,15 +81,6 @@ public class SampleAclUpdateParams extends AclParams {
 
     public SampleAclUpdateParams setCohort(String cohort) {
         this.cohort = cohort;
-        return this;
-    }
-
-    public boolean isPropagate() {
-        return propagate;
-    }
-
-    public SampleAclUpdateParams setPropagate(boolean propagate) {
-        this.propagate = propagate;
         return this;
     }
 

@@ -1462,8 +1462,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> individualStrList, String memberList,
-                                                              IndividualAclParams aclParams, ParamUtils.AclAction action, String token)
-            throws CatalogException {
+                                                              IndividualAclParams aclParams, ParamUtils.AclAction action, boolean propagate,
+                                                              String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);
 
@@ -1473,6 +1473,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
                 .append("action", action)
+                .append("propagate", propagate)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -1526,7 +1527,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             Enums.Resource resource2 = null;
             List<Long> sampleUids = null;
-            if (aclParams.isPropagate()) {
+            if (propagate) {
                 resource2 = Enums.Resource.SAMPLE;
                 sampleUids = getSampleUidsFromIndividuals(study.getUid(), individualUids);
             }
