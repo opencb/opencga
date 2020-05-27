@@ -1,4 +1,10 @@
 #!/bin/sh
+
+echo "------------ OpenCGA INIT ------------"
+/opt/opencga/bin/opencga.sh --version
+
+set -x
+
 FILE=/opt/volume/conf/hadoop
 if [ -d "$FILE" ]; then
     echo "$FILE already exists"
@@ -15,6 +21,9 @@ else
     # Copy the OpenCGA installation directory to the hdinsights cluster
     # TODO - Optimize this down to only required jars
     sshpass -p "$INIT_HADOOP_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
+
+    mkdir -p /opt/volume/conf/hadoop
+    cp -r /opt/opencga/conf/hadoop/* /opt/volume/conf/hadoop
 fi
 
 FILE=/opt/volume/conf/configuration.yml
@@ -34,13 +43,20 @@ else
     #mkdir -p /opt/volume/conf /opt/volume/variants
     cp -r /opt/opencga/conf/* /opt/volume/conf
 fi
-# wait for mongodb 
-until mongo mongodb://$(echo $INIT_CATALOG_DATABASE_HOSTS | cut -d',' -f1)/\?replicaSet=rs0  -u $INIT_CATALOG_DATABASE_USER -p $INIT_CATALOG_DATABASE_PASSWORD  --authenticationDatabase admin --eval 'db.getMongo().getDBNames().indexOf("admin")' --quiet
+# wait for mongodb
+echo "About to wait for MongoDB"
+until mongo mongodb://$(echo $INIT_CATALOG_DATABASE_HOSTS | cut -d',' -f1)/\?replicaSet=rs0  \
+      -u $INIT_CATALOG_DATABASE_USER -p $INIT_CATALOG_DATABASE_PASSWORD --authenticationDatabase admin \
+      --ssl --sslAllowInvalidHostnames --sslAllowInvalidCertificates --quiet \
+      --eval 'db.getMongo().getDBNames().indexOf("admin")'
 do
     echo "Waiting for Mongo DB"
 done
 
-DB_EXISTS=$(mongo mongodb://$(echo $INIT_CATALOG_DATABASE_HOSTS | cut -d',' -f1)/\?replicaSet=rs0  -u $INIT_CATALOG_DATABASE_USER -p $INIT_CATALOG_DATABASE_PASSWORD  --authenticationDatabase admin --eval 'db.getMongo().getDBNames().indexOf("opencga_catalog")' --quiet | tail -1)
+DB_EXISTS=$(mongo mongodb://$(echo $INIT_CATALOG_DATABASE_HOSTS | cut -d',' -f1)/\?replicaSet=rs0  \
+      -u $INIT_CATALOG_DATABASE_USER -p $INIT_CATALOG_DATABASE_PASSWORD --authenticationDatabase admin \
+      --ssl --sslAllowInvalidHostnames --sslAllowInvalidCertificates --quiet \
+      --eval 'db.getMongo().getDBNames().indexOf("opencga_catalog")' | tail -1)
 echo "DB EXISTS: $DB_EXISTS"
 
 if [ $(($DB_EXISTS)) == -1 ]; then
@@ -53,5 +69,4 @@ if [ $(($DB_EXISTS)) == -1 ]; then
      echo "copied session files"
 else
     echo "DB opencga_catalog already exists"
-
 fi
