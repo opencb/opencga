@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.iva.name }}
+  labels:
+    app: {{  .Values.iva.name  }}
+spec:
+  replicas: {{ .Values.iva.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{  .Values.iva.name  }}
+  template:
+    metadata:
+      labels:
+        app: {{  .Values.iva.name  }}
+    spec:
+    {{- with .Values.iva.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ .Values.iva.name }}
+      securityContext:
+        {{- toYaml .Values.iva.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.iva.securityContext | nindent 12 }}
+        image: "{{ .Values.iva.image.repository }}"
+        imagePullPolicy: {{ .Values.iva.image.pullPolicy }}
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        resources:
+          {{- toYaml .Values.iva.resources | nindent 12 }}
+        volumeMounts:
+        - mountPath: /usr/local/apache2/htdocs/iva/conf
+          name: ivaconf
+      volumes:
+      - azureFile:
+          secretName: azure-files-secret
+          shareName: ivaconf
+        name: ivaconf
+      {{- with .Values.iva.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.iva.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.iva.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

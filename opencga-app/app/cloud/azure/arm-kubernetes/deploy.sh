@@ -149,6 +149,11 @@ helm upgrade opencga ../../kubernetes/charts/opencga \
     --install --wait -n $K8S_NAMESPACE --timeout 10m
 
 
+helm upgrade iva ../../kubernetes/charts/iva \
+    --set iva.opencga.host="TODO" \
+    --install --wait -n $K8S_NAMESPACE --timeout 10m
+
+
 
 
 
