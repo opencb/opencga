@@ -92,16 +92,20 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
     # Remove leading comma
     ZK_HOST=`echo $ZK_HOST | cut -c 2-`
 
-    sed -i -e 's/#ZK_HOST=.*/ZK_HOST='$ZK_HOST'/' /opt/solr.in.sh
+    echo "ZK_HOST=\"${ZK_HOST}\"" >> /opt/solr.in.sh
 else
     ZK_CLI="-z localhost:9983"
 fi
 
+echo "SOLR_HOST=\"`hostname`\"" >> /opt/solr.in.sh
+
 ## Ensure always using cloud mode, even for the single server configurations.
 echo 'SOLR_MODE="solrcloud"' >> /opt/solr.in.sh
 
+## Increase HEAP
 TOTAL_RAM=$(sed 's/ kB//g'  <<< $(grep -oP '^MemTotal:\s+\K.*' /proc/meminfo))
 SOLR_HEAP=$(echo "$TOTAL_RAM/1024/1024/2" | bc )
+echo "SOLR_HEAP=${SOLR_HEAP}g" >> /opt/solr.in.sh
 
 docker run --name ${DOCKER_NAME}                                  \
     --restart always                                              \
@@ -110,7 +114,6 @@ docker run --name ${DOCKER_NAME}                                  \
     -v /datadrive/solr-volume/solr:/opt/solr/server/solr          \
     -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh                   \
     -e SOLR_INCLUDE=/opt/solr/bin/solr.in.sh                      \
-    -e SOLR_HEAP=${SOLR_HEAP}g                                    \
      solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground
 
 
@@ -123,6 +126,7 @@ done
 # copy configset to volume ready to mount
 docker run --rm -v /datadrive/solr-volume/solr/configsets:/target opencb/opencga-base:2.0.0-dev cp -r /opt/opencga/misc/solr/ /target/opencga/
 
-for i in `ls  /datadrive/solr-volume/solr/configsets/opencga/ | grep -v INSTALL.md` ; do
+for i in `ls  /datadrive/solr-volume/solr/configsets/opencga/ | grep "configset` ; do
+  echo "Install configset ${i}"
   docker exec ${DOCKER_NAME} /opt/solr/bin/solr zk upconfig -n $i -d /opt/solr/server/solr/configsets/opencga/$i $ZK_CLI
 done
