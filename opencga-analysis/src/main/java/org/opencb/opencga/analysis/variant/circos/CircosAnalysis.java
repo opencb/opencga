@@ -45,7 +45,7 @@ public class CircosAnalysis extends OpenCgaTool {
 
     public final static String SUFFIX_FILENAME = ".genomePlot.png";
 
-    public enum Resolution { LOW, MEDIUM, HIGH }
+    public enum Density { LOW, MEDIUM, HIGH }
 
     private String study;
     private Query query;
