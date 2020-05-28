@@ -128,18 +128,19 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
     }
 
     private boolean snvQuery(Query query, VariantStorageManager storageManager, PrintWriter pw) {
+        boolean ret = true;
         try {
-            int resThreshold;
-            switch ((CircosAnalysis.Resolution) getExecutorParams().get("resolution")) {
+            int threshold;
+            switch ((CircosAnalysis.Density) getExecutorParams().get("density")) {
                 case HIGH:
-                    resThreshold = Integer.MAX_VALUE;
+                    threshold = Integer.MAX_VALUE;
                     break;
                 case MEDIUM:
-                    resThreshold = 250000;
+                    threshold = 250000;
                     break;
                 case LOW:
                 default:
-                    resThreshold = 100000;
+                    threshold = 100000;
                     break;
             }
 
@@ -163,18 +164,18 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         currentChrom = v.getChromosome();
                     }
                     int dist = v.getStart() - prevStart;
-                    if (dist < resThreshold) {
-                        pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
+                    if (dist < threshold) {
+                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
                                 + v.getAlternate() + "\t" + Math.log10(dist));
                     }
                     prevStart = v.getStart();
                 }
             }
         } catch (Exception e) {
-            return false;
+            ret = false;
 //            throw new ToolExecutorException(e);
         }
-        return true;
+        return ret;
     }
 
     private boolean copyNumberQuery(Query query, VariantStorageManager storageManager, PrintWriter pw) {
@@ -190,7 +191,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     StructuralVariation sv = v.getSv();
                     if (sv != null) {
                         if (sv.getType() == StructuralVariantType.COPY_NUMBER_GAIN) {
-                            pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
+                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
                                     + sv.getCopyNumber() + "\t1");
                         } else if (sv.getType() == StructuralVariantType.COPY_NUMBER_LOSS) {
                             pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
@@ -222,15 +223,15 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     Variant v = iterator.next();
                     switch (v.getType()) {
                         case INSERTION: {
-                            pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
+                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
                             break;
                         }
                         case DELETION: {
-                            pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
+                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
                             break;
                         }
                         case INDEL: {
-                            pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
+                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
                             break;
                         }
                         default: {
@@ -292,8 +293,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                             if (sv.getBreakend() != null) {
                                 if (sv.getBreakend().getMate() != null) {
                                     BreakendMate mate = sv.getBreakend().getMate();
-                                    pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + mate.getChromosome()
-                                            + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
+                                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
+                                            + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
                                 } else {
                                     addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", breakend mate is empty for"
                                             + " rearrangement");
