@@ -105,7 +105,7 @@ public class SampleCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
         // Get next BUFFER_SIZE documents
         int counter = 0;
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
-            Document sampleDocument = (Document) mongoCursor.next();
+            Document sampleDocument = mongoCursor.next();
 
             if (user != null && studyUid <= 0) {
                 studyUid = sampleDocument.getLong(PRIVATE_STUDY_UID);
@@ -115,7 +115,7 @@ public class SampleCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
             counter++;
 
             // Extract the sample uids
-            if (!options.getBoolean(NATIVE_QUERY) && !options.getBoolean("lazy")) {
+            if (!options.getBoolean(NATIVE_QUERY) && options.getBoolean(ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM)) {
                 // Extract the sample uid
                 sampleUidMap.put(sampleDocument.getLong(SampleDBAdaptor.QueryParams.UID.key()), sampleDocument);
             }

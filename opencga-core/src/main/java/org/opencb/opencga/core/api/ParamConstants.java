@@ -130,6 +130,9 @@ public class ParamConstants {
     public static final String SAMPLE_VERSION_PARAM = "version";
     public static final String SAMPLE_VERSION_DESCRIPTION = "Sample version";
 
+    public static final String SAMPLE_INCLUDE_INDIVIDUAL_PARAM = "includeIndividual";
+    public static final String SAMPLE_INCLUDE_INDIVIDUAL_DESCRIPTION = "Include Individual object as an attribute";
+
     public static final String SAMPLE_EMPTY_FILES_ACTION_PARAM = "emptyFilesAction";
     public static final String SAMPLE_EMPTY_FILES_ACTION_DESCRIPTION = "Action to be performed over files that were associated only to"
             + " the sample to be deleted. Possible actions are NONE, TRASH, DELETE";
