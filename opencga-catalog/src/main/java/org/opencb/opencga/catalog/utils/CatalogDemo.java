@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.utils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.StudyAclParams;
@@ -112,11 +111,11 @@ public final class CatalogDemo {
         catalogManager.getStudyManager().createGroup(studyId, new Group("analyst", Arrays.asList("user2", "user3", "user4")),
                 sessionId);
         //        // @members will have the role "analyst"
-        StudyAclParams aclParams1 = new StudyAclParams("", AclParams.Action.ADD, "analyst");
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyId), "@analyst", aclParams1, sessionId);
+        StudyAclParams aclParams1 = new StudyAclParams("", "analyst");
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyId), "@analyst", aclParams1, ParamUtils.AclAction.ADD, sessionId);
         //        // Add anonymous user to the role "denyAll". Later we will give it permissions to see some concrete samples.
-        StudyAclParams aclParams = new StudyAclParams("", AclParams.Action.ADD, "locked");
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyId), "*", aclParams, sessionId);
+        StudyAclParams aclParams = new StudyAclParams("", "locked");
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyId), "*", aclParams, ParamUtils.AclAction.ADD, sessionId);
     }
 
 }

@@ -1462,8 +1462,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> individualStrList, String memberList,
-                                                              IndividualAclParams aclParams, String token)
-            throws CatalogException {
+                                                              IndividualAclParams aclParams, ParamUtils.AclAction action, boolean propagate,
+                                                              String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);
 
@@ -1472,6 +1472,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 .append("individualStrList", individualStrList)
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
+                .append("action", action)
+                .append("propagate", propagate)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -1486,7 +1488,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 throw new CatalogException("Update ACL: At least one of these parameters should be provided: individual or sample");
             }
 
-            if (aclParams.getAction() == null) {
+            if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
 
@@ -1525,13 +1527,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             Enums.Resource resource2 = null;
             List<Long> sampleUids = null;
-            if (aclParams.isPropagate()) {
+            if (propagate) {
                 resource2 = Enums.Resource.SAMPLE;
                 sampleUids = getSampleUidsFromIndividuals(study.getUid(), individualUids);
             }
 
             OpenCGAResult<Map<String, List<String>>> queryResults;
-            switch (aclParams.getAction()) {
+            switch (action) {
                 case SET:
                     queryResults = authorizationManager.setAcls(study.getUid(), individualUids, sampleUids, members, permissions,
                             Enums.Resource.INDIVIDUAL, resource2);

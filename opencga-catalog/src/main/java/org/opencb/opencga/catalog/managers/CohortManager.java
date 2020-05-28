@@ -1056,7 +1056,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> cohortStrList, String memberList,
-                                                           AclParams aclParams, String token) throws CatalogException {
+                                                              AclParams aclParams, ParamUtils.AclAction action, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);
 
@@ -1065,6 +1066,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("cohortStrList", cohortStrList)
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
+                .append("action", action)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -1073,7 +1075,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 throw new CatalogException("Missing cohort parameter");
             }
 
-            if (aclParams.getAction() == null) {
+            if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
 
@@ -1100,7 +1102,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             List<Long> cohortUids = cohortList.stream().map(Cohort::getUid).collect(Collectors.toList());
 
             OpenCGAResult<Map<String, List<String>>> queryResultList;
-            switch (aclParams.getAction()) {
+            switch (action) {
                 case SET:
                     queryResultList = authorizationManager.setAcls(study.getUid(), cohortUids, members, permissions, Enums.Resource.COHORT);
                     break;

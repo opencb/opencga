@@ -187,11 +187,19 @@ public class ParamUtils {
         REMOVE
     }
 
+    public enum AclAction {
+        SET,
+        ADD,
+        REMOVE,
+        RESET
+    }
+
     public enum CompleteUpdateAction {
         ADD,
         SET,
         REMOVE,
         RESET,
         REPLACE
+
     }
 }

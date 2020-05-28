@@ -137,10 +137,10 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
 
         PanelAclUpdateParams aclUpdateParams = new PanelAclUpdateParams()
                 .setPanel(extractIdsFromListOrFile(commandOptions.id))
-                .setPermissions(commandOptions.permissions)
-                .setAction(commandOptions.action);
+                .setPermissions(commandOptions.permissions);
 
-        return openCGAClient.getDiseasePanelClient().updateAcl(commandOptions.memberId, aclUpdateParams, queryParams);
+        return openCGAClient.getDiseasePanelClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), aclUpdateParams,
+                queryParams);
     }
 
     private RestResponse<ObjectMap> acl() throws ClientException {

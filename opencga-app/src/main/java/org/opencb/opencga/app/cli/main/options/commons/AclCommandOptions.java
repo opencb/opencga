@@ -20,7 +20,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 
 /**
  * Created by imedina on 26/07/16.
@@ -68,7 +68,7 @@ public class AclCommandOptions {
 
         @Parameter(names = {"-a", "--action"}, description = "Action to be applied with the permissions (SET, ADD, REMOVE or RESET)",
                 arity = 1)
-        public AclParams.Action action = AclParams.Action.SET;
+        public ParamUtils.AclAction action = ParamUtils.AclAction.SET;
 
     }
 

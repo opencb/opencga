@@ -232,14 +232,13 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         IndividualAclUpdateParams updateParams = new IndividualAclUpdateParams()
                 .setIndividual(extractIdsFromListOrFile(commandOptions.id))
                 .setSample(extractIdsFromListOrFile(commandOptions.sample))
-                .setPermissions(commandOptions.permissions)
-                .setAction(commandOptions.action)
-                .setPropagate(commandOptions.propagate);
+                .setPermissions(commandOptions.permissions);
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", commandOptions.study);
+        params.put("propagate", commandOptions.propagate);
 
-        return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, updateParams, params);
+        return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), updateParams, params);
     }
 
     private RestResponse<FacetField> stats() throws ClientException {

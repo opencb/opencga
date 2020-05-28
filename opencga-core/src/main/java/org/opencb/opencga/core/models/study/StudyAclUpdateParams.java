@@ -26,8 +26,8 @@ public class StudyAclUpdateParams extends AclParams {
     public StudyAclUpdateParams() {
     }
 
-    public StudyAclUpdateParams(String permissions, Action action, String study, String template) {
-        super(permissions, action);
+    public StudyAclUpdateParams(String permissions, String study, String template) {
+        super(permissions);
         this.study = study;
         this.template = template;
     }
@@ -38,7 +38,6 @@ public class StudyAclUpdateParams extends AclParams {
         sb.append("study='").append(study).append('\'');
         sb.append(", template='").append(template).append('\'');
         sb.append(", permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append('}');
         return sb.toString();
     }
@@ -66,8 +65,4 @@ public class StudyAclUpdateParams extends AclParams {
         return this;
     }
 
-    public StudyAclUpdateParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
 }

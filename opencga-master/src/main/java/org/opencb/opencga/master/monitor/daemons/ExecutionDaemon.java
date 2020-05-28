@@ -26,10 +26,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;
@@ -76,7 +76,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
@@ -115,6 +114,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
 
 /**
  * Created by imedina on 16/06/16.
@@ -669,7 +670,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .map(FileAclEntry.FilePermissions::toString)
                     .collect(Collectors.joining(","));
             fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
-                    new FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
+                    new FileAclParams(null, allFilePermissions), SET, token);
         }
 
         return folder;

@@ -240,7 +240,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 cliOptions.julieCommandOptions.region,
                 cliOptions.julieCommandOptions.overwrite);
 
-        return openCGAClient.getVariantOperationClient().runJulie(toolParams, params);
+        return openCGAClient.getVariantOperationClient().runVariantJulie(toolParams, params);
     }
 
 

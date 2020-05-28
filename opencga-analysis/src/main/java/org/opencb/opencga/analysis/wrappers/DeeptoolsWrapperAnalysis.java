@@ -89,19 +89,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         File file = new File(fileUriMap.get(bamFile).getPath());
                         File coverageFile = new File(getOutDir() + "/" + file.getName() + ".bw");
                         if (coverageFile.exists()) {
-                            // Get catalog path
-                            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
-                            try {
-                                fileResult = catalogManager.getFileManager().get(getStudy(), bamFile, QueryOptions.empty(), token);
-                            } catch (CatalogException e) {
-                                throw new ToolException("Error accessing file '" + bamFile + "' of the study " + getStudy() + "'", e);
-                            }
-                            if (fileResult.getNumResults() <= 0) {
-                                throw new ToolException("File '" + bamFile + "' not found in study '" + getStudy() + "'");
-                            }
-
-                            String catalogPath = new File(fileResult.getResults().get(0).getPath()).getParent() + "/"
-                                    + coverageFile.getName();
+                            String catalogPath = getCatalogPath(bamFile);
                             Path src = coverageFile.toPath();
                             Path dest = new File(file.getParent()).toPath();
 

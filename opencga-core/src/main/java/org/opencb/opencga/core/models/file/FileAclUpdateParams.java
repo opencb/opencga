@@ -26,8 +26,8 @@ public class FileAclUpdateParams extends AclParams {
     public FileAclUpdateParams() {
     }
 
-    public FileAclUpdateParams(String permissions, Action action, String file, String sample) {
-        super(permissions, action);
+    public FileAclUpdateParams(String permissions, String file, String sample) {
+        super(permissions);
         this.file = file;
         this.sample = sample;
     }
@@ -38,7 +38,6 @@ public class FileAclUpdateParams extends AclParams {
         sb.append("file='").append(file).append('\'');
         sb.append(", sample='").append(sample).append('\'');
         sb.append(", permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append('}');
         return sb.toString();
     }
@@ -66,8 +65,4 @@ public class FileAclUpdateParams extends AclParams {
         return this;
     }
 
-    public FileAclUpdateParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
 }

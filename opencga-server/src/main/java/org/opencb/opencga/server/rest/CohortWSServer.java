@@ -361,12 +361,13 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) CohortAclUpdateParams params) {
         try {
             ObjectUtils.defaultIfNull(params, new CohortAclUpdateParams());
-            AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
+            AclParams aclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getCohort(), false);
-            return createOkResponse(cohortManager.updateAcl(studyStr, idList, memberId, aclParams, token));
+            return createOkResponse(cohortManager.updateAcl(studyStr, idList, memberId, aclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

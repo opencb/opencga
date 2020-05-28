@@ -391,16 +391,17 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = "Propagate individual permissions to related samples", defaultValue = "false") @QueryParam("propagate") boolean propagate,
             @ApiParam(value = "JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
                     + "propagate the permissions defined to the samples that are associated to the matching individuals",
                     required = true) IndividualAclUpdateParams params) {
         try {
             ObjectUtils.defaultIfNull(params, new IndividualAclUpdateParams());
 
-            IndividualAclParams aclParams = new IndividualAclParams(params.getPermissions(), params.getAction(),
-                    params.getSample(), params.isPropagate());
+            IndividualAclParams aclParams = new IndividualAclParams(params.getSample(), params.getPermissions());
             List<String> idList = StringUtils.isEmpty(params.getIndividual()) ? Collections.emptyList() : getIdList(params.getIndividual(), false);
-            return createOkResponse(individualManager.updateAcl(studyStr, idList, memberId, aclParams, token));
+            return createOkResponse(individualManager.updateAcl(studyStr, idList, memberId, aclParams, action, propagate, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

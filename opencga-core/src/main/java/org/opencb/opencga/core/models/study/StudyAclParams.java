@@ -26,8 +26,8 @@ public class StudyAclParams extends AclParams {
     public StudyAclParams() {
     }
 
-    public StudyAclParams(String permissions, Action action, String template) {
-        super(permissions, action);
+    public StudyAclParams(String permissions, String template) {
+        super(permissions);
         this.template = template;
     }
 
@@ -35,7 +35,6 @@ public class StudyAclParams extends AclParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("StudyAclParams{");
         sb.append("permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append(", template='").append(template).append('\'');
         sb.append('}');
         return sb.toString();
@@ -55,8 +54,4 @@ public class StudyAclParams extends AclParams {
         return this;
     }
 
-    public StudyAclParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
 }

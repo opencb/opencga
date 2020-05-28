@@ -179,13 +179,12 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyAclUpdateParams updateParams = new FamilyAclUpdateParams()
                 .setFamily(extractIdsFromListOrFile(commandOptions.id))
-                .setPermissions(commandOptions.permissions)
-                .setAction(commandOptions.action);
+                .setPermissions(commandOptions.permissions);
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", commandOptions.study);
 
-        return openCGAClient.getFamilyClient().updateAcl(commandOptions.memberId, updateParams, params);
+        return openCGAClient.getFamilyClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), updateParams, params);
     }
 
     private RestResponse<Family> updateAnnotations() throws ClientException, IOException {
