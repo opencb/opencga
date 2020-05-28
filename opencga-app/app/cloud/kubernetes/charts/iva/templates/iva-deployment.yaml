@@ -21,6 +21,20 @@ spec:
       serviceAccountName: {{ .Values.iva.name }}
       securityContext:
         {{- toYaml .Values.iva.podSecurityContext | nindent 8 }}
+    initContainers:
+      - name: init
+        securityContext:
+          {{- toYaml .Values.iva.securityContext | nindent 12 }}
+        image: "{{ .Values.iva.image.repository }}"
+        imagePullPolicy: {{ .Values.iva.image.pullPolicy }}
+        command:
+          - /bin/sh
+        args:
+          - -c
+          - '[ -f /opt/ivaconf/config.js ] && echo Configuration already exists || echo Copy configuration && cp -r /usr/local/apache2/htdocs/iva/conf/* /opt/ivaconf && echo "opencga.host = \"{{ .Values.opencga.host }}\";" >> /opt/ivaconf/config.js'
+        volumeMounts:
+          - mountPath: /opt/ivaconf
+            name: ivaconf
       containers:
       - name: {{ .Chart.Name }}
         securityContext:

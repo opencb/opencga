@@ -2,6 +2,9 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+opencga:
+  host: "http://opencga.local/opencga"
+
 iva:
   name: iva
   image:
@@ -42,10 +45,9 @@ iva:
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       # nginx.ingress.kubernetes.io/rewrite-target: /$1
       # kubernetes.io/tls-acme: "true"
-    hosts:
-      - host: "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
-        paths:
-          - /
+    host: "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
+    paths:
+      - /iva
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:

@@ -23,15 +23,13 @@ spec:
   {{- end }}
 {{- end }}
   rules:
-  {{- range .Values.iva.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - host: {{ .Values.iva.ingress.host | quote }}
       http:
         paths:
-        {{- range .paths }}
+        {{- range .Values.iva.ingress.paths }}
           - path: {{ . }}
             backend:
               serviceName: {{ $fullName }}
               servicePort: {{ $svcPort }}
         {{- end }}
-  {{- end }}
 {{- end }}

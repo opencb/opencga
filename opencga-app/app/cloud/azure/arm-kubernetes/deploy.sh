@@ -5,7 +5,7 @@
 # If the script is modifed to use a SAS token, be aware if the SAS token later changes then operations that depend on the storage and solution redeployment will fail.
 # Given dependencies on the storage within OpenCGA a SAS token with a long lifetime needs to be created and used each time the solution is deployed.
 
-cd $(dirname "$0")
+cd "$(dirname "$0")"
 
 set -e
 
@@ -27,10 +27,10 @@ if [ ! -f azuredeploy.parameters.private.json ]; then
 fi
 
 templateContainer="templates"
-location=$(cat azuredeploy.parameters.private.json | jq -r '.parameters.rgLocation.value')
-rgName=$(cat azuredeploy.parameters.private.json | jq -r '.parameters.rgPrefix.value')
-storageAccountName=`echo "${rgName,,}artifacts" | tr -d "_-"`
-deployID=${rgName}-`date "+%Y-%m-%d-%H.%M.%S"`-R${RANDOM}
+location=$(jq -r '.parameters.rgLocation.value' azuredeploy.parameters.private.json)
+rgName=$(jq -r '.parameters.rgPrefix.value' azuredeploy.parameters.private.json)
+storageAccountName=$(echo "${rgName}artifacts" | tr '[:upper:]' '[:lower:]' | tr -d "_-")
+deployID=${rgName}-$(date "+%Y-%m-%d-%H.%M.%S")-R${RANDOM}
 
 az account set --subscription "${subscriptionName}"
 az group create --name "${rgName}" --location "${location}"
@@ -56,7 +56,7 @@ az storage container create \
 
 mkdir -p ARTIFACTS_BLOB_UPDATE/foo
 rm -rf ARTIFACTS_BLOB_UPDATE/*
-cp -r `ls | grep -v "ARTIFACTS_BLOB_UPDATE\|parameters\|deployment-outputs.json"` ARTIFACTS_BLOB_UPDATE
+cp -r $(ls | grep -v "ARTIFACTS_BLOB_UPDATE\|parameters\|deployment-outputs.json") ARTIFACTS_BLOB_UPDATE
 
 az storage blob upload-batch \
     --destination $templateContainer \
@@ -92,12 +92,12 @@ function getOutput() {
 }
 
 # Enable HDInsight monitor
-`getOutput "hdInsightEnableMonitor"`
+$(getOutput "hdInsightEnableMonitor")
 
 echo "# Deploy kubernetes"
 
 # deploy opencga
-az aks get-credentials -n $(`getOutput "aksClusterName"`) -g $(`getOutput "aksResourceGroupName"`)
+az aks get-credentials -n "$(getOutput "aksClusterName")" -g "$(getOutput "aksResourceGroupName")"
 
 K8S_NAMESPACE=${rgName}
 # Create a namespace for opencga
@@ -118,6 +118,13 @@ helm install opencga-nginx stable/nginx-ingress \
     -f ../../kubernetes/charts/nginx/values.yaml \
      --wait --timeout 10m
 
+## Register manually the nginx external IP for ingress
+EXTERNAL_IP=$(kubectl get services opencga-nginx-nginx-ingress-controller -o "jsonpath={.status.loadBalancer.ingress[0].ip}")
+az network private-dns record-set a add-record          \
+  --resource-group ${rgName}                            \
+  --zone-name "$(getHelmParam "privateDnsZonesName")"   \
+  --record-set-name opencga                             \
+  --ipv4-address ${EXTERNAL_IP}
 
 if ! kubectl get secret azure-files-secret -n ${K8S_NAMESPACE} &> /dev/null ; then
    kubectl create secret generic azure-files-secret -n ${K8S_NAMESPACE} \
@@ -146,14 +153,13 @@ helm upgrade opencga ../../kubernetes/charts/opencga \
     --set analysis.execution.options.k8s.masterNode=https://$(getHelmParam "aksApiServerAddress"):443 \
     --set analysis.execution.options.k8s.namespace=$K8S_NAMESPACE \
     --set analysis.index.variant.maxConcurrentJobs="100" \
+    --set rest.ingress.host="opencga.$(getHelmParam "privateDnsZonesName")" \
     --install --wait -n $K8S_NAMESPACE --timeout 10m
 
 
 helm upgrade iva ../../kubernetes/charts/iva \
-    --set iva.opencga.host="TODO" \
+    --set iva.opencga.host="http://opencga.$(getHelmParam "privateDnsZonesName")/opencga" \
+    --set iva.ingress.host="opencga.$(getHelmParam "privateDnsZonesName")" \
     --install --wait -n $K8S_NAMESPACE --timeout 10m
-
-
-
 
 
