@@ -25,8 +25,8 @@ public class JobAclUpdateParams extends AclParams {
     public JobAclUpdateParams() {
     }
 
-    public JobAclUpdateParams(String permissions, Action action, String job) {
-        super(permissions, action);
+    public JobAclUpdateParams(String job, String permissions) {
+        super(permissions);
         this.job = job;
     }
 
@@ -35,7 +35,6 @@ public class JobAclUpdateParams extends AclParams {
         final StringBuilder sb = new StringBuilder("JobAclUpdateParams{");
         sb.append("job='").append(job).append('\'');
         sb.append(", permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append('}');
         return sb.toString();
     }
@@ -54,8 +53,4 @@ public class JobAclUpdateParams extends AclParams {
         return this;
     }
 
-    public JobAclUpdateParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
 }

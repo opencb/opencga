@@ -906,7 +906,8 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> panelStrList, String memberList,
-                                                              AclParams aclParams, String token) throws CatalogException {
+                                                              AclParams aclParams, ParamUtils.AclAction action, String token)
+            throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -915,6 +916,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("panelStrList", panelStrList)
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
+                .append("action", action)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -923,7 +925,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 throw new CatalogException("Update ACL: Missing panel parameter");
             }
 
-            if (aclParams.getAction() == null) {
+            if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
 
@@ -947,7 +949,7 @@ public class PanelManager extends ResourceManager<Panel> {
             checkMembers(study.getUid(), members);
 
             OpenCGAResult<Map<String, List<String>>> queryResultList;
-            switch (aclParams.getAction()) {
+            switch (action) {
                 case SET:
                     queryResultList = authorizationManager.setAcls(study.getUid(), panelDataResult.getResults().stream().map(Panel::getUid)
                             .collect(Collectors.toList()), members, permissions, Enums.Resource.DISEASE_PANEL);

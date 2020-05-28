@@ -874,14 +874,14 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FileAclUpdateParams params) {
         try {
             ObjectUtils.defaultIfNull(params, new FileAclUpdateParams());
-
             FileAclParams aclParams = new FileAclParams(
-                    params.getPermissions(), params.getAction(), params.getSample());
+                    params.getSample(), params.getPermissions());
             List<String> idList = StringUtils.isEmpty(params.getFile()) ? Collections.emptyList() : getIdList(params.getFile(), false);
-            return createOkResponse(fileManager.updateAcl(studyStr, idList, memberId, aclParams, token));
+            return createOkResponse(fileManager.updateAcl(studyStr, idList, memberId, aclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

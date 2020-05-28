@@ -42,6 +42,8 @@ public class ParamConstants {
             + "all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators "
             + "can query by this field. ";
     public static final String ACL_DESCRIPTION = "Filter entries for which a user has the provided permissions. " + ACL_FORMAT;
+    public static final String ACL_ACTION_PARAM = "action";
+    public static final String ACL_ACTION_DESCRIPTION = "Action to be performed [ADD, SET, REMOVE or RESET].";
 
     public static final String TSV_ANNOTATION_DESCRIPTION = "JSON containing the 'content' of the TSV file if this has not yet been "
             + "registered into OpenCGA";

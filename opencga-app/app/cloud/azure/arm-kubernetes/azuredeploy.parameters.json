@@ -38,9 +38,6 @@
         "mongoDBPassword": {
             "value": "SECUREPASSWORD"
         },
-        "catalogSecretKey": {
-            "value": "SECUREPASSWORD"
-        },
         "sslCertificateEmail": {
             "value": ""
         }

@@ -25,8 +25,8 @@ public class CohortAclUpdateParams extends AclParams {
     public CohortAclUpdateParams() {
     }
 
-    public CohortAclUpdateParams(String permissions, Action action, String cohort) {
-        super(permissions, action);
+    public CohortAclUpdateParams(String permissions, String cohort) {
+        super(permissions);
         this.cohort = cohort;
     }
 
@@ -35,7 +35,6 @@ public class CohortAclUpdateParams extends AclParams {
         final StringBuilder sb = new StringBuilder("CohortAclUpdateParams{");
         sb.append("cohort='").append(cohort).append('\'');
         sb.append(", permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append('}');
         return sb.toString();
     }
@@ -54,8 +53,4 @@ public class CohortAclUpdateParams extends AclParams {
         return this;
     }
 
-    public CohortAclUpdateParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
 }

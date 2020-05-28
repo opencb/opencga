@@ -2513,7 +2513,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> fileStrList, String memberList,
-                                                              FileAclParams aclParams, String token) throws CatalogException {
+                                                              FileAclParams aclParams, ParamUtils.AclAction action, String token)
+            throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -2522,6 +2523,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("fileStrList", fileStrList)
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
+                .append("action", action)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -2536,7 +2538,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 throw new CatalogException("Update ACL: At least one of these parameters should be provided: file or sample");
             }
 
-            if (aclParams.getAction() == null) {
+            if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
 
@@ -2577,7 +2579,7 @@ public class FileManager extends AnnotationSetManager<File> {
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
             OpenCGAResult<Map<String, List<String>>> queryResultList;
-            switch (aclParams.getAction()) {
+            switch (action) {
                 case SET:
                     queryResultList = authorizationManager.setAcls(study.getUid(), extendedFileList.stream().map(File::getUid)
                             .collect(Collectors.toList()), members, permissions, Enums.Resource.FILE);

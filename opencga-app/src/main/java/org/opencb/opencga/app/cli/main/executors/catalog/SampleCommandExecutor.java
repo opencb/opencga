@@ -208,17 +208,16 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("study", commandOptions.study);
+        queryParams.put("propagate", commandOptions.propagate);
 
         SampleAclUpdateParams updateParams = new SampleAclUpdateParams()
                 .setSample(extractIdsFromListOrFile(commandOptions.id))
                 .setIndividual(extractIdsFromListOrFile(commandOptions.individual))
                 .setCohort(extractIdsFromListOrFile(commandOptions.cohort))
                 .setFile(extractIdsFromListOrFile(commandOptions.file))
-                .setPermissions(commandOptions.permissions)
-                .setAction(commandOptions.action)
-                .setPropagate(commandOptions.propagate);
+                .setPermissions(commandOptions.permissions);
 
-        return openCGAClient.getSampleClient().updateAcl(commandOptions.memberId, updateParams, queryParams);
+        return openCGAClient.getSampleClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), updateParams, queryParams);
     }
 
     private RestResponse<FacetField> stats() throws ClientException {

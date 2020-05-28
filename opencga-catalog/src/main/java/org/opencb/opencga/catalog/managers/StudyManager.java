@@ -41,7 +41,6 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.common.CustomStatus;
@@ -1086,8 +1085,8 @@ public class StudyManager extends AbstractManager {
             OpenCGAResult<Group> group = studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
 
             // Remove the permissions the group might have had
-            StudyAclParams aclParams = new StudyAclParams(null, AclParams.Action.RESET, null);
-            updateAcl(Collections.singletonList(studyId), groupId, aclParams, token);
+            StudyAclParams aclParams = new StudyAclParams(null, null);
+            updateAcl(Collections.singletonList(studyId), groupId, aclParams, ParamUtils.AclAction.RESET, token);
 
             studyDBAdaptor.deleteGroup(study.getUid(), groupId);
 
@@ -1426,7 +1425,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, StudyAclParams aclParams,
-                                                              String token) throws CatalogException {
+                                                              ParamUtils.AclAction action, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studies = resolveIds(studyIdList, userId);
 
@@ -1434,6 +1433,7 @@ public class StudyManager extends AbstractManager {
                 .append("studyIdList", studyIdList)
                 .append("memberIds", memberIds)
                 .append("aclParams", aclParams)
+                .append("action", action)
                 .append("token", token);
         String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         try {
@@ -1441,7 +1441,7 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Missing study parameter");
             }
 
-            if (aclParams.getAction() == null) {
+            if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
 
@@ -1498,7 +1498,7 @@ public class StudyManager extends AbstractManager {
             }
 
             OpenCGAResult<Map<String, List<String>>> aclResult;
-            switch (aclParams.getAction()) {
+            switch (action) {
                 case SET:
                     aclResult = authorizationManager.setStudyAcls(studies.
                                     stream()

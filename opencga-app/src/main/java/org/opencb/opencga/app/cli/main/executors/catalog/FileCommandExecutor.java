@@ -403,13 +403,12 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         FileAclUpdateParams updateParams = new FileAclUpdateParams()
                 .setFile(extractIdsFromListOrFile(commandOptions.id))
                 .setSample(extractIdsFromListOrFile(commandOptions.sample))
-                .setPermissions(commandOptions.permissions)
-                .setAction(commandOptions.action);
+                .setPermissions(commandOptions.permissions);
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", commandOptions.study);
 
-        return openCGAClient.getFileClient().updateAcl(commandOptions.memberId, updateParams, params);
+        return openCGAClient.getFileClient().updateAcl(commandOptions.memberId, commandOptions.action.name(), updateParams, params);
     }
 
     private RestResponse<FacetField> stats() throws ClientException {

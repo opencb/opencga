@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.Analyst;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
@@ -83,21 +84,21 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     private DataResult<Family> createDummyFamily() throws CatalogException {
-        Phenotype disease1 = new Phenotype("dis1", "Disease 1", "HPO");
-        Phenotype disease2 = new Phenotype("dis2", "Disease 2", "HPO");
+        Disorder disease1 = new Disorder("dis1", "Disease 1", "HPO", null, "", null);
+        Disorder disease2 = new Disorder("dis2", "Disease 2", "HPO", null, "", null);
 
-        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)));
+        Individual mother = new Individual().setId("mother").setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "", null)));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
+        Individual relFather = new Individual().setId("father").setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
                 .setSamples(Arrays.asList(new Sample().setId("sample1")));
-        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")))
+        Individual relMother = new Individual().setId("mother").setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "", null)))
                 .setSamples(Arrays.asList(new Sample().setId("sample3")));
 
         Individual relChild1 = new Individual().setId("child1")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
+                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null), new Disorder("dis2", "dis2", "OT", null, "", null)))
                 .setFather(father)
                 .setMother(mother)
                 .setSamples(Arrays.asList(
@@ -106,7 +107,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 ))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
+                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
                 .setFather(father)
                 .setMother(mother)
                 .setSamples(Arrays.asList(
@@ -115,7 +116,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 ))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setId("child3")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
+                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
                 .setFather(father)
                 .setMother(mother)
                 .setSamples(Arrays.asList(
@@ -124,7 +125,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 ))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("family", "family", Arrays.asList(disease1, disease2), null,
+        Family family = new Family("family", "family", null, Arrays.asList(disease1, disease2),
                 Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1,
                 Collections.emptyList(), Collections.emptyMap());
 
@@ -136,7 +137,6 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         createDummyFamily();
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
-                .setDueDate("20180510100000")
                 .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))));
 
         if (createFamily) {
@@ -189,7 +189,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
-    public void updateQualityContorl() throws CatalogException, InterruptedException {
+    public void updateQualityControl() throws CatalogException, InterruptedException {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
 
         ClinicalAnalysisQcUpdateParams updateParams = new ClinicalAnalysisQcUpdateParams()
@@ -213,6 +213,29 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(2, result2.first().getQualityControl().getComments().size());
         assertEquals("message1", result2.first().getQualityControl().getComments().get(0).getMessage());
         assertEquals("message2", result2.first().getQualityControl().getComments().get(1).getMessage());
+    }
+
+    @Test
+    public void updateDisorder() throws CatalogException {
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
+
+        ClinicalUpdateParams updateParams = new ClinicalUpdateParams()
+                .setDisorder(new DisorderReferenceParam("dis1"));
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
+                sessionIdUser);
+        OpenCGAResult<ClinicalAnalysis> result1 = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(),
+                new QueryOptions(), sessionIdUser);
+
+        assertEquals("dis1", result1.first().getDisorder().getId());
+        assertEquals("OT", result1.first().getDisorder().getSource());
+
+        updateParams = new ClinicalUpdateParams()
+                .setDisorder(new DisorderReferenceParam("non_existing"));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("proband disorders");
+        catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
+                sessionIdUser);
     }
 
     @Test

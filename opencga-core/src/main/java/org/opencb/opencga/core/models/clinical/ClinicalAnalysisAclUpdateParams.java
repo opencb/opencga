@@ -25,8 +25,8 @@ public class ClinicalAnalysisAclUpdateParams extends AclParams {
     public ClinicalAnalysisAclUpdateParams() {
     }
 
-    public ClinicalAnalysisAclUpdateParams(String permissions, Action action, String clinicalAnalysis) {
-        super(permissions, action);
+    public ClinicalAnalysisAclUpdateParams(String clinicalAnalysis, String permissions) {
+        super(permissions);
         this.clinicalAnalysis = clinicalAnalysis;
     }
 
@@ -35,7 +35,6 @@ public class ClinicalAnalysisAclUpdateParams extends AclParams {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisAclUpdateParams{");
         sb.append("clinicalAnalysis='").append(clinicalAnalysis).append('\'');
         sb.append(", permissions='").append(permissions).append('\'');
-        sb.append(", action=").append(action);
         sb.append('}');
         return sb.toString();
     }
@@ -53,10 +52,4 @@ public class ClinicalAnalysisAclUpdateParams extends AclParams {
         super.setPermissions(permissions);
         return this;
     }
-
-    public ClinicalAnalysisAclUpdateParams setAction(Action action) {
-        super.setAction(action);
-        return this;
-    }
-
 }

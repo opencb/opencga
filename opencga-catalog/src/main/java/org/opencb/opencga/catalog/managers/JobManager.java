@@ -1573,7 +1573,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> jobStrList, String memberList,
-                                                              AclParams aclParams, String token) throws CatalogException {
+                                                              AclParams aclParams, ParamUtils.AclAction action, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
 
@@ -1582,6 +1583,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append("jobStrList", jobStrList)
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
+                .append("action", action)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -1590,7 +1592,7 @@ public class JobManager extends ResourceManager<Job> {
                 throw new CatalogException("Missing job parameter");
             }
 
-            if (aclParams.getAction() == null) {
+            if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
 
@@ -1615,7 +1617,7 @@ public class JobManager extends ResourceManager<Job> {
             checkMembers(study.getUid(), members);
 
             OpenCGAResult<Map<String, List<String>>> queryResultList;
-            switch (aclParams.getAction()) {
+            switch (action) {
                 case SET:
                     queryResultList = authorizationManager.setAcls(study.getUid(), jobList.stream().map(Job::getUid)
                             .collect(Collectors.toList()), members, permissions, Enums.Resource.JOB);

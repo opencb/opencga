@@ -330,11 +330,10 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         StudyAclUpdateParams updateParams = new StudyAclUpdateParams()
                 .setStudy(c.study)
-                .setAction(c.action)
                 .setPermissions(c.permissions)
                 .setTemplate(c.template);
 
-        return openCGAClient.getStudyClient().updateAcl(c.memberId, updateParams);
+        return openCGAClient.getStudyClient().updateAcl(c.memberId, c.action.name(), updateParams);
     }
 
 }

@@ -35,6 +35,8 @@ This step should be executed before executing the general deployment.
 ./role-assignments.sh <subscription_name> <resourceGroupPrefix>  <location> <servicePrincipalObjectId>
 ```
 
+To skip role assignments within the main arm templates, add the parameter `"skipRoleAssignment": {"value": true}` to the `azuredeploy.private.parameters.json`
+                
 ## How do I connect to the Open CGA master pod
 
 1. Run `kubectl get pods` and record the name of the master pod.
@@ -83,26 +85,27 @@ Here are the properties that are defined for each t-shirt size:
 | Component   | Property            | 1 (Small)        | 2 (Medium) | 3 (Large)  |
 | ----------- | ------------------- | ------------ | ------ | ------ |
 | AKS        |
-|             | vm-size             | D2sv3        | D4sv3  | D4sv3  |
-|             | vm-quantity         | 3            | 5      | 7      |
-|             | maxJobsPoolAgents   | 5            | 20     | 250    |
-|             | maxJobsPoolAgents   | D4sv3        | D4sv3  | D4sv3  |
+|             | vm-size             | D2sv3        | D4sv3  | D4sv3   |
+|             | vm-quantity         | 3            | 5      | 7       |
+|             | maxJobsPoolAgents   | 1            | 5      | 50      |
+|             | maxJobsPoolAgents   | D8sv3        | D8sv3  | D16sv3  |
 |             |                     |              |
 | Solr        |
 |             | vm-size             | E4v3         | E8v3   | E16v3  |
-|             | vm-quantity         | 1            | 2      | 4      |
-|             | disk-type           | SSD          | SSD    | SSD    |
+|             | vm-quantity         | 1            | 2      | 2      |
+|             | disk-type           | StandardSSD_LRS          | StandardSSD_LRS    | Premium_LRS    |
 |             |                     |              |
 |             |                     |              |
 | MongoDB     |
 |             | node-quanity        | 1            | 3      | 5      |
-|             | node-size           | D2v2         | E8v3   | E16v3  |
-|             | disk-type           | E10          | P20    | P20    |
+|             | node-size           | D4sv3         | E8v3   | E16v3  |
+|             | disk-type           | StandardSSD_LRS          | StandardSSD_LRS    | StandardSSD_LRS    |
+|             | disk-size           | 512          | 1028    | 1028    |
 |             |                     |              |
 | HDInsights  |
-|             | head-node-quanity   | 1            | 2      | 2      |
+|             | head-node-quanity   | 2            | 2      | 2      |
 |             | head-node-size      | D4v2         | D4v2   | D4v2   |
-|             | worker-node-quanity | 2            | 20     | 50     |
+|             | worker-node-quanity | 3            | 20     | 50     |
 |             | worker-node-size    | D3v2         | D5v2   | D14v2  |
 |             |                     |              |
 
@@ -116,20 +119,26 @@ Additionally you can deploy a custom size by specifying the `customDeploymentSiz
             "value": {
                 "type": "0 = CustomSize",
                 "aks": {
-                    "nodeSize": "Standard_D4_v2",
                     "nodeCount": 3,
-                    "maxJobsPoolAgents": 16,
-                    "aksJobsAgentVMSize": "Standard_D4s_v3"
+                    "nodeSize": "Standard_D4s_v3",
+                    "maxJobsPoolAgents": 5,
+                    "aksJobsAgentVMSize": "Standard_D16s_v3"
                 },
                 "solr": {
-                    "ha": false,
-                    "nodeSize": "Standard_E4_v3",
-                    "nodeCount": 1
+                    "ha": true,
+                    "nodeSize": "Standard_E8_v3",
+                    "nodeCount": 2,
+                    "diskType": "StandardSSD_LRS",
+                    "diskSizeGB": 1028,
+                    "zookeeper": {
+                        "nodeSize": "Standard_D2_v2"
+                    }
                 },
                 "mongo": {
-                    "nodeCount": 1,
-                    "nodeSize": "Standard_D4_v2",
-                    "diskType": "E10"
+                    "nodeCount": 3,
+                    "nodeSize": "Standard_E8s_v3",
+                    "diskType": "StandardSSD_LRS",
+                    "diskSizeGB": 1028
                 },
                 "hdInsight": {
                     "head": {
@@ -137,13 +146,48 @@ Additionally you can deploy a custom size by specifying the `customDeploymentSiz
                         "nodeSize": "Standard_D4_v2"
                     },
                     "worker": {
-                        "nodeCount": 2,
-                        "nodeSize": "Standard_D14_v2"
-                    }
+                        "nodeCount": 20,
+                        "nodeSize": "Standard_D5_v2"
+                    },
+                    "yarnSiteMemoryInMb": 14000
                 }
             }
         }
 ```
+
+## Network customization
+
+The generated cluster may need to be attached via vnet peering to an already existing network. In this case, there might be a collision on the address space, therefore, the default CIDR should be modified.
+
+You can deploy a custom network cidr by specifying the `networkCIDR` field in the properties. The object has to contain all required fields. For an example see below.
+
+```
+        "networkCIDR": {
+            "type": "object",
+            "metadata": {
+                "description": "Object containing all the hardcoded IPs and CIDRs required for the deployment"
+            },
+            "defaultValue": {
+                "vnet": {
+                    "addressPrefixes": "10.0.0.0/16",
+                    "subnets": {
+                        "kubernetes": "10.0.0.0/22",
+                        "aci": "10.0.4.0/22",
+                        "hdinsight": "10.0.8.0/24",
+                        "mongo": "10.0.9.0/24",
+                        "solr": "10.0.10.0/24",
+                        "login": "10.0.12.0/24"
+                    }
+                },
+                "aks": {
+                    "serviceCIDR": "10.0.100.0/24",
+                    "dnsServiceIP" : "10.0.100.10",
+                    "dockerBridgeCIDR" : "172.17.0.1/16"
+                }
+            }
+        }
+```
+
 
 ## Possible further work
 

@@ -28,7 +28,6 @@ import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOpe
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
@@ -44,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.ADD;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
@@ -140,7 +140,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name(), AclParams.Action.ADD, null), sessionId);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name(), null), ADD,
+                sessionId);
 
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
@@ -155,16 +156,14 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name(), AclParams.Action.ADD, null), sessionId);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name(), null), ADD, sessionId);
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600"), "*",
-                new SampleAclParams()
-                        .setPermissions(SampleAclEntry.SamplePermissions.VIEW.name()) // View is not enough
-                        .setAction(AclParams.Action.ADD), sessionId);
+                new SampleAclParams().setPermissions(SampleAclEntry.SamplePermissions.VIEW.name()), // View is not enough
+                ADD, false, sessionId);
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19660"), "*",
-                new SampleAclParams()
-                        .setPermissions(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()) // ViewVariants without VIEW should be enough
-                        .setAction(AclParams.Action.ADD), sessionId);
+                new SampleAclParams().setPermissions(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()), // ViewVariants without VIEW should be enough
+                ADD, false, sessionId);
 
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
@@ -181,8 +180,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         // Only 2 samples
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
                 new SampleAclParams()
-                        .setPermissions(SampleAclEntry.SamplePermissions.VIEW + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
-                        .setAction(AclParams.Action.ADD), sessionId);
+                        .setPermissions(SampleAclEntry.SamplePermissions.VIEW + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
+                ADD, false, sessionId);
 
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
@@ -204,12 +203,12 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
     @Test
     public void testQueryAnonymousViewSampleVariantsWithoutAggregatedVariantsFail1() throws Exception {
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), AclParams.Action.ADD, null), sessionId);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), null), ADD, sessionId);
         // Only 2 samples
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
                 new SampleAclParams()
-                        .setPermissions(SampleAclEntry.SamplePermissions.VIEW + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
-                        .setAction(AclParams.Action.ADD), sessionId);
+                        .setPermissions(SampleAclEntry.SamplePermissions.VIEW + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
+                ADD, false, sessionId);
 
         // Filter sample "NA19601" is unauthorized, even if the result is not returned
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1")
@@ -224,12 +223,12 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
     @Test
     public void testQueryAnonymousViewSampleVariantsWithoutAggregatedVariantsFail2() throws Exception {
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), AclParams.Action.ADD, null), sessionId);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), null), ADD, sessionId);
         // Only 2 samples
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
                 new SampleAclParams()
-                        .setPermissions(SampleAclEntry.SamplePermissions.VIEW + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
-                        .setAction(AclParams.Action.ADD), sessionId);
+                        .setPermissions(SampleAclEntry.SamplePermissions.VIEW + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
+                ADD, false, sessionId);
 
         // Include sample "NA19601" is unauthorized
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1")
@@ -246,8 +245,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
                         // VIEW_SAMPLE_VARIANTS without VIEW_SAMPLES should be enough
-                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_SAMPLE_VARIANTS.name())
-                        .setAction(AclParams.Action.ADD), sessionId);
+                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_SAMPLE_VARIANTS.name()),
+                ADD, sessionId);
 
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
@@ -282,8 +281,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
-                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name())
-                        .setAction(AclParams.Action.ADD), sessionId);
+                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name()),
+                ADD, sessionId);
 
         File file = create(studyId2, getResourceUri("variant-test-file.vcf.gz"));
         indexFile(file, new QueryOptions(), outputId2);
@@ -308,8 +307,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
-                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name())
-                        .setAction(AclParams.Action.ADD), sessionId);
+                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name()),
+                ADD, sessionId);
 
         File file = create(studyId2, getResourceUri("variant-test-file.vcf.gz"));
         indexFile(file, new QueryOptions(), outputId2);
@@ -331,8 +330,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
-                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name())
-                        .setAction(AclParams.Action.ADD), sessionId);
+                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name()),
+                ADD, sessionId);
 
         File file = create(studyId2, getResourceUri("variant-test-file.vcf.gz"));
         indexFile(file, new QueryOptions(), outputId2);
@@ -342,8 +341,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyId2), "*",
                 new StudyAclParams()
-                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name())
-                        .setAction(AclParams.Action.ADD), sessionId);
+                        .setPermissions(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name()),
+                ADD, sessionId);
 
         Query query = new Query();
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES.name()), null);
