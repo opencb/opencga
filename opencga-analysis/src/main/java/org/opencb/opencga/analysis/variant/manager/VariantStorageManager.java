@@ -94,8 +94,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NONE;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 public class VariantStorageManager extends StorageManager implements AutoCloseable {
 
@@ -501,6 +500,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secure(query, queryOptions, token, engine -> {
             StopWatch watch = StopWatch.createStarted();
             VariantMetadataFactory metadataFactory = new CatalogVariantMetadataFactory(catalogManager, engine.getDBAdaptor(), token);
+            addDefaultSampleLimit(query, engine.getOptions());
             VariantMetadata metadata = metadataFactory.makeVariantMetadata(query, queryOptions);
             return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(metadata), 1);
         });
