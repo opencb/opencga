@@ -530,7 +530,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || query.getAnnotationIndexQuery().getClinicalMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
                 }
-                if (/*includeAll ||*/ query.getFileIndexMask() != EMPTY_MASK) {
+                if (includeAll || query.getFileIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
                 if (/*includeAll ||*/ query.hasFatherFilter() || query.hasMotherFilter()) {

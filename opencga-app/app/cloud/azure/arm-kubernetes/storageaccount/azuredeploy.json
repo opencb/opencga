@@ -50,27 +50,28 @@
               "enabled": true
             }
           },
-          "keySource": "Microsoft.Storage"
+          "keySource": "Microsoft.Storage",
+          "largeFileSharesState" : true
         }
       },
       "dependsOn": [
       ],
       "sku": {
-        "name": "Premium_LRS",
-        "tier": "Premium"
+        "name": "Standard_LRS",
+        "tier": "Standard "
       },
-      "kind": "FileStorage",
+      "kind": "StorageV2",
       "tags": {
       }
     },
     {
       "name": "[concat(variables('storageAccountName'), '/default/variants')]",
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
-      "apiVersion": "2019-04-01",
+      "apiVersion": "2019-06-01",
       "properties": {
         "metadata": {
         },
-        "shareQuota": 100
+        "shareQuota": 5000
       },
       "dependsOn": [
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
@@ -79,7 +80,7 @@
     {
       "name": "[concat(variables('storageAccountName'), '/default/conf')]",
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
-      "apiVersion": "2019-04-01",
+      "apiVersion": "2019-06-01",
       "properties": {
         "metadata": {
         },
@@ -92,7 +93,7 @@
     {
       "name": "[concat(variables('storageAccountName'), '/default/ivaconf')]",
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
-      "apiVersion": "2019-04-01",
+      "apiVersion": "2019-06-01",
       "properties": {
         "metadata": {
         },
@@ -105,11 +106,11 @@
     {
       "name": "[concat(variables('storageAccountName'), '/default/sessions')]",
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
-      "apiVersion": "2019-04-01",
+      "apiVersion": "2019-06-01",
       "properties": {
         "metadata": {
         },
-        "shareQuota": 100
+        "shareQuota": 5000
       },
       "dependsOn": [
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"

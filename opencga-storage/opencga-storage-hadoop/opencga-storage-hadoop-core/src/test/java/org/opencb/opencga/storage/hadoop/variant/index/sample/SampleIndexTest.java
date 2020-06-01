@@ -66,8 +66,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static boolean loaded = false;
-    private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2);
-    private static final List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
+    public static final String STUDY_NAME_3 = "study_3";
+    private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2, STUDY_NAME_3);
+    private static final Map<String, List<String>> sampleNames = new HashMap<String, List<String>>() {{
+        put(STUDY_NAME, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
+        put(STUDY_NAME_2, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
+        put(STUDY_NAME_3, Arrays.asList("NA12877", "NA12878"));
+    }};
 //    private static List<List<String>> trios = Arrays.asList(
 //            Arrays.asList("NA19600", "NA19660", "NA19661"),
 //            Arrays.asList("NA19660", "NA19661", "NA19685"),
@@ -112,6 +117,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         runETL(engine, getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         runETL(engine, getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         engine.familyIndex(STUDY_NAME_2, trios, new ObjectMap());
+
+        // Study 3 - platinum
+        params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_3)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+        runETL(engine, getPlatinumFile(0), outputUri, params, true, true, true);
+        runETL(engine, getPlatinumFile(1), outputUri, params, true, true, true);
 
         this.variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
 
@@ -186,13 +199,15 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     studyId,
                     Collections.emptySet(), options), options);
 
-            options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
-            options.put(FamilyIndexDriver.OVERWRITE, true);
-            new TestMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
-                    dbAdaptor.getArchiveTableName(studyId),
-                    dbAdaptor.getVariantTable(),
-                    studyId,
-                    Collections.emptySet(), options), options);
+            if (sampleNames.get(study).containsAll(trios.get(0))) {
+                options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+                options.put(FamilyIndexDriver.OVERWRITE, true);
+                new TestMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
+                        dbAdaptor.getArchiveTableName(studyId),
+                        dbAdaptor.getVariantTable(),
+                        studyId,
+                        Collections.emptySet(), options), options);
+            }
 
             Connection c = dbAdaptor.getHBaseManager().getConnection();
 
@@ -288,7 +303,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {
         for (String study : studies) {
-            for (String sampleName : sampleNames) {
+            for (String sampleName : sampleNames.get(study)) {
                 SampleIndexQuery sampleIndexQuery = testQueryIndex(annotationQuery, new Query()
                         .append(STUDY.key(), study)
                         .append(SAMPLE.key(), sampleName));
@@ -299,7 +314,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     public void testQueryFileIndex(Query query) throws Exception {
         for (String study : studies) {
-            for (String sampleName : sampleNames) {
+            for (String sampleName : sampleNames.get(study)) {
                 testQueryIndex(query, new Query()
                         .append(STUDY.key(), study)
                         .append(SAMPLE.key(), sampleName));
@@ -378,7 +393,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testSampleIndexSkipIntersect() throws StorageEngineException {
-        Query query = new Query(VariantQueryParam.SAMPLE.key(), sampleNames.get(0)).append(VariantQueryParam.STUDY.key(), STUDY_NAME);
+        Query query = new Query(VariantQueryParam.SAMPLE.key(), sampleNames.get(STUDY_NAME).get(0)).append(VariantQueryParam.STUDY.key(), STUDY_NAME);
         VariantQueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertEquals("sample_index_table", result.getSource());
 
@@ -410,7 +425,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         List<List<Region>> regionLists = Arrays.asList(null, Arrays.asList(new Region("22", 36591300, 46000000), new Region("1", 1000, 16400000)));
 
         for (String study : studies) {
-            for (String sampleName : sampleNames) {
+            for (String sampleName : sampleNames.get(study)) {
                 for (List<Region> regions : regionLists) {
                     System.out.println("-----------------------------------");
                     System.out.println("study = " + study);
@@ -441,6 +456,11 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void testAggregation() throws Exception {
         SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor());
 
+        testAggregation(executor, "qual", STUDY_NAME_3, "NA12877");
+        testAggregation(executor, "dp", STUDY_NAME_3, "NA12877");
+        testAggregation(executor, "qual>>type", STUDY_NAME_3, "NA12877");
+        testAggregation(executor, "type>>qual", STUDY_NAME_3, "NA12877");
+
         testAggregation(executor, "chromosome>>type>>ct");
         testAggregation(executor, "type>>ct");
         testAggregation(executor, "type;gt>>ct");
@@ -449,7 +469,12 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     private void testAggregation(SampleIndexVariantAggregationExecutor executor, String facet) throws JsonProcessingException {
-        Query query = new Query(STUDY.key(), studies.get(0)).append(SAMPLE.key(), sampleNames.get(0));
+        String study = studies.get(0);
+        testAggregation(executor, facet, study, sampleNames.get(study).get(0));
+    }
+
+    private void testAggregation(SampleIndexVariantAggregationExecutor executor, String facet, String study, String sample) throws JsonProcessingException {
+        Query query = new Query(STUDY.key(), study).append(SAMPLE.key(), sample);
         assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, facet)));
 
         VariantQueryResult<FacetField> result = executor.aggregation(query,
