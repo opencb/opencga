@@ -242,11 +242,14 @@ public final class SampleIndexSchema {
         int files = options.getInt(
                 HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.key(),
                 HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.defaultValue());
+        int samples = options.getInt(
+                HadoopVariantStorageOptions.EXPECTED_SAMPLES_NUMBER.key(),
+                files);
         int preSplitSize = options.getInt(
                 HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(),
                 HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.defaultValue());
 
-        int splits = files / preSplitSize;
+        int splits = samples / preSplitSize;
         ArrayList<byte[]> preSplits = new ArrayList<>(splits);
         for (int i = 0; i < splits; i++) {
             preSplits.add(toRowKey(i * preSplitSize));
