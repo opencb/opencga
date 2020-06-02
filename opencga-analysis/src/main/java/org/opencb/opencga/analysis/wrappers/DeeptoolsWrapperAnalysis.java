@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -31,6 +32,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,46 +72,54 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     @Override
     protected void run() throws Exception {
         step(() -> {
-            String commandLine = getCommandLine();
-            logger.info("Deeptools command line: " + commandLine);
-            try {
-                // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
-                Command cmd = new Command(getCommandLine())
-                        .setOutputOutputStream(
-                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDOUT_FILENAME).toFile())))
-                        .setErrorOutputStream(
-                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDERR_FILENAME).toFile())));
 
-                cmd.run();
+            if (command.equals("bamCoverage")) {
+                org.opencb.opencga.core.models.file.File catalogBamFile = getCatalogFile(bamFile);
+                Path bamPath = Paths.get(catalogBamFile.getUri());
+                Path newCoveragePath = getOutDir().resolve(bamPath.getFileName() + ".bw");
+                Path prevCoveragePath = bamPath.getParent().resolve(newCoveragePath.getFileName());
 
-                // Check deeptools errors
-                boolean success = false;
-                switch (command) {
-                    case "bamCoverage": {
-                        File file = new File(fileUriMap.get(bamFile).getPath());
-                        File coverageFile = new File(getOutDir() + "/" + file.getName() + ".bw");
-                        if (coverageFile.exists()) {
-                            String catalogPath = getCatalogPath(bamFile);
-                            Path src = coverageFile.toPath();
-                            Path dest = new File(file.getParent()).toPath();
+                if (getParams().getBoolean("overwrite", false) || !prevCoveragePath.toFile().exists()) {
+                    String commandLine = getCommandLine();
+                    logger.info("Deeptools command line: " + commandLine);
+                    // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
+                    Command cmd = new Command(getCommandLine())
+                            .setOutputOutputStream(
+                                    new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDOUT_FILENAME).toFile())))
+                            .setErrorOutputStream(
+                                    new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDERR_FILENAME).toFile())));
 
-                            moveFile(getStudy(), src, dest, catalogPath, token);
+                    cmd.run();
 
-                            success = true;
+                    if (newCoveragePath.toFile().exists()) {
+                        if (prevCoveragePath.toFile().exists()) {
+                            prevCoveragePath.toFile().delete();
                         }
-                        break;
+                        FileUtils.moveFile(newCoveragePath.toFile(), prevCoveragePath.toFile());
+                    } else {
+                        File file = new File(getScratchDir() + "/" + STDERR_FILENAME);
+                        String msg = "Something wrong executing Deeptools bamCoverage";
+                        if (file.exists()) {
+                            msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
+                        }
+                        throw new ToolException(msg);
                     }
                 }
-                if (!success) {
-                    File file = new File(getScratchDir() + "/" + STDERR_FILENAME);
-                    String msg = "Something wrong executing Samtools";
-                    if (file.exists()) {
-                        msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
+
+                boolean isLinked = true;
+                OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
+                try {
+                    fileResult = catalogManager.getFileManager().get(getStudy(), catalogBamFile.getPath(), QueryOptions.empty(), token);
+                    if (fileResult.getNumResults() <= 0) {
+                        isLinked = false;
                     }
-                    throw new ToolException(msg);
+                } catch (CatalogException e) {
+                    isLinked = false;
                 }
-            } catch (Exception e) {
-                throw new ToolException(e);
+                if (!isLinked) {
+                    catalogManager.getFileManager().link(getStudy(), prevCoveragePath.toUri(), Paths.get(catalogBamFile.getPath())
+                                    .getParent().toString(), new ObjectMap("parents", true), token);
+                }
             }
         });
     }
@@ -168,9 +178,10 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         if (param.equals(DOCKER_IMAGE_VERSION_PARAM)) {
             return false;
         } else if ("bamCoverage".equals(command)) {
-            if ("o".equals(param) || "b".equals(param)) {
+            if ("o".equals(param) || "b".equals(param) || "overwrite".equals(param)) {
                 return false;
             }
+
         }
         return true;
     }

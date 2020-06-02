@@ -80,6 +80,9 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
 
+        @Parameter(names = {"--overwrite"}, description = "Overwrite index file", arity = 0)
+        public boolean overwrite = false;
+
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
     }
@@ -188,6 +191,9 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
         public int windowSize = 1;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite coverage file", arity = 0)
+        public boolean overwrite = false;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;

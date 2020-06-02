@@ -62,6 +62,10 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
     }
 
     protected String getCatalogPath(String inputFile) throws ToolException {
+        return new File(getCatalogFile(inputFile).getPath()).getParent();
+    }
+
+    protected org.opencb.opencga.core.models.file.File getCatalogFile(String inputFile) throws ToolException {
         // Get catalog path
         OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
         try {
@@ -73,7 +77,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
             throw new ToolException("File '" + inputFile + "' not found in study '" + getStudy() + "'");
         }
 
-        return new File(fileResult.getResults().get(0).getPath()).getParent();
+        return fileResult.getResults().get(0);
     }
 
     protected boolean isValidFile(File file) {

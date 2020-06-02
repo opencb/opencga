@@ -91,7 +91,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
-        alignmentManager.index(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
+        alignmentManager.index(cliOptions.study, cliOptions.file, cliOptions.overwrite, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
 
@@ -134,7 +134,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
-        alignmentManager.coverageRun(cliOptions.study, cliOptions.file, cliOptions.windowSize, cliOptions.outdir, cliOptions.commonOptions.token);
+        alignmentManager.coverageRun(cliOptions.study, cliOptions.file, cliOptions.windowSize, cliOptions.overwrite, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
     private void delete() {

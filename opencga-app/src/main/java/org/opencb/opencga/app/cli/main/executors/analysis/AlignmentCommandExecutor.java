@@ -122,7 +122,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        return openCGAClient.getAlignmentClient().runIndex(new AlignmentIndexParams(cliOptions.file),
+        return openCGAClient.getAlignmentClient().runIndex(new AlignmentIndexParams(cliOptions.file, cliOptions.overwrite),
                 getCommonParamsFromAlignmentOptions(cliOptions.study));
     }
 
@@ -336,7 +336,8 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
 
-        return openCGAClient.getAlignmentClient().runCoverageIndex(new CoverageIndexParams(cliOptions.file, cliOptions.windowSize), params);
+        return openCGAClient.getAlignmentClient().runCoverageIndex(new CoverageIndexParams(cliOptions.file, cliOptions.windowSize,
+                cliOptions.overwrite), params);
     }
 
     private RestResponse<RegionCoverage> coverageQuery() throws ClientException {

@@ -204,10 +204,8 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         List<String> lines = readLines(file, Charset.defaultCharset());
                         if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
                             FileUtils.copyFile(file, outputFile);
-                            AlignmentStats alignmentStats = parseSamToolsStats(outputFile);
-                            //File alignmentStatsFile = getOutDir().resolve("alignment_stats.json").toFile();
-                            //JacksonUtils.getDefaultObjectMapper().writer().writeValue(alignmentStatsFile, alignmentStats);
-                            if (params.containsKey(INDEX_STATS_PARAM) && params.getBoolean(INDEX_STATS_PARAM)) {
+                            if (params.containsKey(INDEX_STATS_PARAM) && params.getBoolean(INDEX_STATS_PARAM) && !isIndexed()) {
+                                AlignmentStats alignmentStats = parseSamToolsStats(outputFile);
                                 indexStats(alignmentStats);
                             }
                             success = true;
@@ -470,10 +468,6 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     }
 
     private void indexStats(AlignmentStats alignmentStats) throws CatalogException, IOException {
-        // TODO: remove when daemon copies the stats file
-        Files.createSymbolicLink(new File(fileUriMap.get(inputFile).getPath()).getParentFile().toPath().resolve(outputFilename),
-                outputFile.toPath());
-
         // Convert AlignmentStats to map in order to create an AnnotationSet
         Map<String, Object> annotations = JacksonUtils.getDefaultObjectMapper().convertValue(alignmentStats, Map.class);
         AnnotationSet annotationSet = new AnnotationSet(ALIGNMENT_STATS_VARIABLE_SET, ALIGNMENT_STATS_VARIABLE_SET, annotations);
@@ -481,6 +475,25 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         // Update catalog
         FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
         catalogManager.getFileManager().update(getStudy(), inputCatalogFile.getId(), updateParams, QueryOptions.empty(), token);
+    }
+
+    private boolean isIndexed() {
+        OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
+        try {
+            fileResult = catalogManager.getFileManager().get(getStudy(), inputCatalogFile.getId(), QueryOptions.empty(), token);
+
+            if (fileResult.getNumResults() == 1) {
+                for (AnnotationSet annotationSet : fileResult.getResults().get(0).getAnnotationSets()) {
+                    if (ALIGNMENT_STATS_VARIABLE_SET.equals(annotationSet.getId())) {
+                        return true;
+                    }
+                }
+            }
+        } catch (CatalogException e) {
+            return false;
+        }
+
+        return false;
     }
 
     public String getCommand() {
