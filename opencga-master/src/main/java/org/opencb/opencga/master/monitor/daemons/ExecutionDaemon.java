@@ -34,10 +34,7 @@ import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
-import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
-import org.opencb.opencga.analysis.file.FileDeleteTask;
-import org.opencb.opencga.analysis.file.FileIndexTask;
-import org.opencb.opencga.analysis.file.FileTsvAnnotationLoader;
+import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.analysis.job.JobIndexTask;
@@ -149,7 +146,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     static {
         TOOL_CLI_MAP = new HashMap<String, String>(){{
-            put("files-unlink", "files unlink");
+            put(FileUnlinkTask.ID, "files unlink");
             put(FileDeleteTask.ID, "files delete");
             put(FetchAndRegisterTask.ID, "files fetch");
             put(FileIndexTask.ID, "files secondary-index");
