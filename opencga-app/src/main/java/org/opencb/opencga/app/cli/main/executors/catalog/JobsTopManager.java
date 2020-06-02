@@ -240,7 +240,7 @@ public class JobsTopManager {
         while (jobs.size() > jobsLimit) {
             if (i > jobs.size()) {
                 jobs = jobs.subList(jobs.size() - jobsLimit, jobs.size());
-                while (jobs.size() > 0 && jobs.get(0).getId().startsWith("├") || jobs.get(0).getId().startsWith("└")) {
+                while (jobs.size() > 0 && (jobs.get(0).getId().startsWith("├") || jobs.get(0).getId().startsWith("└"))) {
                     jobs.remove(0);
                 }
                 break;
@@ -252,7 +252,7 @@ public class JobsTopManager {
                 i++;
             } else {
                 jobs.remove(i);
-                while (jobs.size() > i && jobs.get(i).getId().startsWith("├") || jobs.get(i).getId().startsWith("└")) {
+                while (jobs.size() > i && (jobs.get(i).getId().startsWith("├") || jobs.get(i).getId().startsWith("└"))) {
                     jobs.remove(i);
                 }
             }
