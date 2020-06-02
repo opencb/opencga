@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.variant.manager;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;

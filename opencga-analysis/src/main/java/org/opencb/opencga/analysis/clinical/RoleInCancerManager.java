@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.clinical;
 
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.URLUtils;
 

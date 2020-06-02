@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.clinical.team;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
@@ -46,8 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.DE_NOVO;
+import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
+import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.DE_NOVO;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.lof;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.proteinCoding;
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME;

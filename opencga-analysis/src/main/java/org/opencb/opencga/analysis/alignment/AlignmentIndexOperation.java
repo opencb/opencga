@@ -16,24 +16,20 @@
 
 package org.opencb.opencga.analysis.alignment;
 
-import org.neo4j.io.fs.FileUtils;
+import org.apache.commons.io.FileUtils;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.file.FileRelatedFile;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
-import org.opencb.opencga.core.models.file.SmallRelatedFileParams;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 
 @Tool(id = AlignmentIndexOperation.ID, resource = Enums.Resource.ALIGNMENT, description = "Index alignment.")
 public class AlignmentIndexOperation extends OpenCgaTool {
