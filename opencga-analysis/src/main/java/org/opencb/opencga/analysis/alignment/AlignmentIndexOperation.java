@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.analysis.alignment;
 
+import org.neo4j.io.fs.FileUtils;
 import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -41,6 +43,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
 
     private String study;
     private String inputFile;
+    private boolean overwrite;
 
     private File inputCatalogFile;
     private Path inputPath;
@@ -68,13 +71,6 @@ public class AlignmentIndexOperation extends OpenCgaTool {
             throw new ToolException("Invalid input alignment file '" + inputFile + "': it must be in BAM or CRAM format");
         }
 
-        // Check if the index (.bai or .crai) has been already computed!
-        if (filename.endsWith(".bam") && new java.io.File(inputPath + ".bai").exists()) {
-            throw new ToolException("Index file '" + inputFile + ".bai' already exists");
-        } else if (filename.endsWith(".cram") && new java.io.File(inputPath + ".crai").exists()) {
-            throw new ToolException("Index file '" + inputFile + ".crai' already exists");
-        }
-
         outputPath = getOutDir().resolve(filename + (filename.endsWith(".bam") ? ".bai" : ".crai"));
     }
 
@@ -82,20 +78,38 @@ public class AlignmentIndexOperation extends OpenCgaTool {
     protected void run() throws Exception {
 
         step(ID, () -> {
-            BamManager bamManager = new BamManager(inputPath);
-            bamManager.createIndex(outputPath);
-            bamManager.close();
 
-            if (!outputPath.toFile().exists()) {
-                throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
-            } else {
-                String catalogPath = Paths.get(new java.io.File(inputCatalogFile.getPath()).getParent()).toString();
-                moveFile(study, outputPath, Paths.get(inputPath.toFile().getParent()), catalogPath, token);
+            Path indexPath = Paths.get(inputPath.toFile().getParent()).resolve(outputPath.getFileName());
+            if (overwrite || !indexPath.toFile().exists()) {
+                // Compute index if necessary
+                BamManager bamManager = new BamManager(inputPath);
+                bamManager.createIndex(outputPath);
+                bamManager.close();
 
-                FileUpdateParams updateParams = new FileUpdateParams()
-                        .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(catalogPath + "/"
-                                + outputPath.getFileName(), FileRelatedFile.Relation.PRODUCED_FROM)));
-                catalogManager.getFileManager().update(study, inputFile, updateParams, QueryOptions.empty(), token);
+                if (!outputPath.toFile().exists()) {
+                    throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
+                }
+
+                if (indexPath.toFile().exists()) {
+                    indexPath.toFile().delete();
+                }
+                FileUtils.moveFile(outputPath.toFile(), indexPath.toFile());
+            }
+
+            boolean isLinked = true;
+            Path outputCatalogPath = Paths.get(inputCatalogFile.getPath()).getParent().resolve(outputPath.getFileName());
+            OpenCGAResult<File> fileResult;
+            try {
+                fileResult = catalogManager.getFileManager().get(getStudy(), outputCatalogPath.toString(), QueryOptions.empty(), token);
+                if (fileResult.getNumResults() <= 0) {
+                    isLinked = false;
+                }
+            } catch (CatalogException e) {
+                isLinked = false;
+            }
+            if (!isLinked) {
+                catalogManager.getFileManager().link(getStudy(), indexPath.toUri(), outputCatalogPath.getParent().toString(),
+                        new ObjectMap("parents", true), token);
             }
         });
     }
@@ -115,6 +129,15 @@ public class AlignmentIndexOperation extends OpenCgaTool {
 
     public AlignmentIndexOperation setInputFile(String inputFile) {
         this.inputFile = inputFile;
+        return this;
+    }
+
+    public boolean isOverwrite() {
+        return overwrite;
+    }
+
+    public AlignmentIndexOperation setOverwrite(boolean overwrite) {
+        this.overwrite = overwrite;
         return this;
     }
 }

@@ -69,7 +69,7 @@ public abstract class AbstractManager {
     public static final String ANONYMOUS = "*";
 
     public static final int BATCH_OPERATION_SIZE = 100;
-    public static final int DEFAULT_LIMIT = 2000;
+    public static final int DEFAULT_LIMIT = 10;
 
     protected static final String INTERNAL_DELIMITER = "__";
 

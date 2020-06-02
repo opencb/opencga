@@ -27,6 +27,7 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
@@ -42,6 +43,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -129,6 +131,20 @@ public class FamilyManagerTest extends GenericTest {
 
         assertTrue("Mother id not associated to any children", motherIdUpdated);
         assertTrue("Father id not associated to any children", fatherIdUpdated);
+    }
+
+    @Test
+    public void searchFamily() throws CatalogException {
+        createDummyFamily("Martinez-Martinez", true);
+        createDummyFamily("Martinez", false);
+        createDummyFamily("Furio", false);
+
+        OpenCGAResult<Family> search = catalogManager.getFamilyManager().search(STUDY,
+                new Query(FamilyDBAdaptor.QueryParams.ID.key(), "~^Mart"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(2, search.getNumResults());
+        for (Family result : search.getResults()) {
+            assertTrue(result.getId().startsWith("Mart"));
+        }
     }
 
     @Test

@@ -89,7 +89,7 @@ public class AlignmentStorageManager extends StorageManager {
     // INDEX
     //-------------------------------------------------------------------------
 
-    public void index(String study, String inputFile, String outdir, String token) throws ToolException {
+    public void index(String study, String inputFile, boolean overwrite, String outdir, String token) throws ToolException {
         ObjectMap params = new ObjectMap();
 
         AlignmentIndexOperation indexOperation = new AlignmentIndexOperation();
@@ -97,6 +97,7 @@ public class AlignmentStorageManager extends StorageManager {
 
         indexOperation.setStudy(study);
         indexOperation.setInputFile(inputFile);
+        indexOperation.setOverwrite(overwrite);
 
         indexOperation.start();
     }
@@ -197,10 +198,11 @@ public class AlignmentStorageManager extends StorageManager {
     // COVERAGE: run, query and ratio
     //-------------------------------------------------------------------------
 
-    public void coverageRun(String study, String inputFile, int windowSize, String outdir, String token) throws ToolException {
+    public void coverageRun(String study, String inputFile, int windowSize, boolean overwrite, String outdir, String token) throws ToolException {
         ObjectMap params = new ObjectMap();
         params.put("of", "bigwig");
         params.put("bs", windowSize);
+        params.put("overwrite", overwrite);
 
         DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
 
