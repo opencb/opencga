@@ -9,6 +9,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     HADOOP_LOAD_FILES_IN_PARALLEL("storage.hadoop.load.filesInParallel", 1),
     HBASE_NAMESPACE("storage.hadoop.hbase.namespace"),
     EXPECTED_FILES_NUMBER("expected_files_number", 5000),
+    EXPECTED_SAMPLES_NUMBER("expected_samples_number"),
     DBADAPTOR_PHOENIX_FETCH_SIZE("storage.hadoop.phoenix.fetchSize", -1),
 
     /////////////////////////

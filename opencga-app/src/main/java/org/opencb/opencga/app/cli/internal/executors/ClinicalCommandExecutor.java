@@ -224,7 +224,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
 
         ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        Path configPath = opencgaHome.resolve("analysis/zetta-interpretation.yml");
+        Path configPath = opencgaHome.resolve("analysis/" + ZettaInterpretationAnalysis.ID + "/config.yml");
         if (configPath.toFile().exists()) {
             FileInputStream fis = new FileInputStream(configPath.toFile());
             config = objectMapper.readValue(fis, ZettaInterpretationConfiguration.class);
