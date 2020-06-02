@@ -1,6 +1,7 @@
 ################################################################################
-#' OpencgaR Commons
+#' OpencgaR Common functions
 #' 
+#' @include AllClasses.R
 #' @description This is an S4 class which defines the OpencgaR object
 #' @details This S4 class holds the default configuration required by OpencgaR 
 #' methods to stablish the connection with the web services. By default it is 
@@ -17,7 +18,7 @@
 fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL, 
                          subcategory=NULL, subcategoryId=NULL, action=NULL, 
                          params=NULL, httpMethod="GET", skip=0,
-                         num_threads=NULL, as.queryParam=NULL, batch_size=2000){
+                         num_threads=NULL, as.queryParam=NULL, batch_size=1000){
     
     # Need to disable scientific notation to avoid errors in the URL
     options(scipen=999)
@@ -86,6 +87,9 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
     container <- list()
     count <- 0
     
+    # Initialise array of RestResponse objects
+    restResponseList = list()
+    
     if (is.null(params)){
         params <- list()
     }
@@ -113,16 +117,17 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
             expirationTime <- sessionTable[sessionTableMatch, "expirationTime"]
         }else{
             stop(paste("There is more than one connection to this host in your rsession file. Please, remove any duplicated entries in", 
-                       sessionFile))
+                       object@sessionFile))
         }
         timeNow <- Sys.time()
         timeLeft <- as.numeric(difftime(as.POSIXct(expirationTime, format="%Y%m%d%H%M%S"), timeNow, units="mins"))
         if (timeLeft > 0 & timeLeft <= 5){
             print("INFO: Your session will expire in less than 5 minutes.")
-            urlNewToken <- paste0(host, version, "users/", object@user, "/", "login", "?sid=", token)
+            urlNewToken <- paste0(host, version, "users/login")
             resp <- httr::POST(urlNewToken, httr::add_headers(c("Content-Type"="application/json",
                                                           "Accept"="application/json",
-                                                          "Authorisation"="Bearer")), body="{}")
+                                                          "Authorisation"="Bearer")), 
+                               list(refreshToken=object@refreshToken), encode = "json")
             content <- httr::content(resp, as="text", encoding = "utf-8")
             if (length(jsonlite::fromJSON(content)$responses$results[[1]]$token) > 0){
                 token <- jsonlite::fromJSON(content)$responses$results[[1]]$token
@@ -148,53 +153,16 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
         
         skip <- skip+real_batch_size
         res_list <- parseResponse(resp=response$resp, content=response$content)
-        num_results <- res_list$num_results
-        tmp_result <- res_list$results
-        # There are responses such as AnalysisResults that only return 1 result, not an array of results.
-        if (is.data.frame((jsonlite::fromJSON(res_list$results))[[1]])) {
-            # For those cases, we will simulate an array of results
-            tmp_result <- paste0("[", res_list$results, "]")
-        }
+        num_results <- res_list$numResults
+        restResponseList <- append(x = restResponseList, values = res_list$restResponse)
         
-        result <- as.character(tmp_result)
-        
-        # remove first [ and last ] from json
-        result <- trimws(result)
-        result <- substr(result, 4, nchar(result))
-        result <- substr(result, 1, nchar(result)-3)
-        
-        # Add to list
-        container[[i]] <- result
-        i=i+1
-        count <- count + unlist(num_results)
-        
+        count <- count + num_results
         print(paste("Number of retrieved documents:", count))
     }
     
-    if (count > 0){
-        tryCatch({
-            container <- paste(container, collapse = ',')
-            container <- paste0("[", container, "]")
-            jsonDf <- jsonlite::fromJSON(txt=container)
-            return(jsonDf)
-        }, error = function(e) {
-            print("Constructing data.frame by batches...")
-            containerDfTmp <- list()
-            countTmp <- 0
-            for (i in seq(from = 1, to = length(container), by = 10)){
-                iend <- i+9
-                if(iend > length(container)){
-                    iend <- length(container)
-                }
-                countTmp <- countTmp + 1
-                miniJson <- paste(container[i:iend], collapse = ',')
-                miniJson <- paste0("[", miniJson, "]")
-                containerDfTmp[[countTmp]] <- jsonlite::fromJSON(miniJson)
-            }
-            jsonDf <- jsonlite::rbind_pages(containerDfTmp)
-            return(jsonDf)
-        })
-    }
+    # Merge RestResponses
+    finalRestResponse <- opencgaR::mergeResponses(restResponseList = restResponseList)
+    return(finalRestResponse)
 }
 
 
@@ -232,7 +200,7 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, si
         # Encode the URL
         fullUrl <- httr::build_url(httr::parse_url(fullUrl))
         print(paste("URL:",fullUrl))
-        resp <- httr::GET(fullUrl, httr::add_headers(Accept="application/json", Authorization=session), httr::timeout(300))
+        resp <- httr::GET(fullUrl, httr::add_headers(Accept="application/json", Authorization=session), httr::timeout(30))
         
     }else if(httpMethod == "POST"){
     # Make POST call
@@ -283,7 +251,7 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, si
 
 ## A function to parse the json data into R dataframes
 parseResponse <- function(resp, content){
-    js <- lapply(content, function(x) jsonlite::fromJSON(x))
+    js <- jsonlite::fromJSON(content)
     if (resp$status_code == 200){
         if (!("warning" %in% js[[1]]) || js[[1]]$warning == ""){
             print("Query successful!")
@@ -303,21 +271,27 @@ parseResponse <- function(resp, content){
             stop(paste("ERROR:", js[[1]]$error))
         }
     }
-
-    ares <- lapply(js, function(x)x$responses$results)
-    ares <- jsonlite::toJSON(ares)
-    nums <- lapply(js, function(x)x$responses$numResults)
-
-    # if (class(ares[[1]][[1]])=="data.frame"){
-    #     ds <- lapply(ares, function(x)jsonlite::rbind_pages(x))
-    #     
-    #     ### Important to get correct vertical binding of dataframes
-    #     names(ds) <- NULL
-    #     ds <- jsonlite::rbind_pages(ds)
-    # }else{
-    #     ds <- ares
-    #     names(ds) <- NULL
-    # }
-    return(list(result=ares, num_results=nums))
+    
+    #responsesJSON <- jsonlite::toJSON(js$responses)
+    myRestResponse = new("RestResponse",
+                         apiVersion = js$apiVersion,
+                         time = js$time,
+                         events = js$events,
+                         params = js$params,
+                         responses = list(
+                             time = js$responses$time,
+                             events = js$responses$events,
+                             numResults = js$responses$numResults,
+                             resultType = js$responses$resultType,
+                             numTotalResults = js$responses$numTotalResults,
+                             numMatches = js$responses$numMatches,
+                             numInserted = js$responses$numInserted,
+                             numUpdated = js$responses$numUpdated,
+                             numDeleted = js$responses$numDeleted,
+                             attributes = js$responses$attributes,
+                             results = js$responses$results))
+    
+    return(list(restResponse = myRestResponse, 
+                numResults = js$responses$numResults))
 }
 ###############################################

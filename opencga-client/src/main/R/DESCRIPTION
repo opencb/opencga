@@ -1,21 +1,23 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: 1.4.0
+Version: 2.0.0
 Author: Marta Bleda <martableda@gmail.com>
 Maintainer: Marta Bleda <martableda@gmail.com>
 Description: R client that contains classes and methods for working with
     Opencga data.
 License: GPL-3
+Encoding: UTF-8
 LazyData: TRUE
 Depends:
-    R(>= 3.2.2),
-    methods
+    R(>= 3.2.2)
 Imports:
     jsonlite,
     httr,
     configr,
-    base64enc
+    base64enc,
+    methods,
+    rlang
 Suggests:
     BiocStyle,
     knitr,
@@ -24,25 +26,26 @@ Suggests:
     shiny
 Collate: 
     'AllClasses.R'
-    'AllGenerics.R'
     'commons.R'
-    'AnalysisAlignment-methods.R'
-    'AnalysisClinicalInterpretation-methods.R'
-    'AnalysisTool-methods.R'
-    'AnalysisVariant-methods.R'
-    'ClinicalAnalysis-methods.R'
+    'AllGenerics.R'
+    'Admin-methods.R'
+    'Alignment-methods.R'
+    'Clinical-methods.R'
     'Cohort-methods.R'
-    'Panel-methods.R'
     'Family-methods.R'
     'File-methods.R'
+    'GA4GH-methods.R'
     'Individual-methods.R'
     'Job-methods.R'
     'Meta-methods.R'
     'OpencgaR-methods.R'
+    'Operation-methods.R'
+    'Panel-methods.R'
     'Project-methods.R'
+    'RestResponse-methods.R'
     'Sample-methods.R'
     'Study-methods.R'
     'User-methods.R'
-    'VariableSet-methods.R'
-RoxygenNote: 6.0.1
+    'Variant-methods.R'
+RoxygenNote: 7.0.2
 VignetteBuilder: knitr

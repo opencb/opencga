@@ -5,8 +5,14 @@
 \alias{OpencgaLogin}
 \title{Login to OpenCGA Web Services}
 \usage{
-opencgaLogin(opencga, userid = NULL, passwd = NULL, interactive = FALSE,
-  autoRenew = FALSE, showToken = FALSE)
+opencgaLogin(
+  opencga,
+  userid = NULL,
+  passwd = NULL,
+  interactive = FALSE,
+  autoRenew = FALSE,
+  showToken = FALSE
+)
 }
 \arguments{
 \item{userid}{a charatcer with the username}
@@ -18,6 +24,24 @@ opencgaLogin(opencga, userid = NULL, passwd = NULL, interactive = FALSE,
 #@param ... Any other arguments}
 
 \item{ocga}{an object of type OpencgaR generated using initOpencgaR}
+}
+\value{
+an Opencga class object
+
+\dontrun{
+con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser", showToken = TRUE)
+
+# Configuration in list format
+conf <- list(version="v2", rest=list(host="http://bioinfo.hpc.cam.ac.uk/opencga-prod/"))
+con <- initOpencgaR(opencgaConfig=conf)
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = demouser")
+
+# Configuration in file format ("YAML" or "JSON")
+conf <- "/path/to/conf/client-configuration.yml"
+con <- initOpencgaR(opencgaConfig=conf)
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser")
+}
 }
 \description{
 A function to login Opencga web services

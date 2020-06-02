@@ -7,35 +7,32 @@
 #' necessary details to generate a connection.
 #' @details
 #' This class initializes the OpencgaR object. It holds the default configuration
-#' required by OpencgaR methods to connect to OpenCGA web services. By defult,
-#' it is configured to query HGVA (http://hgva.opencb.org/).
+#' required by OpencgaR methods to connect to OpenCGA web services.
 #' @importFrom methods new slot
 #' @param host a character specifying the host url, e.g.
-#' "http://bioinfo.hpc.cam.ac.uk/hgva"
-#' @param version a character specifying the API version, e.g. "v1"
+#' "http://bioinfo.hpc.cam.ac.uk/opencga-prod/"
+#' @param version a character specifying the API version, e.g. "v2"
 #' @return An object of class OpencgaR
 #' @seealso  \url{https://github.com/opencb/opencga/wiki}
 #' and the RESTful API documentation
-#' \url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
-#' @examples
+#' \url{http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/}
 #' \dontrun{
-#' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1",
-#' user = "user")
-#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
+#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser", showToken = TRUE)
 #'
 #' # Configuration in list format
-#' conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/",
-#' user="user"))
+#' conf <- list(version="v2", rest=list(host="http://bioinfo.hpc.cam.ac.uk/opencga-prod/"))
 #' con <- initOpencgaR(opencgaConfig=conf)
-#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = demouser")
 #'
 #' # Configuration in file format ("YAML" or "JSON")
 #' conf <- "/path/to/conf/client-configuration.yml"
-#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' con <- initOpencgaR(opencgaConfig=conf)
+#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser")
 #' }
 #' @export
 
-initOpencgaR <- function(host=NULL, version="v1", user=NULL, opencgaConfig=NULL){
+initOpencgaR <- function(host=NULL, version="v2", user=NULL, opencgaConfig=NULL){
     if (is.null(opencgaConfig)){
         # Check values provided
         if (!is.null(host) & !is.null(user)){
@@ -63,19 +60,6 @@ initOpencgaR <- function(host=NULL, version="v1", user=NULL, opencgaConfig=NULL)
     return(ocga)
 }
 
-setMethod("show", signature = "OpencgaR", definition = function(object){
-    cat("An object of class ", class(object), "\n", sep = "")
-    cat(paste("| Host:", object@host))
-    cat(paste("\n| Version:", object@version))
-    if (.hasSlot(object, "sessionId")) {
-      cat(paste("\n| Token:", object@sessionId))
-    }
-    if (.hasSlot(object, "expirationTime")) {
-      cat(paste("\n| Expiration time:", object@expirationTime))
-    }
-})
-
-
 ################################################################################
 #' Read OpenCGA configuration
 #'
@@ -84,20 +68,19 @@ setMethod("show", signature = "OpencgaR", definition = function(object){
 #'
 #' @return a OpencgaR object
 #'
-#' @examples
 #' \dontrun{
-#' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
-#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
+#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser", showToken = TRUE)
 #'
 #' # Configuration in list format
-#' conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
+#' conf <- list(version="v2", rest=list(host="http://bioinfo.hpc.cam.ac.uk/opencga-prod/"))
 #' con <- initOpencgaR(opencgaConfig=conf)
-#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = demouser")
 #'
 #' # Configuration in file format ("YAML" or "JSON")
 #' conf <- "/path/to/conf/client-configuration.yml"
 #' con <- initOpencgaR(opencgaConfig=conf)
-#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser")
 #' }
 
 opencgaReadConfig <- function(conf){
@@ -108,14 +91,8 @@ opencgaReadConfig <- function(conf){
         # read from file
         conf <- readConfFile(conf)
     }
-    # if ("user" %in% conf){
-    #     user=conf$user
-    # }else{
-    #     cat("User name not specified. Please specify it if login is required.")
-    #     user=""
-    # }
     ocga <- new(Class = "OpencgaR", host=conf$host, version=conf$version,
-                    user="", sessionId="")
+                    user="", token="", refreshToken="")
     return(ocga)
 }
 
@@ -130,7 +107,7 @@ readConfList <- function(conf){
     if ("version" %in% names(conf)){
         version <- conf$version
     }else{
-        version <- "v1"
+        version <- "v2"
         #stop("Please, specify the OpenCGA version")
     }
     return(list(host=host, version=version))
@@ -162,23 +139,22 @@ readConfFile <- function(conf){
 #'
 #' @return an Opencga class object
 #' 
-#' #@examples
 #' \dontrun{
-#' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
-#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
+#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser", showToken = TRUE)
 #'
 #' # Configuration in list format
-#' conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
+#' conf <- list(version="v2", rest=list(host="http://bioinfo.hpc.cam.ac.uk/opencga-prod/"))
 #' con <- initOpencgaR(opencgaConfig=conf)
-#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = demouser")
 #'
 #' # Configuration in file format ("YAML" or "JSON")
 #' conf <- "/path/to/conf/client-configuration.yml"
 #' con <- initOpencgaR(opencgaConfig=conf)
-#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-#' 
-#' 
+#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser")
+#' }
 #' @export
+
 opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE, 
                          autoRenew=FALSE, showToken=FALSE){
     if (class(opencga) == "OpencgaR"){
@@ -194,7 +170,7 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
     if (!grepl("webservices/rest", host)){
         host <- paste0(host, "webservices/rest/")
     }
-    baseurl <- paste0(host, version,"/users")
+    baseurl <- paste0(host, version,"/users/login")
     
     # Interactive login
     if(requireNamespace("miniUI", quietly = TRUE) & requireNamespace("shiny", quietly = TRUE)){
@@ -233,32 +209,33 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
         passwd <- cred$pass
     }
 
-    baseurl <- paste(baseurl, userid, "login", sep="/")
-
     # Send request
-    query <- httr::POST(baseurl, body = list(password = passwd), encode = "json")
+    query <- httr::POST(baseurl, body = list(user=userid, password=passwd), encode = "json")
 
     # check query status
     httr::warn_for_status(query)
     httr::stop_for_status(query)
 
     res <- httr::content(query)
-    sessionId <- res$responses[[1]]$results[[1]]$sessionId
+    token <- res$responses[[1]]$results[[1]]$token
+    refreshToken <- res$responses[[1]]$results[[1]]$refreshToken
     
     opencga@user <- userid
-    #opencga@sessionId <- sessionId
+    opencga@token <- token
+    opencga@refreshToken <- refreshToken
     opencga@showToken <- showToken
     opencga@autoRenew <- autoRenew
     
     # get expiration time
-    loginInfo <- unlist(strsplit(x=sessionId, split="\\."))[2]
+    loginInfo <- unlist(strsplit(x=token, split="\\."))[2]
     loginInfojson <- jsonlite::fromJSON(rawToChar(base64enc::base64decode(what=loginInfo)))
     loginTime <- as.character(as.POSIXct(loginInfojson$iat, origin="1970-01-01"), format="%Y%m%d%H%M%S")
     expirationTime <- as.character(as.POSIXct(loginInfojson$exp, origin="1970-01-01"), format="%Y%m%d%H%M%S")
     
     # Create session JSON
     sessionDf <- data.frame(host=opencga@host, version=opencga@version, 
-                            user=opencga@user, token=sessionId,
+                            user=opencga@user, token=opencga@token,
+                            refreshToken=opencga@refreshToken,
                             login=loginTime, expirationTime=expirationTime)
     sessionJson <- jsonlite::toJSON(sessionDf)
     
@@ -285,7 +262,8 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
             write(x = jsonlite::toJSON(sessionTable), file = sessionFile)
         }else if (length(sessionTableMatch) == 1){
             sessionTable[sessionTableMatch, "login"] <- loginTime
-            sessionTable[sessionTableMatch, "token"] <- sessionId
+            sessionTable[sessionTableMatch, "token"] <- token
+            sessionTable[sessionTableMatch, "refreshToken"] <- refreshToken
             sessionTable[sessionTableMatch, "expirationTime"] <- expirationTime
             write(x = jsonlite::toJSON(sessionTable), file = sessionFile)
         }else{
@@ -316,7 +294,8 @@ opencgaLogout <- function(opencga){
   if (class(opencga) != "OpencgaR"){
     stop("Please, provide a valid config object. See initOpencgaR")
   }
-  eval.parent(substitute(opencga@sessionId <- ""))
+  eval.parent(substitute(opencga@token <- ""))
+  eval.parent(substitute(opencga@refreshToken <- ""))
 }
 
 
@@ -333,8 +312,8 @@ opencgaLogout <- function(opencga){
 #'
 #' @examples
 #' \dontrun{
-#' con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1")
-#' con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+#' con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
+#' con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser", showToken = TRUE)
 #' opencgaHelp(con, client="userClient", action="info")
 #' }
 #' @export
@@ -359,38 +338,28 @@ opencgaHelp <- function(opencga, client=NULL, action=NULL){
     }else{
         switch(client,
                "userClient"=getMethodInfo(opencga, categ="users", subcat=NULL, action=action),
-               "userConfigClient"=getMethodInfo(opencga, categ="users", subcat="configs", action=action),
-               "userFilterClient"=getMethodInfo(opencga, categ="users", subcat="filters", action=action),
                "projectClient"=getMethodInfo(opencga, categ="projects", subcat=NULL, action=action),
                "studyClient"=getMethodInfo(opencga, categ="studies", subcat=NULL, action=action),
-               "studyGroupClient"=getMethodInfo(opencga, categ="studies", subcat="groups", action=action),
-               "studyAclClient"=getMethodInfo(opencga, categ="studies", subcat="acl", action=action),
-               "studyVariablesetClient"=getMethodInfo(opencga, categ="studies", subcat="variablesets", action=action),
-               "studyVariablesetFieldClient"=getMethodInfo(opencga, categ="studies", subcat="variablesets", action=action),
                "fileClient"=getMethodInfo(opencga, categ="files", subcat=NULL, action=action),
-               "fileAclClient"=getMethodInfo(opencga, categ="files", subcat="acl", action=action),
                "jobClient"=getMethodInfo(opencga, categ="jobs", subcat=NULL, action=action),
-               "jobAclClient"=getMethodInfo(opencga, categ="jobs", subcat="acl", action=action),
-               "familyClient"=getMethodInfo(opencga, categ="families", subcat=NULL, action=action),
-               "familyAnnotationsetClient"=getMethodInfo(opencga, categ="families", subcat="annotationsets", action=action),
-               "familyAclClient"=getMethodInfo(opencga, categ="families", subcat="acl", action=action),
-               "individualClient"=getMethodInfo(opencga, categ="individuals", subcat=NULL, action=action),
-               "individualAnnotationsetClient"=getMethodInfo(opencga, categ="individuals", subcat="annotationsets", action=action),
-               "individualAclClient"=getMethodInfo(opencga, categ="individuals", subcat="acl", action=action),
                "sampleClient"=getMethodInfo(opencga, categ="samples", subcat=NULL, action=action),
-               "sampleAnnotationsetClient"=getMethodInfo(opencga, categ="samples", subcat="annnotationsets", action=action),
-               "sampleAclClient"=getMethodInfo(opencga, categ="samples", subcat="acl", action=action),
+               "individualClient"=getMethodInfo(opencga, categ="individuals", subcat=NULL, action=action),
+               "familyClient"=getMethodInfo(opencga, categ="families", subcat=NULL, action=action),
                "cohortClient"=getMethodInfo(opencga, categ="cohorts", subcat=NULL, action=action),
-               "cohortAnnotationsetClient"=getMethodInfo(opencga, categ="cohorts", subcat="annotationsets", action=action),
-               "cohortAclClient"=getMethodInfo(opencga, categ="cohorts", subcat="acl", action=action),
+               "panelClient"=getMethodInfo(opencga, categ="panels", subcat=NULL, action=action),
+               "alignmentClient"=getMethodInfo(opencga, categ="alignment", subcat=NULL, action=action),
+               "variantClient"=getMethodInfo(opencga, categ="variant", subcat=NULL, action=action),
                "clinicalClient"=getMethodInfo(opencga, categ="clinical", subcat=NULL, action=action),
+               "operationClient"=getMethodInfo(opencga, categ="operation", subcat=NULL, action=action),
                "metaClient"=getMethodInfo(opencga, categ="meta", subcat=NULL, action=action),
-               "analysisVariantClient"=getMethodInfo(opencga, categ="analysis", subcat="variant", action=action)
+               "ga4ghClient"=getMethodInfo(opencga, categ="ga4gh", subcat=NULL, action=action),
+               "adminClient"=getMethodInfo(opencga, categ="admin", subcat=NULL, action=action)
         )
     }
 }
 
 #' @importFrom utils tail
+#' @importFrom rlang .data
 getMethodInfo <- function(opencga, categ, subcat, action){
     allApis <- names(opencga@swagger$paths)
     methodsInCategoryLogic <- sapply(strsplit(x = allApis, split = "/"), "[", 3) == categ
@@ -398,7 +367,7 @@ getMethodInfo <- function(opencga, categ, subcat, action){
     lenParams <- unlist(lapply(X = strsplit(x = allApis, split = "/"), FUN = length))
 
     filterParams <- function(x){
-        x <- subset(x, !name %in% c("apiVersion", "version", "sid", "Authorization"))
+        x <- subset(x, !.data$name %in% c("apiVersion", "version", "sid", "Authorization"))
         x <- x[, c("name", "in", "required", "type", "description")]
         return(x)
     }
