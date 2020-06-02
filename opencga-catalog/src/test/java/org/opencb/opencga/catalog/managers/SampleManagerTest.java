@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
@@ -1229,6 +1230,14 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         Sample sample = catalogManager.getSampleManager().get(studyFqn, sampleId1, QueryOptions.empty(), token).first();
         assertEquals(individualId, sample.getIndividualId());
+
+        sample = catalogManager.getSampleManager().get(studyFqn, sampleId1, new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()), token).first();
+        assertNull(sample.getAttributes());
+
+        sample = catalogManager.getSampleManager().get(studyFqn, sampleId1, new QueryOptions()
+                .append(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())
+                .append(ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), token).first();
+        assertNotNull(sample.getAttributes());
     }
 
     @Test

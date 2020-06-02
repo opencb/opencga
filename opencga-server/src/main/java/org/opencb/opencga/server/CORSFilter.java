@@ -35,7 +35,7 @@ public class CORSFilter implements Filter {
 
         HttpServletResponse resp = (HttpServletResponse) servletResponse;
         resp.addHeader("Access-Control-Allow-Origin","*");
-        resp.addHeader("Access-Control-Allow-Methods","GET,POST");
+        resp.addHeader("Access-Control-Allow-Methods","GET,POST,DELETE");
         resp.addHeader("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Accept, Range, Authorization");
 
         // Just ACCEPT and REPLY OK if OPTIONS

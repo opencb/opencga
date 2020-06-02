@@ -18,7 +18,6 @@ package org.opencb.opencga.analysis.file;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
@@ -26,8 +25,6 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -37,36 +34,27 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.file.SmallFileInternal;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
-import java.io.IOException;
 import java.util.*;
 
-@Tool(id = FileDeleteTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Delete files.")
-public class FileDeleteTask extends OpenCgaTool {
+@Tool(id = FileUnlinkTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Unlink files.")
+public class FileUnlinkTask extends OpenCgaTool {
 
-    public final static String ID = "files-delete";
+    public final static String ID = "files-unlink";
 
     private List<String> files;
     private String studyFqn;
 
-    private boolean skipTrash;
-
     private String randomMark;
 
-    public FileDeleteTask setStudy(String study) {
+    public FileUnlinkTask setStudy(String study) {
         this.studyFqn = study;
         return this;
     }
 
-    public FileDeleteTask setFiles(List<String> files) {
+    public FileUnlinkTask setFiles(List<String> files) {
         this.files = files;
-        return this;
-    }
-
-    public FileDeleteTask setSkipTrash(boolean skipTrash) {
-        this.skipTrash = skipTrash;
         return this;
     }
 
@@ -87,7 +75,7 @@ public class FileDeleteTask extends OpenCgaTool {
         randomMark = "delete_" + RandomStringUtils.randomAlphanumeric(8);
         addAttribute("delete-mark", randomMark);
 
-        step("check-can-delete", () -> {
+        step("check-can-unlink", () -> {
             FileUpdateParams updateParams = new FileUpdateParams()
                     .setInternal(new SmallFileInternal(new FileStatus(FileStatus.PENDING_DELETE)))
                     .setTags(Collections.singletonList(randomMark));
@@ -98,12 +86,12 @@ public class FileDeleteTask extends OpenCgaTool {
 
             // Check and mark all the files for deletion
             for (String file : files) {
-                logger.info("Checking file '{}' can be deleted...", file);
+                logger.info("Checking file '{}' can be unlinked...", file);
 
                 File catalogFile;
                 try {
                     catalogFile = fileManager.get(studyFqn, file, FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                    fileManager.checkCanDeleteFile(studyFqn, catalogFile.getUuid(), false, token);
+                    fileManager.checkCanDeleteFile(studyFqn, catalogFile.getUuid(), true, token);
                 } catch (CatalogException e) {
                     logger.error("Error checking file '{}': {}", file, e.getMessage(), e);
                     addError(e);
@@ -137,15 +125,13 @@ public class FileDeleteTask extends OpenCgaTool {
                 while (iterator.hasNext()) {
                     File file = iterator.next();
                     try {
-                        logger.info("Deleting file '{}'...", file.getPath());
-                        ObjectMap params = new ObjectMap(Constants.SKIP_TRASH, skipTrash);
-                        fileManager.delete(studyFqn, Collections.singletonList(file.getUuid()), params, token);
+                        logger.info("Unlinking file '{}'...", file.getPath());
+                        fileManager.unlink(studyFqn, file.getUuid(), token);
                     } catch (Exception e) {
-                        logger.error("Error deleting file '{}': {}", file.getPath(), e.getMessage(), e);
+                        logger.error("Error unlinking file '{}': {}", file.getPath(), e.getMessage(), e);
                         logger.info("Restoring status of file '{}'", file.getPath());
                         restoreFile(file);
-
-                        addError(new CatalogException("Could not delete file '" + file.getPath() + "': " + e.getMessage(), e));
+                        addError(new CatalogException("Could not unlink file '" + file.getPath() + "': " + e.getMessage(), e));
                     }
                 }
             }
@@ -154,7 +140,7 @@ public class FileDeleteTask extends OpenCgaTool {
 
     @Override
     public List<String> getSteps() {
-        return Arrays.asList("check-can-delete", getId());
+        return Arrays.asList("check-can-unlink", getId());
     }
 
     @Override
@@ -168,38 +154,6 @@ public class FileDeleteTask extends OpenCgaTool {
                 .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.PENDING_DELETE)
                 .append(FileDBAdaptor.QueryParams.TAGS.key(), randomMark);
         restoreFiles(query);
-
-        if (skipTrash) {
-            query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.DELETING);
-            OpenCGAResult<File> fileResult = null;
-            try {
-                fileResult = catalogManager.getFileManager().search(studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES,
-                        token);
-            } catch (CatalogException e) {
-                logger.error("Critical: Could not check if there are any inconsistent files", e);
-                return;
-            }
-            if (fileResult.getNumResults() > 0) {
-                for (File file : fileResult.getResults()) {
-                    // Check file is still present in disk
-                    try {
-                        IOManager ioManager;
-                        try {
-                            ioManager = catalogManager.getIoManagerFactory().get(file.getUri());
-                        } catch (IOException e) {
-                            throw CatalogIOException.ioManagerException(file.getUri(), e);
-                        }
-                        if (ioManager.exists(file.getUri())) {
-                            restoreFile(file);
-                        } else {
-                            setToMissingFile(file);
-                        }
-                    } catch (CatalogIOException e) {
-                        addCriticalError(e);
-                    }
-                }
-            }
-        }
     }
 
     private void restoreFile(File file) {
@@ -211,21 +165,6 @@ public class FileDeleteTask extends OpenCgaTool {
         // Restore non-deleted files to READY status
         FileUpdateParams updateParams = new FileUpdateParams()
                 .setInternal(new SmallFileInternal(new FileStatus(FileStatus.READY)))
-                .setTags(Collections.singletonList(randomMark));
-
-        Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.UpdateAction.REMOVE.name());
-        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
-
-        restore(query, updateParams, options);
-    }
-
-    private void setToMissingFile(File file) {
-        Query query = new Query(FileDBAdaptor.QueryParams.UUID.key(), file.getUuid());
-
-        // Restore non-deleted files to MISSING status
-        FileUpdateParams updateParams = new FileUpdateParams()
-                .setInternal(new SmallFileInternal(new FileStatus(FileStatus.MISSING)))
                 .setTags(Collections.singletonList(randomMark));
 
         Map<String, Object> actionMap = new HashMap<>();

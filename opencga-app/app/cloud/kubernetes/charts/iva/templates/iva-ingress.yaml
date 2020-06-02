@@ -1,20 +1,20 @@
-{{- if .Values.rest.ingress.enabled -}}
-{{- $fullName := .Values.rest.name -}}
-{{- $svcPort := .Values.rest.service.port -}}
+{{- if .Values.iva.ingress.enabled -}}
+{{- $fullName := .Values.iva.name -}}
+{{- $svcPort := .Values.iva.service.port -}}
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: {{ .Values.rest.name }}
+  name: {{ .Values.iva.name }}
   labels:
     app: {{ $fullName }}
-  {{- with .Values.rest.ingress.annotations }}
+  {{- with .Values.iva.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-{{- if .Values.rest.ingress.tls }}
+{{- if .Values.iva.ingress.tls }}
   tls:
-  {{- range .Values.rest.ingress.tls }}
+  {{- range .Values.iva.ingress.tls }}
     - hosts:
       {{- range .hosts }}
         - {{ . | quote }}
@@ -23,10 +23,10 @@ spec:
   {{- end }}
 {{- end }}
   rules:
-    - host: {{ .Values.rest.ingress.host | quote }}
+    - host: {{ .Values.iva.ingress.host | quote }}
       http:
         paths:
-        {{- range .Values.rest.ingress.paths }}
+        {{- range .Values.iva.ingress.paths }}
           - path: {{ . }}
             backend:
               serviceName: {{ $fullName }}

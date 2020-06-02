@@ -86,8 +86,8 @@ class Test_init_script(unittest.TestCase):
             storage_config["cellbase"]["database"]["password"], "cellbasepassword"
         )
         self.assertEqual(
-            storage_config["cellbase"]["database"]["options"]["enableSSL"], True
-        )        
+            storage_config["cellbase"]["database"]["options"]["sslEnabled"], True
+        )
         self.assertEqual(
             storage_config["variant"]["defaultEngine"],
             "test-variant-default-engine",
@@ -148,7 +148,9 @@ class Test_init_script(unittest.TestCase):
         self.assertEqual(
             config["catalog"]["database"]["password"], "test-catalog-database-password"
         )
-        self.assertEqual(config["catalog"]["database"]["options"]["enableSSL"], True)
+        self.assertEqual(config["catalog"]["database"]["options"]["sslEnabled"], True)
+        self.assertEqual(config["catalog"]["database"]["options"]["sslInvalidCertificatesAllowed"], True)
+        self.assertEqual(config["catalog"]["database"]["options"]["authenticationDatabase"], "admin")
         self.assertEqual(
             config["catalog"]["searchEngine"]["hosts"][0], "test-catalog-search-host1"
         )

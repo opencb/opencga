@@ -70,14 +70,14 @@ public class AnnotationIndexConverter {
     public static final byte BT_OTHER_NON_PSEUDOGENE =           (byte) (1 << 6); // -> Other, non_pseudogene
     public static final byte BT_PROTEIN_CODING_MASK =            (byte) (1 << 7);
 
-    public static final byte CLINICAL_SOMATIC_MASK =             (byte) (1 << 0);
-    public static final byte CLINICAL_LIKELY_BENIGN_MASK =       (byte) (1 << 1);
-    public static final byte CLINICAL_VUS_MASK =                 (byte) (1 << 2);
-    public static final byte CLINICAL_LIKELY_PATHOGENIC_MASK =   (byte) (1 << 3);
-    public static final byte CLINICAL_PATHOGENIC_MASK =          (byte) (1 << 4);
-    public static final byte CLINICAL_TARGET_DRUG_MASK =         (byte) (1 << 5); // TODO
-    public static final byte CLINICAL_PGX =                      (byte) (1 << 6); // TODO
-    public static final byte CLINICAL_8_UNUSED_MASK =            (byte) (1 << 7);
+    public static final byte CLINICAL_SOMATIC_MASK =                 (byte) (1 << 0);
+    public static final byte CLINICAL_BENIGN_LIKELY_BENIGN_MASK =    (byte) (1 << 1);
+    public static final byte CLINICAL_UNCERTAIN_SIGNIFICANCE_MASK =  (byte) (1 << 2);
+    public static final byte CLINICAL_LIKELY_PATHOGENIC_MASK =       (byte) (1 << 3);
+    public static final byte CLINICAL_PATHOGENIC_MASK =              (byte) (1 << 4);
+    public static final byte CLINICAL_TARGET_DRUG_MASK =             (byte) (1 << 5); // TODO
+    public static final byte CLINICAL_PGX =                          (byte) (1 << 6); // TODO
+    public static final byte CLINICAL_8_UNUSED_MASK =                (byte) (1 << 7);
 
     public static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
     public static final byte[] VALUE_COLUMN = Bytes.toBytes("v");
@@ -255,10 +255,11 @@ public class AnnotationIndexConverter {
                         && evidenceEntry.getVariantClassification().getClinicalSignificance() != null) {
                     switch (evidenceEntry.getVariantClassification().getClinicalSignificance()) {
                         case likely_benign:
-                            clinicalIndex |= CLINICAL_LIKELY_BENIGN_MASK;
+                            clinicalIndex |= CLINICAL_BENIGN_LIKELY_BENIGN_MASK;
                             break;
+                        case uncertain_significance:
                         case VUS:
-                            clinicalIndex |= CLINICAL_VUS_MASK;
+                            clinicalIndex |= CLINICAL_UNCERTAIN_SIGNIFICANCE_MASK;
                             break;
                         case likely_pathogenic:
                             clinicalIndex |= CLINICAL_LIKELY_PATHOGENIC_MASK;
@@ -266,7 +267,6 @@ public class AnnotationIndexConverter {
                         case pathogenic:
                             clinicalIndex |= CLINICAL_PATHOGENIC_MASK;
                             break;
-                        case uncertain_significance:
                         case benign:
                         default:
                             // Nothing
@@ -491,7 +491,9 @@ public class AnnotationIndexConverter {
             case CT_INCOMPLETE_TERMINAL_CODON_VARIANT_MASK:
                 return INCOMPLETE_TERMINAL_CODON_VARIANT;
             case CT_UTR_MASK: // imprecise
+                return "utr";
             case CT_MIRNA_TFBS_MASK: // imprecise
+                return "mirna_tfbs";
             default:
                 return "other";
         }
@@ -533,6 +535,7 @@ public class AnnotationIndexConverter {
             case BT_PROTEIN_CODING_MASK:
                 return PROTEIN_CODING;
             case BT_LNCRNA_MASK: // imprecise
+                return LNCRNA;
             case BT_OTHER_NON_PSEUDOGENE: // imprecise
             default:
                 return "other";
@@ -587,16 +590,16 @@ public class AnnotationIndexConverter {
         }
     }
 
-    public static List<ClinicalSignificance> getClinicalsFromMask(byte mask) {
+    public static List<String> getClinicalsFromMask(byte mask) {
         if (mask == 0) {
             return Collections.emptyList();
         }
 
-        List<ClinicalSignificance> names = new ArrayList<>(5);
+        List<String> names = new ArrayList<>(5);
         for (int idx = Byte.SIZE; idx > 0; idx--) {
             byte subMask = (byte) (1 << idx);
             if (IndexUtils.testIndexAny(subMask, mask)) {
-                ClinicalSignificance cs = getClinicalFromMask(subMask);
+                String cs = getClinicalFromMask(subMask);
                 if (cs != null) {
                     names.add(cs);
                 }
@@ -605,18 +608,18 @@ public class AnnotationIndexConverter {
         return names;
     }
 
-    public static ClinicalSignificance getClinicalFromMask(byte mask) {
+    public static String getClinicalFromMask(byte mask) {
         switch (mask) {
             case 0:
                 return null;
-            case CLINICAL_LIKELY_BENIGN_MASK:
-                return ClinicalSignificance.likely_benign;
-            case CLINICAL_VUS_MASK:
-                return ClinicalSignificance.VUS;
+            case CLINICAL_BENIGN_LIKELY_BENIGN_MASK:
+                return ClinicalSignificance.benign + "_" + ClinicalSignificance.likely_benign;
+            case CLINICAL_UNCERTAIN_SIGNIFICANCE_MASK:
+                return ClinicalSignificance.uncertain_significance.name();
             case CLINICAL_LIKELY_PATHOGENIC_MASK:
-                return ClinicalSignificance.likely_pathogenic;
+                return ClinicalSignificance.likely_pathogenic.name();
             case CLINICAL_PATHOGENIC_MASK:
-                return ClinicalSignificance.pathogenic;
+                return ClinicalSignificance.pathogenic.name();
             case CLINICAL_SOMATIC_MASK:
             case CLINICAL_TARGET_DRUG_MASK:
             case CLINICAL_PGX:

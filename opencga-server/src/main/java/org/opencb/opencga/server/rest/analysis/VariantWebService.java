@@ -618,7 +618,10 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
     })
-    public Response sampleAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type") @QueryParam("fields") String fields) {
+    public Response sampleAggregationStats(@ApiParam(value =
+            "List of facet fields separated by semicolons, e.g.: studies;type."
+            + " For nested faceted fields use >>, e.g.: chromosome>>type ."
+            + " Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter") @QueryParam("fields") String fields) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);

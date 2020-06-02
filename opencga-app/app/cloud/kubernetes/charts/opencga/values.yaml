@@ -120,10 +120,9 @@ rest:
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       # nginx.ingress.kubernetes.io/rewrite-target: /$1
       # kubernetes.io/tls-acme: "true"
-    hosts:
-      - host: "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
-        paths:
-        - /opencga/
+    host: "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
+    paths:
+    - /opencga/
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:

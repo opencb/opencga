@@ -1,10 +1,7 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
-import org.opencb.opencga.analysis.file.FileDeleteTask;
-import org.opencb.opencga.analysis.file.FileIndexTask;
-import org.opencb.opencga.analysis.file.FileTsvAnnotationLoader;
+import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.app.cli.internal.options.FileCommandOptions;
 import org.opencb.opencga.core.exceptions.ToolException;
 
@@ -73,13 +70,12 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Prepare analysis parameters and config
-        FileDeleteTask delete = new FileDeleteTask()
+        FileUnlinkTask unlink = new FileUnlinkTask()
                 .setStudy(options.studyId)
-                .setFiles(Arrays.asList(org.apache.commons.lang3.StringUtils.split(options.files, ",")))
-                .setUnlink(true);
+                .setFiles(Arrays.asList(org.apache.commons.lang3.StringUtils.split(options.files, ",")));
 
-        delete.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
-        delete.start();
+        unlink.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
+        unlink.start();
     }
 
     private void fetch() throws ToolException {

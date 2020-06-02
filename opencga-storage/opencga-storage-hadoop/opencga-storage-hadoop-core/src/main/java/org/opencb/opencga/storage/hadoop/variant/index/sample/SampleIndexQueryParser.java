@@ -905,10 +905,15 @@ public class SampleIndexQueryParser {
             for (String clinical : query.getAsStringList(ANNOT_CLINICAL_SIGNIFICANCE.key())) {
                 switch (ClinicalSignificance.valueOf(clinical)) {
                     case likely_benign:
-                        clinicalMask |= CLINICAL_LIKELY_BENIGN_MASK;
+                    case benign:
+                        // These two values are covered by the same bit, so, they are not covered.
+                        clinicalCovered = false;
+                        clinicalMask |= CLINICAL_BENIGN_LIKELY_BENIGN_MASK;
                         break;
                     case VUS:
-                        clinicalMask |= CLINICAL_VUS_MASK;
+                    case uncertain_significance:
+                        // These two values are synonymous
+                        clinicalMask |= CLINICAL_UNCERTAIN_SIGNIFICANCE_MASK;
                         break;
                     case likely_pathogenic:
                         clinicalMask |= CLINICAL_LIKELY_PATHOGENIC_MASK;
@@ -916,8 +921,6 @@ public class SampleIndexQueryParser {
                     case pathogenic:
                         clinicalMask |= CLINICAL_PATHOGENIC_MASK;
                         break;
-                    case uncertain_significance:
-                    case benign:
                     default:
                         clinicalCovered = false;
                         break;

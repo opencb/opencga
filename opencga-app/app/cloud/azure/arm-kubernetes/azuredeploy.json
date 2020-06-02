@@ -790,6 +790,10 @@
         "solrConnectionDetails": {
             "type": "array",
             "value": "[reference('solr').outputs.solrConnectionDetails.value]"
+        },
+        "privateDnsZonesName": {
+            "type": "string",
+            "value": "[parameters('privateDnsZonesName')]"
         }
     }
 }

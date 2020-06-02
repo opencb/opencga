@@ -7,7 +7,7 @@ import java.util.Objects;
 public class SampleIndexConfiguration {
 
     public static final double[] QUAL_THRESHOLDS = new double[]{10, 20, 30};
-    public static final double[] DP_THRESHOLDS = new double[]{5, 15, 30};
+    public static final double[] DP_THRESHOLDS = new double[]{5, 10, 15, 20, 30, 40, 50};
 
     private List<PopulationFrequencyRange> populationRanges;
 
