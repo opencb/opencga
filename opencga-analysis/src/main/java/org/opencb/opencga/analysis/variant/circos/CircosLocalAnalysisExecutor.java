@@ -44,7 +44,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements VariantStorageToolExecutor {
 
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-dev";
+    public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc1";
 
     private File snvsFile;
     private File rearrsFile;
