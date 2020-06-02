@@ -17,8 +17,8 @@ at the defined host
 }
 \examples{
 \dontrun{
-con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1")
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser", showToken = TRUE)
 opencgaHelp(con, client="userClient", action="info")
 }
 }

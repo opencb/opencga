@@ -4,14 +4,13 @@
 \alias{initOpencgaR}
 \title{initOpencgaR}
 \usage{
-initOpencgaR(host = NULL, version = "v1", user = NULL,
-  opencgaConfig = NULL)
+initOpencgaR(host = NULL, version = "v2", user = NULL, opencgaConfig = NULL)
 }
 \arguments{
 \item{host}{a character specifying the host url, e.g.
-"http://bioinfo.hpc.cam.ac.uk/hgva"}
+"http://bioinfo.hpc.cam.ac.uk/opencga-prod/"}
 
-\item{version}{a character specifying the API version, e.g. "v1"}
+\item{version}{a character specifying the API version, e.g. "v2"}
 }
 \value{
 An object of class OpencgaR
@@ -25,28 +24,24 @@ OpencgaR init function
 
 
 This class initializes the OpencgaR object. It holds the default configuration
-required by OpencgaR methods to connect to OpenCGA web services. By defult,
-it is configured to query HGVA (http://hgva.opencb.org/).
-}
-\examples{
-\dontrun{
-con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1",
-user = "user")
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-
-# Configuration in list format
-conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/",
-user="user"))
-con <- initOpencgaR(opencgaConfig=conf)
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-
-# Configuration in file format ("YAML" or "JSON")
-conf <- "/path/to/conf/client-configuration.yml"
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
-}
+required by OpencgaR methods to connect to OpenCGA web services.
 }
 \seealso{
 \url{https://github.com/opencb/opencga/wiki}
 and the RESTful API documentation
-\url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
+\url{http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/}
+\dontrun{
+con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser", showToken = TRUE)
+
+# Configuration in list format
+conf <- list(version="v2", rest=list(host="http://bioinfo.hpc.cam.ac.uk/opencga-prod/"))
+con <- initOpencgaR(opencgaConfig=conf)
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = demouser")
+
+# Configuration in file format ("YAML" or "JSON")
+conf <- "/path/to/conf/client-configuration.yml"
+con <- initOpencgaR(opencgaConfig=conf)
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser")
+}
 }

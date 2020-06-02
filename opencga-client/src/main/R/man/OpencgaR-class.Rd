@@ -10,20 +10,21 @@ This is an S4 class which defines the OpencgaR object
 }
 \details{
 This S4 class holds the default configuration required by OpencgaR 
-methods to stablish the connection with the web services. By default it is 
-configured to query HGVA (http://hgva.opencb.org/).
+methods to stablish the connection with the web services.
 }
 \section{Slots}{
 
 \describe{
-\item{\code{host}}{a character specifying the host url. Default 
-"http://bioinfo.hpc.cam.ac.uk/hgva"}
+\item{\code{host}}{a character specifying the host url. Example: 
+"http://bioinfo.hpc.cam.ac.uk/opencga-prod/"}
 
-\item{\code{version}}{a character specifying the API version. Default "v1"}
+\item{\code{version}}{a character specifying the API version. Example: "v2"}
 
 \item{\code{user}}{a character string with you OpenCGA username}
 
-\item{\code{sessionId}}{string containin gyour sessionID}
+\item{\code{token}}{string containin your token}
+
+\item{\code{refreshToken}}{string containin your renew token}
 
 \item{\code{swagger}}{list with the swagger information of the OpenCGA intance in the
 spcified host}
@@ -32,5 +33,5 @@ spcified host}
 \seealso{
 \url{https://github.com/opencb/opencga/wiki} 
 and the RESTful API documentation 
-\url{http://bioinfo.hpc.cam.ac.uk/opencga/webservices/}
+\url{http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/}
 }

@@ -20,22 +20,22 @@ The OpencgaR client provides a user-friendly interface to work with OpenCGA REST
 # Installation and configuration
 Please visit http://docs.opencb.org/display/opencga/Installation+Guide for detailed information on how to install and configure OpenCGA.
 
-# Users login and authentication
-A set of methods have been implemented to deal with the connectivity and login to the REST host. Connection to the host is done in two steps using the functions *__initOpencgaR__* and *__opencgaLogin__* for defining the connection details and loging in, respectively.
+# Connection and authentication into an OpenCGA instance
+A set of methods have been implemented to deal with the connectivity and login to the REST host. Connection to the host is done in two steps using the functions *__initOpencgaR__* and *__opencgaLogin__* for defining the connection details and login, respectively.
 
-The *__initOpencgaR__* function accepts either host and version information or a configuration file (as `list()` or in [YAML or JSON format](http://docs.opencb.org/display/opencga/client-configuration.yml)). The *__opencgaLogin__* function stablishes the connection with the host. It requires an object opencgaR (created using *initOpencgaR*) and the login details: user and password. User and password can be introduced interactively through a popup window using `interactive=TRUE`, to avoid typing user credentials in the R script.
+The *__initOpencgaR__* function accepts either host and version information or a configuration file (as a `list()` or in [YAML or JSON format](http://docs.opencb.org/display/opencga/client-configuration.yml)). The *__opencgaLogin__* function stablishes the connection with the host. It requires an opencgaR object (created using the `initOpencgaR` function) and the login details: user and password. User and password can be introduced interactively through a popup window using `interactive=TRUE`, to avoid typing user credentials within the R script or a config file.
 
-The code below shows the different ways to initialise the OpenCGA connection with the REST server.
+The code below shows three different ways to initialise the OpenCGA connection with the REST server.
 
 ```{r, eval=FALSE}
-# Initialise connection specifying host and REST version
-con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1")
+## Initialise connection specifying host and REST version
+con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
 
-# Initialise connection using configuration (list)
-conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
+## Initialise connection using a configuration in R list
+conf <- list(version="v2", rest=list(host="http://bioinfo.hpc.cam.ac.uk/opencga-prod/"))
 con <- initOpencgaR(opencgaConfig=conf)
 
-# Initialise connection using configuration (YAML or JSON format)
+## Initialise connection using a configuration file (in YAML or JSON format)
 conf <- "/path/to/conf/client-configuration.yml"
 con <- initOpencgaR(opencgaConfig=conf)
 ```
@@ -44,8 +44,9 @@ Once the connection has been initialised users can login specifying their OpenCG
 
 ```{r, eval=FALSE}
 # Log in
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "pass")
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser")
 ```
+
 
 
 

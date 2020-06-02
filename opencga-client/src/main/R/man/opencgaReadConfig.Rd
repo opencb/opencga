@@ -12,23 +12,22 @@ containing the host and version configurations to set OpenCGA connection}
 }
 \value{
 a OpencgaR object
-}
-\description{
-Read OpenCGA configuration
-}
-\examples{
+
 \dontrun{
-con <- initOpencgaR(host = "http://localhost:8080/opencga/", version = "v1", user = "user")
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser", showToken = TRUE)
 
 # Configuration in list format
-conf <- list(version="v1", rest=list(host="http://localhost:8080/opencga/"))
+conf <- list(version="v2", rest=list(host="http://bioinfo.hpc.cam.ac.uk/opencga-prod/"))
 con <- initOpencgaR(opencgaConfig=conf)
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = demouser")
 
 # Configuration in file format ("YAML" or "JSON")
 conf <- "/path/to/conf/client-configuration.yml"
 con <- initOpencgaR(opencgaConfig=conf)
-con <- opencgaLogin(opencga = con, userid = "user", passwd = "user_pass")
+con <- opencgaLogin(opencga = con, userid = "demouser", passwd = "demouser")
 }
+}
+\description{
+Read OpenCGA configuration
 }

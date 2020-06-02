@@ -2,12 +2,22 @@
 % Please edit documentation in R/commons.R
 \name{fetchOpenCGA}
 \alias{fetchOpenCGA}
-\title{OpencgaR Commons}
+\title{OpencgaR Common functions}
 \usage{
-fetchOpenCGA(object = object, category = NULL, categoryId = NULL,
-  subcategory = NULL, subcategoryId = NULL, action = NULL,
-  params = NULL, httpMethod = "GET", skip = 0, num_threads = NULL,
-  as.queryParam = NULL, batch_size = 2000)
+fetchOpenCGA(
+  object = object,
+  category = NULL,
+  categoryId = NULL,
+  subcategory = NULL,
+  subcategoryId = NULL,
+  action = NULL,
+  params = NULL,
+  httpMethod = "GET",
+  skip = 0,
+  num_threads = NULL,
+  as.queryParam = NULL,
+  batch_size = 1000
+)
 }
 \description{
 This is an S4 class which defines the OpencgaR object
