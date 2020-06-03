@@ -323,11 +323,16 @@ public class AlignmentStorageManager extends StorageManager {
                         }
 
 //                        System.out.println("region coverage stats = " + regionCoverage.getStats().toString());
-                        if (regionCoverage.getStats().getAvg() <= threshold) {
-                            lowCoverageRegions.add(new LowCoverageRegion(regionCoverage.getStart(), regionCoverage.getEnd(),
-                                    regionCoverage.getStats().getAvg(), regionCoverage.getStats().getMin()));
-                        }
 
+
+                        // Get low coverage regions, from 0 to threshold depth
+                        List<RegionCoverage> filteredRegions = BamUtils.filterByCoverage(regionCoverage, 0, threshold);
+                        for (RegionCoverage filteredRegion : filteredRegions) {
+                            if (filteredRegion.getValues() != null && filteredRegion.getValues().length > 0) {
+                                lowCoverageRegions.add(new LowCoverageRegion(filteredRegion.getStart(), filteredRegion.getEnd(),
+                                        filteredRegion.getStats().getAvg(), filteredRegion.getStats().getMin()));
+                            }
+                        }
                     }
                 }
                 transcriptCoverageStats.setLength(length);
