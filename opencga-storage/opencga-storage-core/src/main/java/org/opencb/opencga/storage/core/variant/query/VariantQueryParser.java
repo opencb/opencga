@@ -393,11 +393,12 @@ public class VariantQueryParser {
                         GenotypeClass.UNKNOWN_GENOTYPE);
             }
             String genotypes;
-            if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE)
+            List<String> mainGts = GenotypeClass.MAIN_ALT.filter(loadedGenotypes);
+            if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE) && mainGts.isEmpty()
                     || defaultStudy.getAttributes().getBoolean(EXCLUDE_GENOTYPES.key(), EXCLUDE_GENOTYPES.defaultValue())) {
                 genotypes = GenotypeClass.NA_GT_VALUE;
             } else {
-                genotypes = String.join(",", GenotypeClass.MAIN_ALT.filter(loadedGenotypes));
+                genotypes = String.join(",", mainGts);
             }
 
             Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(query.getString(SAMPLE.key()));
