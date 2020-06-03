@@ -994,7 +994,7 @@ public class VariantCommandOptions {
                 + " For more information, please visit " + ParamConstants.ANNOTATION_DOC_URL)
         public String samplesAnnotation;
 
-        @Parameter(names = {"--index-stats"}, description = "Index results in catalog. Requires a cohort."
+        @Parameter(names = {"--index"}, description = "Index results in catalog. Requires a cohort."
                 + "Create an AnnotationSet for the VariableSet " + CohortVariantStatsAnalysis.VARIABLE_SET_ID)
         public boolean index;
 

@@ -731,7 +731,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         cohortVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setCohortName(cliOptions.cohort)
-                .setIndexResults(cliOptions.index)
+                .setIndex(cliOptions.index)
                 .setSamplesQuery(query)
                 .setSampleNames(sampleNames)
                 .start();
