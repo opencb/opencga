@@ -44,7 +44,7 @@ import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.*;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
+import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
 
 public class ClinicalUtils {
 

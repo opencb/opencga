@@ -1,7 +1,7 @@
 package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
