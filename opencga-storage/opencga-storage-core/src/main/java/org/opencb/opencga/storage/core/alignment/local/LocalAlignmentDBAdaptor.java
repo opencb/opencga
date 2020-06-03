@@ -159,10 +159,12 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         RegionCoverage regionCoverage;
         if (path.toString().endsWith("bw") || path.toString().endsWith("bigwig")) {
             regionCoverage = BamUtils.getCoverageFromBigWig(region, windowSize, path);
+//            System.out.println("BW region coverage:\t" + regionCoverage.toString());
         } else {
             BamManager bamManager = new BamManager(path);
             regionCoverage = bamManager.coverage(region, windowSize);
             bamManager.close();
+//            System.out.println("BAM region coverage:\t" + regionCoverage.toString());
         }
 
         // If necessary, filter by coverage range and remove empty regions
