@@ -405,7 +405,9 @@
             "apiVersion": "2018-05-01",
             "name": "hdinsight",
             "dependsOn": [
-                "[concat(parameters('rgPrefix'),'-hdinsight')]"
+                "[concat(parameters('rgPrefix'),'-hdinsight')]",
+                "vnet",
+                "loganalytics"
             ],
             "properties": {
                 "mode": "Incremental",

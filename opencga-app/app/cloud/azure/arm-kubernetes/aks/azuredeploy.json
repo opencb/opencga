@@ -666,7 +666,6 @@
 
             ],
             "resources": [
-
                 {
                     "condition": "[equals(parameters('jobsAgentPoolOrVirtualNode'),'AgentPool')]",
                     "name": "jobs",

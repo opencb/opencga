@@ -18,16 +18,10 @@
             "value": 1
         },
         "HDInsightClusterLoginPassword": {
-            "value": "SECUREPASSWORD",
-            "metadata": {
-                "description": "Used to login to HDInsights cluster interface. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
-            }
+            "value": "SECUREPASSWORD -- Used to login to HDInsights cluster interface. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
         },
         "HDInsightSshPassword": {
-            "value": "SECUREPASSWORD",
-            "metadata": {
-                "description": "Used to login to HDInsight cluster nodes via SSH. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
-            }
+            "value": "SECUREPASSWORD -- Used to login to HDInsight cluster nodes via SSH. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
         },
         "openCgaAdminPassword": {
             "value": "SECUREPASSWORD"
