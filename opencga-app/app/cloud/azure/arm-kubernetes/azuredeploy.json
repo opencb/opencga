@@ -363,8 +363,14 @@
                     "vnetId": {
                         "value" : "[reference('vnet').outputs.vnetId.value]"
                     },
-                    "subnetId": {
+                    "loginSubnetId": {
                         "value" : "[reference('vnet').outputs.loginSubnetId.value]"
+                    },
+                    "aciSubnetId": {
+                        "value" : "[reference('vnet').outputs.aciSubnetId.value]"
+                    },
+                    "kubernetesSubnetId": {
+                        "value" : "[reference('vnet').outputs.kubernetesSubnetId.value]"
                     }
                 }
             }
