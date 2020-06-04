@@ -121,6 +121,13 @@
                 "description": "Optionally deploy a login node named {rgPrefix}-login01"
             }
         },
+        "loginNodeVMSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2_v3",
+            "metadata": {
+                "description": "Size of the Login Node VM"
+            }
+        },
         "networkCIDR": {
             "type": "object",
             "metadata": {
@@ -566,6 +573,9 @@
                 "parameters": {
                     "VMName" : {
                         "value" : "[concat(parameters('rgPrefix'), '-login01')]"
+                    },
+                    "VMSize" : {
+                        "value" : "[parameters('loginNodeVMSize')]"
                     },
                     "adminUsername" : {
                         "value": "[parameters('adminUsername')]"
