@@ -181,6 +181,10 @@
                     "diskSizeGB": 512
                 },
                 "hdInsight": {
+                    "zookeeper": {
+                        "nodeCount": 3,
+                        "nodeSize": "Standard_D2_V2"
+                    },
                     "head": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D4_v2"
@@ -217,6 +221,10 @@
                     "diskSizeGB": 1028
                 },
                 "hdInsight": {
+                    "zookeeper": {
+                        "nodeCount": 3,
+                        "nodeSize": "Standard_D2_V2"
+                    },
                     "head": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D4_v2"
@@ -253,6 +261,10 @@
                     "diskSizeGB": 1028
                 },
                 "hdInsight": {
+                    "zookeeper": {
+                        "nodeCount": 3,
+                        "nodeSize": "Standard_D2_V2"
+                    },
                     "head": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D4_v2"
@@ -403,6 +415,12 @@
                     },
                     "clusterLoginPassword": {
                         "value": "[parameters('HDInsightClusterLoginPassword')]"
+                    },
+                    "clusterZookeeperNodeCount": {
+                        "value": "[variables('selectedSize').hdInsight.zookeeper.nodeCount]"
+                    },
+                    "clusterZookeeperNodeSize": {
+                        "value": "[variables('selectedSize').hdInsight.zookeeper.nodeSize]"
                     },
                     "clusterHeadNodeCount": {
                         "value": "[variables('selectedSize').hdInsight.head.nodeCount]"
