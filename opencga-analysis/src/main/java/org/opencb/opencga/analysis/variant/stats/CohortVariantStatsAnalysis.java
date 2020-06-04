@@ -101,11 +101,11 @@ public class CohortVariantStatsAnalysis extends OpenCgaTool {
      * containing the stats of the cohort.
      * Requires parameter cohortName to exist.
      *
-     * @param indexResults index results
+     * @param index index results
      * @return boolean
      */
-    public CohortVariantStatsAnalysis setIndexResults(boolean indexResults) {
-        this.indexResults = indexResults;
+    public CohortVariantStatsAnalysis setIndex(boolean index) {
+        this.indexResults = index;
         return this;
     }
 

@@ -233,6 +233,7 @@ public class AlignmentStorageManager extends StorageManager {
 
         // Get file
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, token);
+//        System.out.println("file = " + file.getUri());
 
         // Get species and assembly from catalog
         OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
@@ -277,12 +278,18 @@ public class AlignmentStorageManager extends StorageManager {
 
                 for (Region region : exonRegions.get(transcriptId)) {
                     length += region.size();
+//                    System.out.println("region = " + region.toString() + ", region size = " + region.size() + ", acc. length = " + length);
 
                     OpenCGAResult<RegionCoverage> regionResult = alignmentStorageEngine.getDBAdaptor().coverageQuery(
-                            Paths.get(file.getUri()), region, 0, threshold, 1);
+                            Paths.get(file.getUri()), region, 0, Integer.MAX_VALUE, 1);
+
+//                    System.out.println("coverage query, num. results  = " + regionResult.getNumResults());
                     RegionCoverage regionCoverage = regionResult.first();
+//                    System.out.println("coverage region = " + regionCoverage.toString() + ", region coverage size = " + regionCoverage.size());
+
                     if (regionCoverage != null) {
                         for (double coverage : regionCoverage.getValues()) {
+//                            System.out.println("\tcoverage = " + coverage);
                             if (coverage >= 1) {
                                 depths[0]++;
                                 if (coverage >= 5) {
@@ -315,17 +322,26 @@ public class AlignmentStorageManager extends StorageManager {
                             }
                         }
 
-                        if (regionCoverage.getStats().getAvg() <= threshold) {
-                            lowCoverageRegions.add(new LowCoverageRegion(regionCoverage.getStart(), regionCoverage.getEnd(),
-                                    regionCoverage.getStats().getAvg(), regionCoverage.getStats().getMin()));
-                        }
+//                        System.out.println("region coverage stats = " + regionCoverage.getStats().toString());
 
+
+                        // Get low coverage regions, from 0 to threshold depth
+                        List<RegionCoverage> filteredRegions = BamUtils.filterByCoverage(regionCoverage, 0, threshold);
+                        for (RegionCoverage filteredRegion : filteredRegions) {
+                            if (filteredRegion.getValues() != null && filteredRegion.getValues().length > 0) {
+                                lowCoverageRegions.add(new LowCoverageRegion(filteredRegion.getStart(), filteredRegion.getEnd(),
+                                        filteredRegion.getStats().getAvg(), filteredRegion.getStats().getMin()));
+                            }
+                        }
                     }
                 }
                 transcriptCoverageStats.setLength(length);
+//                System.out.println("transcript ID " + transcriptId + " length = " + length);
                 // Update (%) depths
                 for (int i = 0; i < depths.length; i++) {
+//                    System.out.println("count depths[" + i + "] = " + depths[i]);
                     depths[i] = depths[i] / length * 100.0;
+//                    System.out.println("% depths[" + i + "] = " + depths[i]);
                 }
                 transcriptCoverageStats.setDepths(depths);
                 transcriptCoverageStats.setLowCoverageRegions(lowCoverageRegions);

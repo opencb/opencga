@@ -359,7 +359,7 @@ public class VariantAnalysisTest {
 
         analysis.setStudy(STUDY)
                 .setCohortName(StudyEntry.DEFAULT_COHORT)
-                .setIndexResults(true);
+                .setIndex(true);
         checkExecutionResult(analysis.start(), storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
     }
 
