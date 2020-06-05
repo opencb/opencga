@@ -58,7 +58,9 @@
                             "delegations": [
                             ],
                             "serviceEndpoints": [
-
+                                {
+                                    "service": "Microsoft.Storage"
+                                }
                             ]
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
@@ -79,7 +81,9 @@
                                 }
                             ],
                             "serviceEndpoints": [
-
+                                {
+                                    "service": "Microsoft.Storage"
+                                }
                             ]
                         },
                         "type": "Microsoft.Network/virtualNetworks/subnets"
@@ -132,7 +136,11 @@
                             "addressPrefix": "[parameters('cidr').subnets.login]",
                             "ipConfigurations": [],
                             "delegations": [],
-                            "serviceEndpoints": [],
+                            "serviceEndpoints": [
+                                {
+                                    "service": "Microsoft.Storage"
+                                }
+                            ],
                             "privateEndpointNetworkPolicies": "Disabled",
                             "privateLinkServiceNetworkPolicies": "Enabled",
                             "networkSecurityGroup": {
