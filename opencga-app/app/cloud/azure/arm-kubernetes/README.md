@@ -9,8 +9,7 @@ This document contains information related to the deployment of OpenCGA to Azure
 1. Clone the repository and move into the `ARM Kubernetes` directory with `cd ./opencga-app/app/scripts/azure/arm-kubernetes`.
 2. Using your editor fill in the `azuredeploy.parameters.json` with the required parameters
 3. Create  service principal for Azure Kubernetes Service (AKS) by running `./createsp.sh`
-4. Deploy Open CGA using the command `./deploy.sh <subscription_name> <artifact_storage_rg> <artifact_storage_name> <azure_region> $aksServicePrincipalAppId $aksServicePrincipalClientSecret $aksServicePrincipalObjectId` . The arguments `<artifact_storage_rg>` and `<artifact_storage_name>` specify the location for artifacts that are needed for deployment to be stored.
-
+4. Deploy Open CGA using the command `./deploy.sh <subscription_name> <main-azuredeploy-parameters-json> [<service-principal-azuredeploy-parameters-json>]` . The file `<service-principal-azuredeploy-parameters-json>` is optional, and could be merged with the main parameters file.
 
 ## Deploy without User Access Administrator role
 
@@ -32,7 +31,7 @@ This step should be executed before executing the general deployment.
 
 ```shell script
 ./createsp.sh <subscriptionName> <servicePrincipalName>
-./role-assignments.sh <subscription_name> <resourceGroupPrefix>  <location> <servicePrincipalObjectId>
+./role-assignments.sh <subscription_name> <resourceGroupPrefix> <location> <servicePrincipalObjectId>
 ```
 
 To skip role assignments within the main arm templates, add the parameter `"skipRoleAssignment": {"value": true}` to the `azuredeploy.private.parameters.json`

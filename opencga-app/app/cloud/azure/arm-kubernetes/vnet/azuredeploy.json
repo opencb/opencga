@@ -2,6 +2,10 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "vnetName": {
+            "type": "string",
+            "defaultValue": "vnet"
+        },
         "cidr": {
             "type": "object",
             "defaultValue": {
@@ -32,7 +36,7 @@
         },
         {
             "apiVersion": "2018-08-01",
-            "name": "vnet",
+            "name": "[parameters('vnetName')]",
             "type": "Microsoft.Network/virtualNetworks",
             "location": "[resourceGroup().location]",
             "dependsOn": [
@@ -148,35 +152,35 @@
     "outputs": {
         "vnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks', 'vnet')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
         },
         "virtualNetworkName": {
             "type": "string",
-            "value": "vnet"
+            "value": "[parameters('vnetName')]"
         },
         "kubernetesSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','kubernetes')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'kubernetes')]"
         },
         "aciSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','aci')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'aci')]"
         },
         "hdinsightSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','hdinsight')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'hdinsight')]"
         },
         "mongodbSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','mongodb')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'mongodb')]"
         },
         "solrSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','solr')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'solr')]"
         },
         "loginSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet','login')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'login')]"
         }
     }
 }

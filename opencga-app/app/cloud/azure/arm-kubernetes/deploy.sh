@@ -7,33 +7,37 @@
 
 set -e
 
-
-if [[ "$#" -ne 4 ]]; then
-  echo "Usage: $0 <subscription_name> <aksServicePrincipalAppId> <aksServicePrincipalClientSecret> <aksServicePrincipalObjectId> [azuredeploy.parameters.json]"
-  echo " * Execute createsp.sh to obtain the service principal values"
+if [[ "$#" -ne 2 ]]; then
+  echo "Usage: $0 <subscription_name> <main-azuredeploy-parameters-json> [<service-principal-azuredeploy-parameters-json>]"
+  echo " * Execute createsp.sh to obtain the service principal parameters"
   exit 1
 fi
 
 subscriptionName=$1
-aksServicePrincipalAppId=$2
-aksServicePrincipalClientSecret=$3
-aksServicePrincipalObjectId=$4
-azudeDeployParameters=${5:-azuredeploy.parameters.private.json}
+azudeDeployParameters=${2:-azuredeploy.parameters.private.json}
+spAzudeDeployParameters=${3:-$azudeDeployParameters}
 
-if [ ! -f "${azudeDeployParameters}" ]; then
-  echo "Missing file ${azudeDeployParameters}"
-  exit 1
-fi
+function requiredFile() {
+  if [ ! -f $1 ]; then
+    echo "Missing file $1"
+    exit 1
+  fi
+}
+
+requiredFile "${azudeDeployParameters}"
+requiredFile "${spAzudeDeployParameters}"
+
 azudeDeployParameters=$(realpath "${azudeDeployParameters}")
-# Don't move the PWD until we found out the realpath. It could be a relative path.
+spAzudeDeployParameters=$(realpath "${spAzudeDeployParameters}")
 
+# Don't move the PWD until we found out the realpath. It could be a relative path.
 cd "$(dirname "$0")"
 
 templateContainer="templates"
 location=$(jq -r '.parameters.rgLocation.value' "${azudeDeployParameters}")
 rgName=$(jq -r '.parameters.rgPrefix.value' "${azudeDeployParameters}")
 storageAccountName=$(echo "${rgName}artifacts" | tr '[:upper:]' '[:lower:]' | tr -d "_-")
-deploymentOut=$(dirname "${azudeDeployParameters}")/deployment-outputs-$(date "+%Y%m%d%H%M%S").json
+deploymentOut="$(dirname "${azudeDeployParameters}")/deployment-outputs-$(date "+%Y%m%d%H%M%S").json"
 deployId=${rgName}-$(date "+%Y-%m-%d-%H.%M.%S")-R${RANDOM}
 
 
@@ -61,7 +65,7 @@ az storage container create \
 
 mkdir -p ARTIFACTS_BLOB_UPDATE/foo
 rm -rf ARTIFACTS_BLOB_UPDATE/*
-cp -r $(ls | grep -v "ARTIFACTS_BLOB_UPDATE\|parameters\|deployment-outputs.json") ARTIFACTS_BLOB_UPDATE
+cp -r $(ls | grep -v "ARTIFACTS_BLOB_UPDATE\|parameters\|deployment-outputs") ARTIFACTS_BLOB_UPDATE
 
 az storage blob upload-batch \
     --destination $templateContainer \
@@ -85,11 +89,9 @@ echo "az deployment sub create -n $deployId ... "
 # deploy infra
 az deployment sub create -n $deployId  -l ${location} --template-uri $template_url \
     --parameters @"${azudeDeployParameters}"  \
+    --parameters @"${spAzudeDeployParameters}"  \
     --parameters _artifactsLocation=$container_base_url   \
-    --parameters _artifactsLocationSasToken="?$token"  \
-    --parameters aksServicePrincipalAppId=$aksServicePrincipalAppId \
-    --parameters aksServicePrincipalClientSecret=$aksServicePrincipalClientSecret \
-    --parameters aksServicePrincipalObjectId=$aksServicePrincipalObjectId > ${deploymentOut}
+    --parameters _artifactsLocationSasToken="?$token" > ${deploymentOut}
 
 
 function getOutput() {

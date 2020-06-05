@@ -657,8 +657,6 @@
                         "vnetSubnetID": "[parameters('kubernetesSubnetId')]",
                         "dnsPrefix": "agents",
                         "type": "VirtualMachineScaleSets"
-
-
                     }
                 ]
             },
