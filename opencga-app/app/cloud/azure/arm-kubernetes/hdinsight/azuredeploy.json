@@ -134,6 +134,13 @@
         "skipRoleAssignment" : {
             "type": "bool",
             "defaultValue": false
+        },
+        "enableHBaseAcceleratedWrites" : {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "This feature allows the HBase Write Ahead Log to be placed on a Premium SSD disk which enables high throughput writes with lower latencies."
+            }
         }
     },
     "variables": {
@@ -278,7 +285,7 @@
                             ],
                             "dataDisksGroups": [
                                 {
-                                    "disksPerNode": 1
+                                    "disksPerNode": "[if(parameters('enableHBaseAcceleratedWrites'), 1, 0)]"
                                 }
                             ]
                         },

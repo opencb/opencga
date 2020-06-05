@@ -200,7 +200,8 @@
                         "nodeCount": 3,
                         "nodeSize": "Standard_D3_v2"
                     },
-                    "yarnSiteMemoryInMb": 7000
+                    "yarnSiteMemoryInMb": 7000,
+                    "enableHBaseAcceleratedWrites": false
                 }
             },
             {
@@ -240,7 +241,8 @@
                         "nodeCount": 20,
                         "nodeSize": "Standard_D5_v2"
                     },
-                    "yarnSiteMemoryInMb": 14000
+                    "yarnSiteMemoryInMb": 14000,
+                    "enableHBaseAcceleratedWrites": true
                 }
             },
             {
@@ -280,7 +282,8 @@
                         "nodeCount": 50,
                         "nodeSize": "Standard_D14_v2"
                     },
-                    "yarnSiteMemoryInMb": 62720
+                    "yarnSiteMemoryInMb": 62720,
+                    "enableHBaseAcceleratedWrites": true
                 }
             }
         ],
@@ -451,6 +454,9 @@
                     },
                     "yarnSiteMemoryInMb": {
                         "value": "[variables('selectedSize').hdInsight.yarnSiteMemoryInMb]"
+                    },
+                    "enableHBaseAcceleratedWrites": { 
+                        "value": "[variables('selectedSize').hdInsight.enableHBaseAcceleratedWrites]"
                     },
                     "sshPassword": {
                         "value": "[parameters('HDInsightSshPassword')]"
