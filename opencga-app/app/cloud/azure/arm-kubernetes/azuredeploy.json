@@ -121,6 +121,13 @@
                 "description": "Optionally deploy a login node named {rgPrefix}-login01"
             }
         },
+        "loginNodeVMSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2_v3",
+            "metadata": {
+                "description": "Size of the Login Node VM"
+            }
+        },
         "networkCIDR": {
             "type": "object",
             "metadata": {
@@ -133,7 +140,7 @@
                         "kubernetes": "10.0.0.0/22",
                         "aci": "10.0.4.0/22",
                         "hdinsight": "10.0.8.0/24",
-                        "mongo": "10.0.9.0/24",
+                        "mongodb": "10.0.9.0/24",
                         "solr": "10.0.10.0/24",
                         "login": "10.0.12.0/24"
                     }
@@ -161,6 +168,7 @@
                 "aks": {
                     "nodeCount": 3,
                     "nodeSize": "Standard_D2s_v3",
+                    "diskSizeGB": 256,
                     "maxJobsPoolAgents": 1,
                     "aksJobsAgentVMSize": "Standard_D8s_v3"
                 },
@@ -181,6 +189,10 @@
                     "diskSizeGB": 512
                 },
                 "hdInsight": {
+                    "zookeeper": {
+                        "nodeCount": 3,
+                        "nodeSize": "Standard_D2_V2"
+                    },
                     "head": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D4_v2"
@@ -189,7 +201,8 @@
                         "nodeCount": 3,
                         "nodeSize": "Standard_D3_v2"
                     },
-                    "yarnSiteMemoryInMb": 7000
+                    "yarnSiteMemoryInMb": 7000,
+                    "enableHBaseAcceleratedWrites": false
                 }
             },
             {
@@ -197,6 +210,7 @@
                 "aks": {
                     "nodeCount": 3,
                     "nodeSize": "Standard_D4s_v3",
+                    "diskSizeGB": 512,
                     "maxJobsPoolAgents": 5,
                     "aksJobsAgentVMSize": "Standard_D16s_v3"
                 },
@@ -217,6 +231,10 @@
                     "diskSizeGB": 1028
                 },
                 "hdInsight": {
+                    "zookeeper": {
+                        "nodeCount": 3,
+                        "nodeSize": "Standard_D2_V2"
+                    },
                     "head": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D4_v2"
@@ -225,7 +243,8 @@
                         "nodeCount": 20,
                         "nodeSize": "Standard_D5_v2"
                     },
-                    "yarnSiteMemoryInMb": 14000
+                    "yarnSiteMemoryInMb": 14000,
+                    "enableHBaseAcceleratedWrites": true
                 }
             },
             {
@@ -233,6 +252,7 @@
                 "aks": {
                     "nodeCount": 7,
                     "nodeSize": "Standard_D4s_v3",
+                    "diskSizeGB": 1028,
                     "maxJobsPoolAgents": 50,
                     "aksJobsAgentVMSize": "Standard_D16s_v3"
                 },
@@ -253,6 +273,10 @@
                     "diskSizeGB": 1028
                 },
                 "hdInsight": {
+                    "zookeeper": {
+                        "nodeCount": 3,
+                        "nodeSize": "Standard_D2_V2"
+                    },
                     "head": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D4_v2"
@@ -261,7 +285,8 @@
                         "nodeCount": 50,
                         "nodeSize": "Standard_D14_v2"
                     },
-                    "yarnSiteMemoryInMb": 62720
+                    "yarnSiteMemoryInMb": 62720,
+                    "enableHBaseAcceleratedWrites": true
                 }
             }
         ],
@@ -344,8 +369,14 @@
                     "vnetId": {
                         "value" : "[reference('vnet').outputs.vnetId.value]"
                     },
-                    "subnetId": {
+                    "loginSubnetId": {
                         "value" : "[reference('vnet').outputs.loginSubnetId.value]"
+                    },
+                    "aciSubnetId": {
+                        "value" : "[reference('vnet').outputs.aciSubnetId.value]"
+                    },
+                    "kubernetesSubnetId": {
+                        "value" : "[reference('vnet').outputs.kubernetesSubnetId.value]"
                     }
                 }
             }
@@ -386,7 +417,9 @@
             "apiVersion": "2018-05-01",
             "name": "hdinsight",
             "dependsOn": [
-                "[concat(parameters('rgPrefix'),'-hdinsight')]"
+                "[concat(parameters('rgPrefix'),'-hdinsight')]",
+                "vnet",
+                "loganalytics"
             ],
             "properties": {
                 "mode": "Incremental",
@@ -404,6 +437,12 @@
                     "clusterLoginPassword": {
                         "value": "[parameters('HDInsightClusterLoginPassword')]"
                     },
+                    "clusterZookeeperNodeCount": {
+                        "value": "[variables('selectedSize').hdInsight.zookeeper.nodeCount]"
+                    },
+                    "clusterZookeeperNodeSize": {
+                        "value": "[variables('selectedSize').hdInsight.zookeeper.nodeSize]"
+                    },
                     "clusterHeadNodeCount": {
                         "value": "[variables('selectedSize').hdInsight.head.nodeCount]"
                     },
@@ -418,6 +457,9 @@
                     },
                     "yarnSiteMemoryInMb": {
                         "value": "[variables('selectedSize').hdInsight.yarnSiteMemoryInMb]"
+                    },
+                    "enableHBaseAcceleratedWrites": { 
+                        "value": "[variables('selectedSize').hdInsight.enableHBaseAcceleratedWrites]"
                     },
                     "sshPassword": {
                         "value": "[parameters('HDInsightSshPassword')]"
@@ -489,6 +531,9 @@
                     "aksAgentVMSize": {
                         "value": "[variables('selectedSize').aks.nodeSize]"
                     },
+                    "aksAgentOsDiskSizeGB": {
+                        "value": "[variables('selectedSize').aks.diskSizeGB]"
+                    },
                     "maxJobsPoolAgents": {
                         "value": "[variables('selectedSize').aks.maxJobsPoolAgents]"
                     },
@@ -548,6 +593,9 @@
                 "parameters": {
                     "VMName" : {
                         "value" : "[concat(parameters('rgPrefix'), '-login01')]"
+                    },
+                    "VMSize" : {
+                        "value" : "[parameters('loginNodeVMSize')]"
                     },
                     "adminUsername" : {
                         "value": "[parameters('adminUsername')]"

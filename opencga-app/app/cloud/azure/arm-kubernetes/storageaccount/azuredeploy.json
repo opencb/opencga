@@ -16,7 +16,13 @@
     "vnetId": {
       "type": "string"
     },
-    "subnetId": {
+    "loginSubnetId": {
+      "type": "string"
+    },
+    "aciSubnetId": {
+      "type": "string"
+    },
+    "kubernetesSubnetId": {
       "type": "string"
     }
   },
@@ -35,10 +41,25 @@
         "networkAcls": {
           "bypass": "AzureServices",
           "virtualNetworkRules": [
+            {
+              "id": "[parameters('loginSubnetId')]",
+              "action": "Allow",
+              "state": "Succeeded"
+            },
+            {
+              "id": "[parameters('aciSubnetId')]",
+              "action": "Allow",
+              "state": "Succeeded"
+            },
+            {
+              "id": "[parameters('kubernetesSubnetId')]",
+              "action": "Allow",
+              "state": "Succeeded"
+            }
           ],
           "ipRules": [
           ],
-          "defaultAction": "Allow"
+          "defaultAction": "Deny"
         },
         "supportsHttpsTrafficOnly": true,
         "encryption": {
@@ -121,9 +142,10 @@
       "name": "[variables('privateEndpointName')]",
       "type": "Microsoft.Network/privateEndpoints",
       "apiVersion": "2020-03-01",
+      "dependsOn": ["[variables('storageAccountName')]"],
       "properties": {
         "subnet": {
-          "id": "[parameters('subnetId')]"
+          "id": "[parameters('loginSubnetId')]"
         },
         "privateLinkServiceConnections": [
           {

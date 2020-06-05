@@ -38,9 +38,7 @@ az group create --name "${rgName}" --location "${location}"
 if az network vnet show --name vnet --resource-group ${rgName} &> /dev/null; then
   echo "Vnet exists"
 else
-  requiredFile "vnet/azuredeploy.json" || exit 1
-  az deployment group create -g ${rgName} -n ${rgName}-`date "+%Y-%m-%d-%H.%M.%S"`-R${RANDOM}  \
-    --template-file vnet/azuredeploy.json
+  az network vnet create -g ${rgName} -n vnet --subnet-name kubernetes
 fi
 
 az deployment group create -g ${rgName} -n ${rgName}-`date "+%Y-%m-%d-%H.%M.%S"`-R${RANDOM}  \
