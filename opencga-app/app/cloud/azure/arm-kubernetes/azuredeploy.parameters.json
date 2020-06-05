@@ -26,14 +26,11 @@
         "openCgaAdminPassword": {
             "value": "SECUREPASSWORD"
         },
-        "sshAdminKeyData": {
-            "value": "SECUREPASSWORD"
-        },
         "mongoDBPassword": {
             "value": "SECUREPASSWORD"
         },
-        "sslCertificateEmail": {
-            "value": ""
+        "sshAdminKeyData": {
+            "value": "SECURE_SSHKEY"
         }
     }
 }

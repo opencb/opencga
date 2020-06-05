@@ -29,7 +29,7 @@ aksServicePrincipalObjectId=$(az ad sp show --id $aksServicePrincipalAppId --que
 
 cd -
 out=azuredeploy.servicePrincipal.parameters.json
-cat << EOF >> $out
+cat << EOF > $out
 {
     "\$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",

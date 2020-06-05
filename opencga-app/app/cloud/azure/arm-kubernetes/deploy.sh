@@ -7,7 +7,7 @@
 
 set -e
 
-if [[ "$#" -ne 2 ]]; then
+if [[ "$#" -ne 2 && "$#" -ne 3 ]]; then
   echo "Usage: $0 <subscription_name> <main-azuredeploy-parameters-json> [<service-principal-azuredeploy-parameters-json>]"
   echo " * Execute createsp.sh to obtain the service principal parameters"
   exit 1
