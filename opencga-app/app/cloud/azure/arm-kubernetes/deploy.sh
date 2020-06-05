@@ -5,13 +5,11 @@
 # If the script is modifed to use a SAS token, be aware if the SAS token later changes then operations that depend on the storage and solution redeployment will fail.
 # Given dependencies on the storage within OpenCGA a SAS token with a long lifetime needs to be created and used each time the solution is deployed.
 
-cd "$(dirname "$0")"
-
 set -e
 
 
 if [[ "$#" -ne 4 ]]; then
-  echo "Usage: $0 <subscription_name> <aksServicePrincipalAppId> <aksServicePrincipalClientSecret> <aksServicePrincipalObjectId>"
+  echo "Usage: $0 <subscription_name> <aksServicePrincipalAppId> <aksServicePrincipalClientSecret> <aksServicePrincipalObjectId> [azuredeploy.parameters.json]"
   echo " * Execute createsp.sh to obtain the service principal values"
   exit 1
 fi
@@ -20,17 +18,24 @@ subscriptionName=$1
 aksServicePrincipalAppId=$2
 aksServicePrincipalClientSecret=$3
 aksServicePrincipalObjectId=$4
+azudeDeployParameters=${5:-azuredeploy.parameters.private.json}
 
-if [ ! -f azuredeploy.parameters.private.json ]; then
-  echo "Missing file azuredeploy.parameters.private.json"
+if [ ! -f "${azudeDeployParameters}" ]; then
+  echo "Missing file ${azudeDeployParameters}"
   exit 1
 fi
+azudeDeployParameters=$(realpath "${azudeDeployParameters}")
+# Don't move the PWD until we found out the realpath. It could be a relative path.
+
+cd "$(dirname "$0")"
 
 templateContainer="templates"
-location=$(jq -r '.parameters.rgLocation.value' azuredeploy.parameters.private.json)
-rgName=$(jq -r '.parameters.rgPrefix.value' azuredeploy.parameters.private.json)
+location=$(jq -r '.parameters.rgLocation.value' "${azudeDeployParameters}")
+rgName=$(jq -r '.parameters.rgPrefix.value' "${azudeDeployParameters}")
 storageAccountName=$(echo "${rgName}artifacts" | tr '[:upper:]' '[:lower:]' | tr -d "_-")
-deployID=${rgName}-$(date "+%Y-%m-%d-%H.%M.%S")-R${RANDOM}
+deploymentOut=$(dirname "${azudeDeployParameters}")/deployment-outputs-$(date "+%Y%m%d%H%M%S").json
+deployId=${rgName}-$(date "+%Y-%m-%d-%H.%M.%S")-R${RANDOM}
+
 
 az account set --subscription "${subscriptionName}"
 az group create --name "${rgName}" --location "${location}"
@@ -75,20 +80,20 @@ blob_base_url="$(az storage account show -n $storageAccountName  --query primary
 container_base_url=${blob_base_url//\"/}$templateContainer
 
 echo "# Deploy infrastructure"
-echo "az deployment sub create -n $deployID ... "
-DEPLOYMENT_OUT=deployment-outputs.json
+echo "az deployment sub create -n $deployId ... "
+
 # deploy infra
-az deployment sub create -n $deployID  -l ${location} --template-uri $template_url \
-    --parameters @azuredeploy.parameters.private.json  \
+az deployment sub create -n $deployId  -l ${location} --template-uri $template_url \
+    --parameters @"${azudeDeployParameters}"  \
     --parameters _artifactsLocation=$container_base_url   \
     --parameters _artifactsLocationSasToken="?$token"  \
     --parameters aksServicePrincipalAppId=$aksServicePrincipalAppId \
     --parameters aksServicePrincipalClientSecret=$aksServicePrincipalClientSecret \
-    --parameters aksServicePrincipalObjectId=$aksServicePrincipalObjectId > ${DEPLOYMENT_OUT}
+    --parameters aksServicePrincipalObjectId=$aksServicePrincipalObjectId > ${deploymentOut}
 
 
 function getOutput() {
-  jq -r '.properties.outputs.'${1}'.value' ${DEPLOYMENT_OUT}
+  jq -r '.properties.outputs.'${1}'.value' ${deploymentOut}
 }
 
 # Enable HDInsight monitor
