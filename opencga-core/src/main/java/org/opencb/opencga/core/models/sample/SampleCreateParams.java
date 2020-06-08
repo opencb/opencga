@@ -79,8 +79,9 @@ public class SampleCreateParams {
     }
 
     public Sample toSample() {
-        return new Sample(getId(), getIndividualId(), getProcessing(), getCollection(), 1, 1, getDescription(), getSomatic(),
-                getPhenotypes(), getAnnotationSets(), getStatus() != null ? getStatus().toCustomStatus() : null, null, getAttributes());
+        return new Sample(getId(), getIndividualId(), getProcessing(), getCollection(), 1, 1, getDescription(),
+                getSomatic() != null ? getSomatic() : false, getPhenotypes(), getAnnotationSets(),
+                getStatus() != null ? getStatus().toCustomStatus() : null, null, getAttributes());
     }
 
     public String getId() {
