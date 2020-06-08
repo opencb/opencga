@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -1292,6 +1293,16 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
                 new Query().append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual2"), QueryOptions.empty(), token);
         assertEquals(0, sampleDataResult.getNumResults());
+    }
+
+    @Test
+    public void searchIndividualsBySample() throws CatalogException {
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual1")
+                .setSamples(Arrays.asList(new Sample().setId("sample1"), new Sample().setId("sample2"))), new QueryOptions(), token);
+
+        Individual individual = catalogManager.getIndividualManager().search(studyFqn,
+                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), "sample1"), QueryOptions.empty(), token).first();
+        assertEquals("Individual1", individual.getId());
     }
 
     @Test

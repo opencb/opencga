@@ -126,11 +126,11 @@ analysis:
       k8s.imageName: "opencb/opencga-base:2.0.0-hdp3.1-dev"
       k8s.namespace: "default"
       k8s.requests:
-        cpu: 1
-        memory: "4G"
-      k8s.limits:
-        cpu: 2
+        cpu: 3
         memory: "12G"
+      k8s.limits:
+        cpu: 4
+        memory: "13G"
       k8s.nodeSelector:
         agentpool: jobs
         beta.kubernetes.io/os: linux

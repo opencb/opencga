@@ -26,6 +26,7 @@ parser.add_argument("--batch-account-key", required=False)
 parser.add_argument("--batch-endpoint", required=False)
 parser.add_argument("--batch-pool-id", required=False)
 parser.add_argument("--k8s-master-node", required=False)
+parser.add_argument("--k8s-namespace", required=False, default="default")
 parser.add_argument("--max-concurrent-jobs", required=False)
 parser.add_argument("--variant-default-engine", required=False, default="hadoop")
 parser.add_argument("--hadoop-ssh-dns", required=True)
@@ -169,6 +170,7 @@ if args.analysis_execution_mode == "AZURE":
     config["analysis"]["execution"]["options"]["azure.batchPoolId"] = args.batch_pool_id
 elif args.analysis_execution_mode == "k8s":
     config["analysis"]["execution"]["options"]["k8s.masterUrl"] = args.k8s_master_node
+    config["analysis"]["execution"]["options"]["k8s.namespace"] = args.k8s_namespace
 
   
 

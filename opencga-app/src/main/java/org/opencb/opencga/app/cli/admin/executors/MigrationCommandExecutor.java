@@ -6,6 +6,8 @@ import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
@@ -254,6 +256,23 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             authentication = "-u " + configuration.getCatalog().getDatabase().getUser() + " -p "
                     + configuration.getCatalog().getDatabase().getPassword() + " --authenticationDatabase "
                     + configuration.getCatalog().getDatabase().getOptions().getOrDefault("authenticationDatabase", "admin") + " ";
+        }
+        if (configuration.getCatalog().getDatabase().getOptions() != null
+                && configuration.getCatalog().getDatabase().getOptions().containsKey(MongoDBConfiguration.SSL_ENABLED)
+                && Boolean.parseBoolean(configuration.getCatalog().getDatabase().getOptions().get(MongoDBConfiguration.SSL_ENABLED))) {
+            authentication += "--ssl ";
+        }
+        if (configuration.getCatalog().getDatabase().getOptions() != null
+                && configuration.getCatalog().getDatabase().getOptions().containsKey(MongoDBConfiguration.SSL_INVALID_CERTIFICATES_ALLOWED)
+                && Boolean.parseBoolean(configuration.getCatalog().getDatabase().getOptions()
+                .get(MongoDBConfiguration.SSL_INVALID_CERTIFICATES_ALLOWED))) {
+            authentication += "--sslAllowInvalidCertificates ";
+        }
+        if (configuration.getCatalog().getDatabase().getOptions() != null
+                && configuration.getCatalog().getDatabase().getOptions().containsKey(MongoDBConfiguration.SSL_INVALID_HOSTNAME_ALLOWED)
+                && Boolean.parseBoolean(configuration.getCatalog().getDatabase().getOptions()
+                .get(MongoDBConfiguration.SSL_INVALID_HOSTNAME_ALLOWED))) {
+            authentication += "--sslAllowInvalidHostnames ";
         }
 
         String catalogCli = "mongo " + authentication
