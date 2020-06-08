@@ -433,6 +433,106 @@ db.getCollection("panel").remove({});
 
 // --------------------- Clinical ----------------
 print("\nMigrating clinical...")
+
+function fixFamily(doc) {
+    if (isNotUndefinedOrNull(doc.family)) {
+        // Look for the family information
+        var family = db.family.findOne({uid: doc.family['uid']});
+        if (isNotEmptyArray(doc.family.members)) {
+            var sampleUids = [];
+            var memberUids = [];
+            doc.family.members.forEach(function(member) {
+                memberUids.push(member['uid']);
+                if (isNotEmptyArray(member.samples)) {
+                    member.samples.forEach(function(sample) {
+                        sampleUids.push(sample['uid']);
+                    });
+                }
+            });
+
+            // Look for all members
+            var members = [];
+            db.individual.find({uid: {$in: memberUids}}).forEach(function(member) {
+                members.push(member);
+            });
+            family['members'] = members;
+
+            if (sampleUids.length > 0) {
+                // Look for the samples
+                var sampleMap = {};
+                db.sample.find({uid: {$in: sampleUids}}).forEach(function(sample) {
+                    sampleMap[sample['uid']] = sample;
+                });
+
+                //Assign samples to corresponding members
+                members.forEach(function (member) {
+                    var samples = [];
+                    member.samples.forEach(function (sample) {
+                        if (sample['uid'] in sampleMap) {
+                            samples.push(sampleMap[sample['uid']]);
+                        }
+                    });
+                    member['samples'] = samples;
+                });
+            }
+        }
+        return family;
+    }
+    return null;
+}
+
+function fixProband(doc, family) {
+    if (isNotUndefinedOrNull(doc.proband)) {
+        var memberUid = doc.proband.uid;
+        if (isNotUndefinedOrNull(family)) {
+            if (isNotEmptyArray(family.members)) {
+                for (var member of family.members) {
+                    if (Number(member.uid) === Number(memberUid)) {
+                        return member;
+                    }
+                }
+            }
+        }
+    }
+    return null;
+}
+
+function fixFiles(doc) {
+    if (isNotUndefinedOrNull(doc.files)) {
+        var fileUids = new Set();
+        Object.keys(doc.files).forEach(function(key) {
+            doc.files[key].forEach(function(file) {
+                fileUids.add(Number(file['uid']));
+            });
+        });
+        if (fileUids.size > 0) {
+            var files = [];
+            db.file.find({uid: {$in: Array.from(fileUids)}},{}).forEach(function(file) {
+                files.push(file);
+            });
+            return files;
+        }
+    }
+    return null;
+}
+
+function fixRoleToProband(doc) {
+    if (isNotUndefinedOrNull(doc.roleToProband)) {
+        var roleToProband = {};
+        Object.keys(doc.roleToProband).forEach(function(key) {
+            if (doc.roleToProband[key] === "FULL_SIBLING_M") {
+                roleToProband[key] = "BROTHER";
+            } else if (doc.roleToProband[key] === "FULL_SIBLING_F") {
+                roleToProband[key] = "SISTER";
+            } else {
+                roleToProband[key] = doc.roleToProband[key];
+            }
+        });
+        return roleToProband;
+    }
+    return null;
+}
+
 // #1537
 migrateCollection("clinical", {"internal": {"$exists": false}}, {}, function(bulk, doc) {
     doc['status']['description'] = doc['status']['message'];
@@ -443,11 +543,36 @@ migrateCollection("clinical", {"internal": {"$exists": false}}, {}, function(bul
         "internal": {
             "status": doc['status']
         },
-        "status": customStatus
+        "status": customStatus,
+        "interpretation": null,
+        "secondaryInterpretations": doc.interpretations,
+        "consent": {},
+        "qualityControl": {},
+        "comments": [],
+        "alerts": []
     };
     var unset = {
-        "name": ""
+        "name": "",
+        "interpretations": ""
     };
+
+    var family = fixFamily(doc);
+    var proband = fixProband(doc, family);
+    var files = fixFiles(doc);
+    var roleToProband = fixRoleToProband(doc);
+
+    if (isNotUndefinedOrNull(family)) {
+        set['family'] = family;
+    }
+    if (isNotUndefinedOrNull(proband)) {
+        set['proband'] = proband;
+    }
+    if (isNotEmptyArray(files)) {
+        set['files'] = files;
+    }
+    if (isNotUndefinedOrNull(roleToProband)) {
+        set['roleToProband'] = roleToProband;
+    }
 
     bulk.find({"_id": doc._id}).updateOne({"$set": set, "$unset": unset});
 });
