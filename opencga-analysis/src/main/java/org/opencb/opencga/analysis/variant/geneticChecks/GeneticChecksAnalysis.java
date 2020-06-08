@@ -149,7 +149,7 @@ public class GeneticChecksAnalysis extends OpenCgaTool {
             familyId = family.getId();
         } else if (StringUtils.isNotEmpty(sampleId)) {
             // Get father, mother and siblings from that sample
-            samples = GeneticChecksUtils.getRelativeSamplesBySampleId(studyId, individualId, catalogManager, token);
+            samples = GeneticChecksUtils.getRelativeSamplesBySampleId(studyId, sampleId, catalogManager, token);
             Family family = GeneticChecksUtils.getFamilyBySampleId(studyId, sampleId, catalogManager, token);
             familyId = family.getId();
         } else {
