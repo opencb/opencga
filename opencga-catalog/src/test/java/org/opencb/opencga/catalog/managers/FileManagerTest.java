@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.avro.Schema;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -769,13 +770,38 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(Arrays.equals(Files.readAllBytes(Paths.get(sourceUri)), bytes));
     }
 
+    public int countElementsInTree(FileTree fileTree) {
+        int total = 1;
+        for (FileTree child : fileTree.getChildren()) {
+            total += countElementsInTree(child);
+        }
+        return total;
+    }
+
     @Test
     public void testGetTreeView() throws CatalogException {
-        DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(), token);
-        assertEquals(8, fileTree.getNumResults());
+        fileManager.create(studyFqn, new File().setPath("myFile_a.txt").setType(File.Type.FILE), false, "content", QueryOptions.empty(), token);
+        fileManager.create(studyFqn, new File().setPath("myFile_b.txt").setType(File.Type.FILE), false, "content", QueryOptions.empty(), token);
+        fileManager.create(studyFqn, new File().setPath("myFile_c.txt").setType(File.Type.FILE), false, "content", QueryOptions.empty(), token);
+
+        fileManager.create(studyFqn, new File().setPath("data/myFile_a.txt").setType(File.Type.FILE), false, "content", QueryOptions.empty(), token);
+        fileManager.create(studyFqn, new File().setPath("data/myFile_b.txt").setType(File.Type.FILE), false, "content", QueryOptions.empty(), token);
+        fileManager.create(studyFqn, new File().setPath("data/myFile_c.txt").setType(File.Type.FILE), false, "content", QueryOptions.empty(), token);
+
+        fileManager.create(studyFqn, new File().setPath("JOBS/myFile_a.txt").setType(File.Type.FILE), false, "content", QueryOptions.empty(), token);
+        fileManager.create(studyFqn, new File().setPath("JOBS/myFile_b.txt").setType(File.Type.FILE), false, "content", QueryOptions.empty(), token);
+        fileManager.create(studyFqn, new File().setPath("JOBS/myFile_c.txt").setType(File.Type.FILE), false, "content", QueryOptions.empty(), token);
+
+        fileManager.create(studyFqn, new File().setPath("JOBS/AAAAAA/myFile_a.txt").setType(File.Type.FILE), true, "content", QueryOptions.empty(), token);
+        fileManager.create(studyFqn, new File().setPath("JOBS/BBBBBB/myFile_b.txt").setType(File.Type.FILE), true, "content", QueryOptions.empty(), token);
+        fileManager.create(studyFqn, new File().setPath("JOBS/CCCCCC/myFile_c.txt").setType(File.Type.FILE), true, "content", QueryOptions.empty(), token);
+
+        DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), token);
+        assertEquals(23, fileTree.getNumResults());
+        assertEquals(23, countElementsInTree(fileTree.first()));
 
         fileTree = fileManager.getTree(studyFqn, "/", 2, new QueryOptions(), token);
-        assertEquals(4, fileTree.getNumResults());
+        assertEquals(16, fileTree.getNumResults());
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
         fileTree = fileManager.getTree(studyFqn, "/", 2, options, token);

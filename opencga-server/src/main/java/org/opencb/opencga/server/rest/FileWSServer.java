@@ -379,20 +379,22 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Obtain a tree view of the files and folders within a folder", response = FileTree.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "[PENDING] " + ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query")
     })
     public Response treeView(
             @ApiParam(value = "Folder id or name. Paths must be separated by : instead of /") @DefaultValue(":") @PathParam("folder") String folderId,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Maximum depth to get files from") @DefaultValue("5") @QueryParam("maxDepth") int maxDepth) {
         try {
+            queryOptions.remove(QueryOptions.LIMIT);
+
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("folder");
             query.remove("maxDepth");
 
             ParamUtils.checkIsSingleID(folderId);
             query.remove("maxDepth");
+
             DataResult result = fileManager.getTree(studyStr, folderId.replace(":", "/"), maxDepth, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
