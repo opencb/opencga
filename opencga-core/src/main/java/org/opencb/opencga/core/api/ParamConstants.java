@@ -303,7 +303,7 @@ public class ParamConstants {
     public static final String ALIGNMENT_COVERAGE_STATS_DESCRIPTION = "Compute coverage stats per transcript for a list of genes.";
     public static final String LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION = "Only regions whose coverage depth is under this threshold will be reported.";
     public static final String LOW_COVERAGE_REGION_THRESHOLD_PARAM = "threshold";
-    public static final String LOW_COVERAGE_REGION_THRESHOLD_DEFAULT = "20";
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_DEFAULT = "30";
 
     public static final String FILE_ID_PARAM = "file";
     public static final String FILE_ID_1_DESCRIPTION = "Input file #1 (e.g. somatic file)";
