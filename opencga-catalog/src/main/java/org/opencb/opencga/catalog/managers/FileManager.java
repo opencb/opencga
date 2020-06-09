@@ -1195,12 +1195,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
             }
             FileTree fileTree = treeBuilder.toFileTree();
-
-//            // Call recursive method
-//            FileTree fileTree = getTree(fileDataResult.first(), query, options, maxDepth, study.getUid(), userId);
-
             int dbTime = (int) (System.currentTimeMillis() - startTime);
-//            int numResults = countFilesInTree(fileTree);
 
             auditManager.audit(userId, Enums.Action.TREE, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -2782,56 +2777,6 @@ public class FileManager extends AnnotationSetManager<File> {
         logger.debug("Study file path: {}", studyFilePath);
         logger.debug("File path: {}", originalFilePath);
         return !studyFilePath.equals(originalFilePath);
-    }
-
-    private FileTree getTree(File folder, Query query, QueryOptions queryOptions, int maxDepth, long studyId, String userId)
-            throws CatalogException {
-
-        if (maxDepth == 0) {
-            return null;
-        }
-
-        try {
-            authorizationManager.checkFilePermission(studyId, folder.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-        } catch (CatalogException e) {
-            return null;
-        }
-
-        // Update the new path to be looked for
-        query.put(FileDBAdaptor.QueryParams.DIRECTORY.key(), folder.getPath());
-
-        FileTree fileTree = new FileTree(folder);
-        List<FileTree> children = new ArrayList<>();
-
-        // Obtain the files and directories inside the directory
-        OpenCGAResult<File> fileDataResult = fileDBAdaptor.get(query, queryOptions);
-
-        for (File fileAux : fileDataResult.getResults()) {
-            if (fileAux.getType().equals(File.Type.DIRECTORY)) {
-                FileTree subTree = getTree(fileAux, query, queryOptions, maxDepth - 1, studyId, userId);
-                if (subTree != null) {
-                    children.add(subTree);
-                }
-            } else {
-                try {
-                    authorizationManager.checkFilePermission(studyId, fileAux.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-                    children.add(new FileTree(fileAux));
-                } catch (CatalogException e) {
-                    continue;
-                }
-            }
-        }
-        fileTree.setChildren(children);
-
-        return fileTree;
-    }
-
-    private int countFilesInTree(FileTree fileTree) {
-        int count = 1;
-        for (FileTree tree : fileTree.getChildren()) {
-            count += countFilesInTree(tree);
-        }
-        return count;
     }
 
     /**
