@@ -215,9 +215,9 @@ public class GeneticChecksUtils {
         return familyResult.first();
     }
 
-    public static Family getFamilyBySampleId(String studyId, String individualId, CatalogManager catalogManager, String token)
+    public static Family getFamilyBySampleId(String studyId, String sampleId, CatalogManager catalogManager, String token)
             throws ToolException {
-        Individual individual = getIndividualBySampleId(studyId, individualId, catalogManager, token);
+        Individual individual = getIndividualBySampleId(studyId, sampleId, catalogManager, token);
         return getFamilyByIndividualId(studyId, individual.getId(), catalogManager, token);
     }
 
@@ -262,7 +262,7 @@ public class GeneticChecksUtils {
             throws ToolException {
         Sample sample = null;
         Query query = new Query();
-        query.put("individual", individualId);
+        query.put("individualId", individualId);
         OpenCGAResult<Sample> sampleResult;
         try {
             sampleResult = catalogManager.getSampleManager().search(studyId, query, QueryOptions.empty(), token);
@@ -270,7 +270,7 @@ public class GeneticChecksUtils {
             throw new ToolException(e);
         }
         for (Sample individualSample : sampleResult.getResults()) {
-            if (Status.READY.equals(individualSample.getInternal().getStatus())) {
+            if (Status.READY.equals(individualSample.getInternal().getStatus().getName())) {
                 if (sample != null) {
                     throw new ToolException("More than one valid sample found for individual '" + individualId + "'.");
                 }
