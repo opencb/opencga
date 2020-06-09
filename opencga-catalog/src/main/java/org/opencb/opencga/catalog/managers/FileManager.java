@@ -1123,12 +1123,11 @@ public class FileManager extends AnnotationSetManager<File> {
         return get(null, String.valueOf(fileId), options, sessionId);
     }
 
-    public OpenCGAResult<FileTree> getTree(@Nullable String studyId, String fileId, Query query, QueryOptions options, int maxDepth,
-                                           String token) throws CatalogException {
+    public OpenCGAResult<FileTree> getTree(@Nullable String studyId, String fileId, int maxDepth, QueryOptions options, String token)
+            throws CatalogException {
         long startTime = System.currentTimeMillis();
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
@@ -1136,64 +1135,67 @@ public class FileManager extends AnnotationSetManager<File> {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("fileId", fileId)
-                .append("query", query)
                 .append("options", options)
                 .append("maxDepth", maxDepth)
                 .append("token", token);
         try {
+            if (maxDepth < 1) {
+                throw new CatalogException("Depth cannot be lower than 1");
+            }
             if (options.containsKey(QueryOptions.INCLUDE)) {
-                // Add type to the queryOptions
+                // Add type and path to the queryOptions
                 List<String> asStringListOld = options.getAsStringList(QueryOptions.INCLUDE);
-                List<String> newList = new ArrayList<>(asStringListOld.size());
-                for (String include : asStringListOld) {
-                    newList.add(include);
-                }
+                Set<String> newList = new HashSet<>(asStringListOld);
                 newList.add(FileDBAdaptor.QueryParams.TYPE.key());
-                options.put(QueryOptions.INCLUDE, newList);
+                newList.add(FileDBAdaptor.QueryParams.PATH.key());
+                options.put(QueryOptions.INCLUDE, new ArrayList<>(newList));
             } else {
-                // Avoid excluding type
                 if (options.containsKey(QueryOptions.EXCLUDE)) {
+                    // Avoid excluding type and path from queryoptions
                     List<String> asStringListOld = options.getAsStringList(QueryOptions.EXCLUDE);
-                    if (asStringListOld.contains(FileDBAdaptor.QueryParams.TYPE.key())) {
-                        // Remove type from exclude options
-                        if (asStringListOld.size() > 1) {
-                            List<String> toExclude = new ArrayList<>(asStringListOld.size() - 1);
-                            for (String s : asStringListOld) {
-                                if (!s.equalsIgnoreCase(FileDBAdaptor.QueryParams.TYPE.key())) {
-                                    toExclude.add(s);
-                                }
-                            }
-                            options.put(QueryOptions.EXCLUDE, StringUtils.join(toExclude.toArray(), ","));
-                        } else {
-                            options.remove(QueryOptions.EXCLUDE);
-                        }
+                    Set<String> newList = new HashSet<>(asStringListOld);
+                    newList.remove(FileDBAdaptor.QueryParams.TYPE.key());
+                    newList.remove(FileDBAdaptor.QueryParams.PATH.key());
+                    if (newList.size() > 0) {
+                        options.put(QueryOptions.EXCLUDE, new ArrayList<>(newList));
+                    } else {
+                        options.remove(QueryOptions.EXCLUDE);
                     }
                 }
             }
 
-            File file = internalGet(study.getUid(), fileId, INCLUDE_FILE_IDS, userId).first();
-
-            query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-            // Check if we can obtain the file from the dbAdaptor properly.
-            QueryOptions qOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.NAME.key(),
-                            FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
-            OpenCGAResult<File> fileDataResult = fileDBAdaptor.get(file.getUid(), qOptions);
-            if (fileDataResult == null || fileDataResult.getNumResults() != 1) {
-                throw new CatalogException("An error occurred with the database.");
-            }
+            File file = internalGet(study.getUid(), fileId, options, userId).first();
 
             // Check if the id does not correspond to a directory
-            if (!fileDataResult.first().getType().equals(File.Type.DIRECTORY)) {
+            if (!file.getType().equals(File.Type.DIRECTORY)) {
                 throw new CatalogException("The file introduced is not a directory.");
             }
 
-            // Call recursive method
-            FileTree fileTree = getTree(fileDataResult.first(), query, options, maxDepth, study.getUid(), userId);
+            // Build regex to obtain all the files/directories up to certain depth
+            String baseRegex = "([^\\/]+)";
+            StringBuilder pathRegex = new StringBuilder(baseRegex);
+            for (int i = 1; i < maxDepth; i++) {
+                pathRegex.append("[\\/]?").append(baseRegex).append("?");
+            }
+            // It can end in a directory or not
+            pathRegex.append("[\\/]?$");
+            Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + pathRegex.toString());
+            // We want to know beforehand the number of matches we will get to be able to abort before iterating
+            options.put(QueryOptions.COUNT, true);
 
+            FileTreeBuilder treeBuilder = new FileTreeBuilder(file);
+            int numResults;
+            try (DBIterator<File> iterator = fileDBAdaptor.iterator(study.getUid(), query, options, userId)) {
+                if (iterator.getNumMatches() > MAX_LIMIT) {
+                    throw new CatalogException("Please, decrease the maximum depth. More than " + MAX_LIMIT + " files found");
+                }
+                numResults = (int) iterator.getNumMatches() + 1;
+                while (iterator.hasNext()) {
+                    treeBuilder.add(iterator.next());
+                }
+            }
+            FileTree fileTree = treeBuilder.toFileTree();
             int dbTime = (int) (System.currentTimeMillis() - startTime);
-            int numResults = countFilesInTree(fileTree);
 
             auditManager.audit(userId, Enums.Action.TREE, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -2775,56 +2777,6 @@ public class FileManager extends AnnotationSetManager<File> {
         logger.debug("Study file path: {}", studyFilePath);
         logger.debug("File path: {}", originalFilePath);
         return !studyFilePath.equals(originalFilePath);
-    }
-
-    private FileTree getTree(File folder, Query query, QueryOptions queryOptions, int maxDepth, long studyId, String userId)
-            throws CatalogException {
-
-        if (maxDepth == 0) {
-            return null;
-        }
-
-        try {
-            authorizationManager.checkFilePermission(studyId, folder.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-        } catch (CatalogException e) {
-            return null;
-        }
-
-        // Update the new path to be looked for
-        query.put(FileDBAdaptor.QueryParams.DIRECTORY.key(), folder.getPath());
-
-        FileTree fileTree = new FileTree(folder);
-        List<FileTree> children = new ArrayList<>();
-
-        // Obtain the files and directories inside the directory
-        OpenCGAResult<File> fileDataResult = fileDBAdaptor.get(query, queryOptions);
-
-        for (File fileAux : fileDataResult.getResults()) {
-            if (fileAux.getType().equals(File.Type.DIRECTORY)) {
-                FileTree subTree = getTree(fileAux, query, queryOptions, maxDepth - 1, studyId, userId);
-                if (subTree != null) {
-                    children.add(subTree);
-                }
-            } else {
-                try {
-                    authorizationManager.checkFilePermission(studyId, fileAux.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-                    children.add(new FileTree(fileAux));
-                } catch (CatalogException e) {
-                    continue;
-                }
-            }
-        }
-        fileTree.setChildren(children);
-
-        return fileTree;
-    }
-
-    private int countFilesInTree(FileTree fileTree) {
-        int count = 1;
-        for (FileTree tree : fileTree.getChildren()) {
-            count += countFilesInTree(tree);
-        }
-        return count;
     }
 
     /**

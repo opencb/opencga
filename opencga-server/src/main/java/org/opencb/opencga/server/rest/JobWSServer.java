@@ -236,6 +236,9 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String tool) {
         query.remove(JobDBAdaptor.QueryParams.STUDY.key());
+        if (limit == 0) {
+            limit = 20;
+        }
         return run(() -> catalogManager.getJobManager().top(study, query, limit, token));
     }
 

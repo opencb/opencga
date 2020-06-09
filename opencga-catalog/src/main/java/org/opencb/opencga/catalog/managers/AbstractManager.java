@@ -70,6 +70,7 @@ public abstract class AbstractManager {
 
     public static final int BATCH_OPERATION_SIZE = 100;
     public static final int DEFAULT_LIMIT = 10;
+    public static final int MAX_LIMIT = 5000;
 
     protected static final String INTERNAL_DELIMITER = "__";
 
