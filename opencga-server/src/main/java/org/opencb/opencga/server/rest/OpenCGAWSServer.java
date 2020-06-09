@@ -131,7 +131,7 @@ public class OpenCGAWSServer {
     protected static VariantStorageManager variantManager;
 
     private static final int DEFAULT_LIMIT = AbstractManager.DEFAULT_LIMIT;
-    private static final int MAX_LIMIT = 5000;
+    private static final int MAX_LIMIT = AbstractManager.MAX_LIMIT;
     private static final int MAX_ID_SIZE = 100;
 
     private static String errorMessage;

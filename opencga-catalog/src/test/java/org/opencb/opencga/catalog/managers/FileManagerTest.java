@@ -771,9 +771,21 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testGetTreeView() throws CatalogException {
-        DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", new Query(), new QueryOptions(),
-                5, token);
+        DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(), token);
         assertEquals(8, fileTree.getNumResults());
+
+        fileTree = fileManager.getTree(studyFqn, "/", 2, new QueryOptions(), token);
+        assertEquals(4, fileTree.getNumResults());
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
+        fileTree = fileManager.getTree(studyFqn, "/", 2, options, token);
+        assertNotNull(fileTree.first().getFile().getId());
+        assertNull(fileTree.first().getFile().getName());
+
+        for (FileTree child : fileTree.first().getChildren()) {
+            assertNotNull(child.getFile().getId());
+            assertNull(child.getFile().getName());
+        }
     }
 
     @Test
@@ -783,11 +795,11 @@ public class FileManagerTest extends AbstractManagerTest {
         // properly
         catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, token).first().getUid();
 
-        DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", new Query(), new QueryOptions(),
-                5, token);
+        DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(),
+                token);
         assertEquals(8, fileTree.getNumResults());
 
-        fileTree = fileManager.getTree("user@1000G:phase2", ".", new Query(), new QueryOptions(), 5, token);
+        fileTree = fileManager.getTree("user@1000G:phase2", ".", 5, new QueryOptions(), token);
         assertEquals(2, fileTree.getNumResults());
     }
 
