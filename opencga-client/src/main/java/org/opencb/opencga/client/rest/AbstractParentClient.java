@@ -197,6 +197,10 @@ public abstract class AbstractParentClient {
             skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
             limit = params.getInt(QueryOptions.LIMIT, defaultLimit);
             batchSize = this.batchSize;
+
+            if (limit == 0) {
+                limit = defaultLimit;
+            }
         } else {
             // Ignore input SKIP and LIMIT from Params
             skip = 0;
