@@ -292,22 +292,17 @@ public class AlignmentStorageManager extends StorageManager {
 
                         if (CollectionUtils.isNotEmpty(transcript.getExons())) {
                             for (Exon exon : transcript.getExons()) {
-                                if (exon.getGenomicCodingEnd() != 0 && exon.getGenomicCodingStart() != 0) {
-                                    Region region = new Region(exon.getChromosome(), exon.getGenomicCodingStart(), exon.getGenomicCodingEnd());
-
+                                if (exon.getStart() != 0 && exon.getEnd() != 0) {
+                                    Region region = new Region(exon.getChromosome(), exon.getStart(), exon.getEnd());
                                     length += region.size();
-//                    System.out.println("region = " + region.toString() + ", region size = " + region.size() + ", acc. length = " + length);
 
                                     OpenCGAResult<RegionCoverage> regionResult = alignmentStorageEngine.getDBAdaptor().coverageQuery(
                                             Paths.get(file.getUri()), region, 0, Integer.MAX_VALUE, 1);
 
-//                    System.out.println("coverage query, num. results  = " + regionResult.getNumResults());
                                     RegionCoverage regionCoverage = regionResult.first();
-//                    System.out.println("coverage region = " + regionCoverage.toString() + ", region coverage size = " + regionCoverage.size());
 
                                     if (regionCoverage != null) {
                                         for (double coverage : regionCoverage.getValues()) {
-//                            System.out.println("\tcoverage = " + coverage);
                                             if (coverage >= 1) {
                                                 depths[0]++;
                                                 if (coverage >= 5) {
@@ -340,8 +335,6 @@ public class AlignmentStorageManager extends StorageManager {
                                             }
                                         }
 
-//                        System.out.println("region coverage stats = " + regionCoverage.getStats().toString());
-
                                         // Get low coverage regions, from 0 to threshold depth
                                         List<RegionCoverage> filteredRegions = BamUtils.filterByCoverage(regionCoverage, 0, threshold);
                                         for (RegionCoverage filteredRegion : filteredRegions) {
@@ -358,12 +351,10 @@ public class AlignmentStorageManager extends StorageManager {
 
 
                         transcriptCoverageStats.setLength(length);
-//                System.out.println("transcript ID " + transcriptId + " length = " + length);
+
                         // Update (%) depths
                         for (int i = 0; i < depths.length; i++) {
-//                    System.out.println("count depths[" + i + "] = " + depths[i]);
                             depths[i] = depths[i] / length * 100.0;
-//                    System.out.println("% depths[" + i + "] = " + depths[i]);
                         }
                         transcriptCoverageStats.setDepths(depths);
                         transcriptCoverageStats.setLowCoverageRegions(lowCoverageRegions);
