@@ -21,7 +21,7 @@ spec:
       serviceAccountName: {{ .Values.iva.name }}
       securityContext:
         {{- toYaml .Values.iva.podSecurityContext | nindent 8 }}
-    initContainers:
+      initContainers:
       - name: init
         securityContext:
           {{- toYaml .Values.iva.securityContext | nindent 12 }}

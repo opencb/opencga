@@ -35,7 +35,7 @@ function getHelmParam() {
 echo "# Deploy kubernetes"
 
 # deploy opencga
-az aks get-credentials -n "$(getOutput "aksClusterName")" -g "$(getOutput "aksResourceGroupName")"
+az aks get-credentials -n "$(getOutput "aksClusterName")" -g "$(getOutput "aksResourceGroupName")" --overwrite-existing
 
 K8S_NAMESPACE=$(getOutput "aksResourceGroupName")
 # Create a namespace for opencga
@@ -51,18 +51,30 @@ kubectl config set-context --current --namespace=$K8S_NAMESPACE
 helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 helm repo update
 
-helm install opencga-nginx stable/nginx-ingress \
+helm upgrade opencga-nginx stable/nginx-ingress \
     --namespace ${K8S_NAMESPACE} --version 1.27.0 \
     -f ../../kubernetes/charts/nginx/values.yaml \
-     --wait --timeout 10m
+    --install --wait --timeout 10m
 
 ## Register manually the nginx external IP for ingress
 EXTERNAL_IP=$(kubectl get services opencga-nginx-nginx-ingress-controller -o "jsonpath={.status.loadBalancer.ingress[0].ip}")
-az network private-dns record-set a add-record          \
-  --resource-group $(getOutput "aksResourceGroupName")  \
-  --zone-name "$(getOutput "privateDnsZonesName")"   \
-  --record-set-name opencga                             \
-  --ipv4-address ${EXTERNAL_IP}
+ACTUAL_IP=$(az network private-dns record-set a show --resource-group $(getOutput "aksResourceGroupName") --zone-name $(getOutput "privateDnsZonesName") --name opencga 2> /dev/null | jq .aRecords[].ipv4Address -r)
+if [ ! $ACTUAL_IP = "" ] && [ ! $ACTUAL_IP = $EXTERNAL_IP ] ; then
+  echo "Delete outdated A record: opencga.$(getOutput "privateDnsZonesName") : ${ACTUAL_IP}"
+  az network private-dns record-set a delete          \
+    --resource-group $(getOutput "aksResourceGroupName")  \
+    --zone-name "$(getOutput "privateDnsZonesName")"   \
+    --name opencga
+fi
+
+if [ $ACTUAL_IP = "" ] || [ ! $ACTUAL_IP = $EXTERNAL_IP ] ; then
+  echo "Create A record: opencga.$(getOutput "privateDnsZonesName") : ${EXTERNAL_IP}"
+  az network private-dns record-set a add-record          \
+    --resource-group $(getOutput "aksResourceGroupName")  \
+    --zone-name "$(getOutput "privateDnsZonesName")"   \
+    --record-set-name opencga                             \
+    --ipv4-address ${EXTERNAL_IP}
+fi
 
 if ! kubectl get secret azure-files-secret -n ${K8S_NAMESPACE} &> /dev/null ; then
    kubectl create secret generic azure-files-secret -n ${K8S_NAMESPACE} \
@@ -91,7 +103,7 @@ helm upgrade opencga ../../kubernetes/charts/opencga \
 
 
 helm upgrade iva ../../kubernetes/charts/iva \
-    --set iva.opencga.host="http://opencga.$(getHelmParam "privateDnsZonesName")/opencga" \
+    --set opencga.host="http://opencga.$(getHelmParam "privateDnsZonesName")/opencga" \
     --set iva.ingress.host="opencga.$(getHelmParam "privateDnsZonesName")" \
     --install --wait -n $K8S_NAMESPACE --timeout 10m
 
