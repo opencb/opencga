@@ -93,7 +93,6 @@ az deployment sub create -n $deployId  -l ${location} --template-uri $template_u
     --parameters _artifactsLocation=$container_base_url   \
     --parameters _artifactsLocationSasToken="?$token" > ${deploymentOut}
 
-
 function getOutput() {
   jq -r '.properties.outputs.'${1}'.value' ${deploymentOut}
 }
@@ -101,72 +100,4 @@ function getOutput() {
 # Enable HDInsight monitor
 $(getOutput "hdInsightEnableMonitor")
 
-echo "# Deploy kubernetes"
-
-# deploy opencga
-az aks get-credentials -n "$(getOutput "aksClusterName")" -g "$(getOutput "aksResourceGroupName")"
-
-K8S_NAMESPACE=${rgName}
-# Create a namespace for opencga
-if ! kubectl get namespace $K8S_NAMESPACE; then
-    kubectl create namespace $K8S_NAMESPACE
-fi
-
-kubectl config set-context --current --namespace=$K8S_NAMESPACE
-
-# Use Helm to deploy an NGINX ingress controller
-## Deploy in the same namespace
-
-helm repo add stable https://kubernetes-charts.storage.googleapis.com/
-helm repo update
-
-helm install opencga-nginx stable/nginx-ingress \
-    --namespace ${K8S_NAMESPACE} --version 1.27.0 \
-    -f ../../kubernetes/charts/nginx/values.yaml \
-     --wait --timeout 10m
-
-## Register manually the nginx external IP for ingress
-EXTERNAL_IP=$(kubectl get services opencga-nginx-nginx-ingress-controller -o "jsonpath={.status.loadBalancer.ingress[0].ip}")
-az network private-dns record-set a add-record          \
-  --resource-group ${rgName}                            \
-  --zone-name "$(getHelmParam "privateDnsZonesName")"   \
-  --record-set-name opencga                             \
-  --ipv4-address ${EXTERNAL_IP}
-
-if ! kubectl get secret azure-files-secret -n ${K8S_NAMESPACE} &> /dev/null ; then
-   kubectl create secret generic azure-files-secret -n ${K8S_NAMESPACE} \
-       --from-literal=azurestorageaccountname=$(getOutput "storageAccountName") \
-       --from-literal=azurestorageaccountkey=$(getOutput "storageAccountKey")
-fi
-
-if ! kubectl get secret opencga-secrets -n ${K8S_NAMESPACE} &> /dev/null ; then
-   kubectl create secret generic opencga-secrets -n ${K8S_NAMESPACE} \
-       --from-literal=openCgaAdminPassword=$(getOutput "openCgaAdminPassword") \
-       --from-literal=hdInsightSshPassword=$(getOutput "hdInsightSshPassword") \
-       --from-literal=mongoDbPassword=$(getOutput "mongoDbPassword")
-fi
-
-function getHelmParam() {
-  # Commas must be scaped when passed as helm parameter
-  getOutput ${1} | sed 's/,/\\,/g'
-}
-
-helm upgrade opencga ../../kubernetes/charts/opencga \
-    --set hadoop.sshDns=$(getHelmParam "hdInsightSshDns")  \
-    --set hadoop.sshUsername=$(getHelmParam "hdInsightSshUsername") \
-    --set catalog.database.hosts=$(getHelmParam "mongoDbHostsCSV")  \
-    --set catalog.database.user=$(getHelmParam "mongoDbUser")  \
-    --set solr.hosts=$(getHelmParam "solrHostsCSV") \
-    --set analysis.execution.options.k8s.masterNode=https://$(getHelmParam "aksApiServerAddress"):443 \
-    --set analysis.execution.options.k8s.namespace=$K8S_NAMESPACE \
-    --set analysis.index.variant.maxConcurrentJobs="100" \
-    --set rest.ingress.host="opencga.$(getHelmParam "privateDnsZonesName")" \
-    --install --wait -n $K8S_NAMESPACE --timeout 10m
-
-
-helm upgrade iva ../../kubernetes/charts/iva \
-    --set iva.opencga.host="http://opencga.$(getHelmParam "privateDnsZonesName")/opencga" \
-    --set iva.ingress.host="opencga.$(getHelmParam "privateDnsZonesName")" \
-    --install --wait -n $K8S_NAMESPACE --timeout 10m
-
-
+./setup-aks.sh ${deploymentOut}
