@@ -41,14 +41,20 @@ spec:
             - name: http
               containerPort: 9090
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /opencga/webservices/rest/v1/meta/status
-              port: 9090
           readinessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 10
             httpGet:
               path: /opencga/webservices/rest/v1/meta/status
               port: 9090
+              timeoutSeconds: 20
+          livenessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            httpGet:
+              path: /opencga/webservices/rest/v1/meta/status
+              port: 9090
+              timeoutSeconds: 20
           resources:
             {{- toYaml .Values.rest.resources | nindent 12 }}
           volumeMounts:
