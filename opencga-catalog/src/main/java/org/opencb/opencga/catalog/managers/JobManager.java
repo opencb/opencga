@@ -1319,6 +1319,7 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<JobTop> top(List<String> studiesStr, Query baseQuery, int limit, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
+        fixQueryObject(null, baseQuery, userId);
         List<Study> studies = new ArrayList<>(studiesStr.size());
         for (String studyStr : studiesStr) {
             Study study = studyManager.resolveId(studyStr, userId);
