@@ -17,12 +17,14 @@
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
@@ -44,6 +47,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.Addi
 public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator {
 
 
+    public static final int SLOW_CELLBASE_SECONDS = 60;
     protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
     protected final String species;
     protected final String assembly;
@@ -99,7 +103,14 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     @Override
     public final List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {
         List<Variant> nonStructuralVariations = filterStructuralVariants(variants);
-        return getVariantAnnotationList(nonStructuralVariations, annotateFiltered(nonStructuralVariations));
+        StopWatch stopWatch = StopWatch.createStarted();
+        List<QueryResult<VariantAnnotation>> queryResults = annotateFiltered(nonStructuralVariations);
+        stopWatch.stop();
+        if (stopWatch.getTime(TimeUnit.SECONDS) > SLOW_CELLBASE_SECONDS) {
+            logger.warn("Slow annotation from CellBase."
+                    + " Annotating " + variants.size() + " variants took " + TimeUtils.durationToString(stopWatch));
+        }
+        return getVariantAnnotationList(nonStructuralVariations, queryResults);
     }
 
     protected abstract List<QueryResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException;
