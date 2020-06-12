@@ -173,6 +173,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID + "-run");
             put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID + "-run");
             put(FastqcWrapperAnalysis.ID, "alignment " + FastqcWrapperAnalysis.ID + "-run");
+            put(PicardWrapperAnalysis.ID, "alignment " + PicardWrapperAnalysis.ID + "-run");
 
             put(VariantIndexOperationTool.ID, "variant index-run");
             put(VariantExportTool.ID, "variant export-run");

@@ -133,10 +133,12 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
         if (StringUtils.isNotEmpty(uri.toString())) {
             fileUriMap.put(filename, uri);
-            String src = new File(uri.getPath()).getParentFile().getAbsolutePath();
-            if (!srcTargetMap.containsKey(src)) {
-                srcTargetMap.put(src, DOCKER_INPUT_PATH + srcTargetMap.size());
-                sb.append("--mount type=bind,source=\"").append(src).append("\",target=\"").append(srcTargetMap.get(src)).append("\" ");
+            if (srcTargetMap != null) {
+                String src = new File(uri.getPath()).getParentFile().getAbsolutePath();
+                if (!srcTargetMap.containsKey(src)) {
+                    srcTargetMap.put(src, DOCKER_INPUT_PATH + srcTargetMap.size());
+                    sb.append("--mount type=bind,source=\"").append(src).append("\",target=\"").append(srcTargetMap.get(src)).append("\" ");
+                }
             }
         }
     }
