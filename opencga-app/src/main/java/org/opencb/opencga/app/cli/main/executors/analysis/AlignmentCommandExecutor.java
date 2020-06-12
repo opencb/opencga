@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.DeeptoolsCommandOptions.DEEPTOOLS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.FastqcCommandOptions.FASTQC_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.PicardCommandOptions.PICARD_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
@@ -108,6 +109,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case FASTQC_RUN_COMMAND:
                 queryResponse = fastqc();
+                break;
+            case PICARD_RUN_COMMAND:
+                queryResponse = picard();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -449,6 +453,18 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         );
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.fastqcCommandOptions.study);
         return openCGAClient.getAlignmentClient().runFastqc(fastQcWrapperParams, params);
+    }
+
+    // Picard
+
+    private RestResponse<Job> picard() throws ClientException {
+        PicardWrapperParams picardWrapperParams = new PicardWrapperParams(
+                alignmentCommandOptions.picardCommandOptions.command,
+                alignmentCommandOptions.picardCommandOptions.outdir,
+                alignmentCommandOptions.picardCommandOptions.commonOptions.params
+        );
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.picardCommandOptions.study);
+        return openCGAClient.getAlignmentClient().runPicard(picardWrapperParams, params);
     }
 
     //-------------------------------------------------------------------------

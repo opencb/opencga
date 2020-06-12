@@ -20,10 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
@@ -48,6 +45,7 @@ public class AlignmentCommandOptions {
     public SamtoolsCommandOptions samtoolsCommandOptions;
     public DeeptoolsCommandOptions deeptoolsCommandOptions;
     public FastqcCommandOptions fastqcCommandOptions;
+    public PicardCommandOptions picardCommandOptions;
 
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
     public JCommander jCommander;
@@ -69,6 +67,7 @@ public class AlignmentCommandOptions {
         this.samtoolsCommandOptions = new SamtoolsCommandOptions();
         this.deeptoolsCommandOptions = new DeeptoolsCommandOptions();
         this.fastqcCommandOptions = new FastqcCommandOptions();
+        this.picardCommandOptions = new PicardCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = ALIGNMENT_INDEX_DESCRIPTION)
@@ -404,6 +403,25 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--file"}, description = INPUT_FILE_DESCRIPTION)
         public String file;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    // Picard
+
+    @Parameters(commandNames = PicardWrapperAnalysis.ID, commandDescription = PicardWrapperAnalysis.DESCRIPTION)
+    public class PicardCommandOptions {
+        public static final String PICARD_RUN_COMMAND = PicardWrapperAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
+        public String study;
+
+        @Parameter(names = {"--" + PICARD_TOOL_NAME_PARAMETER}, description = PICARD_TOOL_NAME_DESCRIPTION, required = true)
+        public String command;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;

@@ -18,10 +18,7 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.core.exceptions.ToolException;
 
@@ -31,6 +28,7 @@ import java.util.Map;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.DeeptoolsCommandOptions.DEEPTOOLS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.FastqcCommandOptions.FASTQC_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.PicardCommandOptions.PICARD_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
 
 /**
@@ -78,6 +76,9 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 break;
             case FASTQC_RUN_COMMAND:
                 fastqc();
+                break;
+            case PICARD_RUN_COMMAND:
+                picard();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -222,6 +223,22 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         fastqc.setFile(cliOptions.file);
 
         fastqc.start();
+    }
+
+    // Picard
+
+    private void picard() throws Exception {
+        AlignmentCommandOptions.PicardCommandOptions cliOptions = alignmentCommandOptions.picardCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        PicardWrapperAnalysis picard = new PicardWrapperAnalysis();
+        picard.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.commonOptions.token);
+
+        picard.setStudy(cliOptions.study);
+        picard.setCommand(cliOptions.command);
+
+        picard.start();
     }
 
     //-------------------------------------------------------------------------
