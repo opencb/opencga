@@ -504,9 +504,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (parameters.containsKey(QueryParams.TAGS.key())) {
             List<String> tagList = parameters.getAsStringList(QueryParams.TAGS.key());
 
-            if (!tagList.isEmpty()) {
-                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-                String operation = (String) actionMap.getOrDefault(QueryParams.TAGS.key(), "ADD");
+            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+            String operation = (String) actionMap.getOrDefault(QueryParams.TAGS.key(), "ADD");
+            if ("SET".equals(operation) || !tagList.isEmpty()) {
                 switch (operation) {
                     case "SET":
                         document.getSet().put(QueryParams.TAGS.key(), tagList);
@@ -593,7 +593,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 getSampleChanges(file, parameters, document, operation);
             }
 
-            if (!sampleList.isEmpty()) {
+            if ("SET".equals(operation) || !sampleList.isEmpty()) {
                 switch (operation) {
                     case "SET":
                         document.getSet().put(QueryParams.SAMPLES.key(), fileConverter.convertSamples(sampleList));

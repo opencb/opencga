@@ -884,8 +884,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
                 // Override sample list of ids with sample list
                 parameters.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleResult.getResults());
-                options.put(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
-                        ParamUtils.UpdateAction.SET.name()));
             }
         }
 

@@ -327,6 +327,37 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testAssociateSamples() throws CatalogException, URISyntaxException {
+        URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
+        DataResult<File> link = fileManager.link(studyFqn, uri, ".", new ObjectMap(), token);
+        assertEquals(4, link.first().getSamples().size());
+
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.SET.name());
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSamples(Collections.emptyList()),
+                new QueryOptions(Constants.ACTIONS, actionMap), token);
+
+        File file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
+        assertEquals(0, file.getSamples().size());
+
+        actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD.name());
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSamples(Arrays.asList("NA19660", "NA19661")),
+                new QueryOptions(Constants.ACTIONS, actionMap), token);
+
+        file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
+        assertEquals(2, file.getSamples().size());
+
+
+        actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.REMOVE.name());
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSamples(Arrays.asList("NA19660")),
+                new QueryOptions(Constants.ACTIONS, actionMap), token);
+
+        file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
+        assertEquals(1, file.getSamples().size());
+        assertEquals("NA19661", file.getSamples().get(0).getId());
+    }
+
+    @Test
     public void testLinkFileWithDifferentSampleNames() throws CatalogException, URISyntaxException {
         URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
 
