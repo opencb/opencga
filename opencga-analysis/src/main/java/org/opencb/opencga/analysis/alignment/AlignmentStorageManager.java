@@ -288,7 +288,7 @@ public class AlignmentStorageManager extends StorageManager {
                         // Coverage depths: 1x, 5x, 10x, 15x, 20x, 25x, 30x, 40x, 50x, 60x, 75x, 100x
                         double[] depths = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
                         // List of low coverage regions and exon stats
-                        List<LowCoverageRegion> lowCoverageRegions = new ArrayList<>();
+                        List<LowCoverageRegionStats> lowCoverageRegionStats = new ArrayList<>();
                         List<ExonCoverageStats> exonCoverageStats = new ArrayList<>();
 
                         if (CollectionUtils.isNotEmpty(transcript.getExons())) {
@@ -353,7 +353,7 @@ public class AlignmentStorageManager extends StorageManager {
                                         List<RegionCoverage> filteredRegions = BamUtils.filterByCoverage(regionCoverage, 0, threshold);
                                         for (RegionCoverage filteredRegion : filteredRegions) {
                                             if (filteredRegion.getValues() != null && filteredRegion.getValues().length > 0) {
-                                                lowCoverageRegions.add(new LowCoverageRegion(filteredRegion.getChromosome(),
+                                                lowCoverageRegionStats.add(new LowCoverageRegionStats(filteredRegion.getChromosome(),
                                                         filteredRegion.getStart(), filteredRegion.getEnd(),
                                                         filteredRegion.getStats().getAvg(), filteredRegion.getStats().getMin()));
                                             }
@@ -371,7 +371,7 @@ public class AlignmentStorageManager extends StorageManager {
                             depths[i] = depths[i] / length * 100.0;
                         }
                         transcriptCoverageStats.setDepths(depths);
-                        transcriptCoverageStats.setLowCoverageRegions(lowCoverageRegions);
+                        transcriptCoverageStats.setLowCoverageRegionStats(lowCoverageRegionStats);
                         transcriptCoverageStats.setExonStats(exonCoverageStats);
 
                         transcriptCoverageStatsList.add(transcriptCoverageStats);
