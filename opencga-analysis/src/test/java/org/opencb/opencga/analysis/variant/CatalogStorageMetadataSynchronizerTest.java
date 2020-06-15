@@ -17,12 +17,15 @@
 package org.opencb.opencga.analysis.variant;
 
 import org.junit.*;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
@@ -30,6 +33,7 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -129,6 +133,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         metadataManager.addIndexedFiles(studyMetadata.getId(), indexedFiles.stream()
                 .map(f -> metadataManager.getFileId(studyMetadata.getId(), f))
                 .collect(Collectors.toList()));
+        studyConfigurationFactory = new CatalogStorageMetadataSynchronizer(catalogManager, metadataManager);
     }
 
     @After
@@ -162,7 +167,6 @@ public class CatalogStorageMetadataSynchronizerTest {
 
     @Test
     public void updateCatalogFromStudyConfigurationTest() throws Exception {
-        studyConfigurationFactory = new CatalogStorageMetadataSynchronizer(catalogManager, metadataManager);
 
         StudyMetadata sc = studyConfigurationFactory.getStudyMetadata(studyId);
 
@@ -196,5 +200,40 @@ public class CatalogStorageMetadataSynchronizerTest {
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
         assertEquals(FileIndex.IndexStatus.INDEXING, nonIndexedFile.getInternal().getIndex().getStatus().getName());
 
+    }
+
+    @Test
+    public void testMissingSamples() throws CatalogException {
+        String fileId = files.get(1).getId();
+        catalogManager.getFileManager().update(studyId, fileId, new FileUpdateParams().setSamples(Collections.emptyList()), new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "SET")), sessionId);
+
+        catalogManager.getCohortManager().update(studyId, "ALL", new CohortUpdateParams().setSamples(Collections.singletonList("NA12878")), true, new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "REMOVE")), sessionId);
+        catalogManager.getSampleManager().delete(studyId, Collections.singletonList("NA12878"), new ObjectMap(), sessionId);
+
+        assertEquals(0, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().size());
+
+        studyConfigurationFactory.synchronizeCatalogStudyFromStorage(studyId, sessionId);
+
+        assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().size());
+    }
+
+    @Test
+    public void testWrongSamples() throws CatalogException {
+
+        String fileId = files.get(1).getId();
+        String correctSampleId = files.get(1).getSamples().get(0).getId();
+        String wrongSampleId = files.get(2).getSamples().get(0).getId();
+        System.out.println("correctSampleId = " + correctSampleId);
+        System.out.println("wrongSampleId = " + wrongSampleId);
+
+        catalogManager.getFileManager().update(studyId, fileId, new FileUpdateParams().setSamples(Collections.singletonList(wrongSampleId)), new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "SET")), sessionId);
+
+        assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().size());
+        assertEquals(wrongSampleId, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().get(0).getId());
+
+        studyConfigurationFactory.synchronizeCatalogStudyFromStorage(studyId, sessionId);
+
+        assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().size());
+        assertEquals(correctSampleId, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().get(0).getId());
     }
 }

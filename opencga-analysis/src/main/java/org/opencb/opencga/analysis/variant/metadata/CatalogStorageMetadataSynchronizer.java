@@ -24,12 +24,10 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
@@ -63,6 +61,7 @@ public class CatalogStorageMetadataSynchronizer {
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FileDBAdaptor.QueryParams.NAME.key(),
             FileDBAdaptor.QueryParams.PATH.key(),
+            FileDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key(),
             FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(),
             FileDBAdaptor.QueryParams.STUDY_UID.key()));
     public static final Query INDEXED_FILES_QUERY = new Query()
@@ -192,9 +191,9 @@ public class CatalogStorageMetadataSynchronizer {
             throws CatalogException {
         logger.info("Synchronizing study " + study.getName());
 
-        boolean modified = synchronizeCohorts(study, sessionId);
+        boolean modified = synchronizeFiles(study, null, sessionId);
 
-        modified |= synchronizeFiles(study, null, sessionId);
+        modified |= synchronizeCohorts(study, sessionId);
 
         return modified;
     }
@@ -315,11 +314,17 @@ public class CatalogStorageMetadataSynchronizer {
         boolean modified = false;
         BiMap<Integer, String> fileNameMap = HashBiMap.create();
         Map<Integer, String> filePathMap = new HashMap<>();
+        Map<String, Set<String>> fileSamplesMap = new HashMap<>();
         LinkedHashSet<Integer> indexedFiles;
         if (CollectionUtils.isEmpty(files)) {
             metadataManager.fileMetadataIterator(study.getId()).forEachRemaining(fileMetadata -> {
                 fileNameMap.put(fileMetadata.getId(), fileMetadata.getName());
                 filePathMap.put(fileMetadata.getId(), fileMetadata.getPath());
+                Set<String> samples = fileMetadata.getSamples()
+                        .stream()
+                        .map(s -> metadataManager.getSampleName(study.getId(), s))
+                        .collect(Collectors.toSet());
+                fileSamplesMap.put(fileMetadata.getName(), samples);
             });
             indexedFiles = metadataManager.getIndexedFiles(study.getId());
         } else {
@@ -363,6 +368,13 @@ public class CatalogStorageMetadataSynchronizer {
                         catalogManager.getFileManager()
                                 .updateFileIndexStatus(file, IndexStatus.READY, "Indexed, regarding Storage Metadata", sessionId);
                         modified = true;
+                    }
+                    Set<String> storageSamples = fileSamplesMap.get(file.getName());
+                    Set<String> catalogSamples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
+                    if (!storageSamples.equals(catalogSamples)) {
+                        logger.warn("File samples does not match between catalog and storage. Update variant file metadata");
+                        file = catalogManager.getFileManager().get(study.getName(), file.getId(), new QueryOptions(), sessionId).first();
+                        new FileMetadataReader(catalogManager).updateMetadataInformation(study.getName(), file, sessionId);
                     }
                 }
                 if (numFiles != indexedFiles.size()) {

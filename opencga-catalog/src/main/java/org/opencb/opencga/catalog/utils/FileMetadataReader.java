@@ -22,7 +22,10 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
@@ -86,11 +89,24 @@ public class FileMetadataReader {
             ObjectMap updateMap = updateParams.getUpdateMap();
 
             if (!updateMap.isEmpty()) {
-                if (updateParams.getSamples() != null) {
-                    // TODO: Check and create missing samples
+                if (updateParams.getSamples() != null && !updateParams.getSamples().isEmpty()) {
+                    // Check and create missing samples
+                    List<String> missingSamples = new LinkedList<>(updateParams.getSamples());
+                    for (Sample sample : catalogManager.getSampleManager().search(studyId,
+                            new Query(SampleDBAdaptor.QueryParams.ID.key(), updateParams.getSamples()), new QueryOptions(), token)
+                            .getResults()) {
+                        missingSamples.remove(sample.getId());
+                    }
+                    if (!missingSamples.isEmpty()) {
+                        for (String missingSample : missingSamples) {
+                            catalogManager.getSampleManager().create(studyId, new Sample().setId(missingSample), new QueryOptions(), token);
+                        }
+                    }
                 }
 
-                catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams, QueryOptions.empty(), token);
+                catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams,
+                        new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "SET")),
+                        token);
                 return catalogManager.getFileManager().get(studyId, file.getUuid(), QueryOptions.empty(), token).first();
             }
         } catch (JsonProcessingException e) {
