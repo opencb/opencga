@@ -153,7 +153,12 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         for (String param : params.keySet()) {
             if (checkParam(param)) {
                 String value = params.getString(param);
-                sb.append(" -").append(param);
+                if (param.length() >= 3) {
+                    sb.append(" --");
+                } else {
+                    sb.append(" -");
+                }
+                sb.append(param);
                 if (StringUtils.isNotEmpty(value)) {
                     sb.append(" ").append(value);
                 }
