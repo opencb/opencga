@@ -198,7 +198,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        fixQueryObject(study, query, userId);
+        fixQueryObject(query);
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return clinicalDBAdaptor.iterator(study.getUid(), query, options, userId);
@@ -830,7 +830,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         DBIterator<ClinicalAnalysis> iterator;
         try {
-            fixQueryObject(study, query, userId);
+            fixQueryObject(query);
             query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             iterator = clinicalDBAdaptor.iterator(study.getUid(), query, new QueryOptions(), userId);
         } catch (CatalogException e) {
@@ -1145,34 +1145,20 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
-        fixQueryObject(study, query, userId);
+        fixQueryObject(query);
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return clinicalDBAdaptor.get(study.getUid(), query, options, userId);
     }
 
-    private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
-        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {
-            Family family = catalogManager.getFamilyManager().internalGet(study.getUid(),
-                    query.getString(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key()), FamilyManager.INCLUDE_FAMILY_IDS, userId).first();
-            query.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), family.getUid());
-            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
-        }
+    private void fixQueryObject(Query query) {
         if (query.containsKey("sample")) {
-            Sample sample = catalogManager.getSampleManager().internalGet(study.getUid(), query.getString("sample"),
-                    SampleManager.INCLUDE_SAMPLE_IDS, userId).first();
-            query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE_UID.key(), sample.getUid());
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_SAMPLES_ID.key(), query.get("sample"));
             query.remove("sample");
         }
         if (query.containsKey("analystAssignee")) {
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYST_ASSIGNEE.key(), query.get("analystAssignee"));
             query.remove("analystAssignee");
-        }
-        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key())) {
-            OpenCGAResult<Individual> probandDataResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
-                    query.getString(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key()), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
-            query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_UID.key(), probandDataResult.first().getUid());
-            query.remove(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
         }
     }
 
@@ -1186,7 +1172,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            fixQueryObject(study, query, userId);
+            fixQueryObject(query);
             query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             OpenCGAResult<Long> queryResultAux = clinicalDBAdaptor.count(query, userId);
@@ -1318,7 +1304,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         // We try to get an iterator containing all the ClinicalAnalyses to be deleted
         DBIterator<ClinicalAnalysis> iterator;
         try {
-            fixQueryObject(study, finalQuery, userId);
+            fixQueryObject(finalQuery);
             finalQuery.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             iterator = clinicalDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_CLINICAL_INTERPRETATION_IDS, userId);
@@ -1384,7 +1370,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        fixQueryObject(study, query, userId);
+        fixQueryObject(query);
 
         // Add study id to the query
         query.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());

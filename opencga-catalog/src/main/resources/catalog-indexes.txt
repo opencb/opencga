@@ -149,6 +149,9 @@
 {"collection": "clinical", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "clinical", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "clinical", "fields": {"studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"proband.id", "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"proband.samples.id", "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"family.id", "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"type": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"dueDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"priority": 1, "studyUid": 1}, "options": {"background": true}}

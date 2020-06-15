@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.ANALYST_ASSIGNEE;
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -681,6 +681,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                                 Status.getPositiveStatus(ClinicalAnalysisStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case FAMILY:
+                    case FAMILY_ID:
+                        addAutoOrQuery(FAMILY_ID.key(), queryParam.key(), queryCopy, FAMILY_ID.type(), andBsonList);
+                        break;
+                    case PROBAND:
+                    case PROBAND_ID:
+                        addAutoOrQuery(PROBAND_ID.key(), queryParam.key(), queryCopy, PROBAND_ID.type(), andBsonList);
+                        break;
                     case ANALYST:
                     case ANALYST_ASSIGNEE:
                         addAutoOrQuery(ANALYST_ASSIGNEE.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
@@ -691,7 +699,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case TYPE:
                     case DUE_DATE:
                     case PRIORITY:
-                    case SAMPLE_UID:
+                    case PROBAND_SAMPLES_ID:
+                    case PROBAND_SAMPLES_UID:
                     case PROBAND_UID:
                     case FAMILY_UID:
                     case DESCRIPTION:

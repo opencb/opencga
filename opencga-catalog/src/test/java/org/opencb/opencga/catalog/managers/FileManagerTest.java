@@ -379,7 +379,7 @@ public class FileManagerTest extends AbstractManagerTest {
         for (int i = 0; i < numOperations; i++) {
             executorService.submit(() -> {
                 try {
-                    fileManager.link(studyFqn, uri, ".", new ObjectMap(), token);
+                    fileManager.link(studyFqn, new FileLinkParams().setUri(uri.getPath()).setPath("."), false, token);
                     numOk.incrementAndGet();
                 } catch (Exception ignore) {
                     ignore.printStackTrace();
