@@ -84,7 +84,7 @@ rest:
   image:
     # TODO: Currently building from dev image. Update once release available.
     repository: opencb/opencga-base:2.0.0-hdp3.1-dev
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
   imagePullSecrets: []
   nameOverride: ""

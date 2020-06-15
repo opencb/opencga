@@ -259,7 +259,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         variantStorageEngine.getOptions().put(VariantStorageOptions.QUERY_LIMIT_MAX.key(), 10000);
         variantStorageEngine.getOptions().put(VariantStorageOptions.QUERY_SAMPLE_LIMIT_DEFAULT.key(), 10000);
         variantStorageEngine.getOptions().put(VariantStorageOptions.QUERY_SAMPLE_LIMIT_MAX.key(), 10000);
-        variantStorageEngine.getOptions().put(VariantStorageOptions.ANNOTATION_NUM_THREADS.key(), 2);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ANNOTATION_THREADS.key(), 2);
         metadataManager = variantStorageEngine.getMetadataManager();
         variantReaderUtils = variantStorageEngine.getVariantReaderUtils();
         ioConnectorProvider = variantStorageEngine.getIOManagerProvider();

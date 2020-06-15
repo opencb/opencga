@@ -68,6 +68,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.opencb.biodata.models.core.Region.normalizeChromosome;
@@ -190,8 +191,11 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 VariantStorageOptions.ANNOTATION_BATCH_SIZE.key(),
                 VariantStorageOptions.ANNOTATION_BATCH_SIZE.defaultValue());
         int numThreads = params.getInt(
-                VariantStorageOptions.ANNOTATION_NUM_THREADS.key(),
-                VariantStorageOptions.ANNOTATION_NUM_THREADS.defaultValue());
+                VariantStorageOptions.ANNOTATION_THREADS.key(),
+                VariantStorageOptions.ANNOTATION_THREADS.defaultValue());
+        int timeout = (int) TimeUnit.MILLISECONDS.toSeconds(params.getInt(
+                VariantStorageOptions.ANNOTATION_TIMEOUT.key(),
+                VariantStorageOptions.ANNOTATION_TIMEOUT.defaultValue()));
 
         try {
             DataReader<Variant> variantDataReader = getVariantDataReader(query, iteratorQueryOptions, params);
@@ -238,6 +242,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     .setNumTasks(numThreads)
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true)
+                    .setReadQueuePutTimeout(timeout)
                     .setSorted(false).build();
             ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner =
                     new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);
@@ -293,10 +298,12 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      */
     public void loadVariantAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
 
-        final int batchSize = params.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(),
-                VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
-        final int numConsumers = params.getInt(VariantStorageOptions.LOAD_THREADS.key(),
-                VariantStorageOptions.LOAD_THREADS.defaultValue());
+        final int batchSize = params.getInt(
+                VariantStorageOptions.ANNOTATION_LOAD_BATCH_SIZE.key(),
+                VariantStorageOptions.ANNOTATION_LOAD_BATCH_SIZE.defaultValue());
+        final int numConsumers = params.getInt(
+                VariantStorageOptions.ANNOTATION_LOAD_THREADS.key(),
+                VariantStorageOptions.ANNOTATION_LOAD_THREADS.defaultValue());
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setNumTasks(numConsumers)
@@ -462,10 +469,12 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      */
     public void loadCustomAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
 
-        final int batchSize = params.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(),
-                VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
-        final int numConsumers = params.getInt(VariantStorageOptions.LOAD_THREADS.key(),
-                VariantStorageOptions.LOAD_THREADS.defaultValue());
+        final int batchSize = params.getInt(
+                VariantStorageOptions.ANNOTATION_LOAD_BATCH_SIZE.key(),
+                VariantStorageOptions.ANNOTATION_LOAD_BATCH_SIZE.defaultValue());
+        final int numConsumers = params.getInt(
+                VariantStorageOptions.ANNOTATION_LOAD_THREADS.key(),
+                VariantStorageOptions.ANNOTATION_LOAD_THREADS.defaultValue());
         final String key = params.getString(CUSTOM_ANNOTATION_KEY, "default");
         long ts = System.currentTimeMillis();
 

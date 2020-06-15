@@ -93,6 +93,9 @@ variant:
 
     annotation.batchSize: 100
     annotation.numThreads: 8
+    annotation.timeout: 600000 # millis
+    annotation.load.batchSize: 100
+    annotation.load.numThreads: 4
     annotation.file.format: "json"
     annotator: "cellbase"
     #annotator.class: #Allows to inject custom annotators
