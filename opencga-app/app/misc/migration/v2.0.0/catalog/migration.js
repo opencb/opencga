@@ -943,3 +943,8 @@ db.deleted_interpretation.createIndex({"method.name": 1, "studyUid": 1}, {"backg
 db.deleted_interpretation.createIndex({"_creationDate": 1, "studyUid": 1}, {"background": true});
 db.deleted_interpretation.createIndex({"_modificationDate": 1, "studyUid": 1}, {"background": true});
 db.deleted_interpretation.createIndex({"internal.status.name": 1, "studyUid": 1}, {"background": true});
+
+// RC2
+db.clinical.createIndex({"proband.id": 1, "studyUid": 1}, {"background": true});
+db.clinical.createIndex({"proband.samples.id": 1, "studyUid": 1}, {"background": true});
+db.clinical.createIndex({"family.id": 1, "studyUid": 1}, {"background": true});

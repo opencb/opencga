@@ -16,18 +16,17 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.Analyst;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -46,7 +45,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class ClinicalAnalysisManagerTest extends GenericTest {
 
@@ -134,15 +134,17 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     private DataResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily) throws CatalogException {
 
-        createDummyFamily();
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
-                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
+                .setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
                 .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))));
 
         if (createFamily) {
-            clinicalAnalysis.setFamily(new Family().setId("family")
-                    .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
+            createDummyFamily();
         }
+        clinicalAnalysis.setFamily(new Family().setId("family")
+                .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
+
 
         return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
     }
@@ -169,6 +171,16 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         assertEquals(catalogManager.getSampleManager().get(STUDY, "sample2", SampleManager.INCLUDE_SAMPLE_IDS, sessionIdUser)
                 .first().getUid(), dummyEnvironment.first().getProband().getSamples().get(0).getUid());
+    }
+
+    @Test
+    public void searchClinicalAnalysisByProband() throws CatalogException {
+        createDummyEnvironment(true);
+        createDummyEnvironment(false);
+
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY,
+                new Query(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), "^chil"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(2, search.getNumResults());
     }
 
     @Test
@@ -373,9 +385,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void createClinicalAnalysisWithoutFamily() throws CatalogException {
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))));
+
         thrown.expect(CatalogException.class);
         thrown.expectMessage("missing");
-        createDummyEnvironment(false);
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
