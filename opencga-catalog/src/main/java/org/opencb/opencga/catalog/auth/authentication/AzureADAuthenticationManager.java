@@ -72,6 +72,8 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
     private Map<String, PublicKey> publicKeyMap;
 
+    private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
+
     public AzureADAuthenticationManager(AuthenticationOrigin authenticationOrigin) throws CatalogException {
         super();
 
@@ -228,17 +230,14 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     public AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException {
         AuthenticationContext context;
         AuthenticationResult result;
-        ExecutorService service = null;
         try {
-            service = Executors.newFixedThreadPool(1);
-            context = new AuthenticationContext(String.valueOf(this.oidcProviderMetadata.getAuthorizationEndpointURI()), false, service);
+            context = new AuthenticationContext(String.valueOf(this.oidcProviderMetadata.getAuthorizationEndpointURI()), false,
+                    THREAD_POOL);
             Future<AuthenticationResult> future = context.acquireToken(authClientId, authClientId, userId, password, null);
             result = future.get();
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw CatalogAuthenticationException.incorrectUserOrPassword();
-        } finally {
-            service.shutdown();
         }
 
         if (result == null) {
@@ -256,17 +255,14 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     public AuthenticationResponse refreshToken(String refreshToken) throws CatalogAuthenticationException {
         AuthenticationContext context;
         AuthenticationResult result;
-        ExecutorService service = null;
         try {
-            service = Executors.newFixedThreadPool(1);
-            context = new AuthenticationContext(String.valueOf(this.oidcProviderMetadata.getAuthorizationEndpointURI()), false, service);
+            context = new AuthenticationContext(String.valueOf(this.oidcProviderMetadata.getAuthorizationEndpointURI()), false,
+                    THREAD_POOL);
             Future<AuthenticationResult> future = context.acquireTokenByRefreshToken(refreshToken, authClientId, null);
             result = future.get();
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw CatalogAuthenticationException.incorrectUserOrPassword();
-        } finally {
-            service.shutdown();
         }
 
         if (result == null) {
