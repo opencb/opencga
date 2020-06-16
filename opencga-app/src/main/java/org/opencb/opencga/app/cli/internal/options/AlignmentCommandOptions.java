@@ -48,10 +48,12 @@ public class AlignmentCommandOptions {
     public PicardCommandOptions picardCommandOptions;
 
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
+    public GeneralCliOptions.JobOptions commonJobOptions;
     public JCommander jCommander;
 
     public AlignmentCommandOptions(GeneralCliOptions.CommonCommandOptions analysisCommonCommandOptions, JCommander jCommander) {
         this.analysisCommonOptions = analysisCommonCommandOptions;
+        this.commonJobOptions = new GeneralCliOptions.JobOptions();
         this.jCommander = jCommander;
 
         this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
@@ -75,6 +77,9 @@ public class AlignmentCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
 
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
@@ -159,6 +164,9 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
 
@@ -184,6 +192,9 @@ public class AlignmentCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
 
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;

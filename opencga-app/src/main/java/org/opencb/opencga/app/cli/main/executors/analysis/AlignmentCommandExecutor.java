@@ -125,9 +125,24 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Indexing alignment(s)");
 
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
+        ObjectMap params = getCommonParamsFromAlignmentOptions(cliOptions.study);
+        params.putAll(getJobParams());
 
-        return openCGAClient.getAlignmentClient().runIndex(new AlignmentIndexParams(cliOptions.file, cliOptions.overwrite),
-                getCommonParamsFromAlignmentOptions(cliOptions.study));
+        return openCGAClient.getAlignmentClient().runIndex(new AlignmentIndexParams(cliOptions.file, cliOptions.overwrite), params);
+    }
+
+    private ObjectMap getJobParams() {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(JOB_ID, alignmentCommandOptions.commonJobOptions.jobId);
+        params.putIfNotEmpty(JOB_DESCRIPTION, alignmentCommandOptions.commonJobOptions.jobDescription);
+        if (alignmentCommandOptions.commonJobOptions.jobDependsOn != null) {
+            params.put(JOB_DEPENDS_ON, String.join(",", alignmentCommandOptions.commonJobOptions.jobDependsOn));
+        }
+        if (alignmentCommandOptions.commonJobOptions.jobTags != null) {
+            params.put(JOB_TAGS, String.join(",", alignmentCommandOptions.commonJobOptions.jobTags));
+        }
+
+        return params;
     }
 
     private void query() throws InterruptedException, ClientException {
@@ -319,6 +334,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
 
         return openCGAClient.getAlignmentClient().runStats(new AlignmentStatsParams(cliOptions.file), params);
     }
@@ -339,6 +355,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
 
         return openCGAClient.getAlignmentClient().runCoverageIndex(new CoverageIndexParams(cliOptions.file, cliOptions.windowSize,
                 cliOptions.overwrite), params);
