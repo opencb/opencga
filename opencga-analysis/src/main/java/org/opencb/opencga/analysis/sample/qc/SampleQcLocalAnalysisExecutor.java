@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant.geneticChecks;
+package org.opencb.opencga.analysis.sample.qc;
 
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
@@ -23,25 +23,22 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
-import org.opencb.opencga.core.models.variant.MendelianErrorReport;
-import org.opencb.opencga.core.models.variant.RelatednessReport;
+import org.opencb.opencga.core.models.sample.InferredSexReport;
+import org.opencb.opencga.core.models.sample.MendelianErrorReport;
+import org.opencb.opencga.core.models.sample.RelatednessReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
-import org.opencb.opencga.core.tools.variant.GeneticChecksAnalysisExecutor;
+import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@ToolExecutor(id="opencga-local", tool = GeneticChecksAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
+@ToolExecutor(id="opencga-local", tool = SampleQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
-public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExecutor implements StorageToolExecutor {
+public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor implements StorageToolExecutor {
 
     @Override
     public void run() throws ToolException {
-        switch (getGeneticCheck()) {
+        switch (getQc()) {
 
             case INFERRED_SEX: {
 
@@ -53,7 +50,7 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
                 // Get assembly
                 String assembly;
                 try {
-                    assembly = GeneticChecksUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
+                    assembly = SampleQcUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
                 } catch (CatalogException e) {
                     throw new ToolException(e);
                 }
@@ -103,7 +100,7 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
                 break;
             }
             default: {
-                throw new ToolException("Unknown genetic check: " + getGeneticCheck());
+                throw new ToolException("Unknown genetic check: " + getQc());
             }
         }
     }

@@ -20,8 +20,8 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
@@ -119,7 +119,7 @@ public class VariantCommandOptions {
     public final MendelianErrorCommandOptions mendelianErrorCommandOptions;
     public final InferredSexCommandOptions inferredSexCommandOptions;
     public final RelatednessCommandOptions relatednessCommandOptions;
-    public final GeneticChecksCommandOptions geneticChecksCommandOptions;
+    public final SampleQcCommandOptions sampleQcCommandOptions;
 
     // Wrappers
     public final PlinkCommandOptions plinkCommandOptions;
@@ -178,7 +178,7 @@ public class VariantCommandOptions {
         this.mendelianErrorCommandOptions = new MendelianErrorCommandOptions();
         this.inferredSexCommandOptions = new InferredSexCommandOptions();
         this.relatednessCommandOptions = new RelatednessCommandOptions();
-        this.geneticChecksCommandOptions = new GeneticChecksCommandOptions();
+        this.sampleQcCommandOptions = new SampleQcCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
         this.gatkCommandOptions = new GatkCommandOptions();
@@ -1170,9 +1170,9 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND, commandDescription = GeneticChecksAnalysis.DESCRIPTION)
-    public class GeneticChecksCommandOptions {
-        public static final String GENETIC_CHECKS_RUN_COMMAND = GeneticChecksAnalysis.ID + "-run";
+    @Parameters(commandNames = SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND, commandDescription = SampleQcAnalysis.DESCRIPTION)
+    public class SampleQcCommandOptions {
+        public static final String SAMPLE_QC_RUN_COMMAND = SampleQcAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

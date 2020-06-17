@@ -63,5 +63,4 @@ public class SampleCommandOptions {
                 arity = 1)
         public String outDir;
     }
-
 }

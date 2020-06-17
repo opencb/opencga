@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.variant;
+package org.opencb.opencga.core.models.sample;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.List;
-
-public class GeneticChecksAnalysisParams extends ToolParams {
+public class QcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Genetic checks analysis params";
     private String family;
     private String individual;
@@ -29,11 +27,11 @@ public class GeneticChecksAnalysisParams extends ToolParams {
     private String relatednessMethod;
     private String outdir;
 
-    public GeneticChecksAnalysisParams() {
+    public QcAnalysisParams() {
     }
 
-    public GeneticChecksAnalysisParams(String family, String individual, String sample, String minorAlleleFreq, String relatednessMethod,
-                                       String outdir) {
+    public QcAnalysisParams(String family, String individual, String sample, String minorAlleleFreq, String relatednessMethod,
+                            String outdir) {
         this.family = family;
         this.individual = individual;
         this.sample = sample;
@@ -46,7 +44,7 @@ public class GeneticChecksAnalysisParams extends ToolParams {
         return family;
     }
 
-    public GeneticChecksAnalysisParams setFamily(String family) {
+    public QcAnalysisParams setFamily(String family) {
         this.family = family;
         return this;
     }
@@ -55,7 +53,7 @@ public class GeneticChecksAnalysisParams extends ToolParams {
         return individual;
     }
 
-    public GeneticChecksAnalysisParams setIndividual(String individual) {
+    public QcAnalysisParams setIndividual(String individual) {
         this.individual = individual;
         return this;
     }
@@ -64,7 +62,7 @@ public class GeneticChecksAnalysisParams extends ToolParams {
         return sample;
     }
 
-    public GeneticChecksAnalysisParams setSample(String sample) {
+    public QcAnalysisParams setSample(String sample) {
         this.sample = sample;
         return this;
     }
@@ -73,7 +71,7 @@ public class GeneticChecksAnalysisParams extends ToolParams {
         return minorAlleleFreq;
     }
 
-    public GeneticChecksAnalysisParams setMinorAlleleFreq(String minorAlleleFreq) {
+    public QcAnalysisParams setMinorAlleleFreq(String minorAlleleFreq) {
         this.minorAlleleFreq = minorAlleleFreq;
         return this;
     }
@@ -82,7 +80,7 @@ public class GeneticChecksAnalysisParams extends ToolParams {
         return relatednessMethod;
     }
 
-    public GeneticChecksAnalysisParams setRelatednessMethod(String relatednessMethod) {
+    public QcAnalysisParams setRelatednessMethod(String relatednessMethod) {
         this.relatednessMethod = relatednessMethod;
         return this;
     }
@@ -91,7 +89,7 @@ public class GeneticChecksAnalysisParams extends ToolParams {
         return outdir;
     }
 
-    public GeneticChecksAnalysisParams setOutdir(String outdir) {
+    public QcAnalysisParams setOutdir(String outdir) {
         this.outdir = outdir;
         return this;
     }

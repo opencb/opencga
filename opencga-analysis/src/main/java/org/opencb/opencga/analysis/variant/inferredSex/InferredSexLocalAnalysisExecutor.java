@@ -18,22 +18,15 @@ package org.opencb.opencga.analysis.variant.inferredSex;
 
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
-import org.opencb.opencga.analysis.variant.geneticChecks.InferredSexComputation;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.sample.qc.InferredSexComputation;
+import org.opencb.opencga.analysis.sample.qc.SampleQcUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
-import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.models.sample.InferredSexReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
-
-import java.io.IOException;
-import java.util.List;
 
 @ToolExecutor(id="opencga-local", tool = InferredSexAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -46,7 +39,7 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
         FileManager fileManager = catalogManager.getFileManager();
         String assembly;
         try {
-            assembly = GeneticChecksUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
+            assembly = SampleQcUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

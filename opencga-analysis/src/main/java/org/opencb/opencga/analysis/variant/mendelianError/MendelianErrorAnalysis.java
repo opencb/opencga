@@ -17,14 +17,14 @@
 package org.opencb.opencga.analysis.variant.mendelianError;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.analysis.sample.qc.SampleQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.variant.MendelianErrorReport;
+import org.opencb.opencga.core.models.sample.MendelianErrorReport;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.MendelianErrorAnalysisExecutor;
 
@@ -105,13 +105,13 @@ public class MendelianErrorAnalysis extends OpenCgaTool {
         Family family;
         if (StringUtils.isNotEmpty(familyId)) {
             // Get family ID by individual ID
-            family = GeneticChecksUtils.getFamilyById(studyId, familyId, catalogManager, token);
+            family = SampleQcUtils.getFamilyById(studyId, familyId, catalogManager, token);
         } else if (StringUtils.isNotEmpty(individualId)) {
             // Get family ID by individual ID
-            family = GeneticChecksUtils.getFamilyByIndividualId(studyId, individualId, catalogManager, token);
+            family = SampleQcUtils.getFamilyByIndividualId(studyId, individualId, catalogManager, token);
         } else if (StringUtils.isNotEmpty(sampleId)) {
             // Get family ID by sample ID
-            family = GeneticChecksUtils.getFamilyBySampleId(studyId, sampleId, catalogManager, token);
+            family = SampleQcUtils.getFamilyBySampleId(studyId, sampleId, catalogManager, token);
         } else {
             throw new ToolException("Missing a family ID, a individual ID or a sample ID.");
         }

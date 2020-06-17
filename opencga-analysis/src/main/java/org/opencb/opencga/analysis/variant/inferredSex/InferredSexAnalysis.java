@@ -17,18 +17,14 @@
 package org.opencb.opencga.analysis.variant.inferredSex;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.sample.qc.SampleQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.InferredSexReport;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 
@@ -101,7 +97,7 @@ public class InferredSexAnalysis extends OpenCgaTool {
 
         if (StringUtils.isNotEmpty(individualId)) {
             // Check and get sample from individual
-            Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
+            Sample sample = SampleQcUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
             sampleId = sample.getId();
         }
 
@@ -122,7 +118,7 @@ public class InferredSexAnalysis extends OpenCgaTool {
 
             // Get inferred sex report and update with individual info (ID, sex, and karyotypic sex)
             InferredSexReport report = inferredSexExecutor.getInferredSexReport();
-            GeneticChecksUtils.updateSexReport(Collections.singletonList(report), studyId, catalogManager, token);
+            SampleQcUtils.updateSexReport(Collections.singletonList(report), studyId, catalogManager, token);
 
             try {
                 // Save inferred sex report

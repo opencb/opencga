@@ -341,7 +341,7 @@ class Variant(_ParentRestClient):
     def run_genetic_checks(self, data=None, **options):
         """
         Run genetic checks for sex, relatedness and mendelian errors (UDP).
-        PATH: /{apiVersion}/analysis/variant/geneticChecks/run
+        PATH: /{apiVersion}/analysis/variant/qc/run
 
         :param dict data: Genetic checks analysis params. (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
@@ -354,7 +354,7 @@ class Variant(_ParentRestClient):
         :param str job_tags: Job tags.
         """
 
-        return self._post(category='analysis', resource='run', subcategory='variant/geneticChecks', data=data, **options)
+        return self._post(category='analysis', resource='run', subcategory='variant/qc', data=data, **options)
 
     def run_gwas(self, data=None, **options):
         """

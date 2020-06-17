@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant.geneticChecks;
+package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -34,12 +34,8 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.variant.GeneticChecksReport;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
-import org.opencb.opencga.core.models.variant.MendelianErrorReport;
-import org.opencb.opencga.core.models.variant.MendelianErrorReport.SampleAggregation;
-import org.opencb.opencga.core.models.variant.MendelianErrorReport.SampleAggregation.ChromosomeAggregation;
-import org.opencb.opencga.core.models.variant.RelatednessReport;
+import org.opencb.opencga.core.models.sample.InferredSexReport;
+import org.opencb.opencga.core.models.sample.RelatednessReport;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -54,7 +50,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.TPED;
 
-public class GeneticChecksUtils {
+public class SampleQcUtils {
 
     public static void selectMarkers(String basename, String study, List<String> samples, String maf, Path outDir,
                                      VariantStorageManager storageManager, String token) throws ToolException {
@@ -352,7 +348,7 @@ public class GeneticChecksUtils {
         if (CollectionUtils.isNotEmpty(reports)) {
             for (InferredSexReport inferredSexReport : reports) {
                 try {
-                    Individual individual = GeneticChecksUtils.getIndividualBySampleId(studyId, inferredSexReport.getSampleId(), catalogManager, token);
+                    Individual individual = SampleQcUtils.getIndividualBySampleId(studyId, inferredSexReport.getSampleId(), catalogManager, token);
                     inferredSexReport.setIndividualId(individual.getId());
                     inferredSexReport.setReportedSex(individual.getSex().name());
                     inferredSexReport.setReportedKaryotypicSex(individual.getKaryotypicSex().name());

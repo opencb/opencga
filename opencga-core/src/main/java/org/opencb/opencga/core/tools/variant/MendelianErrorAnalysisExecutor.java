@@ -16,13 +16,8 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
-import org.opencb.opencga.core.models.variant.MendelianErrorReport;
+import org.opencb.opencga.core.models.sample.MendelianErrorReport;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public abstract class MendelianErrorAnalysisExecutor extends OpenCgaToolExecutor {
 

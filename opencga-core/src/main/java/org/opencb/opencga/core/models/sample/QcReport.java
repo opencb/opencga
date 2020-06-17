@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.variant;
+package org.opencb.opencga.core.models.sample;
 
 import java.io.Serializable;
 import java.util.List;
 
-public class GeneticChecksReport implements Serializable {
+public class QcReport implements Serializable {
 
     // Family ID
     private String familyId;
@@ -38,11 +38,20 @@ public class GeneticChecksReport implements Serializable {
     // Mendelian errors report
     private MendelianErrorReport mendelianErrorReport;
 
-    public GeneticChecksReport() {
+    // FastQC report
+    private FastQcReport fastQcReport;
+
+    // Flag stats report (from samtools flagstat)
+    private FlagStatsReport flagStatsReport;
+
+    // Hs metrics report (from picard/CollectHsMetrics tool)
+    private HsMetricsReport hsMetricsReport;
+
+    public QcReport() {
     }
 
-    public GeneticChecksReport(String familyId, String fatherId, String motherId, List<String> childrenIds, List<InferredSexReport> inferredSexReport,
-                               RelatednessReport relatednessReport, MendelianErrorReport mendelianErrorReport) {
+    public QcReport(String familyId, String fatherId, String motherId, List<String> childrenIds, List<InferredSexReport> inferredSexReport,
+                    RelatednessReport relatednessReport, MendelianErrorReport mendelianErrorReport) {
         this.familyId = familyId;
         this.fatherId = fatherId;
         this.motherId = motherId;
@@ -56,7 +65,7 @@ public class GeneticChecksReport implements Serializable {
         return familyId;
     }
 
-    public GeneticChecksReport setFamilyId(String familyId) {
+    public QcReport setFamilyId(String familyId) {
         this.familyId = familyId;
         return this;
     }
@@ -65,7 +74,7 @@ public class GeneticChecksReport implements Serializable {
         return fatherId;
     }
 
-    public GeneticChecksReport setFatherId(String fatherId) {
+    public QcReport setFatherId(String fatherId) {
         this.fatherId = fatherId;
         return this;
     }
@@ -74,7 +83,7 @@ public class GeneticChecksReport implements Serializable {
         return motherId;
     }
 
-    public GeneticChecksReport setMotherId(String motherId) {
+    public QcReport setMotherId(String motherId) {
         this.motherId = motherId;
         return this;
     }
@@ -83,7 +92,7 @@ public class GeneticChecksReport implements Serializable {
         return childrenIds;
     }
 
-    public GeneticChecksReport setChildrenIds(List<String> childrenIds) {
+    public QcReport setChildrenIds(List<String> childrenIds) {
         this.childrenIds = childrenIds;
         return this;
     }
@@ -92,7 +101,7 @@ public class GeneticChecksReport implements Serializable {
         return inferredSexReport;
     }
 
-    public GeneticChecksReport setInferredSexReport(List<InferredSexReport> inferredSexReport) {
+    public QcReport setInferredSexReport(List<InferredSexReport> inferredSexReport) {
         this.inferredSexReport = inferredSexReport;
         return this;
     }
@@ -101,7 +110,7 @@ public class GeneticChecksReport implements Serializable {
         return relatednessReport;
     }
 
-    public GeneticChecksReport setRelatednessReport(RelatednessReport relatednessReport) {
+    public QcReport setRelatednessReport(RelatednessReport relatednessReport) {
         this.relatednessReport = relatednessReport;
         return this;
     }
@@ -110,7 +119,7 @@ public class GeneticChecksReport implements Serializable {
         return mendelianErrorReport;
     }
 
-    public GeneticChecksReport setMendelianErrorReport(MendelianErrorReport mendelianErrorReport) {
+    public QcReport setMendelianErrorReport(MendelianErrorReport mendelianErrorReport) {
         this.mendelianErrorReport = mendelianErrorReport;
         return this;
     }
