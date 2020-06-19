@@ -24,7 +24,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.sample.MendelianErrorReport;
+import org.opencb.opencga.core.models.variant.MendelianErrorReport;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.MendelianErrorAnalysisExecutor;
 

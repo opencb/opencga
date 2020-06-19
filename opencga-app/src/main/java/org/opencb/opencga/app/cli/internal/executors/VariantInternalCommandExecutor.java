@@ -813,9 +813,11 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         SampleQcAnalysis sampleQcAnalysis = new SampleQcAnalysis();
         sampleQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         sampleQcAnalysis.setStudy(cliOptions.study)
-                .setFamilyId(cliOptions.family)
-                .setIndividualId(cliOptions.individual)
                 .setSampleId(cliOptions.sample)
+                .setBamFilename(cliOptions.bamFile)
+                .setFastaFilename(cliOptions.fastaFile)
+                .setBaitFilename(cliOptions.baitFile)
+                .setTargetFilename(cliOptions.targetFile)
                 .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
                 .setRelatednessMethod(cliOptions.relatednessMethod)
                 .start();

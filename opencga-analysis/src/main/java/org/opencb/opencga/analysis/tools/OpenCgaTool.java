@@ -479,6 +479,9 @@ public abstract class OpenCgaTool {
         this.storageConfiguration = ConfigurationUtils.loadStorageConfiguration(opencgaHome);
     }
 
+    public ExecutionResultManager getErm() {
+        return erm;
+    }
 
     // TODO can this method be removed?
 //    protected final Analyst getAnalyst(String token) throws ToolException {

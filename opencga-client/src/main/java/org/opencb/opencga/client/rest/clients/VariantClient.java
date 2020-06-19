@@ -30,7 +30,7 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
-import org.opencb.opencga.core.models.sample.QcAnalysisParams;
+import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.GatkRunParams;
 import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
@@ -750,7 +750,7 @@ public class VariantClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runSampleQc(QcAnalysisParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runSampleQc(SampleQcAnalysisParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis", null, "variant/sample/qc", null, "run", params, POST, Job.class);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.sample;
+package org.opencb.opencga.core.models.variant;
 
 public class InferredSexReport {
 

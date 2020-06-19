@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.sample;
+package org.opencb.opencga.core.models.variant;
+
+import org.opencb.opencga.core.models.sample.RelatednessReport;
 
 import java.io.Serializable;
 import java.util.List;
 
-public class QcReport implements Serializable {
+public class SampleQcReport implements Serializable {
 
     // Family ID
     private String familyId;
@@ -47,11 +49,11 @@ public class QcReport implements Serializable {
     // Hs metrics report (from picard/CollectHsMetrics tool)
     private HsMetricsReport hsMetricsReport;
 
-    public QcReport() {
+    public SampleQcReport() {
     }
 
-    public QcReport(String familyId, String fatherId, String motherId, List<String> childrenIds, List<InferredSexReport> inferredSexReport,
-                    RelatednessReport relatednessReport, MendelianErrorReport mendelianErrorReport) {
+    public SampleQcReport(String familyId, String fatherId, String motherId, List<String> childrenIds, List<InferredSexReport> inferredSexReport,
+                          RelatednessReport relatednessReport, MendelianErrorReport mendelianErrorReport) {
         this.familyId = familyId;
         this.fatherId = fatherId;
         this.motherId = motherId;
@@ -65,7 +67,7 @@ public class QcReport implements Serializable {
         return familyId;
     }
 
-    public QcReport setFamilyId(String familyId) {
+    public SampleQcReport setFamilyId(String familyId) {
         this.familyId = familyId;
         return this;
     }
@@ -74,7 +76,7 @@ public class QcReport implements Serializable {
         return fatherId;
     }
 
-    public QcReport setFatherId(String fatherId) {
+    public SampleQcReport setFatherId(String fatherId) {
         this.fatherId = fatherId;
         return this;
     }
@@ -83,7 +85,7 @@ public class QcReport implements Serializable {
         return motherId;
     }
 
-    public QcReport setMotherId(String motherId) {
+    public SampleQcReport setMotherId(String motherId) {
         this.motherId = motherId;
         return this;
     }
@@ -92,7 +94,7 @@ public class QcReport implements Serializable {
         return childrenIds;
     }
 
-    public QcReport setChildrenIds(List<String> childrenIds) {
+    public SampleQcReport setChildrenIds(List<String> childrenIds) {
         this.childrenIds = childrenIds;
         return this;
     }
@@ -101,7 +103,7 @@ public class QcReport implements Serializable {
         return inferredSexReport;
     }
 
-    public QcReport setInferredSexReport(List<InferredSexReport> inferredSexReport) {
+    public SampleQcReport setInferredSexReport(List<InferredSexReport> inferredSexReport) {
         this.inferredSexReport = inferredSexReport;
         return this;
     }
@@ -110,7 +112,7 @@ public class QcReport implements Serializable {
         return relatednessReport;
     }
 
-    public QcReport setRelatednessReport(RelatednessReport relatednessReport) {
+    public SampleQcReport setRelatednessReport(RelatednessReport relatednessReport) {
         this.relatednessReport = relatednessReport;
         return this;
     }
@@ -119,7 +121,7 @@ public class QcReport implements Serializable {
         return mendelianErrorReport;
     }
 
-    public QcReport setMendelianErrorReport(MendelianErrorReport mendelianErrorReport) {
+    public SampleQcReport setMendelianErrorReport(MendelianErrorReport mendelianErrorReport) {
         this.mendelianErrorReport = mendelianErrorReport;
         return this;
     }

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.models.sample.InferredSexReport;
+import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.HashMap;

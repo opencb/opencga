@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.models.sample.QcReport;
+import org.opencb.opencga.core.models.variant.SampleQcReport;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.List;
@@ -24,7 +24,7 @@ import java.util.List;
 public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public enum Qc {
-        INFERRED_SEX, RELATEDNESS, MENDELIAN_ERRORS
+        INFERRED_SEX, RELATEDNESS, MENDELIAN_ERRORS, FASTQC, FLAG_STATS, HS_METRICS
     }
 
     private String studyId;
@@ -34,10 +34,10 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
     private String minorAlleleFreq;
     private String relatednessMethod;
 
-    private QcReport report;
+    private SampleQcReport report;
 
     public SampleQcAnalysisExecutor() {
-        report = new QcReport();
+        report = new SampleQcReport();
     }
 
     public String getStudyId() {
@@ -94,11 +94,11 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public QcReport getReport() {
+    public SampleQcReport getReport() {
         return report;
     }
 
-    public SampleQcAnalysisExecutor setReport(QcReport report) {
+    public SampleQcAnalysisExecutor setReport(SampleQcReport report) {
         this.report = report;
         return this;
     }

@@ -41,7 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.sample.QcAnalysisParams;
+import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.VariantQueryResult;
@@ -367,10 +367,12 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private RestResponse<Job> sampleQc() throws ClientException {
         return openCGAClient.getVariantClient().runSampleQc(
-                new QcAnalysisParams(
-                        variantCommandOptions.sampleQcCommandOptions.family,
-                        variantCommandOptions.sampleQcCommandOptions.individual,
+                new SampleQcAnalysisParams(
                         variantCommandOptions.sampleQcCommandOptions.sample,
+                        variantCommandOptions.sampleQcCommandOptions.bamFile,
+                        variantCommandOptions.sampleQcCommandOptions.fastaFile,
+                        variantCommandOptions.sampleQcCommandOptions.baitFile,
+                        variantCommandOptions.sampleQcCommandOptions.targetFile,
                         variantCommandOptions.sampleQcCommandOptions.minorAlleleFreq,
                         variantCommandOptions.sampleQcCommandOptions.relatednessMethod,
                         variantCommandOptions.sampleQcCommandOptions.outdir

@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.variant.mendelianError;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.sample.qc.MendelianInconsistenciesComputation;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.sample.MendelianErrorReport;
+import org.opencb.opencga.core.models.variant.MendelianErrorReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.MendelianErrorAnalysisExecutor;
 

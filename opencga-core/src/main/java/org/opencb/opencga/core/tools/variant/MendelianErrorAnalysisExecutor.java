@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.models.sample.MendelianErrorReport;
+import org.opencb.opencga.core.models.variant.MendelianErrorReport;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 public abstract class MendelianErrorAnalysisExecutor extends OpenCgaToolExecutor {

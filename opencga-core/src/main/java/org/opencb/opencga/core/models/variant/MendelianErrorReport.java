@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.sample;
+package org.opencb.opencga.core.models.variant;
 
 import java.util.ArrayList;
 import java.util.List;

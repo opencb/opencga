@@ -34,7 +34,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.InferredSexReport;
+import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.models.sample.RelatednessReport;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;

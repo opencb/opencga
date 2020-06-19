@@ -26,15 +26,12 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.QcReport;
-import org.opencb.opencga.core.models.sample.InferredSexReport;
-import org.opencb.opencga.core.models.sample.MendelianErrorReport.SampleAggregation;
-import org.opencb.opencga.core.models.sample.MendelianErrorReport.SampleAggregation.ChromosomeAggregation;
-import org.opencb.opencga.core.models.sample.RelatednessReport;
+import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.variant.InferredSexReport;
+import org.opencb.opencga.core.models.variant.MendelianErrorReport.SampleAggregation;
+import org.opencb.opencga.core.models.variant.MendelianErrorReport.SampleAggregation.ChromosomeAggregation;
+import org.opencb.opencga.core.models.variant.SampleQcReport;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 
@@ -46,14 +43,24 @@ import java.util.stream.Collectors;
 public class SampleQcAnalysis extends OpenCgaTool {
 
     public static final String ID = "sample-qc";
-    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes inferred sex, relatedness and mendelian"
-    + " errors (UDP).";
+    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes inferred sex, relatedness," +
+            " mendelian errors (UDP), FastQC, samtools/flagstat and picard/CollectHsMetrics";
     public static final String VARIABLE_SET_ID = "opencga_sample_qc";
 
+    public  static final String INFERRED_SEX_STEP = "inferred-sex";
+    public  static final String RELATEDNESS_STEP = "relatedness";
+    public  static final String MENDELIAN_ERRORS_STEP = "mendelian-errors";
+    public  static final String FASTQC_STEP = "fastqc";
+    public  static final String HS_METRICS_STEP = "hs-metrics";
+    public  static final String FLAG_STATS_STEP = "flag-stats";
+    public  static final String INDEX_STEP = "index-variable-set";
+
     private String studyId;
-    private String familyId;
-    private String individualId;
     private String sampleId;
+    private String fastaFilename;
+    private String bamFilename;
+    private String baitFilename;
+    private String targetFilename;
     private String minorAlleleFreq;
     private String relatednessMethod;
 
@@ -61,61 +68,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
     private List<String> sampleIds;
 
     public SampleQcAnalysis() {
-    }
-
-    /**
-     * Study of the samples.
-     * @param studyId Study id
-     * @return this
-     */
-    public SampleQcAnalysis setStudy(String studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public String getFamilyId() {
-        return familyId;
-    }
-
-    public SampleQcAnalysis setFamilyId(String familyId) {
-        this.familyId = familyId;
-        return this;
-    }
-
-    public String getIndividualId() {
-        return individualId;
-    }
-
-    public SampleQcAnalysis setIndividualId(String individualId) {
-        this.individualId = individualId;
-        return this;
-    }
-
-    public String getSampleId() {
-        return sampleId;
-    }
-
-    public SampleQcAnalysis setSampleId(String sampleId) {
-        this.sampleId = sampleId;
-        return this;
-    }
-
-    public String getMinorAlleleFreq() {
-        return minorAlleleFreq;
-    }
-
-    public SampleQcAnalysis setMinorAlleleFreq(String minorAlleleFreq) {
-        this.minorAlleleFreq = minorAlleleFreq;
-        return this;
-    }
-
-    public String getRelatednessMethod() {
-        return relatednessMethod;
-    }
-
-    public SampleQcAnalysis setRelatednessMethod(String relatednessMethod) {
-        this.relatednessMethod = relatednessMethod;
-        return this;
     }
 
     @Override
@@ -134,43 +86,37 @@ public class SampleQcAnalysis extends OpenCgaTool {
         }
 
         // Sanity check
-        if (StringUtils.isNotEmpty(familyId) && StringUtils.isNotEmpty(individualId) && StringUtils.isNotEmpty(sampleId)) {
-            throw new ToolException("Incorrect parameters: please, provide only a family ID, a individual ID or a sample ID.");
+        if (StringUtils.isNotEmpty(sampleId)) {
+            throw new ToolException("Missing sample ID.");
         }
 
         // Get relatives, i.e., members of a family
-        List<Sample> samples;
-        if (StringUtils.isNotEmpty(familyId)) {
-            // Check and get the individuals from that family ID
-            samples = SampleQcUtils.getRelativeSamplesByFamilyId(studyId, familyId, catalogManager, token);
-        } else if (StringUtils.isNotEmpty(individualId)) {
-            // Get father, mother and siblings from that individual
-            samples = SampleQcUtils.getRelativeSamplesByIndividualId(studyId, individualId, catalogManager, token);
-            Family family = SampleQcUtils.getFamilyByIndividualId(studyId, individualId, catalogManager, token);
-            familyId = family.getId();
-        } else if (StringUtils.isNotEmpty(sampleId)) {
-            // Get father, mother and siblings from that sample
-            samples = SampleQcUtils.getRelativeSamplesBySampleId(studyId, sampleId, catalogManager, token);
-            Family family = SampleQcUtils.getFamilyBySampleId(studyId, sampleId, catalogManager, token);
-            familyId = family.getId();
-        } else {
-            throw new ToolException("Missing a family ID, a individual ID or a sample ID.");
+        List<Sample> samples = SampleQcUtils.getRelativeSamplesBySampleId(studyId, sampleId, catalogManager, token);
+        if (CollectionUtils.isNotEmpty(samples)) {
+            sampleIds = samples.stream().map(Sample::getId).collect(Collectors.toList());
         }
-
-        if (CollectionUtils.isEmpty(samples)) {
-            throw new ToolException("Member samples not found to execute genetic checks analysis.");
-        }
-
-        sampleIds = samples.stream().map(Sample::getId).collect(Collectors.toList());
     }
 
     @Override
     protected List<String> getSteps() {
         List<String> steps = new ArrayList<>();
-        steps.add("sex");
-        steps.add("relatedness");
-        steps.add("mendelian-errors");
-        steps.add("index-variable-set");
+        if (canRunInferredSex()) {
+            steps.add(INFERRED_SEX_STEP);
+        }
+        if (canRunRelatedness()) {
+            steps.add(RELATEDNESS_STEP);
+        }
+        steps.add(MENDELIAN_ERRORS_STEP);
+        if (canRunFastQc()) {
+            steps.add(FASTQC_STEP);
+        }
+        if (canRunHsMetrics()) {
+            steps.add(HS_METRICS_STEP);
+        }
+        if (canRunFlagStats()) {
+            steps.add(FLAG_STATS_STEP);
+        }
+        steps.add(INDEX_STEP);
         return steps;
     }
 
@@ -180,23 +126,55 @@ public class SampleQcAnalysis extends OpenCgaTool {
         SampleQcAnalysisExecutor executor = getToolExecutor(SampleQcAnalysisExecutor.class);
 
         executor.setStudyId(studyId)
-                .setFamilyId(familyId)
                 .setSampleIds(sampleIds)
                 .setMinorAlleleFreq(minorAlleleFreq)
                 .setRelatednessMethod(relatednessMethod);
 
-        step("sex", () -> {
-            executor.setQc(SampleQcAnalysisExecutor.Qc.INFERRED_SEX).execute();
-            SampleQcUtils.updateSexReport(executor.getReport().getInferredSexReport(), studyId, catalogManager, token);
-        });
+        if (canRunInferredSex()) {
+            step(INFERRED_SEX_STEP, () -> {
+                executor.setQc(SampleQcAnalysisExecutor.Qc.INFERRED_SEX).execute();
+                SampleQcUtils.updateSexReport(executor.getReport().getInferredSexReport(), studyId, catalogManager, token);
+            });
+        } else {
+            getErm().addWarning("Skipping step " + INFERRED_SEX_STEP + ": you need to provide a BAM file");
+        }
 
-        step("relatedness", () -> {
-            executor.setQc(SampleQcAnalysisExecutor.Qc.RELATEDNESS).execute();
-        });
+        if (canRunRelatedness()) {
+            step(RELATEDNESS_STEP, () -> {
+                executor.setQc(SampleQcAnalysisExecutor.Qc.RELATEDNESS).execute();
+            });
+        } else {
+            getErm().addWarning("Skipping step " + RELATEDNESS_STEP + ": no members found for the sample family");
+        }
 
-        step("mendelian-errors", () -> {
+        step(MENDELIAN_ERRORS_STEP, () -> {
             executor.setQc(SampleQcAnalysisExecutor.Qc.MENDELIAN_ERRORS).execute();
         });
+
+        if (canRunFastQc()) {
+            step(FASTQC_STEP, () -> {
+                executor.setQc(SampleQcAnalysisExecutor.Qc.FASTQC).execute();
+            });
+        } else {
+            getErm().addWarning("Skipping step " + FASTQC_STEP + ": you need to provide a BAM file");
+        }
+
+        if (canRunFlagStats()) {
+            step(FLAG_STATS_STEP, () -> {
+                executor.setQc(SampleQcAnalysisExecutor.Qc.FLAG_STATS).execute();
+            });
+        } else {
+            getErm().addWarning("Skipping step " + FLAG_STATS_STEP + ": you need to provide a BAM file");
+        }
+
+        if (canRunHsMetrics()) {
+            step(HS_METRICS_STEP, () -> {
+                executor.setQc(SampleQcAnalysisExecutor.Qc.HS_METRICS).execute();
+            });
+        } else {
+            getErm().addWarning("Skipping step " + HS_METRICS_STEP + ": you need to provide a BAM file, a FASTA file and two BED files," +
+                    " one for the bait intervals and one for the target intervals");
+        }
 
         // Save results
         try {
@@ -212,33 +190,33 @@ public class SampleQcAnalysis extends OpenCgaTool {
         });
     }
 
-    private void indexResults(QcReport report) throws ToolException {
+    private void indexResults(SampleQcReport report) throws ToolException {
         try {
             // Index variable-set for each target individual
             for (String sampleId : sampleIds) {
                 // Create annotation set
                 ObjectMap annotations = buildAnnotations(report, sampleId);
                 AnnotationSet annotationSet = new AnnotationSet(VARIABLE_SET_ID, VARIABLE_SET_ID, annotations);
-                IndividualUpdateParams updateParams = new IndividualUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
+                SampleUpdateParams updateParams = new SampleUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
 
-                // Get individual from sample and update
-                Individual individual = SampleQcUtils.getIndividualBySampleId(studyId, sampleId, catalogManager, token);
-                catalogManager.getIndividualManager().update(studyId, individual.getId(), updateParams, QueryOptions.empty(), token);
+                // Get sample from ID and update
+                Sample sample = SampleQcUtils.getValidSampleById(studyId, sampleId, catalogManager, token);
+                catalogManager.getSampleManager().update(studyId, sample.getId(), updateParams, QueryOptions.empty(), token);
             }
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
     }
 
-    private ObjectMap buildAnnotations(QcReport report, String sampleId) throws ToolException {
+    private ObjectMap buildAnnotations(SampleQcReport report, String sampleId) throws ToolException {
         ObjectMap annot = new ObjectMap();
 
         // Get individual from sample and update
         try {
+            annot.put("sample", sampleId);
             Individual individual = SampleQcUtils.getIndividualBySampleId(studyId, sampleId, catalogManager, token);
             if (individual != null) {
                 annot.put("individual", individual.getId());
-                annot.put("sample", sampleId);
                 if (individual.getFather() != null) {
                     annot.put("father", individual.getFather().getId());
                 }
@@ -316,5 +294,102 @@ public class SampleQcAnalysis extends OpenCgaTool {
         }
 
         return annot;
+    }
+
+    private boolean canRunFlagStats() {
+        return StringUtils.isEmpty(bamFilename) ? false : true;
+    }
+
+    private boolean canRunHsMetrics() {
+        if (StringUtils.isEmpty(bamFilename) || StringUtils.isEmpty(fastaFilename) || StringUtils.isEmpty(baitFilename)
+                || StringUtils.isEmpty(targetFilename)) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean canRunFastQc() {
+        return StringUtils.isEmpty(bamFilename) ? false : true;
+    }
+
+    private boolean canRunRelatedness() {
+        return CollectionUtils.isEmpty(sampleIds) ? false : true;
+    }
+
+    private boolean canRunInferredSex() {
+        return StringUtils.isEmpty(bamFilename) ? false : true;
+    }
+
+    /**
+     * Study of the samples.
+     * @param studyId Study id
+     * @return this
+     */
+    public SampleQcAnalysis setStudy(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public String getSampleId() {
+        return sampleId;
+    }
+
+    public SampleQcAnalysis setSampleId(String sampleId) {
+        this.sampleId = sampleId;
+        return this;
+    }
+
+    public String getFastaFilename() {
+        return fastaFilename;
+    }
+
+    public SampleQcAnalysis setFastaFilename(String fastaFilename) {
+        this.fastaFilename = fastaFilename;
+        return this;
+    }
+
+    public String getBamFilename() {
+        return bamFilename;
+    }
+
+    public SampleQcAnalysis setBamFilename(String bamFilename) {
+        this.bamFilename = bamFilename;
+        return this;
+    }
+
+    public String getBaitFilename() {
+        return baitFilename;
+    }
+
+    public SampleQcAnalysis setBaitFilename(String baitFilename) {
+        this.baitFilename = baitFilename;
+        return this;
+    }
+
+    public String getTargetFilename() {
+        return targetFilename;
+    }
+
+    public SampleQcAnalysis setTargetFilename(String targetFilename) {
+        this.targetFilename = targetFilename;
+        return this;
+    }
+
+    public String getMinorAlleleFreq() {
+        return minorAlleleFreq;
+    }
+
+    public SampleQcAnalysis setMinorAlleleFreq(String minorAlleleFreq) {
+        this.minorAlleleFreq = minorAlleleFreq;
+        return this;
+    }
+
+    public String getRelatednessMethod() {
+        return relatednessMethod;
+    }
+
+    public SampleQcAnalysis setRelatednessMethod(String relatednessMethod) {
+        this.relatednessMethod = relatednessMethod;
+        return this;
     }
 }

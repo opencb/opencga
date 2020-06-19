@@ -61,7 +61,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
-import org.opencb.opencga.core.models.sample.QcAnalysisParams;
+import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -995,7 +995,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = QcAnalysisParams.DESCRIPTION, required = true) QcAnalysisParams params) {
+            @ApiParam(value = SampleQcAnalysisParams.DESCRIPTION, required = true) SampleQcAnalysisParams params) {
         return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 

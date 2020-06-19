@@ -1166,7 +1166,7 @@ public class VariantCommandOptions {
         @Parameter(names = {"--method"}, description = "Method to compute relatedness.")
         public String method = "IBD";
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
         public String outdir;
     }
 
@@ -1180,14 +1180,20 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--family"}, description = "Family ID to get the family members).")
-        public String family;
-
-        @Parameter(names = {"--individual"}, description = "Individual ID: it will be considered a child individual to get the family members).")
-        public String individual;
-
-        @Parameter(names = {"--sample"}, description = "Sample ID: it will be considered a child sample to get the family members).")
+        @Parameter(names = {"--sample"}, description = "Sample ID (it will be considered a child sample to get the family members).", required = true)
         public String sample;
+
+        @Parameter(names = {"--bam-file"}, description = "BAM file.")
+        public String bamFile;
+
+        @Parameter(names = {"--ref-genome-file"}, description = "Reference genome file in FASTA format.")
+        public String fastaFile;
+
+        @Parameter(names = {"--bait-file"}, description = "Bait intervals file in BED format.")
+        public String baitFile;
+
+        @Parameter(names = {"--target-file"}, description = "Target intervals file in BED format.")
+        public String targetFile;
 
         @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
         public String minorAlleleFreq;

@@ -24,7 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.sample.InferredSexReport;
+import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 
