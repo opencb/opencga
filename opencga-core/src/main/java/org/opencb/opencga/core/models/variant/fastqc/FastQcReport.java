@@ -19,6 +19,7 @@ public class FastQcReport {
     private List<KmerContent> kmerContent;
 
     public FastQcReport() {
+        summary = new Summary();
         basicStats = new LinkedHashMap<>();
         perBaseSeqQualities = new LinkedList<>();
         perSeqQualityScores = new LinkedHashMap<>();

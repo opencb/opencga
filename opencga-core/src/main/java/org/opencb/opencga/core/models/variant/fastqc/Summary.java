@@ -2,33 +2,34 @@ package org.opencb.opencga.core.models.variant.fastqc;
 
 public class Summary {
     private String basicStatistics;
-    private String perBaseSequenceQuality;
-    private String perSequenceQualityScores;
-    private String perBaseSequenceContent;
-    private String perSequenceGcContent;
+    private String perBaseSeqQuality;
+    private String perTileSeqQuality;
+    private String perSeqQualityScores;
+    private String perBaseSeqContent;
+    private String perSeqGcContent;
     private String perBaseNContent;
-    private String sequenceLengthDistribution;
-    private String sequenceDuplicationLevels;
-    private String overrepresentedSequences;
+    private String seqLengthDistribution;
+    private String seqDuplicationLevels;
+    private String overrepresentedSeqs;
     private String adapterContent;
     private String kmerContent;
 
     public Summary() {
     }
 
-    public Summary(String basicStatistics, String perBaseSequenceQuality, String perSequenceQualityScores,
-                   String perBaseSequenceContent, String perSequenceGcContent, String perBaseNContent,
-                   String sequenceLengthDistribution, String sequenceDuplicationLevels, String overrepresentedSequences,
-                   String adapterContent, String kmerContent) {
+    public Summary(String basicStatistics, String perBaseSeqQuality, String perTileSeqQuality, String perSeqQualityScores,
+                   String perBaseSeqContent, String perSeqGcContent, String perBaseNContent, String seqLengthDistribution,
+                   String seqDuplicationLevels, String overrepresentedSeqs, String adapterContent, String kmerContent) {
         this.basicStatistics = basicStatistics;
-        this.perBaseSequenceQuality = perBaseSequenceQuality;
-        this.perSequenceQualityScores = perSequenceQualityScores;
-        this.perBaseSequenceContent = perBaseSequenceContent;
-        this.perSequenceGcContent = perSequenceGcContent;
+        this.perBaseSeqQuality = perBaseSeqQuality;
+        this.perTileSeqQuality = perTileSeqQuality;
+        this.perSeqQualityScores = perSeqQualityScores;
+        this.perBaseSeqContent = perBaseSeqContent;
+        this.perSeqGcContent = perSeqGcContent;
         this.perBaseNContent = perBaseNContent;
-        this.sequenceLengthDistribution = sequenceLengthDistribution;
-        this.sequenceDuplicationLevels = sequenceDuplicationLevels;
-        this.overrepresentedSequences = overrepresentedSequences;
+        this.seqLengthDistribution = seqLengthDistribution;
+        this.seqDuplicationLevels = seqDuplicationLevels;
+        this.overrepresentedSeqs = overrepresentedSeqs;
         this.adapterContent = adapterContent;
         this.kmerContent = kmerContent;
     }
@@ -37,14 +38,15 @@ public class Summary {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Summary{");
         sb.append("basicStatistics='").append(basicStatistics).append('\'');
-        sb.append(", perBaseSequenceQuality='").append(perBaseSequenceQuality).append('\'');
-        sb.append(", perSequenceQualityScores='").append(perSequenceQualityScores).append('\'');
-        sb.append(", perBaseSequenceContent='").append(perBaseSequenceContent).append('\'');
-        sb.append(", perSequenceGcContent='").append(perSequenceGcContent).append('\'');
+        sb.append(", perBaseSeqQuality='").append(perBaseSeqQuality).append('\'');
+        sb.append(", perTileSeqQuality='").append(perTileSeqQuality).append('\'');
+        sb.append(", perSeqQualityScores='").append(perSeqQualityScores).append('\'');
+        sb.append(", perBaseSeqContent='").append(perBaseSeqContent).append('\'');
+        sb.append(", perSeqGcContent='").append(perSeqGcContent).append('\'');
         sb.append(", perBaseNContent='").append(perBaseNContent).append('\'');
-        sb.append(", sequenceLengthDistribution='").append(sequenceLengthDistribution).append('\'');
-        sb.append(", sequenceDuplicationLevels='").append(sequenceDuplicationLevels).append('\'');
-        sb.append(", overrepresentedSequences='").append(overrepresentedSequences).append('\'');
+        sb.append(", seqLengthDistribution='").append(seqLengthDistribution).append('\'');
+        sb.append(", seqDuplicationLevels='").append(seqDuplicationLevels).append('\'');
+        sb.append(", overrepresentedSeqs='").append(overrepresentedSeqs).append('\'');
         sb.append(", adapterContent='").append(adapterContent).append('\'');
         sb.append(", kmerContent='").append(kmerContent).append('\'');
         sb.append('}');
@@ -60,39 +62,48 @@ public class Summary {
         return this;
     }
 
-    public String getPerBaseSequenceQuality() {
-        return perBaseSequenceQuality;
+    public String getPerBaseSeqQuality() {
+        return perBaseSeqQuality;
     }
 
-    public Summary setPerBaseSequenceQuality(String perBaseSequenceQuality) {
-        this.perBaseSequenceQuality = perBaseSequenceQuality;
+    public Summary setPerBaseSeqQuality(String perBaseSeqQuality) {
+        this.perBaseSeqQuality = perBaseSeqQuality;
         return this;
     }
 
-    public String getPerSequenceQualityScores() {
-        return perSequenceQualityScores;
+    public String getPerTileSeqQuality() {
+        return perTileSeqQuality;
     }
 
-    public Summary setPerSequenceQualityScores(String perSequenceQualityScores) {
-        this.perSequenceQualityScores = perSequenceQualityScores;
+    public Summary setPerTileSeqQuality(String perTileSeqQuality) {
+        this.perTileSeqQuality = perTileSeqQuality;
         return this;
     }
 
-    public String getPerBaseSequenceContent() {
-        return perBaseSequenceContent;
+    public String getPerSeqQualityScores() {
+        return perSeqQualityScores;
     }
 
-    public Summary setPerBaseSequenceContent(String perBaseSequenceContent) {
-        this.perBaseSequenceContent = perBaseSequenceContent;
+    public Summary setPerSeqQualityScores(String perSeqQualityScores) {
+        this.perSeqQualityScores = perSeqQualityScores;
         return this;
     }
 
-    public String getPerSequenceGcContent() {
-        return perSequenceGcContent;
+    public String getPerBaseSeqContent() {
+        return perBaseSeqContent;
     }
 
-    public Summary setPerSequenceGcContent(String perSequenceGcContent) {
-        this.perSequenceGcContent = perSequenceGcContent;
+    public Summary setPerBaseSeqContent(String perBaseSeqContent) {
+        this.perBaseSeqContent = perBaseSeqContent;
+        return this;
+    }
+
+    public String getPerSeqGcContent() {
+        return perSeqGcContent;
+    }
+
+    public Summary setPerSeqGcContent(String perSeqGcContent) {
+        this.perSeqGcContent = perSeqGcContent;
         return this;
     }
 
@@ -105,30 +116,30 @@ public class Summary {
         return this;
     }
 
-    public String getSequenceLengthDistribution() {
-        return sequenceLengthDistribution;
+    public String getSeqLengthDistribution() {
+        return seqLengthDistribution;
     }
 
-    public Summary setSequenceLengthDistribution(String sequenceLengthDistribution) {
-        this.sequenceLengthDistribution = sequenceLengthDistribution;
+    public Summary setSeqLengthDistribution(String seqLengthDistribution) {
+        this.seqLengthDistribution = seqLengthDistribution;
         return this;
     }
 
-    public String getSequenceDuplicationLevels() {
-        return sequenceDuplicationLevels;
+    public String getSeqDuplicationLevels() {
+        return seqDuplicationLevels;
     }
 
-    public Summary setSequenceDuplicationLevels(String sequenceDuplicationLevels) {
-        this.sequenceDuplicationLevels = sequenceDuplicationLevels;
+    public Summary setSeqDuplicationLevels(String seqDuplicationLevels) {
+        this.seqDuplicationLevels = seqDuplicationLevels;
         return this;
     }
 
-    public String getOverrepresentedSequences() {
-        return overrepresentedSequences;
+    public String getOverrepresentedSeqs() {
+        return overrepresentedSeqs;
     }
 
-    public Summary setOverrepresentedSequences(String overrepresentedSequences) {
-        this.overrepresentedSequences = overrepresentedSequences;
+    public Summary setOverrepresentedSeqs(String overrepresentedSeqs) {
+        this.overrepresentedSeqs = overrepresentedSeqs;
         return this;
     }
 

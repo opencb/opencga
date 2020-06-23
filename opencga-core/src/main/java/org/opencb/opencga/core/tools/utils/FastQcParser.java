@@ -24,30 +24,45 @@ public class FastQcParser {
         String line;
 
         while ((line = br.readLine()) != null) {
-            if (line.startsWith(">>Basic Statistics")) {
-                parseBasicStatistics(fastQcReport.getBasicStats(), br);
-            } else if (line.startsWith(">>Per base sequence quality")) {
-                parsePerBaseSeqQuality(fastQcReport.getPerBaseSeqQualities(), br);
-            } else if (line.startsWith(">>Per tile sequence quality")) {
-                parsePerTileSeqQuality(fastQcReport.getPerTileSeqQualities(), br);
-            } else if (line.startsWith(">>Per sequence quality scores")) {
-                parsePerSeqQualityScores(fastQcReport.getPerSeqQualityScores(), br);
-            } else if (line.startsWith(">>Per base sequence content")) {
-                parsePerBaseSeqContent(fastQcReport.getPerBaseSeqContent(), br);
-            } else if (line.startsWith(">>Per sequence GC content")) {
-                parsePerSeqGcContent(fastQcReport.getPerSeqGcContent(), br);
-            } else if (line.startsWith(">>Per base N content")) {
-                parsePerBaseNContent(fastQcReport.getPerBaseNContent(), br);
-            } else if (line.startsWith(">>Sequence Length Distribution")) {
-                parseSeqLengthDistribution(fastQcReport.getSeqLengthDistribution(), br);
-            } else if (line.startsWith(">>Sequence Duplication Levels")) {
-                parseSeqDuplicationLevels(fastQcReport.getSeqDuplicationLevels(), br);
-            } else if (line.startsWith(">>Overrepresented sequences")) {
-                parseOverrepresentedSeqs(fastQcReport.getOverrepresentedSeqs(), br);
-            } else if (line.startsWith(">>Adapter Content")) {
-                parseAdapterContent(fastQcReport.getAdapterContent(), br);
-            } else if (line.startsWith(">>Kmer Content")) {
-                parseKmerContent(fastQcReport.getKmerContent(), br);
+            if (line.startsWith(">>")) {
+                String status = line.split("\t")[1].toUpperCase();
+                if (line.startsWith(">>Basic Statistics")) {
+                    fastQcReport.getSummary().setBasicStatistics(status);
+                    parseBasicStatistics(fastQcReport.getBasicStats(), br);
+                } else if (line.startsWith(">>Per base sequence quality")) {
+                    fastQcReport.getSummary().setPerBaseSeqQuality(status);
+                    parsePerBaseSeqQuality(fastQcReport.getPerBaseSeqQualities(), br);
+                } else if (line.startsWith(">>Per tile sequence quality")) {
+                    fastQcReport.getSummary().setPerTileSeqQuality(status);
+                    parsePerTileSeqQuality(fastQcReport.getPerTileSeqQualities(), br);
+                } else if (line.startsWith(">>Per sequence quality scores")) {
+                    fastQcReport.getSummary().setPerSeqQualityScores(status);
+                    parsePerSeqQualityScores(fastQcReport.getPerSeqQualityScores(), br);
+                } else if (line.startsWith(">>Per base sequence content")) {
+                    fastQcReport.getSummary().setPerBaseSeqContent(status);
+                    parsePerBaseSeqContent(fastQcReport.getPerBaseSeqContent(), br);
+                } else if (line.startsWith(">>Per sequence GC content")) {
+                    fastQcReport.getSummary().setPerSeqGcContent(status);
+                    parsePerSeqGcContent(fastQcReport.getPerSeqGcContent(), br);
+                } else if (line.startsWith(">>Per base N content")) {
+                    fastQcReport.getSummary().setPerBaseNContent(status);
+                    parsePerBaseNContent(fastQcReport.getPerBaseNContent(), br);
+                } else if (line.startsWith(">>Sequence Length Distribution")) {
+                    fastQcReport.getSummary().setSeqLengthDistribution(status);
+                    parseSeqLengthDistribution(fastQcReport.getSeqLengthDistribution(), br);
+                } else if (line.startsWith(">>Sequence Duplication Levels")) {
+                    fastQcReport.getSummary().setSeqDuplicationLevels(status);
+                    parseSeqDuplicationLevels(fastQcReport.getSeqDuplicationLevels(), br);
+                } else if (line.startsWith(">>Overrepresented sequences")) {
+                    fastQcReport.getSummary().setOverrepresentedSeqs(status);
+                    parseOverrepresentedSeqs(fastQcReport.getOverrepresentedSeqs(), br);
+                } else if (line.startsWith(">>Adapter Content")) {
+                    fastQcReport.getSummary().setAdapterContent(status);
+                    parseAdapterContent(fastQcReport.getAdapterContent(), br);
+                } else if (line.startsWith(">>Kmer Content")) {
+                    fastQcReport.getSummary().setKmerContent(status);
+                    parseKmerContent(fastQcReport.getKmerContent(), br);
+                }
             }
         }
         fr.close();
