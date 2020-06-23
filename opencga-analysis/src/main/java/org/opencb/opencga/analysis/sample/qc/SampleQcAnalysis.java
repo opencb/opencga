@@ -43,17 +43,12 @@ import java.util.stream.Collectors;
 public class SampleQcAnalysis extends OpenCgaTool {
 
     public static final String ID = "sample-qc";
-    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes inferred sex, relatedness," +
-            " mendelian errors (UDP), FastQC, samtools/flagstat and picard/CollectHsMetrics";
-    public static final String VARIABLE_SET_ID = "opencga_sample_qc";
+    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes FastQC, samtools/flagstat and"
+        + " picard/CollectHsMetrics";
 
-    public  static final String INFERRED_SEX_STEP = "inferred-sex";
-    public  static final String RELATEDNESS_STEP = "relatedness";
-    public  static final String MENDELIAN_ERRORS_STEP = "mendelian-errors";
     public  static final String FASTQC_STEP = "fastqc";
     public  static final String HS_METRICS_STEP = "hs-metrics";
     public  static final String FLAG_STATS_STEP = "flag-stats";
-    public  static final String INDEX_STEP = "index-variable-set";
 
     private String studyId;
     private String sampleId;
@@ -61,11 +56,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
     private String bamFilename;
     private String baitFilename;
     private String targetFilename;
-    private String minorAlleleFreq;
-    private String relatednessMethod;
-
-    // Internal members
-    private List<String> sampleIds;
 
     public SampleQcAnalysis() {
     }
@@ -89,26 +79,11 @@ public class SampleQcAnalysis extends OpenCgaTool {
         if (StringUtils.isNotEmpty(sampleId)) {
             throw new ToolException("Missing sample ID.");
         }
-
-        // Get relatives, i.e., members of a family
-        List<Sample> samples = SampleQcUtils.getRelativeSamplesBySampleId(studyId, sampleId, catalogManager, token);
-        if (CollectionUtils.isNotEmpty(samples)) {
-            sampleIds = samples.stream().map(Sample::getId).collect(Collectors.toList());
-        }
     }
 
     @Override
     protected List<String> getSteps() {
         List<String> steps = new ArrayList<>();
-        if (canRunInferredSex()) {
-            steps.add(INFERRED_SEX_STEP);
-        }
-        if (canRunRelatedness()) {
-            steps.add(RELATEDNESS_STEP);
-        }
-        if (canRunMendelianErrors()) {
-            steps.add(MENDELIAN_ERRORS_STEP);
-        }
         if (canRunFastQc()) {
             steps.add(FASTQC_STEP);
         }
@@ -118,7 +93,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
         if (canRunFlagStats()) {
             steps.add(FLAG_STATS_STEP);
         }
-        steps.add(INDEX_STEP);
         return steps;
     }
 
@@ -127,35 +101,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
         SampleQcAnalysisExecutor executor = getToolExecutor(SampleQcAnalysisExecutor.class);
 
-        executor.setStudyId(studyId)
-                .setSampleIds(sampleIds)
-                .setMinorAlleleFreq(minorAlleleFreq)
-                .setRelatednessMethod(relatednessMethod);
-
-        if (canRunInferredSex()) {
-            step(INFERRED_SEX_STEP, () -> {
-                executor.setQc(SampleQcAnalysisExecutor.Qc.INFERRED_SEX).execute();
-                SampleQcUtils.updateSexReport(executor.getReport().getInferredSexReport(), studyId, catalogManager, token);
-            });
-        } else {
-            getErm().addWarning("Skipping step " + INFERRED_SEX_STEP + ": you need to provide a BAM file");
-        }
-
-        if (canRunRelatedness()) {
-            step(RELATEDNESS_STEP, () -> {
-                executor.setQc(SampleQcAnalysisExecutor.Qc.RELATEDNESS).execute();
-            });
-        } else {
-            getErm().addWarning("Skipping step " + RELATEDNESS_STEP + ": no members found for the sample family");
-        }
-
-        if (canRunMendelianErrors()) {
-            step(MENDELIAN_ERRORS_STEP, () -> {
-                executor.setQc(SampleQcAnalysisExecutor.Qc.MENDELIAN_ERRORS).execute();
-            });
-        } else {
-            getErm().addWarning("Skipping step " + MENDELIAN_ERRORS_STEP + ": father and mother must exist for sample " + sampleId);
-        }
+        executor.setStudyId(studyId);
 
         if (canRunFastQc()) {
             step(FASTQC_STEP, () -> {
@@ -189,117 +135,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
         } catch (IOException e) {
             throw new ToolException(e);
         }
-
-        // Index as a variable set
-        step("index-variable-set", () -> {
-            indexResults(executor.getReport());
-        });
-    }
-
-    private void indexResults(SampleQualityControl report) throws ToolException {
-        try {
-            // Index variable-set for each target individual
-            for (String sampleId : sampleIds) {
-                // Create annotation set
-                ObjectMap annotations = buildAnnotations(report, sampleId);
-                AnnotationSet annotationSet = new AnnotationSet(VARIABLE_SET_ID, VARIABLE_SET_ID, annotations);
-                SampleUpdateParams updateParams = new SampleUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
-
-                // Get sample from ID and update
-                Sample sample = SampleQcUtils.getValidSampleById(studyId, sampleId, catalogManager, token);
-                catalogManager.getSampleManager().update(studyId, sample.getId(), updateParams, QueryOptions.empty(), token);
-            }
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
-    }
-
-    private ObjectMap buildAnnotations(SampleQualityControl report, String sampleId) throws ToolException {
-        ObjectMap annot = new ObjectMap();
-
-        // Get individual from sample and update
-        try {
-            annot.put("sample", sampleId);
-            Individual individual = SampleQcUtils.getIndividualBySampleId(studyId, sampleId, catalogManager, token);
-            if (individual != null) {
-                annot.put("individual", individual.getId());
-                if (individual.getFather() != null) {
-                    annot.put("father", individual.getFather().getId());
-                }
-                if (individual.getMother() != null) {
-                    annot.put("mother", individual.getMother().getId());
-                }
-            }
-        } catch (ToolException e) {
-            throw new ToolException(e);
-        }
-
-        // Relatedness annotations
-        if (report.getRelatednessReport() != null) {
-            ObjectMap relatednessAnnot = new ObjectMap();
-
-            relatednessAnnot.put("method", report.getRelatednessReport().getMethod());
-            List<ObjectMap> scoreAnnot = new ArrayList<>();
-            for (RelatednessReport.RelatednessScore score : report.getRelatednessReport().getScores()) {
-                if (sampleId.equals(score.getSampleId1()) || sampleId.equals(score.getSampleId2())) {
-                    scoreAnnot.add(new ObjectMap()
-                            .append("sampleId1", score.getSampleId1())
-                            .append("sampleId2", score.getSampleId2())
-                            .append("reportedRelation", score.getInferredRelationship())
-                            .append("z0", score.getZ0())
-                            .append("z1", score.getZ1())
-                            .append("z2", score.getZ2())
-                            .append("piHat", score.getPiHat())
-                    );
-                }
-            }
-            relatednessAnnot.put("scores", scoreAnnot);
-            annot.put("relatednessReport", relatednessAnnot);
-        }
-
-        // Mendelian error annotations
-        if (report.getMendelianErrorReport() != null) {
-            for (SampleAggregation sampleAggregation : report.getMendelianErrorReport().getSampleAggregation()) {
-                if (sampleId.equals(sampleAggregation.getSample())) {
-                    ObjectMap meAnnot = new ObjectMap();
-                    meAnnot.put("numErrors", sampleAggregation.getNumErrors());
-                    meAnnot.put("numRatio", sampleAggregation.getRatio());
-
-                    List<ObjectMap> chromAnnot = new ArrayList<>();
-                    for (ChromosomeAggregation chromAggregation : sampleAggregation.getChromAggregation()) {
-                        chromAnnot.add(new ObjectMap()
-                                .append("chromosome", chromAggregation.getChromosome())
-                                .append("numErrors", chromAggregation.getNumErrors())
-                                .append("errorCodeAggregation", chromAggregation.getErrorCodeAggregation())
-                        );
-                    }
-                    meAnnot.put("chromAggregation", chromAnnot);
-                    annot.put("mendelianErrorReport", meAnnot);
-
-                    break;
-                }
-            }
-        }
-
-        // Sex annotations
-        if (CollectionUtils.isNotEmpty(report.getInferredSexReport())) {
-            for (InferredSexReport inferredSexReport : report.getInferredSexReport()) {
-                if (sampleId.equals(inferredSexReport.getSampleId())) {
-                    // Found
-                    ObjectMap sexAnnot = new ObjectMap();
-                    sexAnnot.put("reportedSex", inferredSexReport.getReportedSex());
-                    sexAnnot.put("reportedKaryotypicSex", inferredSexReport.getReportedKaryotypicSex());
-                    sexAnnot.put("ratioX", inferredSexReport.getRatioX());
-                    sexAnnot.put("ratioY", inferredSexReport.getRatioY());
-                    sexAnnot.put("inferredKaryotypicSex", inferredSexReport.getInferredKaryotypicSex());
-
-                    annot.put("sexReport", sexAnnot);
-                    break;
-                }
-            }
-        }
-
-        return annot;
     }
 
     private boolean canRunFlagStats() {
@@ -314,27 +149,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
         return true;
     }
 
-    private boolean canRunMendelianErrors() {
-        Individual individual;
-        try {
-            individual = SampleQcUtils.getIndividualBySampleId(studyId, sampleId, catalogManager, token);
-        } catch (ToolException e) {
-            return false;
-        }
-        if (individual.getMother() == null || individual.getFather() == null) {
-            return false;
-        }
-        return true;
-    }
     private boolean canRunFastQc() {
-        return StringUtils.isEmpty(bamFilename) ? false : true;
-    }
-
-    private boolean canRunRelatedness() {
-        return CollectionUtils.isEmpty(sampleIds) ? false : true;
-    }
-
-    private boolean canRunInferredSex() {
         return StringUtils.isEmpty(bamFilename) ? false : true;
     }
 
@@ -390,24 +205,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
     public SampleQcAnalysis setTargetFilename(String targetFilename) {
         this.targetFilename = targetFilename;
-        return this;
-    }
-
-    public String getMinorAlleleFreq() {
-        return minorAlleleFreq;
-    }
-
-    public SampleQcAnalysis setMinorAlleleFreq(String minorAlleleFreq) {
-        this.minorAlleleFreq = minorAlleleFreq;
-        return this;
-    }
-
-    public String getRelatednessMethod() {
-        return relatednessMethod;
-    }
-
-    public SampleQcAnalysis setRelatednessMethod(String relatednessMethod) {
-        this.relatednessMethod = relatednessMethod;
         return this;
     }
 }

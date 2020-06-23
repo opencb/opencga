@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.sample.qc;
+package org.opencb.opencga.analysis.individual.qc;
 
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -35,7 +35,7 @@ public class IBDComputation {
     public static RelatednessReport compute(String study, List<String> samples, String maf, Path outDir,
                                             VariantStorageManager storageManager, String token) throws ToolException {
         // Select markers
-        SampleQcUtils.selectMarkers(BASENAME, study, samples, maf, outDir, storageManager, token);
+        IndividualQcUtils.selectMarkers(BASENAME, study, samples, maf, outDir, storageManager, token);
 
         // run IBD and return the result file (now autosome-file comprises X chromosome too)
         File outFile = runIBD(BASENAME, outDir);
@@ -44,7 +44,7 @@ public class IBDComputation {
             throw new ToolException("Something wrong happened executing relatedness analysis");
         }
 
-        return SampleQcUtils.buildRelatednessReport(outFile);
+        return IndividualQcUtils.buildRelatednessReport(outFile);
     }
 
     private static File runIBD(String basename, Path outDir) throws ToolException {

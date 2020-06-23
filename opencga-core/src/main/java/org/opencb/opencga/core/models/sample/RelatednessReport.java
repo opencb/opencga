@@ -23,7 +23,7 @@ import java.util.Map;
 
 public class RelatednessReport {
 
-    // Method., e.g.: IBD
+    // Method., e.g.: Plink/IBD
     private String method;
 
     // Relatedness scores for pair of samples
@@ -48,24 +48,28 @@ public class RelatednessReport {
         // Reported relation according to pedigree
         private String inferredRelationship;
 
-        private Map<String, Object> values = new LinkedHashMap<>();
-        private double z0;
-        private double z1;
-        private double z2;
-        private double piHat;
+        private Map<String, Object> values;
 
         public RelatednessScore() {
+             this("", "", "", new LinkedHashMap<>());
         }
 
-        public RelatednessScore(String sampleId1, String sampleId2, String inferredRelationship, double z0, double z1, double z2, double piHat)
-        {
+        public RelatednessScore(String sampleId1, String sampleId2, String inferredRelationship, Map<String, Object> values) {
             this.sampleId1 = sampleId1;
             this.sampleId2 = sampleId2;
             this.inferredRelationship = inferredRelationship;
-            this.z0 = z0;
-            this.z1 = z1;
-            this.z2 = z2;
-            this.piHat = piHat;
+            this.values = values;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("RelatednessScore{");
+            sb.append("sampleId1='").append(sampleId1).append('\'');
+            sb.append(", sampleId2='").append(sampleId2).append('\'');
+            sb.append(", inferredRelationship='").append(inferredRelationship).append('\'');
+            sb.append(", values=").append(values);
+            sb.append('}');
+            return sb.toString();
         }
 
         public String getSampleId1() {
@@ -95,39 +99,12 @@ public class RelatednessReport {
             return this;
         }
 
-        public double getZ0() {
-            return z0;
+        public Map<String, Object> getValues() {
+            return values;
         }
 
-        public RelatednessScore setZ0(double z0) {
-            this.z0 = z0;
-            return this;
-        }
-
-        public double getZ1() {
-            return z1;
-        }
-
-        public RelatednessScore setZ1(double z1) {
-            this.z1 = z1;
-            return this;
-        }
-
-        public double getZ2() {
-            return z2;
-        }
-
-        public RelatednessScore setZ2(double z2) {
-            this.z2 = z2;
-            return this;
-        }
-
-        public double getPiHat() {
-            return piHat;
-        }
-
-        public RelatednessScore setPiHat(double piHat) {
-            this.piHat = piHat;
+        public RelatednessScore setValues(Map<String, Object> values) {
+            this.values = values;
             return this;
         }
     }

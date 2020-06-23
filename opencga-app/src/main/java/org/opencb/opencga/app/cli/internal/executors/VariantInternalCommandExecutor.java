@@ -785,8 +785,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
         inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         inferredSexAnalysis.setStudyId(cliOptions.study)
-                .setSampleId(cliOptions.individual)
-                .setSampleId(cliOptions.sample)
+                .setIndividualId(cliOptions.individual)
                 .start();
     }
 
@@ -818,8 +817,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setFastaFilename(cliOptions.fastaFile)
                 .setBaitFilename(cliOptions.baitFile)
                 .setTargetFilename(cliOptions.targetFile)
-                .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
-                .setRelatednessMethod(cliOptions.relatednessMethod)
                 .start();
     }
 

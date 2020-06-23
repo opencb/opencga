@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.sample.qc;
+package org.opencb.opencga.analysis.individual.qc;
 
 import org.junit.Test;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -28,14 +28,14 @@ import java.nio.file.Paths;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
-public class SampleQcUtilsTest {
+public class IndividualQcUtilsTest {
 
     @Test
     public void buildRelatednessReport() throws ToolException, IOException {
 
         URI resourceUri = getResourceUri("ibd.genome");
         File file = Paths.get(resourceUri.getPath()).toFile();
-        RelatednessReport relatednessReport = SampleQcUtils.buildRelatednessReport(file);
+        RelatednessReport relatednessReport = IndividualQcUtils.buildRelatednessReport(file);
 
         System.out.println(JacksonUtils.getDefaultNonNullObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(relatednessReport));
     }

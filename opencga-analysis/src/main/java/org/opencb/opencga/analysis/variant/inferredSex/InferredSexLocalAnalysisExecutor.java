@@ -18,8 +18,8 @@ package org.opencb.opencga.analysis.variant.inferredSex;
 
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.sample.qc.InferredSexComputation;
-import org.opencb.opencga.analysis.sample.qc.SampleQcUtils;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
+import org.opencb.opencga.analysis.individual.qc.InferredSexComputation;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -27,6 +27,10 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @ToolExecutor(id="opencga-local", tool = InferredSexAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -39,17 +43,23 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
         FileManager fileManager = catalogManager.getFileManager();
         String assembly;
         try {
-            assembly = SampleQcUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
+            assembly = IndividualQcUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
         // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
-        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), getSampleId(), assembly, fileManager, alignmentStorageManager,
+        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), getIndividualId(), assembly, fileManager, alignmentStorageManager,
                 getToken());
 
-        // Set inferred sex report (individual fields will be set later)
         // TODO infer sex from ratios
-        setInferredSexReport(new InferredSexReport("", getSampleId(), "", "", ratios[0], ratios[1], ""));
+        String inferredKaryotypicSex = "";
+
+        Map<String, Object> values = new HashMap<>();
+        values.put("ratioX", ratios[0]);
+        values.put("ratioY", ratios[1]);
+
+        // Set inferred sex report (individual fields will be set later)
+        setInferredSexReport(new InferredSexReport("CoverageRatio", inferredKaryotypicSex, values, Collections.emptyList()));
     }
 }
