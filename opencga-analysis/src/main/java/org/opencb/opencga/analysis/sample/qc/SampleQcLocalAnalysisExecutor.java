@@ -16,9 +16,11 @@
 
 package org.opencb.opencga.analysis.sample.qc;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -27,8 +29,10 @@ import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.models.variant.MendelianErrorReport;
 import org.opencb.opencga.core.models.sample.RelatednessReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,6 +75,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
                 getReport().setInferredSexReport(sexReportList);
                 break;
             }
+
             case RELATEDNESS: {
 
                 // Get managers
@@ -85,6 +90,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
                 getReport().setRelatednessReport(relatednessReport);
                 break;
             }
+
             case MENDELIAN_ERRORS: {
 
                 // Get managers
@@ -99,6 +105,41 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
                 getReport().setMendelianErrorReport(mendelianErrorReport);
                 break;
             }
+
+            case FASTQC: {
+
+//                // Get managers
+//                FastqcWrapperAnalysis fastqc = new FastqcWrapperAnalysis();
+//
+//                AlignmentCommandOptions.FastqcCommandOptions cliOptions = alignmentCommandOptions.fastqcCommandOptions;
+//                ObjectMap params = new ObjectMap();
+//                params.putAll(cliOptions.commonOptions.params);
+//
+//                FastqcWrapperAnalysis fastqc = new FastqcWrapperAnalysis();
+//
+//                fastqc.setUp(appHome, getVariantStorageManager().getCatalogManager(), storageEngineFactory, params, getOutDir()), getToken());
+//
+//                fastqc.setStudy(getStudyId());
+//
+//                fastqc.setFile();
+//
+//                fastqc.start();
+//
+//
+//                ExecutionResult fastqcResult = fastqc.start();
+//
+//                VariantStorageManager variantStorageManager = getVariantStorageManager();
+//                CatalogManager catalogManager = variantStorageManager.getCatalogManager();
+//
+//                // Compute mendelian inconsitencies
+//                MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(getStudyId(), getFamilyId(),
+//                        variantStorageManager, getToken());
+//
+//                // Set relatedness report
+//                getReport().setMendelianErrorReport(mendelianErrorReport);
+                break;
+            }
+
             default: {
                 throw new ToolException("Unknown genetic check: " + getQc());
             }

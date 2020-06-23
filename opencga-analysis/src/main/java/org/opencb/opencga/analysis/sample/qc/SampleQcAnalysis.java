@@ -106,7 +106,9 @@ public class SampleQcAnalysis extends OpenCgaTool {
         if (canRunRelatedness()) {
             steps.add(RELATEDNESS_STEP);
         }
-        steps.add(MENDELIAN_ERRORS_STEP);
+        if (canRunMendelianErrors()) {
+            steps.add(MENDELIAN_ERRORS_STEP);
+        }
         if (canRunFastQc()) {
             steps.add(FASTQC_STEP);
         }
@@ -147,9 +149,13 @@ public class SampleQcAnalysis extends OpenCgaTool {
             getErm().addWarning("Skipping step " + RELATEDNESS_STEP + ": no members found for the sample family");
         }
 
-        step(MENDELIAN_ERRORS_STEP, () -> {
-            executor.setQc(SampleQcAnalysisExecutor.Qc.MENDELIAN_ERRORS).execute();
-        });
+        if (canRunMendelianErrors()) {
+            step(MENDELIAN_ERRORS_STEP, () -> {
+                executor.setQc(SampleQcAnalysisExecutor.Qc.MENDELIAN_ERRORS).execute();
+            });
+        } else {
+            getErm().addWarning("Skipping step " + MENDELIAN_ERRORS_STEP + ": father and mother must exist for sample " + sampleId);
+        }
 
         if (canRunFastQc()) {
             step(FASTQC_STEP, () -> {
@@ -308,6 +314,18 @@ public class SampleQcAnalysis extends OpenCgaTool {
         return true;
     }
 
+    private boolean canRunMendelianErrors() {
+        Individual individual;
+        try {
+            individual = SampleQcUtils.getIndividualBySampleId(studyId, sampleId, catalogManager, token);
+        } catch (ToolException e) {
+            return false;
+        }
+        if (individual.getMother() == null || individual.getFather() == null) {
+            return false;
+        }
+        return true;
+    }
     private boolean canRunFastQc() {
         return StringUtils.isEmpty(bamFilename) ? false : true;
     }

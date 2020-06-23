@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.models.sample.RelatednessReport;
+import org.opencb.opencga.core.models.variant.fastqc.FastQcReport;
 
 import java.io.Serializable;
 import java.util.List;
