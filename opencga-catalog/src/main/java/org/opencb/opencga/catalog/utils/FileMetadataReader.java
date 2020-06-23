@@ -51,25 +51,21 @@ import java.util.stream.Collectors;
  */
 public class FileMetadataReader {
 
+    @Deprecated
     public static final String VARIANT_FILE_STATS = "variantFileStats";
     @Deprecated
     public static final String VARIANT_STATS = "variantStats";
-
     @Deprecated
     public static final String VARIANT_SOURCE = "variantSource";
+
     public static final String VARIANT_FILE_METADATA = "variantFileMetadata";
-    public static final String VARIANT_FILE_METADATA_VARIABLE_SET = "opencga_variant_file_metadata";
-    private static final QueryOptions STUDY_QUERY_OPTIONS =
-            new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias"));
+    public static final String FILE_VARIANT_STATS_VARIABLE_SET = "opencga_file_variant_stats";
+
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(FileMetadataReader.class);
-    public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
-    private final FileUtils catalogFileUtils;
-
 
     public FileMetadataReader(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        catalogFileUtils = new FileUtils(catalogManager);
     }
 
     public void addMetadataInformation(String studyId, File file) throws CatalogException {

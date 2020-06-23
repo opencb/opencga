@@ -75,7 +75,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
+import static org.opencb.opencga.catalog.utils.FileMetadataReader.FILE_VARIANT_STATS_VARIABLE_SET;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
@@ -452,8 +452,14 @@ public class FileManager extends AnnotationSetManager<File> {
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
                 VariantFileMetadata fileMetadata = getDefaultObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantSetStats stats = fileMetadata.getStats();
-                update(studyStr, vcf.getPath(),
-                        new FileUpdateParams().setStats(new ObjectMap(VARIANT_FILE_STATS, stats)), new QueryOptions(), sessionId);
+
+                AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, FILE_VARIANT_STATS_VARIABLE_SET);
+                catalogManager.getFileManager()
+                        .update(studyStr, vcf.getPath(), new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet)),
+                                new QueryOptions(Constants.ACTIONS,
+                                        Collections.singletonMap(ANNOTATION_SETS, ParamUtils.CompleteUpdateAction.SET)), sessionId);
+
+
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
             }
@@ -1950,7 +1956,7 @@ public class FileManager extends AnnotationSetManager<File> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         if (parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
-            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            Map<String, Object> actionMap = new HashMap<>(options.getMap(Constants.ACTIONS, Collections.emptyMap()));
             if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
                     && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
                 logger.warn("Assuming the user wants to add the list of annotation sets provided");

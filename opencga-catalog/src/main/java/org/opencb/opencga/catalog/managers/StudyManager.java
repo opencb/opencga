@@ -326,24 +326,7 @@ public class StudyManager extends AbstractManager {
             fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty());
 
             // Read and process installation variable sets
-            Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
-            for (String variableSetFile : variablesets) {
-                VariableSet vs = null;
-                try {
-                    vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
-                            getClass().getClassLoader().getResourceAsStream(variableSetFile), VariableSet.class);
-                } catch (IOException e) {
-                    logger.error("Could not parse variable set '{}'", variableSetFile, e);
-                }
-                if (vs != null) {
-                    if (vs.getAttributes() == null) {
-                        vs.setAttributes(new HashMap<>());
-                    }
-                    vs.getAttributes().put("resource", variableSetFile);
-                    createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.getDescription(),
-                            vs.getAttributes(), new ArrayList<>(vs.getVariables()), vs.getEntities(), token);
-                }
-            }
+            createDefaultVariableSets(study, token);
 
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -354,6 +337,38 @@ public class StudyManager extends AbstractManager {
             auditManager.auditCreate(userId, Enums.Resource.STUDY, id, "", id, "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
+        }
+    }
+
+    public void createDefaultVariableSets(String studyStr, String token) throws CatalogException {
+        Study study = get(studyStr, new QueryOptions(), token).first();
+        createDefaultVariableSets(study, token);
+    }
+
+    private void createDefaultVariableSets(Study study, String token) throws CatalogException {
+        Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
+        for (String variableSetFile : variablesets) {
+            VariableSet vs;
+            try {
+                vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
+                        getClass().getClassLoader().getResourceAsStream(variableSetFile), VariableSet.class);
+            } catch (IOException e) {
+                logger.error("Could not parse variable set '{}'", variableSetFile, e);
+                continue;
+            }
+            if (vs != null) {
+                if (vs.getAttributes() == null) {
+                    vs.setAttributes(new HashMap<>());
+                }
+                vs.getAttributes().put("resource", variableSetFile);
+
+                if (study.getVariableSets().stream().anyMatch(tvs -> tvs.getId().equals(vs.getId()))) {
+                    logger.debug("Skip already existing variable set " + vs.getId());
+                } else {
+                    createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.getDescription(),
+                            vs.getAttributes(), new ArrayList<>(vs.getVariables()), vs.getEntities(), token);
+                }
+            }
         }
     }
 

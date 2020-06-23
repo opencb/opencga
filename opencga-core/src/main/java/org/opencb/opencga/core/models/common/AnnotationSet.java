@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.common;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Collections;
@@ -162,5 +163,9 @@ public class AnnotationSet {
     public AnnotationSet setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    public <T> T to(Class<T> tClass) {
+        return JacksonUtils.getDefaultObjectMapper().convertValue(this.getAnnotations(), tClass);
     }
 }

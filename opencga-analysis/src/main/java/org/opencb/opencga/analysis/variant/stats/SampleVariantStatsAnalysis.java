@@ -235,10 +235,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
                 catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), token);
             } catch (CatalogException e) {
                 // Assume variable set not found. Try to create
-                List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(SampleVariantStats.getClassSchema());
-                catalogManager.getStudyManager()
-                        .createVariableSet(study, VARIABLE_SET_ID, VARIABLE_SET_ID, true, false, "", Collections.emptyMap(), variables,
-                        Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token);
+                catalogManager.getStudyManager().createDefaultVariableSets(study, token);
             }
 
             for (SampleVariantStats sampleStats : stats) {
