@@ -746,12 +746,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return false;
         }
 
-        switch (job.getTool().getId()) {
-            case "variant-index":
-                int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
-                return canBeQueued("variant-index", maxIndexJobs);
-            default:
-                return true;
+        Integer maxJobs = catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().get(job.getTool().getId());
+        if (maxJobs == null) {
+            // No limit for this tool
+            return true;
+        } else {
+            return canBeQueued(job.getTool().getId(), maxJobs);
         }
     }
 

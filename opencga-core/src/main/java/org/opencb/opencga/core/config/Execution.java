@@ -31,6 +31,7 @@ public class Execution {
     private String defaultQueue;
     private String availableQueues;
     private Map<String, List<String>> toolsPerQueue;
+    private Map<String, Integer> maxConcurrentJobs;
     private ObjectMap options;
 
     public Execution() {
@@ -74,6 +75,15 @@ public class Execution {
         return this;
     }
 
+    public Map<String, Integer> getMaxConcurrentJobs() {
+        return maxConcurrentJobs;
+    }
+
+    public Execution setMaxConcurrentJobs(Map<String, Integer> maxConcurrentJobs) {
+        this.maxConcurrentJobs = maxConcurrentJobs;
+        return this;
+    }
+
     public ObjectMap getOptions() {
         return options;
     }
@@ -90,6 +100,7 @@ public class Execution {
         sb.append(", defaultQueue='").append(defaultQueue).append('\'');
         sb.append(", availableQueues='").append(availableQueues).append('\'');
         sb.append(", toolsPerQueue=").append(toolsPerQueue);
+        sb.append(", maxConcurrentJobs=").append(maxConcurrentJobs);
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();

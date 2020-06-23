@@ -109,6 +109,10 @@ analysis:
 #      - slow:
 #        - "coverage"
 #        - "alignmentStats"
+    maxConcurrentJobs:
+      variant-index: 20
+      variant-annotation-index: 5
+      variant-secondary-index: 2
     options:
      ## Local executor configuration
       local.maxConcurrentJobs: 1    # Max number of concurrent jobs to be executed locally in the master
