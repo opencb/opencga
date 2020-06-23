@@ -31,7 +31,7 @@ import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.models.variant.MendelianErrorReport.SampleAggregation;
 import org.opencb.opencga.core.models.variant.MendelianErrorReport.SampleAggregation.ChromosomeAggregation;
-import org.opencb.opencga.core.models.variant.SampleQcReport;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 
@@ -196,7 +196,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
         });
     }
 
-    private void indexResults(SampleQcReport report) throws ToolException {
+    private void indexResults(SampleQualityControl report) throws ToolException {
         try {
             // Index variable-set for each target individual
             for (String sampleId : sampleIds) {
@@ -214,7 +214,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
         }
     }
 
-    private ObjectMap buildAnnotations(SampleQcReport report, String sampleId) throws ToolException {
+    private ObjectMap buildAnnotations(SampleQualityControl report, String sampleId) throws ToolException {
         ObjectMap annot = new ObjectMap();
 
         // Get individual from sample and update
@@ -245,7 +245,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
                     scoreAnnot.add(new ObjectMap()
                             .append("sampleId1", score.getSampleId1())
                             .append("sampleId2", score.getSampleId2())
-                            .append("reportedRelation", score.getReportedRelation())
+                            .append("reportedRelation", score.getInferredRelationship())
                             .append("z0", score.getZ0())
                             .append("z1", score.getZ1())
                             .append("z2", score.getZ2())

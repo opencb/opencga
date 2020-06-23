@@ -19,13 +19,15 @@ package org.opencb.opencga.core.models.sample;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Status;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -36,6 +38,8 @@ public class Sample extends Annotable {
     private String uuid;
     private SampleProcessing processing;
     private SampleCollection collection;
+
+    private SampleQualityControl qualityControl;
 
     private int release;
     private int version;
@@ -93,6 +97,30 @@ public class Sample extends Annotable {
         this.attributes = attributes;
     }
 
+    public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, SampleQualityControl qualityControl,
+                  int release, int version, String creationDate, String modificationDate, String description, boolean somatic,
+                  List<Phenotype> phenotypes, String individualId, List<String> fileIds, CustomStatus status, SampleInternal internal,
+                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this.id = id;
+        this.uuid = uuid;
+        this.processing = processing;
+        this.collection = collection;
+        this.qualityControl = qualityControl;
+        this.release = release;
+        this.version = version;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
+        this.description = description;
+        this.somatic = somatic;
+        this.phenotypes = phenotypes;
+        this.individualId = individualId;
+        this.fileIds = fileIds;
+        this.status = status;
+        this.internal = internal;
+        this.annotationSets = annotationSets;
+        this.attributes = attributes;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Sample{");
@@ -100,6 +128,7 @@ public class Sample extends Annotable {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", processing=").append(processing);
         sb.append(", collection=").append(collection);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -213,6 +242,15 @@ public class Sample extends Annotable {
 
     public Sample setCollection(SampleCollection collection) {
         this.collection = collection;
+        return this;
+    }
+
+    public SampleQualityControl getQualityControl() {
+        return qualityControl;
+    }
+
+    public Sample setQualityControl(SampleQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 

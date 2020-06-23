@@ -17,7 +17,9 @@
 package org.opencb.opencga.core.models.sample;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RelatednessReport {
 
@@ -26,10 +28,17 @@ public class RelatednessReport {
 
     // Relatedness scores for pair of samples
     private List<RelatednessScore> scores;
+    private List<String> files;
 
-    //-------------------------------------------------------------------------
-    // R E L A T E D N E S S     S C O R E
-    //-------------------------------------------------------------------------
+    public RelatednessReport() {
+        this("Plink/IBD", new ArrayList<>(), new ArrayList<>());
+    }
+
+    public RelatednessReport(String method, List<RelatednessScore> scores, List<String> files) {
+        this.method = method;
+        this.scores = scores;
+        this.files = files;
+    }
 
     public static class RelatednessScore {
         // Pair of samples
@@ -37,24 +46,22 @@ public class RelatednessReport {
         private String sampleId2;
 
         // Reported relation according to pedigree
-        private String reportedRelation;
+        private String inferredRelationship;
 
-        // Z scores
+        private Map<String, Object> values = new LinkedHashMap<>();
         private double z0;
         private double z1;
         private double z2;
-
-        // PI-HAT score
         private double piHat;
 
         public RelatednessScore() {
         }
 
-        public RelatednessScore(String sampleId1, String sampleId2, String reportedRelation, double z0, double z1, double z2, double piHat)
+        public RelatednessScore(String sampleId1, String sampleId2, String inferredRelationship, double z0, double z1, double z2, double piHat)
         {
             this.sampleId1 = sampleId1;
             this.sampleId2 = sampleId2;
-            this.reportedRelation = reportedRelation;
+            this.inferredRelationship = inferredRelationship;
             this.z0 = z0;
             this.z1 = z1;
             this.z2 = z2;
@@ -79,12 +86,12 @@ public class RelatednessReport {
             return this;
         }
 
-        public String getReportedRelation() {
-            return reportedRelation;
+        public String getInferredRelationship() {
+            return inferredRelationship;
         }
 
-        public RelatednessScore setReportedRelation(String reportedRelation) {
-            this.reportedRelation = reportedRelation;
+        public RelatednessScore setInferredRelationship(String inferredRelationship) {
+            this.inferredRelationship = inferredRelationship;
             return this;
         }
 
@@ -125,14 +132,14 @@ public class RelatednessReport {
         }
     }
 
-    public RelatednessReport() {
-        this.method = "IBD";
-        this.scores = new ArrayList<>();
-    }
 
-    public RelatednessReport(String method, List<RelatednessScore> scores) {
-        this.method = method;
-        this.scores = scores;
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("RelatednessReport{");
+        sb.append("method='").append(method).append('\'');
+        sb.append(", scores=").append(scores);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getMethod() {

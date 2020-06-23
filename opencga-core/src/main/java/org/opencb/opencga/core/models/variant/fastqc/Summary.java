@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.models.variant.fastqc;
 
 public class Summary {
+
     private String basicStatistics;
     private String perBaseSeqQuality;
     private String perTileSeqQuality;

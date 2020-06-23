@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class SampleSampleQcReportTest {
+public class SampleSampleQualityControlTest {
 
     @Test
     public void test() throws JsonProcessingException {

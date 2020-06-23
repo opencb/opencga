@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.models.variant.SampleQcReport;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.List;
@@ -34,10 +34,10 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
     private String minorAlleleFreq;
     private String relatednessMethod;
 
-    private SampleQcReport report;
+    private SampleQualityControl report;
 
     public SampleQcAnalysisExecutor() {
-        report = new SampleQcReport();
+        report = new SampleQualityControl();
     }
 
     public String getStudyId() {
@@ -94,11 +94,11 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public SampleQcReport getReport() {
+    public SampleQualityControl getReport() {
         return report;
     }
 
-    public SampleQcAnalysisExecutor setReport(SampleQcReport report) {
+    public SampleQcAnalysisExecutor setReport(SampleQualityControl report) {
         this.report = report;
         return this;
     }

@@ -16,92 +16,46 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 public class InferredSexReport {
 
-    // Sample ID
-    private String individualId;
-
-    // Sample ID
-    private String sampleId;
-
-    // Reported values
-    private String reportedSex;
-    private String reportedKaryotypicSex;
-
-    // Ratio: X-chrom / autosoma-chroms
-    private double ratioX;
-
-    // Ratio: Y-chrom / autosoma-chroms
-    private double ratioY;
-
-    // Inferred karyotypic sex
+    private String method;
     private String inferredKaryotypicSex;
+    private Map<String, Object> values;
+    private List<String> files;
 
     public InferredSexReport() {
+        this("CoverageRatio", "", new LinkedHashMap<>(), new ArrayList<>());
     }
 
-    public InferredSexReport(String individualId, String sampleId, String reportedSex, String reportedKaryotypicSex, double ratioX,
-                             double ratioY, String inferredKaryotypicSex) {
-        this.individualId = individualId;
-        this.sampleId = sampleId;
-        this.reportedSex = reportedSex;
-        this.reportedKaryotypicSex = reportedKaryotypicSex;
-        this.ratioX = ratioX;
-        this.ratioY = ratioY;
+    public InferredSexReport(String method, String inferredKaryotypicSex, Map<String, Object> values, List<String> files) {
+        this.method = method;
         this.inferredKaryotypicSex = inferredKaryotypicSex;
+        this.values = values;
+        this.files = files;
     }
 
-    public String getIndividualId() {
-        return individualId;
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("InferredSexReport{");
+        sb.append("method='").append(method).append('\'');
+        sb.append(", inferredKaryotypicSex='").append(inferredKaryotypicSex).append('\'');
+        sb.append(", values=").append(values);
+        sb.append(", files=").append(files);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public InferredSexReport setIndividualId(String individualId) {
-        this.individualId = individualId;
-        return this;
+    public String getMethod() {
+        return method;
     }
 
-    public String getSampleId() {
-        return sampleId;
-    }
-
-    public InferredSexReport setSampleId(String sampleId) {
-        this.sampleId = sampleId;
-        return this;
-    }
-
-    public String getReportedSex() {
-        return reportedSex;
-    }
-
-    public InferredSexReport setReportedSex(String reportedSex) {
-        this.reportedSex = reportedSex;
-        return this;
-    }
-
-    public String getReportedKaryotypicSex() {
-        return reportedKaryotypicSex;
-    }
-
-    public InferredSexReport setReportedKaryotypicSex(String reportedKaryotypicSex) {
-        this.reportedKaryotypicSex = reportedKaryotypicSex;
-        return this;
-    }
-
-    public double getRatioX() {
-        return ratioX;
-    }
-
-    public InferredSexReport setRatioX(double ratioX) {
-        this.ratioX = ratioX;
-        return this;
-    }
-
-    public double getRatioY() {
-        return ratioY;
-    }
-
-    public InferredSexReport setRatioY(double ratioY) {
-        this.ratioY = ratioY;
+    public InferredSexReport setMethod(String method) {
+        this.method = method;
         return this;
     }
 
@@ -111,6 +65,24 @@ public class InferredSexReport {
 
     public InferredSexReport setInferredKaryotypicSex(String inferredKaryotypicSex) {
         this.inferredKaryotypicSex = inferredKaryotypicSex;
+        return this;
+    }
+
+    public Map<String, Object> getValues() {
+        return values;
+    }
+
+    public InferredSexReport setValues(Map<String, Object> values) {
+        this.values = values;
+        return this;
+    }
+
+    public List<String> getFiles() {
+        return files;
+    }
+
+    public InferredSexReport setFiles(List<String> files) {
+        this.files = files;
         return this;
     }
 }

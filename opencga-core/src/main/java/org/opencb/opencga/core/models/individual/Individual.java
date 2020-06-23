@@ -44,6 +44,8 @@ public class Individual extends Annotable {
     private Individual mother;
     private Location location;
 
+    private IndividualQualityControl qualityControl;
+
     private Sex sex;
     private KaryotypicSex karyotypicSex;
     private String ethnicity;
@@ -112,6 +114,37 @@ public class Individual extends Annotable {
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
+    public Individual(String id, String name, String uuid, Individual father, Individual mother, Location location,
+                      IndividualQualityControl qualityControl, Sex sex, KaryotypicSex karyotypicSex, String ethnicity,
+                      IndividualPopulation population, String dateOfBirth, int release, int version, String creationDate,
+                      String modificationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
+                      List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
+                      IndividualInternal internal, Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.father = ObjectUtils.defaultIfNull(father, new Individual());
+        this.mother = ObjectUtils.defaultIfNull(mother, new Individual());
+        this.location = location;
+        this.qualityControl = qualityControl;
+        this.sex = sex;
+        this.karyotypicSex = karyotypicSex;
+        this.ethnicity = ethnicity;
+        this.population = ObjectUtils.defaultIfNull(population, new IndividualPopulation());
+        this.dateOfBirth = dateOfBirth;
+        this.release = release;
+        this.version = version;
+        this.creationDate = ObjectUtils.defaultIfNull(creationDate, TimeUtils.getTime());
+        this.lifeStatus = lifeStatus;
+        this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
+        this.disorders = ObjectUtils.defaultIfNull(disorders, new ArrayList<>());
+        this.samples = ObjectUtils.defaultIfNull(samples, new ArrayList<>());
+        this.parentalConsanguinity = parentalConsanguinity;
+        this.annotationSets = annotationSets;
+        this.status = status;
+        this.internal = internal;
+        this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Individual{");
@@ -121,6 +154,7 @@ public class Individual extends Annotable {
         sb.append(", father=").append(father);
         sb.append(", mother=").append(mother);
         sb.append(", location=").append(location);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", sex=").append(sex);
         sb.append(", karyotypicSex=").append(karyotypicSex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
@@ -244,6 +278,15 @@ public class Individual extends Annotable {
 
     public Individual setLocation(Location location) {
         this.location = location;
+        return this;
+    }
+
+    public IndividualQualityControl getQualityControl() {
+        return qualityControl;
+    }
+
+    public Individual setQualityControl(IndividualQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 

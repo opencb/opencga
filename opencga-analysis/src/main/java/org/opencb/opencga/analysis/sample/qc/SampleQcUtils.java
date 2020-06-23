@@ -162,11 +162,13 @@ public class SampleQcUtils {
                 RelatednessReport.RelatednessScore score = new RelatednessReport.RelatednessScore();
                 score.setSampleId1(splits[1]);
                 score.setSampleId2(splits[3]);
+                score.setInferredRelationship(splits[4]);
+
+                // TODO move to values
                 score.setZ0(Double.parseDouble(splits[6]));
                 score.setZ1(Double.parseDouble(splits[7]));
                 score.setZ2(Double.parseDouble(splits[8]));
                 score.setPiHat(Double.parseDouble(splits[9]));
-                score.setReportedRelation(splits[4]);
 
                 // Add relatedness score to the report
                 relatednessReport.getScores().add(score);
