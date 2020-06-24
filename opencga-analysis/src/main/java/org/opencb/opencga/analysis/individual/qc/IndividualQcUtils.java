@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.sample.qc;
+package org.opencb.opencga.analysis.individual.qc;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -33,9 +33,8 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.models.sample.RelatednessReport;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -50,7 +49,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.TPED;
 
-public class SampleQcUtils {
+public class IndividualQcUtils {
 
     public static void selectMarkers(String basename, String study, List<String> samples, String maf, Path outDir,
                                      VariantStorageManager storageManager, String token) throws ToolException {
@@ -164,11 +163,13 @@ public class SampleQcUtils {
                 score.setSampleId2(splits[3]);
                 score.setInferredRelationship(splits[4]);
 
-                // TODO move to values
-                score.setZ0(Double.parseDouble(splits[6]));
-                score.setZ1(Double.parseDouble(splits[7]));
-                score.setZ2(Double.parseDouble(splits[8]));
-                score.setPiHat(Double.parseDouble(splits[9]));
+                Map<String, Object> values = new LinkedHashMap<>();
+                values.put("ez", Double.parseDouble(splits[5]));
+                values.put("z0", Double.parseDouble(splits[6]));
+                values.put("z1", Double.parseDouble(splits[7]));
+                values.put("z2", Double.parseDouble(splits[8]));
+                values.put("PiHat", Double.parseDouble(splits[9]));
+                score.setValues(values);
 
                 // Add relatedness score to the report
                 relatednessReport.getScores().add(score);
@@ -343,22 +344,6 @@ public class SampleQcUtils {
         Family family = getFamilyBySampleId(studyId, sampleId, catalogManager, token);
         // And then search samples for the family members
         return getRelativeSamplesByFamilyId(studyId, family.getId(), catalogManager, token);
-    }
-
-    public static void updateSexReport(List<InferredSexReport> reports, String studyId, CatalogManager catalogManager, String token)
-            throws ToolException {
-        if (CollectionUtils.isNotEmpty(reports)) {
-            for (InferredSexReport inferredSexReport : reports) {
-                try {
-                    Individual individual = SampleQcUtils.getIndividualBySampleId(studyId, inferredSexReport.getSampleId(), catalogManager, token);
-                    inferredSexReport.setIndividualId(individual.getId());
-                    inferredSexReport.setReportedSex(individual.getSex().name());
-                    inferredSexReport.setReportedKaryotypicSex(individual.getKaryotypicSex().name());
-                } catch (ToolException e) {
-                    throw new ToolException(e);
-                }
-            }
-        }
     }
 
     //-------------------------------------------------------------------------

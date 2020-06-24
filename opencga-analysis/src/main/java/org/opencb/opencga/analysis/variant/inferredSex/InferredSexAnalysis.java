@@ -17,19 +17,16 @@
 package org.opencb.opencga.analysis.variant.inferredSex;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.analysis.sample.qc.SampleQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.variant.InferredSexReport;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 
 import java.io.IOException;
-import java.util.Collections;
 
 @Tool(id = InferredSexAnalysis.ID, resource = Enums.Resource.VARIANT, description = InferredSexAnalysis.DESCRIPTION)
 public class InferredSexAnalysis extends OpenCgaTool {
@@ -39,7 +36,6 @@ public class InferredSexAnalysis extends OpenCgaTool {
 
     private String studyId;
     private String individualId;
-    private String sampleId;
 
     public InferredSexAnalysis() {
     }
@@ -63,15 +59,6 @@ public class InferredSexAnalysis extends OpenCgaTool {
         return this;
     }
 
-    public String getSampleId() {
-        return sampleId;
-    }
-
-    public InferredSexAnalysis setSampleId(String sampleId) {
-        this.sampleId = sampleId;
-        return this;
-    }
-
     @Override
     protected void check() throws Exception {
         super.check();
@@ -88,21 +75,8 @@ public class InferredSexAnalysis extends OpenCgaTool {
         }
 
         // Check individual and sample
-        if (StringUtils.isEmpty(individualId) && StringUtils.isEmpty(sampleId)) {
-            throw new ToolException("Missing individual and sample. You must provide almost one of them.");
-        }
-        if (StringUtils.isNotEmpty(individualId) && StringUtils.isNotEmpty(sampleId)) {
-            throw new ToolException("Individual and sample are incompatible parameters: please, provide only a individual or a sample.");
-        }
-
-        if (StringUtils.isNotEmpty(individualId)) {
-            // Check and get sample from individual
-            Sample sample = SampleQcUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
-            sampleId = sample.getId();
-        }
-
-        if (StringUtils.isEmpty(sampleId)) {
-            throw new ToolException("Not found sample to execute inferred sex analysis");
+        if (StringUtils.isEmpty(individualId)) {
+            throw new ToolException("Missing individual ID.");
         }
     }
 
@@ -113,12 +87,11 @@ public class InferredSexAnalysis extends OpenCgaTool {
             InferredSexAnalysisExecutor inferredSexExecutor = getToolExecutor(InferredSexAnalysisExecutor.class);
 
             inferredSexExecutor.setStudyId(studyId)
-                    .setSampleId(sampleId)
+                    .setIndividualId(individualId)
                     .execute();
 
-            // Get inferred sex report and update with individual info (ID, sex, and karyotypic sex)
+            // Get inferred sex report
             InferredSexReport report = inferredSexExecutor.getInferredSexReport();
-            SampleQcUtils.updateSexReport(Collections.singletonList(report), studyId, catalogManager, token);
 
             try {
                 // Save inferred sex report

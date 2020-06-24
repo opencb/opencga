@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.variant.relatedness;
 
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.analysis.sample.qc.SampleQcUtils;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -115,7 +115,7 @@ public class RelatednessAnalysis extends OpenCgaTool {
             // Check and get individual for each ID
             sampleIds = new ArrayList<>();
             for (String individualId : individualIds) {
-                Sample sample = SampleQcUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
+                Sample sample = IndividualQcUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
                 sampleIds.add(sample.getId());
             }
         }

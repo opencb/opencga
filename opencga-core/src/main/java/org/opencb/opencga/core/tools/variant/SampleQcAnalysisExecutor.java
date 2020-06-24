@@ -24,15 +24,12 @@ import java.util.List;
 public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public enum Qc {
-        INFERRED_SEX, RELATEDNESS, MENDELIAN_ERRORS, FASTQC, FLAG_STATS, HS_METRICS
+        FASTQC, FLAG_STATS, HS_METRICS
     }
 
     private String studyId;
-    private String familyId;
-    private List<String> sampleIds;
+    private String sampleId;
     private Qc qc;
-    private String minorAlleleFreq;
-    private String relatednessMethod;
 
     private SampleQualityControl report;
 
@@ -49,21 +46,12 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public String getFamilyId() {
-        return familyId;
+    public String getSampleId() {
+        return sampleId;
     }
 
-    public SampleQcAnalysisExecutor setFamilyId(String familyId) {
-        this.familyId = familyId;
-        return this;
-    }
-
-    public List<String> getSampleIds() {
-        return sampleIds;
-    }
-
-    public SampleQcAnalysisExecutor setSampleIds(List<String> sampleIds) {
-        this.sampleIds = sampleIds;
+    public SampleQcAnalysisExecutor setSampleId(String sampleId) {
+        this.sampleId = sampleId;
         return this;
     }
 
@@ -73,24 +61,6 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public SampleQcAnalysisExecutor setQc(Qc qc) {
         this.qc = qc;
-        return this;
-    }
-
-    public String getMinorAlleleFreq() {
-        return minorAlleleFreq;
-    }
-
-    public SampleQcAnalysisExecutor setMinorAlleleFreq(String minorAlleleFreq) {
-        this.minorAlleleFreq = minorAlleleFreq;
-        return this;
-    }
-
-    public String getRelatednessMethod() {
-        return relatednessMethod;
-    }
-
-    public SampleQcAnalysisExecutor setRelatednessMethod(String relatednessMethod) {
-        this.relatednessMethod = relatednessMethod;
         return this;
     }
 
