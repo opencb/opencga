@@ -114,10 +114,10 @@ public class Individual extends Annotable {
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
-    public Individual(String id, String name, String uuid, Individual father, Individual mother, Location location,
+    public Individual(String id, String name, Individual father, Individual mother, Location location,
                       IndividualQualityControl qualityControl, Sex sex, KaryotypicSex karyotypicSex, String ethnicity,
                       IndividualPopulation population, String dateOfBirth, int release, int version, String creationDate,
-                      String modificationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
+                      LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
                       List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
                       IndividualInternal internal, Map<String, Object> attributes) {
         this.id = id;
