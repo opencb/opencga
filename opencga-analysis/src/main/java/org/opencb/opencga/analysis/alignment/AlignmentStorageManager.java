@@ -248,7 +248,7 @@ public class AlignmentStorageManager extends StorageManager {
 
             // Init gene coverage stats
             GeneCoverageStats geneCoverageStats = new GeneCoverageStats();
-            geneCoverageStats.setFileId(file.getId());
+            geneCoverageStats.setFile(file.getId());
 
             geneCoverageStats.setGeneName(geneName);
             if (CollectionUtils.isNotEmpty(file.getSamples())) {
