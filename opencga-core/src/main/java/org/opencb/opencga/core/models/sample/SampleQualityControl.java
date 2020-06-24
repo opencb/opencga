@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.clinical.qc.sample.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.sample.Signature;
 import org.opencb.opencga.core.models.variant.HsMetricsReport;
 import org.opencb.opencga.core.models.variant.SamtoolsFlagStatsReport;
-import org.opencb.opencga.core.models.variant.fastqc.FastQcReport;
 
 import java.io.Serializable;
 import java.util.List;
@@ -29,7 +29,7 @@ import java.util.List;
 public class SampleQualityControl implements Serializable {
 
     private List<SampleQcVariantStats> variantStats;
-    private FastQcReport fastQcReport;
+    private FastQc fastQc;
     private SamtoolsFlagStatsReport samtoolsFlagStatsReport;
     private HsMetricsReport hsMetricsReport;
     private List<GeneCoverageStats> geneCoverageStats;
@@ -38,11 +38,11 @@ public class SampleQualityControl implements Serializable {
     public SampleQualityControl() {
     }
 
-    public SampleQualityControl(List<SampleQcVariantStats> variantStats, FastQcReport fastQcReport,
+    public SampleQualityControl(List<SampleQcVariantStats> variantStats, FastQc fastQc,
                                 SamtoolsFlagStatsReport samtoolsFlagStatsReport, HsMetricsReport hsMetricsReport,
                                 List<GeneCoverageStats> geneCoverageStats, Signature signature) {
         this.variantStats = variantStats;
-        this.fastQcReport = fastQcReport;
+        this.fastQc = fastQc;
         this.samtoolsFlagStatsReport = samtoolsFlagStatsReport;
         this.hsMetricsReport = hsMetricsReport;
         this.geneCoverageStats = geneCoverageStats;
@@ -53,7 +53,7 @@ public class SampleQualityControl implements Serializable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQualityControl{");
         sb.append("variantStats=").append(variantStats);
-        sb.append(", fastQcReport=").append(fastQcReport);
+        sb.append(", fastQc=").append(fastQc);
         sb.append(", samtoolsFlagStatsReport=").append(samtoolsFlagStatsReport);
         sb.append(", hsMetricsReport=").append(hsMetricsReport);
         sb.append(", geneCoverageStats=").append(geneCoverageStats);
@@ -71,12 +71,12 @@ public class SampleQualityControl implements Serializable {
         return this;
     }
 
-    public FastQcReport getFastQcReport() {
-        return fastQcReport;
+    public FastQc getFastQc() {
+        return fastQc;
     }
 
-    public SampleQualityControl setFastQcReport(FastQcReport fastQcReport) {
-        this.fastQcReport = fastQcReport;
+    public SampleQualityControl setFastQc(FastQc fastQc) {
+        this.fastQc = fastQc;
         return this;
     }
 
