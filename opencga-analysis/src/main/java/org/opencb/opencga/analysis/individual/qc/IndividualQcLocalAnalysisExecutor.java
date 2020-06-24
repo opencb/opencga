@@ -74,7 +74,7 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
                 }
 
                 // Set sex report
-                getReport().setInferredSexReport(sexReportList);
+                getReport().getMetrics().get(0).setInferredSexReport(sexReportList);
                 break;
             }
 
@@ -89,7 +89,7 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
                         getOutDir(), variantStorageManager, getToken());
 
                 // Set relatedness report
-                getReport().setRelatednessReport(relatednessReport);
+                getReport().getMetrics().get(0).setRelatednessReport(relatednessReport);
                 break;
             }
 
@@ -100,11 +100,11 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
                 CatalogManager catalogManager = variantStorageManager.getCatalogManager();
 
                 // Compute mendelian inconsitencies
-                MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(getStudyId(), getIndividualId(),
+                MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(getStudyId(), getFamilyId(),
                         variantStorageManager, getToken());
 
                 // Set relatedness report
-                getReport().setMendelianErrorReport(mendelianErrorReport);
+                getReport().getMetrics().get(0).setMendelianErrorReport(mendelianErrorReport);
                 break;
             }
 

@@ -23,6 +23,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -51,6 +52,8 @@ public class IndividualQcAnalysis extends OpenCgaTool {
     private String relatednessMethod;
 
     // Internal members
+    private String sampleId;
+    private String familyId;
     private List<String> sampleIds;
 
     public IndividualQcAnalysis() {
@@ -75,6 +78,14 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         if (StringUtils.isNotEmpty(individualId)) {
             throw new ToolException("Missing individual ID.");
         }
+
+        // Get sample for that individual
+        Sample sample = IndividualQcUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
+        sampleId = sample.getId();
+
+        // Get family
+        Family family = IndividualQcUtils.getFamilyByIndividualId(studyId, individualId, catalogManager, token);
+        familyId = family.getId();
 
         // Get relatives, i.e., members of a family
         List<Sample> samples = IndividualQcUtils.getRelativeSamplesByIndividualId(studyId, individualId, catalogManager, token);
@@ -105,30 +116,26 @@ public class IndividualQcAnalysis extends OpenCgaTool {
 
         executor.setStudyId(studyId)
                 .setIndividualId(individualId)
+                .setSampleId(sampleId)
+                .setFamilyId(familyId)
                 .setSampleIds(sampleIds)
                 .setMinorAlleleFreq(minorAlleleFreq)
                 .setRelatednessMethod(relatednessMethod);
 
         if (canRunInferredSex()) {
-            step(INFERRED_SEX_STEP, () -> {
-                executor.setQc(IndividualQcAnalysisExecutor.Qc.INFERRED_SEX).execute();
-            });
+            step(INFERRED_SEX_STEP, () -> executor.setQc(IndividualQcAnalysisExecutor.Qc.INFERRED_SEX).execute());
         } else {
             getErm().addWarning("Skipping step " + INFERRED_SEX_STEP + ": you need to provide a BAM file");
         }
 
         if (canRunRelatedness()) {
-            step(RELATEDNESS_STEP, () -> {
-                executor.setQc(IndividualQcAnalysisExecutor.Qc.RELATEDNESS).execute();
-            });
+            step(RELATEDNESS_STEP, () -> executor.setQc(IndividualQcAnalysisExecutor.Qc.RELATEDNESS).execute());
         } else {
             getErm().addWarning("Skipping step " + RELATEDNESS_STEP + ": no members found for the sample family");
         }
 
         if (canRunMendelianErrors()) {
-            step(MENDELIAN_ERRORS_STEP, () -> {
-                executor.setQc(IndividualQcAnalysisExecutor.Qc.MENDELIAN_ERRORS).execute();
-            });
+            step(MENDELIAN_ERRORS_STEP, () -> executor.setQc(IndividualQcAnalysisExecutor.Qc.MENDELIAN_ERRORS).execute());
         } else {
             getErm().addWarning("Skipping step " + MENDELIAN_ERRORS_STEP + ": father and mother must exist for individual " + individualId);
         }
@@ -149,18 +156,15 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         } catch (ToolException e) {
             return false;
         }
-        if (individual.getMother() == null || individual.getFather() == null) {
-            return false;
-        }
-        return true;
+        return individual.getMother() != null && individual.getFather() != null;
     }
 
     private boolean canRunRelatedness() {
-        return CollectionUtils.isEmpty(sampleIds) ? false : true;
+        return !CollectionUtils.isEmpty(sampleIds);
     }
 
     private boolean canRunInferredSex() {
-        return StringUtils.isEmpty(bamFilename) ? false : true;
+        return !StringUtils.isEmpty(bamFilename);
     }
 
     /**

@@ -19,6 +19,8 @@ package org.opencb.opencga.core.tools.variant;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
@@ -29,6 +31,8 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String studyId;
     private String individualId;
+    private String sampleId;
+    private String familyId;
     private List<String> sampleIds;
     private Qc qc;
     private String minorAlleleFreq;
@@ -37,7 +41,10 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
     private IndividualQualityControl report;
 
     public IndividualQcAnalysisExecutor() {
-        report = new IndividualQualityControl();
+        IndividualQualityControl.IndividualQcMetrics metrics = new IndividualQualityControl.IndividualQcMetrics();
+        metrics.setSampleId(sampleId);
+
+        report = new IndividualQualityControl(Collections.singletonList(metrics), Collections.emptyList());
     }
 
     public String getStudyId() {
@@ -55,6 +62,24 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public IndividualQcAnalysisExecutor setIndividualId(String individualId) {
         this.individualId = individualId;
+        return this;
+    }
+
+    public String getSampleId() {
+        return sampleId;
+    }
+
+    public IndividualQcAnalysisExecutor setSampleId(String sampleId) {
+        this.sampleId = sampleId;
+        return this;
+    }
+
+    public String getFamilyId() {
+        return familyId;
+    }
+
+    public IndividualQcAnalysisExecutor setFamilyId(String familyId) {
+        this.familyId = familyId;
         return this;
     }
 
