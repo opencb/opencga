@@ -17,12 +17,12 @@
 package org.opencb.opencga.analysis.variant.inferredSex;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.qc.individual.InferredSexReport;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 

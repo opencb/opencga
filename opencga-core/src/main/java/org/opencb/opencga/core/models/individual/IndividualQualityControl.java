@@ -18,9 +18,9 @@ package org.opencb.opencga.core.models.individual;
 
 import org.opencb.biodata.models.clinical.Comment;
 import org.opencb.biodata.models.clinical.qc.QualityControlFile;
-import org.opencb.opencga.core.models.sample.RelatednessReport;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
-import org.opencb.opencga.core.models.variant.MendelianErrorReport;
+import org.opencb.biodata.models.clinical.qc.individual.InferredSexReport;
+import org.opencb.biodata.models.clinical.qc.individual.MendelianErrorReport;
+import org.opencb.biodata.models.clinical.qc.individual.RelatednessReport;
 
 import java.util.List;
 

@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.analysis.individual.qc;
 
+import org.opencb.biodata.models.clinical.qc.individual.RelatednessReport;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.sample.RelatednessReport;
 
 import java.io.*;
 import java.nio.file.Path;

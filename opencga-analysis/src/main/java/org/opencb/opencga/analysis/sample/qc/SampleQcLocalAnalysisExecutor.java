@@ -17,22 +17,9 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import org.opencb.opencga.analysis.StorageToolExecutor;
-import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.individual.qc.IBDComputation;
-import org.opencb.opencga.analysis.individual.qc.InferredSexComputation;
-import org.opencb.opencga.analysis.individual.qc.MendelianInconsistenciesComputation;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
-import org.opencb.opencga.core.models.variant.MendelianErrorReport;
-import org.opencb.opencga.core.models.sample.RelatednessReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
-
-import java.util.*;
 
 @ToolExecutor(id="opencga-local", tool = SampleQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)

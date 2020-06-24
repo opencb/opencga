@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.inferredSex;
 
+import org.opencb.biodata.models.clinical.qc.individual.InferredSexReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
@@ -24,7 +25,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 

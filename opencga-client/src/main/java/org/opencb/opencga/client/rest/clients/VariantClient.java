@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.client.rest.clients;
 
-import org.opencb.biodata.models.clinical.qc.MutationalSignature;
+import org.opencb.biodata.models.clinical.qc.sample.MutationalSignature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -30,23 +30,7 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
-import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.variant.GatkRunParams;
-import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
-import org.opencb.opencga.core.models.variant.InferredSexAnalysisParams;
-import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
-import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
-import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
-import org.opencb.opencga.core.models.variant.PlinkRunParams;
-import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
-import org.opencb.opencga.core.models.variant.RvtestsRunParams;
-import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
-import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
-import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.variant.VariantExportParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 
