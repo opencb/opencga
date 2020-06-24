@@ -17,21 +17,14 @@
 package org.opencb.opencga.client.rest.clients;
 
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.models.alignment.AlignmentStats;
+import org.opencb.biodata.formats.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
-import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
-import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
-import org.opencb.opencga.core.models.alignment.BwaWrapperParams;
-import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
-import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
-import org.opencb.opencga.core.models.alignment.FastQcWrapperParams;
-import org.opencb.opencga.core.models.alignment.PicardWrapperParams;
-import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
+import org.opencb.opencga.core.models.alignment.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -289,10 +282,10 @@ public class AlignmentClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<AlignmentStats> infoStats(String file, ObjectMap params) throws ClientException {
+    public RestResponse<SamtoolsStats> infoStats(String file, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("file", file);
-        return execute("analysis", null, "alignment/stats", null, "info", params, GET, AlignmentStats.class);
+        return execute("analysis", null, "alignment/stats", null, "info", params, GET, SamtoolsStats.class);
     }
 
     /**

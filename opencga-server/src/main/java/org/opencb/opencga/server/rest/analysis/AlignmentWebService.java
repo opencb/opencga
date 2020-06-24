@@ -21,7 +21,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.models.alignment.AlignmentStats;
+import org.opencb.biodata.formats.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
@@ -406,7 +406,7 @@ public class AlignmentWebService extends AnalysisWebService {
 
     @GET
     @Path("/stats/info")
-    @ApiOperation(value = ALIGNMENT_STATS_INFO_DESCRIPTION, response = AlignmentStats.class)
+    @ApiOperation(value = ALIGNMENT_STATS_INFO_DESCRIPTION, response = SamtoolsStats.class)
     public Response statsInfo(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(FILE_ID_PARAM) String inputFile,
                               @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
         AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);

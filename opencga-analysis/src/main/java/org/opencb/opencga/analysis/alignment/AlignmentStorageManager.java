@@ -20,6 +20,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.formats.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.*;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
@@ -158,7 +159,7 @@ public class AlignmentStorageManager extends StorageManager {
 
     //-------------------------------------------------------------------------
 
-    public OpenCGAResult<AlignmentStats> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
+    public OpenCGAResult<SamtoolsStats> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
         OpenCGAResult<File> fileResult;
         fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
 
@@ -166,8 +167,8 @@ public class AlignmentStorageManager extends StorageManager {
             for (AnnotationSet annotationSet : fileResult.getResults().get(0).getAnnotationSets()) {
                 if ("opencga_alignment_stats".equals(annotationSet.getId())) {
                     StopWatch watch = StopWatch.createStarted();
-                    AlignmentStats stats = JacksonUtils.getDefaultObjectMapper().convertValue(annotationSet.getAnnotations(),
-                            AlignmentStats.class);
+                    SamtoolsStats stats = JacksonUtils.getDefaultObjectMapper().convertValue(annotationSet.getAnnotations(),
+                            SamtoolsStats.class);
                     watch.stop();
                     return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(stats), 1);
                 }

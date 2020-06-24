@@ -24,7 +24,7 @@ import ga4gh.Reads;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.models.alignment.AlignmentStats;
+import org.opencb.biodata.formats.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
@@ -339,7 +339,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getAlignmentClient().runStats(new AlignmentStatsParams(cliOptions.file), params);
     }
 
-    private RestResponse<AlignmentStats> statsInfo() throws ClientException {
+    private RestResponse<SamtoolsStats> statsInfo() throws ClientException {
         AlignmentCommandOptions.StatsInfoAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsInfoAlignmentCommandOptions;
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
