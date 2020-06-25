@@ -17,6 +17,8 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SequenceWriter;
@@ -54,6 +56,7 @@ import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -72,10 +75,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
@@ -809,14 +809,42 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         ObjectMap params = new ObjectMap();
         params.putAll(cliOptions.commonOptions.params);
 
+        TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String,String>>() {};
+        Map<String, String> variantStatsQuery = new HashMap<>();
+        if (StringUtils.isNotEmpty(cliOptions.variantStatsQuery)) {
+            try {
+                variantStatsQuery = JacksonUtils.getDefaultObjectMapper().readValue(cliOptions.variantStatsQuery, typeRef);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        }
+        Map<String, String> signatureQuery = new HashMap<>();
+        if (StringUtils.isNotEmpty(cliOptions.signatureQuery)) {
+            try {
+                signatureQuery = JacksonUtils.getDefaultObjectMapper().readValue(cliOptions.signatureQuery, typeRef);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        }
+        List<String> genesForCoverageStats = new ArrayList<>();
+        if (StringUtils.isNotEmpty(cliOptions.genesForCoverageStats)) {
+            genesForCoverageStats = Arrays.asList(cliOptions.genesForCoverageStats.split(","));
+        }
+
         SampleQcAnalysis sampleQcAnalysis = new SampleQcAnalysis();
         sampleQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
-        sampleQcAnalysis.setStudy(cliOptions.study)
+        sampleQcAnalysis.setStudyId(cliOptions.study)
                 .setSampleId(cliOptions.sample)
-                .setBamFilename(cliOptions.bamFile)
-                .setFastaFilename(cliOptions.fastaFile)
-                .setBaitFilename(cliOptions.baitFile)
-                .setTargetFilename(cliOptions.targetFile)
+                .setBamFile(cliOptions.bamFile)
+                .setFastaFile(cliOptions.fastaFile)
+                .setBaitFile(cliOptions.baitFile)
+                .setTargetFile(cliOptions.targetFile)
+                .setVariantStatsId(cliOptions.variantStatsId)
+                .setVariantStatsDecription(cliOptions.variantStatsDecription)
+                .setVariantStatsQuery(variantStatsQuery)
+                .setSignatureId(cliOptions.signatureId)
+                .setSignatureQuery(signatureQuery)
+                .setGenesForCoverageStats(genesForCoverageStats)
                 .start();
     }
 

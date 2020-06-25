@@ -16,25 +16,35 @@
 
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public enum Qc {
-        FASTQC, FLAG_STATS, HS_METRICS
+        VARIAN_STATS, FASTQC, FLAG_STATS, HS_METRICS, GENE_COVERAGE_STATS, MUTATIONAL_SIGNATURE
     }
 
     private String studyId;
-    private String sampleId;
+    private Sample sample;
+    private String bamFile;
+    private String fastaFile;
+    private String baitFile;
+    private String targetFile;
+    private String variantStatsId;
+    private String variantStatsDecription;
+    private Map<String, String> variantStatsQuery;
+    private String signatureId;
+    private Map<String, String> signatureQuery;
+    private List<String> genesForCoverageStats;
+
     private Qc qc;
 
-    private SampleQualityControl report;
-
     public SampleQcAnalysisExecutor() {
-        report = new SampleQualityControl();
     }
 
     public String getStudyId() {
@@ -46,12 +56,102 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public String getSampleId() {
-        return sampleId;
+    public Sample getSample() {
+        return sample;
     }
 
-    public SampleQcAnalysisExecutor setSampleId(String sampleId) {
-        this.sampleId = sampleId;
+    public SampleQcAnalysisExecutor setSample(Sample sample) {
+        this.sample = sample;
+        return this;
+    }
+
+    public String getBamFile() {
+        return bamFile;
+    }
+
+    public SampleQcAnalysisExecutor setBamFile(String bamFile) {
+        this.bamFile = bamFile;
+        return this;
+    }
+
+    public String getFastaFile() {
+        return fastaFile;
+    }
+
+    public SampleQcAnalysisExecutor setFastaFile(String fastaFile) {
+        this.fastaFile = fastaFile;
+        return this;
+    }
+
+    public String getBaitFile() {
+        return baitFile;
+    }
+
+    public SampleQcAnalysisExecutor setBaitFile(String baitFile) {
+        this.baitFile = baitFile;
+        return this;
+    }
+
+    public String getTargetFile() {
+        return targetFile;
+    }
+
+    public SampleQcAnalysisExecutor setTargetFile(String targetFile) {
+        this.targetFile = targetFile;
+        return this;
+    }
+
+    public String getVariantStatsId() {
+        return variantStatsId;
+    }
+
+    public SampleQcAnalysisExecutor setVariantStatsId(String variantStatsId) {
+        this.variantStatsId = variantStatsId;
+        return this;
+    }
+
+    public String getVariantStatsDecription() {
+        return variantStatsDecription;
+    }
+
+    public SampleQcAnalysisExecutor setVariantStatsDecription(String variantStatsDecription) {
+        this.variantStatsDecription = variantStatsDecription;
+        return this;
+    }
+
+    public Map<String, String> getVariantStatsQuery() {
+        return variantStatsQuery;
+    }
+
+    public SampleQcAnalysisExecutor setVariantStatsQuery(Map<String, String> variantStatsQuery) {
+        this.variantStatsQuery = variantStatsQuery;
+        return this;
+    }
+
+    public String getSignatureId() {
+        return signatureId;
+    }
+
+    public SampleQcAnalysisExecutor setSignatureId(String signatureId) {
+        this.signatureId = signatureId;
+        return this;
+    }
+
+    public Map<String, String> getSignatureQuery() {
+        return signatureQuery;
+    }
+
+    public SampleQcAnalysisExecutor setSignatureQuery(Map<String, String> signatureQuery) {
+        this.signatureQuery = signatureQuery;
+        return this;
+    }
+
+    public List<String> getGenesForCoverageStats() {
+        return genesForCoverageStats;
+    }
+
+    public SampleQcAnalysisExecutor setGenesForCoverageStats(List<String> genesForCoverageStats) {
+        this.genesForCoverageStats = genesForCoverageStats;
         return this;
     }
 
@@ -61,15 +161,6 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public SampleQcAnalysisExecutor setQc(Qc qc) {
         this.qc = qc;
-        return this;
-    }
-
-    public SampleQualityControl getReport() {
-        return report;
-    }
-
-    public SampleQcAnalysisExecutor setReport(SampleQualityControl report) {
-        this.report = report;
         return this;
     }
 }

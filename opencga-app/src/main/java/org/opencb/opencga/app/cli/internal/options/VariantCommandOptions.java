@@ -1180,28 +1180,41 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--sample"}, description = "Sample ID (it will be considered a child sample to get the family members).", required = true)
+        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
         public String sample;
 
         @Parameter(names = {"--bam-file"}, description = "BAM file.")
         public String bamFile;
 
-        @Parameter(names = {"--ref-genome-file"}, description = "Reference genome file in FASTA format.")
+        @Parameter(names = {"--ref-genome-file"}, description = "Reference genome file in FASTA format (for HS metrics).")
         public String fastaFile;
 
-        @Parameter(names = {"--bait-file"}, description = "Bait intervals file in BED format.")
+        @Parameter(names = {"--bait-file"}, description = "Bait intervals file in BED format (for HS metrics).")
         public String baitFile;
 
-        @Parameter(names = {"--target-file"}, description = "Target intervals file in BED format.")
+        @Parameter(names = {"--target-file"}, description = "Target intervals file in BED format (for HS metrics).")
         public String targetFile;
 
-        @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
-        public String minorAlleleFreq;
+        @Parameter(names = {"--variant-stats-id"}, description = "Variant stats ID.")
+        public String variantStatsId;
 
-        @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
-        public String relatednessMethod = "IBD";
+        @Parameter(names = {"--variant-stats-description"}, description = "Variant stats description.")
+        public String variantStatsDecription;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        @Parameter(names = {"--variant-stats-query"}, description = "Variant stats query in JSON format, e.g.: '{\"gene\":\"BRCA2\", \"ct\":\"missense_variant\"}'")
+        public String variantStatsQuery;
+
+        @Parameter(names = {"--signature-id"}, description = "Signature ID.")
+        public String signatureId;
+
+        @Parameter(names = {"--signature-query"}, description = "Signature query in JSON format, e.g.: '{\"type\":\"SNV\", \"ct\":\"missense_variant\"}'")
+        public String signatureQuery;
+
+        @Parameter(names = {"--genes-for-coverage-stats"}, description = "A comma separated list of genes to compute the coverage stats.")
+        public String genesForCoverageStats;
+
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
     }
 

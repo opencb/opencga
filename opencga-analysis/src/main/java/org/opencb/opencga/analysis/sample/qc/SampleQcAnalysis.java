@@ -17,38 +17,47 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 
-import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
 public class SampleQcAnalysis extends OpenCgaTool {
 
     public static final String ID = "sample-qc";
-    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes FastQC, samtools/flagstat and"
-        + " picard/CollectHsMetrics";
+    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes variant stats, FastQC," +
+            "samtools/flagstat, picard/CollectHsMetrics and gene coverage stats; and for somatic samples, mutational signature";
 
+    public  static final String VARIANT_STATS_STEP = "variant-stats";
     public  static final String FASTQC_STEP = "fastqc";
     public  static final String HS_METRICS_STEP = "hs-metrics";
     public  static final String FLAG_STATS_STEP = "flag-stats";
+    public  static final String GENE_COVERAGE_STEP = "gene-coverage-stats";
+    public  static final String MUTATIONAL_SIGNATUR_STEP = "mutational-signature";
 
     private String studyId;
     private String sampleId;
-    private String fastaFilename;
-    private String bamFilename;
-    private String baitFilename;
-    private String targetFilename;
+    private String bamFile;
+    private String fastaFile;
+    private String baitFile;
+    private String targetFile;
+    private String variantStatsId;
+    private String variantStatsDecription;
+    private Map<String, String> variantStatsQuery;
+    private String signatureId;
+    private Map<String, String> signatureQuery;
+    private List<String> genesForCoverageStats;
 
-    public SampleQcAnalysis() {
-    }
+    private Sample sample;
 
     @Override
     protected void check() throws Exception {
@@ -66,24 +75,21 @@ public class SampleQcAnalysis extends OpenCgaTool {
         }
 
         // Sanity check
-        if (StringUtils.isNotEmpty(sampleId)) {
+        if (StringUtils.isEmpty(sampleId)) {
             throw new ToolException("Missing sample ID.");
         }
+
+        sample = IndividualQcUtils.getValidSampleById(studyId, sampleId, catalogManager, token);
+        if (sample == null) {
+            throw new ToolException("Sample '" + sampleId + "' not found.");
+        }
+
     }
 
     @Override
     protected List<String> getSteps() {
-        List<String> steps = new ArrayList<>();
-        if (canRunFastQc()) {
-            steps.add(FASTQC_STEP);
-        }
-        if (canRunHsMetrics()) {
-            steps.add(HS_METRICS_STEP);
-        }
-        if (canRunFlagStats()) {
-            steps.add(FLAG_STATS_STEP);
-        }
-        return steps;
+        return Arrays.asList(VARIANT_STATS_STEP, FASTQC_STEP, FLAG_STATS_STEP, HS_METRICS_STEP, GENE_COVERAGE_STEP,
+                MUTATIONAL_SIGNATUR_STEP);
     }
 
     @Override
@@ -91,64 +97,34 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
         SampleQcAnalysisExecutor executor = getToolExecutor(SampleQcAnalysisExecutor.class);
 
-        executor.setStudyId(studyId);
+        // Set up executor
+        executor.setStudyId(studyId)
+                .setSample(sample)
+                .setBamFile(bamFile)
+                .setFastaFile(fastaFile)
+                .setBaitFile(baitFile)
+                .setTargetFile(targetFile)
+                .setVariantStatsId(variantStatsId)
+                .setVariantStatsDecription(variantStatsDecription)
+                .setVariantStatsQuery(variantStatsQuery)
+                .setSignatureId(signatureId)
+                .setSignatureQuery(signatureQuery)
+                .setGenesForCoverageStats(genesForCoverageStats);
 
-        if (canRunFastQc()) {
-            step(FASTQC_STEP, () -> {
-                executor.setQc(SampleQcAnalysisExecutor.Qc.FASTQC).execute();
-            });
-        } else {
-            getErm().addWarning("Skipping step " + FASTQC_STEP + ": you need to provide a BAM file");
-        }
-
-        if (canRunFlagStats()) {
-            step(FLAG_STATS_STEP, () -> {
-                executor.setQc(SampleQcAnalysisExecutor.Qc.FLAG_STATS).execute();
-            });
-        } else {
-            getErm().addWarning("Skipping step " + FLAG_STATS_STEP + ": you need to provide a BAM file");
-        }
-
-        if (canRunHsMetrics()) {
-            step(HS_METRICS_STEP, () -> {
-                executor.setQc(SampleQcAnalysisExecutor.Qc.HS_METRICS).execute();
-            });
-        } else {
-            getErm().addWarning("Skipping step " + HS_METRICS_STEP + ": you need to provide a BAM file, a FASTA file and two BED files," +
-                    " one for the bait intervals and one for the target intervals");
-        }
-
-        // Save results
-        try {
-            JacksonUtils.getDefaultObjectMapper().writer().writeValue(getOutDir().resolve(ID + ".report.json").toFile(),
-                    executor.getReport());
-        } catch (IOException e) {
-            throw new ToolException(e);
-        }
+        // Step by step
+        step(VARIANT_STATS_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.VARIAN_STATS).execute());
+        step(FASTQC_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.FASTQC).execute());
+        step(FLAG_STATS_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.FLAG_STATS).execute());
+        step(HS_METRICS_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.HS_METRICS).execute());
+        step(GENE_COVERAGE_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.GENE_COVERAGE_STATS).execute());
+        step(MUTATIONAL_SIGNATUR_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.MUTATIONAL_SIGNATURE).execute());
     }
 
-    private boolean canRunFlagStats() {
-        return StringUtils.isEmpty(bamFilename) ? false : true;
+    public String getStudyId() {
+        return studyId;
     }
 
-    private boolean canRunHsMetrics() {
-        if (StringUtils.isEmpty(bamFilename) || StringUtils.isEmpty(fastaFilename) || StringUtils.isEmpty(baitFilename)
-                || StringUtils.isEmpty(targetFilename)) {
-            return false;
-        }
-        return true;
-    }
-
-    private boolean canRunFastQc() {
-        return StringUtils.isEmpty(bamFilename) ? false : true;
-    }
-
-    /**
-     * Study of the samples.
-     * @param studyId Study id
-     * @return this
-     */
-    public SampleQcAnalysis setStudy(String studyId) {
+    public SampleQcAnalysis setStudyId(String studyId) {
         this.studyId = studyId;
         return this;
     }
@@ -162,39 +138,93 @@ public class SampleQcAnalysis extends OpenCgaTool {
         return this;
     }
 
-    public String getFastaFilename() {
-        return fastaFilename;
+    public String getBamFile() {
+        return bamFile;
     }
 
-    public SampleQcAnalysis setFastaFilename(String fastaFilename) {
-        this.fastaFilename = fastaFilename;
+    public SampleQcAnalysis setBamFile(String bamFile) {
+        this.bamFile = bamFile;
         return this;
     }
 
-    public String getBamFilename() {
-        return bamFilename;
+    public String getFastaFile() {
+        return fastaFile;
     }
 
-    public SampleQcAnalysis setBamFilename(String bamFilename) {
-        this.bamFilename = bamFilename;
+    public SampleQcAnalysis setFastaFile(String fastaFile) {
+        this.fastaFile = fastaFile;
         return this;
     }
 
-    public String getBaitFilename() {
-        return baitFilename;
+    public String getBaitFile() {
+        return baitFile;
     }
 
-    public SampleQcAnalysis setBaitFilename(String baitFilename) {
-        this.baitFilename = baitFilename;
+    public SampleQcAnalysis setBaitFile(String baitFile) {
+        this.baitFile = baitFile;
         return this;
     }
 
-    public String getTargetFilename() {
-        return targetFilename;
+    public String getTargetFile() {
+        return targetFile;
     }
 
-    public SampleQcAnalysis setTargetFilename(String targetFilename) {
-        this.targetFilename = targetFilename;
+    public SampleQcAnalysis setTargetFile(String targetFile) {
+        this.targetFile = targetFile;
+        return this;
+    }
+
+    public String getVariantStatsId() {
+        return variantStatsId;
+    }
+
+    public SampleQcAnalysis setVariantStatsId(String variantStatsId) {
+        this.variantStatsId = variantStatsId;
+        return this;
+    }
+
+    public String getVariantStatsDecription() {
+        return variantStatsDecription;
+    }
+
+    public SampleQcAnalysis setVariantStatsDecription(String variantStatsDecription) {
+        this.variantStatsDecription = variantStatsDecription;
+        return this;
+    }
+
+    public Map<String, String> getVariantStatsQuery() {
+        return variantStatsQuery;
+    }
+
+    public SampleQcAnalysis setVariantStatsQuery(Map<String, String> variantStatsQuery) {
+        this.variantStatsQuery = variantStatsQuery;
+        return this;
+    }
+
+    public String getSignatureId() {
+        return signatureId;
+    }
+
+    public SampleQcAnalysis setSignatureId(String signatureId) {
+        this.signatureId = signatureId;
+        return this;
+    }
+
+    public Map<String, String> getSignatureQuery() {
+        return signatureQuery;
+    }
+
+    public SampleQcAnalysis setSignatureQuery(Map<String, String> signatureQuery) {
+        this.signatureQuery = signatureQuery;
+        return this;
+    }
+
+    public List<String> getGenesForCoverageStats() {
+        return genesForCoverageStats;
+    }
+
+    public SampleQcAnalysis setGenesForCoverageStats(List<String> genesForCoverageStats) {
+        this.genesForCoverageStats = genesForCoverageStats;
         return this;
     }
 }
