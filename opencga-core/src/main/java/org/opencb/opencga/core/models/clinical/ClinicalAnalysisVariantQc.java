@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.models.clinical.qc.sample.SampleQcVariantStats;
+import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;

@@ -21,7 +21,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.qc.sample.MutationalSignature;
+import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;

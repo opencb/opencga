@@ -17,7 +17,7 @@
 package org.opencb.opencga.client.rest.clients;
 
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.formats.samtools.SamtoolsStats;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.commons.datastore.core.ObjectMap;

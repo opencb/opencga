@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.mendelianError;
 
-import org.opencb.biodata.models.clinical.qc.individual.MendelianErrorReport;
+import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.individual.qc.MendelianInconsistenciesComputation;
 import org.opencb.opencga.core.exceptions.ToolException;

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.client.rest.clients;
 
-import org.opencb.biodata.models.clinical.qc.sample.MutationalSignature;
+import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;

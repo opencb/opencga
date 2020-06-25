@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.biodata.models.clinical.qc.individual.MendelianErrorReport;
+import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 public abstract class MendelianErrorAnalysisExecutor extends OpenCgaToolExecutor {

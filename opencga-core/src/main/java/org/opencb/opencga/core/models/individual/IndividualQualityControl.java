@@ -17,10 +17,6 @@
 package org.opencb.opencga.core.models.individual;
 
 import org.opencb.biodata.models.clinical.Comment;
-import org.opencb.biodata.models.clinical.qc.QualityControlFile;
-import org.opencb.biodata.models.clinical.qc.individual.InferredSexReport;
-import org.opencb.biodata.models.clinical.qc.individual.MendelianErrorReport;
-import org.opencb.biodata.models.clinical.qc.individual.RelatednessReport;
 
 import java.util.List;
 
@@ -29,7 +25,7 @@ public class IndividualQualityControl {
     /**
      * List of metrics for that individual, one metrics per sample
      */
-    private List<IndividualQcMetrics> metrics;
+    private List<IndividualQualityControlMetrics> metrics;
 
     /**
      * Comments related to the quality control
@@ -39,94 +35,9 @@ public class IndividualQualityControl {
     public IndividualQualityControl() {
     }
 
-    public IndividualQualityControl(List<IndividualQcMetrics> metrics, List<Comment> comments) {
+    public IndividualQualityControl(List<IndividualQualityControlMetrics> metrics, List<Comment> comments) {
         this.metrics = metrics;
         this.comments = comments;
-    }
-
-    public static class IndividualQcMetrics {
-
-        /**
-         * Sample of that individual
-         */
-        private String sampleId;
-
-        /**
-         * Inferred Sex based on sexual chromosome coverage
-         */
-        private List<InferredSexReport> inferredSexReport;
-
-        /**
-         * Plink-based relatedness
-         */
-        private RelatednessReport relatednessReport;
-
-        /**
-         * Mendelian errors
-         */
-        private MendelianErrorReport mendelianErrorReport;
-
-        /**
-         * List of quality control files related to the previous analysis
-         */
-        private List<QualityControlFile> qcFiles;
-
-        public IndividualQcMetrics() {
-        }
-
-        public IndividualQcMetrics(String sampleId, List<InferredSexReport> inferredSexReport, RelatednessReport relatednessReport,
-                                   MendelianErrorReport mendelianErrorReport, List<QualityControlFile> qcFiles) {
-            this.sampleId = sampleId;
-            this.inferredSexReport = inferredSexReport;
-            this.relatednessReport = relatednessReport;
-            this.mendelianErrorReport = mendelianErrorReport;
-            this.qcFiles = qcFiles;
-        }
-
-        public String getSampleId() {
-            return sampleId;
-        }
-
-        public IndividualQcMetrics setSampleId(String sampleId) {
-            this.sampleId = sampleId;
-            return this;
-        }
-
-        public List<InferredSexReport> getInferredSexReport() {
-            return inferredSexReport;
-        }
-
-        public IndividualQcMetrics setInferredSexReport(List<InferredSexReport> inferredSexReport) {
-            this.inferredSexReport = inferredSexReport;
-            return this;
-        }
-
-        public RelatednessReport getRelatednessReport() {
-            return relatednessReport;
-        }
-
-        public IndividualQcMetrics setRelatednessReport(RelatednessReport relatednessReport) {
-            this.relatednessReport = relatednessReport;
-            return this;
-        }
-
-        public MendelianErrorReport getMendelianErrorReport() {
-            return mendelianErrorReport;
-        }
-
-        public IndividualQcMetrics setMendelianErrorReport(MendelianErrorReport mendelianErrorReport) {
-            this.mendelianErrorReport = mendelianErrorReport;
-            return this;
-        }
-
-        public List<QualityControlFile> getQcFiles() {
-            return qcFiles;
-        }
-
-        public IndividualQcMetrics setQcFiles(List<QualityControlFile> qcFiles) {
-            this.qcFiles = qcFiles;
-            return this;
-        }
     }
 
 
@@ -139,11 +50,11 @@ public class IndividualQualityControl {
         return sb.toString();
     }
 
-    public List<IndividualQcMetrics> getMetrics() {
+    public List<IndividualQualityControlMetrics> getMetrics() {
         return metrics;
     }
 
-    public IndividualQualityControl setMetrics(List<IndividualQcMetrics> metrics) {
+    public IndividualQualityControl setMetrics(List<IndividualQualityControlMetrics> metrics) {
         this.metrics = metrics;
         return this;
     }

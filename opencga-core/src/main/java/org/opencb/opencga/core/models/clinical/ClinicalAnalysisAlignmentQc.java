@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.formats.samtools.SamtoolsStats;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.opencga.core.models.file.File;
 

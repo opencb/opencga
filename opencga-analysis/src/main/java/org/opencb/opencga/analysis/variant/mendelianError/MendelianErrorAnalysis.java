@@ -17,7 +17,7 @@
 package org.opencb.opencga.analysis.variant.mendelianError;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.qc.individual.MendelianErrorReport;
+import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;

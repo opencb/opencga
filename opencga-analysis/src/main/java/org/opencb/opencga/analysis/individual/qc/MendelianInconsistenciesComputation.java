@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.analysis.individual.qc;
 
-import org.opencb.biodata.models.clinical.qc.individual.MendelianErrorReport;
-import org.opencb.biodata.models.clinical.qc.individual.MendelianErrorReport.SampleAggregation;
-import org.opencb.biodata.models.clinical.qc.individual.MendelianErrorReport.SampleAggregation.ChromosomeAggregation;
+import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
+import org.opencb.biodata.models.clinical.qc.MendelianErrorReport.SampleAggregation;
+import org.opencb.biodata.models.clinical.qc.MendelianErrorReport.SampleAggregation.ChromosomeAggregation;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.IssueEntry;
 import org.opencb.commons.datastore.core.Query;

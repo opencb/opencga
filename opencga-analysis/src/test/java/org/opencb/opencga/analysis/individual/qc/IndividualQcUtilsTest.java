@@ -17,7 +17,7 @@
 package org.opencb.opencga.analysis.individual.qc;
 
 import org.junit.Test;
-import org.opencb.biodata.models.clinical.qc.individual.RelatednessReport;
+import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 

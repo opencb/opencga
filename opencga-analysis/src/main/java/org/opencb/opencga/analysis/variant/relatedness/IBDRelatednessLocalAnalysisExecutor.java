@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.relatedness;
 
-import org.opencb.biodata.models.clinical.qc.individual.RelatednessReport;
+import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.individual.qc.IBDComputation;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;

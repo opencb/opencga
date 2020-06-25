@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.analysis.individual.qc;
 
-import org.opencb.biodata.models.clinical.qc.individual.InferredSexReport;
-import org.opencb.biodata.models.clinical.qc.individual.MendelianErrorReport;
-import org.opencb.biodata.models.clinical.qc.individual.RelatednessReport;
+import org.opencb.biodata.models.clinical.qc.InferredSexReport;
+import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
+import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;

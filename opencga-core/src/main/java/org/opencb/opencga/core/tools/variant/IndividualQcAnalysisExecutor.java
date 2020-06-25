@@ -17,9 +17,9 @@
 package org.opencb.opencga.core.tools.variant;
 
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
+import org.opencb.opencga.core.models.individual.IndividualQualityControlMetrics;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -41,7 +41,7 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
     private IndividualQualityControl report;
 
     public IndividualQcAnalysisExecutor() {
-        IndividualQualityControl.IndividualQcMetrics metrics = new IndividualQualityControl.IndividualQcMetrics();
+        IndividualQualityControlMetrics metrics = new IndividualQualityControlMetrics();
         metrics.setSampleId(sampleId);
 
         report = new IndividualQualityControl(Collections.singletonList(metrics), Collections.emptyList());

@@ -24,7 +24,7 @@ import ga4gh.Reads;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.formats.samtools.SamtoolsStats;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;

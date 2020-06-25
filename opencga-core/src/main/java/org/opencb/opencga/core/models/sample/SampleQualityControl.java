@@ -18,8 +18,8 @@ package org.opencb.opencga.core.models.sample;
 
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
-import org.opencb.biodata.models.clinical.qc.sample.SampleQcVariantStats;
-import org.opencb.biodata.models.clinical.qc.sample.Signature;
+import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.opencga.core.models.variant.HsMetricsReport;
 import org.opencb.opencga.core.models.variant.SamtoolsFlagStatsReport;
 

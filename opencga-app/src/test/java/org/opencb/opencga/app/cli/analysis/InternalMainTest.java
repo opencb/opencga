@@ -21,7 +21,7 @@ import org.ga4gh.models.ReadAlignment;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.opencb.biodata.formats.samtools.SamtoolsStats;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
