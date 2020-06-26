@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.sample.qc;
 
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.AnalysisUtils;
@@ -27,12 +27,9 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
-import org.parboiled.common.StringUtils;
 
-import java.io.IOException;
 import java.nio.file.Path;
 
 @ToolExecutor(id="opencga-local", tool = SampleQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
