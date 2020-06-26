@@ -2,6 +2,8 @@ package org.opencb.opencga.analysis.wrappers.executors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -10,11 +12,9 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class FastqcWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecutor {
 
@@ -23,48 +23,37 @@ public class FastqcWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecuto
     public FastqcWrapperAnalysisExecutor(String studyId, ObjectMap params, Path outDir, Path scratchDir, CatalogManager catalogManager,
                                          String token) {
         super(studyId, params, outDir, scratchDir, catalogManager, token);
+
+        sep = " ";
+        shortPrefix = "-";
+        longPrefix = "--";
     }
 
     @Override
     public void run() throws ToolException {
-        StringBuilder sb = new StringBuilder("docker run ");
+        StringBuilder sb = initCommandLine();
 
-        // Mount management
+        // Append mounts
+        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("", file)));
         Map<String, String> srcTargetMap = new HashMap<>();
-        updateFileMaps(file, sb, fileUriMap, srcTargetMap);
+        appendMounts(inputFilenames, srcTargetMap, sb);
 
-        sb.append("--mount type=bind,source=\"")
-                .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
+        // Append docker image, version and command
+        appendCommand("", sb);
 
-        // Docker image and version
-        sb.append(getDockerImageName());
-        if (params.containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
-            sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
-        }
+        // Append input file params
+        appendInputFiles(inputFilenames, srcTargetMap, sb);
 
-        // Input file
-        File f = new File(fileUriMap.get(file).getPath());
-        sb.append(" ").append(srcTargetMap.get(f.getParentFile().getAbsolutePath())).append("/").append(f.getName());
+        // Append other params
+        Set<String> skipParams =  new HashSet<>(Arrays.asList("o", "output"));
+        appendOtherParams(skipParams, sb);
 
-        // FastQC options
-        for (String param : params.keySet()) {
-            if (checkParam(param)) {
-                String value = params.getString(param);
-                sb.append(param.length() == 1 ? " -" : " --").append(param);
-                if (StringUtils.isNotEmpty(value) && !"null".equals(value)) {
-                    sb.append(" ").append(value);
-                }
-            }
-        }
+        // Append output file params
+        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o", "")));
+        appendOutputFiles(outputFilenames, sb);
 
-        sb.append(" -o ").append(DOCKER_OUTPUT_PATH);
-
-        try {
-            // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
-            runCommandLine(sb.toString());
-        } catch (FileNotFoundException e) {
-            throw new ToolException(e);
-        }
+        // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
+        runCommandLine(sb.toString());
     }
 
     public FastQc getResult() throws ToolException {

@@ -35,13 +35,18 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
     protected Path scratchDir;
     protected String token;
 
+    protected String sep;
+    protected String shortPrefix;
+    protected String longPrefix;
+
     protected final ObjectMap params;
 
     protected Map<String, URI> fileUriMap;
 
     private CatalogManager catalogManager;
 
-    public OpenCgaWrapperAnalysisExecutor(String studyId, ObjectMap params, Path outDir, Path scratchDir, CatalogManager catalogManager, String token) {
+    public OpenCgaWrapperAnalysisExecutor(String studyId, ObjectMap params, Path outDir, Path scratchDir, CatalogManager catalogManager,
+                                          String token) {
         this.studyId = studyId;
         this.params = params;
         this.outDir = outDir;
@@ -53,7 +58,9 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
     }
 
     public abstract void run() throws ToolException;
+
     protected abstract String getId();
+
     protected abstract String getDockerImageName();
 
     protected StringBuilder initCommandLine() {
@@ -87,14 +94,35 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
         File file;
         for (Pair<String, String> pair : inputFilenames) {
             file = new File(fileUriMap.get(pair.getValue()).getPath());
-            sb.append(" ").append(pair.getKey()).append("=").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/")
+            sb.append(" ");
+            if (StringUtils.isNotEmpty(pair.getKey())) {
+                if (pair.getKey().length() <= 1) {
+                    sb.append(shortPrefix);
+                } else {
+                    sb.append(longPrefix);
+                }
+                sb.append(pair.getKey()).append(sep);
+            }
+            sb.append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/")
                     .append(file.getName());
         }
     }
 
     protected void appendOutputFiles(List<Pair<String, String>> outputFilenames, StringBuilder sb) {
         for (Pair<String, String> pair : outputFilenames) {
-            sb.append(" ").append(pair.getKey()).append("=").append(DOCKER_OUTPUT_PATH).append("/").append(pair.getValue());
+            sb.append(" ");
+            if (StringUtils.isNotEmpty(pair.getKey())) {
+                if (pair.getKey().length() <= 1) {
+                    sb.append(shortPrefix);
+                } else {
+                    sb.append(longPrefix);
+                }
+                sb.append(pair.getKey()).append(sep);
+            }
+            sb.append(DOCKER_OUTPUT_PATH);
+            if (StringUtils.isNotEmpty(pair.getValue())) {
+                sb.append("/").append(pair.getValue());
+            }
         }
     }
 
@@ -103,21 +131,33 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
             if (skipParams.contains(paramName)) {
                 continue;
             }
-            sb.append(" ").append(paramName);
+            sb.append(" ");
+            if (StringUtils.isNotEmpty(paramName)) {
+                if (paramName.length() <= 1) {
+                    sb.append(shortPrefix);
+                } else {
+                    sb.append(longPrefix);
+                }
+                sb.append(paramName).append(sep);
+            }
             if (StringUtils.isNotEmpty(params.getString(paramName))) {
-                sb.append("=").append(params.getString(paramName));
+                sb.append(params.getString(paramName));
             }
         }
     }
 
-    protected void runCommandLine(String cmdline) throws FileNotFoundException {
-        System.out.println("Docker command line:\n" + cmdline);
-        new Command(cmdline)
-                .setOutputOutputStream(
-                        new DataOutputStream(new FileOutputStream(getScratchDir().resolve(getId() + "." + STDOUT_FILENAME).toFile())))
-                .setErrorOutputStream(
-                        new DataOutputStream(new FileOutputStream(getScratchDir().resolve(getId() + "." + STDERR_FILENAME).toFile())))
-                .run();
+    protected void runCommandLine(String cmdline) throws ToolException {
+        try {
+            System.out.println("Docker command line:\n" + cmdline);
+            new Command(cmdline)
+                    .setOutputOutputStream(
+                            new DataOutputStream(new FileOutputStream(getScratchDir().resolve(getId() + "." + STDOUT_FILENAME).toFile())))
+                    .setErrorOutputStream(
+                            new DataOutputStream(new FileOutputStream(getScratchDir().resolve(getId() + "." + STDERR_FILENAME).toFile())))
+                    .run();
+        } catch (FileNotFoundException e) {
+            throw new ToolException(e);
+        }
     }
 
     protected void updateFileMaps(String filename, StringBuilder sb, Map<String, URI> fileUriMap, Map<String, String> srcTargetMap)
@@ -183,6 +223,33 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
 
     public OpenCgaWrapperAnalysisExecutor setCatalogManager(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
+        return this;
+    }
+
+    public String getSep() {
+        return sep;
+    }
+
+    public OpenCgaWrapperAnalysisExecutor setSep(String sep) {
+        this.sep = sep;
+        return this;
+    }
+
+    public String getShortPrefix() {
+        return shortPrefix;
+    }
+
+    public OpenCgaWrapperAnalysisExecutor setShortPrefix(String shortPrefix) {
+        this.shortPrefix = shortPrefix;
+        return this;
+    }
+
+    public String getLongPrefix() {
+        return longPrefix;
+    }
+
+    public OpenCgaWrapperAnalysisExecutor setLongPrefix(String longPrefix) {
+        this.longPrefix = longPrefix;
         return this;
     }
 }
