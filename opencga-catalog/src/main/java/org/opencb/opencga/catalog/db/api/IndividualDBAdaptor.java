@@ -80,6 +80,8 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
         PHENOTYPES_SOURCE("phenotypes.source", TEXT, ""),
 
+        QUALITY_CONTROL("qualityControl", TEXT_ARRAY, ""),
+
         KARYOTYPIC_SEX("karyotypicSex", TEXT, ""),
         LIFE_STATUS("lifeStatus", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
