@@ -679,22 +679,23 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 .append(internalCli)
                 .append(" ").append(TOOL_CLI_MAP.get(toolId));
         for (Map.Entry<String, Object> entry : params.entrySet()) {
+            String key = entry.getKey();
+            String param = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key);
             if (entry.getValue() instanceof Map) {
                 Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
                 for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
-                    cliBuilder.append(" ").append("-D");
+                    cliBuilder.append(" ").append("--").append(param).append(" ");
                     escapeCliArg(cliBuilder, dynamicEntry.getKey());
                     cliBuilder.append("=");
                     escapeCliArg(cliBuilder, dynamicEntry.getValue());
                 }
             } else {
-                String key = entry.getKey();
                 if (!StringUtils.isAlphanumeric(StringUtils.replaceChars(key, "-_", ""))) {
                     // This should never happen
                     throw new IllegalArgumentException("Invalid job param key '" + key + "'");
                 }
                 cliBuilder
-                        .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key))
+                        .append(" --").append(param)
                         .append(" ");
                 escapeCliArg(cliBuilder, entry.getValue().toString());
             }

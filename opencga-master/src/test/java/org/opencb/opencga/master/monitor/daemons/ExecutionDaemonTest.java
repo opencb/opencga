@@ -91,13 +91,15 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("paramWithSpaces", "This could be a description");
         params.put("paramWithSingleQuotes", "This could 'be' a description");
         params.put("paramWithDoubleQuotes", "This could \"be\" a description");
-        Map<String, String> dynamic = new LinkedHashMap<>();
-        dynamic.put("dynamic", "It's true");
-        dynamic.put("param with spaces", "Fuc*!");
 
-        params.put("other", dynamic);
+        Map<String, String> dynamic1 = new LinkedHashMap<>();
+        dynamic1.put("dynamic", "It's true");
+        dynamic1.put("param with spaces", "Fuc*!");
+
+        params.put("dynamicParam1", dynamic1);
+        params.put("dynamicNested2", dynamic1);
         String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant-index", params);
-        assertEquals("opencga-internal.sh variant index "
+        assertEquals("opencga-internal.sh variant index-run "
                 + "--key value "
                 + "--camel-case-key value "
                 + "--flag  "
@@ -106,8 +108,10 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 + "--param-with-spaces 'This could be a description' "
                 + "--param-with-single-quotes 'This could '\"'\"'be'\"'\"' a description' "
                 + "--param-with-double-quotes 'This could \"be\" a description' "
-                + "-Ddynamic='It'\"'\"'s true' "
-                + "-D'param with spaces'='Fuc*!'", cli);
+                + "--dynamic-param1 dynamic='It'\"'\"'s true' "
+                + "--dynamic-param1 'param with spaces'='Fuc*!' "
+                + "--dynamic-nested2 dynamic='It'\"'\"'s true' "
+                + "--dynamic-nested2 'param with spaces'='Fuc*!'", cli);
     }
 
     @Test
