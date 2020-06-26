@@ -73,6 +73,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
+        QUALITY_CONTORL("qualityControl", TEXT_ARRAY, ""),
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
         PHENOTYPES_ID("phenotypes.id", TEXT, ""),
         PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
