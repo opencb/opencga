@@ -20,6 +20,7 @@ import com.mongodb.BasicDBObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.models.clinical.Comment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -41,6 +42,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.project.Project;
@@ -1347,6 +1349,28 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testUpdateIndividualQualityControl() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        DataResult<Individual> individualDataResult = individualManager.create(studyFqn, new Individual().setId("Test")
+                .setDateOfBirth("19870214"), QueryOptions.empty(), token);
+
+        IndividualQualityControl qualityControl = new IndividualQualityControl(Collections.emptyList(),
+                Arrays.asList(new Comment("pfurio", "type", "message", "today")));
+        DataResult<Individual> update = individualManager.update(studyFqn, individualDataResult.first().getId(),
+                new IndividualUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
+        assertEquals(1, update.getNumUpdated());
+
+        Individual individual = individualManager.get(studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
+                .first();
+        assertEquals(0, individual.getQualityControl().getMetrics().size());
+        assertEquals(1, individual.getQualityControl().getComments().size());
+        assertEquals("pfurio", individual.getQualityControl().getComments().get(0).getAuthor());
+        assertEquals("type", individual.getQualityControl().getComments().get(0).getType());
+        assertEquals("message", individual.getQualityControl().getComments().get(0).getMessage());
+        assertEquals("today", individual.getQualityControl().getComments().get(0).getDate());
+    }
+
+        @Test
     public void testUpdateIndividualInfo() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         DataResult<Individual> individualDataResult = individualManager.create(studyFqn, new Individual().setId("Test")
