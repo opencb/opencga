@@ -45,23 +45,27 @@ public class PendingVariantsToAnnotateReader extends AbstractHBaseDataReader<Var
     protected List<Variant> convert(List<Result> results) {
         List<Variant> variants = new ArrayList<>(results.size());
         for (Result result : results) {
-//            System.out.println("result.isEmpty() = " + result.isEmpty());
-//            for (Cell cell : result.rawCells()) {
-//                System.out.println("cell = " + Bytes.toString(cell.getQualifier()));
-//            }
             variants.add(VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow()));
         }
         return variants;
     }
 
-    private static Scan parseScan(Query query) {
-        Scan scan = new Scan();
-        Region region = null;
+    private static List<Scan> parseScan(Query query) {
+        List<Scan> scans = new ArrayList<>();
+        List<Region> regions = null;
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {
-            region = new Region(query.getString(VariantQueryParam.REGION.key()));
+            regions = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
         }
-        VariantHBaseQueryParser.addRegionFilter(scan, region);
-        return scan;
+        if (regions == null) {
+            scans.add(new Scan());
+        } else {
+            for (Region region : regions) {
+                Scan scan = new Scan();
+                VariantHBaseQueryParser.addRegionFilter(scan, region);
+                scans.add(scan);
+            }
+        }
+        return scans;
     }
 
 
