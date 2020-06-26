@@ -53,7 +53,7 @@ public class PicardWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecuto
         return PicardWrapperAnalysis.PICARD_DOCKER_IMAGE;
     }
 
-    private void runBedToIntervalList() throws ToolException, FileNotFoundException {
+    private void runBedToIntervalList() throws ToolException {
         String bedFilename = "";
         if (StringUtils.isNotEmpty(params.getString("INPUT"))) {
             bedFilename = params.getString("INPUT");

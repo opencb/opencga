@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.opencga.core.models.variant.HsMetricsReport;
-import org.opencb.opencga.core.models.variant.SamtoolsFlagStatsReport;
 
 import java.io.Serializable;
 import java.util.List;
@@ -30,7 +30,7 @@ public class SampleQualityControl implements Serializable {
 
     private List<SampleQcVariantStats> variantStats;
     private FastQc fastQc;
-    private SamtoolsFlagStatsReport samtoolsFlagStatsReport;
+    private SamtoolsFlagstats samtoolsFlagstats;
     private HsMetricsReport hsMetricsReport;
     private List<GeneCoverageStats> geneCoverageStats;
     private Signature signature;
@@ -38,12 +38,11 @@ public class SampleQualityControl implements Serializable {
     public SampleQualityControl() {
     }
 
-    public SampleQualityControl(List<SampleQcVariantStats> variantStats, FastQc fastQc,
-                                SamtoolsFlagStatsReport samtoolsFlagStatsReport, HsMetricsReport hsMetricsReport,
-                                List<GeneCoverageStats> geneCoverageStats, Signature signature) {
+    public SampleQualityControl(List<SampleQcVariantStats> variantStats, FastQc fastQc, SamtoolsFlagstats samtoolsFlagstats,
+                                HsMetricsReport hsMetricsReport, List<GeneCoverageStats> geneCoverageStats, Signature signature) {
         this.variantStats = variantStats;
         this.fastQc = fastQc;
-        this.samtoolsFlagStatsReport = samtoolsFlagStatsReport;
+        this.samtoolsFlagstats = samtoolsFlagstats;
         this.hsMetricsReport = hsMetricsReport;
         this.geneCoverageStats = geneCoverageStats;
         this.signature = signature;
@@ -54,7 +53,7 @@ public class SampleQualityControl implements Serializable {
         final StringBuilder sb = new StringBuilder("SampleQualityControl{");
         sb.append("variantStats=").append(variantStats);
         sb.append(", fastQc=").append(fastQc);
-        sb.append(", samtoolsFlagStatsReport=").append(samtoolsFlagStatsReport);
+        sb.append(", samtoolsFlagstats=").append(samtoolsFlagstats);
         sb.append(", hsMetricsReport=").append(hsMetricsReport);
         sb.append(", geneCoverageStats=").append(geneCoverageStats);
         sb.append(", signature=").append(signature);
@@ -80,12 +79,12 @@ public class SampleQualityControl implements Serializable {
         return this;
     }
 
-    public SamtoolsFlagStatsReport getSamtoolsFlagStatsReport() {
-        return samtoolsFlagStatsReport;
+    public SamtoolsFlagstats getSamtoolsFlagstats() {
+        return samtoolsFlagstats;
     }
 
-    public SampleQualityControl setSamtoolsFlagStatsReport(SamtoolsFlagStatsReport samtoolsFlagStatsReport) {
-        this.samtoolsFlagStatsReport = samtoolsFlagStatsReport;
+    public SampleQualityControl setSamtoolsFlagstats(SamtoolsFlagstats samtoolsFlagstats) {
+        this.samtoolsFlagstats = samtoolsFlagstats;
         return this;
     }
 

@@ -4,24 +4,29 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
+import org.opencb.biodata.formats.alignment.samtools.io.SamtoolsFlagstatsParser;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-public class FastqcWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecutor {
+public class SamtoolsWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecutor {
 
-    private String file;
+    private String command;
+    private String bamFile;
 
-    public FastqcWrapperAnalysisExecutor(String studyId, ObjectMap params, Path outDir, Path scratchDir, CatalogManager catalogManager,
-                                         String token) {
+    public SamtoolsWrapperAnalysisExecutor(String studyId, ObjectMap params, Path outDir, Path scratchDir, CatalogManager catalogManager,
+                                           String token) {
         super(studyId, params, outDir, scratchDir, catalogManager, token);
 
         sep = " ";
@@ -34,12 +39,12 @@ public class FastqcWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecuto
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("", file)));
+        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("", bamFile)));
         Map<String, String> srcTargetMap = new HashMap<>();
         appendMounts(inputFilenames, srcTargetMap, sb);
 
         // Append docker image, version and command
-        appendCommand("", sb);
+        appendCommand("samtools " + command, sb);
 
         // Append input file params
         appendInputFiles(inputFilenames, srcTargetMap, sb);
@@ -49,35 +54,20 @@ public class FastqcWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecuto
         appendOtherParams(skipParams, sb);
 
         // Append output file params
-        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o", "")));
+        List<Pair<String, String>> outputFilenames = new ArrayList<>();
         appendOutputFiles(outputFilenames, sb);
 
         // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
         runCommandLine(sb.toString());
     }
 
-    public FastQc getResult() throws ToolException {
-        File[] files = outDir.toFile().listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.getName().endsWith("_fastqc") && file.isDirectory()) {
-                    try {
-                        Path dataPath = file.toPath().resolve("fastqc_data.txt");
-                        return FastQcParser.parse(dataPath.toFile());
-                    } catch (IOException e) {
-                        throw new ToolException(e);
-                    }
-                }
-            }
-        }
-        String msg = "Something wrong when reading FastQC result.\n";
+    public SamtoolsFlagstats getFlagstatsResult() throws ToolException {
         try {
-            msg += StringUtils.join(FileUtils.readLines(scratchDir.resolve(getId() + ".stderr.txt").toFile()), "\n");
+            Path path = getScratchDir().resolve(getId() + "." + STDOUT_FILENAME);
+            return SamtoolsFlagstatsParser.parse(path);
         } catch (IOException e) {
             throw new ToolException(e);
         }
-
-        throw new ToolException(msg);
     }
 
     @Override
@@ -87,22 +77,24 @@ public class FastqcWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecuto
 
     @Override
     protected String getDockerImageName() {
-        return FastqcWrapperAnalysis.FASTQC_DOCKER_IMAGE;
+        return SamtoolsWrapperAnalysis.SAMTOOLS_DOCKER_IMAGE;
     }
 
-    private boolean checkParam(String param) {
-        if ("o".equals(param) || param.equals(DOCKER_IMAGE_VERSION_PARAM)) {
-            return false;
-        }
-        return true;
+    public String getCommand() {
+        return command;
     }
 
-    public String getFile() {
-        return file;
+    public SamtoolsWrapperAnalysisExecutor setCommand(String command) {
+        this.command = command;
+        return this;
     }
 
-    public FastqcWrapperAnalysisExecutor setFile(String file) {
-        this.file = file;
+    public String getBamFile() {
+        return bamFile;
+    }
+
+    public SamtoolsWrapperAnalysisExecutor setBamFile(String bamFile) {
+        this.bamFile = bamFile;
         return this;
     }
 }
