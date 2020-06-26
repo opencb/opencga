@@ -331,8 +331,8 @@ public class AnnotationConverter {
                     List<Object> numberElements = new ArrayList<>();
 
                     List annotationLevel1;
-                    if (annotation instanceof String) {
-                        annotationLevel1 = Collections.singletonList(String.valueOf(annotation));
+                    if (!(annotation instanceof List)) {
+                        annotationLevel1 = Collections.singletonList(annotation);
                     } else {
                         annotationLevel1 = (List) annotation; // a.b[]
                     }
