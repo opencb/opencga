@@ -64,7 +64,7 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
     protected abstract String getDockerImageName();
 
     protected StringBuilder initCommandLine() {
-        return new StringBuilder("docker run ");
+        return new StringBuilder("docker run --log-driver=none -a stdin -a stdout -a stderr ");
     }
 
     protected void appendMounts(List<Pair<String, String>> inputFilenames, Map<String, String> srcTargetMap, StringBuilder sb) throws ToolException {

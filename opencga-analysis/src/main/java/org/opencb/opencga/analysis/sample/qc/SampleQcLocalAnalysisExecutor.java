@@ -17,11 +17,13 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.io.FileUtils;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.wrappers.executors.FastqcWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.executors.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
@@ -103,7 +105,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
 
         // Check BAM file
         if (StringUtils.isEmpty(getBamFile())) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no BAM file was provided");
+            addWarning("Skipping FastQC analysis: no BAM file was provided");
         }
         File bamFile = AnalysisUtils.getCatalogFile(getBamFile(), getStudyId(), catalogManager.getFileManager(), getToken());
         if (bamFile == null) {
@@ -128,35 +130,45 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         FastQc fastQc = executor.getResult();
         if (fastQc != null) {
             qc.setFastQc(fastQc);
-            System.out.println(fastQc);
         }
     }
 
     private void runFlagStats() throws ToolException {
-        if (qc.getSamtoolsFlagStatsReport() != null) {
+        if (qc.getSamtoolsFlagstats() != null) {
             // Samtools flag stats already exists!
             addWarning("Skipping samtools/flagstat analysis: it was already computed");
             return;
         }
 
-        CatalogManager catalogManager = getVariantStorageManager().getCatalogManager();
-
         // Check BAM file
-        if (StringUtils.isEmpty(getBaitFile())) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no bait file was provided");
+        if (StringUtils.isEmpty(getBamFile())) {
+            addWarning("Skipping samtools/flagstat analysis: no BAM file was provided");
         }
-        File baitFile = AnalysisUtils.getCatalogFile(getBaitFile(), getStudyId(), catalogManager.getFileManager(), getToken());
+        File bamFile = AnalysisUtils.getCatalogFile(getBamFile(), getStudyId(), catalogManager.getFileManager(), getToken());
+        if (bamFile == null) {
+            addWarning("Skipping samtools/flagstat analysis: missing BAM file '" + getBamFile() + "' in catalog database");
+            return;
+        }
 
         ObjectMap params = new ObjectMap();
 
         Path outDir = getOutDir().resolve("flagstat");
         Path scratchDir = outDir.resolve("scratch");
+        scratchDir.toFile().mkdirs();
 
-//        SamtoolsWrapperAnalysisExecutor executor = new SamtoolsWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir,
-//                catalogManager, getToken());
-//
-//        executor.setFile(getBamFile());
-//        executor.run();
+        SamtoolsWrapperAnalysisExecutor executor = new SamtoolsWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir, catalogManager,
+                getToken());
+
+        executor.setCommand("flagstat");
+        executor.setBamFile(getBamFile());
+        executor.run();
+
+        // Check for result
+        SamtoolsFlagstats flagtats = executor.getFlagstatsResult();
+        if (flagtats != null) {
+            qc.setSamtoolsFlagstats(flagtats);
+            System.out.println(flagtats);
+        }
     }
 
     private void runHsMetrics() throws ToolException {
