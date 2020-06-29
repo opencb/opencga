@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -31,7 +32,7 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     protected String studyId;
     protected Sample sample;
-    protected String bamFile;
+    protected File catalogBamFile;
     protected String fastaFile;
     protected String baitFile;
     protected String targetFile;
@@ -67,12 +68,12 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public String getBamFile() {
-        return bamFile;
+    public File getCatalogBamFile() {
+        return catalogBamFile;
     }
 
-    public SampleQcAnalysisExecutor setBamFile(String bamFile) {
-        this.bamFile = bamFile;
+    public SampleQcAnalysisExecutor setCatalogBamFile(File catalogBamFile) {
+        this.catalogBamFile = catalogBamFile;
         return this;
     }
 

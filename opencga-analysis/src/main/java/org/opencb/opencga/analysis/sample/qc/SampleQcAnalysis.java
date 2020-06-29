@@ -92,7 +92,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
             throw new ToolException("Sample '" + sampleId + "' not found.");
         }
 
-        File catalogBamFile;
         if (StringUtils.isEmpty(getBamFile())) {
             try {
                 catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), getStudyId(), catalogManager.getFileManager(), getToken());
@@ -128,7 +127,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
         // Set up executor
         executor.setStudyId(studyId)
                 .setSample(sample)
-                .setBamFile(bamFile)
+                .setCatalogBamFile(catalogBamFile)
                 .setFastaFile(fastaFile)
                 .setBaitFile(baitFile)
                 .setTargetFile(targetFile)
@@ -170,7 +169,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
         if (sample.getQualityControl() == null) {
             qualityControl = new SampleQualityControl();
         } else {
-            int index = 1;
+            int index = 0;
             for (SampleQualityControlMetrics prevMetrics : qualityControl.getMetrics()) {
                 if (prevMetrics.getBamFileId().equals(metrics.getBamFileId())) {
                     qualityControl.getMetrics().remove(index);

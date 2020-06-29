@@ -101,13 +101,8 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         }
 
         // Check BAM file
-        if (StringUtils.isEmpty(getBamFile())) {
+        if (catalogBamFile == null) {
             addWarning("Skipping FastQC analysis: no BAM file was provided");
-        }
-        File bamFile = AnalysisUtils.getCatalogFile(getBamFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-        if (bamFile == null) {
-            addWarning("Skipping FastQC analysis: missing BAM file '" + getBamFile() + "' in catalog database");
-            return;
         }
 
         ObjectMap params = new ObjectMap();
@@ -120,7 +115,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         FastqcWrapperAnalysisExecutor executor = new FastqcWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir, catalogManager,
                 getToken());
 
-        executor.setFile(getBamFile());
+        executor.setFile(catalogBamFile.getId());
         executor.run();
 
         // Check for result
@@ -138,13 +133,8 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         }
 
         // Check BAM file
-        if (StringUtils.isEmpty(getBamFile())) {
+        if (catalogBamFile == null) {
             addWarning("Skipping samtools/flagstat analysis: no BAM file was provided");
-        }
-        File bamFile = AnalysisUtils.getCatalogFile(getBamFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-        if (bamFile == null) {
-            addWarning("Skipping samtools/flagstat analysis: missing BAM file '" + getBamFile() + "' in catalog database");
-            return;
         }
 
         ObjectMap params = new ObjectMap();
@@ -153,11 +143,11 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         Path scratchDir = outDir.resolve("scratch");
         scratchDir.toFile().mkdirs();
 
-        SamtoolsWrapperAnalysisExecutor executor = new SamtoolsWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir, catalogManager,
-                getToken());
+        SamtoolsWrapperAnalysisExecutor executor = new SamtoolsWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir,
+                catalogManager, getToken());
 
         executor.setCommand("flagstat");
-        executor.setBamFile(getBamFile());
+        executor.setBamFile(catalogBamFile.getId());
         executor.run();
 
         // Check for result
@@ -229,13 +219,8 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
 
     private void runGeneCoverageStats() throws ToolException {
         // Check BAM file
-        if (StringUtils.isEmpty(getBamFile())) {
+        if (catalogBamFile == null) {
             addWarning("Skipping gene coverage stats analysis: no BAM file was provided");
-        }
-        File bamFile = AnalysisUtils.getCatalogFile(getBamFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-        if (bamFile == null) {
-            addWarning("Skipping gene coverage stats analysis: missing BAM file '" + getBamFile() + "' in catalog database");
-            return;
         }
 
         // Check genes
@@ -271,8 +256,8 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
 
         if (CollectionUtils.isNotEmpty(targetGenes)) {
             try {
-                OpenCGAResult<GeneCoverageStats> geneCoverageStatsResult = getAlignmentStorageManager().coverageStats(getStudyId(), getBamFile(),
-                        targetGenes, Integer.parseInt(LOW_COVERAGE_REGION_THRESHOLD_DEFAULT), getToken());
+                OpenCGAResult<GeneCoverageStats> geneCoverageStatsResult = getAlignmentStorageManager().coverageStats(getStudyId(),
+                        catalogBamFile.getId(), targetGenes, Integer.parseInt(LOW_COVERAGE_REGION_THRESHOLD_DEFAULT), getToken());
 
                 if (geneCoverageStatsResult.getNumResults() != 1) {
                     throw new ToolException("Something wrong happened when computing gene coverage stats: no results returned");
