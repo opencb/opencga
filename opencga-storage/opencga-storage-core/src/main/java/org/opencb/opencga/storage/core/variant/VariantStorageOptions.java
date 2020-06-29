@@ -54,6 +54,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     STATS_AGGREGATION_MAPPING_FILE("stats.aggregation.mappingFile"),
 
     ANNOTATE("annotate", false), // Do annotate after step.
+    ANNOTATION_CHECKPOINT_SIZE("annotation.checkpointSize", 1000000),
     ANNOTATION_BATCH_SIZE("annotation.batchSize", 100),
     ANNOTATION_FILE_FORMAT("annotation.file.format", "json"),
     ANNOTATION_THREADS("annotation.numThreads", 8),

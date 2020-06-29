@@ -34,11 +34,11 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -46,15 +46,16 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.annotation.pending.DiscoverPendingVariantsToAnnotateDriver;
-import org.opencb.opencga.storage.hadoop.variant.annotation.pending.PendingVariantsToAnnotateReader;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsDescriptor;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
+import org.opencb.opencga.storage.hadoop.variant.pending.DiscoverPendingVariantsDriver;
+import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.*;
 
 /**
@@ -126,8 +127,9 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
                     // Append all query to params to use the same filter also at the MR
                     params = new ObjectMap(params).appendAll(query);
-                    mrExecutor.run(DiscoverPendingVariantsToAnnotateDriver.class,
-                            DiscoverPendingVariantsToAnnotateDriver.buildArgs(dbAdaptor.getVariantTable(), params),
+                    mrExecutor.run(DiscoverPendingVariantsDriver.class,
+                            DiscoverPendingVariantsDriver.buildArgs(
+                                    dbAdaptor.getVariantTable(), AnnotationPendingVariantsDescriptor.class, params),
                             params, "Prepare variants to annotate");
 
                     if (annotateAll) {
@@ -148,7 +150,11 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             return super.getVariantDataReader(query, iteratorQueryOptions, params);
         } else {
             logger.info("Reading variants to annotate from pending variants to annotate");
-            return new PendingVariantsToAnnotateReader(dbAdaptor, query);
+            PendingVariantsReader reader = new AnnotationPendingVariantsManager(dbAdaptor).reader(query);
+            if (iteratorQueryOptions.getInt(QueryOptions.LIMIT) > 0) {
+                reader.setLimit(iteratorQueryOptions.getLong(QueryOptions.LIMIT));
+            }
+            return reader;
         }
     }
 
@@ -200,9 +206,9 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
-    public void loadVariantAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
-        super.loadVariantAnnotation(uri, params);
-
+    protected void postAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params)
+            throws VariantAnnotatorException, StorageEngineException, IOException {
+        super.postAnnotate(query, doCreate, doLoad, params);
         updateSampleIndexAnnotation(params);
     }
 
