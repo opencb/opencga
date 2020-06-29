@@ -98,6 +98,7 @@ import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
+import org.opencb.opencga.storage.hadoop.variant.search.SecondaryIndexPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -415,6 +416,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
         queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+
+        if (!overwrite) {
+            new SecondaryIndexPendingVariantsManager(getDBAdaptor()).discoverPending(getMRExecutor(), getMergedOptions(queryOptions));
+        }
+
         return super.secondaryIndex(query, queryOptions, overwrite);
     }
 
@@ -423,10 +429,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throws StorageEngineException {
         if (!overwrite) {
             query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
-            logger.info("Column intersect!");
-//        queryOptions.put("multiIteratorBatchSize", 1000);
-            return new HBaseColumnIntersectVariantQueryExecutor(getDBAdaptor(), getStorageEngineId(), getOptions())
-                    .iterator(query, queryOptions);
+            VariantDBIterator iterator = new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
+            return getDBAdaptor().iterator(iterator, query, queryOptions);
         } else {
             logger.info("Get variants to index");
             return super.getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor);
@@ -435,7 +439,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
-        return new HadoopVariantSearchLoadListener(getDBAdaptor());
+        return new HadoopVariantSearchLoadListener(getDBAdaptor(), new SecondaryIndexPendingVariantsManager(getDBAdaptor()).cleaner());
     }
 
     @Override

@@ -62,6 +62,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     // Do not create phoenix indexes. Testing purposes only
     VARIANT_TABLE_INDEXES_SKIP("storage.hadoop.variant.table.indexes.skip"),
     VARIANT_TABLE_LOAD_REFERENCE("storage.hadoop.variant.table.load.reference", false),
+    PENDING_SECONDARY_INDEX_TABLE_COMPRESSION("storage.hadoop.pendingSecondaryIndex.table.compression",
+            Compression.Algorithm.SNAPPY.getName()),
 
     /////////////////////////
     // Archive table configuration

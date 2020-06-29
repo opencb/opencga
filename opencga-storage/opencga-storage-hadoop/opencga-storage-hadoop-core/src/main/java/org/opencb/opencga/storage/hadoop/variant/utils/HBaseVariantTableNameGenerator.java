@@ -19,6 +19,7 @@ public class HBaseVariantTableNameGenerator {
     private static final String SAMPLE_SUFIX = "_variant_sample_index_";
     private static final String ANNOTATION_SUFIX = "_annotation";
     private static final String PENDING_ANNOTATION_SUFIX = "_pending_annotation";
+    private static final String PENDING_SECONDARY_INDEX_SUFIX = "_pending_secondary_index";
     private static final int MINIMUM_DB_NAME_SIZE = 1;
 
     private final String namespace;
@@ -27,6 +28,7 @@ public class HBaseVariantTableNameGenerator {
     private final String metaTableName;
     private final String annotationIndexTableName;
     private final String pendingAnnotationTableName;
+    private final String pendingSecondaryIndexTableName;
 
 
     public HBaseVariantTableNameGenerator(String dbName, ObjectMap options) {
@@ -47,6 +49,7 @@ public class HBaseVariantTableNameGenerator {
         metaTableName = getMetaTableName(namespace, this.dbName);
         annotationIndexTableName = getAnnotationIndexTableName(namespace, this.dbName);
         pendingAnnotationTableName = getPendingAnnotationTableName(namespace, this.dbName);
+        pendingSecondaryIndexTableName = getPendingSecondaryIndexTableName(namespace, this.dbName);
     }
 
     public String getVariantTableName() {
@@ -67,6 +70,10 @@ public class HBaseVariantTableNameGenerator {
 
     public String getPendingAnnotationTableName() {
         return pendingAnnotationTableName;
+    }
+
+    public String getPendingSecondaryIndexTableName() {
+        return pendingSecondaryIndexTableName;
     }
 
     public String getMetaTableName() {
@@ -103,7 +110,13 @@ public class HBaseVariantTableNameGenerator {
 
     public static void checkValidPendingAnnotationTableName(String pendingAnnotationTableName) {
         if (!validSuffix(pendingAnnotationTableName, PENDING_ANNOTATION_SUFIX)) {
-            throw new IllegalArgumentException("Invalid variants table name : " + pendingAnnotationTableName);
+            throw new IllegalArgumentException("Invalid pending annotation table name : " + pendingAnnotationTableName);
+        }
+    }
+
+    public static void checkValidPendingSecondaryIndexTableName(String pendingSecondaryIndexTableName) {
+        if (!validSuffix(pendingSecondaryIndexTableName, PENDING_SECONDARY_INDEX_SUFIX)) {
+            throw new IllegalArgumentException("Invalid pending secondary index table name : " + pendingSecondaryIndexTableName);
         }
     }
 
@@ -201,6 +214,10 @@ public class HBaseVariantTableNameGenerator {
 
     public static String getPendingAnnotationTableName(String namespace, String dbName) {
         return buildTableName(namespace, dbName, PENDING_ANNOTATION_SUFIX);
+    }
+
+    public static String getPendingSecondaryIndexTableName(String namespace, String dbName) {
+        return buildTableName(namespace, dbName, PENDING_SECONDARY_INDEX_SUFIX);
     }
 
     public static String getMetaTableName(String namespace, String dbName) {

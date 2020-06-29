@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.pending;
 import org.apache.hadoop.hbase.client.Delete;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -22,7 +21,7 @@ public class PendingVariantsDBCleaner extends AbstractHBaseDataWriter<byte[], De
     public PendingVariantsDBCleaner(HBaseManager hBaseManager, String tableName, PendingVariantsDescriptor descriptor) {
         super(hBaseManager, tableName);
         this.descriptor = descriptor;
-        HBaseVariantTableNameGenerator.checkValidPendingAnnotationTableName(tableName);
+        descriptor.checkValidPendingTableName(tableName);
     }
 
     @Override

@@ -79,7 +79,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
 //                new QueryOptions(QueryOptions.INCLUDE, VariantField.TYPE.fieldName()));
 
         Scan scan = new Scan();
-        descriptor.configureScan(scan);
+        descriptor.configureScan(scan, getMetadataManager());
 
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {
             Region region = new Region(query.getString(VariantQueryParam.REGION.key()));
@@ -114,7 +114,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
 
     @Override
     protected String getJobOperationName() {
-        return "discover_variants_to_annotate";
+        return "discover_" + descriptor.name() + "_pending_variants";
     }
 
 
