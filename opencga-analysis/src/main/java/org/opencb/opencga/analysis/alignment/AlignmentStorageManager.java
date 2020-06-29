@@ -20,6 +20,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.*;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
@@ -158,7 +159,7 @@ public class AlignmentStorageManager extends StorageManager {
 
     //-------------------------------------------------------------------------
 
-    public OpenCGAResult<AlignmentStats> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
+    public OpenCGAResult<SamtoolsStats> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
         OpenCGAResult<File> fileResult;
         fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
 
@@ -166,8 +167,8 @@ public class AlignmentStorageManager extends StorageManager {
             for (AnnotationSet annotationSet : fileResult.getResults().get(0).getAnnotationSets()) {
                 if ("opencga_alignment_stats".equals(annotationSet.getId())) {
                     StopWatch watch = StopWatch.createStarted();
-                    AlignmentStats stats = JacksonUtils.getDefaultObjectMapper().convertValue(annotationSet.getAnnotations(),
-                            AlignmentStats.class);
+                    SamtoolsStats stats = JacksonUtils.getDefaultObjectMapper().convertValue(annotationSet.getAnnotations(),
+                            SamtoolsStats.class);
                     watch.stop();
                     return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(stats), 1);
                 }
@@ -248,7 +249,7 @@ public class AlignmentStorageManager extends StorageManager {
 
             // Init gene coverage stats
             GeneCoverageStats geneCoverageStats = new GeneCoverageStats();
-            geneCoverageStats.setFileId(file.getId());
+            geneCoverageStats.setFile(file.getId());
 
             geneCoverageStats.setGeneName(geneName);
             if (CollectionUtils.isNotEmpty(file.getSamples())) {
@@ -294,18 +295,18 @@ public class AlignmentStorageManager extends StorageManager {
                         if (CollectionUtils.isNotEmpty(transcript.getExons())) {
                             for (Exon exon : transcript.getExons()) {
                                 if (exon.getStart() != 0 && exon.getEnd() != 0) {
-                                    Region region = new Region(exon.getChromosome(), exon.getStart(), exon.getEnd());
-                                    length += region.size();
+                                    Region region = new Region(exon.getChromosome(), exon.getStart() - 5, exon.getEnd() + 5);
+                                    length += (region.size() - 10);
 
                                     OpenCGAResult<RegionCoverage> regionResult = alignmentStorageEngine.getDBAdaptor().coverageQuery(
                                             Paths.get(file.getUri()), region, 0, Integer.MAX_VALUE, 1);
 
                                     RegionCoverage regionCoverage = regionResult.first();
 
-                                    // Exon stats
+                                    // Exon stats (skipping +/-5 bp)
+                                    RegionCoverageStats stats = computeExonStats(regionCoverage);
                                     ExonCoverageStats exonStats = new ExonCoverageStats(exon.getId(), exon.getChromosome(), exon.getStart(),
-                                            exon.getEnd(), regionCoverage.getStats().getAvg(), regionCoverage.getStats().getMin(),
-                                            regionCoverage.getStats().getMax());
+                                            exon.getEnd(), stats.getAvg(), stats.getMin(), stats.getMax());
                                     exonCoverageStats.add(exonStats);
 
                                     // % depths
@@ -350,7 +351,7 @@ public class AlignmentStorageManager extends StorageManager {
                                         }
 
                                         // Get low coverage regions, from 0 to threshold depth
-                                        List<RegionCoverage> filteredRegions = BamUtils.filterByCoverage(regionCoverage, 0, threshold);
+                                        List<RegionCoverage> filteredRegions = BamUtils.filterByCoverage(regionCoverage, 0, threshold + 1);
                                         for (RegionCoverage filteredRegion : filteredRegions) {
                                             if (filteredRegion.getValues() != null && filteredRegion.getValues().length > 0) {
                                                 lowCoverageRegionStats.add(new LowCoverageRegionStats(filteredRegion.getChromosome(),
@@ -388,6 +389,25 @@ public class AlignmentStorageManager extends StorageManager {
         watch.stop();
         return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), geneCoverageStatsList.size(), geneCoverageStatsList,
                 geneCoverageStatsList.size());
+    }
+
+    private RegionCoverageStats computeExonStats(RegionCoverage regionCoverage) {
+        double min = Double.MAX_VALUE;
+        double max = Double.MIN_VALUE;
+        double agg = 0;
+
+        double[] values = regionCoverage.getValues();
+        int lastPosition = values.length - 5;
+        for (int i = 5; i < lastPosition; i++) {
+            if (values[i] < min) {
+                min = values[i];
+            }
+            if (values[i] > max) {
+                max = values[i];
+            }
+            agg += values[i];
+        }
+        return new RegionCoverageStats((int) Math.round(min), (int) Math.round(max), agg / (values.length - 10));
     }
 
 //-------------------------------------------------------------------------

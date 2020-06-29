@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant.geneticChecks;
+package org.opencb.opencga.analysis.individual.qc;
 
+import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.variant.RelatednessReport;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -35,7 +35,7 @@ public class IBDComputation {
     public static RelatednessReport compute(String study, List<String> samples, String maf, Path outDir,
                                             VariantStorageManager storageManager, String token) throws ToolException {
         // Select markers
-        GeneticChecksUtils.selectMarkers(BASENAME, study, samples, maf, outDir, storageManager, token);
+        IndividualQcUtils.selectMarkers(BASENAME, study, samples, maf, outDir, storageManager, token);
 
         // run IBD and return the result file (now autosome-file comprises X chromosome too)
         File outFile = runIBD(BASENAME, outDir);
@@ -44,7 +44,7 @@ public class IBDComputation {
             throw new ToolException("Something wrong happened executing relatedness analysis");
         }
 
-        return GeneticChecksUtils.buildRelatednessReport(outFile);
+        return IndividualQcUtils.buildRelatednessReport(outFile);
     }
 
     private static File runIBD(String basename, Path outDir) throws ToolException {

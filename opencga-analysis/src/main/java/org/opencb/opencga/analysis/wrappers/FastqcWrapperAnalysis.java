@@ -20,6 +20,7 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
+import org.opencb.opencga.analysis.wrappers.executors.FastqcWrapperAnalysisExecutor;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -40,7 +41,7 @@ public class FastqcWrapperAnalysis extends OpenCgaWrapperAnalysis {
     public final static String ID = "fastqc";
     public final static String DESCRIPTION = "A quality control tool for high throughput sequence data.";
 
-    public final static String SAMTOOLS_DOCKER_IMAGE = "dceoy/fastqc";
+    public final static String FASTQC_DOCKER_IMAGE = "dceoy/fastqc";
 
     private String file;
 
@@ -55,17 +56,13 @@ public class FastqcWrapperAnalysis extends OpenCgaWrapperAnalysis {
     @Override
     protected void run() throws Exception {
         step(() -> {
-            String commandLine = getCommandLine();
-            logger.info("FastQC command line: " + commandLine);
-            try {
-                // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
-                Command cmd = new Command(getCommandLine())
-                        .setOutputOutputStream(
-                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDOUT_FILENAME).toFile())))
-                        .setErrorOutputStream(
-                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDERR_FILENAME).toFile())));
 
-                cmd.run();
+            try {
+                FastqcWrapperAnalysisExecutor executor = new FastqcWrapperAnalysisExecutor(getStudy(), params, getOutDir(),
+                        getScratchDir(), catalogManager, token);
+
+                executor.setFile(file);
+                executor.run();
 
                 // Check fastqc errors
                 boolean success = false;
@@ -90,54 +87,6 @@ public class FastqcWrapperAnalysis extends OpenCgaWrapperAnalysis {
         });
     }
 
-    @Override
-    public String getDockerImageName() {
-        return SAMTOOLS_DOCKER_IMAGE;
-    }
-
-    @Override
-    public String getCommandLine() throws ToolException {
-        StringBuilder sb = new StringBuilder("docker run ");
-
-        // Mount management
-        Map<String, String> srcTargetMap = new HashMap<>();
-        updateFileMaps(file, sb, fileUriMap, srcTargetMap);
-
-        sb.append("--mount type=bind,source=\"")
-                .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
-
-        // Docker image and version
-        sb.append(getDockerImageName());
-        if (params.containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
-            sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
-        }
-
-        // FastQC options
-        for (String param : params.keySet()) {
-            if (checkParam(param)) {
-                String value = params.getString(param);
-                sb.append(param.length() == 1 ? " -" : " --").append(param);
-                if (StringUtils.isNotEmpty(value) && !"null".equals(value)) {
-                    sb.append(" ").append(value);
-                }
-            }
-        }
-
-        sb.append(" -o ").append(DOCKER_OUTPUT_PATH);
-
-        File file = new File(fileUriMap.get(this.file).getPath());
-        sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
-
-        return sb.toString();
-    }
-
-    private boolean checkParam(String param) {
-        if ("o".equals(param) || param.equals(DOCKER_IMAGE_VERSION_PARAM)) {
-            return false;
-        }
-        return true;
-    }
-
     public String getFile() {
         return file;
     }
@@ -145,5 +94,10 @@ public class FastqcWrapperAnalysis extends OpenCgaWrapperAnalysis {
     public FastqcWrapperAnalysis setFile(String file) {
         this.file = file;
         return this;
+    }
+
+    @Override
+    public String getDockerImageName() {
+        return null;
     }
 }

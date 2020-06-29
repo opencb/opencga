@@ -20,6 +20,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.Document;
 import org.junit.Test;
+import org.opencb.biodata.formats.sequence.fastqc.FastQc;
+import org.opencb.biodata.formats.sequence.fastqc.Summary;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -182,6 +184,28 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals("my description", testSample.first().getStatus().getDescription());
         assertNotNull(testSample.first().getStatus().getDate());
         assertTrue(testSample.first().getCollection().getAttributes().isEmpty());
+    }
+
+    @Test
+    public void updateQualityControlField() throws CatalogException {
+        catalogManager.getSampleManager().create(studyFqn,
+                new Sample().setId("testSample").setDescription("description"), null, token);
+
+        SampleQualityControl qualityControl = new SampleQualityControl(Collections.emptyList(), 
+                new FastQc().setSummary(new Summary("basicStatistics", "perBaseSeqQuality", "perTileSeqQuality", "perSeqQualityScores",
+                        "perBaseSeqContent", "perSeqGcContent", "perBaseNContent", "seqLengthDistribution", "seqDuplicationLevels",
+                        "overrepresentedSeqs", "adapterContent", "kmerContent")), null, null, null, null);
+
+        catalogManager.getSampleManager().update(studyFqn, "testSample",
+                new SampleUpdateParams().setQualityControl(qualityControl),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+
+        DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
+        assertEquals("basicStatistics", testSample.first().getQualityControl().getFastQc().getSummary().getBasicStatistics());
+        assertEquals("perBaseSeqQuality", testSample.first().getQualityControl().getFastQc().getSummary().getPerBaseSeqQuality());
+        assertEquals("perTileSeqQuality", testSample.first().getQualityControl().getFastQc().getSummary().getPerTileSeqQuality());
+        assertEquals("perSeqQualityScores", testSample.first().getQualityControl().getFastQc().getSummary().getPerSeqQualityScores());
+        assertEquals("perBaseSeqContent", testSample.first().getQualityControl().getFastQc().getSummary().getPerBaseSeqContent());
     }
 
     @Test

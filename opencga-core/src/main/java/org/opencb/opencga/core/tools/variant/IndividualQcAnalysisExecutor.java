@@ -16,37 +16,61 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.variant.GeneticChecksReport;
+import org.opencb.opencga.core.models.individual.IndividualQualityControl;
+import org.opencb.opencga.core.models.individual.IndividualQualityControlMetrics;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
+import java.util.Collections;
 import java.util.List;
 
-public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor {
+public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
 
-    public enum GeneticCheck {
+    public enum Qc {
         INFERRED_SEX, RELATEDNESS, MENDELIAN_ERRORS
     }
 
     private String studyId;
+    private String individualId;
+    private String sampleId;
     private String familyId;
     private List<String> sampleIds;
-    private GeneticCheck geneticCheck;
+    private Qc qc;
     private String minorAlleleFreq;
     private String relatednessMethod;
 
-    private GeneticChecksReport report;
+    private IndividualQualityControl report;
 
-    public GeneticChecksAnalysisExecutor() {
-        report = new GeneticChecksReport();
+    public IndividualQcAnalysisExecutor() {
+        IndividualQualityControlMetrics metrics = new IndividualQualityControlMetrics();
+        metrics.setSampleId(sampleId);
+
+        report = new IndividualQualityControl(Collections.singletonList(metrics), Collections.emptyList());
     }
 
     public String getStudyId() {
         return studyId;
     }
 
-    public GeneticChecksAnalysisExecutor setStudyId(String studyId) {
+    public IndividualQcAnalysisExecutor setStudyId(String studyId) {
         this.studyId = studyId;
+        return this;
+    }
+
+    public String getIndividualId() {
+        return individualId;
+    }
+
+    public IndividualQcAnalysisExecutor setIndividualId(String individualId) {
+        this.individualId = individualId;
+        return this;
+    }
+
+    public String getSampleId() {
+        return sampleId;
+    }
+
+    public IndividualQcAnalysisExecutor setSampleId(String sampleId) {
+        this.sampleId = sampleId;
         return this;
     }
 
@@ -54,7 +78,7 @@ public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor 
         return familyId;
     }
 
-    public GeneticChecksAnalysisExecutor setFamilyId(String familyId) {
+    public IndividualQcAnalysisExecutor setFamilyId(String familyId) {
         this.familyId = familyId;
         return this;
     }
@@ -63,17 +87,17 @@ public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor 
         return sampleIds;
     }
 
-    public GeneticChecksAnalysisExecutor setSampleIds(List<String> sampleIds) {
+    public IndividualQcAnalysisExecutor setSampleIds(List<String> sampleIds) {
         this.sampleIds = sampleIds;
         return this;
     }
 
-    public GeneticCheck getGeneticCheck() {
-        return geneticCheck;
+    public Qc getQc() {
+        return qc;
     }
 
-    public GeneticChecksAnalysisExecutor setGeneticCheck(GeneticCheck geneticCheck) {
-        this.geneticCheck = geneticCheck;
+    public IndividualQcAnalysisExecutor setQc(Qc qc) {
+        this.qc = qc;
         return this;
     }
 
@@ -81,7 +105,7 @@ public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor 
         return minorAlleleFreq;
     }
 
-    public GeneticChecksAnalysisExecutor setMinorAlleleFreq(String minorAlleleFreq) {
+    public IndividualQcAnalysisExecutor setMinorAlleleFreq(String minorAlleleFreq) {
         this.minorAlleleFreq = minorAlleleFreq;
         return this;
     }
@@ -90,16 +114,16 @@ public abstract class GeneticChecksAnalysisExecutor extends OpenCgaToolExecutor 
         return relatednessMethod;
     }
 
-    public GeneticChecksAnalysisExecutor setRelatednessMethod(String relatednessMethod) {
+    public IndividualQcAnalysisExecutor setRelatednessMethod(String relatednessMethod) {
         this.relatednessMethod = relatednessMethod;
         return this;
     }
 
-    public GeneticChecksReport getReport() {
+    public IndividualQualityControl getReport() {
         return report;
     }
 
-    public GeneticChecksAnalysisExecutor setReport(GeneticChecksReport report) {
+    public IndividualQcAnalysisExecutor setReport(IndividualQualityControl report) {
         this.report = report;
         return this;
     }

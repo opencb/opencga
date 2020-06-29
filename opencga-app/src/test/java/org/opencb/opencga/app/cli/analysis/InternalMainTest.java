@@ -21,7 +21,7 @@ import org.ga4gh.models.ReadAlignment;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.opencb.biodata.models.alignment.AlignmentStats;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -399,7 +399,7 @@ public class InternalMainTest {
 
         // stats info
         AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
-        DataResult<AlignmentStats> statsInfo = alignmentStorageManager.statsInfo(studyId, bamFile.getId(), sessionId);
+        DataResult<SamtoolsStats> statsInfo = alignmentStorageManager.statsInfo(studyId, bamFile.getId(), sessionId);
         assertEquals(1, statsInfo.getNumMatches());
 //        assert(statsInfo.getResults().get(0).length() > 0);
         System.out.println(statsInfo);

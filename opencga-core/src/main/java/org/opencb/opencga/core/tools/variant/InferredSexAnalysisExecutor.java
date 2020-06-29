@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
+import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.HashMap;
@@ -27,7 +25,7 @@ import java.util.Map;
 public abstract class InferredSexAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String studyId;
-    private String sampleId;
+    private String individualId;
 
     private InferredSexReport inferredSexReport;
 
@@ -43,12 +41,12 @@ public abstract class InferredSexAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public String getSampleId() {
-        return sampleId;
+    public String getIndividualId() {
+        return individualId;
     }
 
-    public InferredSexAnalysisExecutor setSampleId(String sampleId) {
-        this.sampleId = sampleId;
+    public InferredSexAnalysisExecutor setIndividualId(String individualId) {
+        this.individualId = individualId;
         return this;
     }
 

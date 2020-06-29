@@ -18,12 +18,11 @@ package org.opencb.opencga.analysis.variant.relatedness;
 
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.IBDRelatednessAnalysisExecutor;
@@ -116,7 +115,7 @@ public class RelatednessAnalysis extends OpenCgaTool {
             // Check and get individual for each ID
             sampleIds = new ArrayList<>();
             for (String individualId : individualIds) {
-                Sample sample = GeneticChecksUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
+                Sample sample = IndividualQcUtils.getValidSampleByIndividualId(studyId, individualId, catalogManager, token);
                 sampleIds.add(sample.getId());
             }
         }

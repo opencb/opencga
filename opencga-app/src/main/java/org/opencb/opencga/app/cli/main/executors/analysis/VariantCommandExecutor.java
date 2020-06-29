@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.app.cli.main.executors.analysis;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -40,7 +42,9 @@ import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.VariantQueryResult;
@@ -57,7 +61,7 @@ import java.util.concurrent.TimeUnit;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
@@ -186,8 +190,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = relatedness();
                 break;
 
-            case GENETIC_CHECKS_RUN_COMMAND:
-                queryResponse = geneticChecks();
+            case SAMPLE_QC_RUN_COMMAND:
+                queryResponse = sampleQc();
                 break;
 
             case PLINK_RUN_COMMAND:
@@ -364,17 +368,47 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         );
     }
 
-    private RestResponse<Job> geneticChecks() throws ClientException {
-        return openCGAClient.getVariantClient().runGeneticChecks(
-                new GeneticChecksAnalysisParams(
-                        variantCommandOptions.geneticChecksCommandOptions.family,
-                        variantCommandOptions.geneticChecksCommandOptions.individual,
-                        variantCommandOptions.geneticChecksCommandOptions.sample,
-                        variantCommandOptions.geneticChecksCommandOptions.minorAlleleFreq,
-                        variantCommandOptions.geneticChecksCommandOptions.relatednessMethod,
-                        variantCommandOptions.geneticChecksCommandOptions.outdir
+    private RestResponse<Job> sampleQc() throws ClientException {
+        TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String,String>>() {};
+        Map<String, String> variantStatsQuery = new HashMap<>();
+        if (StringUtils.isNotEmpty(variantCommandOptions.sampleQcCommandOptions.variantStatsQuery)) {
+            try {
+                variantStatsQuery = JacksonUtils.getDefaultObjectMapper().readValue(
+                        variantCommandOptions.sampleQcCommandOptions.variantStatsQuery, typeRef);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        }
+        Map<String, String> signatureQuery = new HashMap<>();
+        if (StringUtils.isNotEmpty(variantCommandOptions.sampleQcCommandOptions.signatureQuery)) {
+            try {
+                signatureQuery = JacksonUtils.getDefaultObjectMapper().readValue(
+                        variantCommandOptions.sampleQcCommandOptions.signatureQuery, typeRef);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        }
+        List<String> genesForCoverageStats = new ArrayList<>();
+        if (StringUtils.isNotEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)) {
+            genesForCoverageStats = Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
+        }
+
+        return openCGAClient.getVariantClient().runSampleQc(
+                new SampleQcAnalysisParams(
+                        variantCommandOptions.sampleQcCommandOptions.sample,
+                        variantCommandOptions.sampleQcCommandOptions.bamFile,
+                        variantCommandOptions.sampleQcCommandOptions.fastaFile,
+                        variantCommandOptions.sampleQcCommandOptions.baitFile,
+                        variantCommandOptions.sampleQcCommandOptions.targetFile,
+                        variantCommandOptions.sampleQcCommandOptions.variantStatsId,
+                        variantCommandOptions.sampleQcCommandOptions.variantStatsDecription,
+                        variantStatsQuery,
+                        variantCommandOptions.sampleQcCommandOptions.signatureId,
+                        signatureQuery,
+                        genesForCoverageStats,
+                        variantCommandOptions.sampleQcCommandOptions.outdir
                 ),
-                getParams(variantCommandOptions.geneticChecksCommandOptions.study)
+                getParams(variantCommandOptions.sampleQcCommandOptions.study)
         );
     }
 

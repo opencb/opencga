@@ -20,8 +20,8 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
@@ -119,7 +119,7 @@ public class VariantCommandOptions {
     public final MendelianErrorCommandOptions mendelianErrorCommandOptions;
     public final InferredSexCommandOptions inferredSexCommandOptions;
     public final RelatednessCommandOptions relatednessCommandOptions;
-    public final GeneticChecksCommandOptions geneticChecksCommandOptions;
+    public final SampleQcCommandOptions sampleQcCommandOptions;
 
     // Wrappers
     public final PlinkCommandOptions plinkCommandOptions;
@@ -178,7 +178,7 @@ public class VariantCommandOptions {
         this.mendelianErrorCommandOptions = new MendelianErrorCommandOptions();
         this.inferredSexCommandOptions = new InferredSexCommandOptions();
         this.relatednessCommandOptions = new RelatednessCommandOptions();
-        this.geneticChecksCommandOptions = new GeneticChecksCommandOptions();
+        this.sampleQcCommandOptions = new SampleQcCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
         this.gatkCommandOptions = new GatkCommandOptions();
@@ -1166,13 +1166,13 @@ public class VariantCommandOptions {
         @Parameter(names = {"--method"}, description = "Method to compute relatedness.")
         public String method = "IBD";
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
         public String outdir;
     }
 
-    @Parameters(commandNames = GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND, commandDescription = GeneticChecksAnalysis.DESCRIPTION)
-    public class GeneticChecksCommandOptions {
-        public static final String GENETIC_CHECKS_RUN_COMMAND = GeneticChecksAnalysis.ID + "-run";
+    @Parameters(commandNames = SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND, commandDescription = SampleQcAnalysis.DESCRIPTION)
+    public class SampleQcCommandOptions {
+        public static final String SAMPLE_QC_RUN_COMMAND = SampleQcAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1180,22 +1180,41 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--family"}, description = "Family ID to get the family members).")
-        public String family;
-
-        @Parameter(names = {"--individual"}, description = "Individual ID: it will be considered a child individual to get the family members).")
-        public String individual;
-
-        @Parameter(names = {"--sample"}, description = "Sample ID: it will be considered a child sample to get the family members).")
+        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
         public String sample;
 
-        @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
-        public String minorAlleleFreq;
+        @Parameter(names = {"--bam-file"}, description = "BAM file.")
+        public String bamFile;
 
-        @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
-        public String relatednessMethod = "IBD";
+        @Parameter(names = {"--ref-genome-file"}, description = "Reference genome file in FASTA format (for HS metrics).")
+        public String fastaFile;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        @Parameter(names = {"--bait-file"}, description = "Bait intervals file in BED format (for HS metrics).")
+        public String baitFile;
+
+        @Parameter(names = {"--target-file"}, description = "Target intervals file in BED format (for HS metrics).")
+        public String targetFile;
+
+        @Parameter(names = {"--variant-stats-id"}, description = "Variant stats ID.")
+        public String variantStatsId;
+
+        @Parameter(names = {"--variant-stats-description"}, description = "Variant stats description.")
+        public String variantStatsDecription;
+
+        @Parameter(names = {"--variant-stats-query"}, description = "Variant stats query in JSON format, e.g.: '{\"gene\":\"BRCA2\", \"ct\":\"missense_variant\"}'")
+        public String variantStatsQuery;
+
+        @Parameter(names = {"--signature-id"}, description = "Signature ID.")
+        public String signatureId;
+
+        @Parameter(names = {"--signature-query"}, description = "Signature query in JSON format, e.g.: '{\"type\":\"SNV\", \"ct\":\"missense_variant\"}'")
+        public String signatureQuery;
+
+        @Parameter(names = {"--genes-for-coverage-stats"}, description = "A comma separated list of genes to compute the coverage stats.")
+        public String genesForCoverageStats;
+
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
     }
 

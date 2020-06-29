@@ -528,7 +528,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 // Update set of already obtained individuals
                 Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
                 relativeMap = lookForParentsAndChildren(study, mother, skipIndividuals, queryOptions, userId);
-
                 addDegreeRelatives(relativeMap, relationMap, 2, individualList);
             }
             if (father != null) {
@@ -577,28 +576,38 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         for (Map.Entry<ClinicalAnalysis.FamiliarRelationship, List<Individual>> entry : relativeMap.entrySet()) {
             switch (entry.getKey()) {
                 case MOTHER:
-                    if (relationMap.isEmpty()) {
-                        addRelativeToList(entry.getValue().get(0), ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDMOTHER, degree,
+                    if (relationMap.containsKey(ClinicalAnalysis.FamiliarRelationship.MOTHER)) {
+                        addRelativeToList(entry.getValue().get(0), relationMap.get(ClinicalAnalysis.FamiliarRelationship.MOTHER), degree,
                                 individualList);
                     }
                     break;
                 case FATHER:
-                    addRelativeToList(entry.getValue().get(0), ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDFATHER, degree,
-                            individualList);
+                    if (relationMap.containsKey(ClinicalAnalysis.FamiliarRelationship.FATHER)) {
+                        addRelativeToList(entry.getValue().get(0), relationMap.get(ClinicalAnalysis.FamiliarRelationship.FATHER), degree,
+                                individualList);
+                    }
                     break;
                 case SON:
-                    for (Individual child : entry.getValue()) {
-                        addRelativeToList(child, ClinicalAnalysis.FamiliarRelationship.BROTHER, degree, individualList);
+                    if (relationMap.containsKey(ClinicalAnalysis.FamiliarRelationship.SON)) {
+                        for (Individual child : entry.getValue()) {
+                            addRelativeToList(child, relationMap.get(ClinicalAnalysis.FamiliarRelationship.SON), degree, individualList);
+                        }
                     }
                     break;
                 case DAUGHTER:
-                    for (Individual child : entry.getValue()) {
-                        addRelativeToList(child, ClinicalAnalysis.FamiliarRelationship.SISTER, degree, individualList);
+                    if (relationMap.containsKey(ClinicalAnalysis.FamiliarRelationship.DAUGHTER)) {
+                        for (Individual child : entry.getValue()) {
+                            addRelativeToList(child, relationMap.get(ClinicalAnalysis.FamiliarRelationship.DAUGHTER), degree,
+                                    individualList);
+                        }
                     }
                     break;
                 case CHILD_OF_UNKNOWN_SEX:
-                    for (Individual child : entry.getValue()) {
-                        addRelativeToList(child, ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING, degree, individualList);
+                    if (relationMap.containsKey(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX)) {
+                        for (Individual child : entry.getValue()) {
+                            addRelativeToList(child, relationMap.get(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX), degree,
+                                    individualList);
+                        }
                     }
                     break;
                 default:
@@ -728,9 +737,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             includeSet.add(IndividualDBAdaptor.QueryParams.UUID.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.SEX.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key());
+            includeSet.add(IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.UID.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key());
+            includeSet.add(IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.UID.key());
 
-            queryOptions.add(QueryOptions.INCLUDE, new ArrayList<>(includeSet));
+            queryOptions.put(QueryOptions.INCLUDE, new ArrayList<>(includeSet));
         } else if (options.containsKey(QueryOptions.EXCLUDE)) {
             Set<String> excludeSet = new HashSet<>(options.getAsStringList(QueryOptions.EXCLUDE));
             excludeSet.remove(IndividualDBAdaptor.QueryParams.ID.key());
@@ -739,7 +750,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             excludeSet.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
             excludeSet.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
 
-            queryOptions.add(QueryOptions.EXCLUDE, new ArrayList<>(excludeSet));
+            queryOptions.put(QueryOptions.EXCLUDE, new ArrayList<>(excludeSet));
         }
 
         return queryOptions;

@@ -14,34 +14,31 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant.geneticChecks;
+package org.opencb.opencga.analysis.individual.qc;
 
+import org.opencb.biodata.models.clinical.qc.InferredSexReport;
+import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
+import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.variant.InferredSexReport;
-import org.opencb.opencga.core.models.variant.MendelianErrorReport;
-import org.opencb.opencga.core.models.variant.RelatednessReport;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
-import org.opencb.opencga.core.tools.variant.GeneticChecksAnalysisExecutor;
+import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-@ToolExecutor(id="opencga-local", tool = GeneticChecksAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
+@ToolExecutor(id="opencga-local", tool = SampleQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
-public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExecutor implements StorageToolExecutor {
+public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecutor implements StorageToolExecutor {
 
     @Override
     public void run() throws ToolException {
-        switch (getGeneticCheck()) {
+        switch (getQc()) {
 
             case INFERRED_SEX: {
 
@@ -53,7 +50,7 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
                 // Get assembly
                 String assembly;
                 try {
-                    assembly = GeneticChecksUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
+                    assembly = IndividualQcUtils.getAssembly(getStudyId(), alignmentStorageManager.getCatalogManager(), getToken());
                 } catch (CatalogException e) {
                     throw new ToolException(e);
                 }
@@ -65,15 +62,22 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
                     double[] ratios = InferredSexComputation.computeRatios(getStudyId(), sampleId, assembly, fileManager,
                             alignmentStorageManager, getToken());
 
-                    // Add sex report to the list (individual fields will be set later)
                     // TODO infer sex from ratios
-                    sexReportList.add(new InferredSexReport("", sampleId, "", "", ratios[0], ratios[1], ""));
+                    String inferredKaryotypicSex = "";
+
+                    Map<String, Object> values = new HashMap<>();
+                    values.put("ratioX", ratios[0]);
+                    values.put("ratioY", ratios[1]);
+
+                    // Set inferred sex report (individual fields will be set later)
+                    sexReportList.add(new InferredSexReport("CoverageRatio", inferredKaryotypicSex, values, Collections.emptyList()));
                 }
 
                 // Set sex report
-                getReport().setInferredSexReport(sexReportList);
+                getReport().getMetrics().get(0).setInferredSexReport(sexReportList);
                 break;
             }
+
             case RELATEDNESS: {
 
                 // Get managers
@@ -85,9 +89,10 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
                         getOutDir(), variantStorageManager, getToken());
 
                 // Set relatedness report
-                getReport().setRelatednessReport(relatednessReport);
+                getReport().getMetrics().get(0).setRelatednessReport(relatednessReport);
                 break;
             }
+
             case MENDELIAN_ERRORS: {
 
                 // Get managers
@@ -99,11 +104,12 @@ public class GeneticChecksLocalAnalysisExecutor extends GeneticChecksAnalysisExe
                         variantStorageManager, getToken());
 
                 // Set relatedness report
-                getReport().setMendelianErrorReport(mendelianErrorReport);
+                getReport().getMetrics().get(0).setMendelianErrorReport(mendelianErrorReport);
                 break;
             }
+
             default: {
-                throw new ToolException("Unknown genetic check: " + getGeneticCheck());
+                throw new ToolException("Unknown individual quality control: " + getQc());
             }
         }
     }
