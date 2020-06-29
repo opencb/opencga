@@ -191,21 +191,24 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn,
                 new Sample().setId("testSample").setDescription("description"), null, token);
 
-        SampleQualityControl qualityControl = new SampleQualityControl(Collections.emptyList(), 
-                new FastQc().setSummary(new Summary("basicStatistics", "perBaseSeqQuality", "perTileSeqQuality", "perSeqQualityScores",
-                        "perBaseSeqContent", "perSeqGcContent", "perBaseNContent", "seqLengthDistribution", "seqDuplicationLevels",
-                        "overrepresentedSeqs", "adapterContent", "kmerContent")), null, null, null, null);
+        SampleQualityControl qualityControl = new SampleQualityControl();
 
-        catalogManager.getSampleManager().update(studyFqn, "testSample",
-                new SampleUpdateParams().setQualityControl(qualityControl),
+        SampleQualityControlMetrics metrics = new SampleQualityControlMetrics();
+        metrics.setFastQc(new FastQc().setSummary(new Summary("basicStatistics", "perBaseSeqQuality", "perTileSeqQuality",
+                "perSeqQualityScores", "perBaseSeqContent", "perSeqGcContent", "perBaseNContent", "seqLengthDistribution",
+                "seqDuplicationLevels", "overrepresentedSeqs", "adapterContent", "kmerContent")));
+
+        qualityControl.getMetrics().add(metrics);
+
+        catalogManager.getSampleManager().update(studyFqn, "testSample", new SampleUpdateParams().setQualityControl(qualityControl),
                 new QueryOptions(Constants.INCREMENT_VERSION, true), token);
 
         DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
-        assertEquals("basicStatistics", testSample.first().getQualityControl().getFastQc().getSummary().getBasicStatistics());
-        assertEquals("perBaseSeqQuality", testSample.first().getQualityControl().getFastQc().getSummary().getPerBaseSeqQuality());
-        assertEquals("perTileSeqQuality", testSample.first().getQualityControl().getFastQc().getSummary().getPerTileSeqQuality());
-        assertEquals("perSeqQualityScores", testSample.first().getQualityControl().getFastQc().getSummary().getPerSeqQualityScores());
-        assertEquals("perBaseSeqContent", testSample.first().getQualityControl().getFastQc().getSummary().getPerBaseSeqContent());
+        assertEquals("basicStatistics", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getBasicStatistics());
+        assertEquals("perBaseSeqQuality", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerBaseSeqQuality());
+        assertEquals("perTileSeqQuality", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerTileSeqQuality());
+        assertEquals("perSeqQualityScores", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerSeqQualityScores());
+        assertEquals("perBaseSeqContent", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerBaseSeqContent());
     }
 
     @Test

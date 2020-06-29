@@ -21,8 +21,7 @@ public class AnalysisUtils {
         query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
         try {
             fileQueryResult = fileManager.search(studyId, query, queryOptions, token);
-        } catch (
-                CatalogException e) {
+        } catch (CatalogException e) {
             throw new ToolException(e);
         }
 

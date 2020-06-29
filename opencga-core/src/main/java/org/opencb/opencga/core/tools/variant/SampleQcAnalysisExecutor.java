@@ -17,7 +17,7 @@
 package org.opencb.opencga.core.tools.variant;
 
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControl;
+import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.List;
@@ -25,24 +25,26 @@ import java.util.Map;
 
 public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
-    public enum Qc {
+    public enum QcType {
         VARIAN_STATS, FASTQC, FLAG_STATS, HS_METRICS, GENE_COVERAGE_STATS, MUTATIONAL_SIGNATURE
     }
 
-    private String studyId;
-    private Sample sample;
-    private String bamFile;
-    private String fastaFile;
-    private String baitFile;
-    private String targetFile;
-    private String variantStatsId;
-    private String variantStatsDecription;
-    private Map<String, String> variantStatsQuery;
-    private String signatureId;
-    private Map<String, String> signatureQuery;
-    private List<String> genesForCoverageStats;
+    protected String studyId;
+    protected Sample sample;
+    protected String bamFile;
+    protected String fastaFile;
+    protected String baitFile;
+    protected String targetFile;
+    protected String variantStatsId;
+    protected String variantStatsDecription;
+    protected Map<String, String> variantStatsQuery;
+    protected String signatureId;
+    protected Map<String, String> signatureQuery;
+    protected List<String> genesForCoverageStats;
 
-    private Qc qc;
+    protected QcType qcType;
+
+    protected SampleQualityControlMetrics metrics;
 
     public SampleQcAnalysisExecutor() {
     }
@@ -155,12 +157,21 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public Qc getQc() {
-        return qc;
+    public QcType getQcType() {
+        return qcType;
     }
 
-    public SampleQcAnalysisExecutor setQc(Qc qc) {
-        this.qc = qc;
+    public SampleQcAnalysisExecutor setQcType(QcType qcType) {
+        this.qcType = qcType;
+        return this;
+    }
+
+    public SampleQualityControlMetrics getMetrics() {
+        return metrics;
+    }
+
+    public SampleQcAnalysisExecutor setMetrics(SampleQualityControlMetrics metrics) {
+        this.metrics = metrics;
         return this;
     }
 }

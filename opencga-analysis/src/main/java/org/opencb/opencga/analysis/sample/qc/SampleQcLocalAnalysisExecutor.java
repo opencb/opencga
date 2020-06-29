@@ -29,8 +29,6 @@ import org.opencb.opencga.analysis.wrappers.executors.SamtoolsWrapperAnalysisExe
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
@@ -45,23 +43,18 @@ import static org.opencb.opencga.core.api.ParamConstants.LOW_COVERAGE_REGION_THR
         source = ToolExecutor.Source.STORAGE)
 public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor implements StorageToolExecutor {
 
-    private Sample sample;
-
-    private SampleQualityControl qc;
     private CatalogManager catalogManager;
 
     @Override
     public void run() throws ToolException {
-
-        sample = getSample();
-        qc = sample.getQualityControl();
-        if (qc == null) {
-            qc = new SampleQualityControl();
+        // Sanity check
+        if (metrics == null) {
+            throw new ToolException("Sample quality control metrics is null");
         }
 
         catalogManager = getVariantStorageManager().getCatalogManager();
 
-        switch (getQc()) {
+        switch (qcType) {
             case VARIAN_STATS: {
                 runVariantStats();
                 break;
@@ -92,7 +85,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
                 break;
             }
             default: {
-                throw new ToolException("Unknown quality control: " + getQc());
+                throw new ToolException("Unknown quality control type: " + qcType);
             }
         }
     }
@@ -101,7 +94,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
     }
 
     private void runFastqc() throws ToolException {
-        if (qc.getFastQc() != null) {
+        if (metrics.getFastQc() != null) {
             // FastQC already exists!
             addWarning("Skipping FastQC analysis: it was already computed");
             return;
@@ -133,12 +126,12 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         // Check for result
         FastQc fastQc = executor.getResult();
         if (fastQc != null) {
-            qc.setFastQc(fastQc);
+            metrics.setFastQc(fastQc);
         }
     }
 
     private void runFlagStats() throws ToolException {
-        if (qc.getSamtoolsFlagstats() != null) {
+        if (metrics.getSamtoolsFlagstats() != null) {
             // Samtools flag stats already exists!
             addWarning("Skipping samtools/flagstat analysis: it was already computed");
             return;
@@ -170,54 +163,54 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         // Check for result
         SamtoolsFlagstats flagtats = executor.getFlagstatsResult();
         if (flagtats != null) {
-            qc.setSamtoolsFlagstats(flagtats);
+            metrics.setSamtoolsFlagstats(flagtats);
             System.out.println(flagtats);
         }
     }
 
     private void runHsMetrics() throws ToolException {
-        if (qc.getHsMetricsReport() != null) {
-            // Hs metrics already exists!
-            addWarning("Skipping picard/CollectHsMetrics analysis: it was already computed");
-            return;
-        }
-
-        // Check BAM file
-        File bamFile = getBamFileFromCatalog();
-        if (bamFile == null) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no BAM file was provided and no BAM file found for sample " + sample.getId());
-            return;
-        }
-
-        // Check bait file
-        if (StringUtils.isEmpty(getBaitFile())) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no bait file was provided");
-        }
-        File baitFile = AnalysisUtils.getCatalogFile(getBaitFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-        if (baitFile == null) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no bait file '" + getBaitFile() + "' found in catalog database");
-            return;
-        }
-
-        // Check target file
-        if (StringUtils.isEmpty(getTargetFile())) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no target file was provided");
-        }
-        File targetFile = AnalysisUtils.getCatalogFile(getTargetFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-        if (targetFile == null) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no target file '" + getBaitFile() + "' found in catalog database");
-            return;
-        }
-
-        // Check fasta file
-        if (StringUtils.isEmpty(getFastaFile())) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no fasta file was provided");
-        }
-        File fastaFile = AnalysisUtils.getCatalogFile(getFastaFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-        if (fastaFile == null) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no fasta file '" + getFastaFile() + "' found in catalog database");
-            return;
-        }
+//        if (metrics.getHsMetricsReport() != null) {
+//            // Hs metrics already exists!
+//            addWarning("Skipping picard/CollectHsMetrics analysis: it was already computed");
+//            return;
+//        }
+//
+//        // Check BAM file
+//        File bamFile = getBamFileFromCatalog();
+//        if (bamFile == null) {
+//            addWarning("Skipping picard/CollectHsMetrics analysis: no BAM file was provided and no BAM file found for sample " + sample.getId());
+//            return;
+//        }
+//
+//        // Check bait file
+//        if (StringUtils.isEmpty(getBaitFile())) {
+//            addWarning("Skipping picard/CollectHsMetrics analysis: no bait file was provided");
+//        }
+//        File baitFile = AnalysisUtils.getCatalogFile(getBaitFile(), getStudyId(), catalogManager.getFileManager(), getToken());
+//        if (baitFile == null) {
+//            addWarning("Skipping picard/CollectHsMetrics analysis: no bait file '" + getBaitFile() + "' found in catalog database");
+//            return;
+//        }
+//
+//        // Check target file
+//        if (StringUtils.isEmpty(getTargetFile())) {
+//            addWarning("Skipping picard/CollectHsMetrics analysis: no target file was provided");
+//        }
+//        File targetFile = AnalysisUtils.getCatalogFile(getTargetFile(), getStudyId(), catalogManager.getFileManager(), getToken());
+//        if (targetFile == null) {
+//            addWarning("Skipping picard/CollectHsMetrics analysis: no target file '" + getBaitFile() + "' found in catalog database");
+//            return;
+//        }
+//
+//        // Check fasta file
+//        if (StringUtils.isEmpty(getFastaFile())) {
+//            addWarning("Skipping picard/CollectHsMetrics analysis: no fasta file was provided");
+//        }
+//        File fastaFile = AnalysisUtils.getCatalogFile(getFastaFile(), getStudyId(), catalogManager.getFileManager(), getToken());
+//        if (fastaFile == null) {
+//            addWarning("Skipping picard/CollectHsMetrics analysis: no fasta file '" + getFastaFile() + "' found in catalog database");
+//            return;
+//        }
 
         addWarning("Skipping picard/CollectHsMetrics analysis: not yet implemented");
 
@@ -252,7 +245,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         }
 
         // Sanity check
-        List<GeneCoverageStats> geneCoverageStats = qc.getGeneCoverageStats();
+        List<GeneCoverageStats> geneCoverageStats = metrics.getGeneCoverageStats();
         if (geneCoverageStats == null) {
             geneCoverageStats = new ArrayList<>();
         }
@@ -287,7 +280,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
                 geneCoverageStats.add(geneCoverageStatsResult.first());
 
                 // Add result to the list
-                qc.setGeneCoverageStats(geneCoverageStats);
+                metrics.setGeneCoverageStats(geneCoverageStats);
             } catch (Exception e) {
                 throw new ToolException(e);
             }
@@ -296,25 +289,5 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
 
     private void runMutationalSignature() throws ToolException {
         addWarning("Skipping mutational signature analysis: not yet implemented");
-    }
-
-    private File getBamFileFromCatalog() {
-        File file;
-        if (StringUtils.isEmpty(getBamFile())) {
-            try {
-                file = AnalysisUtils.getBamFileBySampleId(sample.getId(), getStudyId(), catalogManager.getFileManager(), getToken());
-            } catch (ToolException e) {
-                // FastQC already exists!
-                return null;
-            }
-        } else {
-            try {
-                file = AnalysisUtils.getBamFile(getBamFile(), sample.getId(), getStudyId(), catalogManager.getFileManager(), getToken());
-            } catch (ToolException e) {
-                return null;
-            }
-        }
-
-        return file;
     }
 }

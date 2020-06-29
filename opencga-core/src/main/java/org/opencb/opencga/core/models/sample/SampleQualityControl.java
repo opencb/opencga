@@ -16,102 +16,62 @@
 
 package org.opencb.opencga.core.models.sample;
 
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
-import org.opencb.biodata.formats.sequence.fastqc.FastQc;
-import org.opencb.biodata.models.alignment.GeneCoverageStats;
-import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
-import org.opencb.biodata.models.clinical.qc.Signature;
-import org.opencb.opencga.core.models.variant.HsMetricsReport;
+import org.opencb.biodata.models.clinical.Comment;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 public class SampleQualityControl implements Serializable {
 
-    private List<SampleQcVariantStats> variantStats;
-    private FastQc fastQc;
-    private SamtoolsFlagstats samtoolsFlagstats;
-    private HsMetricsReport hsMetricsReport;
-    private List<GeneCoverageStats> geneCoverageStats;
-    private Signature signature;
+    List<String> fileIds;
+    List<Comment> comments;
+    List<SampleQualityControlMetrics> metrics;
 
     public SampleQualityControl() {
+        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public SampleQualityControl(List<SampleQcVariantStats> variantStats, FastQc fastQc, SamtoolsFlagstats samtoolsFlagstats,
-                                HsMetricsReport hsMetricsReport, List<GeneCoverageStats> geneCoverageStats, Signature signature) {
-        this.variantStats = variantStats;
-        this.fastQc = fastQc;
-        this.samtoolsFlagstats = samtoolsFlagstats;
-        this.hsMetricsReport = hsMetricsReport;
-        this.geneCoverageStats = geneCoverageStats;
-        this.signature = signature;
+    public SampleQualityControl(List<String> fileIds, List<Comment> comments, List<SampleQualityControlMetrics> metrics) {
+        this.fileIds = fileIds;
+        this.comments = comments;
+        this.metrics = metrics;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQualityControl{");
-        sb.append("variantStats=").append(variantStats);
-        sb.append(", fastQc=").append(fastQc);
-        sb.append(", samtoolsFlagstats=").append(samtoolsFlagstats);
-        sb.append(", hsMetricsReport=").append(hsMetricsReport);
-        sb.append(", geneCoverageStats=").append(geneCoverageStats);
-        sb.append(", signature=").append(signature);
+        sb.append("fileIds=").append(fileIds);
+        sb.append(", comments=").append(comments);
+        sb.append(", metrics=").append(metrics);
         sb.append('}');
         return sb.toString();
     }
 
-    public List<SampleQcVariantStats> getVariantStats() {
-        return variantStats;
+    public List<String> getFileIds() {
+        return fileIds;
     }
 
-    public SampleQualityControl setVariantStats(List<SampleQcVariantStats> variantStats) {
-        this.variantStats = variantStats;
+    public SampleQualityControl setFileIds(List<String> fileIds) {
+        this.fileIds = fileIds;
         return this;
     }
 
-    public FastQc getFastQc() {
-        return fastQc;
+    public List<Comment> getComments() {
+        return comments;
     }
 
-    public SampleQualityControl setFastQc(FastQc fastQc) {
-        this.fastQc = fastQc;
+    public SampleQualityControl setComments(List<Comment> comments) {
+        this.comments = comments;
         return this;
     }
 
-    public SamtoolsFlagstats getSamtoolsFlagstats() {
-        return samtoolsFlagstats;
+    public List<SampleQualityControlMetrics> getMetrics() {
+        return metrics;
     }
 
-    public SampleQualityControl setSamtoolsFlagstats(SamtoolsFlagstats samtoolsFlagstats) {
-        this.samtoolsFlagstats = samtoolsFlagstats;
-        return this;
-    }
-
-    public HsMetricsReport getHsMetricsReport() {
-        return hsMetricsReport;
-    }
-
-    public SampleQualityControl setHsMetricsReport(HsMetricsReport hsMetricsReport) {
-        this.hsMetricsReport = hsMetricsReport;
-        return this;
-    }
-
-    public List<GeneCoverageStats> getGeneCoverageStats() {
-        return geneCoverageStats;
-    }
-
-    public SampleQualityControl setGeneCoverageStats(List<GeneCoverageStats> geneCoverageStats) {
-        this.geneCoverageStats = geneCoverageStats;
-        return this;
-    }
-
-    public Signature getSignature() {
-        return signature;
-    }
-
-    public SampleQualityControl setSignature(Signature signature) {
-        this.signature = signature;
+    public SampleQualityControl setMetrics(List<SampleQualityControlMetrics> metrics) {
+        this.metrics = metrics;
         return this;
     }
 }
