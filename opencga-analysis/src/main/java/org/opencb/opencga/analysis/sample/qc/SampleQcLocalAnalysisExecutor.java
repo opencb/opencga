@@ -17,14 +17,13 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
-import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.executors.FastqcWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.executors.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -33,15 +32,11 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
-import org.parboiled.common.StringUtils;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.opencb.opencga.core.api.ParamConstants.LOW_COVERAGE_REGION_THRESHOLD_DEFAULT;
@@ -300,6 +295,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
     }
 
     private void runMutationalSignature() throws ToolException {
+        addWarning("Skipping mutational signature analysis: not yet implemented");
     }
 
     private File getBamFileFromCatalog() {
@@ -321,5 +317,4 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
 
         return file;
     }
-
 }

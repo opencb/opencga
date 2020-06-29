@@ -51,6 +51,7 @@ public class IndividualUpdateParams {
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
     private CustomStatusParams status;
+    private IndividualQualityControl qualityControl;
     private Map<String, Object> attributes;
 
     public IndividualUpdateParams() {
@@ -61,7 +62,8 @@ public class IndividualUpdateParams {
                                   String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
                                   List<String> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
-                                  List<Disorder> disorders, CustomStatusParams status, Map<String, Object> attributes) {
+                                  List<Disorder> disorders, CustomStatusParams status, IndividualQualityControl qualityControl,
+                                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -80,6 +82,7 @@ public class IndividualUpdateParams {
         this.phenotypes = phenotypes;
         this.disorders = disorders;
         this.status = status;
+        this.qualityControl = qualityControl;
         this.attributes = attributes;
     }
 
@@ -120,6 +123,7 @@ public class IndividualUpdateParams {
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
         sb.append(", status=").append(status);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -284,6 +288,15 @@ public class IndividualUpdateParams {
 
     public IndividualUpdateParams setStatus(CustomStatusParams status) {
         this.status = status;
+        return this;
+    }
+
+    public IndividualQualityControl getQualityControl() {
+        return qualityControl;
+    }
+
+    public IndividualUpdateParams setQualityControl(IndividualQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 
