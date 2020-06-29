@@ -21,8 +21,7 @@ public class AnalysisUtils {
         query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
         try {
             fileQueryResult = fileManager.search(studyId, query, queryOptions, token);
-        } catch (
-                CatalogException e) {
+        } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
@@ -42,7 +41,7 @@ public class AnalysisUtils {
         OpenCGAResult<File> fileQueryResult;
 
         Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key());
+        QueryOptions queryOptions = new QueryOptions();//QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key());
 
         query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
         try {
@@ -56,6 +55,8 @@ public class AnalysisUtils {
             throw new ToolException("No BAM files found for sample " + sampleId);
         }
         for (File file : fileQueryResult.getResults()) {
+            System.out.println("===> filename = " + filename + " -> comparing to " + file.getId() + ", " + file.getPath() + ", " + file.getName()
+                    + ", " + file.getUuid() + ", " + file.getPath());
             if (filename.equals(file.getId()) || filename.equals(file.getPath()) || filename.equals(file.getName())
                     || filename.equals(file.getUuid())) {
                 return file;
