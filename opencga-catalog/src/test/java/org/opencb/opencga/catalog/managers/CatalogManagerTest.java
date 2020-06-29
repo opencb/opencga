@@ -1437,6 +1437,29 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testIndividualRelatives() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        individualManager.create(studyFqn, new Individual().setId("proband").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("brother").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("sister").setSex(IndividualProperty.Sex.FEMALE), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("father").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("mother").setSex(IndividualProperty.Sex.FEMALE), QueryOptions.empty(), token);
+
+        individualManager.update(studyFqn, "proband", new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
+        individualManager.update(studyFqn, "brother", new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
+        individualManager.update(studyFqn, "sister", new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
+
+        OpenCGAResult<Individual> relatives = catalogManager.getIndividualManager().relatives(studyFqn, "proband", 2,
+                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()), token);
+
+        assertEquals(5, relatives.getNumResults());
+        for (Individual individual : relatives.getResults()) {
+            assertEquals(individual.getId().toUpperCase(),
+                    ((ObjectMap) individual.getAttributes().get("OPENCGA_RELATIVE")).getString("RELATION"));
+        }
+    }
+
+    @Test
     public void testDeleteIndividualWithFamilies() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         Individual child = individualManager.create(studyFqn, new Individual()
