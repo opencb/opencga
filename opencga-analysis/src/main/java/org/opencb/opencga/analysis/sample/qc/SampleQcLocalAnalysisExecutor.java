@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.analysis.sample.qc;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
+import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
+import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.executors.FastqcWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.executors.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -29,6 +32,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
@@ -36,6 +40,11 @@ import org.parboiled.common.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import static org.opencb.opencga.core.api.ParamConstants.LOW_COVERAGE_REGION_THRESHOLD_DEFAULT;
 
 @ToolExecutor(id="opencga-local", tool = SampleQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -215,20 +224,79 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
             return;
         }
 
-        ObjectMap params = new ObjectMap();
-        params.put("INPUT", getBamFile());
+        addWarning("Skipping picard/CollectHsMetrics analysis: not yet implemented");
 
-        Path outDir = getOutDir().resolve("/fastqc");
-        Path scratchDir = outDir.resolve("/scratch");
-
-        FastqcWrapperAnalysisExecutor executor = new FastqcWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir, catalogManager,
-                getToken());
-
-        executor.setFile(getBamFile());
-        executor.run();
+//        ObjectMap params = new ObjectMap();
+//        params.put("INPUT", getBamFile());
+//
+//        Path outDir = getOutDir().resolve("/fastqc");
+//        Path scratchDir = outDir.resolve("/scratch");
+//
+//        FastqcWrapperAnalysisExecutor executor = new FastqcWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir, catalogManager,
+//                getToken());
+//
+//        executor.setFile(getBamFile());
+//        executor.run();
     }
 
     private void runGeneCoverageStats() throws ToolException {
+        // Check BAM file
+        if (StringUtils.isEmpty(getBamFile())) {
+            addWarning("Skipping gene coverage stats analysis: no BAM file was provided");
+        }
+        File bamFile = AnalysisUtils.getCatalogFile(getBamFile(), getStudyId(), catalogManager.getFileManager(), getToken());
+        if (bamFile == null) {
+            addWarning("Skipping gene coverage stats analysis: missing BAM file '" + getBamFile() + "' in catalog database");
+            return;
+        }
+
+        // Check genes
+        if (CollectionUtils.isEmpty(getGenesForCoverageStats())) {
+            addWarning("Skipping gene coverage stats analysis: missing genes");
+            return;
+        }
+
+        // Sanity check
+        List<GeneCoverageStats> geneCoverageStats = qc.getGeneCoverageStats();
+        if (geneCoverageStats == null) {
+            geneCoverageStats = new ArrayList<>();
+        }
+
+        List<String> targetGenes = new ArrayList<>();
+        if (CollectionUtils.isEmpty(geneCoverageStats)) {
+            targetGenes = getGenesForCoverageStats();
+        } else {
+            for (String gene : getGenesForCoverageStats()) {
+                boolean found = false;
+                for (GeneCoverageStats stats : geneCoverageStats) {
+                    if (gene.equals(stats.getGeneName())) {
+                        found = true;
+                        addWarning("Skipping gene coverage stats for gene " + gene + ": it was already computed");
+                        break;
+                    }
+                }
+                if (!found) {
+                    targetGenes.add(gene);
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(targetGenes)) {
+            try {
+                OpenCGAResult<GeneCoverageStats> geneCoverageStatsResult = getAlignmentStorageManager().coverageStats(getStudyId(), getBamFile(),
+                        targetGenes, Integer.parseInt(LOW_COVERAGE_REGION_THRESHOLD_DEFAULT), getToken());
+
+                if (geneCoverageStatsResult.getNumResults() != 1) {
+                    throw new ToolException("Something wrong happened when computing gene coverage stats: no results returned");
+                }
+                geneCoverageStats.add(geneCoverageStatsResult.first());
+
+                // Add result to the list
+                qc.setGeneCoverageStats(geneCoverageStats);
+            } catch (Exception e) {
+                throw new ToolException(e);
+            }
+        }
     }
 
     private void runMutationalSignature() throws ToolException {
