@@ -1,58 +1,69 @@
-package org.opencb.opencga.storage.hadoop.variant.annotation.pending;
+package org.opencb.opencga.storage.hadoop.variant.pending;
 
 
-import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.MultithreadedTableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
-import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.SO;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.TYPE;
-import static org.opencb.opencga.storage.hadoop.variant.annotation.pending.PendingVariantsToAnnotateUtils.*;
 
 /**
  * Created on 12/02/19.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class DiscoverPendingVariantsToAnnotateDriver extends AbstractVariantsTableDriver {
+public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
 
-    private final Logger logger = LoggerFactory.getLogger(DiscoverPendingVariantsToAnnotateDriver.class);
+    private final Logger logger = LoggerFactory.getLogger(DiscoverPendingVariantsDriver.class);
+
+    private PendingVariantsDescriptor descriptor;
 
     @Override
-    protected Class<DiscoverVariantsToAnnotateMapper> getMapperClass() {
-        return DiscoverVariantsToAnnotateMapper.class;
+    protected Class<DiscoverVariantsMapper> getMapperClass() {
+        return DiscoverVariantsMapper.class;
+    }
+
+    @Override
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
+        this.descriptor = getDescriptor(getConf());
     }
 
     @Override
     protected void preExecution(String variantTable) throws IOException, StorageEngineException {
         super.preExecution(variantTable);
 
+
         HBaseManager hBaseManager = getHBaseManager();
-        PendingVariantsToAnnotateUtils.createTableIfNeeded(getTableNameGenerator().getPendingAnnotationTableName(), hBaseManager);
+        descriptor.createTableIfNeeded(descriptor.getTableName(getTableNameGenerator()), hBaseManager);
+    }
+
+    private static PendingVariantsDescriptor getDescriptor(Configuration conf) {
+        try {
+            return conf.getClass(PendingVariantsDescriptor.class.getName(), null, PendingVariantsDescriptor.class).newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new IllegalArgumentException("Missing valid PendingVariantsDescriptor", e);
+        }
     }
 
     @Override
@@ -68,14 +79,12 @@ public class DiscoverPendingVariantsToAnnotateDriver extends AbstractVariantsTab
 //                new QueryOptions(QueryOptions.INCLUDE, VariantField.TYPE.fieldName()));
 
         Scan scan = new Scan();
+        descriptor.configureScan(scan);
 
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {
             Region region = new Region(query.getString(VariantQueryParam.REGION.key()));
             VariantHBaseQueryParser.addRegionFilter(scan, region);
         }
-
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, TYPE.bytes());
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, SO.bytes());
 
         int caching = getConf().getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), 50);
         boolean multiThread = getConf().getBoolean("annotation.pending.discover.MultithreadedTableMapper", false);
@@ -94,8 +103,7 @@ public class DiscoverPendingVariantsToAnnotateDriver extends AbstractVariantsTab
         } else {
             mapperClass = getMapperClass();
         }
-        VariantMapReduceUtil.initTableMapperJob(job, variantTable,
-                getTableNameGenerator().getPendingAnnotationTableName(), scan, mapperClass);
+        VariantMapReduceUtil.initTableMapperJob(job, variantTable, descriptor.getTableName(getTableNameGenerator()), scan, mapperClass);
 
 
         VariantMapReduceUtil.setNoneReduce(job);
@@ -110,48 +118,38 @@ public class DiscoverPendingVariantsToAnnotateDriver extends AbstractVariantsTab
     }
 
 
-    public static class DiscoverVariantsToAnnotateMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
+    public static class DiscoverVariantsMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
 
-        public static final byte[] SO_BYTES = SO.bytes();
         private int variants;
-        private int annotatedVariants;
+        private int readyVariants;
         private int pendingVariants;
+        private PendingVariantsDescriptor descriptor;
 
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
-            HBaseVariantTableNameGenerator
-                    .checkValidPendingAnnotationTableName(context.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE));
+            descriptor = getDescriptor(context.getConfiguration());
+            descriptor.checkValidPendingTableName(context.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE));
             variants = 0;
-            annotatedVariants = 0;
+            readyVariants = 0;
             pendingVariants = 0;
         }
 
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-            boolean annotated = false;
-            for (Cell cell : value.rawCells()) {
-                if (cell.getValueLength() > 0) {
-                    if (Bytes.equals(
-                            cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength(),
-                            SO_BYTES, 0, SO_BYTES.length)) {
-                        annotated = true;
-                        break;
-                    }
-                }
-            }
+            boolean pending = descriptor.isPending(value);
 
             variants++;
-            if (annotated) {
-                annotatedVariants++;
-                Delete delete = new Delete(value.getRow());
-                context.write(key, delete);
-            } else {
+            if (pending) {
                 pendingVariants++;
                 Put put = new Put(value.getRow());
-                put.addColumn(FAMILY, COLUMN, VALUE);
+                put.addColumn(PendingVariantsDescriptor.FAMILY, PendingVariantsDescriptor.COLUMN, PendingVariantsDescriptor.VALUE);
                 context.write(key, put);
+            } else {
+                readyVariants++;
+                Delete delete = new Delete(value.getRow());
+                context.write(key, delete);
             }
         }
 
@@ -162,16 +160,21 @@ public class DiscoverPendingVariantsToAnnotateDriver extends AbstractVariantsTab
             Counter counter = context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants");
             synchronized (counter) {
                 counter.increment(variants);
-                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "annotated_variants").increment(annotatedVariants);
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "ready_variants").increment(readyVariants);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "pending_variants").increment(pendingVariants);
             }
         }
     }
 
+    public static String[] buildArgs(String table, Class<? extends PendingVariantsDescriptor> descriptor, ObjectMap options) {
+        options.put(PendingVariantsDescriptor.class.getName(), descriptor.getName());
+        return buildArgs(table, options);
+    }
+
     public static void main(String[] args) {
         int exitCode;
         try {
-            exitCode = ToolRunner.run(new DiscoverPendingVariantsToAnnotateDriver(), args);
+            exitCode = ToolRunner.run(new DiscoverPendingVariantsDriver(), args);
         } catch (Exception e) {
             e.printStackTrace();
             exitCode = 1;

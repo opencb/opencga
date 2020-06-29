@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.annotation.pending;
+package org.opencb.opencga.storage.hadoop.variant.pending;
 
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
@@ -8,9 +8,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataReader;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -22,19 +24,24 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class PendingVariantsToAnnotateReader extends AbstractHBaseDataReader<Variant> {
+public class PendingVariantsReader extends AbstractHBaseDataReader<Variant> {
 
-    private final VariantHadoopDBAdaptor dbAdaptor;
+    private final PendingVariantsDescriptor descriptor;
 
-    public PendingVariantsToAnnotateReader(VariantHadoopDBAdaptor dbAdaptor, Query query) {
-        super(dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator().getPendingAnnotationTableName(), parseScan(query));
-        this.dbAdaptor = dbAdaptor;
+    public PendingVariantsReader(Query query, PendingVariantsDescriptor descriptor, VariantHadoopDBAdaptor dbAdaptor) {
+        this(query, descriptor, dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator());
+    }
+
+    public PendingVariantsReader(Query query, PendingVariantsDescriptor descriptor,
+                                 HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator) {
+        super(hBaseManager, descriptor.getTableName(tableNameGenerator), parseScan(query));
+        this.descriptor = descriptor;
     }
 
     @Override
     public boolean pre() {
         try {
-            PendingVariantsToAnnotateUtils.createTableIfNeeded(tableName, dbAdaptor.getHBaseManager());
+            descriptor.createTableIfNeeded(tableName, hBaseManager);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

@@ -147,7 +147,7 @@ public class HBaseManager implements AutoCloseable {
      * @throws IOException If any IO problem occurs
      */
     public ResultScanner getScanner(String tableName, Scan scan) throws IOException {
-        if (isValid(scan) != null) {
+        if (isValid(scan)) {
             return act(tableName, (Table table) -> table.getScanner(scan));
         }
         return new PersistentResultScanner(this, scan, tableName);
