@@ -104,6 +104,7 @@ configureDataDrive() {
     mkdir /datadrive/mongodb
     setfacl -R -m u:mongodb:rwx /datadrive/mongodb
     sed -i -e '/dbPath/ s/: .*/: \/datadrive\/mongodb /' /etc/mongod.conf
+    echo "storage.directoryPerDB: true" >> /etc/mongod.conf
 
     systemctl restart mongod
     sleep 10
@@ -111,8 +112,8 @@ configureDataDrive() {
 
 configureMongoDB() {
     echo "configuring mongo"
-  
-    until mongo admin --eval 'db.createUser({user: "'${MONGODB_USERNAME}'",pwd: "'${MONGODB_PASSWORD}'",roles: ["root"]})' --quiet 
+
+    until mongo admin --eval 'db.createUser({user: "'${MONGODB_USERNAME}'",pwd: "'${MONGODB_PASSWORD}'",roles: ["root"]})' --quiet
     do
         echo "Waiting for Mongo DB"
         sleep 5
@@ -186,7 +187,7 @@ createReplicaSet() {
 restoreMongoDBDump() {
     echo "restoring mongoDB dump"
     systemctl stop mongod
-    
+
     cd /datadrive
 
     echo "Get azcopy to speed up download"
@@ -195,11 +196,14 @@ restoreMongoDBDump() {
 
     echo "Restoring MongoDB data dump"
     echo "Downloading dump file"
-    ./azcopy copy --recursive $MONGODB_DUMP_URL /datadrive/
+    mv mongodb mongodb_bk
+    ./azcopy copy --recursive ${MONGODB_DUMP_URL} /datadrive/
+#    tar zxfv mongodb.tar.gz
 
     echo "Set file ownership to mongo"
-    chown -R mongodb /datadrive/mongodb/**
-    chmod -R 777 /datadrive/mongodb/** #Todo: maybe not needed
+    chown -R mongodb:mongodb /datadrive/mongodb/
+    chmod -R 777 /datadrive/mongodb/ #Todo: maybe not needed
+    rm /datadrive/mongodb/mongod.lock
 
     echo "Restarting mongo"
     systemctl start mongod
