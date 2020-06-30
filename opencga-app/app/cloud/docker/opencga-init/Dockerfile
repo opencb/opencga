@@ -6,7 +6,7 @@ FROM $ORG/opencga-base:$TAG
 ARG INIT_PATH=cloud/docker/opencga-init/
 
 # Install local dependencies
-RUN echo 'http://dl-cdn.alpinelinux.org/alpine/v3.6/main' >> /etc/apk/repositories && echo 'http://dl-cdn.alpinelinux.org/alpine/v3.6/community' >> /etc/apk/repositories && apk update && apk add  python3 py3-pip git mongodb && \
+RUN apk add python3 py3-pip git mongodb && \
     pip3 install --upgrade pip setuptools
 
 # Mount volume to copy config into

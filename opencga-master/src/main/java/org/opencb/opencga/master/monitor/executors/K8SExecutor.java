@@ -40,6 +40,7 @@ public class K8SExecutor implements BatchExecutor {
 
     public static final String K8S_MASTER_NODE = "k8s.masterUrl";
     public static final String K8S_IMAGE_NAME = "k8s.imageName";
+    public static final String K8S_DIND_IMAGE_NAME = "k8s.dind.imageName";
     public static final String K8S_REQUESTS = "k8s.requests";
     public static final String K8S_LIMITS = "k8s.limits";
     public static final String K8S_NAMESPACE = "k8s.namespace";
@@ -47,6 +48,8 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_VOLUMES = "k8s.volumes";
     public static final String K8S_NODE_SELECTOR = "k8s.nodeSelector";
     public static final String K8S_TOLERATIONS = "k8s.tolerations";
+    public static final EnvVar DOCKER_HOST = new EnvVar("DOCKER_HOST", "tcp://localhost:2375", null);
+    public static final String DOCKER_GRAPH_STORAGE = "docker-graph-storage";
 
     private final String k8sClusterMaster;
     private final String namespace;
@@ -57,6 +60,7 @@ public class K8SExecutor implements BatchExecutor {
     private final List<Toleration> tolerations;
     private final ResourceRequirements resources;
     private final Config k8sConfig;
+    private final Container dockerDaemonSidecar;
     private final KubernetesClient kubernetesClient;
     private static Logger logger = LoggerFactory.getLogger(K8SExecutor.class);
 
@@ -87,6 +91,19 @@ public class K8SExecutor implements BatchExecutor {
         resources = new ResourceRequirementsBuilder()
                 .withLimits(limits)
                 .withRequests(requests)
+                .build();
+
+        String dindImageName = execution.getOptions().getString(K8S_DIND_IMAGE_NAME, "docker:dind");
+        dockerDaemonSidecar = new ContainerBuilder()
+                .withName("dind-daemon")
+                .withImage(dindImageName)
+                .withSecurityContext(new SecurityContextBuilder().withPrivileged(true).build())
+                .withEnv(new EnvVar("DOCKER_TLS_CERTDIR", "", null))
+//                .withResources(resources) // TODO: Should we add resources here?
+                .withVolumeMounts(new VolumeMountBuilder()
+                        .withName(DOCKER_GRAPH_STORAGE)
+                        .withMountPath("/var/lib/docker")
+                        .build())
                 .build();
 
         jobsWatcher = getKubernetesClient().batch().jobs().watch(new Watcher<Job>() {
@@ -152,11 +169,13 @@ public class K8SExecutor implements BatchExecutor {
                         .withBackoffLimit(0) // specify the number of retries before considering a Job as failed
                         .withTemplate(new PodTemplateSpecBuilder()
                                 .withSpec(new PodSpecBuilder()
-                                        .withContainers(new ContainerBuilder()
+                                        .addToContainers(dockerDaemonSidecar)
+                                        .addToContainers(new ContainerBuilder()
                                                 .withName(jobName)
                                                 .withImage(imageName)
                                                 .withImagePullPolicy("Always")
                                                 .withResources(resources)
+                                                .addToEnv(DOCKER_HOST)
                                                 .withCommand("/bin/sh")
                                                 .withArgs("-c", getCommandLine(commandLine, stdout, stderr))
                                                 .withVolumeMounts(volumeMounts)
@@ -347,6 +366,10 @@ public class K8SExecutor implements BatchExecutor {
             ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
             volumes.add(mapper.convertValue(o, Volume.class));
         }
+        volumes.add(new VolumeBuilder()
+                .withName(DOCKER_GRAPH_STORAGE)
+                .withEmptyDir(new EmptyDirVolumeSource())
+                .build());
         return volumes;
     }
 
