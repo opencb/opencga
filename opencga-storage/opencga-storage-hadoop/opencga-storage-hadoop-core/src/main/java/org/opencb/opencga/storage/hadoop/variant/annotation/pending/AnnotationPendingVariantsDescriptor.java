@@ -1,8 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.annotation.pending;
 
 import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -15,12 +14,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.SO;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.TYPE;
 
 public class AnnotationPendingVariantsDescriptor implements PendingVariantsDescriptor {
 
+    public static final byte[] FAMILY = GenomeHelper.COLUMN_FAMILY_BYTES;
+    public static final byte[] COLUMN = Bytes.toBytes("v");
+    public static final byte[] VALUE = new byte[0];
     private static final byte[] SO_BYTES = SO.bytes();
 
     private static Logger logger = LoggerFactory.getLogger(AnnotationPendingVariantsDescriptor.class);
@@ -53,7 +56,21 @@ public class AnnotationPendingVariantsDescriptor implements PendingVariantsDescr
         return scan;
     }
 
-    public boolean isPending(Result value) {
+
+    public Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager) {
+        return value -> {
+            boolean pending = isPending(value);
+            if (pending) {
+                Put put = new Put(value.getRow());
+                put.addColumn(FAMILY, COLUMN, VALUE);
+                return put;
+            } else {
+                return new Delete(value.getRow());
+            }
+        };
+    }
+
+    private boolean isPending(Result value) {
         for (Cell cell : value.rawCells()) {
             if (cell.getValueLength() > 0) {
                 if (Bytes.equals(

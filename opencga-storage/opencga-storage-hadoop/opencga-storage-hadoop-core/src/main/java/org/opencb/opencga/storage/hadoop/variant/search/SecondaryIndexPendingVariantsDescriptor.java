@@ -2,10 +2,10 @@ package org.opencb.opencga.storage.hadoop.variant.search;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
@@ -15,7 +15,10 @@ import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDescript
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.function.Function;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.STUDY_SUFIX_BYTES;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
 
@@ -47,27 +50,46 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsD
     @Override
     public Scan configureScan(Scan scan, VariantStorageMetadataManager metadataManager) {
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, TYPE.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, FULL_ANNOTATION.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, ANNOTATION_ID.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_NOT_SYNC.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_UNKNOWN.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STUDIES.bytes());
         for (Integer studyId : metadataManager.getStudyIds()) {
             scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+            for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyId)) {
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.getStatsColumn(studyId, cohort.getId()).bytes());
+            }
         }
         return scan;
     }
 
-    @Override
-    public boolean isPending(Result value) {
+    public Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager) {
+        long ts = metadataManager.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+        return (value) -> isPending(value, ts);
+    }
+
+    private Mutation isPending(Result value, long ts) {
+        final boolean pending;
         boolean unknown = false;
         int studies = 0;
         int indexedStudies = 0;
+        long nosyncTs = 0;
+        long unknownTs = 0;
+        long indexedStudiesTs = 0;
 
         for (Cell cell : value.rawCells()) {
             if (CellUtil.matchingQualifier(cell, INDEX_NOT_SYNC.bytes())) {
-                return true;
+//                if (cell.getTimestamp() > ts) {
+//                    return true;
+//                }
+                nosyncTs = cell.getTimestamp();
             } else if (CellUtil.matchingQualifier(cell, INDEX_UNKNOWN.bytes())) {
-                unknown = true;
+//                if (cell.getTimestamp() > ts) {
+//                }
+                unknownTs = cell.getTimestamp();
             } else if (CellUtil.matchingQualifier(cell, INDEX_STUDIES.bytes())) {
+                indexedStudiesTs = cell.getTimestamp();
                 indexedStudies++;
                 for (int i = cell.getValueOffset(); i < cell.getValueLength(); i++) {
                     if (cell.getValueArray()[i] == ',') {
@@ -79,13 +101,36 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsD
                 studies++;
             }
         }
-        if (unknown && indexedStudies > 0) {
-            // If the field indexedStudies exists, and it contains same number of studies studies should have, skip this variant
-            if (indexedStudies == studies) {
-                // Variant already synchronized. Skip this variant!
-                return false;
+        if (nosyncTs > indexedStudiesTs) {
+            // Valid noSync column
+            pending = true;
+        } else {
+            if (unknownTs > indexedStudies) {
+                // Valid unknown column
+                unknown = true;
+            }
+            if (unknown) {
+                // If the field indexedStudies exists, and it contains same number of studies studies should have, skip this variant
+                // Pending if number of studies is different.
+                pending = indexedStudies != studies;
+            } else {
+                pending = false;
             }
         }
-        return true;
+        if (pending) {
+            Put put = new Put(value.getRow());
+            try {
+                for (Cell cell : value.rawCells()) {
+                    put.add(cell);
+                }
+            } catch (IOException e) {
+                // This should never happen
+                throw new UncheckedIOException(e);
+            }
+            return put;
+        } else {
+//            return new Delete(value.getRow());
+            return null;
+        }
     }
 }
