@@ -480,7 +480,10 @@ public class TemplateManager {
         params.put(ParamConstants.JOB_DEPENDS_ON, jobDependsOn);
         VariantIndexParams variantIndexParams = new VariantIndexParams().setFile(file);
         if (study.getAttributes() != null) {
-            variantIndexParams.updateParams(new HashMap<>(study.getAttributes()));
+            Object o = study.getAttributes().get("variant-index-run");
+            if (o instanceof Map) {
+                variantIndexParams.updateParams(new HashMap<>(((Map) o)));
+            }
         }
         return checkJob(openCGAClient.getVariantClient()
                 .runIndex(variantIndexParams, params));
