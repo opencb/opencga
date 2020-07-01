@@ -62,6 +62,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
@@ -192,6 +193,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
             case FAMILY_QC_RUN_COMMAND:
                 queryResponse = familyQc();
+                break;
+
+            case INDIVIDUAL_QC_RUN_COMMAND:
+                queryResponse = individualQc();
                 break;
 
             case SAMPLE_QC_RUN_COMMAND:
@@ -371,6 +376,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 getParams(variantCommandOptions.relatednessCommandOptions.study)
         );
     }
+
     private RestResponse<Job> familyQc() throws ClientException {
         return openCGAClient.getVariantClient().runFamilyQc(
                 new FamilyQcAnalysisParams(
@@ -380,6 +386,18 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.familyQcCommandOptions.outdir
                 ),
                 getParams(variantCommandOptions.familyQcCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> individualQc() throws ClientException {
+        return openCGAClient.getVariantClient().runIndividualQc(
+                new IndividualQcAnalysisParams(
+                        variantCommandOptions.individualQcCommandOptions.individual,
+                        variantCommandOptions.individualQcCommandOptions.sample,
+                        variantCommandOptions.individualQcCommandOptions.inferredSexMethod,
+                        variantCommandOptions.individualQcCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.individualQcCommandOptions.study)
         );
     }
 

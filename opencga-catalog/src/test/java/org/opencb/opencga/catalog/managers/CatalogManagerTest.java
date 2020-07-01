@@ -1354,7 +1354,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         DataResult<Individual> individualDataResult = individualManager.create(studyFqn, new Individual().setId("Test")
                 .setDateOfBirth("19870214"), QueryOptions.empty(), token);
 
-        IndividualQualityControl qualityControl = new IndividualQualityControl(Collections.emptyList(),
+        IndividualQualityControl qualityControl = new IndividualQualityControl(null, null, null, Collections.emptyList(),
                 Arrays.asList(new Comment("pfurio", "type", "message", "today")));
         DataResult<Individual> update = individualManager.update(studyFqn, individualDataResult.first().getId(),
                 new IndividualUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
@@ -1362,7 +1362,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         Individual individual = individualManager.get(studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
                 .first();
-        assertEquals(0, individual.getQualityControl().getMetrics().size());
         assertEquals(1, individual.getQualityControl().getComments().size());
         assertEquals("pfurio", individual.getQualityControl().getComments().get(0).getAuthor());
         assertEquals("type", individual.getQualityControl().getComments().get(0).getType());

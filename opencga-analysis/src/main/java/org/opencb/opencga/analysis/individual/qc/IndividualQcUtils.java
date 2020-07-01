@@ -165,11 +165,10 @@ public class IndividualQcUtils {
             throw new ToolException(e);
         }
         if (familyResult.getNumResults() == 0) {
-            throw new ToolException("None individual found for individual '" + individualId + "'.");
+            return null;
         }
-        if (familyResult.getNumResults() > 1) {
-            throw new ToolException("More than one family found for individual '" + individualId + "'.");
-        }
+
+        // Return the first family
         return familyResult.first();
     }
 
@@ -189,7 +188,7 @@ public class IndividualQcUtils {
             throw new ToolException(e);
         }
         if (individualResult.getNumResults() == 0) {
-            throw new ToolException("Not found individual for ID '" + individualId + "'.");
+            throw new ToolException("Individual '" + individualId + "' not found.");
         }
         if (individualResult.getNumResults() > 1) {
             throw new ToolException("More than one individual found for ID '" + individualId + "'.");
@@ -236,6 +235,25 @@ public class IndividualQcUtils {
             }
         }
         return sample;
+    }
+
+    public static List<Sample> getValidSamplesByIndividualId(String studyId, String individualId, CatalogManager catalogManager, String token)
+            throws ToolException {
+        List<Sample> samples = new ArrayList<>();
+        Query query = new Query();
+        query.put("individualId", individualId);
+        OpenCGAResult<Sample> sampleResult;
+        try {
+            sampleResult = catalogManager.getSampleManager().search(studyId, query, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        for (Sample individualSample : sampleResult.getResults()) {
+            if (Status.READY.equals(individualSample.getInternal().getStatus().getName())) {
+                samples.add(individualSample);
+            }
+        }
+        return samples;
     }
 
     public static Sample getValidSampleById(String studyId, String sampleId, CatalogManager catalogManager, String token)

@@ -91,7 +91,7 @@ public class FamilyQcAnalysis extends OpenCgaTool {
     @Override
     protected void run() throws ToolException {
 
-        // Get sample quality control metrics to update
+        // Get family quality control metrics to update
         FamilyQualityControl qualityControl = family.getQualityControl();
         if (qualityControl == null) {
             qualityControl = new FamilyQualityControl();

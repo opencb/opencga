@@ -17,15 +17,33 @@
 package org.opencb.opencga.core.models.individual;
 
 import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.qc.InferredSexReport;
+import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class IndividualQualityControl {
 
     /**
-     * List of metrics for that individual, one metrics per sample
+     * Sample ID, only germinal sample and indexed
      */
-    private List<IndividualQualityControlMetrics> metrics;
+    private String sampleId;
+
+    /**
+     * List of inferred sex reports, it depends on the method (currently by coverage ratio)
+     */
+    List<InferredSexReport> inferredSexReports;
+
+    /**
+     * Mendelian errors
+     */
+    private MendelianErrorReport mendelianErrorReport;
+
+    /**
+     * File IDs related to the quality control
+     */
+    private List<String> fileIds;
 
     /**
      * Comments related to the quality control
@@ -33,29 +51,63 @@ public class IndividualQualityControl {
     private List<Comment> comments;
 
     public IndividualQualityControl() {
+        this(null, new ArrayList<>(), null, new ArrayList<>(), new ArrayList<>());
     }
 
-    public IndividualQualityControl(List<IndividualQualityControlMetrics> metrics, List<Comment> comments) {
-        this.metrics = metrics;
+    public IndividualQualityControl(String sampleId, List<InferredSexReport> inferredSexReports, MendelianErrorReport mendelianErrorReport,
+                                    List<String> fileIds, List<Comment> comments) {
+        this.sampleId = sampleId;
+        this.inferredSexReports = inferredSexReports;
+        this.mendelianErrorReport = mendelianErrorReport;
+        this.fileIds = fileIds;
         this.comments = comments;
     }
-
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualQualityControl{");
-        sb.append("metrics=").append(metrics);
+        sb.append("sampleId='").append(sampleId).append('\'');
+        sb.append(", inferredSexReports=").append(inferredSexReports);
+        sb.append(", mendelianErrorReport=").append(mendelianErrorReport);
+        sb.append(", fileIds=").append(fileIds);
         sb.append(", comments=").append(comments);
         sb.append('}');
         return sb.toString();
     }
 
-    public List<IndividualQualityControlMetrics> getMetrics() {
-        return metrics;
+    public String getSampleId() {
+        return sampleId;
     }
 
-    public IndividualQualityControl setMetrics(List<IndividualQualityControlMetrics> metrics) {
-        this.metrics = metrics;
+    public IndividualQualityControl setSampleId(String sampleId) {
+        this.sampleId = sampleId;
+        return this;
+    }
+
+    public List<InferredSexReport> getInferredSexReports() {
+        return inferredSexReports;
+    }
+
+    public IndividualQualityControl setInferredSexReports(List<InferredSexReport> inferredSexReports) {
+        this.inferredSexReports = inferredSexReports;
+        return this;
+    }
+
+    public MendelianErrorReport getMendelianErrorReport() {
+        return mendelianErrorReport;
+    }
+
+    public IndividualQualityControl setMendelianErrorReport(MendelianErrorReport mendelianErrorReport) {
+        this.mendelianErrorReport = mendelianErrorReport;
+        return this;
+    }
+
+    public List<String> getFileIds() {
+        return fileIds;
+    }
+
+    public IndividualQualityControl setFileIds(List<String> fileIds) {
+        this.fileIds = fileIds;
         return this;
     }
 
@@ -68,3 +120,4 @@ public class IndividualQualityControl {
         return this;
     }
 }
+

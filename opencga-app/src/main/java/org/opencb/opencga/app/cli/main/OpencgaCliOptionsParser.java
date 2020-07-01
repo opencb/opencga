@@ -36,6 +36,7 @@ import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOption
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
@@ -284,6 +285,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(INFERRED_SEX_RUN_COMMAND, variantCommandOptions.inferredSexCommandOptions);
         variantSubCommands.addCommand(RELATEDNESS_RUN_COMMAND, variantCommandOptions.relatednessCommandOptions);
         variantSubCommands.addCommand(FAMILY_QC_RUN_COMMAND, variantCommandOptions.familyQcCommandOptions);
+        variantSubCommands.addCommand(INDIVIDUAL_QC_RUN_COMMAND, variantCommandOptions.individualQcCommandOptions);
         variantSubCommands.addCommand(SAMPLE_QC_RUN_COMMAND, variantCommandOptions.sampleQcCommandOptions);
         variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
         variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
