@@ -21,6 +21,7 @@ import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.family.qc.IBDComputation;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;

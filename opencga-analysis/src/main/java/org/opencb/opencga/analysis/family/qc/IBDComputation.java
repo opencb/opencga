@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.individual.qc;
+package org.opencb.opencga.analysis.family.qc;
 
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.core.exceptions.ToolException;
 
 import java.io.*;
 import java.nio.file.Path;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class IBDComputation {
 
@@ -44,7 +43,7 @@ public class IBDComputation {
             throw new ToolException("Something wrong happened executing relatedness analysis");
         }
 
-        return IndividualQcUtils.buildRelatednessReport(outFile);
+        return buildRelatednessReport(outFile);
     }
 
     private static File runIBD(String basename, Path outDir) throws ToolException {
@@ -109,5 +108,46 @@ public class IBDComputation {
         } catch (IOException e) {
             throw new ToolException(e);
         }
+    }
+
+    public static RelatednessReport buildRelatednessReport(File file) throws ToolException {
+        RelatednessReport relatednessReport = new RelatednessReport();
+
+        // Set method
+        relatednessReport.setMethod("IBD");
+
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+            // First line is the header
+            // FID1         IID1 FID2         IID2 RT    EZ      Z0      Z1      Z2  PI_HAT PHE       DST     PPC   RATIO
+            String line = reader.readLine();
+
+            while ((line = reader.readLine()) != null) {
+                String[] splits = line.trim().split("\\s+");
+
+                // Create relatedness score
+                RelatednessReport.RelatednessScore score = new RelatednessReport.RelatednessScore();
+                score.setSampleId1(splits[1]);
+                score.setSampleId2(splits[3]);
+                score.setInferredRelationship(splits[4]);
+
+                Map<String, Object> values = new LinkedHashMap<>();
+                values.put("ez", Double.parseDouble(splits[5]));
+                values.put("z0", Double.parseDouble(splits[6]));
+                values.put("z1", Double.parseDouble(splits[7]));
+                values.put("z2", Double.parseDouble(splits[8]));
+                values.put("PiHat", Double.parseDouble(splits[9]));
+                score.setValues(values);
+
+                // Add relatedness score to the report
+                relatednessReport.getScores().add(score);
+            }
+            reader.close();
+        } catch (IOException e) {
+            throw new ToolException(e);
+        }
+
+        return relatednessReport;
     }
 }
