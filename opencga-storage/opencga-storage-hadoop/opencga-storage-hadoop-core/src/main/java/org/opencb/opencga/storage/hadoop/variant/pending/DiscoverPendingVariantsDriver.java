@@ -2,7 +2,10 @@ package org.opencb.opencga.storage.hadoop.variant.pending;
 
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Mutation;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.MultithreadedTableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
@@ -14,18 +17,22 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 /**
  * Created on 12/02/19.
@@ -80,6 +87,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
 
         Scan scan = new Scan();
         descriptor.configureScan(scan, getMetadataManager());
+        logger.info("Scan variants table " + variantTable + " with scan " + scan.toString(50));
 
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {
             Region region = new Region(query.getString(VariantQueryParam.REGION.key()));
@@ -124,6 +132,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
         private int readyVariants;
         private int pendingVariants;
         private PendingVariantsDescriptor descriptor;
+        private Function<Result, Mutation> pendingEvaluator;
 
 
         @Override
@@ -134,22 +143,26 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
             variants = 0;
             readyVariants = 0;
             pendingVariants = 0;
+            pendingEvaluator = descriptor.getPendingEvaluatorMapper(
+                    new VariantStorageMetadataManager(
+                            new HBaseVariantStorageMetadataDBAdaptorFactory(
+                                    new VariantTableHelper(context.getConfiguration()))));
         }
 
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-            boolean pending = descriptor.isPending(value);
+            Mutation mutation = pendingEvaluator.apply(value);
 
             variants++;
-            if (pending) {
-                pendingVariants++;
-                Put put = new Put(value.getRow());
-                put.addColumn(PendingVariantsDescriptor.FAMILY, PendingVariantsDescriptor.COLUMN, PendingVariantsDescriptor.VALUE);
-                context.write(key, put);
-            } else {
+            if (mutation == null) {
                 readyVariants++;
-                Delete delete = new Delete(value.getRow());
-                context.write(key, delete);
+//                context.write(key, mutation);
+            } else if (mutation instanceof Delete) {
+                readyVariants++;
+                context.write(key, mutation);
+            } else {
+                pendingVariants++;
+                context.write(key, mutation);
             }
         }
 

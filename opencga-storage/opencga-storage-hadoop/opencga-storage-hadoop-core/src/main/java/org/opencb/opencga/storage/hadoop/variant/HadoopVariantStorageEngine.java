@@ -52,7 +52,6 @@ import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -415,7 +414,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
-        queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+//        queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
 
         if (!overwrite) {
             new SecondaryIndexPendingVariantsManager(getDBAdaptor()).discoverPending(getMRExecutor(), getMergedOptions(queryOptions));
@@ -427,13 +426,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
             throws StorageEngineException {
-        if (!overwrite) {
-            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
-            VariantDBIterator iterator = new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
-            return getDBAdaptor().iterator(iterator, query, queryOptions);
-        } else {
+        if (overwrite) {
             logger.info("Get variants to index");
             return super.getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor);
+        } else {
+            logger.info("Get variants to index from pending variants table");
+            logger.info("Query: " + query.toJson());
+            return new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
         }
     }
 

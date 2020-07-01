@@ -135,6 +135,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
         }
 
         try {
+            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
             if (CollectionUtils.isNotEmpty(sampleNames)) {
                 catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), token)
                         .getResults()
@@ -143,11 +144,15 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
                         .forEach(allSamples::add);
             }
             if (samplesQuery != null) {
+                List<String> samplesFromQuery = new LinkedList<>();
                 catalogManager.getSampleManager().search(study, samplesQuery, new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
-                        .forEach(allSamples::add);
+                        .forEach(samplesFromQuery::add);
+                // Remove non-indexed samples
+                samplesFromQuery.removeIf(s -> !indexedSamples.contains(s));
+                allSamples.addAll(samplesFromQuery);
             }
             if (StringUtils.isNotEmpty(individual)) {
                 Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individual);
@@ -171,9 +176,16 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
                         .forEach(allSamples::add);
             }
 
+            List<String> nonIndexedSamples = new ArrayList<>();
             // Remove non-indexed samples
-            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
-            allSamples.removeIf(s -> !indexedSamples.contains(s));
+            for (String sample : allSamples) {
+                if (!indexedSamples.contains(sample)) {
+                    nonIndexedSamples.add(sample);
+                }
+            }
+            if (!nonIndexedSamples.isEmpty()) {
+                throw new IllegalArgumentException("Samples " + nonIndexedSamples + " are not indexed into the Variant Storage");
+            }
 
         } catch (CatalogException e) {
             throw new ToolException(e);

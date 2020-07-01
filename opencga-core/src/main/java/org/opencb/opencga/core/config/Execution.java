@@ -37,6 +37,7 @@ public class Execution {
     public Execution() {
         toolsPerQueue = new HashMap<>();
         options = new ObjectMap();
+        maxConcurrentJobs = new HashMap<>();
     }
 
     public String getId() {

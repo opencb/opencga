@@ -286,7 +286,8 @@ public class VariantHBaseQueryParser {
             regionOrVariant = region;
             logger.debug("region = {}", region);
             addRegionFilter(scan, region);
-        } else if (isValidParam(query, ID)) {
+        }
+        if (isValidParam(query, ID)) {
             List<String> ids = query.getAsStringList(ID.key());
             if (ids.size() != 1) {
                 throw VariantQueryException.malformedParam(ID, ids.toString(), "Unsupported multiple variant ids filter");

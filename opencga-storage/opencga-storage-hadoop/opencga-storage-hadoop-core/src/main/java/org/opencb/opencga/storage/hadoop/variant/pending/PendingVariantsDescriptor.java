@@ -1,10 +1,10 @@
 package org.opencb.opencga.storage.hadoop.variant.pending;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGene
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Created on 13/02/19.
@@ -21,9 +22,6 @@ import java.util.List;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface PendingVariantsDescriptor {
-    byte[] FAMILY = GenomeHelper.COLUMN_FAMILY_BYTES;
-    byte[] COLUMN = Bytes.toBytes("v");
-    byte[] VALUE = new byte[0];
 
     String name();
 
@@ -35,7 +33,7 @@ public interface PendingVariantsDescriptor {
 
     Scan configureScan(Scan scan, VariantStorageMetadataManager metadataManager);
 
-    boolean isPending(Result value);
+    Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager);
 
     default boolean createTableIfNeeded(String tableName, HBaseManager hBaseManager, Compression.Algorithm compression) throws IOException {
         checkValidPendingTableName(tableName);
