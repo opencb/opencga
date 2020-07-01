@@ -69,9 +69,14 @@ public class MigrationCommandOptions extends GeneralCliOptions {
                 + "be exactly the same one specified in the configuration file !", required = true, arity = 1)
         public String jobFolder;
 
-//        @Parameter(names = {"--what"}, description = "Select which parts will be migrated. Options: ALL, CATALOG, STORAGE, ANNOTATIONS, "
-//                + "CATALOG_NO_ANNOTATIONS")
-//        public Migrate what = Migrate.ALL;
+        @Parameter(names = {"--what"}, description = "Select to which version migrate. Options: ALL, RC1, RC2")
+        public MigrateRC what = MigrateRC.ALL;
+    }
+
+    public enum MigrateRC {
+        ALL,
+        RC1,
+        RC2
     }
 
     public enum Migrate {

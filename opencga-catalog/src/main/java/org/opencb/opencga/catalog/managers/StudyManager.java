@@ -85,8 +85,8 @@ public class StudyManager extends AbstractManager {
 
     private final CatalogIOManager catalogIOManager;
 
-    private static final String MEMBERS = "@members";
-    private static final String ADMINS = "@admins";
+    public static final String MEMBERS = "@members";
+    public static final String ADMINS = "@admins";
     //[A-Za-z]([-_.]?[A-Za-z0-9]
     private static final String USER_PATTERN = "[A-Za-z][[-_.]?[A-Za-z0-9]?]*";
     private static final String PROJECT_PATTERN = "[A-Za-z0-9][[-_.]?[A-Za-z0-9]?]*";
