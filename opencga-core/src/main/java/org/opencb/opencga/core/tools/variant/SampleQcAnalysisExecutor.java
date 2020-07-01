@@ -39,6 +39,7 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
     protected String variantStatsId;
     protected String variantStatsDecription;
     protected Map<String, String> variantStatsQuery;
+    protected String variantStatsJobId;
     protected String signatureId;
     protected Map<String, String> signatureQuery;
     protected List<String> genesForCoverageStats;
@@ -128,6 +129,15 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public SampleQcAnalysisExecutor setVariantStatsQuery(Map<String, String> variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
+        return this;
+    }
+
+    public String getVariantStatsJobId() {
+        return variantStatsJobId;
+    }
+
+    public SampleQcAnalysisExecutor setVariantStatsJobId(String variantStatsJobId) {
+        this.variantStatsJobId = variantStatsJobId;
         return this;
     }
 

@@ -396,13 +396,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().runSampleQc(
                 new SampleQcAnalysisParams(
                         variantCommandOptions.sampleQcCommandOptions.sample,
-                        variantCommandOptions.sampleQcCommandOptions.bamFile,
                         variantCommandOptions.sampleQcCommandOptions.fastaFile,
                         variantCommandOptions.sampleQcCommandOptions.baitFile,
                         variantCommandOptions.sampleQcCommandOptions.targetFile,
                         variantCommandOptions.sampleQcCommandOptions.variantStatsId,
                         variantCommandOptions.sampleQcCommandOptions.variantStatsDecription,
                         variantStatsQuery,
+                        variantCommandOptions.sampleQcCommandOptions.variantStatsJobId,
                         variantCommandOptions.sampleQcCommandOptions.signatureId,
                         signatureQuery,
                         genesForCoverageStats,

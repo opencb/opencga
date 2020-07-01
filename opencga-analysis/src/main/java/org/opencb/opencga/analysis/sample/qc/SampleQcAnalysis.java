@@ -53,13 +53,13 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
     private String studyId;
     private String sampleId;
-    private String bamFile;
     private String fastaFile;
     private String baitFile;
     private String targetFile;
     private String variantStatsId;
     private String variantStatsDecription;
     private Map<String, String> variantStatsQuery;
+    private String variantStatsJobId;
     private String signatureId;
     private Map<String, String> signatureQuery;
     private List<String> genesForCoverageStats;
@@ -92,18 +92,10 @@ public class SampleQcAnalysis extends OpenCgaTool {
             throw new ToolException("Sample '" + sampleId + "' not found.");
         }
 
-        if (StringUtils.isEmpty(getBamFile())) {
-            try {
-                catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), getStudyId(), catalogManager.getFileManager(), getToken());
-            } catch (ToolException e) {
-                throw new ToolException(e);
-            }
-        } else {
-            try {
-                catalogBamFile = AnalysisUtils.getBamFile(getBamFile(), sample.getId(), getStudyId(), catalogManager.getFileManager(), getToken());
-            } catch (ToolException e) {
-                throw new ToolException(e);
-            }
+        try {
+            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), getStudyId(), catalogManager.getFileManager(), getToken());
+        } catch (ToolException e) {
+            throw new ToolException(e);
         }
         if (catalogBamFile == null) {
             throw new ToolException("BAM file not found for sample '" + sampleId + "'.");
@@ -134,6 +126,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
                 .setVariantStatsId(variantStatsId)
                 .setVariantStatsDecription(variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)
+                .setVariantStatsJobId(variantStatsJobId)
                 .setSignatureId(signatureId)
                 .setSignatureQuery(signatureQuery)
                 .setGenesForCoverageStats(genesForCoverageStats)
@@ -189,26 +182,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
     }
 
 
-//    private File getBamFileFromCatalog() {
-//        File file;
-//        if (StringUtils.isEmpty(getBamFile())) {
-//            try {
-//                file = AnalysisUtils.getBamFileBySampleId(sample.getId(), getStudyId(), catalogManager.getFileManager(), getToken());
-//            } catch (ToolException e) {
-//                // FastQC already exists!
-//                return null;
-//            }
-//        } else {
-//            try {
-//                file = AnalysisUtils.getBamFile(getBamFile(), sample.getId(), getStudyId(), catalogManager.getFileManager(), getToken());
-//            } catch (ToolException e) {
-//                return null;
-//            }
-//        }
-//
-//        return file;
-//    }
-
     public String getStudyId() {
         return studyId;
     }
@@ -224,15 +197,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
     public SampleQcAnalysis setSampleId(String sampleId) {
         this.sampleId = sampleId;
-        return this;
-    }
-
-    public String getBamFile() {
-        return bamFile;
-    }
-
-    public SampleQcAnalysis setBamFile(String bamFile) {
-        this.bamFile = bamFile;
         return this;
     }
 
@@ -287,6 +251,15 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
     public SampleQcAnalysis setVariantStatsQuery(Map<String, String> variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
+        return this;
+    }
+
+    public String getVariantStatsJobId() {
+        return variantStatsJobId;
+    }
+
+    public SampleQcAnalysis setVariantStatsJobId(String variantStatsJobId) {
+        this.variantStatsJobId = variantStatsJobId;
         return this;
     }
 
