@@ -33,6 +33,7 @@ public class SampleQcAnalysisParams extends ToolParams {
     private String variantStatsJobId;
     private String signatureId;
     private Map<String, String> signatureQuery;
+    private String signatureJobId;
     private List<String> genesForCoverageStats;
 
     private String outdir;
@@ -42,8 +43,8 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams(String sample, String fastaFile, String baitFile, String targetFile, String variantStatsId,
                                   String variantStatsDecription, Map<String, String> variantStatsQuery, String variantStatsJobId,
-                                  String signatureId, Map<String, String> signatureQuery, List<String> genesForCoverageStats,
-                                  String outdir) {
+                                  String signatureId, Map<String, String> signatureQuery, String signatureJobId,
+                                  List<String> genesForCoverageStats, String outdir) {
         this.sample = sample;
         this.fastaFile = fastaFile;
         this.baitFile = baitFile;
@@ -54,6 +55,7 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.variantStatsJobId = variantStatsJobId;
         this.signatureId = signatureId;
         this.signatureQuery = signatureQuery;
+        this.signatureJobId = signatureJobId;
         this.genesForCoverageStats = genesForCoverageStats;
         this.outdir = outdir;
     }
@@ -71,6 +73,7 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", variantStatsJobId='").append(variantStatsJobId).append('\'');
         sb.append(", signatureId='").append(signatureId).append('\'');
         sb.append(", signatureQuery=").append(signatureQuery);
+        sb.append(", signatureJobId='").append(signatureJobId).append('\'');
         sb.append(", genesForCoverageStats=").append(genesForCoverageStats);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
@@ -164,6 +167,15 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setSignatureQuery(Map<String, String> signatureQuery) {
         this.signatureQuery = signatureQuery;
+        return this;
+    }
+
+    public String getSignatureJobId() {
+        return signatureJobId;
+    }
+
+    public SampleQcAnalysisParams setSignatureJobId(String signatureJobId) {
+        this.signatureJobId = signatureJobId;
         return this;
     }
 

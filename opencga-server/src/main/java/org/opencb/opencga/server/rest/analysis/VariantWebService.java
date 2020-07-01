@@ -26,6 +26,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -1004,6 +1005,10 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = SampleQcAnalysisParams.DESCRIPTION, required = true) SampleQcAnalysisParams params) {
 
+        final String OPENCGA_ALL = "ALL";
+
+        List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
+
         Sample sample;
         org.opencb.opencga.core.models.file.File catalogBamFile;
         try {
@@ -1016,7 +1021,11 @@ public class VariantWebService extends AnalysisWebService {
             return createErrorResponse(e);
         }
 
-        // Check
+        // Check sample/stats
+        if (OPENCGA_ALL.equals(params.getVariantStatsId())) {
+            return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
+                    + " variant stats ID"));
+        }
         if (StringUtils.isEmpty(params.getVariantStatsId()) && MapUtils.isNotEmpty(params.getVariantStatsQuery())) {
             return createErrorResponse(new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
                     + " empty too"));
@@ -1026,17 +1035,25 @@ public class VariantWebService extends AnalysisWebService {
                     + " can not be empty"));
         }
         if (StringUtils.isEmpty(params.getVariantStatsId())) {
-            params.setVariantStatsId("ALL");
+            params.setVariantStatsId(OPENCGA_ALL);
         }
 
         boolean runVariantStats = true;
         if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
-            if (catalogBamFile != null) {
+            if (catalogBamFile == null) {
+                // No BAM file provided
+//                for (Signature signature : sample.getQualityControl().getMetrics().get(0).getSignatures()) {
+//                    if (params.getSignatureId().equals(signature.getId())) {
+//                        runSignature
+//                    }
+//                }
+//                for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+//
+//                }
+            } else {
                 for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
-                    System.out.println("-----> metrics.getBamFileId() = " + metrics.getBamFileId() + " vs input bam file = "
-                            + catalogBamFile.getId());
                     if (catalogBamFile.getId().equals(metrics.getBamFileId())) {
-                        if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && "ALL".equals(params.getVariantStatsId())) {
+                        if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && OPENCGA_ALL.equals(params.getVariantStatsId())) {
                             runVariantStats = false;
                         }
                         break;
@@ -1045,7 +1062,52 @@ public class VariantWebService extends AnalysisWebService {
             }
         }
 
-        System.out.println("-----> runVariantStats = " + runVariantStats);
+        // Check mutational signature
+        if (OPENCGA_ALL.equals(params.getSignatureId())) {
+            return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
+                    + " signature ID"));
+        }
+
+        if (StringUtils.isEmpty(params.getSignatureId()) && MapUtils.isNotEmpty(params.getSignatureQuery())) {
+            return createErrorResponse(new ToolException("Invalid parameters: if signature ID is empty, signature query must be"
+                    + " empty too"));
+        }
+        if (StringUtils.isNotEmpty(params.getSignatureId()) && MapUtils.isEmpty(params.getSignatureQuery())) {
+            return createErrorResponse(new ToolException("Invalid parameters: if you provide a signature ID, signature query"
+                    + " can not be empty"));
+        }
+        if (StringUtils.isEmpty(params.getSignatureId())) {
+            params.setSignatureId(OPENCGA_ALL);
+        }
+
+        boolean runSignature = true;
+        if (!sample.isSomatic()) {
+            runSignature = false;
+        } else {
+            if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+                if (catalogBamFile == null) {
+                    for (Signature signature : sample.getQualityControl().getMetrics().get(0).getSignatures()) {
+                        if (params.getSignatureId().equals(signature.getId())) {
+                            runSignature = false;
+                            break;
+                        }
+                    }
+                } else {
+                    for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                        if (catalogBamFile.getId().equals(metrics.getBamFileId())) {
+                            for (Signature signature : metrics.getSignatures()) {
+                                if (params.getSignatureId().equals(signature.getId())) {
+                                    runSignature = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Run variant stats if necessary
         if (runVariantStats) {
             Map<String, Object> paramsMap = new HashMap<>();
             paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
@@ -1058,11 +1120,32 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             Job sampleStatsJob = jobResult.first();
-            dependsOn = sampleStatsJob.getId();
+            dependsOnList.add(sampleStatsJob.getId());
             params.setVariantStatsJobId(sampleStatsJob.getId());
+        } else {
+            params.setVariantStatsJobId(null);
         }
 
-        return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        // Run signature if necessary
+        if (runSignature) {
+            Map<String, Object> paramsMap = new HashMap<>();
+            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+            paramsMap.putIfAbsent("sample", params.getSample());
+            DataResult<Job> jobResult;
+            try {
+                jobResult = (DataResult<Job>) submitJobRaw(MutationalSignatureAnalysis.ID, null, study, paramsMap, null, null, null, null);
+            } catch (CatalogException e) {
+                return createErrorResponse(e);
+            }
+
+            Job signatureJob = jobResult.first();
+            dependsOnList.add(signatureJob.getId());
+            params.setSignatureJobId(signatureJob.getId());
+        } else {
+            params.setSignatureJobId(null);
+        }
+
+        return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);
     }
 
     @POST

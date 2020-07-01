@@ -22,10 +22,12 @@ import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.StorageToolExecutor;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.wrappers.executors.FastqcWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.executors.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -37,6 +39,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -318,37 +321,33 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         if (!sample.isSomatic()) {
             addWarning("Skipping mutational signature analysis: sample " + sample.getId() + " is not somatic");
         } else {
-            addWarning("Skipping mutational signature analysis: not yet implemented");
-//            OpenCGAResult<Job> jobResult;
-//            try {
-//                jobResult = catalogManager.getJobManager().get(studyId, Collections.singletonList(variantStatsJobId),
-//                        QueryOptions.empty(), false, getToken());
-//            } catch (CatalogException e) {
-//                throw new ToolException(e);
-//            }
-//
-//            Job job = jobResult.first();
-//
-//            Path path = Paths.get(job.getOutDir().getUri().getPath()).resolve("sample-variant-stats.json");
-//            if (path.toFile().exists()) {
-//                if (metrics.getVariantStats() == null) {
-//                    metrics.setVariantStats(new ArrayList<>());
-//                }
-//
-//                List<SampleVariantStats> stats = new ArrayList<>();
-//                try {
-//                    JacksonUtils.getDefaultObjectMapper()
-//                            .readerFor(SampleVariantStats.class)
-//                            .<SampleVariantStats>readValues(path.toFile())
-//                            .forEachRemaining(stats::add);
-//                } catch (IOException e) {
-//                    throw new ToolException(e);
-//                }
-//
-//                // Add to metrics
-//                metrics.getVariantStats().add(new SampleQcVariantStats(variantStatsId, variantStatsDecription, variantStatsQuery,
-//                        stats.get(0)));
-//            }
+            if (metrics.getSignatures() == null) {
+                metrics.setSignatures(new ArrayList<>());
+            }
+
+            if (StringUtils.isEmpty(variantStatsJobId)) {
+                // mutationalSignature/query
+                addWarning("Skipping mutational signature analysis: not yet implemented mutationalSignature/query");
+            } else {
+                // mutationalSignature/run
+                OpenCGAResult<Job> jobResult;
+                try {
+                    jobResult = catalogManager.getJobManager().get(studyId, Collections.singletonList(variantStatsJobId),
+                            QueryOptions.empty(), false, getToken());
+                } catch (CatalogException e) {
+                    throw new ToolException(e);
+                }
+
+                Job job = jobResult.first();
+
+                Path path = Paths.get(job.getOutDir().getUri().getPath()).resolve("context.txt");
+                if (path.toFile().exists()) {
+                    Signature.SignatureCount[] signatureCounts = MutationalSignatureAnalysis.parseSignatureCounts(path.toFile());
+
+                    // Add to metrics
+                    metrics.getSignatures().add(new Signature(signatureId, signatureQuery, "", signatureCounts, new ArrayList()));
+                }
+            }
         }
     }
 }

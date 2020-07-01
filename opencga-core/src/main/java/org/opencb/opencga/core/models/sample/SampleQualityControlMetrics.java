@@ -20,18 +20,18 @@ public class SampleQualityControlMetrics {
     private SamtoolsFlagstats samtoolsFlagstats;
     private HsMetricsReport hsMetricsReport;
     private List<GeneCoverageStats> geneCoverageStats;
-    private Signature signature;
+    private List<Signature> signatures;
 
     List<String> fileIds;
     List<Comment> comments;
 
     public SampleQualityControlMetrics() {
-        this(null, new ArrayList<>(), null, null, null, new ArrayList<>(), null, new ArrayList<>(), new ArrayList<>());
+        this(null, new ArrayList<>(), null, null, null, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
     public SampleQualityControlMetrics(String bamFileId, List<SampleQcVariantStats> variantStats, FastQc fastQc,
                                        SamtoolsFlagstats samtoolsFlagstats, HsMetricsReport hsMetricsReport,
-                                       List<GeneCoverageStats> geneCoverageStats, Signature signature, List<String> fileIds,
+                                       List<GeneCoverageStats> geneCoverageStats, List<Signature> signatures, List<String> fileIds,
                                        List<Comment> comments) {
         this.bamFileId = bamFileId;
         this.variantStats = variantStats;
@@ -39,7 +39,7 @@ public class SampleQualityControlMetrics {
         this.samtoolsFlagstats = samtoolsFlagstats;
         this.hsMetricsReport = hsMetricsReport;
         this.geneCoverageStats = geneCoverageStats;
-        this.signature = signature;
+        this.signatures = signatures;
         this.fileIds = fileIds;
         this.comments = comments;
     }
@@ -53,7 +53,7 @@ public class SampleQualityControlMetrics {
         sb.append(", samtoolsFlagstats=").append(samtoolsFlagstats);
         sb.append(", hsMetricsReport=").append(hsMetricsReport);
         sb.append(", geneCoverageStats=").append(geneCoverageStats);
-        sb.append(", signature=").append(signature);
+        sb.append(", signature=s").append(signatures);
         sb.append(", fileIds=").append(fileIds);
         sb.append(", comments=").append(comments);
         sb.append('}');
@@ -114,12 +114,12 @@ public class SampleQualityControlMetrics {
         return this;
     }
 
-    public Signature getSignature() {
-        return signature;
+    public List<Signature> getSignatures() {
+        return signatures;
     }
 
-    public SampleQualityControlMetrics setSignature(Signature signature) {
-        this.signature = signature;
+    public SampleQualityControlMetrics setSignatures(List<Signature> signatures) {
+        this.signatures = signatures;
         return this;
     }
 

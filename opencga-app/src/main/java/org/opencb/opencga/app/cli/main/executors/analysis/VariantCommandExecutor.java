@@ -405,6 +405,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.sampleQcCommandOptions.variantStatsJobId,
                         variantCommandOptions.sampleQcCommandOptions.signatureId,
                         signatureQuery,
+                        variantCommandOptions.sampleQcCommandOptions.signatureJobId,
                         genesForCoverageStats,
                         variantCommandOptions.sampleQcCommandOptions.outdir
                 ),
