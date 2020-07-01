@@ -88,9 +88,9 @@ public class File extends Annotable {
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileInternal internal, long size,
-                List<Sample> samples, Software software, Map<String, Object> stats, Map<String, Object> attributes) {
+                List<Sample> samples, Software software, String jobId, Map<String, Object> stats, Map<String, Object> attributes) {
         this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                false, size, software, new FileExperiment(), samples, Collections.emptyList(), "", -1, Collections.emptyList(), stats,
+                false, size, software, new FileExperiment(), samples, Collections.emptyList(), jobId, -1, Collections.emptyList(), stats,
                 new CustomStatus(), internal, attributes);
     }
 

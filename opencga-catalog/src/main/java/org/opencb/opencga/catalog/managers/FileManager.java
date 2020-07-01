@@ -525,6 +525,11 @@ public class FileManager extends AnnotationSetManager<File> {
 
     public OpenCGAResult<File> createFolder(String studyStr, String path, boolean parents, String description, QueryOptions options,
                                             String token) throws CatalogException {
+        return createFolder(studyStr, path, parents, description, "", options, token);
+    }
+
+    public OpenCGAResult<File> createFolder(String studyStr, String path, boolean parents, String description, String jobId,
+                                            QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkPath(path, "folderPath");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -541,8 +546,9 @@ public class FileManager extends AnnotationSetManager<File> {
         OpenCGAResult<File> fileDataResult;
         switch (checkPathExists(path, study.getUid())) {
             case FREE_PATH:
-                fileDataResult = create(studyStr, File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, path,
-                        description, 0, null, null, null, parents, null, options, token);
+                File file = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, path, description,
+                        FileInternal.initialize(), 0, null, null, jobId, null, null);
+                fileDataResult = create(studyStr, file, parents, null, options, token);
                 break;
             case DIRECTORY_EXISTS:
                 Query query = new Query()
@@ -586,7 +592,8 @@ public class FileManager extends AnnotationSetManager<File> {
                                       String description, long size, List<Sample> samples, Map<String, Object> stats,
                                       Map<String, Object> attributes, boolean parents, String content, QueryOptions options,
                                       String token) throws CatalogException {
-        File file = new File(type, format, bioformat, path, description, FileInternal.initialize(), size, samples, null, stats, attributes);
+        File file = new File(type, format, bioformat, path, description, FileInternal.initialize(), size, samples, null, "", stats,
+                attributes);
         return create(studyStr, file, parents, content, options, token);
     }
 
@@ -633,6 +640,7 @@ public class FileManager extends AnnotationSetManager<File> {
         file.setRelatedFiles(ParamUtils.defaultObject(file.getRelatedFiles(), ArrayList::new));
         file.setSamples(ParamUtils.defaultObject(file.getSamples(), ArrayList::new));
         file.setCreationDate(TimeUtils.getTime());
+        file.setJobId(ParamUtils.defaultString(file.getJobId(), ""));
         file.setModificationDate(file.getCreationDate());
         file.setTags(ParamUtils.defaultObject(file.getTags(), ArrayList::new));
         file.setInternal(ParamUtils.defaultObject(file.getInternal(), FileInternal::new));
@@ -717,7 +725,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "",
                         new FileInternal(new FileStatus(FileStatus.READY), new FileIndex(), Collections.emptyMap()), 0,
-                        Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
+                        Collections.emptyList(), null, "", Collections.emptyMap(), Collections.emptyMap());
                 validateNewFile(study, parentFile, sessionId, false);
                 parentFileId = register(study, parentFile, parents, options, sessionId).first().getUid();
             } else {
@@ -1522,10 +1530,15 @@ public class FileManager extends AnnotationSetManager<File> {
      *                          Study not found, folderId does not exist or user does not have permissions.
      */
     public OpenCGAResult<File> syncUntrackedFiles(String studyId, String folderId, String token) throws CatalogException {
-        return syncUntrackedFiles(studyId, folderId, uri -> true, token);
+        return syncUntrackedFiles(studyId, folderId, uri -> true, "", token);
     }
 
     public OpenCGAResult<File> syncUntrackedFiles(String studyId, String folderId, Predicate<URI> filter, String token)
+            throws CatalogException {
+        return syncUntrackedFiles(studyId, folderId, filter, "", token);
+    }
+
+    public OpenCGAResult<File> syncUntrackedFiles(String studyId, String folderId, Predicate<URI> filter, String jobId, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
@@ -1579,7 +1592,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
                 fileList.add(registeredFile);
             } catch (CatalogException e) {
-                File file = registerFile(study, finalCatalogPath, fileUri, token).first();
+                File file = registerFile(study, finalCatalogPath, fileUri, jobId, token).first();
 
                 result.setNumInserted(result.getNumInserted() + 1);
                 fileList.add(file);
@@ -3377,7 +3390,7 @@ public class FileManager extends AnnotationSetManager<File> {
         return fileDBAdaptor.get(query, queryOptions);
     }
 
-    OpenCGAResult<File> registerFile(Study study, String filePath, URI fileUri, String token) throws CatalogException {
+    OpenCGAResult<File> registerFile(Study study, String filePath, URI fileUri, String jobId, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         IOManager ioManager;
         try {
@@ -3398,7 +3411,7 @@ public class FileManager extends AnnotationSetManager<File> {
         File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
                 "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
-                Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyMap(),
+                Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyMap(),
                 new CustomStatus(), FileInternal.initialize(), Collections.emptyMap());
         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
