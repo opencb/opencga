@@ -359,7 +359,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        if (trios.size() < 1000) {
+        if (trios.isEmpty()) {
+            throw new StorageEngineException("Undefined family trios");
+        } else if (trios.size() < 1000) {
             options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
         } else {
             File mendelianErrorsFile = null;
