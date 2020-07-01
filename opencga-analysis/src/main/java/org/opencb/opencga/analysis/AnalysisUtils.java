@@ -15,25 +15,20 @@ public class AnalysisUtils {
         // Look for the bam file for each sample
         OpenCGAResult<File> fileQueryResult;
 
-        Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key());
-
-        query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
+        Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM)
+                .append(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
         try {
-            fileQueryResult = fileManager.search(studyId, query, queryOptions, token);
+            fileQueryResult = fileManager.search(studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
         // Sanity check
-        if (fileQueryResult.getNumResults() == 0) {
-            throw new ToolException("BAM file not found for sample " + sampleId);
-        }
         if (fileQueryResult.getNumResults() > 1) {
             throw new ToolException("Found more than one BAM files (" + fileQueryResult.getNumResults() + ") for sample " + sampleId);
         }
 
-        return fileQueryResult.first();
+        return (fileQueryResult.getNumResults() == 0) ? null : fileQueryResult.first();
     }
 
     public static File getBamFile(String filename, String sampleId, String studyId, FileManager fileManager, String token) throws ToolException {

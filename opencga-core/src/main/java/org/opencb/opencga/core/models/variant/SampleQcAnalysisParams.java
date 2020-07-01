@@ -24,13 +24,13 @@ import java.util.Map;
 public class SampleQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Sample QC analysis params";
     private String sample;
-    private String bamFile;
     private String fastaFile;
     private String baitFile;
     private String targetFile;
     private String variantStatsId;
     private String variantStatsDecription;
     private Map<String, String> variantStatsQuery;
+    private String variantStatsJobId;
     private String signatureId;
     private Map<String, String> signatureQuery;
     private List<String> genesForCoverageStats;
@@ -40,18 +40,18 @@ public class SampleQcAnalysisParams extends ToolParams {
     public SampleQcAnalysisParams() {
     }
 
-    public SampleQcAnalysisParams(String sample, String bamFile, String fastaFile, String baitFile, String targetFile,
-                                  String variantStatsId, String variantStatsDecription, Map<String, String> variantStatsQuery,
+    public SampleQcAnalysisParams(String sample, String fastaFile, String baitFile, String targetFile, String variantStatsId,
+                                  String variantStatsDecription, Map<String, String> variantStatsQuery, String variantStatsJobId,
                                   String signatureId, Map<String, String> signatureQuery, List<String> genesForCoverageStats,
                                   String outdir) {
         this.sample = sample;
-        this.bamFile = bamFile;
         this.fastaFile = fastaFile;
         this.baitFile = baitFile;
         this.targetFile = targetFile;
         this.variantStatsId = variantStatsId;
         this.variantStatsDecription = variantStatsDecription;
         this.variantStatsQuery = variantStatsQuery;
+        this.variantStatsJobId = variantStatsJobId;
         this.signatureId = signatureId;
         this.signatureQuery = signatureQuery;
         this.genesForCoverageStats = genesForCoverageStats;
@@ -62,13 +62,13 @@ public class SampleQcAnalysisParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQcAnalysisParams{");
         sb.append("sample='").append(sample).append('\'');
-        sb.append(", bamFile='").append(bamFile).append('\'');
         sb.append(", fastaFile='").append(fastaFile).append('\'');
         sb.append(", baitFile='").append(baitFile).append('\'');
         sb.append(", targetFile='").append(targetFile).append('\'');
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
         sb.append(", variantStatsDecription='").append(variantStatsDecription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
+        sb.append(", variantStatsJobId='").append(variantStatsJobId).append('\'');
         sb.append(", signatureId='").append(signatureId).append('\'');
         sb.append(", signatureQuery=").append(signatureQuery);
         sb.append(", genesForCoverageStats=").append(genesForCoverageStats);
@@ -83,15 +83,6 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setSample(String sample) {
         this.sample = sample;
-        return this;
-    }
-
-    public String getBamFile() {
-        return bamFile;
-    }
-
-    public SampleQcAnalysisParams setBamFile(String bamFile) {
-        this.bamFile = bamFile;
         return this;
     }
 
@@ -146,6 +137,15 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setVariantStatsQuery(Map<String, String> variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
+        return this;
+    }
+
+    public String getVariantStatsJobId() {
+        return variantStatsJobId;
+    }
+
+    public SampleQcAnalysisParams setVariantStatsJobId(String variantStatsJobId) {
+        this.variantStatsJobId = variantStatsJobId;
         return this;
     }
 

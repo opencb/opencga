@@ -739,8 +739,8 @@ public class OpenCGAWSServer {
         });
     }
 
-    private DataResult<?> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap,
-                                       String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+    protected DataResult<?> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap,
+                                         String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
             throws CatalogException {
 
         if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {

@@ -1183,9 +1183,6 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
         public String sample;
 
-        @Parameter(names = {"--bam-file"}, description = "BAM file.")
-        public String bamFile;
-
         @Parameter(names = {"--ref-genome-file"}, description = "Reference genome file in FASTA format (for HS metrics).")
         public String fastaFile;
 
@@ -1203,6 +1200,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--variant-stats-query"}, description = "Variant stats query in JSON format, e.g.: '{\"gene\":\"BRCA2\", \"ct\":\"missense_variant\"}'")
         public String variantStatsQuery;
+
+        @Parameter(names = {"--variant-stats-job-id"}, description = "Variant stats job ID.")
+        public String variantStatsJobId;
 
         @Parameter(names = {"--signature-id"}, description = "Signature ID.")
         public String signatureId;

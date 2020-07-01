@@ -189,61 +189,85 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
+        boolean skipRc1 = false;
+        boolean skipRc2 = false;
+        switch (options.what) {
+            case RC1:
+                skipRc2 = true;
+                break;
+            case RC2:
+                skipRc1 = true;
+                break;
+            case ALL:
+            default:
+                break;
+        }
+
         // Check administrator password
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
         MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
 
-        String cypheredPassword = CryptoUtils.sha1(options.commonOptions.adminPassword);
-        Document document = new Document("admin.password", cypheredPassword);
-        if (metaCollection.count(document).getNumMatches() == 0) {
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
-        }
+        if (!skipRc1) {
+            String cypheredPassword = CryptoUtils.sha1(options.commonOptions.adminPassword);
+            Document document = new Document("admin.password", cypheredPassword);
+            if (metaCollection.count(document).getNumMatches() == 0) {
+                throw CatalogAuthenticationException.incorrectUserOrPassword();
+            }
 
-        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            // 1. Catalog Javascript migration
-            logger.info("Starting Catalog migration for 2.0.0");
-            runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v1.4.2_to_v.2.0.0.js");
+            try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+                // 1. Catalog Javascript migration
+                logger.info("Starting Catalog migration for 2.0.0 RC1");
+                runMigration(catalogManager, appHome + "/misc/migration/v2.0.0-rc1/", "opencga_catalog_v1.4.2_to_v2.0.0-rc1.js");
 
-            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+                String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
-            // Create default project and study for administrator #1491
-            catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
-            catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", "Default study",
-                    null, null, null, Collections.emptyMap(), null, token);
+                // Create default project and study for administrator #1491
+                catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
+                catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", "Default study",
+                        null, null, null, Collections.emptyMap(), null, token);
 
-            // Create default JOBS folder for analysis
-            MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(),
-                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.RELEASE.key()));
-            DBIterator<Study> iterator = dbAdaptorFactory.getCatalogStudyDBAdaptor().iterator(new Query(), queryOptions);
+                // Create default JOBS folder for analysis
+                MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(),
+                        StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.RELEASE.key()));
+                DBIterator<Study> iterator = dbAdaptorFactory.getCatalogStudyDBAdaptor().iterator(new Query(), queryOptions);
 
-            Query fileQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), "JOBS/");
-            while (iterator.hasNext()) {
-                Study study = iterator.next();
-                fileQuery.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-                if (dbAdaptorFactory.getCatalogFileDBAdaptor().count(fileQuery).getNumMatches() == 0) {
-                    logger.info("Creating JOBS/ folder for study {}", study.getFqn());
+                Query fileQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), "JOBS/");
+                while (iterator.hasNext()) {
+                    Study study = iterator.next();
+                    fileQuery.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+                    if (dbAdaptorFactory.getCatalogFileDBAdaptor().count(fileQuery).getNumMatches() == 0) {
+                        logger.info("Creating JOBS/ folder for study {}", study.getFqn());
 
-                    // JOBS folder does not exist
-                    org.opencb.opencga.core.models.file.File file = new org.opencb.opencga.core.models.file.File("JOBS",
-                            org.opencb.opencga.core.models.file.File.Type.DIRECTORY, org.opencb.opencga.core.models.file.File.Format.UNKNOWN,
-                            org.opencb.opencga.core.models.file.File.Bioformat.UNKNOWN,
-                            Paths.get(options.jobFolder).normalize().toAbsolutePath().resolve("JOBS").toUri(),
-                            "JOBS/", null, TimeUtils.getTime(), TimeUtils.getTime(), "Default jobs folder",
-                            false, 0, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "",
-                            study.getRelease(), Collections.emptyList(), Collections.emptyMap(), new CustomStatus(),
-                            FileInternal.initialize(), Collections.emptyMap());
-                    file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
-                    file.setTags(Collections.emptyList());
-                    file.setId(file.getPath().replace("/", ":"));
+                        // JOBS folder does not exist
+                        org.opencb.opencga.core.models.file.File file = new org.opencb.opencga.core.models.file.File("JOBS",
+                                org.opencb.opencga.core.models.file.File.Type.DIRECTORY, org.opencb.opencga.core.models.file.File.Format.UNKNOWN,
+                                org.opencb.opencga.core.models.file.File.Bioformat.UNKNOWN,
+                                Paths.get(options.jobFolder).normalize().toAbsolutePath().resolve("JOBS").toUri(),
+                                "JOBS/", null, TimeUtils.getTime(), TimeUtils.getTime(), "Default jobs folder",
+                                false, 0, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "",
+                                study.getRelease(), Collections.emptyList(), Collections.emptyMap(), new CustomStatus(),
+                                FileInternal.initialize(), Collections.emptyMap());
+                        file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
+                        file.setTags(Collections.emptyList());
+                        file.setId(file.getPath().replace("/", ":"));
 
-                    dbAdaptorFactory.getCatalogFileDBAdaptor().insert(study.getUid(), file, null, QueryOptions.empty());
+                        dbAdaptorFactory.getCatalogFileDBAdaptor().insert(study.getUid(), file, null, QueryOptions.empty());
 
-                    // Create physical folder
-                    catalogManager.getIoManagerFactory().get(file.getUri()).createDirectory(file.getUri(), true);
-                } else {
-                    logger.info("JOBS/ folder already present for study {}", study.getFqn());
+                        // Create physical folder
+                        catalogManager.getIoManagerFactory().get(file.getUri()).createDirectory(file.getUri(), true);
+                    } else {
+                        logger.info("JOBS/ folder already present for study {}", study.getFqn());
+                    }
                 }
+            }
+        }
+        if (!skipRc2) {
+            try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+                catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+
+                logger.info("Starting Catalog migration for 2.0.0 RC2");
+                runMigration(catalogManager, appHome + "/misc/migration/v2.0.0-rc2/", "opencga_catalog_v2.0.0-rc1_to_v2.0.0-rc2.js");
             }
         }
     }
