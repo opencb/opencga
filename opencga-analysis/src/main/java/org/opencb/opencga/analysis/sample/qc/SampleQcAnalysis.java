@@ -17,12 +17,19 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
+import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 
@@ -46,18 +53,19 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
     private String studyId;
     private String sampleId;
-    private String bamFile;
     private String fastaFile;
     private String baitFile;
     private String targetFile;
     private String variantStatsId;
     private String variantStatsDecription;
     private Map<String, String> variantStatsQuery;
+    private String variantStatsJobId;
     private String signatureId;
     private Map<String, String> signatureQuery;
     private List<String> genesForCoverageStats;
 
     private Sample sample;
+    private File catalogBamFile;
 
     @Override
     protected void check() throws Exception {
@@ -84,6 +92,14 @@ public class SampleQcAnalysis extends OpenCgaTool {
             throw new ToolException("Sample '" + sampleId + "' not found.");
         }
 
+        try {
+            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), getStudyId(), catalogManager.getFileManager(), getToken());
+        } catch (ToolException e) {
+            throw new ToolException(e);
+        }
+        if (catalogBamFile == null) {
+            throw new ToolException("BAM file not found for sample '" + sampleId + "'.");
+        }
     }
 
     @Override
@@ -95,30 +111,76 @@ public class SampleQcAnalysis extends OpenCgaTool {
     @Override
     protected void run() throws ToolException {
 
+        // Get sample quality control metrics to update
+        SampleQualityControlMetrics metrics = getSampleQualityControlMetrics();
+
         SampleQcAnalysisExecutor executor = getToolExecutor(SampleQcAnalysisExecutor.class);
 
         // Set up executor
         executor.setStudyId(studyId)
                 .setSample(sample)
-                .setBamFile(bamFile)
+                .setCatalogBamFile(catalogBamFile)
                 .setFastaFile(fastaFile)
                 .setBaitFile(baitFile)
                 .setTargetFile(targetFile)
                 .setVariantStatsId(variantStatsId)
                 .setVariantStatsDecription(variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)
+                .setVariantStatsJobId(variantStatsJobId)
                 .setSignatureId(signatureId)
                 .setSignatureQuery(signatureQuery)
-                .setGenesForCoverageStats(genesForCoverageStats);
+                .setGenesForCoverageStats(genesForCoverageStats)
+                .setMetrics(metrics);
 
         // Step by step
-        step(VARIANT_STATS_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.VARIAN_STATS).execute());
-        step(FASTQC_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.FASTQC).execute());
-        step(FLAG_STATS_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.FLAG_STATS).execute());
-        step(HS_METRICS_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.HS_METRICS).execute());
-        step(GENE_COVERAGE_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.GENE_COVERAGE_STATS).execute());
-        step(MUTATIONAL_SIGNATUR_STEP, () -> executor.setQc(SampleQcAnalysisExecutor.Qc.MUTATIONAL_SIGNATURE).execute());
+        step(VARIANT_STATS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.VARIAN_STATS).execute());
+        step(FASTQC_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.FASTQC).execute());
+        step(FLAG_STATS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.FLAG_STATS).execute());
+        step(HS_METRICS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.HS_METRICS).execute());
+        step(GENE_COVERAGE_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.GENE_COVERAGE_STATS).execute());
+        step(MUTATIONAL_SIGNATUR_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.MUTATIONAL_SIGNATURE).execute());
+
+        // Finally, update sample quality control metrics
+        updateSampleQualityControlMetrics(metrics);
     }
+
+    private SampleQualityControlMetrics getSampleQualityControlMetrics() {
+        if (sample.getQualityControl() == null) {
+            sample.setQualityControl(new SampleQualityControl());
+        } else {
+            for (SampleQualityControlMetrics prevMetrics : sample.getQualityControl().getMetrics()) {
+                if (prevMetrics.getBamFileId().equals(catalogBamFile.getId())) {
+                    return prevMetrics;
+                }
+            }
+        }
+        return new SampleQualityControlMetrics().setBamFileId(catalogBamFile.getId());
+    }
+
+    private void updateSampleQualityControlMetrics(SampleQualityControlMetrics metrics) throws ToolException {
+        SampleQualityControl qualityControl = sample.getQualityControl();
+        if (sample.getQualityControl() == null) {
+            qualityControl = new SampleQualityControl();
+        } else {
+            int index = 0;
+            for (SampleQualityControlMetrics prevMetrics : qualityControl.getMetrics()) {
+                if (prevMetrics.getBamFileId().equals(metrics.getBamFileId())) {
+                    qualityControl.getMetrics().remove(index);
+                    break;
+                }
+                index++;
+            }
+        }
+        qualityControl.getMetrics().add(metrics);
+
+        try {
+            catalogManager.getSampleManager().update(getStudyId(), getSampleId(), new SampleUpdateParams().setQualityControl(qualityControl),
+                    new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+    }
+
 
     public String getStudyId() {
         return studyId;
@@ -135,15 +197,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
     public SampleQcAnalysis setSampleId(String sampleId) {
         this.sampleId = sampleId;
-        return this;
-    }
-
-    public String getBamFile() {
-        return bamFile;
-    }
-
-    public SampleQcAnalysis setBamFile(String bamFile) {
-        this.bamFile = bamFile;
         return this;
     }
 
@@ -198,6 +251,15 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
     public SampleQcAnalysis setVariantStatsQuery(Map<String, String> variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
+        return this;
+    }
+
+    public String getVariantStatsJobId() {
+        return variantStatsJobId;
+    }
+
+    public SampleQcAnalysis setVariantStatsJobId(String variantStatsJobId) {
+        this.variantStatsJobId = variantStatsJobId;
         return this;
     }
 

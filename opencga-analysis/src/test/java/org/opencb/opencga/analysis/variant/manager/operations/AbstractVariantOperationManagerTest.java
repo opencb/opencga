@@ -79,6 +79,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.variant.manager.operations.StatsVariantStorageTest.checkCalculatedStats;
+import static org.opencb.opencga.catalog.utils.FileMetadataReader.FILE_VARIANT_STATS_VARIABLE_SET;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
@@ -255,7 +256,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         }
         inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getInternal().getIndex().getStatus().getName());
-        assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
+        assertEquals(FILE_VARIANT_STATS_VARIABLE_SET, inputFile.getAnnotationSets().get(0).getId());
 
         // Default cohort should not be modified
         assertEquals(String.valueOf(defaultCohort), String.valueOf(getDefaultCohort(studyId)));

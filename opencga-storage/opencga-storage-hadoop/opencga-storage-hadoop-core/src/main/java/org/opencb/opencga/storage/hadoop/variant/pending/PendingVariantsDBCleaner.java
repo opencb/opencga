@@ -1,9 +1,8 @@
-package org.opencb.opencga.storage.hadoop.variant.annotation.pending;
+package org.opencb.opencga.storage.hadoop.variant.pending;
 
 import org.apache.hadoop.hbase.client.Delete;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -15,17 +14,20 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class PendingVariantsToAnnotateDBCleaner extends AbstractHBaseDataWriter<byte[], Delete> {
+public class PendingVariantsDBCleaner extends AbstractHBaseDataWriter<byte[], Delete> {
 
-    public PendingVariantsToAnnotateDBCleaner(HBaseManager hBaseManager, String pendingAnnotationTable) {
-        super(hBaseManager, pendingAnnotationTable);
-        HBaseVariantTableNameGenerator.checkValidPendingAnnotationTableName(pendingAnnotationTable);
+    private final PendingVariantsDescriptor descriptor;
+
+    public PendingVariantsDBCleaner(HBaseManager hBaseManager, String tableName, PendingVariantsDescriptor descriptor) {
+        super(hBaseManager, tableName);
+        this.descriptor = descriptor;
+        descriptor.checkValidPendingTableName(tableName);
     }
 
     @Override
     public boolean pre() {
         try {
-            PendingVariantsToAnnotateUtils.createTableIfNeeded(tableName, hBaseManager);
+            descriptor.createTableIfNeeded(tableName, hBaseManager);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

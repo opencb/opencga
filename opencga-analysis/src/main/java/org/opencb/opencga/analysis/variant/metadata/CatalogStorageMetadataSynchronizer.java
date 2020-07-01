@@ -21,6 +21,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -320,10 +321,34 @@ public class CatalogStorageMetadataSynchronizer {
             metadataManager.fileMetadataIterator(study.getId()).forEachRemaining(fileMetadata -> {
                 fileNameMap.put(fileMetadata.getId(), fileMetadata.getName());
                 filePathMap.put(fileMetadata.getId(), fileMetadata.getPath());
-                Set<String> samples = fileMetadata.getSamples()
-                        .stream()
-                        .map(s -> metadataManager.getSampleName(study.getId(), s))
-                        .collect(Collectors.toSet());
+                Set<String> samples;
+                if (!fileMetadata.isIndexed()) {
+                    // Skip non indexed files
+                    return;
+                }
+                if (fileMetadata.getSamples() == null) {
+                    logger.warn("File '{}' with null samples", fileMetadata.getName());
+                    try {
+                        VariantFileMetadata variantFileMetadata =
+                                metadataManager.getVariantFileMetadata(study.getId(), fileMetadata.getId(), new QueryOptions()).first();
+                        if (variantFileMetadata == null) {
+                            logger.error("Missing VariantFileMetadata from file {}", fileMetadata.getName());
+                        } else {
+                            logger.info("Samples from VariantFileMetadata: {}", variantFileMetadata.getSampleIds());
+                        }
+                    } catch (StorageEngineException e) {
+                        logger.error("Error reading VariantFileMetadata for file " + fileMetadata.getName(), e);
+                    }
+                    samples = Collections.emptySet();
+                } else {
+                    if (fileMetadata.getSamples().contains(null)) {
+                        logger.warn("File '{}' has a null sampleId in samples", fileMetadata.getName());
+                    }
+                    samples = fileMetadata.getSamples()
+                            .stream()
+                            .map(s -> metadataManager.getSampleName(study.getId(), s))
+                            .collect(Collectors.toSet());
+                }
                 fileSamplesMap.put(fileMetadata.getName(), samples);
             });
             indexedFiles = metadataManager.getIndexedFiles(study.getId());
@@ -371,6 +396,13 @@ public class CatalogStorageMetadataSynchronizer {
                     }
                     Set<String> storageSamples = fileSamplesMap.get(file.getName());
                     Set<String> catalogSamples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
+                    if (storageSamples == null) {
+                        storageSamples = new HashSet<>();
+                        Integer fileId = metadataManager.getFileId(study.getId(), file.getName());
+                        for (Integer sampleId : metadataManager.getSampleIdsFromFileId(study.getId(), fileId)) {
+                            storageSamples.add(metadataManager.getSampleName(study.getId(), sampleId));
+                        }
+                    }
                     if (!storageSamples.equals(catalogSamples)) {
                         logger.warn("File samples does not match between catalog and storage. Update variant file metadata");
                         file = catalogManager.getFileManager().get(study.getName(), file.getId(), new QueryOptions(), sessionId).first();

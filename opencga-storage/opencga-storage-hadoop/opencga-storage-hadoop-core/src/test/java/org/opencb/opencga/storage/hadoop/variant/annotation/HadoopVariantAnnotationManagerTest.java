@@ -14,8 +14,9 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
-import org.opencb.opencga.storage.hadoop.variant.annotation.pending.DiscoverPendingVariantsToAnnotateDriver;
-import org.opencb.opencga.storage.hadoop.variant.annotation.pending.PendingVariantsToAnnotateReader;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsDescriptor;
+import org.opencb.opencga.storage.hadoop.variant.pending.DiscoverPendingVariantsDriver;
+import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 
 import java.net.URI;
 import java.util.List;
@@ -46,18 +47,18 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
                     .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
 
             // Update pending variants
-            new TestMRExecutor().run(DiscoverPendingVariantsToAnnotateDriver.class,
-                    DiscoverPendingVariantsToAnnotateDriver.buildArgs(engine.getDBAdaptor().getVariantTable(), new ObjectMap()),
+            new TestMRExecutor().run(DiscoverPendingVariantsDriver.class,
+                    DiscoverPendingVariantsDriver.buildArgs(engine.getDBAdaptor().getVariantTable(), AnnotationPendingVariantsDescriptor.class, new ObjectMap()),
                     new ObjectMap(), "Prepare variants to annotate");
 
-            long pendingVariantsCount = new PendingVariantsToAnnotateReader(engine.getDBAdaptor(), new Query()).stream().count();
+            long pendingVariantsCount = new PendingVariantsReader(new Query(), new AnnotationPendingVariantsDescriptor(), engine.getDBAdaptor()).stream().count();
             System.out.println("pendingVariants = " + pendingVariantsCount);
             long expectedPendingVariantsCount = engine.count(new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false)).first();
             Assert.assertEquals(expectedPendingVariantsCount, pendingVariantsCount);
             Assert.assertEquals(expectedPendingVariantsCount, engine.annotate(new Query(), new ObjectMap()));
 
 
-            List<Variant> pendingVariants = new PendingVariantsToAnnotateReader(engine.getDBAdaptor(), new Query())
+            List<Variant> pendingVariants = new PendingVariantsReader(new Query(), new AnnotationPendingVariantsDescriptor(), engine.getDBAdaptor())
                     .stream()
                     .collect(Collectors.toList());
             expectedPendingVariantsCount = engine.count(new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false)).first();

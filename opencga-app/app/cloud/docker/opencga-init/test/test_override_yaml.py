@@ -164,7 +164,7 @@ class Test_init_script(unittest.TestCase):
             config["catalog"]["searchEngine"]["password"], "test-catalog-search-password"
         )
         self.assertEqual(config["analysis"]["execution"]["id"], "test-analysis-execution-mode")
-        self.assertEqual(config["analysis"]["index"]["variant"]["maxConcurrentJobs"], 25)
+        self.assertEqual(config["analysis"]["execution"]["maxConcurrentJobs"]["variant-index"], 25)
         self.assertEqual(client_config["rest"]["host"], "test-rest-host")
         self.assertEqual(client_config["grpc"]["host"], "test-grpc-host")
 

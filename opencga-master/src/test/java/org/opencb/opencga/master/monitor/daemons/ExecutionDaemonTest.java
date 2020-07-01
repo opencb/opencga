@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
+import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
@@ -45,7 +46,10 @@ import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -71,7 +75,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         String expiringToken = this.catalogManager.getUserManager().loginAsAdmin("admin").getToken();
         String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
-        catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().setMaxConcurrentJobs(1);
+        catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().put(VariantIndexOperationTool.ID, 1);
 
         daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager, "/tmp");
         executor = new DummyBatchExecutor();

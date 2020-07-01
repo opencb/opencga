@@ -72,6 +72,7 @@ public class File extends Annotable {
     private List<String> tags;
     private List<FileRelatedFile> relatedFiles;
 
+    @Deprecated
     private Map<String, Object> stats;
     private CustomStatus status;
     private FileInternal internal;
@@ -456,10 +457,12 @@ public class File extends Annotable {
         return this;
     }
 
+    @Deprecated
     public Map<String, Object> getStats() {
         return stats;
     }
 
+    @Deprecated
     public File setStats(Map<String, Object> stats) {
         this.stats = stats;
         return this;

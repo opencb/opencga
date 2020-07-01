@@ -100,4 +100,4 @@ function getOutput() {
 # Enable HDInsight monitor
 $(getOutput "hdInsightEnableMonitor")
 
-./setup-aks.sh ${deploymentOut}
+./setup-aks.sh ${subscriptionName} ${deploymentOut}
