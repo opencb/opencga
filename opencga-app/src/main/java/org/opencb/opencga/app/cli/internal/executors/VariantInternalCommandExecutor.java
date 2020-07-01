@@ -844,6 +844,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setVariantStatsJobId(cliOptions.variantStatsJobId)
                 .setSignatureId(cliOptions.signatureId)
                 .setSignatureQuery(signatureQuery)
+                .setVariantStatsJobId(cliOptions.signatureJobId)
                 .setGenesForCoverageStats(genesForCoverageStats)
                 .start();
     }

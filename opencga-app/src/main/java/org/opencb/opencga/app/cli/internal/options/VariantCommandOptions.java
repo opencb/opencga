@@ -1210,6 +1210,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--signature-query"}, description = "Signature query in JSON format, e.g.: '{\"type\":\"SNV\", \"ct\":\"missense_variant\"}'")
         public String signatureQuery;
 
+        @Parameter(names = {"--signature-job-id"}, description = "Signature job ID.")
+        public String signatureJobId;
+
         @Parameter(names = {"--genes-for-coverage-stats"}, description = "A comma separated list of genes to compute the coverage stats.")
         public String genesForCoverageStats;
 
