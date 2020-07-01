@@ -17,13 +17,16 @@
 package org.opencb.opencga.analysis.family.qc;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.FamilyQcAnalysisExecutor;
 
@@ -89,9 +92,9 @@ public class FamilyQcAnalysis extends OpenCgaTool {
     protected void run() throws ToolException {
 
         // Get sample quality control metrics to update
-        FamilyQualityControl qc = family.getQualityControl();
-        if (qc == null) {
-            qc = new FamilyQualityControl();
+        FamilyQualityControl qualityControl = family.getQualityControl();
+        if (qualityControl == null) {
+            qualityControl = new FamilyQualityControl();
         }
 
         FamilyQcAnalysisExecutor executor = getToolExecutor(FamilyQcAnalysisExecutor.class);
@@ -101,18 +104,21 @@ public class FamilyQcAnalysis extends OpenCgaTool {
                 .setFamily(family)
                 .setRelatednessMethod(relatednessMethod)
                 .setRelatednessMaf(relatednessMaf)
-                .setQualityControl(qc);
+                .setQualityControl(qualityControl);
 
         // Step by step
         step(RELATEDNESS_STEP, () -> executor.setQcType(FamilyQcAnalysisExecutor.QcType.RELATEDNESS).execute());
 
         // Finally, update family quality control
-//        try {
-//            catalogManager.getFamilyManager().update(getStudyId(), familyId, new FamilyUpdateParams().setQualityControl(qc),
-//                    new QueryOptions(Constants.INCREMENT_VERSION, true), token);
-//        } catch (CatalogException e) {
-//            throw new ToolException(e);
-//        }
+        try {
+            qualityControl = executor.getQualityControl();
+            if (qualityControl != null) {
+                catalogManager.getFamilyManager().update(getStudyId(), familyId, new FamilyUpdateParams().setQualityControl(qualityControl),
+                        new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+            }
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
     }
 
     public String getStudyId() {

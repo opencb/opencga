@@ -44,7 +44,7 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
 
     @Override
     public void run() throws ToolException {
-        // Sanity check
+        // Sanity check: quality control to update must not be null
         if (qualityControl == null) {
             throw new ToolException("Family quality control metrics is null");
         }
@@ -68,7 +68,9 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
         if (CollectionUtils.isNotEmpty(qualityControl.getRelatedness())) {
             for (RelatednessReport relatedness : qualityControl.getRelatedness()) {
                 if (relatednessMethod.equals(relatedness.getMethod())) {
+                    // Nothing to update
                     addWarning("Skipping relatedness analysis: it was already computed for method " + relatednessMethod);
+                    qualityControl = null;
                     return;
                 }
             }
@@ -100,21 +102,25 @@ public class FamilyQcLocalAnalysisExecutor extends FamilyQcAnalysisExecutor impl
             throw new ToolException(e);
         }
 
+        // Sanity check
         if (sampleIds.size() < 2) {
+            // Nothing to update
             addWarning("Skipping relatedness analysis: too few samples found (" + sampleIds.size() + ") for that family members;"
                     + " minimum is 2 member samples");
-        } else {
-            // Run IBD/IBS computation using PLINK in docker
-            RelatednessReport report = IBDComputation.compute(getStudyId(), sampleIds, relatednessMaf, getOutDir(),
-                    getVariantStorageManager(), getToken());
-
-            // Sanity check
-            if (report == null) {
-                throw new ToolException("Something wrong when executing relatedness analysis for family " + family.getId());
-            }
-
-            // Save results
-            qualityControl.getRelatedness().add(report);
+            qualityControl = null;
+            return;
         }
+
+        // Run IBD/IBS computation using PLINK in docker
+        RelatednessReport report = IBDComputation.compute(getStudyId(), sampleIds, relatednessMaf, getOutDir(), getVariantStorageManager(),
+                getToken());
+
+        // Sanity check
+        if (report == null) {
+            throw new ToolException("Something wrong when executing relatedness analysis for family " + family.getId());
+        }
+
+        // Updating quality control with the new relatedness report
+        qualityControl.getRelatedness().add(report);
     }
 }
