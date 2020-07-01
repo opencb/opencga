@@ -137,6 +137,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         try {
             OpenCGAResult<R> result = OpenCGAResult.empty();
 
+            options.remove(QueryOptions.LIMIT);
             InternalGetDataResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, ignoreException);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
