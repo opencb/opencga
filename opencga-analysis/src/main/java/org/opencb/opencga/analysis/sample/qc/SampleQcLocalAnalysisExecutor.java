@@ -39,7 +39,6 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,7 +56,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
 
     @Override
     public void run() throws ToolException {
-        // Sanity check
+        // Sanity check: metrics to update can not be null
         if (metrics == null) {
             throw new ToolException("Sample quality control metrics is null");
         }
