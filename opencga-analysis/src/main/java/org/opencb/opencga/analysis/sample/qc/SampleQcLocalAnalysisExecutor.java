@@ -345,7 +345,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
                     Signature.SignatureCount[] signatureCounts = MutationalSignatureAnalysis.parseSignatureCounts(path.toFile());
 
                     // Add to metrics
-                    metrics.getSignatures().add(new Signature(signatureId, signatureQuery, "", signatureCounts, new ArrayList()));
+                    metrics.getSignatures().add(new Signature(signatureId, signatureQuery, "SNV", signatureCounts, new ArrayList()));
                 }
             }
         }
