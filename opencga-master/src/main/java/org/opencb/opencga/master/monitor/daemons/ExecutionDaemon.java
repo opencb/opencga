@@ -34,6 +34,7 @@ import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
@@ -205,6 +206,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(MendelianErrorAnalysis.ID, "variant " + MendelianErrorAnalysis.ID + "-run");
             put(InferredSexAnalysis.ID, "variant " + InferredSexAnalysis.ID + "-run");
             put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");
+            put(FamilyQcAnalysis.ID, "variant " + FamilyQcAnalysis.ID + "-run");
             put(SampleQcAnalysis.ID, "variant " + SampleQcAnalysis.ID + "-run");
 
             put(TeamInterpretationAnalysis.ID, "clinical " + TeamInterpretationAnalysis.ID + "-run");
