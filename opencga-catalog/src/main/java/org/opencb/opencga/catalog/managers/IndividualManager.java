@@ -215,6 +215,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
         individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), new ArrayList<>()));
         individual.setStatus(ParamUtils.defaultObject(individual.getStatus(), CustomStatus::new));
+        individual.setQualityControl(ParamUtils.defaultObject(individual.getQualityControl(), IndividualQualityControl::new));
 
         individual.setInternal(ParamUtils.defaultObject(individual.getInternal(), IndividualInternal::new));
         individual.getInternal().setStatus(new Status());

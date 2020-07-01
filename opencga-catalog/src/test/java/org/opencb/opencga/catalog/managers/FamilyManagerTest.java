@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.clinical.Comment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -38,6 +39,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
@@ -530,7 +532,7 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     @Test
-    public void updateFamilyPhenotype() throws JsonProcessingException, CatalogException {
+    public void updateFamilyPhenotype() throws CatalogException {
         DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
         Phenotype phenotype1 = new Phenotype("dis1", "New name", "New source");
@@ -554,7 +556,30 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     @Test
-    public void updateFamilyMissingPhenotype() throws JsonProcessingException, CatalogException {
+    public void updateFamilyQualityControl() throws CatalogException {
+        DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
+
+        FamilyQualityControl qualityControl = new FamilyQualityControl(null, Arrays.asList("file1", "file2"),
+                Collections.singletonList(new Comment("author", "type", "message", "date")));
+
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControl(qualityControl);
+
+        DataResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getId(),
+                updateParams, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, updatedFamily.getNumUpdated());
+
+        updatedFamily = familyManager.get(STUDY, originalFamily.first().getId(), QueryOptions.empty(), sessionIdUser);
+        assertTrue(Arrays.asList("file1", "file2").containsAll(updatedFamily.first().getQualityControl().getFileIds()));
+        assertEquals(1, updatedFamily.first().getQualityControl().getComments().size());
+        assertEquals("author", updatedFamily.first().getQualityControl().getComments().get(0).getAuthor());
+        assertEquals("type", updatedFamily.first().getQualityControl().getComments().get(0).getType());
+        assertEquals("message", updatedFamily.first().getQualityControl().getComments().get(0).getMessage());
+        assertEquals("date", updatedFamily.first().getQualityControl().getComments().get(0).getDate());
+    }
+
+
+    @Test
+    public void updateFamilyMissingPhenotype() throws CatalogException {
         DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
         Phenotype phenotype1 = new Phenotype("dis1", "New name", "New source");
