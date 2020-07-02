@@ -99,7 +99,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         params.put("other", dynamic);
         String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant-index", params);
-        assertEquals("opencga-internal.sh variant index "
+        assertEquals("opencga-internal.sh variant index-run "
                 + "--key value "
                 + "--camel-case-key value "
                 + "--flag  "
