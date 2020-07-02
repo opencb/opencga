@@ -828,7 +828,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         FamilyQcAnalysis familyQcAnalysis = new FamilyQcAnalysis();
-        familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         familyQcAnalysis.setStudyId(cliOptions.study)
                 .setFamilyId(cliOptions.family)
                 .setRelatednessMethod(cliOptions.relatednessMethod)
@@ -842,7 +843,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         IndividualQcAnalysis individualQcAnalysis = new IndividualQcAnalysis();
-        individualQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        individualQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         individualQcAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)
                 .setSampleId(cliOptions.sample)
