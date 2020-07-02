@@ -31,6 +31,8 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
@@ -79,8 +81,10 @@ import java.util.*;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
@@ -218,6 +222,12 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case RELATEDNESS_RUN_COMMAND:
                 relatedness();
+                break;
+            case FAMILY_QC_RUN_COMMAND:
+                familyQc();
+                break;
+            case INDIVIDUAL_QC_RUN_COMMAND:
+                individualQc();
                 break;
             case SAMPLE_QC_RUN_COMMAND:
                 sampleQc();
@@ -809,6 +819,34 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setSampleIds(cliOptions.samples)
                 .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
                 .setMethod(cliOptions.method)
+                .start();
+    }
+
+    private void familyQc() throws Exception {
+        VariantCommandOptions.FamilyQcCommandOptions cliOptions = variantCommandOptions.familyQcCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        FamilyQcAnalysis familyQcAnalysis = new FamilyQcAnalysis();
+        familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        familyQcAnalysis.setStudyId(cliOptions.study)
+                .setFamilyId(cliOptions.family)
+                .setRelatednessMethod(cliOptions.relatednessMethod)
+                .setRelatednessMaf(cliOptions.relatednessMaf)
+                .start();
+    }
+
+    private void individualQc() throws Exception {
+        VariantCommandOptions.IndividualQcCommandOptions cliOptions = variantCommandOptions.individualQcCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        IndividualQcAnalysis individualQcAnalysis = new IndividualQcAnalysis();
+        individualQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        individualQcAnalysis.setStudyId(cliOptions.study)
+                .setIndividualId(cliOptions.individual)
+                .setSampleId(cliOptions.sample)
+                .setInferredSexMethod(cliOptions.inferredSexMethod)
                 .start();
     }
 

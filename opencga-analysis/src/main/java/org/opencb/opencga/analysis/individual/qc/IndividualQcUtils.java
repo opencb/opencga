@@ -141,47 +141,6 @@ public class IndividualQcUtils {
         return assembly;
     }
 
-    public static RelatednessReport buildRelatednessReport(File file) throws ToolException {
-        RelatednessReport relatednessReport = new RelatednessReport();
-
-        // Set method
-        relatednessReport.setMethod("IBD");
-
-        BufferedReader reader;
-        try {
-            reader = new BufferedReader(new FileReader(file));
-            // First line is the header
-            // FID1         IID1 FID2         IID2 RT    EZ      Z0      Z1      Z2  PI_HAT PHE       DST     PPC   RATIO
-            String line = reader.readLine();
-
-            while ((line = reader.readLine()) != null) {
-                String[] splits = line.trim().split("\\s+");
-
-                // Create relatedness score
-                RelatednessReport.RelatednessScore score = new RelatednessReport.RelatednessScore();
-                score.setSampleId1(splits[1]);
-                score.setSampleId2(splits[3]);
-                score.setInferredRelationship(splits[4]);
-
-                Map<String, Object> values = new LinkedHashMap<>();
-                values.put("ez", Double.parseDouble(splits[5]));
-                values.put("z0", Double.parseDouble(splits[6]));
-                values.put("z1", Double.parseDouble(splits[7]));
-                values.put("z2", Double.parseDouble(splits[8]));
-                values.put("PiHat", Double.parseDouble(splits[9]));
-                score.setValues(values);
-
-                // Add relatedness score to the report
-                relatednessReport.getScores().add(score);
-            }
-            reader.close();
-        } catch (IOException e) {
-            throw new ToolException(e);
-        }
-
-        return relatednessReport;
-    }
-
     public static Family getFamilyById(String studyId, String familyId, CatalogManager catalogManager, String token)
             throws ToolException {
         OpenCGAResult<Family> familyResult;
@@ -206,11 +165,10 @@ public class IndividualQcUtils {
             throw new ToolException(e);
         }
         if (familyResult.getNumResults() == 0) {
-            throw new ToolException("None individual found for individual '" + individualId + "'.");
+            return null;
         }
-        if (familyResult.getNumResults() > 1) {
-            throw new ToolException("More than one family found for individual '" + individualId + "'.");
-        }
+
+        // Return the first family
         return familyResult.first();
     }
 
@@ -230,7 +188,7 @@ public class IndividualQcUtils {
             throw new ToolException(e);
         }
         if (individualResult.getNumResults() == 0) {
-            throw new ToolException("Not found individual for ID '" + individualId + "'.");
+            throw new ToolException("Individual '" + individualId + "' not found.");
         }
         if (individualResult.getNumResults() > 1) {
             throw new ToolException("More than one individual found for ID '" + individualId + "'.");
@@ -277,6 +235,25 @@ public class IndividualQcUtils {
             }
         }
         return sample;
+    }
+
+    public static List<Sample> getValidSamplesByIndividualId(String studyId, String individualId, CatalogManager catalogManager, String token)
+            throws ToolException {
+        List<Sample> samples = new ArrayList<>();
+        Query query = new Query();
+        query.put("individualId", individualId);
+        OpenCGAResult<Sample> sampleResult;
+        try {
+            sampleResult = catalogManager.getSampleManager().search(studyId, query, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        for (Sample individualSample : sampleResult.getResults()) {
+            if (Status.READY.equals(individualSample.getInternal().getStatus().getName())) {
+                samples.add(individualSample);
+            }
+        }
+        return samples;
     }
 
     public static Sample getValidSampleById(String studyId, String sampleId, CatalogManager catalogManager, String token)

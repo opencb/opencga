@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.individual.qc;
 
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
+import org.opencb.opencga.analysis.family.qc.IBDComputation;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 
@@ -35,7 +36,7 @@ public class IndividualQcUtilsTest {
 
         URI resourceUri = getResourceUri("ibd.genome");
         File file = Paths.get(resourceUri.getPath()).toFile();
-        RelatednessReport relatednessReport = IndividualQcUtils.buildRelatednessReport(file);
+        RelatednessReport relatednessReport = IBDComputation.buildRelatednessReport(file);
 
         System.out.println(JacksonUtils.getDefaultNonNullObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(relatednessReport));
     }

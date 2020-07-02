@@ -16,35 +16,32 @@
 
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
-import org.opencb.opencga.core.models.individual.IndividualQualityControlMetrics;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-
-import java.util.Collections;
-import java.util.List;
 
 public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
 
-    public enum Qc {
+    public enum QcType {
         INFERRED_SEX, RELATEDNESS, MENDELIAN_ERRORS
     }
 
-    private String studyId;
-    private String individualId;
-    private String sampleId;
-    private String familyId;
-    private List<String> sampleIds;
-    private Qc qc;
-    private String minorAlleleFreq;
-    private String relatednessMethod;
+    public static final String COVERAGE_RATIO_INFERRED_SEX_METHOD = "CoverageRatio";
 
-    private IndividualQualityControl report;
+    protected String studyId;
+    protected Individual individual;
+    protected Sample sample;
+    protected Family family;
+    protected String inferredSexMethod;
+
+    protected QcType qcType;
+
+    protected IndividualQualityControl qualityControl;
 
     public IndividualQcAnalysisExecutor() {
-        IndividualQualityControlMetrics metrics = new IndividualQualityControlMetrics();
-        metrics.setSampleId(sampleId);
-
-        report = new IndividualQualityControl(Collections.singletonList(metrics), Collections.emptyList());
     }
 
     public String getStudyId() {
@@ -56,75 +53,57 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public String getIndividualId() {
-        return individualId;
+    public Individual getIndividual() {
+        return individual;
     }
 
-    public IndividualQcAnalysisExecutor setIndividualId(String individualId) {
-        this.individualId = individualId;
+    public IndividualQcAnalysisExecutor setIndividual(Individual individual) {
+        this.individual = individual;
         return this;
     }
 
-    public String getSampleId() {
-        return sampleId;
+    public Sample getSample() {
+        return sample;
     }
 
-    public IndividualQcAnalysisExecutor setSampleId(String sampleId) {
-        this.sampleId = sampleId;
+    public IndividualQcAnalysisExecutor setSample(Sample sample) {
+        this.sample = sample;
         return this;
     }
 
-    public String getFamilyId() {
-        return familyId;
+    public Family getFamily() {
+        return family;
     }
 
-    public IndividualQcAnalysisExecutor setFamilyId(String familyId) {
-        this.familyId = familyId;
+    public IndividualQcAnalysisExecutor setFamily(Family family) {
+        this.family = family;
         return this;
     }
 
-    public List<String> getSampleIds() {
-        return sampleIds;
+    public String getInferredSexMethod() {
+        return inferredSexMethod;
     }
 
-    public IndividualQcAnalysisExecutor setSampleIds(List<String> sampleIds) {
-        this.sampleIds = sampleIds;
+    public IndividualQcAnalysisExecutor setInferredSexMethod(String inferredSexMethod) {
+        this.inferredSexMethod = inferredSexMethod;
         return this;
     }
 
-    public Qc getQc() {
-        return qc;
+    public QcType getQcType() {
+        return qcType;
     }
 
-    public IndividualQcAnalysisExecutor setQc(Qc qc) {
-        this.qc = qc;
+    public IndividualQcAnalysisExecutor setQcType(QcType qcType) {
+        this.qcType = qcType;
         return this;
     }
 
-    public String getMinorAlleleFreq() {
-        return minorAlleleFreq;
+    public IndividualQualityControl getQualityControl() {
+        return qualityControl;
     }
 
-    public IndividualQcAnalysisExecutor setMinorAlleleFreq(String minorAlleleFreq) {
-        this.minorAlleleFreq = minorAlleleFreq;
-        return this;
-    }
-
-    public String getRelatednessMethod() {
-        return relatednessMethod;
-    }
-
-    public IndividualQcAnalysisExecutor setRelatednessMethod(String relatednessMethod) {
-        this.relatednessMethod = relatednessMethod;
-        return this;
-    }
-
-    public IndividualQualityControl getReport() {
-        return report;
-    }
-
-    public IndividualQcAnalysisExecutor setReport(IndividualQualityControl report) {
-        this.report = report;
+    public IndividualQcAnalysisExecutor setQualityControl(IndividualQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 }

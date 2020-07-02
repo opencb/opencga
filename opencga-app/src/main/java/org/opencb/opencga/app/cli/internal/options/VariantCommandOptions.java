@@ -20,6 +20,8 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
@@ -44,6 +46,7 @@ import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.AbstractBasicVariantQueryParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
+import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
@@ -120,6 +123,8 @@ public class VariantCommandOptions {
     public final MendelianErrorCommandOptions mendelianErrorCommandOptions;
     public final InferredSexCommandOptions inferredSexCommandOptions;
     public final RelatednessCommandOptions relatednessCommandOptions;
+    public final FamilyQcCommandOptions familyQcCommandOptions;
+    public final IndividualQcCommandOptions individualQcCommandOptions;
     public final SampleQcCommandOptions sampleQcCommandOptions;
 
     // Wrappers
@@ -183,6 +188,8 @@ public class VariantCommandOptions {
         this.mendelianErrorCommandOptions = new MendelianErrorCommandOptions();
         this.inferredSexCommandOptions = new InferredSexCommandOptions();
         this.relatednessCommandOptions = new RelatednessCommandOptions();
+        this.familyQcCommandOptions = new FamilyQcCommandOptions();
+        this.individualQcCommandOptions = new IndividualQcCommandOptions();
         this.sampleQcCommandOptions = new SampleQcCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
@@ -1274,6 +1281,52 @@ public class VariantCommandOptions {
         public String method = "IBD";
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND, commandDescription = FamilyQcAnalysis.DESCRIPTION)
+    public class FamilyQcCommandOptions {
+        public static final String FAMILY_QC_RUN_COMMAND = FamilyQcAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--family"}, description = "Family ID.", required = true)
+        public String family;
+
+        @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
+        public String relatednessMethod = "IBD";
+
+        @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
+        public String relatednessMaf;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    @Parameters(commandNames = IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND, commandDescription = IndividualQcAnalysis.DESCRIPTION)
+    public class IndividualQcCommandOptions {
+        public static final String INDIVIDUAL_QC_RUN_COMMAND = IndividualQcAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--individual"}, description = "Individual ID.", required = true)
+        public String individual;
+
+        @Parameter(names = {"--sample"}, description = "Sample ID (in case that individual has multiple samples).")
+        public String sample;
+
+        @Parameter(names = {"--inferred-sex-method"}, description = "Method to infer sex. Valid values: " + IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD)
+        public String inferredSexMethod = IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
     }
 

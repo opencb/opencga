@@ -39,6 +39,58 @@ import static org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor.
 
 public class InferredSexComputation {
 
+    public static double[] computeRatios(String study, File bamFile, String assembly, AlignmentStorageManager alignmentStorageManager,
+                                         String token)
+            throws ToolException {
+
+        // Compute coverage for each chromosome for each BAM file
+        // TODO get chromosomes from cellbase
+        Map<String, Integer> chromosomes;
+        if (assembly.toLowerCase().equals("grch37")) {
+            chromosomes = GRCH37_CHROMOSOMES;
+        } else {
+            chromosomes = GRCH38_CHROMOSOMES;
+        }
+
+        double[] means = new double[]{0d, 0d, 0d};
+        for (String chrom : chromosomes.keySet()) {
+            int chromSize = chromosomes.get(chrom);
+            Region region = new Region(chrom, 1, chromSize - 1);
+            try {
+                List<RegionCoverage> regionCoverages = alignmentStorageManager.coverageQuery(study, bamFile.getUuid(), region, 0, 100,
+                        chromSize, token).getResults();
+                double meanCoverage = 0d;
+                for (RegionCoverage regionCoverage : regionCoverages) {
+                    meanCoverage += regionCoverage.meanCoverage();
+                }
+                meanCoverage /= regionCoverages.size();
+
+                String name = chrom.toUpperCase();
+                switch (name) {
+                    case "Y": {
+                        means[2] = meanCoverage;
+                        break;
+                    }
+                    case "X": {
+                        means[1] = meanCoverage;
+                        break;
+                    }
+                    default: {
+                        means[0] += meanCoverage;
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                throw new ToolException(e);
+            }
+        }
+        means[0] /= (chromosomes.size() - 2);
+
+        // Create sex report for that sample
+        return new double[]{1.0d * means[1] / means[0], 1.0d * means[2] / means[0]};
+    }
+
+    @Deprecated
     public static double[] computeRatios(String study, String sample, String assembly, FileManager fileManager,
                                          AlignmentStorageManager alignmentStorageManager, String token)
             throws ToolException {

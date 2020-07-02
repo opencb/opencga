@@ -34,9 +34,11 @@ import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
@@ -206,6 +208,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(MendelianErrorAnalysis.ID, "variant " + MendelianErrorAnalysis.ID + "-run");
             put(InferredSexAnalysis.ID, "variant " + InferredSexAnalysis.ID + "-run");
             put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");
+            put(FamilyQcAnalysis.ID, "variant " + FamilyQcAnalysis.ID + "-run");
+            put(IndividualQcAnalysis.ID, "variant " + IndividualQcAnalysis.ID + "-run");
             put(SampleQcAnalysis.ID, "variant " + SampleQcAnalysis.ID + "-run");
 
             put(TeamInterpretationAnalysis.ID, "clinical " + TeamInterpretationAnalysis.ID + "-run");

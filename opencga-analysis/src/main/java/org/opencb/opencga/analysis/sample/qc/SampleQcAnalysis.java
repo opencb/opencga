@@ -97,9 +97,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
         } catch (ToolException e) {
             throw new ToolException(e);
         }
-        if (catalogBamFile == null) {
-            throw new ToolException("BAM file not found for sample '" + sampleId + "'.");
-        }
     }
 
     @Override
@@ -141,7 +138,10 @@ public class SampleQcAnalysis extends OpenCgaTool {
         step(MUTATIONAL_SIGNATUR_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.MUTATIONAL_SIGNATURE).execute());
 
         // Finally, update sample quality control metrics
-        updateSampleQualityControlMetrics(metrics);
+        metrics = executor.getMetrics();
+        if (metrics != null) {
+            updateSampleQualityControlMetrics(metrics);
+        }
     }
 
     private SampleQualityControlMetrics getSampleQualityControlMetrics() {
