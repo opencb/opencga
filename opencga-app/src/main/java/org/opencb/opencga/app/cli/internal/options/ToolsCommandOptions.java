@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.models.common.Enums;
 
@@ -16,11 +17,14 @@ public class ToolsCommandOptions {
     public ExecuteJobCommandOptions executeJobCommandOptions;
     public ExecuteToolCommandOptions executeToolCommandOptions;
 
+    public final InternalCliOptionsParser.JobOptions internalJobOptions;
+
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     public ToolsCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
+        this.internalJobOptions = new InternalCliOptionsParser.JobOptions();
         this.jCommander = jCommander;
 
         this.listToolCommandOptions = new ListToolCommandOptions();
@@ -35,6 +39,9 @@ public class ToolsCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
         @Parameter(names = {"--job"}, description = "Job id containing the information of the job to be executed", required = true,
                 arity = 1)
         public String job;
@@ -45,6 +52,9 @@ public class ToolsCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"--tool"}, description = "Tool identifier. It can be either the tool id itself, or the class name.", required = true,
                 arity = 1)
@@ -64,6 +74,9 @@ public class ToolsCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
         @Parameter(names = {"--resource"}, description = "Filter by tool resource", arity = 1)
         public Enums.Resource resource;
 
@@ -77,6 +90,9 @@ public class ToolsCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"--tool"}, description = "Tool identifier. It can be either the tool id itself, or the class name.", arity = 1)
         public String tool;

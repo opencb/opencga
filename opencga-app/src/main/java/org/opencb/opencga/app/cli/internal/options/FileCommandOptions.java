@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
 
 @Parameters(commandNames = {"file"}, commandDescription = "Implement several file tasks")
@@ -18,11 +19,13 @@ public class FileCommandOptions {
     public SecondaryIndex secondaryIndex;
     public TsvLoad tsvLoad;
 
-    public GeneralCliOptions.CommonCommandOptions fileCommonOptions;
+    public final GeneralCliOptions.CommonCommandOptions fileCommonOptions;
+    public final InternalCliOptionsParser.JobOptions internalJobOptions;
     public JCommander jCommander;
 
     public FileCommandOptions(GeneralCliOptions.CommonCommandOptions fileCommonCommandOptions, JCommander jCommander) {
         this.fileCommonOptions = fileCommonCommandOptions;
+        this.internalJobOptions = new InternalCliOptionsParser.JobOptions();
         this.jCommander = jCommander;
 
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -37,6 +40,9 @@ public class FileCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
                 arity = 1)
@@ -59,6 +65,9 @@ public class FileCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
 
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
         @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
                 arity = 1)
         public String studyId;
@@ -75,6 +84,9 @@ public class FileCommandOptions {
     public class FetchCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
                 arity = 1)
@@ -98,6 +110,9 @@ public class FileCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
 
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
         @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = false,
                 arity = 1)
         public String studyId;
@@ -111,6 +126,9 @@ public class FileCommandOptions {
     public class TsvLoad {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
                 arity = 1)

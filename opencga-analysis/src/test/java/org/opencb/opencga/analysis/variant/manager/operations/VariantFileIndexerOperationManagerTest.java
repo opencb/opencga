@@ -425,7 +425,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
     @Test
     public void testIndexMalformed() throws Exception {
-        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()), "");
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_malformed_file"));
         VariantIndexParams params = new VariantIndexParams();
@@ -443,7 +443,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
     @Test
     public void testIndexDuplicated() throws Exception {
-        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()), "");
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_duplicated_file"));
         VariantIndexParams params = new VariantIndexParams();

@@ -73,6 +73,7 @@ import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.A
 public class AlignmentStorageManager extends StorageManager {
 
     private AlignmentStorageEngine alignmentStorageEngine;
+    private String jobId;
 
     private static final Map<String, String> statsMap = new HashMap<>();
 
@@ -85,6 +86,16 @@ public class AlignmentStorageManager extends StorageManager {
         initStatsMap();
     }
 
+    public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, String jobId) {
+        super(catalogManager, storageEngineFactory);
+
+        // TODO: Create this alignmentStorageEngine by reflection
+        this.alignmentStorageEngine = new LocalAlignmentStorageEngine();
+        this.jobId = jobId;
+
+        initStatsMap();
+    }
+
     //-------------------------------------------------------------------------
     // INDEX
     //-------------------------------------------------------------------------
@@ -93,7 +104,7 @@ public class AlignmentStorageManager extends StorageManager {
         ObjectMap params = new ObjectMap();
 
         AlignmentIndexOperation indexOperation = new AlignmentIndexOperation();
-        indexOperation.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), token);
+        indexOperation.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
 
         indexOperation.setStudy(study);
         indexOperation.setInputFile(inputFile);
@@ -147,7 +158,7 @@ public class AlignmentStorageManager extends StorageManager {
         params.put(SamtoolsWrapperAnalysis.INDEX_STATS_PARAM, true);
 
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
-        samtools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), token);
+        samtools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
 
         samtools.setStudy(study);
         samtools.setCommand("stats")
@@ -206,7 +217,7 @@ public class AlignmentStorageManager extends StorageManager {
 
         DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
 
-        deeptools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), token);
+        deeptools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
 
         deeptools.setStudy(study);
         deeptools.setCommand("bamCoverage")

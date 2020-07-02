@@ -246,7 +246,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         cohortSubCommands.addCommand("acl-update", cohortCommandOptions.aclsUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-update", cohortCommandOptions.annotationUpdateCommandOptions);
 
-        alignmentCommandOptions = new AlignmentCommandOptions(this.commonCommandOptions, jCommander);
+        alignmentCommandOptions = new AlignmentCommandOptions(this.commonCommandOptions, jCommander, true);
         jCommander.addCommand("alignments", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
         alignmentSubCommands.addCommand("index-run", alignmentCommandOptions.indexAlignmentCommandOptions);

@@ -90,7 +90,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void indexRun() throws Exception {
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory, alignmentCommandOptions.internalJobOptions.jobId);
 
         alignmentManager.index(cliOptions.study, cliOptions.file, cliOptions.overwrite, cliOptions.outdir, cliOptions.commonOptions.token);
     }
@@ -125,7 +125,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void statsRun() throws ToolException {
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory, alignmentCommandOptions.internalJobOptions.jobId);
 
         alignmentManager.statsRun(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
     }
@@ -133,7 +133,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void coverageRun() throws ToolException {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory, alignmentCommandOptions.internalJobOptions.jobId);
 
         alignmentManager.coverageRun(cliOptions.study, cliOptions.file, cliOptions.windowSize, cliOptions.overwrite, cliOptions.outdir, cliOptions.commonOptions.token);
     }
@@ -155,7 +155,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         BwaWrapperAnalysis bwa = new BwaWrapperAnalysis();
         bwa.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                cliOptions.commonOptions.token);
+                alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
 
         bwa.setStudy(cliOptions.study);
 
@@ -178,7 +178,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
         samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                cliOptions.commonOptions.token);
+                alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
 
         samtools.setStudy(cliOptions.study);
 
@@ -198,7 +198,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
         deeptools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                cliOptions.commonOptions.token);
+                alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
 
         deeptools.setStudy(cliOptions.study);
 
@@ -216,7 +216,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         FastqcWrapperAnalysis fastqc = new FastqcWrapperAnalysis();
-        fastqc.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.commonOptions.token);
+        fastqc.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
 
         fastqc.setStudy(cliOptions.study);
 
@@ -233,7 +233,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         PicardWrapperAnalysis picard = new PicardWrapperAnalysis();
-        picard.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.commonOptions.token);
+        picard.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
 
         picard.setStudy(cliOptions.study);
         picard.setCommand(cliOptions.command);
