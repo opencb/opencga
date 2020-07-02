@@ -419,6 +419,11 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
             assertTrue(Arrays.asList(outDir, outDir + "file1.txt", outDir + "file2.txt", outDir + "A/", outDir + "A/file3.txt",
                     outDir + "" + job.getId() + ".log", outDir + "" + job.getId() + ".err").contains(file.getPath()));
         }
+
+        files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), ""), token);
+        assertEquals(10, files.getNumMatches());
+        files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), "NonE"), token);
+        assertEquals(10, files.getNumMatches());
     }
 
     @Test

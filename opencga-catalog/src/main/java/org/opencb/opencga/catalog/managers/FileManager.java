@@ -1300,6 +1300,12 @@ public class FileManager extends AnnotationSetManager<File> {
                     .collect(Collectors.toList()));
         }
 
+        // Convert jobId=NONE to jobId=""
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.JOB_ID.key()))
+                && "NONE".equalsIgnoreCase(query.getString(FileDBAdaptor.QueryParams.JOB_ID.key()))) {
+            query.put(FileDBAdaptor.QueryParams.JOB_ID.key(), "");
+        }
+
         // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
             OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().internalGet(study.getUid(),
