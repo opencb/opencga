@@ -146,6 +146,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         // Check BAM file
         if (catalogBamFile == null) {
             addWarning("Skipping FastQC analysis: no BAM file was provided");
+            return;
         }
 
         ObjectMap params = new ObjectMap();
@@ -178,6 +179,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         // Check BAM file
         if (catalogBamFile == null) {
             addWarning("Skipping samtools/flagstat analysis: no BAM file was provided");
+            return;
         }
 
         ObjectMap params = new ObjectMap();
@@ -265,6 +267,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         // Check BAM file
         if (catalogBamFile == null) {
             addWarning("Skipping gene coverage stats analysis: no BAM file was provided");
+            return;
         }
 
         // Check genes

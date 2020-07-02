@@ -145,16 +145,18 @@ public class SampleQcAnalysis extends OpenCgaTool {
     }
 
     private SampleQualityControlMetrics getSampleQualityControlMetrics() {
+        String bamFileId = (catalogBamFile == null) ? "" : catalogBamFile.getId();
+
         if (sample.getQualityControl() == null) {
             sample.setQualityControl(new SampleQualityControl());
         } else {
             for (SampleQualityControlMetrics prevMetrics : sample.getQualityControl().getMetrics()) {
-                if (prevMetrics.getBamFileId().equals(catalogBamFile.getId())) {
+                if (prevMetrics.getBamFileId().equals(bamFileId)) {
                     return prevMetrics;
                 }
             }
         }
-        return new SampleQualityControlMetrics().setBamFileId(catalogBamFile.getId());
+        return new SampleQualityControlMetrics().setBamFileId(bamFileId);
     }
 
     private void updateSampleQualityControlMetrics(SampleQualityControlMetrics metrics) throws ToolException {
