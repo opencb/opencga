@@ -121,6 +121,7 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     public static final String OUTDIR_PARAM = "outdir";
+    public static final String JOB_ID_PARAM = "job-id";
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
     private String internalCli;
     private JobManager jobManager;
@@ -569,6 +570,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         Path outDirPath = Paths.get(updateParams.getOutDir().getUri());
         params.put(OUTDIR_PARAM, outDirPath.toAbsolutePath().toString());
+        params.put(JOB_ID_PARAM, job.getId());
 
         // Define where the stdout and stderr will be stored
         Path stderr = outDirPath.resolve(getErrorLogFileName(job));

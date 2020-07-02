@@ -132,7 +132,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         configure();
 
         token = getSessionId(variantCommandOptions.commonCommandOptions);
-        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory);
+        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory, variantCommandOptions.internalJobOptions.jobId);
 
         switch (subCommandString) {
             case VARIANT_DELETE_COMMAND:
@@ -334,7 +334,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
     private void fileDelete() throws ToolException {
         VariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
 
-        VariantFileDeleteParams params = new VariantFileDeleteParams(cliOptions.genericVariantDeleteOptions.file, cliOptions.genericVariantDeleteOptions.resume);
+        VariantFileDeleteParams params = new VariantFileDeleteParams(cliOptions.genericVariantDeleteOptions.file,
+                cliOptions.genericVariantDeleteOptions.resume);
         toolRunner.execute(VariantFileDeleteOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir), token);
@@ -642,7 +643,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                     .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.controlCohortSamplesAnnotation);
         }
         GwasAnalysis gwasAnalysis = new GwasAnalysis();
-        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         gwasAnalysis.setStudy(cliOptions.study)
                 .setPhenotype(cliOptions.phenotype)
                 .setIndex(cliOptions.index)
@@ -702,7 +704,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         }
 
         SampleVariantStatsAnalysis sampleVariantStatsAnalysis = new SampleVariantStatsAnalysis();
-        sampleVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        sampleVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         sampleVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setIndexResults(cliOptions.index)
                 .setFamily(cliOptions.family)
@@ -727,7 +730,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         List<String> sampleNames = cliOptions.samples;
 
         CohortVariantStatsAnalysis cohortVariantStatsAnalysis = new CohortVariantStatsAnalysis();
-        cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         cohortVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setCohortName(cliOptions.cohort)
                 .setIndex(cliOptions.index)
@@ -757,7 +761,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
-        mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         mutationalSignatureAnalysis.setStudy(cliOptions.study)
                 .setSampleName(cliOptions.sample)
                 .start();
@@ -769,7 +774,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         MendelianErrorAnalysis mendelianErrorAnalysis = new MendelianErrorAnalysis();
-        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         mendelianErrorAnalysis.setStudy(cliOptions.study)
                 .setFamilyId(cliOptions.family)
                 .setIndividualId(cliOptions.individual)
@@ -783,7 +789,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
-        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         inferredSexAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)
                 .start();
@@ -795,7 +802,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         RelatednessAnalysis relatednessAnalysis = new RelatednessAnalysis();
-        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         relatednessAnalysis.setStudyId(cliOptions.study)
                 .setIndividualIds(cliOptions.individuals)
                 .setSampleIds(cliOptions.samples)
@@ -832,7 +840,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         }
 
         SampleQcAnalysis sampleQcAnalysis = new SampleQcAnalysis();
-        sampleQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        sampleQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         sampleQcAnalysis.setStudyId(cliOptions.study)
                 .setSampleId(cliOptions.sample)
                 .setFastaFile(cliOptions.fastaFile)
@@ -867,7 +876,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         }
 
         PlinkWrapperAnalysis plink = new PlinkWrapperAnalysis();
-        plink.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        plink.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
 
         plink.start();
     }
@@ -895,7 +905,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         }
 
         RvtestsWrapperAnalysis rvtests = new RvtestsWrapperAnalysis();
-        rvtests.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        rvtests.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
 
         rvtests.start();
     }
@@ -906,7 +917,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.basicOptions.params);
 
         GatkWrapperAnalysis gatk = new GatkWrapperAnalysis();
-        gatk.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.basicOptions.token);
+        gatk.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, cliOptions.basicOptions.token);
 
         gatk.setStudy(cliOptions.study);
         gatk.setCommand(cliOptions.command);
