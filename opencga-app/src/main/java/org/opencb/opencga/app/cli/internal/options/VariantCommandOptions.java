@@ -1291,6 +1291,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
@@ -1313,6 +1316,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
