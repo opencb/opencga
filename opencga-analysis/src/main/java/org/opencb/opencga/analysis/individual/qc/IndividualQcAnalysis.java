@@ -75,7 +75,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         }
 
         // Sanity check
-        if (StringUtils.isNotEmpty(individualId)) {
+        if (StringUtils.isEmpty(individualId)) {
             throw new ToolException("Missing individual ID.");
         }
 
