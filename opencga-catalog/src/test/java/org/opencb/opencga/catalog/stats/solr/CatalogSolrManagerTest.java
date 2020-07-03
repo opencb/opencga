@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.ADD;
+import static org.opencb.opencga.core.api.ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM;
 
 public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
@@ -117,10 +118,9 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         SampleDBAdaptor sampleDBAdaptor = factory.getCatalogSampleDBAdaptor();
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.add(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
                 SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()));
-        //queryOptions.add("nativeQuery", true);
-        queryOptions.add("lazy", false);
+        queryOptions.put(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true);
 
         DBIterator<Sample> sampleDBIterator = sampleDBAdaptor.iterator(new Query(), queryOptions);
         int i = 0;
