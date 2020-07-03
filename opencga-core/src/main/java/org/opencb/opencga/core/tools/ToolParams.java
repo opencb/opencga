@@ -108,7 +108,7 @@ public abstract class ToolParams {
                     if (value.equals("true")) {
                         map.put(key, "");
                     }
-                } else if (fieldClass != null &&  Map.class.isAssignableFrom(fieldClass)) {
+                } else if (fieldClass != null && Map.class.isAssignableFrom(fieldClass) || ToolParams.class.isAssignableFrom(fieldClass)) {
                     map.put(key, params.getMap(key));
                 } else {
                     map.put(key, value);
@@ -123,14 +123,43 @@ public abstract class ToolParams {
 
     private Map<String, Class<?>> loadPropertiesMap() {
         if (internalPropertiesMap == null) {
-            ObjectMapper objectMapper = getObjectMapper();
-            BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(objectMapper.constructType(this.getClass()));
-            internalPropertiesMap = new HashMap<>(beanDescription.findProperties().size());
-            for (BeanPropertyDefinition property : beanDescription.findProperties()) {
-                internalPropertiesMap.put(property.getName(), property.getRawPrimaryType());
+            internalPropertiesMap = buildPropertiesMap(this.getClass());
+        }
+        return internalPropertiesMap;
+    }
+
+    private static Map<String, Class<?>> buildPropertiesMap(Class<? extends ToolParams> aClass) {
+        ObjectMapper objectMapper = getObjectMapper();
+        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(objectMapper.constructType(aClass));
+        Map<String, Class<?>> internalPropertiesMap = new HashMap<>(beanDescription.findProperties().size());
+        for (BeanPropertyDefinition property : beanDescription.findProperties()) {
+            Class<?> rawPrimaryType = property.getRawPrimaryType();
+            internalPropertiesMap.put(property.getName(), rawPrimaryType);
+            if (ToolParams.class.isAssignableFrom(rawPrimaryType)) {
+                if (hasNestedFields(((Class<? extends ToolParams>) rawPrimaryType))) {
+                    throw new IllegalStateException("Invalid param '" + property.getName() + "' from ToolParams " + aClass + ". "
+                            + "Invalid multiple level nesting params");
+                }
             }
         }
         return internalPropertiesMap;
+    }
+
+    private boolean hasNestedFields() {
+        return hasNestedFields(loadPropertiesMap());
+    }
+
+    private static boolean hasNestedFields(Class<? extends ToolParams> aClass) {
+        return hasNestedFields(buildPropertiesMap(aClass));
+    }
+
+    private static boolean hasNestedFields(Map<String, Class<?>> propertiesMap) {
+        for (Class<?> fieldClass : propertiesMap.values()) {
+            if (Map.class.isAssignableFrom(fieldClass) || ToolParams.class.isAssignableFrom(fieldClass)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
