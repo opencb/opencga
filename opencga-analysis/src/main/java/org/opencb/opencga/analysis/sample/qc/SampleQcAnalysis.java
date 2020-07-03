@@ -16,26 +16,37 @@
 
 package org.opencb.opencga.analysis.sample.qc;
 
+import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
+import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
 public class SampleQcAnalysis extends OpenCgaTool {
@@ -58,14 +69,16 @@ public class SampleQcAnalysis extends OpenCgaTool {
     private String targetFile;
     private String variantStatsId;
     private String variantStatsDecription;
-    private Map<String, String> variantStatsQuery;
-    private String variantStatsJobId;
+    private Query variantStatsQuery;
     private String signatureId;
-    private Map<String, String> signatureQuery;
+    private Query signatureQuery;
     private List<String> genesForCoverageStats;
 
     private Sample sample;
     private File catalogBamFile;
+    private SampleQualityControlMetrics metrics;
+    private Job variantStatsJob = null;
+    private Job signatureJob = null;
 
     @Override
     protected void check() throws Exception {
@@ -108,8 +121,29 @@ public class SampleQcAnalysis extends OpenCgaTool {
     @Override
     protected void run() throws ToolException {
 
+        // Get job dependencies
+        try {
+            OpenCGAResult<Job> jobResult = catalogManager.getJobManager().get(studyId, jobId, QueryOptions.empty(), token);
+            Job job = jobResult.first();
+            if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
+                for (Job dependsOnJob : job.getDependsOn()) {
+                    if (dependsOnJob.getId().startsWith(SampleVariantStatsAnalysis.ID)) {
+                        variantStatsJob = catalogManager.getJobManager().get(studyId, dependsOnJob.getId(), QueryOptions.empty(), token)
+                                .first();
+                        break;
+                    } else if (dependsOnJob.getId().startsWith(MutationalSignatureAnalysis.ID)) {
+                        signatureJob = catalogManager.getJobManager().get(studyId, dependsOnJob.getId(), QueryOptions.empty(), token)
+                                .first();
+                        break;
+                    }
+                }
+            }
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+
         // Get sample quality control metrics to update
-        SampleQualityControlMetrics metrics = getSampleQualityControlMetrics();
+        metrics = getSampleQualityControlMetrics();
 
         SampleQcAnalysisExecutor executor = getToolExecutor(SampleQcAnalysisExecutor.class);
 
@@ -123,14 +157,13 @@ public class SampleQcAnalysis extends OpenCgaTool {
                 .setVariantStatsId(variantStatsId)
                 .setVariantStatsDecription(variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)
-                .setVariantStatsJobId(variantStatsJobId)
                 .setSignatureId(signatureId)
                 .setSignatureQuery(signatureQuery)
                 .setGenesForCoverageStats(genesForCoverageStats)
                 .setMetrics(metrics);
 
         // Step by step
-        step(VARIANT_STATS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.VARIAN_STATS).execute());
+        step(VARIANT_STATS_STEP, () -> runVariantStats());
         step(FASTQC_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.FASTQC).execute());
         step(FLAG_STATS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.FLAG_STATS).execute());
         step(HS_METRICS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.HS_METRICS).execute());
@@ -141,6 +174,33 @@ public class SampleQcAnalysis extends OpenCgaTool {
         metrics = executor.getMetrics();
         if (metrics != null) {
             updateSampleQualityControlMetrics(metrics);
+        }
+    }
+
+    private void runVariantStats() throws ToolException {
+        if (variantStatsJob == null) {
+            addWarning("Skipping sample variant stats");
+        } else {
+            Path path = Paths.get(variantStatsJob.getOutDir().getUri().getPath()).resolve("sample-variant-stats.json");
+            if (path.toFile().exists()) {
+                if (metrics.getVariantStats() == null) {
+                    metrics.setVariantStats(new ArrayList<>());
+                }
+
+                List<SampleVariantStats> stats = new ArrayList<>();
+                try {
+                    JacksonUtils.getDefaultObjectMapper()
+                            .readerFor(SampleVariantStats.class)
+                            .<SampleVariantStats>readValues(path.toFile())
+                            .forEachRemaining(stats::add);
+                } catch (IOException e) {
+                    throw new ToolException(e);
+                }
+
+                // Add to metrics
+                metrics.getVariantStats().add(new SampleQcVariantStats(variantStatsId, variantStatsDecription, null, //variantStatsQuery,
+                        stats.get(0)));
+            }
         }
     }
 
@@ -247,21 +307,12 @@ public class SampleQcAnalysis extends OpenCgaTool {
         return this;
     }
 
-    public Map<String, String> getVariantStatsQuery() {
+    public Query getVariantStatsQuery() {
         return variantStatsQuery;
     }
 
-    public SampleQcAnalysis setVariantStatsQuery(Map<String, String> variantStatsQuery) {
+    public SampleQcAnalysis setVariantStatsQuery(Query variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
-        return this;
-    }
-
-    public String getVariantStatsJobId() {
-        return variantStatsJobId;
-    }
-
-    public SampleQcAnalysis setVariantStatsJobId(String variantStatsJobId) {
-        this.variantStatsJobId = variantStatsJobId;
         return this;
     }
 
@@ -274,11 +325,11 @@ public class SampleQcAnalysis extends OpenCgaTool {
         return this;
     }
 
-    public Map<String, String> getSignatureQuery() {
+    public Query getSignatureQuery() {
         return signatureQuery;
     }
 
-    public SampleQcAnalysis setSignatureQuery(Map<String, String> signatureQuery) {
+    public SampleQcAnalysis setSignatureQuery(Query signatureQuery) {
         this.signatureQuery = signatureQuery;
         return this;
     }

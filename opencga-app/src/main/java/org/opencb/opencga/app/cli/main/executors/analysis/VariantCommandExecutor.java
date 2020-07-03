@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.app.cli.main.executors.analysis;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -42,11 +40,11 @@ import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
@@ -402,29 +400,18 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> sampleQc() throws ClientException {
-        TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String,String>>() {};
-        Map<String, String> variantStatsQuery = new HashMap<>();
-        if (StringUtils.isNotEmpty(variantCommandOptions.sampleQcCommandOptions.variantStatsQuery)) {
-            try {
-                variantStatsQuery = JacksonUtils.getDefaultObjectMapper().readValue(
-                        variantCommandOptions.sampleQcCommandOptions.variantStatsQuery, typeRef);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-        }
-        Map<String, String> signatureQuery = new HashMap<>();
-        if (StringUtils.isNotEmpty(variantCommandOptions.sampleQcCommandOptions.signatureQuery)) {
-            try {
-                signatureQuery = JacksonUtils.getDefaultObjectMapper().readValue(
-                        variantCommandOptions.sampleQcCommandOptions.signatureQuery, typeRef);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-        }
-        List<String> genesForCoverageStats = new ArrayList<>();
-        if (StringUtils.isNotEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)) {
-            genesForCoverageStats = Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
-        }
+        VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
+
+        // Build variant query from cli options
+        BasicVariantQueryParams variantStatsQuery = ToolParams.fromParams(BasicVariantQueryParams.class, cliOptions.variantStatsQuery);
+
+        // Build signature query from cli options
+        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class, cliOptions.signatureQuery);
+
+        // Build list of genes from cli options
+        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
+                ? new ArrayList<>()
+                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
 
         return openCGAClient.getVariantClient().runSampleQc(
                 new SampleQcAnalysisParams(
@@ -435,10 +422,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.sampleQcCommandOptions.variantStatsId,
                         variantCommandOptions.sampleQcCommandOptions.variantStatsDecription,
                         variantStatsQuery,
-                        variantCommandOptions.sampleQcCommandOptions.variantStatsJobId,
                         variantCommandOptions.sampleQcCommandOptions.signatureId,
                         signatureQuery,
-                        variantCommandOptions.sampleQcCommandOptions.signatureJobId,
                         genesForCoverageStats,
                         variantCommandOptions.sampleQcCommandOptions.outdir
                 ),
@@ -462,12 +447,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.gwasCommandOptions.controlCohortSamples,
                         variantCommandOptions.gwasCommandOptions.outdir
                 ), getParams(variantCommandOptions.gwasCommandOptions.study));
-    }
-
-    private List<String> asList(String s) {
-        return StringUtils.isEmpty(s)
-                ? Collections.emptyList()
-                : Arrays.asList(s.split(","));
     }
 
     private RestResponse<Job> export() throws ClientException, IOException {
@@ -806,5 +785,4 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         }
         return params;
     }
-
 }

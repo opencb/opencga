@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.app.cli.internal.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
@@ -46,12 +43,15 @@ import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.AbstractBasicVariantQueryParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
@@ -1291,6 +1291,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
@@ -1298,10 +1301,10 @@ public class VariantCommandOptions {
         public String family;
 
         @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
-        public String relatednessMethod = "IBD";
+        public String relatednessMethod = "PLINK/IBD";
 
-        @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
-        public String relatednessMaf;
+        @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35, cohort:ALL>0.05")
+        public String relatednessMaf = "cohort:ALL>0.05";
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
@@ -1313,6 +1316,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
@@ -1361,24 +1367,17 @@ public class VariantCommandOptions {
         @Parameter(names = {"--variant-stats-description"}, description = "Variant stats description.")
         public String variantStatsDecription;
 
-        @Parameter(names = {"--variant-stats-query"}, description = "Variant stats query in JSON format, e.g.: '{\"gene\":\"BRCA2\", \"ct\":\"missense_variant\"}'")
-        public String variantStatsQuery;
-
-        @Parameter(names = {"--variant-stats-job-id"}, description = "Variant stats job ID.")
-        public String variantStatsJobId;
+        @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2V\" --vsq ct=\"missense_variant\"")
+        public Map<String, String> variantStatsQuery = null; //new HashMap<>();
 
         @Parameter(names = {"--signature-id"}, description = "Signature ID.")
         public String signatureId;
 
-        @Parameter(names = {"--signature-query"}, description = "Signature query in JSON format, e.g.: '{\"type\":\"SNV\", \"ct\":\"missense_variant\"}'")
-        public String signatureQuery;
-
-        @Parameter(names = {"--signature-job-id"}, description = "Signature job ID.")
-        public String signatureJobId;
+        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
+        public Map<String, String> signatureQuery = null; //new HashMap<>();
 
         @Parameter(names = {"--genes-for-coverage-stats"}, description = "A comma separated list of genes to compute the coverage stats.")
         public String genesForCoverageStats;
-
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;

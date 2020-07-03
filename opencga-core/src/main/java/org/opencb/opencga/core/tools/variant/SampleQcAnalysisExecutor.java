@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.List;
-import java.util.Map;
 
 public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
@@ -38,10 +38,9 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
     protected String targetFile;
     protected String variantStatsId;
     protected String variantStatsDecription;
-    protected Map<String, String> variantStatsQuery;
-    protected String variantStatsJobId;
+    protected Query variantStatsQuery;
     protected String signatureId;
-    protected Map<String, String> signatureQuery;
+    protected Query signatureQuery;
     protected List<String> genesForCoverageStats;
 
     protected QcType qcType;
@@ -123,21 +122,12 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public Map<String, String> getVariantStatsQuery() {
+    public Query getVariantStatsQuery() {
         return variantStatsQuery;
     }
 
-    public SampleQcAnalysisExecutor setVariantStatsQuery(Map<String, String> variantStatsQuery) {
+    public SampleQcAnalysisExecutor setVariantStatsQuery(Query variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
-        return this;
-    }
-
-    public String getVariantStatsJobId() {
-        return variantStatsJobId;
-    }
-
-    public SampleQcAnalysisExecutor setVariantStatsJobId(String variantStatsJobId) {
-        this.variantStatsJobId = variantStatsJobId;
         return this;
     }
 
@@ -150,11 +140,11 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public Map<String, String> getSignatureQuery() {
+    public Query getSignatureQuery() {
         return signatureQuery;
     }
 
-    public SampleQcAnalysisExecutor setSignatureQuery(Map<String, String> signatureQuery) {
+    public SampleQcAnalysisExecutor setSignatureQuery(Query signatureQuery) {
         this.signatureQuery = signatureQuery;
         return this;
     }

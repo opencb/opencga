@@ -64,6 +64,7 @@ import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -857,27 +858,28 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         ObjectMap params = new ObjectMap();
         params.putAll(cliOptions.commonOptions.params);
 
-        TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String,String>>() {};
-        Map<String, String> variantStatsQuery = new HashMap<>();
-        if (StringUtils.isNotEmpty(cliOptions.variantStatsQuery)) {
-            try {
-                variantStatsQuery = JacksonUtils.getDefaultObjectMapper().readValue(cliOptions.variantStatsQuery, typeRef);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
+        // Build variant query from cli options
+        Query variantStatsQuery = null;
+        if (cliOptions.variantStatsQuery != null) {
+            variantStatsQuery = new Query();
+            for (Map.Entry<String, String> e : cliOptions.variantStatsQuery.entrySet()) {
+                variantStatsQuery.append(e.getKey(), e.getValue());
             }
         }
-        Map<String, String> signatureQuery = new HashMap<>();
-        if (StringUtils.isNotEmpty(cliOptions.signatureQuery)) {
-            try {
-                signatureQuery = JacksonUtils.getDefaultObjectMapper().readValue(cliOptions.signatureQuery, typeRef);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
+
+        // Build signature query from cli options
+        Query signatureQuery = null;
+        if (cliOptions.signatureQuery != null) {
+            signatureQuery = new Query();
+            for (Map.Entry<String, String> e : cliOptions.signatureQuery.entrySet()) {
+                signatureQuery.append(e.getKey(), e.getValue());
             }
         }
-        List<String> genesForCoverageStats = new ArrayList<>();
-        if (StringUtils.isNotEmpty(cliOptions.genesForCoverageStats)) {
-            genesForCoverageStats = Arrays.asList(cliOptions.genesForCoverageStats.split(","));
-        }
+
+        // Build list of genes from cli options
+        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
+                ? new ArrayList<>()
+                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
 
         SampleQcAnalysis sampleQcAnalysis = new SampleQcAnalysis();
         sampleQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
@@ -890,12 +892,11 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setVariantStatsId(cliOptions.variantStatsId)
                 .setVariantStatsDecription(cliOptions.variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)
-                .setVariantStatsJobId(cliOptions.variantStatsJobId)
                 .setSignatureId(cliOptions.signatureId)
                 .setSignatureQuery(signatureQuery)
-                .setVariantStatsJobId(cliOptions.signatureJobId)
-                .setGenesForCoverageStats(genesForCoverageStats)
-                .start();
+                .setGenesForCoverageStats(genesForCoverageStats).toString();
+
+        sampleQcAnalysis.start();
     }
 
     // Wrappers

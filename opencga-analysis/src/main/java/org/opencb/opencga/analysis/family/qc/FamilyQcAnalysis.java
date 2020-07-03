@@ -76,10 +76,10 @@ public class FamilyQcAnalysis extends OpenCgaTool {
 
         // As relatedness is the only QC to compute, it is mandatory
         if (StringUtils.isEmpty(relatednessMethod)) {
-            throw new ToolException("Missing relatedness method.");
+            relatednessMethod = "PLINK/IBD";
         }
         if (StringUtils.isEmpty(relatednessMaf)) {
-            throw new ToolException("Missing MAF to compute the relatedness.");
+            relatednessMaf = "cohort:ALL>0.05";
         }
     }
 

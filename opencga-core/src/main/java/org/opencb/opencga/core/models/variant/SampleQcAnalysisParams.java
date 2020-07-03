@@ -19,7 +19,6 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
-import java.util.Map;
 
 public class SampleQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Sample QC analysis params";
@@ -29,11 +28,9 @@ public class SampleQcAnalysisParams extends ToolParams {
     private String targetFile;
     private String variantStatsId;
     private String variantStatsDecription;
-    private Map<String, String> variantStatsQuery;
-    private String variantStatsJobId;
+    private BasicVariantQueryParams variantStatsQuery;
     private String signatureId;
-    private Map<String, String> signatureQuery;
-    private String signatureJobId;
+    private SampleQcSignatureQueryParams signatureQuery;
     private List<String> genesForCoverageStats;
 
     private String outdir;
@@ -42,9 +39,8 @@ public class SampleQcAnalysisParams extends ToolParams {
     }
 
     public SampleQcAnalysisParams(String sample, String fastaFile, String baitFile, String targetFile, String variantStatsId,
-                                  String variantStatsDecription, Map<String, String> variantStatsQuery, String variantStatsJobId,
-                                  String signatureId, Map<String, String> signatureQuery, String signatureJobId,
-                                  List<String> genesForCoverageStats, String outdir) {
+                                  String variantStatsDecription, BasicVariantQueryParams variantStatsQuery, String signatureId,
+                                  SampleQcSignatureQueryParams signatureQuery, List<String> genesForCoverageStats, String outdir) {
         this.sample = sample;
         this.fastaFile = fastaFile;
         this.baitFile = baitFile;
@@ -52,10 +48,8 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.variantStatsId = variantStatsId;
         this.variantStatsDecription = variantStatsDecription;
         this.variantStatsQuery = variantStatsQuery;
-        this.variantStatsJobId = variantStatsJobId;
         this.signatureId = signatureId;
         this.signatureQuery = signatureQuery;
-        this.signatureJobId = signatureJobId;
         this.genesForCoverageStats = genesForCoverageStats;
         this.outdir = outdir;
     }
@@ -70,10 +64,8 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
         sb.append(", variantStatsDecription='").append(variantStatsDecription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
-        sb.append(", variantStatsJobId='").append(variantStatsJobId).append('\'');
         sb.append(", signatureId='").append(signatureId).append('\'');
         sb.append(", signatureQuery=").append(signatureQuery);
-        sb.append(", signatureJobId='").append(signatureJobId).append('\'');
         sb.append(", genesForCoverageStats=").append(genesForCoverageStats);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
@@ -134,21 +126,12 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public Map<String, String> getVariantStatsQuery() {
+    public BasicVariantQueryParams getVariantStatsQuery() {
         return variantStatsQuery;
     }
 
-    public SampleQcAnalysisParams setVariantStatsQuery(Map<String, String> variantStatsQuery) {
+    public SampleQcAnalysisParams setVariantStatsQuery(BasicVariantQueryParams variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
-        return this;
-    }
-
-    public String getVariantStatsJobId() {
-        return variantStatsJobId;
-    }
-
-    public SampleQcAnalysisParams setVariantStatsJobId(String variantStatsJobId) {
-        this.variantStatsJobId = variantStatsJobId;
         return this;
     }
 
@@ -161,21 +144,12 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public Map<String, String> getSignatureQuery() {
+    public SampleQcSignatureQueryParams getSignatureQuery() {
         return signatureQuery;
     }
 
-    public SampleQcAnalysisParams setSignatureQuery(Map<String, String> signatureQuery) {
+    public SampleQcAnalysisParams setSignatureQuery(SampleQcSignatureQueryParams signatureQuery) {
         this.signatureQuery = signatureQuery;
-        return this;
-    }
-
-    public String getSignatureJobId() {
-        return signatureJobId;
-    }
-
-    public SampleQcAnalysisParams setSignatureJobId(String signatureJobId) {
-        this.signatureJobId = signatureJobId;
         return this;
     }
 

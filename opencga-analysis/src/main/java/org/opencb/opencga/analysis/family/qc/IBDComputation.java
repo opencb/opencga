@@ -114,7 +114,7 @@ public class IBDComputation {
         RelatednessReport relatednessReport = new RelatednessReport();
 
         // Set method
-        relatednessReport.setMethod("IBD");
+        relatednessReport.setMethod("PLINK/IBD");
 
         BufferedReader reader;
         try {
