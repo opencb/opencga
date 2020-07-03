@@ -1054,87 +1054,77 @@ public class VariantWebService extends AnalysisWebService {
             return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
                     + " variant stats ID"));
         }
-        if (StringUtils.isEmpty(params.getVariantStatsId()) && MapUtils.isNotEmpty(params.getVariantStatsQuery())) {
-            return createErrorResponse(new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
-                    + " empty too"));
-        }
-        if (StringUtils.isNotEmpty(params.getVariantStatsId()) && MapUtils.isEmpty(params.getVariantStatsQuery())) {
-            return createErrorResponse(new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
-                    + " can not be empty"));
-        }
+//        if (StringUtils.isEmpty(params.getVariantStatsId()) && !params.getVariantStatsQuery().isEmpty()) {
+//            return createErrorResponse(new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
+//                    + " empty too"));
+//        }
+//        if (StringUtils.isNotEmpty(params.getVariantStatsId()) && MapUtils.isEmpty(params.getVariantStatsQuery())) {
+//            return createErrorResponse(new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
+//                    + " can not be empty"));
+//        }
         if (StringUtils.isEmpty(params.getVariantStatsId())) {
             params.setVariantStatsId(OPENCGA_ALL);
         }
 
         boolean runVariantStats = true;
         if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
-            if (catalogBamFile == null) {
-                // No BAM file provided
-//                for (Signature signature : sample.getQualityControl().getMetrics().get(0).getSignatures()) {
-//                    if (params.getSignatureId().equals(signature.getId())) {
-//                        runSignature
+            String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
+            for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                if (bamId.equals(metrics.getBamFileId())) {
+                    if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && OPENCGA_ALL.equals(params.getVariantStatsId())) {
+                        runVariantStats = false;
+                    }
+                    break;
+                }
+            }
+        }
+
+//
+//        // Check mutational signature
+//        if (OPENCGA_ALL.equals(params.getSignatureId())) {
+//            return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
+//                    + " signature ID"));
+//        }
+//
+////        if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery())) {
+////            return createErrorResponse(new ToolException("Invalid parameters: if signature ID is empty, signature query must be"
+////                    + " empty too"));
+////        }
+////        if (StringUtils.isNotEmpty(params.getSignatureId()) && MapUtils.isEmpty(params.getSignatureQuery())) {
+////            return createErrorResponse(new ToolException("Invalid parameters: if you provide a signature ID, signature query"
+////                    + " can not be empty"));
+////        }
+//        if (StringUtils.isEmpty(params.getSignatureId())) {
+//            params.setSignatureId(OPENCGA_ALL);
+//        }
+//
+//        boolean runSignature = true;
+//        if (!sample.isSomatic()) {
+//            runSignature = false;
+//        } else {
+//            if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+//                if (catalogBamFile == null) {
+//                    for (Signature signature : sample.getQualityControl().getMetrics().get(0).getSignatures()) {
+//                        if (params.getSignatureId().equals(signature.getId())) {
+//                            runSignature = false;
+//                            break;
+//                        }
+//                    }
+//                } else {
+//                    for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+//                        if (catalogBamFile.getId().equals(metrics.getBamFileId())) {
+//                            for (Signature signature : metrics.getSignatures()) {
+//                                if (params.getSignatureId().equals(signature.getId())) {
+//                                    runSignature = false;
+//                                    break;
+//                                }
+//                            }
+//                        }
 //                    }
 //                }
-//                for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+//            }
+//        }
 //
-//                }
-            } else {
-                for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
-                    if (catalogBamFile.getId().equals(metrics.getBamFileId())) {
-                        if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && OPENCGA_ALL.equals(params.getVariantStatsId())) {
-                            runVariantStats = false;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Check mutational signature
-        if (OPENCGA_ALL.equals(params.getSignatureId())) {
-            return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
-                    + " signature ID"));
-        }
-
-        if (StringUtils.isEmpty(params.getSignatureId()) && MapUtils.isNotEmpty(params.getSignatureQuery())) {
-            return createErrorResponse(new ToolException("Invalid parameters: if signature ID is empty, signature query must be"
-                    + " empty too"));
-        }
-        if (StringUtils.isNotEmpty(params.getSignatureId()) && MapUtils.isEmpty(params.getSignatureQuery())) {
-            return createErrorResponse(new ToolException("Invalid parameters: if you provide a signature ID, signature query"
-                    + " can not be empty"));
-        }
-        if (StringUtils.isEmpty(params.getSignatureId())) {
-            params.setSignatureId(OPENCGA_ALL);
-        }
-
-        boolean runSignature = true;
-        if (!sample.isSomatic()) {
-            runSignature = false;
-        } else {
-            if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
-                if (catalogBamFile == null) {
-                    for (Signature signature : sample.getQualityControl().getMetrics().get(0).getSignatures()) {
-                        if (params.getSignatureId().equals(signature.getId())) {
-                            runSignature = false;
-                            break;
-                        }
-                    }
-                } else {
-                    for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
-                        if (catalogBamFile.getId().equals(metrics.getBamFileId())) {
-                            for (Signature signature : metrics.getSignatures()) {
-                                if (params.getSignatureId().equals(signature.getId())) {
-                                    runSignature = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         // Run variant stats if necessary
         if (runVariantStats) {
             Map<String, Object> paramsMap = new HashMap<>();
@@ -1149,29 +1139,26 @@ public class VariantWebService extends AnalysisWebService {
 
             Job sampleStatsJob = jobResult.first();
             dependsOnList.add(sampleStatsJob.getId());
-            params.setVariantStatsJobId(sampleStatsJob.getId());
-        } else {
-            params.setVariantStatsJobId(null);
         }
-
-        // Run signature if necessary
-        if (runSignature) {
-            Map<String, Object> paramsMap = new HashMap<>();
-            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
-            paramsMap.putIfAbsent("sample", params.getSample());
-            DataResult<Job> jobResult;
-            try {
-                jobResult = (DataResult<Job>) submitJobRaw(MutationalSignatureAnalysis.ID, null, study, paramsMap, null, null, null, null);
-            } catch (CatalogException e) {
-                return createErrorResponse(e);
-            }
-
-            Job signatureJob = jobResult.first();
-            dependsOnList.add(signatureJob.getId());
-            params.setSignatureJobId(signatureJob.getId());
-        } else {
-            params.setSignatureJobId(null);
-        }
+//
+//        // Run signature if necessary
+//        if (runSignature) {
+//            Map<String, Object> paramsMap = new HashMap<>();
+//            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+//            paramsMap.putIfAbsent("sample", params.getSample());
+//            DataResult<Job> jobResult;
+//            try {
+//                jobResult = (DataResult<Job>) submitJobRaw(MutationalSignatureAnalysis.ID, null, study, paramsMap, null, null, null, null);
+//            } catch (CatalogException e) {
+//                return createErrorResponse(e);
+//            }
+//
+//            Job signatureJob = jobResult.first();
+//            dependsOnList.add(signatureJob.getId());
+//            params.setSignatureJobId(signatureJob.getId());
+//        } else {
+//            params.setSignatureJobId(null);
+//        }
 
         return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);
     }
