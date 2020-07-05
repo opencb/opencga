@@ -85,7 +85,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
             inputFiles.add(create("platinum/1K.end.platinum-genomes-vcf-NA128" + i + "_S1.genome.vcf.gz"));
         }
 
-        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()), "");
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_indexFamily"));
         System.out.println("outDir = " + outDir);

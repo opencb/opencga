@@ -233,6 +233,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             family.getInternal().setStatus(new FamilyStatus());
             family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
             family.setStatus(ParamUtils.defaultObject(family.getStatus(), CustomStatus::new));
+            family.setQualityControl(ParamUtils.defaultObject(family.getQualityControl(), FamilyQualityControl::new));
             family.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             family.setVersion(1);
             family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));

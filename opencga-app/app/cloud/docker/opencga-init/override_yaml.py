@@ -157,7 +157,7 @@ if args.catalog_search_user is not None:
 # Inject execution settings
 config["analysis"]["scratchDir"] = "/tmp"
 if args.max_concurrent_jobs is not None:
-    config["analysis"]["index"]["variant"]["maxConcurrentJobs"] = int(args.max_concurrent_jobs)
+    config["analysis"]["execution"]["maxConcurrentJobs"]["variant-index"] = int(args.max_concurrent_jobs)
 
 if args.analysis_execution_mode is not None:
     config["analysis"]["execution"]["id"] = args.analysis_execution_mode

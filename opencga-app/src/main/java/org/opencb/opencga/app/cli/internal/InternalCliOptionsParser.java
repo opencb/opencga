@@ -36,8 +36,10 @@ import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOption
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.JulieRunCommandOptions.JULIE_RUN_COMMAND;
@@ -81,6 +83,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     private final GeneralCliOptions.DataModelOptions dataModelOptions;
     private final GeneralCliOptions.NumericOptions numericOptions;
+    private final JobOptions internalJobOptions;
 
     private final VariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions;
 
@@ -106,6 +109,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
         dataModelOptions = new GeneralCliOptions.DataModelOptions();
         numericOptions = new GeneralCliOptions.NumericOptions();
+        internalJobOptions = new JobOptions();
 
         variantQueryCommandOptions = new VariantCommandOptions(commonCommandOptions, dataModelOptions, numericOptions, jCommander, false)
                 .new VariantQueryCommandOptions();
@@ -161,12 +165,14 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(MENDELIAN_ERROR_RUN_COMMAND, variantCommandOptions.mendelianErrorCommandOptions);
         variantSubCommands.addCommand(INFERRED_SEX_RUN_COMMAND, variantCommandOptions.inferredSexCommandOptions);
         variantSubCommands.addCommand(RELATEDNESS_RUN_COMMAND, variantCommandOptions.relatednessCommandOptions);
-        variantSubCommands.addCommand(GENETIC_CHECKS_RUN_COMMAND, variantCommandOptions.geneticChecksCommandOptions);
+        variantSubCommands.addCommand(FAMILY_QC_RUN_COMMAND, variantCommandOptions.familyQcCommandOptions);
+        variantSubCommands.addCommand(INDIVIDUAL_QC_RUN_COMMAND, variantCommandOptions.individualQcCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_QC_RUN_COMMAND, variantCommandOptions.sampleQcCommandOptions);
         variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
         variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
         variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);
 
-        alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
+        alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander, false);
         jCommander.addCommand("alignment", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignment");
         alignmentSubCommands.addCommand("index-run", alignmentCommandOptions.indexAlignmentCommandOptions);
@@ -255,6 +261,11 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         return commonCommandOptions.help;
     }
 
+    public static class JobOptions {
+        @Parameter(names = {"--job-id"}, description = "Job id executing the command line", arity = 1)
+        public String jobId;
+    }
+
     /**
      * This class contains all those parameters available for all 'commands'
      */
@@ -288,6 +299,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         ClusteringExpressionCommandOptions clusteringExpressionCommandOptions;
 
         GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
+        JobOptions jobOptions = InternalCliOptionsParser.this.internalJobOptions;
 
         public ExpressionCommandOptions() {
             this.diffExpressionCommandOptions = new DiffExpressionCommandOptions();
@@ -331,6 +343,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
 
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
         @Parameter(names = {"--filter"}, description = "Query filter for data")
         public String filter;
     }
@@ -340,6 +355,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
     }
 
 
@@ -354,6 +372,8 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
 
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = InternalCliOptionsParser.this.internalJobOptions;
 
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
         public String userId;
@@ -366,6 +386,8 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
 
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = InternalCliOptionsParser.this.internalJobOptions;
 
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
         public String userId;

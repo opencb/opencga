@@ -91,6 +91,9 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     @Override
     public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException {
         ObjectMap about = cellBaseClient.getMetaClient().about().firstResult();
+        if (about == null) {
+            throw new IOException("Error fetching CellBase program information from meta/about");
+        }
         ProjectMetadata.VariantAnnotatorProgram program = new ProjectMetadata.VariantAnnotatorProgram();
 
         for (Map.Entry<String, Object> entry : about.entrySet()) {
@@ -111,6 +114,9 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     @Override
     public List<ObjectMap> getVariantAnnotatorSourceVersion() throws IOException {
         List<ObjectMap> objectMaps = cellBaseClient.getMetaClient().versions().allResults();
+        if (objectMaps == null) {
+            throw new IOException("Error fetching CellBase source information from meta/versions");
+        }
         return objectMaps;
     }
 }

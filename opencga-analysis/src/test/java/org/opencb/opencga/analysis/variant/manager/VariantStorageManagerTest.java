@@ -19,11 +19,18 @@ package org.opencb.opencga.analysis.variant.manager;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOperationManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
-import static org.junit.Assert.*;
+import java.util.Collections;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
 
 public class VariantStorageManagerTest extends AbstractVariantOperationManagerTest {
 
@@ -37,13 +44,26 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
     public void testConfigure() throws CatalogException, StorageEngineException {
         ObjectMap expectedConfiguration = new ObjectMap("Key", "value");
         String existingKey = variantManager.getVariantStorageEngine(studyId, sessionId).getOptions().keySet().iterator().next();
-        expectedConfiguration.put(existingKey, "OVERWRITED_VALUE");
+        expectedConfiguration.put(existingKey, "NEW_VALUE");
 
         variantManager.configureProject(projectId, expectedConfiguration, sessionId);
 
         ObjectMap configuration = variantManager.getDataStoreByProjectId(projectId, sessionId).getConfiguration();
         assertEquals(expectedConfiguration, configuration);
 
-        assertEquals("OVERWRITED_VALUE", variantManager.getVariantStorageEngine(studyId, sessionId).getOptions().get(existingKey));
+        assertEquals("NEW_VALUE", variantManager.getVariantStorageEngine(studyId, sessionId).getOptions().get(existingKey));
+    }
+
+    @Test
+    public void testGetIndexedSamples() throws Exception {
+        assertEquals(Collections.emptySet(), variantManager.getIndexedSamples(studyId, sessionId));
+        File file = getSmallFile();
+        indexFile(file, new QueryOptions(), outputId);
+        assertEquals(file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()), variantManager.getIndexedSamples(studyId, sessionId));
+
+        Study studyNew = catalogManager.getStudyManager().create(projectId, "sNew", "sNew", "sNew",
+                "Study New", null, null, null, null, null, sessionId)
+                .first();
+        assertEquals(Collections.emptySet(), variantManager.getIndexedSamples(studyNew.getId(), sessionId));
     }
 }

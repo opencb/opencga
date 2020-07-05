@@ -9,12 +9,13 @@ function requiredFile() {
   fi
 }
 
-if [[ "$#" -ne 1 ]]; then
-  echo "Usage: $0 <deployment-output.json>"
+if [[ "$#" -ne 2 ]]; then
+  echo "Usage: $0 <subscription_name> <deployment-output.json>"
   exit 1
 fi
 
-deploymentOut=$1
+subscriptionName=$1
+deploymentOut=$2
 requiredFile $deploymentOut
 deploymentOut=$(realpath "${deploymentOut}")
 
@@ -34,6 +35,7 @@ function getHelmParam() {
 
 echo "# Deploy kubernetes"
 
+az account set --subscription "${subscriptionName}"
 # deploy opencga
 az aks get-credentials -n "$(getOutput "aksClusterName")" -g "$(getOutput "aksResourceGroupName")" --overwrite-existing
 

@@ -55,9 +55,10 @@ scanForNewDisks
 
 # create a directory to store the server/solr directory
 mkdir /datadrive/solr-volume
+mkdir /datadrive/solr-volume/data
 
 # make sure its host owner matches the container's solr user
-sudo chown 8983:8983 /datadrive/solr-volume
+sudo chown -R 8983:8983 /datadrive/solr-volume
 
 # copy the solr directory from a temporary container to the volume
 docker run --rm -v /datadrive/solr-volume:/target solr:${SOLR_VERSION} cp -r server/solr /target/
@@ -65,6 +66,8 @@ docker run --rm -v /datadrive/solr-volume:/target solr:${SOLR_VERSION} cp -r ser
 # get script
 docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh.orig > /opt/solr.in.sh
 
+echo "#" >> /opt/solr.in.sh
+echo "# MODIFIED BY $0 , `date`" >> /opt/solr.in.sh
 
 ZK_CLI=
 if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
@@ -98,6 +101,8 @@ else
 fi
 
 echo "SOLR_HOST=\"`hostname`\"" >> /opt/solr.in.sh
+echo 'SOLR_DATA_HOME="/var/solr/data"' >> /opt/solr.in.sh
+echo 'SOLR_LOGS_DIR="/var/solr/logs"' >> /opt/solr.in.sh
 
 ## Ensure always using cloud mode, even for the single server configurations.
 echo 'SOLR_MODE="solrcloud"' >> /opt/solr.in.sh
@@ -112,6 +117,7 @@ docker run --name ${DOCKER_NAME}                                  \
     -h $(hostname)                                                \
     -p 8983:8983 -d                                               \
     -v /datadrive/solr-volume/solr:/opt/solr/server/solr          \
+    -v /datadrive/solr-volume/data:/var/solr                       \
     -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh                   \
     -e SOLR_INCLUDE=/opt/solr/bin/solr.in.sh                      \
      solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground

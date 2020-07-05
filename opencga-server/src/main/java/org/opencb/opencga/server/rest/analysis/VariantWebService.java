@@ -16,22 +16,31 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
+import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
 import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -55,6 +64,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -62,6 +72,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
@@ -620,8 +631,8 @@ public class VariantWebService extends AnalysisWebService {
     })
     public Response sampleAggregationStats(@ApiParam(value =
             "List of facet fields separated by semicolons, e.g.: studies;type."
-            + " For nested faceted fields use >>, e.g.: chromosome>>type ."
-            + " Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter") @QueryParam("fields") String fields) {
+                    + " For nested faceted fields use >>, e.g.: chromosome>>type ."
+                    + " Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter") @QueryParam("fields") String fields) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -986,16 +997,170 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/geneticChecks/run")
-    @ApiOperation(value = GeneticChecksAnalysis.DESCRIPTION, response = Job.class)
-    public Response geneticChecksRun(
+    @Path("/family/qc/run")
+    @ApiOperation(value = FamilyQcAnalysis.DESCRIPTION, response = Job.class)
+    public Response familyQcRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = GeneticChecksAnalysisParams.DESCRIPTION, required = true) GeneticChecksAnalysisParams params) {
-        return submitJob(GeneticChecksAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+            @ApiParam(value = FamilyQcAnalysisParams.DESCRIPTION, required = true) FamilyQcAnalysisParams params) {
+        return submitJob(FamilyQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/individual/qc/run")
+    @ApiOperation(value = IndividualQcAnalysis.DESCRIPTION, response = Job.class)
+    public Response individualQcRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = IndividualQcAnalysisParams.DESCRIPTION, required = true) IndividualQcAnalysisParams params) {
+        return submitJob(IndividualQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/sample/qc/run")
+    @ApiOperation(value = SampleQcAnalysis.DESCRIPTION, response = Job.class)
+    public Response sampleQcRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = SampleQcAnalysisParams.DESCRIPTION, required = true) SampleQcAnalysisParams params) {
+
+        final String OPENCGA_ALL = "ALL";
+
+        List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
+
+        Sample sample;
+        org.opencb.opencga.core.models.file.File catalogBamFile;
+        try {
+            sample = IndividualQcUtils.getValidSampleById(study, params.getSample(), catalogManager, token);
+            if (sample == null) {
+                return createErrorResponse(new ToolException("Sample '" + params.getSample() + "' not found."));
+            }
+            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), study, catalogManager.getFileManager(), token);
+        } catch (ToolException e) {
+            return createErrorResponse(e);
+        }
+
+        // Check sample/stats
+        if (OPENCGA_ALL.equals(params.getVariantStatsId())) {
+            return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
+                    + " variant stats ID"));
+        }
+//        if (StringUtils.isEmpty(params.getVariantStatsId()) && !params.getVariantStatsQuery().isEmpty()) {
+//            return createErrorResponse(new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
+//                    + " empty too"));
+//        }
+//        if (StringUtils.isNotEmpty(params.getVariantStatsId()) && MapUtils.isEmpty(params.getVariantStatsQuery())) {
+//            return createErrorResponse(new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
+//                    + " can not be empty"));
+//        }
+        if (StringUtils.isEmpty(params.getVariantStatsId())) {
+            params.setVariantStatsId(OPENCGA_ALL);
+        }
+
+        boolean runVariantStats = true;
+        if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+            String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
+            for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                if (bamId.equals(metrics.getBamFileId())) {
+                    if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && OPENCGA_ALL.equals(params.getVariantStatsId())) {
+                        runVariantStats = false;
+                    }
+                    break;
+                }
+            }
+        }
+
+//
+//        // Check mutational signature
+//        if (OPENCGA_ALL.equals(params.getSignatureId())) {
+//            return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
+//                    + " signature ID"));
+//        }
+//
+////        if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery())) {
+////            return createErrorResponse(new ToolException("Invalid parameters: if signature ID is empty, signature query must be"
+////                    + " empty too"));
+////        }
+////        if (StringUtils.isNotEmpty(params.getSignatureId()) && MapUtils.isEmpty(params.getSignatureQuery())) {
+////            return createErrorResponse(new ToolException("Invalid parameters: if you provide a signature ID, signature query"
+////                    + " can not be empty"));
+////        }
+//        if (StringUtils.isEmpty(params.getSignatureId())) {
+//            params.setSignatureId(OPENCGA_ALL);
+//        }
+//
+//        boolean runSignature = true;
+//        if (!sample.isSomatic()) {
+//            runSignature = false;
+//        } else {
+//            if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+//                if (catalogBamFile == null) {
+//                    for (Signature signature : sample.getQualityControl().getMetrics().get(0).getSignatures()) {
+//                        if (params.getSignatureId().equals(signature.getId())) {
+//                            runSignature = false;
+//                            break;
+//                        }
+//                    }
+//                } else {
+//                    for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+//                        if (catalogBamFile.getId().equals(metrics.getBamFileId())) {
+//                            for (Signature signature : metrics.getSignatures()) {
+//                                if (params.getSignatureId().equals(signature.getId())) {
+//                                    runSignature = false;
+//                                    break;
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+        // Run variant stats if necessary
+        if (runVariantStats) {
+            Map<String, Object> paramsMap = new HashMap<>();
+            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+            paramsMap.putIfAbsent("sample", params.getSample());
+            DataResult<Job> jobResult;
+            try {
+                jobResult = (DataResult<Job>) submitJobRaw(SampleVariantStatsAnalysis.ID, null, study, paramsMap, null, null, null, null);
+            } catch (CatalogException e) {
+                return createErrorResponse(e);
+            }
+
+            Job sampleStatsJob = jobResult.first();
+            dependsOnList.add(sampleStatsJob.getId());
+        }
+//
+//        // Run signature if necessary
+//        if (runSignature) {
+//            Map<String, Object> paramsMap = new HashMap<>();
+//            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+//            paramsMap.putIfAbsent("sample", params.getSample());
+//            DataResult<Job> jobResult;
+//            try {
+//                jobResult = (DataResult<Job>) submitJobRaw(MutationalSignatureAnalysis.ID, null, study, paramsMap, null, null, null, null);
+//            } catch (CatalogException e) {
+//                return createErrorResponse(e);
+//            }
+//
+//            Job signatureJob = jobResult.first();
+//            dependsOnList.add(signatureJob.getId());
+//            params.setSignatureJobId(signatureJob.getId());
+//        } else {
+//            params.setSignatureJobId(null);
+//        }
+
+        return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);
     }
 
     @POST

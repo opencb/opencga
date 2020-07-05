@@ -109,7 +109,6 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
     @Override
     public long annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
-
         String annotationFileStr = params.getString(LOAD_FILE);
         boolean doCreate = params.getBoolean(CREATE);
         boolean doLoad = StringUtils.isNotEmpty(annotationFileStr);
@@ -121,22 +120,53 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         if (!overwrite) {
             query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         }
+        int checkpointSize = params.getInt(
+                VariantStorageOptions.ANNOTATION_CHECKPOINT_SIZE.key(),
+                VariantStorageOptions.ANNOTATION_CHECKPOINT_SIZE.defaultValue());
 
         preAnnotate(query, doCreate, doLoad, params);
 
-        URI annotationFile;
         if (doCreate) {
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
                 checkCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
                 return projectMetadata;
             });
+        }
 
+        long variants = 0;
+        if (checkpointSize > 0 && doLoad && doCreate && !overwrite) {
+            int batch = 0;
+            long newVariants;
+            do {
+                batch++;
+                newVariants = annotateBatch(query, params, doCreate, doLoad, annotationFileStr, checkpointSize, batch, "." + batch);
+            } while (newVariants == checkpointSize);
+            variants += newVariants;
+        } else {
+            variants = annotateBatch(query, params, doCreate, doLoad, annotationFileStr, null, null, null);
+        }
+        logger.info("Finish annotation. New annotated variants: " + variants);
+
+        postAnnotate(query, doCreate, doLoad, params);
+
+        return variants;
+    }
+
+    protected long annotateBatch(Query query, ObjectMap params, boolean doCreate, boolean doLoad,
+                                 String annotationFileStr, Integer batchSize, Integer batchId, String fileSufix)
+            throws VariantAnnotatorException, IOException, StorageEngineException {
+        numAnnotationsToLoad.set(0);
+        URI annotationFile;
+        if (doCreate) {
             long start = System.currentTimeMillis();
-            logger.info("Starting annotation creation");
+            logger.info("Starting annotation creation" + (batchId == null ? "" : (", batch " + batchId + "x" + batchSize)));
             logger.info("Query : {} ", query.toJson());
+            if (batchSize != null && batchSize > 0) {
+                params.put(QueryOptions.LIMIT, batchSize);
+            }
             annotationFile = createAnnotation(
                     UriUtils.createDirectoryUriSafe(params.getString(OUT_DIR)),
-                    params.getString(FILE_NAME, "annotation_" + TimeUtils.getTime()),
+                    params.getString(FILE_NAME, "annotation_" + TimeUtils.getTime()) + fileSufix,
                     query, params);
             logger.info("Finished annotation creation {}ms, generated file {}", System.currentTimeMillis() - start, annotationFile);
         } else {
@@ -152,13 +182,6 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             logger.info("Starting annotation load {}", annotationFile);
             loadAnnotation(annotationFile, params);
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
-
-            if (doCreate) {
-                dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                    updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
-                    return projectMetadata;
-                });
-            }
         }
 
         return numAnnotationsToLoad.get();
@@ -320,9 +343,6 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         } catch (ExecutionException e) {
             throw new StorageEngineException("Error loading variant annotation", e);
         }
-
-        postLoadAnnotation();
-
     }
 
     protected ParallelTaskRunner<VariantAnnotation, ?> buildLoadAnnotationParallelTaskRunner(
@@ -358,7 +378,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      * Determine if this query is going to annotate all the variants from the database.
      * If so, list all the currently indexed files. These will be marked as "annotated" once the annotation is loaded.
      *
-     * @see #postLoadAnnotation()
+     * @see #postAnnotate
      * @param query            Query for creating the annotation.
      * @param doCreate         if creating the annotation
      * @param doLoad           if loading the annotation
@@ -429,11 +449,26 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     /**
      * Mark all {@link #filesToBeAnnotated} as annotated.
      *
+     * @param query annotation query
+     * @param doCreate doCreate
+     * @param doLoad doLoad
+     * @param params params
      * @see #preAnnotate
+     * @throws VariantAnnotatorException on error writing the metadata
      * @throws StorageEngineException on error writing the metadata
+     * @throws IOException on error writing the metadata
      */
-    protected void postLoadAnnotation() throws StorageEngineException {
-        if (filesToBeAnnotated != null) {
+    protected void postAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params)
+            throws VariantAnnotatorException, StorageEngineException, IOException {
+        boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
+        if (doLoad && doCreate) {
+            dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
+                updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
+                return projectMetadata;
+            });
+        }
+
+        if (doLoad && filesToBeAnnotated != null) {
             VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
 
             for (Map.Entry<Integer, List<Integer>> entry : filesToBeAnnotated.entrySet()) {

@@ -131,3 +131,9 @@ files:
   - name: quartet.variants.annotated.vcf.gz
     path: data
     #uri: http://resources.opencb.org/datasets/corpasome/data/quartet.variants.annotated.vcf.gz
+
+
+attributes:
+  aggregation: NONE
+  variant-index-run:
+    family: true

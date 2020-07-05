@@ -194,7 +194,7 @@ public class VariantAnalysisTest {
         catalogManager = opencga.getCatalogManager();
         variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
 
-        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
+        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()), "");
     }
 
     @AfterClass
@@ -234,7 +234,7 @@ public class VariantAnalysisTest {
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
                 .setSamples(samples.subList(1, 3));
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
         checkExecutionResult(ar);
@@ -259,7 +259,7 @@ public class VariantAnalysisTest {
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
                 .setCohort(Arrays.asList("c1", "c2"));
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
         checkExecutionResult(ar);
@@ -287,7 +287,7 @@ public class VariantAnalysisTest {
                 .setStudy(STUDY)
                 .setSamples(samples.subList(1, 3))
                 .setRegion(region);
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
         checkExecutionResult(ar);
@@ -319,7 +319,7 @@ public class VariantAnalysisTest {
         SampleVariantStatsAnalysis analysis = new SampleVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_sample_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         analysis.setSampleNames(samples)
                 .setStudy(STUDY)
@@ -342,7 +342,7 @@ public class VariantAnalysisTest {
         CohortVariantStatsAnalysis analysis = new CohortVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         analysis.setStudy(STUDY)
                 .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 3)));
@@ -355,7 +355,7 @@ public class VariantAnalysisTest {
         CohortVariantStatsAnalysis analysis = new CohortVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
         analysis.setStudy(STUDY)
                 .setCohortName(StudyEntry.DEFAULT_COHORT)
@@ -383,7 +383,7 @@ public class VariantAnalysisTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         analysis.setStudy(STUDY)
                 .setCaseCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 2)))
@@ -397,7 +397,7 @@ public class VariantAnalysisTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_phenotype"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
         analysis.setStudy(STUDY)
                 .setPhenotype(PHENOTYPE_NAME);
@@ -413,7 +413,7 @@ public class VariantAnalysisTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
         catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(file.getSamples().subList(0, 2)), new QueryOptions(), token);
         catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CONTROL").setSamples(file.getSamples().subList(2, 4)), new QueryOptions(), token);

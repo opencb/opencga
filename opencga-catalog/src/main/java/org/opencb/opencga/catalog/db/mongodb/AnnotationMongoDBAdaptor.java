@@ -291,8 +291,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         if (actionMap.containsKey(ANNOTATION_SETS)) {
             List<AnnotationSet> annotationSetList = (List<AnnotationSet>) parameters.get(ANNOTATION_SETS);
 
-            ParamUtils.UpdateAction action = (ParamUtils.UpdateAction) actionMap.getOrDefault(ANNOTATION_SETS,
-                    ParamUtils.UpdateAction.ADD);
+            ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap, ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
 
             if (annotationSetList == null) {
                 return OpenCGAResult.empty();

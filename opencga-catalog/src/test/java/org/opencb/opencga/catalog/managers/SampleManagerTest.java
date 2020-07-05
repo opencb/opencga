@@ -20,6 +20,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.Document;
 import org.junit.Test;
+import org.opencb.biodata.formats.sequence.fastqc.FastQc;
+import org.opencb.biodata.formats.sequence.fastqc.Summary;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -60,6 +62,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.catalog.db.api.SampleDBAdaptor.QueryParams.ANNOTATION;
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
+import static org.opencb.opencga.core.api.ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM;
 
 public class SampleManagerTest extends AbstractManagerTest {
 
@@ -182,6 +185,31 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals("my description", testSample.first().getStatus().getDescription());
         assertNotNull(testSample.first().getStatus().getDate());
         assertTrue(testSample.first().getCollection().getAttributes().isEmpty());
+    }
+
+    @Test
+    public void updateQualityControlField() throws CatalogException {
+        catalogManager.getSampleManager().create(studyFqn,
+                new Sample().setId("testSample").setDescription("description"), null, token);
+
+        SampleQualityControl qualityControl = new SampleQualityControl();
+
+        SampleQualityControlMetrics metrics = new SampleQualityControlMetrics();
+        metrics.setFastQc(new FastQc().setSummary(new Summary("basicStatistics", "perBaseSeqQuality", "perTileSeqQuality",
+                "perSeqQualityScores", "perBaseSeqContent", "perSeqGcContent", "perBaseNContent", "seqLengthDistribution",
+                "seqDuplicationLevels", "overrepresentedSeqs", "adapterContent", "kmerContent")));
+
+        qualityControl.getMetrics().add(metrics);
+
+        catalogManager.getSampleManager().update(studyFqn, "testSample", new SampleUpdateParams().setQualityControl(qualityControl),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+
+        DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
+        assertEquals("basicStatistics", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getBasicStatistics());
+        assertEquals("perBaseSeqQuality", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerBaseSeqQuality());
+        assertEquals("perTileSeqQuality", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerTileSeqQuality());
+        assertEquals("perSeqQualityScores", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerSeqQualityScores());
+        assertEquals("perBaseSeqContent", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerBaseSeqContent());
     }
 
     @Test
@@ -1237,7 +1265,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         sample = catalogManager.getSampleManager().get(studyFqn, sampleId1, new QueryOptions()
                 .append(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())
-                .append(ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), token).first();
+                .append(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), token).first();
         assertNotNull(sample.getAttributes());
     }
 
@@ -1258,17 +1286,17 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
                 new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, false, token);
 
-        sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
-        assertEquals(null, sample.getAttributes().get("individual"));
+        sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), sessionIdUser2).first();
+        assertEquals(null, sample.getAttributes().get("OPENCGA_INDIVIDUAL"));
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
                 new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, true, token);
-        sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
+        sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), sessionIdUser2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
 
         sample = catalogManager.getSampleManager().search(studyFqn, new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual1"),
-                new QueryOptions("lazy", false), sessionIdUser2).first();
+                new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), sessionIdUser2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
 

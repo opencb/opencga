@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.models.alignment.AlignmentStats;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.opencga.core.models.file.File;
 
@@ -8,14 +8,14 @@ import java.util.List;
 
 public class ClinicalAnalysisAlignmentQc {
 
-    private List<AlignmentStats> stats;
+    private List<SamtoolsStats> stats;
     private List<GeneCoverageStats> geneCoverageStats;
     private List<File> files;
 
     public ClinicalAnalysisAlignmentQc() {
     }
 
-    public ClinicalAnalysisAlignmentQc(List<AlignmentStats> stats, List<GeneCoverageStats> geneCoverageStats, List<File> files) {
+    public ClinicalAnalysisAlignmentQc(List<SamtoolsStats> stats, List<GeneCoverageStats> geneCoverageStats, List<File> files) {
         this.stats = stats;
         this.geneCoverageStats = geneCoverageStats;
         this.files = files;
@@ -31,11 +31,11 @@ public class ClinicalAnalysisAlignmentQc {
         return sb.toString();
     }
 
-    public List<AlignmentStats> getStats() {
+    public List<SamtoolsStats> getStats() {
         return stats;
     }
 
-    public ClinicalAnalysisAlignmentQc setStats(List<AlignmentStats> stats) {
+    public ClinicalAnalysisAlignmentQc setStats(List<SamtoolsStats> stats) {
         this.stats = stats;
         return this;
     }

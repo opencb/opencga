@@ -34,7 +34,7 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
 
         String subCommandString = getParsedSubCommand(toolCommandOptions.jCommander);
         configure();
-        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory);
+        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory, toolCommandOptions.internalJobOptions.jobId);
         switch (subCommandString) {
             case "execute-tool":
                 executeTool();

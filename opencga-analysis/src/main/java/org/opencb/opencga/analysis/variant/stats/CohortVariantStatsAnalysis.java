@@ -200,12 +200,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaTool {
                         catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), token);
                     } catch (CatalogException e) {
                         // Assume variable set not found. Try to create
-                        List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(VariantSetStats.getClassSchema());
-                        catalogManager.getStudyManager()
-                                .createVariableSet(study, VARIABLE_SET_ID, VARIABLE_SET_ID, true, false,
-                                        "", Collections.emptyMap(), variables,
-                                        Arrays.asList(VariableSet.AnnotableDataModels.COHORT, VariableSet.AnnotableDataModels.FILE),
-                                        token);
+                        catalogManager.getStudyManager().createDefaultVariableSets(study, token);
                     }
 
                     AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, VARIABLE_SET_ID);

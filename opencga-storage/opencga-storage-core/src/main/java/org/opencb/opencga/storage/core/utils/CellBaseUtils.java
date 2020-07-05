@@ -50,7 +50,7 @@ public class CellBaseUtils {
     public static final QueryOptions GENE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             "id,name,chromosome,start,end,transcripts.id,transcripts.name,transcripts.proteinId");
 
-    private ConcurrentHashMap<String, Region> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Region> cache = new ConcurrentHashMap<>();
 
     public CellBaseUtils(CellBaseClient cellBaseClient, String assembly) {
         this.cellBaseClient = cellBaseClient;

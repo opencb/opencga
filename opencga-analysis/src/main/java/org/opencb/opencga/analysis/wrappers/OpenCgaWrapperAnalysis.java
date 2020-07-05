@@ -42,6 +42,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
     protected Map<String, URI> fileUriMap = new HashMap<>();
 
+    @Deprecated
     public abstract String getDockerImageName();
 
     protected String getCommandLine() throws ToolException {

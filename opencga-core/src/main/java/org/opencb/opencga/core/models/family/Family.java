@@ -43,6 +43,8 @@ public class Family extends Annotable {
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
 
+    private FamilyQualityControl qualityControl;
+
     private String creationDate;
     private String modificationDate;
     private int expectedSize;
@@ -91,6 +93,7 @@ public class Family extends Annotable {
         sb.append(", members=").append(members);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", expectedSize=").append(expectedSize);
@@ -100,7 +103,6 @@ public class Family extends Annotable {
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
     }
@@ -168,6 +170,15 @@ public class Family extends Annotable {
 
     public Family setMembers(List<Individual> members) {
         this.members = members;
+        return this;
+    }
+
+    public FamilyQualityControl getQualityControl() {
+        return qualityControl;
+    }
+
+    public Family setQualityControl(FamilyQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 
@@ -251,5 +262,4 @@ public class Family extends Annotable {
         this.attributes = attributes;
         return this;
     }
-
 }

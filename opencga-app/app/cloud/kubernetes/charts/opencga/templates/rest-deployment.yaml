@@ -30,13 +30,15 @@ spec:
           command: ["/bin/sh"]
           args: 
           - "-c"
-          - "echo $PASSWORD | /opt/opencga/bin/opencga-admin.sh server rest --start"
+          - "docker pull opencb/opencga-r:2.0.0-rc1 & echo $PASSWORD | /opt/opencga/bin/opencga-admin.sh server rest --start"
           env:
           - name:  "PASSWORD"
             valueFrom:
               secretKeyRef:
                 name: opencga-secrets
                 key: openCgaAdminPassword
+          - name: DOCKER_HOST
+            value: tcp://localhost:2375
           ports:
             - name: http
               containerPort: 9090
@@ -44,17 +46,17 @@ spec:
           readinessProbe:
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 20
             httpGet:
               path: /opencga/webservices/rest/v1/meta/status
               port: 9090
-              timeoutSeconds: 20
           livenessProbe:
             initialDelaySeconds: 15
             periodSeconds: 20
+            timeoutSeconds: 20
             httpGet:
               path: /opencga/webservices/rest/v1/meta/status
               port: 9090
-              timeoutSeconds: 20
           resources:
             {{- toYaml .Values.rest.resources | nindent 12 }}
           volumeMounts:
@@ -64,6 +66,16 @@ spec:
             mountPath: /opt/opencga/sessions
           - name : variants
             mountPath: /opt/opencga/variants
+        - name: dind-daemon
+          image: docker:dind
+          securityContext:
+            privileged: true
+          env:
+              - name: DOCKER_TLS_CERTDIR
+                value: ""
+          volumeMounts:
+            - name: docker-graph-storage
+              mountPath: /var/lib/docker
       volumes:
       - name: conf
         azureFile:
@@ -80,6 +92,8 @@ spec:
           secretName: azure-files-secret
           shareName: variants
           readOnly: false
+      - name: docker-graph-store
+        emptyDir: {}
       {{- with .Values.rest.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

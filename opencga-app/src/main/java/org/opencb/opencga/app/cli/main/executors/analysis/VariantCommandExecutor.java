@@ -44,6 +44,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
@@ -56,9 +57,10 @@ import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
@@ -66,6 +68,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantExportCommandOptions.EXPORT_RUN_COMMAND;
@@ -186,8 +189,16 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = relatedness();
                 break;
 
-            case GENETIC_CHECKS_RUN_COMMAND:
-                queryResponse = geneticChecks();
+            case FAMILY_QC_RUN_COMMAND:
+                queryResponse = familyQc();
+                break;
+
+            case INDIVIDUAL_QC_RUN_COMMAND:
+                queryResponse = individualQc();
+                break;
+
+            case SAMPLE_QC_RUN_COMMAND:
+                queryResponse = sampleQc();
                 break;
 
             case PLINK_RUN_COMMAND:
@@ -364,17 +375,59 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         );
     }
 
-    private RestResponse<Job> geneticChecks() throws ClientException {
-        return openCGAClient.getVariantClient().runGeneticChecks(
-                new GeneticChecksAnalysisParams(
-                        variantCommandOptions.geneticChecksCommandOptions.family,
-                        variantCommandOptions.geneticChecksCommandOptions.individual,
-                        variantCommandOptions.geneticChecksCommandOptions.sample,
-                        variantCommandOptions.geneticChecksCommandOptions.minorAlleleFreq,
-                        variantCommandOptions.geneticChecksCommandOptions.relatednessMethod,
-                        variantCommandOptions.geneticChecksCommandOptions.outdir
+    private RestResponse<Job> familyQc() throws ClientException {
+        return openCGAClient.getVariantClient().runFamilyQc(
+                new FamilyQcAnalysisParams(
+                        variantCommandOptions.familyQcCommandOptions.family,
+                        variantCommandOptions.familyQcCommandOptions.relatednessMethod,
+                        variantCommandOptions.familyQcCommandOptions.relatednessMaf,
+                        variantCommandOptions.familyQcCommandOptions.outdir
                 ),
-                getParams(variantCommandOptions.geneticChecksCommandOptions.study)
+                getParams(variantCommandOptions.familyQcCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> individualQc() throws ClientException {
+        return openCGAClient.getVariantClient().runIndividualQc(
+                new IndividualQcAnalysisParams(
+                        variantCommandOptions.individualQcCommandOptions.individual,
+                        variantCommandOptions.individualQcCommandOptions.sample,
+                        variantCommandOptions.individualQcCommandOptions.inferredSexMethod,
+                        variantCommandOptions.individualQcCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.individualQcCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> sampleQc() throws ClientException {
+        VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
+
+        // Build variant query from cli options
+        BasicVariantQueryParams variantStatsQuery = ToolParams.fromParams(BasicVariantQueryParams.class, cliOptions.variantStatsQuery);
+
+        // Build signature query from cli options
+        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class, cliOptions.signatureQuery);
+
+        // Build list of genes from cli options
+        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
+                ? new ArrayList<>()
+                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
+
+        return openCGAClient.getVariantClient().runSampleQc(
+                new SampleQcAnalysisParams(
+                        variantCommandOptions.sampleQcCommandOptions.sample,
+                        variantCommandOptions.sampleQcCommandOptions.fastaFile,
+                        variantCommandOptions.sampleQcCommandOptions.baitFile,
+                        variantCommandOptions.sampleQcCommandOptions.targetFile,
+                        variantCommandOptions.sampleQcCommandOptions.variantStatsId,
+                        variantCommandOptions.sampleQcCommandOptions.variantStatsDecription,
+                        variantStatsQuery,
+                        variantCommandOptions.sampleQcCommandOptions.signatureId,
+                        signatureQuery,
+                        genesForCoverageStats,
+                        variantCommandOptions.sampleQcCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.sampleQcCommandOptions.study)
         );
     }
 
@@ -394,12 +447,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.gwasCommandOptions.controlCohortSamples,
                         variantCommandOptions.gwasCommandOptions.outdir
                 ), getParams(variantCommandOptions.gwasCommandOptions.study));
-    }
-
-    private List<String> asList(String s) {
-        return StringUtils.isEmpty(s)
-                ? Collections.emptyList()
-                : Arrays.asList(s.split(","));
     }
 
     private RestResponse<Job> export() throws ClientException, IOException {
@@ -738,5 +785,4 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         }
         return params;
     }
-
 }

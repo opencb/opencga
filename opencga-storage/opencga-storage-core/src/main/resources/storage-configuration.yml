@@ -93,6 +93,7 @@ variant:
 
     annotation.batchSize: 100
     annotation.numThreads: 8
+    annotation.checkpointSize: 5000000
     annotation.timeout: 600000 # millis
     annotation.load.batchSize: 100
     annotation.load.numThreads: 4

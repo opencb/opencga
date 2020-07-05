@@ -22,8 +22,11 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
+import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -72,7 +75,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         String expiringToken = this.catalogManager.getUserManager().loginAsAdmin("admin").getToken();
         String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
-        catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().setMaxConcurrentJobs(1);
+        catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().put(VariantIndexOperationTool.ID, 1);
 
         daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager, "/tmp");
         executor = new DummyBatchExecutor();
@@ -96,7 +99,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         params.put("other", dynamic);
         String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant-index", params);
-        assertEquals("opencga-internal.sh variant index "
+        assertEquals("opencga-internal.sh variant index-run "
                 + "--key value "
                 + "--camel-case-key value "
                 + "--flag  "
@@ -358,7 +361,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testRegisterFilesSuccessfully() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
-        params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
+//        params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
         org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
@@ -395,15 +398,32 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), token).first();
 
+        String outDir = job.getOutDir().getPath();
+
         assertEquals(4, job.getOutput().size());
         for (org.opencb.opencga.core.models.file.File file : job.getOutput()) {
-            assertTrue(Arrays.asList("outDir/file1.txt", "outDir/file2.txt", "outDir/A/", "outDir/A/file3.txt").contains(file.getPath()));
+            assertTrue(Arrays.asList(outDir + "file1.txt", outDir + "file2.txt", outDir + "A/", outDir + "A/file3.txt")
+                    .contains(file.getPath()));
         }
         assertEquals(0, job.getOutput().stream().filter(f -> f.getName().endsWith(ExecutionResultManager.FILE_EXTENSION))
                 .collect(Collectors.toList()).size());
 
         assertEquals(job.getId() + ".log", job.getStdout().getName());
         assertEquals(job.getId() + ".err", job.getStderr().getName());
+
+        // Check jobId is properly populated
+        OpenCGAResult<org.opencb.opencga.core.models.file.File> files = catalogManager.getFileManager().search(studyFqn,
+                new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), job.getId()), FileManager.INCLUDE_FILE_URI_PATH, token);
+        assertEquals(7, files.getNumResults());
+        for (org.opencb.opencga.core.models.file.File file : files.getResults()) {
+            assertTrue(Arrays.asList(outDir, outDir + "file1.txt", outDir + "file2.txt", outDir + "A/", outDir + "A/file3.txt",
+                    outDir + "" + job.getId() + ".log", outDir + "" + job.getId() + ".err").contains(file.getPath()));
+        }
+
+        files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), ""), token);
+        assertEquals(10, files.getNumMatches());
+        files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), "NonE"), token);
+        assertEquals(10, files.getNumMatches());
     }
 
     @Test

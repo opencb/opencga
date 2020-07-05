@@ -17,6 +17,8 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SequenceWriter;
@@ -29,12 +31,13 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
-import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
@@ -55,34 +58,34 @@ import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND;
@@ -91,6 +94,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantExportCommandOptions.EXPORT_RUN_COMMAND;
@@ -133,7 +137,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         configure();
 
         token = getSessionId(variantCommandOptions.commonCommandOptions);
-        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory);
+        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory, variantCommandOptions.internalJobOptions.jobId);
 
         switch (subCommandString) {
             case VARIANT_DELETE_COMMAND:
@@ -220,8 +224,14 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             case RELATEDNESS_RUN_COMMAND:
                 relatedness();
                 break;
-            case GENETIC_CHECKS_RUN_COMMAND:
-                geneticChecks();
+            case FAMILY_QC_RUN_COMMAND:
+                familyQc();
+                break;
+            case INDIVIDUAL_QC_RUN_COMMAND:
+                individualQc();
+                break;
+            case SAMPLE_QC_RUN_COMMAND:
+                sampleQc();
                 break;
             case PLINK_RUN_COMMAND:
                 plink();
@@ -335,7 +345,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
     private void fileDelete() throws ToolException {
         VariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
 
-        VariantFileDeleteParams params = new VariantFileDeleteParams(cliOptions.genericVariantDeleteOptions.file, cliOptions.genericVariantDeleteOptions.resume);
+        VariantFileDeleteParams params = new VariantFileDeleteParams(cliOptions.genericVariantDeleteOptions.file,
+                cliOptions.genericVariantDeleteOptions.resume);
         toolRunner.execute(VariantFileDeleteOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir), token);
@@ -643,7 +654,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                     .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.controlCohortSamplesAnnotation);
         }
         GwasAnalysis gwasAnalysis = new GwasAnalysis();
-        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         gwasAnalysis.setStudy(cliOptions.study)
                 .setPhenotype(cliOptions.phenotype)
                 .setIndex(cliOptions.index)
@@ -703,7 +715,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         }
 
         SampleVariantStatsAnalysis sampleVariantStatsAnalysis = new SampleVariantStatsAnalysis();
-        sampleVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        sampleVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         sampleVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setIndexResults(cliOptions.index)
                 .setFamily(cliOptions.family)
@@ -728,7 +741,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         List<String> sampleNames = cliOptions.samples;
 
         CohortVariantStatsAnalysis cohortVariantStatsAnalysis = new CohortVariantStatsAnalysis();
-        cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         cohortVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setCohortName(cliOptions.cohort)
                 .setIndex(cliOptions.index)
@@ -758,7 +772,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
-        mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         mutationalSignatureAnalysis.setStudy(cliOptions.study)
                 .setSampleName(cliOptions.sample)
                 .start();
@@ -770,7 +785,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         MendelianErrorAnalysis mendelianErrorAnalysis = new MendelianErrorAnalysis();
-        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         mendelianErrorAnalysis.setStudy(cliOptions.study)
                 .setFamilyId(cliOptions.family)
                 .setIndividualId(cliOptions.individual)
@@ -784,10 +800,10 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
-        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         inferredSexAnalysis.setStudyId(cliOptions.study)
-                .setSampleId(cliOptions.individual)
-                .setSampleId(cliOptions.sample)
+                .setIndividualId(cliOptions.individual)
                 .start();
     }
 
@@ -797,7 +813,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         RelatednessAnalysis relatednessAnalysis = new RelatednessAnalysis();
-        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
         relatednessAnalysis.setStudyId(cliOptions.study)
                 .setIndividualIds(cliOptions.individuals)
                 .setSampleIds(cliOptions.samples)
@@ -806,20 +823,80 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .start();
     }
 
-    private void geneticChecks() throws Exception {
-        VariantCommandOptions.GeneticChecksCommandOptions cliOptions = variantCommandOptions.geneticChecksCommandOptions;
+    private void familyQc() throws Exception {
+        VariantCommandOptions.FamilyQcCommandOptions cliOptions = variantCommandOptions.familyQcCommandOptions;
         ObjectMap params = new ObjectMap();
         params.putAll(cliOptions.commonOptions.params);
 
-        GeneticChecksAnalysis geneticChecksAnalysis = new GeneticChecksAnalysis();
-        geneticChecksAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
-        geneticChecksAnalysis.setStudy(cliOptions.study)
+        FamilyQcAnalysis familyQcAnalysis = new FamilyQcAnalysis();
+        familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
+        familyQcAnalysis.setStudyId(cliOptions.study)
                 .setFamilyId(cliOptions.family)
+                .setRelatednessMethod(cliOptions.relatednessMethod)
+                .setRelatednessMaf(cliOptions.relatednessMaf)
+                .start();
+    }
+
+    private void individualQc() throws Exception {
+        VariantCommandOptions.IndividualQcCommandOptions cliOptions = variantCommandOptions.individualQcCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        IndividualQcAnalysis individualQcAnalysis = new IndividualQcAnalysis();
+        individualQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
+        individualQcAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)
                 .setSampleId(cliOptions.sample)
-                .setMinorAlleleFreq(cliOptions.minorAlleleFreq)
-                .setRelatednessMethod(cliOptions.relatednessMethod)
+                .setInferredSexMethod(cliOptions.inferredSexMethod)
                 .start();
+    }
+
+    private void sampleQc() throws Exception {
+        VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        // Build variant query from cli options
+        Query variantStatsQuery = null;
+        if (cliOptions.variantStatsQuery != null) {
+            variantStatsQuery = new Query();
+            for (Map.Entry<String, String> e : cliOptions.variantStatsQuery.entrySet()) {
+                variantStatsQuery.append(e.getKey(), e.getValue());
+            }
+        }
+
+        // Build signature query from cli options
+        Query signatureQuery = null;
+        if (cliOptions.signatureQuery != null) {
+            signatureQuery = new Query();
+            for (Map.Entry<String, String> e : cliOptions.signatureQuery.entrySet()) {
+                signatureQuery.append(e.getKey(), e.getValue());
+            }
+        }
+
+        // Build list of genes from cli options
+        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
+                ? new ArrayList<>()
+                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
+
+        SampleQcAnalysis sampleQcAnalysis = new SampleQcAnalysis();
+        sampleQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
+        sampleQcAnalysis.setStudyId(cliOptions.study)
+                .setSampleId(cliOptions.sample)
+                .setFastaFile(cliOptions.fastaFile)
+                .setBaitFile(cliOptions.baitFile)
+                .setTargetFile(cliOptions.targetFile)
+                .setVariantStatsId(cliOptions.variantStatsId)
+                .setVariantStatsDecription(cliOptions.variantStatsDecription)
+                .setVariantStatsQuery(variantStatsQuery)
+                .setSignatureId(cliOptions.signatureId)
+                .setSignatureQuery(signatureQuery)
+                .setGenesForCoverageStats(genesForCoverageStats).toString();
+
+        sampleQcAnalysis.start();
     }
 
     // Wrappers
@@ -840,7 +917,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         }
 
         PlinkWrapperAnalysis plink = new PlinkWrapperAnalysis();
-        plink.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        plink.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
 
         plink.start();
     }
@@ -868,7 +946,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         }
 
         RvtestsWrapperAnalysis rvtests = new RvtestsWrapperAnalysis();
-        rvtests.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        rvtests.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, token);
 
         rvtests.start();
     }
@@ -879,7 +958,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.basicOptions.params);
 
         GatkWrapperAnalysis gatk = new GatkWrapperAnalysis();
-        gatk.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.basicOptions.token);
+        gatk.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                variantCommandOptions.internalJobOptions.jobId, cliOptions.basicOptions.token);
 
         gatk.setStudy(cliOptions.study);
         gatk.setCommand(cliOptions.command);

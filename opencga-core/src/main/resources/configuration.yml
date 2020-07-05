@@ -95,9 +95,6 @@ healthCheck:
 
 analysis:
   scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"    # Scratch folder for the analysis.
-  index:
-    variant:
-      maxConcurrentJobs: 2
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
@@ -109,6 +106,10 @@ analysis:
 #      - slow:
 #        - "coverage"
 #        - "alignmentStats"
+    maxConcurrentJobs:
+      variant-index: 20
+      variant-annotation-index: 5
+      variant-secondary-index: 2
     options:
      ## Local executor configuration
       local.maxConcurrentJobs: 1    # Max number of concurrent jobs to be executed locally in the master

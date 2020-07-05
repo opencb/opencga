@@ -386,6 +386,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     throw new CatalogException("Proband '" + clinicalAnalysis.getProband().getId() + "' not found in family");
                 }
                 clinicalAnalysis.setProband(proband);
+
+                // Validate the proband has a disorder
+                validateDisorder(clinicalAnalysis);
             } else {
                 OpenCGAResult<Individual> individualOpenCGAResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
                         clinicalAnalysis.getProband().getId(), new Query(), new QueryOptions(), userId);
@@ -458,7 +461,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             validateRoleToProband(clinicalAnalysis);
             sortMembersFromFamily(clinicalAnalysis);
-            validateDisorder(clinicalAnalysis);
 
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
             OpenCGAResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);

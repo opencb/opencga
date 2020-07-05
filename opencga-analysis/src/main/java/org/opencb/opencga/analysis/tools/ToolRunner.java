@@ -41,13 +41,15 @@ public class ToolRunner {
     private final StorageEngineFactory storageEngineFactory;
     private final String opencgaHome;
     private final ToolFactory toolFactory;
+    private final String jobId;
 
-    public ToolRunner(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
+    public ToolRunner(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, String jobId) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
 
         this.storageEngineFactory = storageEngineFactory;
         this.toolFactory = new ToolFactory();
+        this.jobId = jobId;
     }
 
     /**
@@ -78,7 +80,7 @@ public class ToolRunner {
     public ExecutionResult execute(String toolId, ObjectMap params, Path outDir, String token) throws ToolException {
         return toolFactory
                 .createTool(toolId)
-                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, token)
+                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, jobId, token)
                 .start();
     }
 
@@ -94,7 +96,7 @@ public class ToolRunner {
     public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ObjectMap params, Path outDir, String token) throws ToolException {
         return toolFactory
                 .createTool(tool)
-                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, token)
+                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, jobId, token)
                 .start();
     }
 
@@ -115,7 +117,7 @@ public class ToolRunner {
         }
         return toolFactory
                 .createTool(tool)
-                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, token)
+                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, jobId, token)
                 .start();
     }
 

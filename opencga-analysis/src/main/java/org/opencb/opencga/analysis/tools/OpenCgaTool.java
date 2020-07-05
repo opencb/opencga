@@ -59,6 +59,7 @@ public abstract class OpenCgaTool {
     protected StorageConfiguration storageConfiguration;
     protected VariantStorageManager variantStorageManager;
 
+    protected String jobId;
     protected String opencgaHome;
     protected String token;
 
@@ -82,22 +83,19 @@ public abstract class OpenCgaTool {
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                                   ObjectMap params, Path outDir, String token) {
+                                   ObjectMap params, Path outDir, String jobId, String token) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
-        return setUp(opencgaHome, catalogManager, manager, params, outDir, token);
-    }
-
-    public final OpenCgaTool setUp(VariantStorageManager variantStorageManager, ObjectMap params, Path outDir, String token) {
-        return setUp(null, variantStorageManager.getCatalogManager(), variantStorageManager, params, outDir, token);
+        return setUp(opencgaHome, catalogManager, manager, params, outDir, jobId, token);
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                                   ObjectMap params, Path outDir, String token) {
+                                   ObjectMap params, Path outDir, String jobId, String token) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
+        this.jobId = jobId;
         this.token = token;
         if (params != null) {
             this.params.putAll(params);
@@ -479,6 +477,9 @@ public abstract class OpenCgaTool {
         this.storageConfiguration = ConfigurationUtils.loadStorageConfiguration(opencgaHome);
     }
 
+    public ExecutionResultManager getErm() {
+        return erm;
+    }
 
     // TODO can this method be removed?
 //    protected final Analyst getAnalyst(String token) throws ToolException {

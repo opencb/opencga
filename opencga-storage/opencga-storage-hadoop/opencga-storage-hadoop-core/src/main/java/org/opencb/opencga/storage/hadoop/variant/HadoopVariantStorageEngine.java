@@ -52,7 +52,6 @@ import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -98,6 +97,7 @@ import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
+import org.opencb.opencga.storage.hadoop.variant.search.SecondaryIndexPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -359,7 +359,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        if (trios.size() < 1000) {
+        if (trios.isEmpty()) {
+            throw new StorageEngineException("Undefined family trios");
+        } else if (trios.size() < 1000) {
             options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
         } else {
             File mendelianErrorsFile = null;
@@ -414,28 +416,31 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
-        queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+//        queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+
+        if (!overwrite) {
+            new SecondaryIndexPendingVariantsManager(getDBAdaptor()).discoverPending(getMRExecutor(), getMergedOptions(queryOptions));
+        }
+
         return super.secondaryIndex(query, queryOptions, overwrite);
     }
 
     @Override
     protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
             throws StorageEngineException {
-        if (!overwrite) {
-            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
-            logger.info("Column intersect!");
-//        queryOptions.put("multiIteratorBatchSize", 1000);
-            return new HBaseColumnIntersectVariantQueryExecutor(getDBAdaptor(), getStorageEngineId(), getOptions())
-                    .iterator(query, queryOptions);
-        } else {
+        if (overwrite) {
             logger.info("Get variants to index");
             return super.getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor);
+        } else {
+            logger.info("Get variants to index from pending variants table");
+            logger.info("Query: " + query.toJson());
+            return new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
         }
     }
 
     @Override
     protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
-        return new HadoopVariantSearchLoadListener(getDBAdaptor());
+        return new HadoopVariantSearchLoadListener(getDBAdaptor(), new SecondaryIndexPendingVariantsManager(getDBAdaptor()).cleaner());
     }
 
     @Override

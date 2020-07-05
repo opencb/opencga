@@ -34,15 +34,17 @@ import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
@@ -68,6 +70,7 @@ import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -120,6 +123,7 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     public static final String OUTDIR_PARAM = "outdir";
+    public static final String JOB_ID_PARAM = "job-id";
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
     private String internalCli;
     private JobManager jobManager;
@@ -204,7 +208,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(MendelianErrorAnalysis.ID, "variant " + MendelianErrorAnalysis.ID + "-run");
             put(InferredSexAnalysis.ID, "variant " + InferredSexAnalysis.ID + "-run");
             put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");
-            put(GeneticChecksAnalysis.ID, "variant " + GeneticChecksAnalysis.ID + "-run");
+            put(FamilyQcAnalysis.ID, "variant " + FamilyQcAnalysis.ID + "-run");
+            put(IndividualQcAnalysis.ID, "variant " + IndividualQcAnalysis.ID + "-run");
+            put(SampleQcAnalysis.ID, "variant " + SampleQcAnalysis.ID + "-run");
 
             put(TeamInterpretationAnalysis.ID, "clinical " + TeamInterpretationAnalysis.ID + "-run");
             put(TieringInterpretationAnalysis.ID, "clinical " + TieringInterpretationAnalysis.ID + "-run");
@@ -568,6 +574,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         Path outDirPath = Paths.get(updateParams.getOutDir().getUri());
         params.put(OUTDIR_PARAM, outDirPath.toAbsolutePath().toString());
+        params.put(JOB_ID_PARAM, job.getId());
 
         // Define where the stdout and stderr will be stored
         Path stderr = outDirPath.resolve(getErrorLogFileName(job));
@@ -643,7 +650,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private File getValidDefaultOutDir(Job job) throws CatalogException {
         File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
-                        + job.getId(), true, "Job " + job.getTool().getId(), QueryOptions.empty(), token).first();
+                        + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
@@ -669,6 +676,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .collect(Collectors.joining(","));
             fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
                     new FileAclParams(null, allFilePermissions), SET, token);
+            // Remove permissions to the @members group
+            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
+                    StudyManager.MEMBERS, new FileAclParams(null, ""), SET, token);
         }
 
         return folder;
@@ -746,12 +756,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return false;
         }
 
-        switch (job.getTool().getId()) {
-            case "variant-index":
-                int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
-                return canBeQueued("variant-index", maxIndexJobs);
-            default:
-                return true;
+        Integer maxJobs = catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().get(job.getTool().getId());
+        if (maxJobs == null) {
+            // No limit for this tool
+            return true;
+        } else {
+            return canBeQueued(job.getTool().getId(), maxJobs);
         }
     }
 
@@ -942,8 +952,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(ExecutionResultManager.FILE_EXTENSION)
                     && !uri.getPath().endsWith(ExecutionResultManager.SWAP_FILE_EXTENSION)
                     && !uri.getPath().contains("/scratch_");
-            registeredFiles = fileManager.syncUntrackedFiles(job.getStudy().getId(), job.getOutDir().getPath(), uriPredicate, token)
-                    .getResults();
+            registeredFiles = fileManager.syncUntrackedFiles(job.getStudy().getId(), job.getOutDir().getPath(), uriPredicate, job.getId(),
+                    token).getResults();
         } catch (CatalogException e) {
             logger.error("Could not registered files in Catalog: {}", e.getMessage(), e);
             return 0;

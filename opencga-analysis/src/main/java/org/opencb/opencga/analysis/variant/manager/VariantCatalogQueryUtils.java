@@ -599,7 +599,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             for (String panelId : panels) {
                 Panel panel = getPanel(defaultStudyStr, panelId, token);
                 for (GenePanel genePanel : panel.getGenes()) {
-                    geneNames.add(genePanel.getName());
+                    String gene = genePanel.getName();
+                    if (StringUtils.isEmpty(gene)) {
+                        gene = genePanel.getId();
+                    }
+                    geneNames.add(gene);
                 }
 
                 if (CollectionUtils.isNotEmpty(panel.getRegions()) || CollectionUtils.isNotEmpty(panel.getVariants())) {

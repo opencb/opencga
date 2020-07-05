@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
 
 @Parameters(commandNames = {"family"}, commandDescription = "Implement several family tasks")
@@ -15,11 +16,13 @@ public class FamilyCommandOptions {
     public SecondaryIndex secondaryIndex;
     public TsvLoad tsvLoad;
 
-    public GeneralCliOptions.CommonCommandOptions familyCommandOptions;
+    public final GeneralCliOptions.CommonCommandOptions familyCommandOptions;
+    public final InternalCliOptionsParser.JobOptions internalJobOptions;
     public JCommander jCommander;
 
     public FamilyCommandOptions(GeneralCliOptions.CommonCommandOptions familyCommandOptions, JCommander jCommander) {
         this.familyCommandOptions = familyCommandOptions;
+        this.internalJobOptions = new InternalCliOptionsParser.JobOptions();
         this.jCommander = jCommander;
 
         this.secondaryIndex = new SecondaryIndex();
@@ -30,6 +33,9 @@ public class FamilyCommandOptions {
     public class SecondaryIndex {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = familyCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = false,
                 arity = 1)
@@ -44,6 +50,9 @@ public class FamilyCommandOptions {
     public class TsvLoad {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = familyCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
                 arity = 1)
