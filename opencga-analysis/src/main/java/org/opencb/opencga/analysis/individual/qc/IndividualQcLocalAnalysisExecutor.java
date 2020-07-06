@@ -101,12 +101,11 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
     }
 
     private void runMendelianErrors() throws ToolException {
-        // Get managers
-        VariantStorageManager variantStorageManager = getVariantStorageManager();
-        CatalogManager catalogManager = variantStorageManager.getCatalogManager();
-
         // Compute mendelian inconsitencies
         try {
+            // Get managers
+            VariantStorageManager variantStorageManager = getVariantStorageManager();
+
             MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(studyId, sampleId, motherSampleId,
                     fatherSampleId, variantStorageManager, getToken());
 
