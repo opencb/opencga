@@ -461,7 +461,9 @@ public class VariantQueryParser {
                         genotypeParam, query.getString(genotypeParam.key())
                 );
             }
-            for (String sample : query.getAsStringList(param.key())) {
+            List<String> samples = query.getAsStringList(param.key());
+            Set<String> samplesAndParents = new LinkedHashSet<>(samples);
+            for (String sample : samples) {
                 Integer sampleId = metadataManager.getSampleId(defaultStudy.getId(), sample);
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sample, defaultStudy.getName());
@@ -471,6 +473,21 @@ public class VariantQueryParser {
                     throw VariantQueryException.malformedParam(param, "Sample \"" + sampleMetadata.getName()
                             + "\" does not have the Mendelian Errors precomputed yet");
                 }
+                if (sampleMetadata.getFather() != null) {
+                    samplesAndParents.add(metadataManager.getSampleName(defaultStudy.getId(), sampleMetadata.getFather()));
+                }
+                if (sampleMetadata.getMother() != null) {
+                    samplesAndParents.add(metadataManager.getSampleName(defaultStudy.getId(), sampleMetadata.getMother()));
+                }
+            }
+            if (VariantQueryUtils.isValidParam(query, INCLUDE_SAMPLE)) {
+                List<String> includeSamples = query.getAsStringList(INCLUDE_SAMPLE.key());
+                if (!includeSamples.containsAll(samplesAndParents)) {
+                    throw new VariantQueryException("Invalid list of '" + INCLUDE_SAMPLE.key() + "'. "
+                            + "It must include, at least, all parents.");
+                }
+            } else {
+                query.put(INCLUDE_SAMPLE.key(), new ArrayList<>(samplesAndParents));
             }
         }
 
