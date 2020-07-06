@@ -7,15 +7,17 @@ import getpass
 from pprint import pprint
 import json
 
+
 def qc(families):
     print('Executing qc...')
     for family in families:
-        if len(family['members']) > 1:
+        if len(family['members']) > 1 and 'qualityControl' not in family:
             data = {'family': family['id']}
             if args.relatednessMaf is not None:
                 data['relatednessMaf'] = args.relatednessMaf
-            print("Calculate QC " + sample['id'])
-            # oc.variants..index_family_genotype(data, study=args.study)
+            print("Calculate QC " + family['id'])
+            oc.variants.run_family_qc(data, study=args.study)
+
 
 def index(families):
     print('Executing index...')
@@ -25,6 +27,7 @@ def index(families):
             data = {'family': family_list}
             print("Index " + family['id'])
             oc.variant_operations.index_family_genotype(data, study=args.study)
+
 
 # Define parameters
 parser = argparse.ArgumentParser()

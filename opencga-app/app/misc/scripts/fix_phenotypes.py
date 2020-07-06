@@ -7,33 +7,39 @@ import getpass
 from pprint import pprint
 import json
 
-def qc(samples):
-    print('Executing qc...')
-    for sample in samples:
-        if len(sample['members']) > 1:
-            data = {'sample': sample['id']}
-            if args.bamFile is not None:
-                data['bamFile'] = args.bamFile
-            print("Calculate QC " + sample['id'])
-            # oc.variants.run_sample_qc(data, study=args.study)
 
-def index(samples):
-    print('Executing index...')
-    for sample in samples:
-        if len(sample['members']) > 1:
-            sample_list = [sample['id']]
-            data = {'sample': sample_list}
-            print("Index " + sample['id'])
-            oc.variant_operations.index_sample_genotype(data, study=args.study)
+def fix_phenotypes(phenotypes):
+    pprint(phenotypes)
+    return []
+
+
+def fix_sample_phenotypes(query):
+    print('Executing sample...')
+    sample_resp = oc.samples.search(**query)
+    for sample in sample_resp.get_results():
+        print("Fix HPO " + sample['id'])
+        if 'phenotypes' in sample and len(sample['phenotypes']) > 0:
+            phenotypes = fix_phenotypes(sample['phenotypes'])
+            # oc.samples.update(data, study=args.study)
+
+
+def fix_individual_phenotypes(query):
+    print('Executing sample...')
+    individual_resp = oc.individuals.search(**query)
+    for individual in individual_resp.get_results():
+        print("Fix HPO " + individual['id'])
+        if 'phenotypes' in individual and len(individual['phenotypes']) > 0:
+            phenotypes = fix_phenotypes(individual['phenotypes'])
+            # oc.individuals.update(data, study=args.study)
+
 
 # Define parameters
 parser = argparse.ArgumentParser()
-parser.add_argument('action', help="Action to execute", choices=["qc", "index"], default="")
+parser.add_argument('action', help="Action to execute", choices=['sample', 'individual'], default="")
 parser.add_argument('-s', '--study', help="Study ID or fqn")
-parser.add_argument('--id', help="comma separated list of sample ID")
-parser.add_argument('--individual-id', help="comma separated list of individual ID")
+parser.add_argument('--id', help="Comma-separated list of sample ID")
 parser.add_argument('--phenotypes', help="Comma-separated list of phenotype ID, e.g. hp:12345")
-parser.add_argument('--bamFile', help="BAM file to be used for some stats")
+parser.add_argument('--hpo', required=True, help="Load HPO ontology terms")
 parser.add_argument('--conf', help="Load client-configuration.yml")
 parser.add_argument('--url', default="https://bioinfo.hpc.cam.ac.uk/opencga-prod", help="Default https://bioinfo.hpc.cam.ac.uk/opencga-prod")
 parser.add_argument('-u', '--user', help="Username to login to OpenCGA")
@@ -60,6 +66,12 @@ else:
 oc = OpencgaClient(config)
 oc.login(args.user, args.password)  # If done this way, password will be prompted to the user so it is not displayed or..
 
+# Load HPO Ontology terms
+if args.hpo is not None:
+    print('load terms')
+else:
+    print('error and exit')
+
 # Fetch selected families
 query = {}
 if args.study is not None:
@@ -68,10 +80,9 @@ if args.id is not None:
     query['id'] = args.id
 if args.phenotypes is not None:
     query['phenotypes'] = args.phenotypes
-sample_resp = oc.samples.search(**query)
 
 # Execute action
-if args.action == "qc":
-    qc(sample_resp.get_results())
-elif args.action == "index":
-    index(sample_resp.get_results())
+if args.action == "sample":
+    fix_sample_phenotypes(query)
+elif args.action == "individual":
+    fix_individual_phenotypes(query)
