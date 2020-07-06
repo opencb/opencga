@@ -146,9 +146,11 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         qualityControl = individual.getQualityControl();
         if (qualityControl == null) {
             qualityControl = new IndividualQualityControl().setSampleId(sample.getId());
-        } else if (!qualityControl.getSampleId().equals(sample.getId())) {
-            throw new ToolException("Individual quality control was computed previously for the sample '" + qualityControl.getSampleId()
-                    + "'");
+        } else {
+            if (StringUtils.isNotEmpty(qualityControl.getSampleId()) && !qualityControl.getSampleId().equals(sample.getId())) {
+                throw new ToolException("Individual quality control was computed previously for the sample '" + qualityControl.getSampleId()
+                        + "'");
+            }
         }
 
         executor = getToolExecutor(IndividualQcAnalysisExecutor.class)
