@@ -30,13 +30,57 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.parboiled.common.StringUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MendelianInconsistenciesComputation {
 
+    public static MendelianErrorReport compute(String studyId, String childId, String motherId, String fatherId,
+                                               VariantStorageManager storageManager, String token) throws ToolException {
+        List<String> sampleIds = new ArrayList<>();
+
+        // Sanity check
+        if (StringUtils.isEmpty(childId)) {
+            throw new ToolException("Missing child sample ID.");
+        }
+        sampleIds.add(childId);
+        if (StringUtils.isNotEmpty(motherId)) {
+            sampleIds.add(motherId);
+        }
+        if (StringUtils.isEmpty(fatherId)) {
+            sampleIds.add(fatherId);
+        }
+        if (sampleIds.size() == 1) {
+            throw new ToolException("Invalid parameters: both mother and father sample IDs are empty but in order to compute mendelian"
+                    + " errors at least one of them has to be not empty.");
+        }
+
+        // Query to retrive mendelian error variants from childId, motherId, fatherId
+        Query query = new Query();
+        query.put(VariantQueryParam.STUDY.key(), studyId);
+        query.put(VariantQueryParam.SAMPLE.key(), childId + ":MendelianError");
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put("includeSample", StringUtils.join(sampleIds, ","));
+        queryOptions.put(QueryOptions.EXCLUDE, "annotation");
+
+        VariantDBIterator iterator = null;
+        try {
+            iterator = storageManager.iterator(query, queryOptions, token);
+        } catch (CatalogException | StorageEngineException e) {
+            throw new ToolException(e);
+        }
+
+        return buildMendelianErrorReport(iterator, getTotalVariants(studyId, storageManager, token));
+    }
+
+
+    @Deprecated
     public static MendelianErrorReport compute(String studyId, String familyId, VariantStorageManager storageManager,
                                                String token) throws ToolException {
         // Create query to count the total number of variants
@@ -94,6 +138,83 @@ public class MendelianInconsistenciesComputation {
             }
         } catch (CatalogException | StorageEngineException e) {
             throw new ToolException(e);
+        }
+
+        // Create mendelian error report from auxiliary map
+        MendelianErrorReport meReport = new MendelianErrorReport();
+        meReport.setNumErrors(numErrors);
+        for (String sampleId : counter.keySet()) {
+            SampleAggregation sampleAgg = new SampleAggregation();
+            int numSampleErrors = 0;
+            for (String chrom : counter.get(sampleId).keySet()) {
+                int numChromErrors = counter.get(sampleId).get(chrom).values().stream().mapToInt(Integer::intValue).sum();
+
+                ChromosomeAggregation chromAgg = new ChromosomeAggregation();
+                chromAgg.setChromosome(chrom);
+                chromAgg.setNumErrors(numChromErrors);
+                chromAgg.setErrorCodeAggregation(counter.get(sampleId).get(chrom));
+
+                // Update sample aggregation
+                sampleAgg.getChromAggregation().add(chromAgg);
+                numSampleErrors += numChromErrors;
+            }
+            sampleAgg.setSample(sampleId);
+            sampleAgg.setNumErrors(numSampleErrors);
+            sampleAgg.setRatio(1.0d * numSampleErrors / numVariants);
+
+            meReport.getSampleAggregation().add(sampleAgg);
+        }
+
+        return meReport;
+    }
+
+    private static long getTotalVariants(String studyId, VariantStorageManager storageManager, String token) throws ToolException {
+        // Create query to count the total number of variants
+        Query query = new Query()
+                .append(VariantQueryParam.STUDY.key(), studyId);
+
+        // Get total number of variants
+        long numVariants;
+        try {
+            numVariants = storageManager.count(query, token).first();
+        } catch (CatalogException | StorageEngineException | IOException e) {
+            throw new ToolException(e);
+        }
+        return numVariants;
+    }
+
+    private static MendelianErrorReport buildMendelianErrorReport(VariantDBIterator iterator, long numVariants) {
+        // Create auxiliary map
+        //   sample      chrom      error    count
+        Map<String, Map<String, Map<String, Integer>>> counter = new HashMap<>();
+        int numErrors = 0;
+        while (iterator.hasNext()) {
+            Variant variant = iterator.next();
+
+            // Get sampleId and error code from variant issues
+            boolean foundError = false;
+            for (IssueEntry issue : variant.getStudies().get(0).getIssues()) {
+                if ("MENDELIAN_ERROR".equals(issue.getType()) || "DE_NOVO".equals(issue.getType())) {
+                    foundError = true;
+
+                    String sampleId = issue.getSample().getSampleId();
+                    String errorCode = issue.getSample().getData().get(0);
+                    if (!counter.containsKey(sampleId)) {
+                        counter.put(sampleId, new HashMap<>());
+                    }
+                    if (!counter.get(sampleId).containsKey(variant.getChromosome())) {
+                        counter.get(sampleId).put(variant.getChromosome(), new HashMap<>());
+                    }
+                    int val = 0;
+                    if (counter.get(sampleId).get(variant.getChromosome()).containsKey(errorCode)) {
+                        val = counter.get(sampleId).get(variant.getChromosome()).get(errorCode);
+                    }
+                    counter.get(sampleId).get(variant.getChromosome()).put(errorCode, val + 1);
+                }
+            }
+            if (foundError) {
+                numErrors++;
+            }
         }
 
         // Create mendelian error report from auxiliary map

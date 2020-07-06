@@ -16,26 +16,22 @@
 
 package org.opencb.opencga.analysis.individual.qc;
 
-import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
-import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.family.qc.IBDComputation;
-import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @ToolExecutor(id="opencga-local", tool = IndividualQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -62,30 +58,16 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
     }
 
     private void runInferredSex() throws ToolException {
-        if (CollectionUtils.isNotEmpty(qualityControl.getInferredSexReports())) {
-            for (InferredSexReport inferredSexReport : qualityControl.getInferredSexReports()) {
-                if (inferredSexReport.getMethod().equals(inferredSexMethod)) {
-                    addWarning("Skipping inferred sex: it was already computed using method '" + inferredSexMethod + "'");
-                    return;
-                }
-            }
-        }
-
-        if (!COVERAGE_RATIO_INFERRED_SEX_METHOD.equals(inferredSexMethod)) {
-            addWarning("Skipping inferred sex: unknown inferred sex method '" + inferredSexMethod + "'");
-            return;
-        }
-
         File inferredSexBamFile;
         try {
-            inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), studyId,
+            inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(sampleId, studyId,
                     getVariantStorageManager().getCatalogManager().getFileManager(), getToken());
         } catch (ToolException e) {
             throw new ToolException(e);
         }
 
         if (inferredSexBamFile == null) {
-            addWarning("Skipping inferred sex: BAM file not found for sample '" + sample.getId() + "' of individual '" +
+            addWarning("Skipping inferred sex: BAM file not found for sample '" + sampleId + "' of individual '" +
                     individual.getId() + "'");
             return;
         }
@@ -118,18 +100,13 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
     }
 
     private void runMendelianErrors() throws ToolException {
-        if (qualityControl.getMendelianErrorReport() != null) {
-            addWarning("Skipping mendelian error: it was already computed");
-            return;
-        }
-
         // Get managers
         VariantStorageManager variantStorageManager = getVariantStorageManager();
         CatalogManager catalogManager = variantStorageManager.getCatalogManager();
 
         // Compute mendelian inconsitencies
-        MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(studyId, family.getId(),
-                variantStorageManager, getToken());
+        MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(studyId, sampleId, motherSampleId,
+                fatherSampleId, variantStorageManager, getToken());
 
         // Set relatedness report
         qualityControl.setMendelianErrorReport(mendelianErrorReport);

@@ -256,6 +256,18 @@ public class IndividualQcUtils {
         return samples;
     }
 
+    public static List<Sample> getValidGermlineSamplesByIndividualId(String studyId, String individualId, CatalogManager catalogManager,
+                                                                     String token) throws ToolException {
+        List<Sample> samples = IndividualQcUtils.getValidSamplesByIndividualId(studyId, individualId, catalogManager, token);
+        List<Sample> germlineSamples = new ArrayList<>();
+        for (Sample individualSample : samples) {
+            if (!individualSample.isSomatic()) {
+                germlineSamples.add(individualSample);
+            }
+        }
+        return germlineSamples;
+    }
+
     public static Sample getValidSampleById(String studyId, String sampleId, CatalogManager catalogManager, String token)
             throws ToolException {
         OpenCGAResult<Sample> sampleResult;
@@ -331,7 +343,7 @@ public class IndividualQcUtils {
                                    String token) throws ToolException {
         try {
             storageManager.exportData(tpedFile.getAbsolutePath(), TPED, null, query, QueryOptions.empty(), token);
-        } catch(CatalogException | IOException | StorageEngineException e) {
+        } catch (CatalogException | IOException | StorageEngineException e) {
             throw new ToolException(e);
         }
 

@@ -18,13 +18,15 @@ package org.opencb.opencga.analysis.individual.qc;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
@@ -32,7 +34,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -54,7 +55,10 @@ public class IndividualQcAnalysis extends OpenCgaTool {
     // Internal members
     private Individual individual;
     private Sample sample;
-    private Family family;
+    private String motherSampleId;
+    private String fatherSampleId;
+    private IndividualQualityControl qualityControl;
+    private IndividualQcAnalysisExecutor executor;
 
     public IndividualQcAnalysis() {
     }
@@ -84,21 +88,15 @@ public class IndividualQcAnalysis extends OpenCgaTool {
 
         // Get samples of that individual, but only germline samples
         sample = null;
-        List<Sample> samples = IndividualQcUtils.getValidSamplesByIndividualId(studyId, individualId, catalogManager, token);
-        List<Sample> germlineSamples = new ArrayList<>();
-        for (Sample individualSample : samples) {
-            if (!individualSample.isSomatic()) {
-                germlineSamples.add(individualSample);
-            }
-        }
-
-        if (CollectionUtils.isEmpty(germlineSamples)) {
+        List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(studyId, individualId, catalogManager,
+                token);
+        if (CollectionUtils.isEmpty(childGermlineSamples)) {
             throw new ToolException("Germline sample not found for individual '" +  individualId + "'");
         }
 
-        if (germlineSamples.size() > 1) {
+        if (childGermlineSamples.size() > 1) {
             if (StringUtils.isNotEmpty(sampleId)) {
-                for (Sample germlineSample : germlineSamples) {
+                for (Sample germlineSample : childGermlineSamples) {
                     if (sampleId.equals(germlineSample.getId())) {
                         sample = germlineSample;
                         break;
@@ -109,14 +107,27 @@ public class IndividualQcAnalysis extends OpenCgaTool {
                 }
             } else {
                 // If multiple germline samples, we take the first one
-                sample = germlineSamples.get(0);
+                sample = childGermlineSamples.get(0);
             }
         } else {
-            sample = germlineSamples.get(0);
+            sample = childGermlineSamples.get(0);
         }
 
-        // Get family (for mendelian error)
-        family = IndividualQcUtils.getFamilyByIndividualId(studyId, individualId, catalogManager, token);
+        if (individual.getMother() != null) {
+            List<Sample> motherGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(studyId,
+                    individual.getMother().getId(), catalogManager, token);
+            if (CollectionUtils.isNotEmpty(motherGermlineSamples)) {
+                motherSampleId = motherGermlineSamples.get(0).getId();
+            }
+        }
+
+        if (individual.getFather() != null) {
+            List<Sample> fatherGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(studyId,
+                    individual.getFather().getId(), catalogManager, token);
+            if (CollectionUtils.isNotEmpty(fatherGermlineSamples)) {
+                fatherSampleId = fatherGermlineSamples.get(0).getId();
+            }
+        }
 
         if (StringUtils.isEmpty(inferredSexMethod)) {
             inferredSexMethod = IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
@@ -132,7 +143,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
     protected void run() throws ToolException {
 
         // Get individual quality control metrics to update
-        IndividualQualityControl qualityControl = individual.getQualityControl();
+        qualityControl = individual.getQualityControl();
         if (qualityControl == null) {
             qualityControl = new IndividualQualityControl().setSampleId(sample.getId());
         } else if (!qualityControl.getSampleId().equals(sample.getId())) {
@@ -140,17 +151,17 @@ public class IndividualQcAnalysis extends OpenCgaTool {
                     + "'");
         }
 
-        IndividualQcAnalysisExecutor executor = getToolExecutor(IndividualQcAnalysisExecutor.class);
-
-        executor.setStudyId(studyId)
+        executor = getToolExecutor(IndividualQcAnalysisExecutor.class)
+                .setStudyId(studyId)
                 .setIndividual(individual)
-                .setSample(sample)
-                .setFamily(family)
+                .setSampleId(sample.getId())
+                .setMotherSampleId(motherSampleId)
+                .setFatherSampleId(fatherSampleId)
                 .setInferredSexMethod(inferredSexMethod)
                 .setQualityControl(qualityControl);
 
-        step(INFERRED_SEX_STEP, () -> executor.setQcType(IndividualQcAnalysisExecutor.QcType.INFERRED_SEX).execute());
-        step(MENDELIAN_ERRORS_STEP, () -> executor.setQcType(IndividualQcAnalysisExecutor.QcType.MENDELIAN_ERRORS).execute());
+        step(INFERRED_SEX_STEP, () -> runInferredSex());
+        step(MENDELIAN_ERRORS_STEP, () -> runMendelianError());
 
         // Finally, update individual quality control
         try {
@@ -163,6 +174,58 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
+    }
+
+    private void runInferredSex() throws ToolException {
+        if (com.nimbusds.oauth2.sdk.util.CollectionUtils.isNotEmpty(qualityControl.getInferredSexReports())) {
+            for (InferredSexReport inferredSexReport : qualityControl.getInferredSexReports()) {
+                if (inferredSexReport.getMethod().equals(inferredSexMethod)) {
+                    addWarning("Skipping inferred sex: it was already computed using method '" + inferredSexMethod + "'");
+                    return;
+                }
+            }
+        }
+
+        if (!IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD.equals(inferredSexMethod)) {
+            addWarning("Skipping inferred sex: unknown inferred sex method '" + inferredSexMethod + "'");
+            return;
+        }
+
+        File inferredSexBamFile;
+        try {
+            inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), studyId,
+                    getVariantStorageManager().getCatalogManager().getFileManager(), getToken());
+        } catch (ToolException e) {
+            throw new ToolException(e);
+        }
+
+        if (inferredSexBamFile == null) {
+            addWarning("Skipping inferred sex: BAM file not found for sample '" + sample.getId() + "' of individual '" +
+                    individual.getId() + "'");
+            return;
+        }
+
+        executor.setQcType(IndividualQcAnalysisExecutor.QcType.INFERRED_SEX).execute();
+    }
+
+    private void runMendelianError() throws ToolException {
+        if (qualityControl.getMendelianErrorReport() != null) {
+            addWarning("Skipping mendelian error: it was already computed");
+            return;
+        }
+
+        // Sanity check
+        if (sample == null || StringUtils.isEmpty(sample.getId())) {
+            addWarning("Skipping mendelian error: missing child sample ID.");
+            return;
+        }
+        if (StringUtils.isEmpty(motherSampleId) && StringUtils.isEmpty(fatherSampleId)) {
+            addWarning("Skipping mendelian error: both mother and father sample IDs are empty but in order to compute mendelian"
+                    + " errors at least one of them has to be not empty.");
+            return;
+        }
+
+        executor.setQcType(IndividualQcAnalysisExecutor.QcType.MENDELIAN_ERRORS).execute();
     }
 
     public String getStudyId() {
@@ -216,15 +279,6 @@ public class IndividualQcAnalysis extends OpenCgaTool {
 
     public IndividualQcAnalysis setSample(Sample sample) {
         this.sample = sample;
-        return this;
-    }
-
-    public Family getFamily() {
-        return family;
-    }
-
-    public IndividualQcAnalysis setFamily(Family family) {
-        this.family = family;
         return this;
     }
 }
