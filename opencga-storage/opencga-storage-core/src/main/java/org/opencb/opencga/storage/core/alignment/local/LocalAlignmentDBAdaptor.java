@@ -174,9 +174,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
         // If necessary, filter by coverage range and remove empty regions
         List<RegionCoverage> selectedRegions = new ArrayList<>();
-        if (minCoverage <= 0 && maxCoverage >= Integer.MAX_VALUE) {
-            selectedRegions.add(regionCoverage);
-        } else {
+        if (minCoverage > 0 || maxCoverage < Integer.MAX_VALUE) {
             // Filter region by coverage range
             List<RegionCoverage> regionCoverages = BamUtils.filterByCoverage(regionCoverage, minCoverage, maxCoverage);
 
@@ -186,6 +184,8 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
                     selectedRegions.add(coverage);
                 }
             }
+        } else {
+            selectedRegions.add(regionCoverage);
         }
 
         watch.stop();
