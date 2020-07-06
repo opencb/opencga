@@ -84,7 +84,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHetero
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianErrorQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
@@ -337,17 +336,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-
-        options.put(SampleIndexAnnotationLoaderDriver.SAMPLES, samples);
-        int studyId = getMetadataManager().getStudyId(study);
-        getMRExecutor().run(SampleIndexAnnotationLoaderDriver.class,
-                FamilyIndexDriver.buildArgs(
-                        getArchiveTableName(studyId),
-                        getVariantTableName(),
-                        studyId,
-                        null,
-                        options), options,
-                "Annotate sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));    }
+        new SampleIndexAnnotationLoader(hBaseManager, getTableNameGenerator(), getMetadataManager(), getMRExecutor())
+                .updateSampleAnnotation(study, samples, options);
+    }
 
 
     @Override

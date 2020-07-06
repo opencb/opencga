@@ -187,6 +187,10 @@ public class ExecutionResultManager {
         updateResult(result -> result.setExecutor(executorInfo));
     }
 
+    public void addEvent(Event.Type type, String message) throws ToolException {
+        updateResult(result -> result.getEvents().add(new Event(type, message)));
+    }
+
     public void addWarning(String warningMessage) throws ToolException {
         updateResult(result -> result.getEvents().add(new Event(Event.Type.WARNING, warningMessage)));
     }

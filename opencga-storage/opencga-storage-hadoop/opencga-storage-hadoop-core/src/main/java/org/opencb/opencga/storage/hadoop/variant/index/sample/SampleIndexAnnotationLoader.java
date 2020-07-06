@@ -13,6 +13,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -28,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR;
 
 /**
  * Created by jacobo on 04/01/19.
@@ -56,13 +60,33 @@ public class SampleIndexAnnotationLoader {
         family = GenomeHelper.COLUMN_FAMILY_BYTES;
     }
 
+    public void updateSampleAnnotation(String study, List<String> samples, ObjectMap options)
+            throws StorageEngineException {
+        int studyId = metadataManager.getStudyId(study);
+        List<Integer> sampleIds;
+        if (samples.size() == 1 && samples.get(0).equals(VariantQueryUtils.ALL)) {
+            sampleIds = metadataManager.getIndexedSamples(studyId);
+        } else {
+            sampleIds = new ArrayList<>(samples.size());
+            for (String sample : samples) {
+                Integer sampleId = metadataManager.getSampleId(studyId, sample, true);
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(sample, study);
+                }
+                sampleIds.add(sampleId);
+            }
+        }
+
+        updateSampleAnnotation(studyId, sampleIds, options, options.getBoolean(OVERWRITE, false));
+    }
+
     public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options)
-            throws IOException, StorageEngineException {
+            throws StorageEngineException {
         updateSampleAnnotation(studyId, samples, options, options.getBoolean(OVERWRITE, false));
     }
 
     public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options, boolean overwrite)
-            throws IOException, StorageEngineException {
+            throws StorageEngineException {
         List<Integer> finalSamplesList = new ArrayList<>(samples.size());
         List<String> nonAnnotated = new LinkedList<>();
         List<String> alreadyAnnotated = new LinkedList<>();
@@ -102,15 +126,33 @@ public class SampleIndexAnnotationLoader {
             logger.info("Run sample index annotation on " + finalSamplesList.size() + " samples");
         }
 
-//        updateSampleAnnotationBatchMultiThread(studyId, finalSamplesList);
-        updateSampleAnnotationBatchMapreduce(studyId, finalSamplesList, options);
+        int batchSize = options.getInt(
+                SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR.key(),
+                SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR.defaultValue());
+//        if (finalSamplesList.size() < 10) {
+//            updateSampleAnnotationBatchMultiThread(studyId, finalSamplesList);
+//        }
+        if (finalSamplesList.size() > batchSize) {
+            int batches = (int) Math.round(Math.ceil(finalSamplesList.size() / ((float) batchSize)));
+            batchSize = (finalSamplesList.size() / batches) + 1;
+            logger.warn("Unable to run sample index annotation in one single MapReduce operation.");
+            logger.info("Split in {} jobs of {} samples each.", batches, batchSize);
+            for (int i = 0; i < batches; i++) {
+                List<Integer> subSet = finalSamplesList.subList(i * batchSize, Math.min((i + 1) * batchSize, finalSamplesList.size()));
+                logger.info("Running MapReduce {}/{} over {} samples", i + 1, batches, subSet.size());
+                updateSampleAnnotationBatchMapreduce(studyId, subSet, options);
+            }
+        } else {
+            updateSampleAnnotationBatchMapreduce(studyId, finalSamplesList, options);
+        }
     }
 
     private void updateSampleAnnotationBatchMapreduce(int studyId, List<Integer> samples, ObjectMap options)
-            throws IOException, StorageEngineException {
+            throws StorageEngineException {
         mrExecutor.run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
                 tableNameGenerator.getArchiveTableName(studyId),
-                tableNameGenerator.getVariantTableName(), studyId, samples, options), options, "Update sample annotation batch");
+                tableNameGenerator.getVariantTableName(), studyId, samples, options), options,
+                "Annotate sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));
     }
 
 
