@@ -27,7 +27,7 @@ individuals:
         name: Developmental cataract
         source: HPO
         status: OBSERVED
-      - id: HP:00005456
+      - id: HP:0000545
         name: Myopia
         source: HPO
         status: OBSERVED
@@ -45,7 +45,7 @@ individuals:
     karyotypicSex: XX
     lifeStatus: ALIVE
     phenotypes:
-      - id: HP:00005456
+      - id: HP:0000545
         name: Myopia
         source: HPO
         status: OBSERVED
@@ -63,7 +63,7 @@ individuals:
     karyotypicSex: XY
     lifeStatus: ALIVE
     phenotypes:
-      - id: HP:00005456
+      - id: HP:0000545
         name: Myopia
         source: HPO
         status: OBSERVED
