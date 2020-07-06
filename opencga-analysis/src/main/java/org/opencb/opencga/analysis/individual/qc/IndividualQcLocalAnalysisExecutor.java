@@ -63,7 +63,8 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
             inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(sampleId, studyId,
                     getVariantStorageManager().getCatalogManager().getFileManager(), getToken());
         } catch (ToolException e) {
-            throw new ToolException(e);
+            addWarning("Skipping inferred sex: " + e.getMessage());
+            return;
         }
 
         if (inferredSexBamFile == null) {
@@ -105,10 +106,15 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
         CatalogManager catalogManager = variantStorageManager.getCatalogManager();
 
         // Compute mendelian inconsitencies
-        MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(studyId, sampleId, motherSampleId,
-                fatherSampleId, variantStorageManager, getToken());
+        try {
+            MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(studyId, sampleId, motherSampleId,
+                    fatherSampleId, variantStorageManager, getToken());
 
-        // Set relatedness report
-        qualityControl.setMendelianErrorReport(mendelianErrorReport);
+            // Set relatedness report
+            qualityControl.setMendelianErrorReport(mendelianErrorReport);
+        } catch (ToolException e) {
+            addWarning("Skipping mendelian errors: " + e.getMessage());
+            return;
+        }
     }
 }
