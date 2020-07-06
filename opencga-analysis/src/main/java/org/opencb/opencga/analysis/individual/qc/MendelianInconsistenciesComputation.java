@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.individual.qc;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport.SampleAggregation;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport.SampleAggregation.ChromosomeAggregation;
@@ -30,7 +31,6 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.parboiled.common.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
