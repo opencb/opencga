@@ -64,9 +64,9 @@ public class MendelianInconsistenciesComputation {
         Query query = new Query();
         query.put(VariantQueryParam.STUDY.key(), studyId);
         query.put(VariantQueryParam.SAMPLE.key(), childId + ":MendelianError");
+        query.put("includeSample", StringUtils.join(sampleIds, ","));
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put("includeSample", StringUtils.join(sampleIds, ","));
         queryOptions.put(QueryOptions.EXCLUDE, "annotation");
 
         System.out.println("---> Query = " + query.toJson());
