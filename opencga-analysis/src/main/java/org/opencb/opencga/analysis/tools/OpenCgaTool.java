@@ -20,6 +20,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -377,6 +378,10 @@ public abstract class OpenCgaTool {
 
     protected final void errorStep() throws ToolException {
         erm.errorStep();
+    }
+
+    protected final void addEvent(Event.Type type, String message) throws ToolException {
+        erm.addEvent(type, message);
     }
 
     protected final void addWarning(String warning) throws ToolException {

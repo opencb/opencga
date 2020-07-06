@@ -27,10 +27,7 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -89,10 +86,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggrega
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -357,11 +351,50 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
 
     @Override
-    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
+        trios = new LinkedList<>(trios);
+        DataResult<List<String>> dr = new DataResult<>();
+        dr.setResults(trios);
+        dr.setEvents(new LinkedList<>());
+
+        boolean overwrite = options.getBoolean(FamilyIndexDriver.OVERWRITE);
         if (trios.isEmpty()) {
             throw new StorageEngineException("Undefined family trios");
-        } else if (trios.size() < 1000) {
+        }
+        int studyId = getMetadataManager().getStudyId(study);
+        Iterator<List<String>> iterator = trios.iterator();
+        while (iterator.hasNext()) {
+            List<Integer> trioIds = new ArrayList<>(3);
+            List<String> trio = iterator.next();
+            for (String sample : trio) {
+                Integer sampleId;
+                if (sample.equals("-")) {
+                    sampleId = -1;
+                } else {
+                    sampleId = getMetadataManager().getSampleId(studyId, sample);
+                    if (sampleId == null) {
+                        throw new IllegalArgumentException("Sample '" + sample + "' not found.");
+                    }
+                }
+                trioIds.add(sampleId);
+            }
+            if (trioIds.size() != 3) {
+                throw new IllegalArgumentException("Found trio with " + trioIds.size() + " members, instead of 3: " + trioIds);
+            }
+            SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(studyId, trioIds.get(2));
+            if (!overwrite && sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
+                String msg = "Skip sample " + sampleMetadata.getName() + ". Already precomputed!";
+                logger.info(msg);
+                dr.getEvents().add(new Event(Event.Type.INFO, msg));
+                iterator.remove();
+            }
+        }
+        if (trios.isEmpty()) {
+            logger.info("Nothing to do!");
+            return dr;
+        }
+        if (trios.size() < 1000) {
             options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
         } else {
             File mendelianErrorsFile = null;
@@ -384,10 +417,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             options.put(FamilyIndexDriver.TRIOS_FILE_DELETE, true);
         }
 
-        int studyId = getMetadataManager().getStudyId(study);
         getMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),
                 studyId, null, options), options,
                 "Precompute mendelian errors for " + (trios.size() == 1 ? "trio " + trios.get(0) : trios.size() + " trios"));
+        return dr;
     }
 
 

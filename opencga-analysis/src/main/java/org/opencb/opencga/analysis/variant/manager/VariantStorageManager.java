@@ -363,11 +363,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    public void familyIndex(String study, List<String> familiesStr, boolean skipIncompleteFamilies, ObjectMap params, String token)
+    public DataResult<List<String>> familyIndex(String study, List<String> familiesStr, boolean skipIncompleteFamilies,
+                                                ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
+        return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             List<List<String>> trios = new LinkedList<>();
-
+            List<Event> events = new LinkedList<>();
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
             if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
@@ -383,14 +384,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 }
             }
 
-            engine.familyIndex(study, trios, params);
-            return null;
+            return engine.familyIndex(study, trios, params);
         });
     }
 
-    public void familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
+    public DataResult<List<String>> familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
+        return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
 
             OpenCGAResult<Individual> individualResult = getCatalogManager().getIndividualManager()
                     .search(study,
@@ -399,8 +399,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
             List<List<String>> trios = catalogUtils.getTrios(study, engine.getMetadataManager(), individualResult.getResults(), token);
 
-            engine.familyIndex(study, trios, params);
-            return null;
+            return engine.familyIndex(study, trios, params);
         });
     }
 
