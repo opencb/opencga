@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.variant.io;
 
-import org.mortbay.io.RuntimeIOException;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
@@ -109,7 +108,7 @@ public class VariantTpedWriter implements DataWriter<Variant> {
             try {
                 dataOutputStream.close();
             } catch (IOException e) {
-                throw new RuntimeIOException(e);
+                throw new UncheckedIOException(e);
             }
         }
 
