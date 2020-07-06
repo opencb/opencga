@@ -52,7 +52,7 @@ public class MendelianInconsistenciesComputation {
         if (StringUtils.isNotEmpty(motherId)) {
             sampleIds.add(motherId);
         }
-        if (StringUtils.isEmpty(fatherId)) {
+        if (StringUtils.isNotEmpty(fatherId)) {
             sampleIds.add(fatherId);
         }
         if (sampleIds.size() == 1) {
@@ -69,7 +69,10 @@ public class MendelianInconsistenciesComputation {
         queryOptions.put("includeSample", StringUtils.join(sampleIds, ","));
         queryOptions.put(QueryOptions.EXCLUDE, "annotation");
 
-        VariantDBIterator iterator = null;
+        System.out.println("---> Query = " + query.toJson());
+        System.out.println("---> QueryOptions = " + queryOptions.toJson());
+
+        VariantDBIterator iterator;
         try {
             iterator = storageManager.iterator(query, queryOptions, token);
         } catch (CatalogException | StorageEngineException e) {
