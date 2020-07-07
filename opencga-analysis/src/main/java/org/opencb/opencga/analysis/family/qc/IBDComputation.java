@@ -43,7 +43,12 @@ public class IBDComputation {
             throw new ToolException("Something wrong happened executing relatedness analysis");
         }
 
-        return buildRelatednessReport(outFile);
+        RelatednessReport relatedness = new RelatednessReport()
+                .setMethod("PLINK/IBD")
+                .setMaf(maf)
+                .setScores(parseRelatednessScores(outFile));
+
+        return relatedness;
     }
 
     private static File runIBD(String basename, Path outDir) throws ToolException {
@@ -110,18 +115,17 @@ public class IBDComputation {
         }
     }
 
-    public static RelatednessReport buildRelatednessReport(File file) throws ToolException {
-        RelatednessReport relatednessReport = new RelatednessReport();
+    public static List<RelatednessReport.RelatednessScore> parseRelatednessScores(File file) throws ToolException {
+        List<RelatednessReport.RelatednessScore> scores = new ArrayList<>();
 
-        // Set method
-        relatednessReport.setMethod("PLINK/IBD");
-
+        String line;
         BufferedReader reader;
         try {
             reader = new BufferedReader(new FileReader(file));
-            // First line is the header
+
+            // Skip first line is the header
             // FID1         IID1 FID2         IID2 RT    EZ      Z0      Z1      Z2  PI_HAT PHE       DST     PPC   RATIO
-            String line = reader.readLine();
+            reader.readLine();
 
             while ((line = reader.readLine()) != null) {
                 String[] splits = line.trim().split("\\s+");
@@ -141,13 +145,13 @@ public class IBDComputation {
                 score.setValues(values);
 
                 // Add relatedness score to the report
-                relatednessReport.getScores().add(score);
+                scores.add(score);
             }
             reader.close();
         } catch (IOException e) {
             throw new ToolException(e);
         }
 
-        return relatednessReport;
+        return scores;
     }
 }

@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
@@ -36,7 +37,7 @@ public class IndividualQcUtilsTest {
 
         URI resourceUri = getResourceUri("ibd.genome");
         File file = Paths.get(resourceUri.getPath()).toFile();
-        RelatednessReport relatednessReport = IBDComputation.buildRelatednessReport(file);
+        List<RelatednessReport.RelatednessScore> relatednessReport = IBDComputation.parseRelatednessScores(file);
 
         System.out.println(JacksonUtils.getDefaultNonNullObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(relatednessReport));
     }
