@@ -351,7 +351,23 @@ public final class VariantQueryUtils {
     }
 
     public static boolean isNoneOrAll(String value) {
-        return value.equals(NONE) || value.equals(ALL);
+        return isNone(value) || isAll(value);
+    }
+
+    public static boolean isNoneOrEmpty(List<String> value) {
+        return value != null && (value.isEmpty() || value.size() == 1 && isNone(value.get(0)));
+    }
+
+    private static boolean isNone(String value) {
+        return value.equals(NONE);
+    }
+
+    public static boolean isAllOrNull(List<String> value) {
+        return value == null || value.size() == 1 && isAll(value.get(0));
+    }
+
+    public static boolean isAll(String s) {
+        return s.equals(ALL);
     }
 
     /**

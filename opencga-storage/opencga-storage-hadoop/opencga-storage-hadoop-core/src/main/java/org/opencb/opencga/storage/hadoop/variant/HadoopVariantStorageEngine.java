@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -39,6 +38,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -97,9 +97,7 @@ import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGene
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -379,33 +377,37 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 logger.info(msg);
                 dr.getEvents().add(new Event(Event.Type.INFO, msg));
                 iterator.remove();
+            } else {
+                Integer fatherId = trioIds.get(0);
+                boolean fatherDefined = fatherId != -1;
+                Integer motherId = trioIds.get(1);
+                boolean motherDefined = motherId != -1;
+                if (fatherDefined && !fatherId.equals(sampleMetadata.getFather())
+                        || motherDefined && !motherId.equals(sampleMetadata.getMother())) {
+                    getMetadataManager().updateSampleMetadata(studyId, sampleMetadata.getId(), s -> {
+                        if (fatherDefined) {
+                            sampleMetadata.setFather(fatherId);
+                        }
+                        if (motherDefined) {
+                            sampleMetadata.setMother(motherId);
+                        }
+                        return sampleMetadata;
+                    });
+                }
             }
         }
         if (trios.isEmpty()) {
             logger.info("Nothing to do!");
             return dr;
         }
-        if (trios.size() < 1000) {
+        if (trios.size() < 500) {
             options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
         } else {
-            File mendelianErrorsFile = null;
-            try {
-                mendelianErrorsFile = File.createTempFile("mendelian_errors.", ".tmp");
-                try (OutputStream os = FileUtils.openOutputStream(mendelianErrorsFile)) {
-                    for (List<String> trio : trios) {
-                        os.write(String.join(",", trio).getBytes());
-                        os.write('\n');
-                    }
-                }
-            } catch (IOException e) {
-                if (mendelianErrorsFile == null) {
-                    throw new StorageEngineException("Error generating temporary file.", e);
-                } else {
-                    throw new StorageEngineException("Error writing temporary file " + mendelianErrorsFile, e);
-                }
-            }
-            options.put(FamilyIndexDriver.TRIOS_FILE, mendelianErrorsFile.toPath().toAbsolutePath().toString());
-            options.put(FamilyIndexDriver.TRIOS_FILE_DELETE, true);
+            CohortMetadata cohortMetadata = getMetadataManager().registerTemporaryCohort(study, "pendingFamilyIndexSamples",
+                    trios.stream().map(t -> t.get(2)).collect(Collectors.toList()));
+
+            options.put(FamilyIndexDriver.TRIOS_COHORT, cohortMetadata.getName());
+            options.put(FamilyIndexDriver.TRIOS_COHORT_DELETE, true);
         }
 
         getMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),
