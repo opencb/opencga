@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -73,7 +74,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         logger.info("Running family index!");
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         int studyId = metadataManager.getStudyId(study);
@@ -92,6 +93,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
                 return sampleMetadata;
             });
         }
+        return new DataResult<List<String>>().setResults(trios);
     }
 
     @Override

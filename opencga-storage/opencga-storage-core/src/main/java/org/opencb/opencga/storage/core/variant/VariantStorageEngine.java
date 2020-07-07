@@ -560,8 +560,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *              If a family has two children, two trios should be defined.
      * @param options Other options
      * @throws StorageEngineException in an error occurs
+     * @return List of trios used to index. Empty if there was nothing to do.
      */
-    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException("Unsupported familyIndex");
     }
 
@@ -618,7 +619,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         // then, load variants
         queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
         try (VariantDBIterator iterator = getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor)) {
-            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
+            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
             VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
 
             long value = System.currentTimeMillis();
