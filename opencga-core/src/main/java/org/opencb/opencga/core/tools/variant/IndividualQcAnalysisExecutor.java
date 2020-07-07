@@ -20,6 +20,8 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
+import java.util.Map;
+
 public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public enum QcType {
@@ -34,6 +36,7 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
     protected String motherSampleId;
     protected String fatherSampleId;
     protected String inferredSexMethod;
+    protected Map<String, Double> karyotypicSexThresholds;
 
     protected QcType qcType;
 
@@ -93,6 +96,15 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public IndividualQcAnalysisExecutor setInferredSexMethod(String inferredSexMethod) {
         this.inferredSexMethod = inferredSexMethod;
+        return this;
+    }
+
+    public Map<String, Double> getKaryotypicSexThresholds() {
+        return karyotypicSexThresholds;
+    }
+
+    public IndividualQcAnalysisExecutor setKaryotypicSexThresholds(Map<String, Double> karyotypicSexThresholds) {
+        this.karyotypicSexThresholds = karyotypicSexThresholds;
         return this;
     }
 

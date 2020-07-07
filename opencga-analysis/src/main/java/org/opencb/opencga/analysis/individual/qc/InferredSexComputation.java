@@ -60,15 +60,11 @@ public class InferredSexComputation {
                 List<RegionCoverage> regionCoverages = alignmentStorageManager.coverageQuery(study, bamFile.getUuid(), region, 0,
                         Integer.MAX_VALUE, chromSize, token).getResults();
 
-                System.out.println("region coverages size = " + regionCoverages.size());
-
                 double meanCoverage = 0d;
                 for (RegionCoverage regionCoverage : regionCoverages) {
-                    System.out.println("\tregion coverage : " + regionCoverage.toJSON());
                     meanCoverage += regionCoverage.getStats().getAvg();
                 }
                 meanCoverage /= regionCoverages.size();
-                System.out.println("mean coverage = " + meanCoverage);
 
                 String name = chrom.toUpperCase();
                 switch (name) {
@@ -91,10 +87,6 @@ public class InferredSexComputation {
         }
 
         means[0] /= (1.0d * (chromosomes.size() - 2));
-
-        System.out.println("mean cov. other  = " + means[0]);
-        System.out.println("mean cov. X = " + means[1] + ", ratio = " + (1.0d * means[1] / means[0]));
-        System.out.println("mean cov. Y = " + means[2] + ", ratio = " + (1.0d * means[2] / means[0]));
 
         // Create sex report for that sample
         return new double[]{1.0d * means[1] / means[0], 1.0d * means[2] / means[0]};

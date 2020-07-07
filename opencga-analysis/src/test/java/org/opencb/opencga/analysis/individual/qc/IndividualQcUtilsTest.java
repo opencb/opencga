@@ -25,12 +25,10 @@ import org.opencb.biodata.models.variant.avro.IssueType;
 import org.opencb.opencga.analysis.family.qc.IBDComputation;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -61,6 +59,16 @@ public class IndividualQcUtilsTest {
 
 //        List<Variant> variants = JacksonUtils.getDefaultNonNullObjectMapper().readerFor(Variant.class).readValue(path.toFile());
 //        System.out.println(variants.size());
+    }
+
+
+    @Test
+    public void parseKaryotypicSexThresholds() throws IOException {
+        URI resourceUri = getResourceUri("karyotypic_sex_thresholds.json");
+        File file = Paths.get(resourceUri.getPath()).toFile();
+        Map<String, Double> thresholds = JacksonUtils.getDefaultNonNullObjectMapper().readerFor(Map.class).readValue(file);
+
+        System.out.println(JacksonUtils.getDefaultNonNullObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(thresholds));
     }
 
     private MendelianErrorReport buildMendelianErrorReport(Iterator iterator, long numVariants) {
