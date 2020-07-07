@@ -307,7 +307,7 @@ public class AlignmentStorageManager extends StorageManager {
                             for (Exon exon : transcript.getExons()) {
                                 if (exon.getStart() != 0 && exon.getEnd() != 0) {
                                     Region region = new Region(exon.getChromosome(), exon.getStart() - 5, exon.getEnd() + 5);
-                                    length += (region.size() - 10);
+                                    length += (region.size());// - 10);
 
                                     OpenCGAResult<RegionCoverage> regionResult = alignmentStorageEngine.getDBAdaptor().coverageQuery(
                                             Paths.get(file.getUri()), region, 0, Integer.MAX_VALUE, 1);
