@@ -22,6 +22,7 @@ import org.opencb.biodata.models.clinical.qc.MendelianErrorReport.SampleAggregat
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport.SampleAggregation.ChromosomeAggregation;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.IssueEntry;
+import org.opencb.biodata.models.variant.avro.IssueType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
@@ -197,7 +198,7 @@ public class MendelianInconsistenciesComputation {
             // Get sampleId and error code from variant issues
             boolean foundError = false;
             for (IssueEntry issue : variant.getStudies().get(0).getIssues()) {
-                if ("MENDELIAN_ERROR".equals(issue.getType()) || "DE_NOVO".equals(issue.getType())) {
+                if (IssueType.MENDELIAN_ERROR == issue.getType() || IssueType.DE_NOVO == issue.getType()) {
                     foundError = true;
 
                     String sampleId = issue.getSample().getSampleId();
@@ -213,6 +214,7 @@ public class MendelianInconsistenciesComputation {
                         val = counter.get(sampleId).get(variant.getChromosome()).get(errorCode);
                     }
                     counter.get(sampleId).get(variant.getChromosome()).put(errorCode, val + 1);
+                    break;
                 }
             }
             if (foundError) {
