@@ -109,17 +109,24 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
 
+        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+
+        boolean multiFileSamples = false;
         for (Integer sampleId : sampleIds) {
             SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sampleId);
-            for (PhoenixHelper.Column column : VariantPhoenixHelper.getSampleColumns(sampleMetadata)) {
+            List<PhoenixHelper.Column> sampleColumns = VariantPhoenixHelper.getSampleColumns(sampleMetadata);
+            if (sampleColumns.size() > 1) {
+                multiFileSamples = true;
+            }
+            for (PhoenixHelper.Column column : sampleColumns) {
                 scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column.bytes());
             }
         }
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
 
         SampleIndexAnnotationLoaderMapper.setHasGenotype(job, hasGenotype);
-
-        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        SampleIndexAnnotationLoaderMapper.setMultiFileSamples(job, multiFileSamples);
+        SampleIndexAnnotationLoaderMapper.setSampleIdRange(job, sampleIds);
 
         VariantMapReduceUtil.initTableMapperJob(job, variantTable,
                 scan, getMapperClass(), VariantAlignedInputFormat.class);
