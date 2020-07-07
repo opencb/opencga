@@ -429,18 +429,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        // This code is to calculate the total effective permissions
-        // TODO: Take into account effective permissions at some point
-//        List<String> members = new ArrayList<>(2);
-//        members.add(member);
-//        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
-//            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
-//                members.add(groupBelonging.first().getName());
-//            }
-//        }
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
 
-        return aclDBAdaptor.get(studyId, Arrays.asList(member), Enums.Resource.STUDY);
+        return aclDBAdaptor.get(studyId, memberList, Enums.Resource.STUDY);
     }
 
     @Override
@@ -459,18 +456,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        // This code is to calculate the total effective permissions
-        // TODO: Take into account effective permissions at some point
-//        List<String> members = new ArrayList<>(2);
-//        members.add(member);
-//        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
-//            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
-//                members.add(groupBelonging.first().getName());
-//            }
-//        }
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
 
-        return aclDBAdaptor.get(sampleId, Arrays.asList(member), Enums.Resource.SAMPLE);
+        return aclDBAdaptor.get(sampleId, memberList, Enums.Resource.SAMPLE);
     }
 
     @Override
@@ -497,18 +491,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        // This code is to calculate the total effective permissions
-        // TODO: Take into account effective permissions at some point
-//        List<String> members = new ArrayList<>(2);
-//        members.add(member);
-//        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
-//            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
-//                members.add(groupBelonging.first().getName());
-//            }
-//        }
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
 
-        return aclDBAdaptor.get(fileId, Arrays.asList(member), Enums.Resource.FILE);
+        return aclDBAdaptor.get(fileId, memberList, Enums.Resource.FILE);
     }
 
     @Override
@@ -528,18 +519,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        // This code is to calculate the total effective permissions
-        // TODO: Take into account effective permissions at some point
-//        List<String> members = new ArrayList<>(2);
-//        members.add(member);
-//        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
-//            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
-//                members.add(groupBelonging.first().getName());
-//            }
-//        }
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
 
-        return aclDBAdaptor.get(individualId, Arrays.asList(member), Enums.Resource.INDIVIDUAL);
+        return aclDBAdaptor.get(individualId, memberList, Enums.Resource.INDIVIDUAL);
     }
 
     @Override
@@ -558,18 +546,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        // This code is to calculate the total effective permissions
-        // TODO: Take into account effective permissions at some point
-//        List<String> members = new ArrayList<>(2);
-//        members.add(member);
-//        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
-//            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
-//                members.add(groupBelonging.first().getName());
-//            }
-//        }
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
 
-        return aclDBAdaptor.get(cohortId, Arrays.asList(member), Enums.Resource.COHORT);
+        return aclDBAdaptor.get(cohortId, memberList, Enums.Resource.COHORT);
     }
 
     @Override
@@ -588,7 +573,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        return aclDBAdaptor.get(panelId, Arrays.asList(member), Enums.Resource.DISEASE_PANEL);
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
+
+        return aclDBAdaptor.get(panelId, memberList, Enums.Resource.DISEASE_PANEL);
     }
 
     @Override
@@ -607,18 +600,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        // This code is to calculate the total effective permissions
-        // TODO: Take into account effective permissions at some point
-//        List<String> members = new ArrayList<>(2);
-//        members.add(member);
-//        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
-//            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
-//                members.add(groupBelonging.first().getName());
-//            }
-//        }
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
 
-        return aclDBAdaptor.get(jobId, Arrays.asList(member), Enums.Resource.JOB);
+        return aclDBAdaptor.get(jobId, memberList, Enums.Resource.JOB);
     }
 
     @Override
@@ -637,7 +627,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        return aclDBAdaptor.get(familyId, Arrays.asList(member), Enums.Resource.FAMILY);
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
+
+        return aclDBAdaptor.get(familyId, memberList, Enums.Resource.FAMILY);
     }
 
     @Override
@@ -657,17 +655,28 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        return aclDBAdaptor.get(clinicalAnalysisId, Arrays.asList(member), Enums.Resource.CLINICAL_ANALYSIS);
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
+
+        return aclDBAdaptor.get(clinicalAnalysisId, memberList, Enums.Resource.CLINICAL_ANALYSIS);
     }
 
     private void checkAskingOwnPermissions(String userId, String member, long studyId) throws CatalogException {
         if (member.startsWith("@")) { //group
             // If the userId does not belong to the group...
-            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
-            if (groupBelonging.getNumResults() != 1 || !groupBelonging.first().getId().equals(member)) {
-                throw new CatalogAuthorizationException("The user " + userId + " does not have permissions to see the ACLs of "
-                        + member);
+            OpenCGAResult<Group> groupsBelonging = getGroupBelonging(studyId, userId);
+            for (Group group : groupsBelonging.getResults()) {
+                if (group.getId().equals(member)) {
+                    return;
+                }
             }
+            throw new CatalogAuthorizationException("The user " + userId + " does not have permissions to see the ACLs of "
+                    + member);
         } else {
             // If the userId asking to see the permissions is not asking to see their own permissions
             if (!userId.equals(member)) {
