@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -26,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -50,10 +52,33 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     protected abstract String getJobName();
 
     private Job newJob() throws IOException {
+        LOGGER.info("Create MR Job");
         Job job = Job.getInstance(getConf(), getJobName());
-        job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
+        job.getConfiguration().set(MRJobConfig.MAPREDUCE_JOB_USER_CLASSPATH_FIRST, "true");
         job.setJarByClass(AbstractHBaseDriver.class);    // class that contains mapper
+        addJobConf(job, MRJobConfig.PRIORITY);
+        addJobConf(job, MRJobConfig.QUEUE_NAME);
+        addJobConf(job, MRJobConfig.MAP_MEMORY_MB);
+        addJobConf(job, MRJobConfig.REDUCE_MEMORY_MB);
+        addJobConf(job, MRJobConfig.MAP_CPU_VCORES);
+        addJobConf(job, MRJobConfig.REDUCE_CPU_VCORES);
+        addJobConf(job, MRJobConfig.TASK_TIMEOUT);
         return job;
+    }
+
+    private void addJobConf(Job job, String key) {
+        String value = getConf().get(getClass().getName() + "." + key);
+        if (StringUtils.isEmpty(value)) {
+            value = getConf().get(getClass().getSimpleName() + "." + key);
+        }
+        if (StringUtils.isEmpty(value)) {
+            value = getConf().get(key);
+        }
+
+        if (StringUtils.isNotEmpty(value)) {
+            LOGGER.info("Configure MR job with {} = {}", key, value);
+            job.getConfiguration().set(key, value);
+        }
     }
 
     protected abstract void setupJob(Job job, String table) throws IOException;
@@ -311,14 +336,23 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         List<String> args = new ArrayList<>(1 + options.size() * 2);
 
         args.add(table);
+        addMap(args, options, "");
+        return args.toArray(new String[0]);
+    }
+
+    private static void addMap(List<String> args, ObjectMap options, String keyPrefix) {
         for (String key : options.keySet()) {
-            String value = options.getString(key);
-            if (StringUtils.isNotEmpty(key) && StringUtils.isNotEmpty(value)) {
-                args.add(key);
-                args.add(value);
+            if (options.get(key) instanceof Map) {
+                ObjectMap map = new ObjectMap(options.getMap(key));
+                addMap(args, map, keyPrefix + key + ".");
+            } else {
+                String value = options.getString(key);
+                if (StringUtils.isNotEmpty(key) && StringUtils.isNotEmpty(value)) {
+                    args.add(keyPrefix + key);
+                    args.add(value);
+                }
             }
         }
-        return args.toArray(new String[args.size()]);
     }
 
     protected static void main(String[] args, Class<? extends Tool> aClass) {
