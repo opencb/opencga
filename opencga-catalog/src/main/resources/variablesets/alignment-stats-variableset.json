@@ -19,18 +19,6 @@
       "attributes": {}
     },
     {
-      "id": "sampleId",
-      "name": "sampleId",
-      "type": "STRING",
-      "required": true,
-      "multiValue": false,
-      "allowedValues": [],
-      "rank": 2,
-      "dependsOn": "",
-      "description": "Sample ID",
-      "attributes": {}
-    },
-    {
       "id": "rawTotalSequences",
       "name": "rawTotalSequences",
       "category": "number",
@@ -38,7 +26,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 3,
+      "rank": 2,
       "dependsOn": "",
       "description": "Raw total sequences",
       "attributes": {}
@@ -51,7 +39,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 4,
+      "rank": 3,
       "dependsOn": "",
       "description": "Filtered sequences",
       "attributes": {}
@@ -64,7 +52,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 5,
+      "rank": 4,
       "dependsOn": "",
       "description": "Sequences",
       "attributes": {}
@@ -77,7 +65,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 6,
+      "rank": 5,
       "dependsOn": "",
       "description": "Is sorted",
       "attributes": {}
@@ -90,7 +78,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 7,
+      "rank": 6,
       "dependsOn": "",
       "description": "First fragments",
       "attributes": {}
@@ -103,7 +91,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 8,
+      "rank": 7,
       "dependsOn": "",
       "description": "Last fragments",
       "attributes": {}
@@ -116,7 +104,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 9,
+      "rank": 8,
       "dependsOn": "",
       "description": "Reads mapped",
       "attributes": {}
@@ -129,7 +117,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 10,
+      "rank": 9,
       "dependsOn": "",
       "description": "Reads mapped and paired: paired-end technology bit set + both mates mapped",
       "attributes": {}
@@ -142,7 +130,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 11,
+      "rank": 10,
       "dependsOn": "",
       "description": "Reads unmapped",
       "attributes": {}
@@ -155,7 +143,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 12,
+      "rank": 11,
       "dependsOn": "",
       "description": "Reads properly paired: proper-pair bit set",
       "attributes": {}
@@ -168,7 +156,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 13,
+      "rank": 12,
       "dependsOn": "",
       "description": "Reads paired: paired-end technology bit set",
       "attributes": {}
@@ -181,7 +169,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 14,
+      "rank": 13,
       "dependsOn": "",
       "description": "Reads duplicated: PCR or optical duplicate bit set",
       "attributes": {}
@@ -194,7 +182,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 15,
+      "rank": 14,
       "dependsOn": "",
       "description": "Reads MQ0: mapped and MQ=0",
       "attributes": {}
@@ -207,7 +195,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 16,
+      "rank": 15,
       "dependsOn": "",
       "description": "Reads QC failed",
       "attributes": {}
@@ -220,7 +208,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 17,
+      "rank": 16,
       "dependsOn": "",
       "description": "Non-primary alignments",
       "attributes": {}
@@ -233,7 +221,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 18,
+      "rank": 17,
       "dependsOn": "",
       "description": "Total length: ignores clipping",
       "attributes": {}
@@ -246,7 +234,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 19,
+      "rank": 18,
       "dependsOn": "",
       "description": "Total first fragment length: ignores clipping",
       "attributes": {}
@@ -259,7 +247,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 20,
+      "rank": 19,
       "dependsOn": "",
       "description": "Total last fragment length: ignores clipping",
       "attributes": {}
@@ -272,7 +260,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 21,
+      "rank": 20,
       "dependsOn": "",
       "description": "Bases mapped: ignores clipping",
       "attributes": {}
@@ -285,7 +273,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 22,
+      "rank": 21,
       "dependsOn": "",
       "description": "Bases mapped (cigar): more accurate",
       "attributes": {}
@@ -298,7 +286,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 23,
+      "rank": 22,
       "dependsOn": "",
       "description": "Bases trimmed",
       "attributes": {}
@@ -311,7 +299,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 24,
+      "rank": 23,
       "dependsOn": "",
       "description": "Bases duplicated",
       "attributes": {}
@@ -324,7 +312,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 25,
+      "rank": 24,
       "dependsOn": "",
       "description": "Mismatches: from NM fields",
       "attributes": {}
@@ -337,7 +325,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 26,
+      "rank": 25,
       "dependsOn": "",
       "description": "Error rate: mismatches / bases mapped (cigar)",
       "attributes": {}
@@ -350,7 +338,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 27,
+      "rank": 26,
       "dependsOn": "",
       "description": "Average length",
       "attributes": {}
@@ -363,7 +351,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 28,
+      "rank": 27,
       "dependsOn": "",
       "description": "Average first fragment length",
       "attributes": {}
@@ -376,7 +364,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 29,
+      "rank": 28,
       "dependsOn": "",
       "description": "Average last fragment length",
       "attributes": {}
@@ -389,7 +377,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 30,
+      "rank": 29,
       "dependsOn": "",
       "description": "Maximum length",
       "attributes": {}
@@ -402,7 +390,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 31,
+      "rank": 30,
       "dependsOn": "",
       "description": "Maximum first fragment length",
       "attributes": {}
@@ -415,7 +403,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 32,
+      "rank": 31,
       "dependsOn": "",
       "description": "Maximum last fragment length",
       "attributes": {}
@@ -428,7 +416,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 33,
+      "rank": 32,
       "dependsOn": "",
       "description": "Average quality",
       "attributes": {}
@@ -441,7 +429,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 34,
+      "rank": 33,
       "dependsOn": "",
       "description": "Insert size average",
       "attributes": {}
@@ -454,7 +442,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 35,
+      "rank": 34,
       "dependsOn": "",
       "description": "Insert size standard deviation",
       "attributes": {}
@@ -467,7 +455,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 36,
+      "rank": 35,
       "dependsOn": "",
       "description": "Inward oriented pairs",
       "attributes": {}
@@ -480,7 +468,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 37,
+      "rank": 36,
       "dependsOn": "",
       "description": "Outward oriented pairs",
       "attributes": {}
@@ -493,7 +481,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 38,
+      "rank": 37,
       "dependsOn": "",
       "description": "Pairs with other orientation",
       "attributes": {}
@@ -506,7 +494,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 39,
+      "rank": 38,
       "dependsOn": "",
       "description": "Pairs on different chromosomes",
       "attributes": {}
@@ -519,7 +507,7 @@
       "required": false,
       "multiValue": false,
       "allowedValues": [],
-      "rank": 40,
+      "rank": 39,
       "dependsOn": "",
       "description": "Percentage of properly paired reads",
       "attributes": {}
