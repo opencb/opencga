@@ -39,6 +39,7 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
@@ -47,6 +48,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+
+import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS;
+import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_SAMPLES;
 
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
 public class SampleQcAnalysis extends OpenCgaTool {
@@ -89,8 +93,11 @@ public class SampleQcAnalysis extends OpenCgaTool {
             throw new ToolException("Missing study ID.");
         }
 
+        // Check permissions
         try {
-            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
+            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
+            String userId = catalogManager.getUserManager().getUserId(token);
+            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_SAMPLES);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

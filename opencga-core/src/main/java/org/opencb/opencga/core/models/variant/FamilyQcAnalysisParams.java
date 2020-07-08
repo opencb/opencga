@@ -22,7 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 public class FamilyQcAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Family QC analysis params";
+    public static final String DESCRIPTION = "Family QC analysis params. Family ID. Relatedness method, by default 'PLINK/IBD'. Minor "
+            + " allele frequence (MAF) is used to filter variants before computing relatedness, e.g.: 1kg_phase3:CEU>0.35 or cohort:ALL>0.05";
     private String family;
     private String relatednessMethod;
     private String relatednessMaf;

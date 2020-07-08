@@ -19,30 +19,34 @@ package org.opencb.opencga.analysis.individual.qc;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+
+import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS;
+import static org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
 
 @Tool(id = IndividualQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = IndividualQcAnalysis.DESCRIPTION)
 public class IndividualQcAnalysis extends OpenCgaTool {
@@ -64,6 +68,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
     private Sample sample;
     private String motherSampleId;
     private String fatherSampleId;
+    private Map<String, Double> karyotypicSexThresholds;
     private IndividualQualityControl qualityControl;
     private IndividualQcAnalysisExecutor executor;
 
@@ -79,18 +84,19 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             throw new ToolException("Missing study ID.");
         }
 
+        // Check permissions
         try {
-            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
+            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
+            String userId = catalogManager.getUserManager().getUserId(token);
+            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_INDIVIDUALS);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
-        // Sanity check
+        // Get individual
         if (StringUtils.isEmpty(individualId)) {
             throw new ToolException("Missing individual ID.");
         }
-
-        // Get individual
         individual = IndividualQcUtils.getIndividualById(studyId, individualId, catalogManager, token);
 
         // Get samples of that individual, but only germline samples
@@ -137,7 +143,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         }
 
         if (StringUtils.isEmpty(inferredSexMethod)) {
-            inferredSexMethod = IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
+            inferredSexMethod = COVERAGE_RATIO_INFERRED_SEX_METHOD;
         }
     }
 
@@ -152,12 +158,17 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         // Get individual quality control metrics to update
         qualityControl = individual.getQualityControl();
         if (qualityControl == null) {
-            qualityControl = new IndividualQualityControl().setSampleId(sample.getId());
+            qualityControl = new IndividualQualityControl();
         } else {
             if (StringUtils.isNotEmpty(qualityControl.getSampleId()) && !qualityControl.getSampleId().equals(sample.getId())) {
                 throw new ToolException("Individual quality control was computed previously for the sample '" + qualityControl.getSampleId()
                         + "'");
             }
+        }
+
+        // Set sample ID
+        if (StringUtils.isEmpty(qualityControl.getSampleId())) {
+            qualityControl.setSampleId(sample.getId());
         }
 
         executor = getToolExecutor(IndividualQcAnalysisExecutor.class)
@@ -186,7 +197,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
     }
 
     private void runInferredSex() throws ToolException {
-        if (com.nimbusds.oauth2.sdk.util.CollectionUtils.isNotEmpty(qualityControl.getInferredSexReports())) {
+        if (CollectionUtils.isNotEmpty(qualityControl.getInferredSexReports())) {
             for (InferredSexReport inferredSexReport : qualityControl.getInferredSexReports()) {
                 if (inferredSexReport.getMethod().equals(inferredSexMethod)) {
                     addWarning("Skipping inferred sex: it was already computed using method '" + inferredSexMethod + "'");
@@ -195,8 +206,9 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             }
         }
 
-        if (!IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD.equals(inferredSexMethod)) {
-            addWarning("Skipping inferred sex: unknown inferred sex method '" + inferredSexMethod + "'");
+        if (!COVERAGE_RATIO_INFERRED_SEX_METHOD.equals(inferredSexMethod)) {
+            addWarning("Skipping inferred sex: unknown inferred sex method '" + inferredSexMethod + "'. Please, use '"
+                    + COVERAGE_RATIO_INFERRED_SEX_METHOD + "'");
             return;
         }
 
@@ -214,7 +226,17 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             return;
         }
 
-        executor.setQcType(IndividualQcAnalysisExecutor.QcType.INFERRED_SEX).execute();
+        try {
+            Path thresholdsPath = Paths.get(opencgaHome).resolve("analysis").resolve(ID).resolve("karyotypic_sex_thresholds.json");
+            karyotypicSexThresholds = JacksonUtils.getDefaultNonNullObjectMapper().readerFor(Map.class).readValue(thresholdsPath.toFile());
+        } catch (IOException e) {
+            addWarning("Skipping inferred sex: something wrong happened when loading the karyotypic sex thresholds file"
+                    + " (karyotypic_sex_thresholds.json)");
+            return;
+        }
+        executor.setQcType(IndividualQcAnalysisExecutor.QcType.INFERRED_SEX)
+                .setKaryotypicSexThresholds(karyotypicSexThresholds)
+                .execute();
     }
 
     private void runMendelianError() throws ToolException {

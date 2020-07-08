@@ -1,0 +1,3795 @@
+[{
+          "id": "1:884101:A:C",
+          "names": [
+            "rs4970455"
+          ],
+          "chromosome": "1",
+          "reference": "A",
+          "alternate": "C",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 0,
+                    "VQSRTrancheSNP99.00to99.90": 1
+                  },
+                  "qualityAvg": 192.02,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "A",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 0,
+                    "VQSRTrancheSNP99.00to99.90": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "5,4",
+                    "9",
+                    "99",
+                    "114,0,152"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "40,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "39,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "OND": "0.125",
+                    "EFF": "DOWNSTREAM(MODIFIER||||681|SAMD11||CODING|NM_152486.2||1),INTRON(MODIFIER||||749|NOC2L||CODING|NM_015658.3|12|1)",
+                    "ABHet": "0.556",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "13",
+                    "ReadPosRankSum": "-2.074",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-6.601e+01",
+                    "QD": "14.77",
+                    "ABHom": "0.833",
+                    "AC": "7",
+                    "MQRankSum": "-0.935",
+                    "FILTER": "VQSRTrancheSNP99.00to99.90",
+                    "set": "FilteredInAll",
+                    "MQ": "37.86",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "192.02",
+                    "BaseQRankSum": "0.811",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs4970455",
+                    "VQSLOD": "1.2585",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 884101,
+          "type": "SNP",
+          "end": 884101,
+          "length": 1
+        },
+        {
+          "id": "1:900505:G:C",
+          "names": [
+            "rs28705211"
+          ],
+          "chromosome": "1",
+          "reference": "G",
+          "alternate": "C",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 969.94,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "G",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "35,14",
+                    "49",
+                    "99",
+                    "341,0,1127"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,6",
+                    "6",
+                    "18",
+                    "233,18,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "1,3",
+                    "4",
+                    "9",
+                    "115,9,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "OND": "0.063",
+                    "EFF": "SYNONYMOUS_CODING(LOW|SILENT|gtG/gtC|V621|642|KLHL17||CODING|NM_198317.2|12|1),UPSTREAM(MODIFIER||||576|PLEKHN1||CODING|NM_001160184.1||1),UPSTREAM(MODIFIER||||611|PLEKHN1||CODING|NM_032129.2||1)",
+                    "ABHet": "0.714",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "68",
+                    "ReadPosRankSum": "0.620",
+                    "FS": "0.908",
+                    "MQ0": "0",
+                    "SB": "-4.308e+02",
+                    "QD": "14.26",
+                    "ABHom": "0.923",
+                    "AC": "7",
+                    "MQRankSum": "-0.596",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.4666",
+                    "QUAL": "969.94",
+                    "BaseQRankSum": "-2.832",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs28705211",
+                    "VQSLOD": "13.5181",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 900505,
+          "type": "SNP",
+          "end": 900505,
+          "length": 1
+        },
+        {
+          "id": "1:2985885:C:G",
+          "names": [
+            "rs7413494"
+          ],
+          "chromosome": "1",
+          "reference": "C",
+          "alternate": "G",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 116.24,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "C",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "1,1",
+                    "2",
+                    "24",
+                    "24,0,34"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "37,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "40,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||1257|PRDM16||CODING|NM_199454.2|1|1),INTRON(MODIFIER||||1276|PRDM16||CODING|NM_022114.3|1|1),UPSTREAM(MODIFIER|||||FLJ42875||NON_CODING|NR_015440.1||1),UPSTREAM(MODIFIER|||||FLJ42875||NON_CODING|NR_024371.1||1)",
+                    "ABHet": "0.500",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "6",
+                    "ReadPosRankSum": "0.736",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-1.182e-02",
+                    "QD": "19.37",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "-0.736",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "33.48",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "116.23999999999998",
+                    "BaseQRankSum": "-0.736",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs7413494",
+                    "VQSLOD": "2.1069",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 2985885,
+          "type": "SNP",
+          "end": 2985885,
+          "length": 1
+        },
+        {
+          "id": "1:6188779:G:C",
+          "names": [
+            "rs2273033"
+          ],
+          "chromosome": "1",
+          "reference": "G",
+          "alternate": "C",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 2,
+                    "1/1": 2
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 264.22,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 2,
+                  "altAlleleCount": 6,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.5,
+                    "1/1": 0.5
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.25,
+                  "altAlleleFreq": 0.75,
+                  "maf": 0.25,
+                  "mgf": 0,
+                  "mafAllele": "G",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "3,3",
+                    "6",
+                    "99",
+                    "100,0,102"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,2",
+                    "2",
+                    "6",
+                    "73,6,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,2",
+                    "2",
+                    "6",
+                    "73,6,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||1954|CHD5||CODING|NM_015557.2|23|1)",
+                    "ABHet": "0.550",
+                    "Dels": "0.00",
+                    "MLEAC": "6",
+                    "MLEAF": "0.750",
+                    "DP": "15",
+                    "ReadPosRankSum": "0.884",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-6.402e+01",
+                    "QD": "17.61",
+                    "ABHom": "1.00",
+                    "AC": "6",
+                    "MQRankSum": "0.059",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.750",
+                    "HaplotypeScore": "0.2333",
+                    "QUAL": "264.22",
+                    "BaseQRankSum": "0.177",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs2273033",
+                    "VQSLOD": "20.2071",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 6188779,
+          "type": "SNP",
+          "end": 6188779,
+          "length": 1
+        },
+        {
+          "id": "1:9206357:C:T",
+          "names": [
+            "rs4908813"
+          ],
+          "chromosome": "1",
+          "reference": "C",
+          "alternate": "T",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 2
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 141.25,
+                  "sampleCount": 3,
+                  "alleleCount": 6,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 5,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.33333334,
+                    "1/1": 0.6666667
+                  },
+                  "missingAlleleCount": 2,
+                  "missingGenotypeCount": 1,
+                  "refAlleleFreq": 0.16666667,
+                  "altAlleleFreq": 0.8333333,
+                  "maf": 0.16666667,
+                  "mgf": 0,
+                  "mafAllele": "C",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "1,3",
+                    "4",
+                    "26",
+                    "102,0,26"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "39,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "38,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTERGENIC(MODIFIER||||||||||1)",
+                    "ABHet": "0.250",
+                    "Dels": "0.00",
+                    "MLEAC": "5",
+                    "MLEAF": "0.833",
+                    "DP": "6",
+                    "ReadPosRankSum": "0.736",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-6.905e+01",
+                    "QD": "23.54",
+                    "ABHom": "1.00",
+                    "AC": "5",
+                    "MQRankSum": "0.736",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.833",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "141.25",
+                    "BaseQRankSum": "0.736",
+                    "AN": "6",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs4908813",
+                    "VQSLOD": "20.5505",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 9206357,
+          "type": "SNP",
+          "end": 9206357,
+          "length": 1
+        },
+        {
+          "id": "1:12638964:T:C",
+          "names": [
+            "rs2275875"
+          ],
+          "chromosome": "1",
+          "reference": "T",
+          "alternate": "C",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 462.66,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "T",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "6,5",
+                    "11",
+                    "99",
+                    "122,0,203"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,3",
+                    "3",
+                    "6",
+                    "73,6,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,6",
+                    "6",
+                    "18",
+                    "213,18,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "SYNONYMOUS_CODING(LOW|SILENT|ccA/ccG|P160|302|DHRS3||CODING|NM_004753.4|4|1)",
+                    "ABHet": "0.545",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "23",
+                    "ReadPosRankSum": "0.035",
+                    "FS": "2.066",
+                    "MQ0": "0",
+                    "SB": "-2.258e+02",
+                    "QD": "20.12",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "-0.525",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "462.6600000000001",
+                    "BaseQRankSum": "-1.365",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs2275875",
+                    "VQSLOD": "14.3862",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 12638964,
+          "type": "SNP",
+          "end": 12638964,
+          "length": 1
+        },
+        {
+          "id": "1:16344494:G:A",
+          "names": [
+            "rs1572381"
+          ],
+          "chromosome": "1",
+          "reference": "G",
+          "alternate": "A",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 0,
+                    "VQSRTrancheSNP99.00to99.90": 1
+                  },
+                  "qualityAvg": 452.28,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "G",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 0,
+                    "VQSRTrancheSNP99.00to99.90": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "7,3",
+                    "10",
+                    "78",
+                    "78,0,240"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,7",
+                    "7",
+                    "12",
+                    "159,12,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,5",
+                    "5",
+                    "12",
+                    "154,12,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "UPSTREAM(MODIFIER||||644|CLCNKA||CODING|NM_001257139.1||1),UPSTREAM(MODIFIER||||686|CLCNKA||CODING|NM_001042704.1||1),UPSTREAM(MODIFIER||||687|CLCNKA||CODING|NM_004070.3||1),UTR_5_PRIME(MODIFIER||||170|HSPB7||CODING|NM_014424.4|1|1)",
+                    "ABHet": "0.700",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "25",
+                    "ReadPosRankSum": "1.362",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-1.901e+01",
+                    "QD": "18.09",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "-2.149",
+                    "FILTER": "VQSRTrancheSNP99.00to99.90",
+                    "set": "FilteredInAll",
+                    "MQ": "36.60",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.8990",
+                    "QUAL": "452.28",
+                    "BaseQRankSum": "-1.664",
+                    "AN": "8",
+                    "culprit": "MQRankSum",
+                    "VCF_ID": "rs1572381",
+                    "VQSLOD": "1.1877",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 16344494,
+          "type": "SNP",
+          "end": 16344494,
+          "length": 1
+        },
+        {
+          "id": "1:16951024:T:C",
+          "names": [
+            "rs1624137"
+          ],
+          "chromosome": "1",
+          "reference": "T",
+          "alternate": "C",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 0,
+                    "VQSRTrancheSNP99.00to99.90": 1
+                  },
+                  "qualityAvg": 227.41,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "T",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 0,
+                    "VQSRTrancheSNP99.00to99.90": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "1,2",
+                    "3",
+                    "29",
+                    "46,0,29"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,2",
+                    "2",
+                    "6",
+                    "55,6,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,2",
+                    "2",
+                    "6",
+                    "79,6,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER|||||CROCCP2||NON_CODING|NR_026752.1|5|1)",
+                    "ABHet": "0.333",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "10",
+                    "ReadPosRankSum": "0.000",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-7.892e+01",
+                    "QD": "22.74",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "-1.741",
+                    "FILTER": "VQSRTrancheSNP99.00to99.90",
+                    "set": "FilteredInAll",
+                    "MQ": "29.19",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "227.41",
+                    "BaseQRankSum": "0.000",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs1624137",
+                    "VQSLOD": "-1.2586",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 16951024,
+          "type": "SNP",
+          "end": 16951024,
+          "length": 1
+        },
+        {
+          "id": "1:16952993:C:G",
+          "names": [
+            "rs942268"
+          ],
+          "chromosome": "1",
+          "reference": "C",
+          "alternate": "G",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 0,
+                    "VQSRTrancheSNP99.00to99.90": 1
+                  },
+                  "qualityAvg": 1824.55,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "C",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 0,
+                    "VQSRTrancheSNP99.00to99.90": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "4,22",
+                    "26",
+                    "82",
+                    "701,0,82"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,10",
+                    "10",
+                    "27",
+                    "346,27,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,13",
+                    "13",
+                    "39",
+                    "493,39,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "EXON(MODIFIER|||||CROCCP2||NON_CODING|NR_026752.1|4|1)",
+                    "ABHet": "0.154",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "59",
+                    "ReadPosRankSum": "-1.764",
+                    "FS": "3.459",
+                    "MQ0": "0",
+                    "SB": "-2.280e+02",
+                    "QD": "30.92",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "-0.950",
+                    "FILTER": "VQSRTrancheSNP99.00to99.90",
+                    "set": "FilteredInAll",
+                    "MQ": "34.02",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.4161",
+                    "QUAL": "1824.5499999999997",
+                    "BaseQRankSum": "-2.156",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs942268",
+                    "VQSLOD": "1.6301",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 16952993,
+          "type": "SNP",
+          "end": 16952993,
+          "length": 1
+        },
+        {
+          "id": "1:16959101:C:T",
+          "names": [
+            "rs698884"
+          ],
+          "chromosome": "1",
+          "reference": "C",
+          "alternate": "T",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 268.8,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "C",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "1,4",
+                    "5",
+                    "25",
+                    "136,0,25"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "36,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "37,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTERGENIC(MODIFIER||||||||||1),UPSTREAM(MODIFIER|||||CROCCP2||NON_CODING|NR_026752.1||1)",
+                    "ABHet": "0.200",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "10",
+                    "ReadPosRankSum": "0.000",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-7.904e+01",
+                    "QD": "26.88",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "-0.348",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "35.85",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "268.8",
+                    "BaseQRankSum": "-1.741",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs698884",
+                    "VQSLOD": "2.6997",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 16959101,
+          "type": "SNP",
+          "end": 16959101,
+          "length": 1
+        },
+        {
+          "id": "1:17431277:G:T",
+          "names": [
+            "rs6701159"
+          ],
+          "chromosome": "1",
+          "reference": "G",
+          "alternate": "T",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 289.49,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "G",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "5,5",
+                    "10",
+                    "99",
+                    "153,0,170"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "33,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,2",
+                    "2",
+                    "6",
+                    "70,6,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||665|PADI2||CODING|NM_007365.2|2|1)",
+                    "ABHet": "0.500",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "15",
+                    "ReadPosRankSum": "0.184",
+                    "FS": "4.771",
+                    "MQ0": "0",
+                    "SB": "-1.182e-02",
+                    "QD": "19.30",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "-0.551",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "289.49",
+                    "BaseQRankSum": "-3.123",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs6701159",
+                    "VQSLOD": "14.0746",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 17431277,
+          "type": "SNP",
+          "end": 17431277,
+          "length": 1
+        },
+        {
+          "id": "1:19282032:T:C",
+          "names": [
+            "rs74957812"
+          ],
+          "chromosome": "1",
+          "reference": "T",
+          "alternate": "C",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 1,
+                    "0/1": 1,
+                    "1/1": 2
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 65.02,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 3,
+                  "altAlleleCount": 5,
+                  "genotypeFreq": {
+                    "0/0": 0.25,
+                    "0/1": 0.25,
+                    "1/1": 0.5
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.375,
+                  "altAlleleFreq": 0.625,
+                  "maf": 0.375,
+                  "mgf": 0.25,
+                  "mafAllele": "T",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "3,1",
+                    "4",
+                    "28",
+                    "28,0,92"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "40,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "40,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||517|IFFO2||CODING|NM_001136265.1|1|1)",
+                    "ABHet": "0.750",
+                    "Dels": "0.00",
+                    "MLEAC": "4",
+                    "MLEAF": "0.500",
+                    "DP": "8",
+                    "ReadPosRankSum": "0.684",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-1.407e-02",
+                    "QD": "10.84",
+                    "ABHom": "1.00",
+                    "AC": "5",
+                    "MQRankSum": "0.322",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.625",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "65.02",
+                    "BaseQRankSum": "0.322",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs74957812",
+                    "VQSLOD": "19.4352",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 19282032,
+          "type": "SNP",
+          "end": 19282032,
+          "length": 1
+        },
+        {
+          "id": "1:20978832:T:C",
+          "names": [
+            "rs6893"
+          ],
+          "chromosome": "1",
+          "reference": "T",
+          "alternate": "C",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 182.02,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "T",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "2,3",
+                    "5",
+                    "63",
+                    "104,0,63"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "39,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "40,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "DOWNSTREAM(MODIFIER||||581|PINK1||CODING|NM_032409.2||1),UTR_3_PRIME(MODIFIER||||456|DDOST||CODING|NM_005216.4|11|1)",
+                    "ABHet": "0.400",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "8",
+                    "ReadPosRankSum": "1.067",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-1.182e-02",
+                    "QD": "22.75",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "0.572",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "182.02",
+                    "BaseQRankSum": "0.572",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs6893",
+                    "VQSLOD": "21.0478",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 20978832,
+          "type": "SNP",
+          "end": 20978832,
+          "length": 1
+        },
+        {
+          "id": "1:20998849:C:T",
+          "names": [
+            "rs72650862"
+          ],
+          "chromosome": "1",
+          "reference": "C",
+          "alternate": "T",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 1,
+                    "0/1": 1,
+                    "1/1": 2
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 103.27,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 3,
+                  "altAlleleCount": 5,
+                  "genotypeFreq": {
+                    "0/0": 0.25,
+                    "0/1": 0.25,
+                    "1/1": 0.5
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.375,
+                  "altAlleleFreq": 0.625,
+                  "maf": 0.375,
+                  "mgf": 0.25,
+                  "mafAllele": "C",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "1,2",
+                    "3",
+                    "31",
+                    "67,0,31"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "38,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "40,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||1028|KIF17||CODING|NM_001122819.1|11|1),INTRON(MODIFIER||||1029|KIF17||CODING|NM_020816.2|11|1)",
+                    "ABHet": "0.333",
+                    "Dels": "0.00",
+                    "MLEAC": "5",
+                    "MLEAF": "0.625",
+                    "DP": "6",
+                    "ReadPosRankSum": "0.720",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-3.604e+01",
+                    "QD": "20.65",
+                    "ABHom": "1.00",
+                    "AC": "5",
+                    "MQRankSum": "-1.380",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.625",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "103.27",
+                    "BaseQRankSum": "-0.720",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs72650862",
+                    "VQSLOD": "19.8464",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 20998849,
+          "type": "SNP",
+          "end": 20998849,
+          "length": 1
+        },
+        {
+          "id": "1:24408414:C:T",
+          "names": [
+            "rs4313343"
+          ],
+          "chromosome": "1",
+          "reference": "C",
+          "alternate": "T",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 135.02,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "C",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "4,2",
+                    "6",
+                    "58",
+                    "58,0,142"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "39,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "39,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||1437|MYOM3||CODING|NM_152372.3|18|1)",
+                    "ABHet": "0.667",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "9",
+                    "ReadPosRankSum": "0.361",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-1.182e-02",
+                    "QD": "15.00",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "-0.361",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "135.02",
+                    "BaseQRankSum": "-2.219",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs4313343",
+                    "VQSLOD": "20.7463",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 24408414,
+          "type": "SNP",
+          "end": 24408414,
+          "length": 1
+        },
+        {
+          "id": "1:25353235:T:A",
+          "names": [
+            "rs311429"
+          ],
+          "chromosome": "1",
+          "reference": "T",
+          "alternate": "A",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 2
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 69.24,
+                  "sampleCount": 3,
+                  "alleleCount": 6,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 5,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.33333334,
+                    "1/1": 0.6666667
+                  },
+                  "missingAlleleCount": 2,
+                  "missingGenotypeCount": 1,
+                  "refAlleleFreq": 0.16666667,
+                  "altAlleleFreq": 0.8333333,
+                  "maf": 0.16666667,
+                  "mgf": 0,
+                  "mafAllele": "T",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "1,1",
+                    "2",
+                    "33",
+                    "34,0,33"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "37,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "36,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTERGENIC(MODIFIER||||||||||1)",
+                    "ABHet": "0.500",
+                    "Dels": "0.00",
+                    "MLEAC": "5",
+                    "MLEAF": "0.833",
+                    "DP": "4",
+                    "ReadPosRankSum": "-0.727",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-2.925e+01",
+                    "QD": "17.31",
+                    "ABHom": "1.00",
+                    "AC": "5",
+                    "MQRankSum": "0.727",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.833",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "69.24",
+                    "BaseQRankSum": "0.727",
+                    "AN": "6",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs311429",
+                    "VQSLOD": "20.3694",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 25353235,
+          "type": "SNP",
+          "end": 25353235,
+          "length": 1
+        },
+        {
+          "id": "1:25893221:G:T",
+          "names": [
+            "rs4523506"
+          ],
+          "chromosome": "1",
+          "reference": "G",
+          "alternate": "T",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 2,
+                    "1/1": 2
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 106.27,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 2,
+                  "altAlleleCount": 6,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.5,
+                    "1/1": 0.5
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.25,
+                  "altAlleleFreq": 0.75,
+                  "maf": 0.25,
+                  "mgf": 0,
+                  "mafAllele": "G",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "1,1",
+                    "2",
+                    "32",
+                    "34,0,32"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "40,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "40,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||308|LDLRAP1||CODING|NM_015627.2|8|1)",
+                    "ABHet": "0.500",
+                    "Dels": "0.00",
+                    "MLEAC": "5",
+                    "MLEAF": "0.625",
+                    "DP": "6",
+                    "ReadPosRankSum": "0.000",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-1.182e-02",
+                    "QD": "17.71",
+                    "ABHom": "1.00",
+                    "AC": "6",
+                    "MQRankSum": "-0.720",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.750",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "106.26999999999998",
+                    "BaseQRankSum": "1.380",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs4523506",
+                    "VQSLOD": "20.0929",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 25893221,
+          "type": "SNP",
+          "end": 25893221,
+          "length": 1
+        },
+        {
+          "id": "1:26629465:G:C",
+          "names": [
+            "rs11803933"
+          ],
+          "chromosome": "1",
+          "reference": "G",
+          "alternate": "C",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 223.4,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "G",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "2,2",
+                    "4",
+                    "55",
+                    "55,0,68"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,2",
+                    "2",
+                    "6",
+                    "70,6,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,3",
+                    "3",
+                    "9",
+                    "85,9,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||400|UBXN11||CODING|NM_001077262.1|1|1),INTRON(MODIFIER||||487|UBXN11||CODING|NM_145345.2|2|1),INTRON(MODIFIER||||520|UBXN11||CODING|NM_183008.2|2|1)",
+                    "ABHet": "0.500",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "11",
+                    "ReadPosRankSum": "-0.589",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-1.182e-02",
+                    "QD": "20.31",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "-1.061",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "223.4",
+                    "BaseQRankSum": "-2.239",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs11803933",
+                    "VQSLOD": "19.7308",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 26629465,
+          "type": "SNP",
+          "end": 26629465,
+          "length": 1
+        },
+        {
+          "id": "1:27660340:T:C",
+          "names": [
+            "rs12758154"
+          ],
+          "chromosome": "1",
+          "reference": "T",
+          "alternate": "C",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 181.02,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "T",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "2,3",
+                    "5",
+                    "53",
+                    "101,0,53"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "40,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "40,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||208|TMEM222||CODING|NM_032125.2|3|1),INTRON(MODIFIER|||||TMEM222||CODING|NR_037576.1|4|1),INTRON(MODIFIER|||||TMEM222||CODING|NR_037577.1|3|1),INTRON(MODIFIER|||||TMEM222||CODING|NR_037580.1|4|1)",
+                    "ABHet": "0.400",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "8",
+                    "ReadPosRankSum": "1.067",
+                    "FS": "3.332",
+                    "MQ0": "0",
+                    "SB": "-3.394e+01",
+                    "QD": "22.63",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "0.000",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "181.02",
+                    "BaseQRankSum": "1.589",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs12758154",
+                    "VQSLOD": "14.3312",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 27660340,
+          "type": "SNP",
+          "end": 27660340,
+          "length": 1
+        },
+        {
+          "id": "1:29616318:C:A",
+          "names": [
+            "rs2076620"
+          ],
+          "chromosome": "1",
+          "reference": "C",
+          "alternate": "A",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 1,
+                    "0/1": 1,
+                    "1/1": 2
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 288.14,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 3,
+                  "altAlleleCount": 5,
+                  "genotypeFreq": {
+                    "0/0": 0.25,
+                    "0/1": 0.25,
+                    "1/1": 0.5
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.375,
+                  "altAlleleFreq": 0.625,
+                  "maf": 0.375,
+                  "mgf": 0.25,
+                  "mafAllele": "C",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "3,5",
+                    "8",
+                    "96",
+                    "162,0,96"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,2",
+                    "2",
+                    "6",
+                    "69,6,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,3",
+                    "3",
+                    "9",
+                    "105,9,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||1433|PTPRU||CODING|NM_001195001.1|14|1),INTRON(MODIFIER||||1436|PTPRU||CODING|NM_133178.3|14|1),INTRON(MODIFIER||||1440|PTPRU||CODING|NM_133177.3|14|1),INTRON(MODIFIER||||1446|PTPRU||CODING|NM_005704.4|15|1)",
+                    "ABHet": "0.375",
+                    "Dels": "0.00",
+                    "MLEAC": "5",
+                    "MLEAF": "0.625",
+                    "DP": "17",
+                    "ReadPosRankSum": "-0.634",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-3.301e+01",
+                    "QD": "22.16",
+                    "ABHom": "1.00",
+                    "AC": "5",
+                    "MQRankSum": "-0.927",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.625",
+                    "HaplotypeScore": "0.2487",
+                    "QUAL": "288.14",
+                    "BaseQRankSum": "-2.001",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs2076620",
+                    "VQSLOD": "20.8181",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 29616318,
+          "type": "SNP",
+          "end": 29616318,
+          "length": 1
+        },
+        {
+          "id": "1:36926445:C:T",
+          "names": [
+            "rs3738839"
+          ],
+          "chromosome": "1",
+          "reference": "C",
+          "alternate": "T",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 460.22,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "C",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "3,3",
+                    "6",
+                    "77",
+                    "77,0,102"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,3",
+                    "3",
+                    "9",
+                    "107,9,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,8",
+                    "8",
+                    "24",
+                    "284,24,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTRON(MODIFIER||||257|MRPS15||CODING|NM_031280.3|4|1)",
+                    "ABHet": "0.500",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "18",
+                    "ReadPosRankSum": "0.592",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-1.182e-02",
+                    "QD": "25.57",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "0.000",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.2433",
+                    "QUAL": "460.22",
+                    "BaseQRankSum": "-2.725",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs3738839",
+                    "VQSLOD": "20.6761",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 36926445,
+          "type": "SNP",
+          "end": 36926445,
+          "length": 1
+        },
+        {
+          "id": "1:43771017:A:-",
+          "names": [
+            "rs150833977"
+          ],
+          "chromosome": "1",
+          "reference": "A",
+          "alternate": "",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 354.4,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "A",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "6,2",
+                    "8",
+                    "64",
+                    "64,0,260"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,4",
+                    "4",
+                    "12",
+                    "170,12,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,3",
+                    "3",
+                    "9",
+                    "129,9,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "call": {
+                    "variantId": "1:43771016:TA:T",
+                    "alleleIndex": 0
+                  },
+                  "data": {
+                    "RPA": "3,2",
+                    "RU": "A",
+                    "EFF": "INTRON(MODIFIER||||1093|TIE1||CODING|NM_001253357.1|3|1),INTRON(MODIFIER||||1138|TIE1||CODING|NM_005424.4|3|1)",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "16",
+                    "ReadPosRankSum": "0.813",
+                    "FS": "3.010",
+                    "MQ0": "0",
+                    "SB": "-8.678e+01",
+                    "STR": "true",
+                    "QD": "22.15",
+                    "AC": "7",
+                    "MQRankSum": "-0.054",
+                    "FILTER": "PASS",
+                    "set": "variant",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "1.4232",
+                    "QUAL": "354.4",
+                    "BaseQRankSum": "0.271",
+                    "AN": "8",
+                    "VCF_ID": "rs150833977",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 43771017,
+          "type": "INDEL",
+          "end": 43771017,
+          "length": 1
+        },
+        {
+          "id": "1:53164220:C:T",
+          "names": [
+            "rs375945"
+          ],
+          "chromosome": "1",
+          "reference": "C",
+          "alternate": "T",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 2
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 66.25,
+                  "sampleCount": 3,
+                  "alleleCount": 6,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 5,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.33333334,
+                    "1/1": 0.6666667
+                  },
+                  "missingAlleleCount": 2,
+                  "missingGenotypeCount": 1,
+                  "refAlleleFreq": 0.16666667,
+                  "altAlleleFreq": 0.8333333,
+                  "maf": 0.16666667,
+                  "mgf": 0,
+                  "mafAllele": "C",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "1,1",
+                    "2",
+                    "28",
+                    "28,0,34"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "38,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "38,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTERGENIC(MODIFIER||||||||||1),UPSTREAM(MODIFIER||||231|SELRC1||CODING|NM_023077.2||1)",
+                    "ABHet": "0.500",
+                    "Dels": "0.00",
+                    "MLEAC": "5",
+                    "MLEAF": "0.833",
+                    "DP": "4",
+                    "ReadPosRankSum": "0.727",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-1.182e-02",
+                    "QD": "16.56",
+                    "ABHom": "1.00",
+                    "AC": "5",
+                    "MQRankSum": "0.727",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.833",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "66.25",
+                    "BaseQRankSum": "-0.727",
+                    "AN": "6",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs375945",
+                    "VQSLOD": "20.9098",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 53164220,
+          "type": "SNP",
+          "end": 53164220,
+          "length": 1
+        },
+        {
+          "id": "1:53364976:A:G",
+          "names": [
+            "rs576891"
+          ],
+          "chromosome": "1",
+          "reference": "A",
+          "alternate": "G",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 490.71,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "A",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "3,4",
+                    "7",
+                    "99",
+                    "137,0,99"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,2",
+                    "2",
+                    "6",
+                    "77,6,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,3",
+                    "3",
+                    "9",
+                    "120,9,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "DOWNSTREAM(MODIFIER||||759|ZYG11A||CODING|NM_001004339.2||1),INTRON(MODIFIER||||244|ECHDC2||CODING|NM_001198962.1|6|1),INTRON(MODIFIER||||261|ECHDC2||CODING|NM_018281.3|6|1),INTRON(MODIFIER||||292|ECHDC2||CODING|NM_001198961.1|7|1)",
+                    "ABHet": "0.429",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "17",
+                    "ReadPosRankSum": "1.449",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-1.182e-02",
+                    "QD": "28.87",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "0.567",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "490.71",
+                    "BaseQRankSum": "1.323",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs576891",
+                    "VQSLOD": "21.3540",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 53364976,
+          "type": "SNP",
+          "end": 53364976,
+          "length": 1
+        },
+        {
+          "id": "1:55080629:A:G",
+          "names": [
+            "rs1702015"
+          ],
+          "chromosome": "1",
+          "reference": "A",
+          "alternate": "G",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 170.49,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "A",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "2,1",
+                    "3",
+                    "27",
+                    "27,0,70"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,2",
+                    "2",
+                    "6",
+                    "79,6,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "30,3,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "DOWNSTREAM(MODIFIER||||594|ACOT11||CODING|NM_147161.3||1),INTRON(MODIFIER||||585|FAM151A||CODING|NM_176782.2|3|1),INTRON(MODIFIER||||607|ACOT11||CODING|NM_015547.3|15|1)",
+                    "ABHet": "0.667",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "8",
+                    "ReadPosRankSum": "-0.572",
+                    "FS": "0.000",
+                    "MQ0": "0",
+                    "SB": "-7.348e+01",
+                    "QD": "21.31",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "-0.572",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "35.72",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.7496",
+                    "QUAL": "170.49",
+                    "BaseQRankSum": "0.000",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs1702015",
+                    "VQSLOD": "1.7902",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 55080629,
+          "type": "SNP",
+          "end": 55080629,
+          "length": 1
+        },
+        {
+          "id": "1:55833351:A:G",
+          "names": [
+            "rs910270"
+          ],
+          "chromosome": "1",
+          "reference": "A",
+          "alternate": "G",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 1
+                  },
+                  "qualityAvg": 451.44,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "A",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "2,7",
+                    "9",
+                    "51",
+                    "232,0,51"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "39,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,5",
+                    "5",
+                    "12",
+                    "125,12,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTERGENIC(MODIFIER||||||||||1)",
+                    "ABHet": "0.222",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "18",
+                    "ReadPosRankSum": "1.616",
+                    "FS": "5.035",
+                    "MQ0": "0",
+                    "SB": "-7.163e+01",
+                    "QD": "25.08",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "0.211",
+                    "FILTER": "PASS",
+                    "set": "variant2",
+                    "MQ": "37.00",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "451.44",
+                    "BaseQRankSum": "-2.178",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs910270",
+                    "VQSLOD": "13.9444",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 55833351,
+          "type": "SNP",
+          "end": 55833351,
+          "length": 1
+        },
+        {
+          "id": "1:59097172:C:T",
+          "names": [
+            "rs232916"
+          ],
+          "chromosome": "1",
+          "reference": "C",
+          "alternate": "T",
+          "strand": "+",
+          "studies": [
+            {
+              "stats": [
+                {
+                  "cohortId": "ALL",
+                  "genotypeCount": {
+                    "0/0": 0,
+                    "0/1": 1,
+                    "1/1": 3
+                  },
+                  "filterCount": {
+                    "PASS": 0,
+                    "VQSRTrancheSNP99.00to99.90": 1
+                  },
+                  "qualityAvg": 210.49,
+                  "sampleCount": 4,
+                  "alleleCount": 8,
+                  "fileCount": 1,
+                  "refAlleleCount": 1,
+                  "altAlleleCount": 7,
+                  "genotypeFreq": {
+                    "0/0": 0,
+                    "0/1": 0.25,
+                    "1/1": 0.75
+                  },
+                  "missingAlleleCount": 0,
+                  "missingGenotypeCount": 0,
+                  "refAlleleFreq": 0.125,
+                  "altAlleleFreq": 0.875,
+                  "maf": 0.125,
+                  "mgf": 0,
+                  "mafAllele": "C",
+                  "mgfGenotype": "0/0",
+                  "filterFreq": {
+                    "PASS": 0,
+                    "VQSRTrancheSNP99.00to99.90": 1
+                  },
+                  "qualityCount": 1
+                }
+              ],
+              "scores": [],
+              "sampleDataKeys": [
+                "GT",
+                "AD",
+                "DP",
+                "GQ",
+                "PL"
+              ],
+              "issues": [
+                {
+                  "type": "MENDELIAN_ERROR",
+                  "sample": {
+                    "sampleId": "ISDBM322015",
+                    "data": [
+                      "1"
+                    ]
+                  }
+                }
+              ],
+              "secondaryAlternates": [],
+              "studyId": "demo@family:corpasome",
+              "samples": [
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "0/1",
+                    "2,2",
+                    "4",
+                    "55",
+                    "65,0,55"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,1",
+                    "1",
+                    "3",
+                    "39,3,0"
+                  ]
+                },
+                {
+                  "fileIndex": 0,
+                  "data": [
+                    "1/1",
+                    "0,2",
+                    "2",
+                    "6",
+                    "72,6,0"
+                  ]
+                }
+              ],
+              "files": [
+                {
+                  "fileId": "quartet.variants.annotated.vcf.gz",
+                  "data": {
+                    "EFF": "INTERGENIC(MODIFIER||||||||||1)",
+                    "ABHet": "0.500",
+                    "Dels": "0.00",
+                    "MLEAC": "7",
+                    "MLEAF": "0.875",
+                    "DP": "10",
+                    "ReadPosRankSum": "0.480",
+                    "FS": "6.990",
+                    "MQ0": "0",
+                    "SB": "0.118",
+                    "QD": "21.05",
+                    "ABHom": "1.00",
+                    "AC": "7",
+                    "MQRankSum": "0.898",
+                    "FILTER": "VQSRTrancheSNP99.00to99.90",
+                    "set": "FilteredInAll",
+                    "MQ": "35.85",
+                    "AF": "0.875",
+                    "HaplotypeScore": "0.0000",
+                    "QUAL": "210.49",
+                    "BaseQRankSum": "0.000",
+                    "AN": "8",
+                    "culprit": "MQ",
+                    "VCF_ID": "rs232916",
+                    "VQSLOD": "0.3905",
+                    "DB": "true"
+                  }
+                }
+              ]
+            }
+          ],
+          "start": 59097172,
+          "type": "SNP",
+          "end": 59097172,
+          "length": 1
+        }
+]
