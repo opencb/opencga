@@ -18,9 +18,14 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.junit.Test;
+import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
+import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 
@@ -275,4 +280,15 @@ public class AnnotableConverterTest {
 
     }
 
+
+    @Test
+    public void convertAvroTest() throws Exception {
+        AnnotableConverter<Sample> c = new AnnotableConverter<>(Sample.class);
+        c.convertToStorageType(
+                new Sample().setQualityControl(
+                        new SampleQualityControl().setMetrics(Collections.singletonList(
+                                new SampleQualityControlMetrics().setVariantStats(Collections.singletonList(
+                                        new SampleQcVariantStats().setStats(
+                                                new SampleVariantStats())))))));
+    }
 }

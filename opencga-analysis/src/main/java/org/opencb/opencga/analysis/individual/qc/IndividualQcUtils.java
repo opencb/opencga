@@ -69,15 +69,19 @@ public class IndividualQcUtils {
         query.put(VariantQueryParam.GENOTYPE.key(), gt);
         //.append(VariantQueryParam.FILTER.key(), "PASS")
 
-        // Export variants in format .tped and .tfam to run PLINK (only autosomal chromosomes)
-        File tpedFile = outDir.resolve(basename + ".tped").toFile();
-        File tfamFile = outDir.resolve(basename + ".tfam").toFile();
         query.put(VariantQueryParam.REGION.key(), Arrays.asList("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22".split(",")));
         if (maf.startsWith("cohort:")) {
             query.put(VariantQueryParam.STATS_MAF.key(), maf.substring(7));
         } else {
             query.put(VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), maf);
         }
+
+        System.out.println(">>>> query = " + query.toJson());
+
+        // Export variants in format .tped and .tfam to run PLINK (only autosomal chromosomes)
+        File tpedFile = outDir.resolve(basename + ".tped").toFile();
+        File tfamFile = outDir.resolve(basename + ".tfam").toFile();
+
 
         exportData(tpedFile, tfamFile, query, storageManager, token);
         if (tpedFile.exists() && tpedFile.length() > 0) {
@@ -256,6 +260,18 @@ public class IndividualQcUtils {
         return samples;
     }
 
+    public static List<Sample> getValidGermlineSamplesByIndividualId(String studyId, String individualId, CatalogManager catalogManager,
+                                                                     String token) throws ToolException {
+        List<Sample> samples = IndividualQcUtils.getValidSamplesByIndividualId(studyId, individualId, catalogManager, token);
+        List<Sample> germlineSamples = new ArrayList<>();
+        for (Sample individualSample : samples) {
+            if (!individualSample.isSomatic()) {
+                germlineSamples.add(individualSample);
+            }
+        }
+        return germlineSamples;
+    }
+
     public static Sample getValidSampleById(String studyId, String sampleId, CatalogManager catalogManager, String token)
             throws ToolException {
         OpenCGAResult<Sample> sampleResult;
@@ -331,7 +347,7 @@ public class IndividualQcUtils {
                                    String token) throws ToolException {
         try {
             storageManager.exportData(tpedFile.getAbsolutePath(), TPED, null, query, QueryOptions.empty(), token);
-        } catch(CatalogException | IOException | StorageEngineException e) {
+        } catch (CatalogException | IOException | StorageEngineException e) {
             throw new ToolException(e);
         }
 

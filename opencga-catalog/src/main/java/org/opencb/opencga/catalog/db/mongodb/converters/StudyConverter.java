@@ -16,8 +16,10 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.apache.avro.generic.GenericRecord;
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.study.Study;
 
 /**
@@ -27,6 +29,7 @@ public class StudyConverter extends GenericDocumentComplexConverter<Study> {
 
     public StudyConverter() {
         super(Study.class);
+        getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
     }
 
     @Override

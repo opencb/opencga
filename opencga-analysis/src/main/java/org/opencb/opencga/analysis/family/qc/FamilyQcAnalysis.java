@@ -27,11 +27,15 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.FamilyQcAnalysisExecutor;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_FAMILIES;
+import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_SAMPLES;
 
 @Tool(id = FamilyQcAnalysis.ID, resource = Enums.Resource.FAMILY, description = FamilyQcAnalysis.DESCRIPTION)
 public class FamilyQcAnalysis extends OpenCgaTool {
@@ -58,8 +62,11 @@ public class FamilyQcAnalysis extends OpenCgaTool {
             throw new ToolException("Missing study ID.");
         }
 
+        // Check permissions
         try {
-            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
+            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
+            String userId = catalogManager.getUserManager().getUserId(token);
+            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_FAMILIES);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

@@ -297,6 +297,8 @@ public class AlignmentStorageManager extends StorageManager {
 
                         // Trasscript length as a sum of exon lengths
                         int length = 0;
+                        int numExons = 0;
+                        final int bp = 5;
                         // Coverage depths: 1x, 5x, 10x, 15x, 20x, 25x, 30x, 40x, 50x, 60x, 75x, 100x
                         double[] depths = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
                         // List of low coverage regions and exon stats
@@ -306,16 +308,17 @@ public class AlignmentStorageManager extends StorageManager {
                         if (CollectionUtils.isNotEmpty(transcript.getExons())) {
                             for (Exon exon : transcript.getExons()) {
                                 if (exon.getStart() != 0 && exon.getEnd() != 0) {
-                                    Region region = new Region(exon.getChromosome(), exon.getStart() - 5, exon.getEnd() + 5);
-                                    length += (region.size() - 10);
+                                    numExons++;
+                                    Region region = new Region(exon.getChromosome(), exon.getStart() - bp, exon.getEnd() + bp);
+                                    length += (region.size());
 
                                     OpenCGAResult<RegionCoverage> regionResult = alignmentStorageEngine.getDBAdaptor().coverageQuery(
                                             Paths.get(file.getUri()), region, 0, Integer.MAX_VALUE, 1);
 
                                     RegionCoverage regionCoverage = regionResult.first();
 
-                                    // Exon stats (skipping +/-5 bp)
-                                    RegionCoverageStats stats = computeExonStats(regionCoverage);
+                                    // Exon stats (skipping +/- bp)
+                                    RegionCoverageStats stats = computeExonStats(regionCoverage, bp);
                                     ExonCoverageStats exonStats = new ExonCoverageStats(exon.getId(), exon.getChromosome(), exon.getStart(),
                                             exon.getEnd(), stats.getAvg(), stats.getMin(), stats.getMax());
                                     exonCoverageStats.add(exonStats);
@@ -375,10 +378,10 @@ public class AlignmentStorageManager extends StorageManager {
                             }
                         }
 
+                        // Set transcript length taking into account to remove the extra bp
+                        transcriptCoverageStats.setLength(length - (2 * bp * numExons));
 
-                        transcriptCoverageStats.setLength(length);
-
-                        // Update (%) depths
+                        // Update (%) depths but taking into account the extra bp
                         for (int i = 0; i < depths.length; i++) {
                             depths[i] = depths[i] / length * 100.0;
                         }
@@ -402,14 +405,14 @@ public class AlignmentStorageManager extends StorageManager {
                 geneCoverageStatsList.size());
     }
 
-    private RegionCoverageStats computeExonStats(RegionCoverage regionCoverage) {
+    private RegionCoverageStats computeExonStats(RegionCoverage regionCoverage, int bp) {
         double min = Double.MAX_VALUE;
         double max = Double.MIN_VALUE;
         double agg = 0;
 
         double[] values = regionCoverage.getValues();
-        int lastPosition = values.length - 5;
-        for (int i = 5; i < lastPosition; i++) {
+        int lastPosition = values.length - bp;
+        for (int i = bp; i < lastPosition; i++) {
             if (values[i] < min) {
                 min = values[i];
             }
@@ -418,7 +421,7 @@ public class AlignmentStorageManager extends StorageManager {
             }
             agg += values[i];
         }
-        return new RegionCoverageStats((int) Math.round(min), (int) Math.round(max), agg / (values.length - 10));
+        return new RegionCoverageStats((int) Math.round(min), (int) Math.round(max), agg / (values.length - (2 * bp)));
     }
 
 //-------------------------------------------------------------------------

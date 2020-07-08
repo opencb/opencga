@@ -16,10 +16,11 @@
 
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
-import org.apache.hadoop.util.StopWatch;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.util.Tool;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
@@ -67,15 +67,14 @@ public abstract class MRExecutor {
             throws StorageEngineException {
         Logger logger = LoggerFactory.getLogger(MRExecutor.class);
 
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        StopWatch stopWatch = StopWatch.createStarted();
         logger.info("------------------------------------------------------");
         logger.info(taskDescription);
         logger.info("------------------------------------------------------");
         int exitValue = run(execClass, args, options);
         logger.info("------------------------------------------------------");
         logger.info("Exit value: {}", exitValue);
-        logger.info("Total time: {}s", (stopWatch.now(TimeUnit.MILLISECONDS)) / 1000.0);
+        logger.info("Total time: {}s", TimeUtils.durationToString(stopWatch));
 
         if (exitValue != 0) {
             throw new StorageEngineException("Error executing MapReduce for : \"" + taskDescription + "\"");

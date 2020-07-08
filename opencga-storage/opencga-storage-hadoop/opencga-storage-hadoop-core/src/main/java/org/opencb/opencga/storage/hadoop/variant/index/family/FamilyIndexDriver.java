@@ -53,6 +53,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
     public static final String OUTPUT = "output";
 
     private static final String TRIOS_LIST = "FamilyIndexDriver.trios_list";
+    private static final int MISSING_SAMPLE = -1;
     private List<Integer> sampleIds;
     private boolean partial;
     private String region;
@@ -105,7 +106,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 for (String sample : trio.split(",")) {
                     Integer sampleId;
                     if (sample.equals("-")) {
-                        sampleId = -1;
+                        sampleId = MISSING_SAMPLE;
                     } else {
                         sampleId = metadataManager.getSampleId(getStudyId(), sample);
                         if (sampleId == null) {
@@ -158,9 +159,11 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         job.getConfiguration().set(TRIOS_LIST, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
 
         for (Integer sampleId : sampleIds) {
-            SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sampleId);
-            for (PhoenixHelper.Column column : VariantPhoenixHelper.getSampleColumns(sampleMetadata)) {
-                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column.bytes());
+            if (sampleId != MISSING_SAMPLE) {
+                SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sampleId);
+                for (PhoenixHelper.Column column : VariantPhoenixHelper.getSampleColumns(sampleMetadata)) {
+                    scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column.bytes());
+                }
             }
         }
 //        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
@@ -311,7 +314,8 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                                            String fatherGtStr, String motherGtStr, String childGtStr,
                                            Context context,
                                            FamilyIndexPutBuilder builder, int idx) throws IOException {
-            if ((fatherGtStr != null || father == -1) && (motherGtStr != null || mother == -1) && childGtStr != null) {
+            if ((fatherGtStr != null || father == MISSING_SAMPLE)
+                    && (motherGtStr != null || mother == MISSING_SAMPLE) && childGtStr != null) {
                 Genotype fatherGt;
                 Genotype motherGt;
                 Genotype childGt;

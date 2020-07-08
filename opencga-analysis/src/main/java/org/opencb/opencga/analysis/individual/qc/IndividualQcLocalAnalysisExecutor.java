@@ -16,26 +16,23 @@
 
 package org.opencb.opencga.analysis.individual.qc;
 
-import com.nimbusds.oauth2.sdk.util.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
-import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.family.qc.IBDComputation;
-import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @ToolExecutor(id="opencga-local", tool = IndividualQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -62,30 +59,17 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
     }
 
     private void runInferredSex() throws ToolException {
-        if (CollectionUtils.isNotEmpty(qualityControl.getInferredSexReports())) {
-            for (InferredSexReport inferredSexReport : qualityControl.getInferredSexReports()) {
-                if (inferredSexReport.getMethod().equals(inferredSexMethod)) {
-                    addWarning("Skipping inferred sex: it was already computed using method '" + inferredSexMethod + "'");
-                    return;
-                }
-            }
-        }
-
-        if (!COVERAGE_RATIO_INFERRED_SEX_METHOD.equals(inferredSexMethod)) {
-            addWarning("Skipping inferred sex: unknown inferred sex method '" + inferredSexMethod + "'");
+        File inferredSexBamFile;
+        try {
+            inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(sampleId, studyId,
+                    getVariantStorageManager().getCatalogManager().getFileManager(), getToken());
+        } catch (ToolException e) {
+            addWarning("Skipping inferred sex: " + e.getMessage());
             return;
         }
 
-        File inferredSexBamFile;
-        try {
-            inferredSexBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), studyId,
-                    getVariantStorageManager().getCatalogManager().getFileManager(), getToken());
-        } catch (ToolException e) {
-            throw new ToolException(e);
-        }
-
         if (inferredSexBamFile == null) {
-            addWarning("Skipping inferred sex: BAM file not found for sample '" + sample.getId() + "' of individual '" +
+            addWarning("Skipping inferred sex: BAM file not found for sample '" + sampleId + "' of individual '" +
                     individual.getId() + "'");
             return;
         }
@@ -105,12 +89,44 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
         // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
         double[] ratios = InferredSexComputation.computeRatios(studyId, inferredSexBamFile, assembly, alignmentStorageManager, getToken());
 
-        // TODO infer sex from ratios
-        String inferredKaryotypicSex = "";
+        // Infer sex from ratios
+        double xAuto = ratios[0];
+        double yAuto = ratios[1];
+        String inferredKaryotypicSex = "UNKNOWN";
+        if (MapUtils.isEmpty(karyotypicSexThresholds)) {
+            addWarning("Impossible to infer karyotypic sex beacause sex thresholds are empty");
+        } else {
+            if (xAuto >= karyotypicSexThresholds.get("xx.xmin") && xAuto <= karyotypicSexThresholds.get("xx.xmax")
+                    && yAuto >= karyotypicSexThresholds.get("xx.ymin") && yAuto <= karyotypicSexThresholds.get("xx.ymax")) {
+                inferredKaryotypicSex = "XX";
+            } else if (xAuto >= karyotypicSexThresholds.get("xy.xmin") && xAuto <= karyotypicSexThresholds.get("xy.xmax")
+                    && yAuto >= karyotypicSexThresholds.get("xy.ymin") && yAuto <= karyotypicSexThresholds.get("xy.ymax")) {
+                inferredKaryotypicSex = "XY";
+            } else if (xAuto >= karyotypicSexThresholds.get("xo_clearcut.xmin") && xAuto <= karyotypicSexThresholds.get("xo_clearcut.xmax")
+                    && yAuto >= karyotypicSexThresholds.get("xo_clearcut.ymin") && yAuto <= karyotypicSexThresholds.get("xo_clearcut.ymax")) {
+                inferredKaryotypicSex = "XO";
+            } else if (xAuto >= karyotypicSexThresholds.get("xxy.xmin") && xAuto <= karyotypicSexThresholds.get("xxy.xmax")
+                    && yAuto >= karyotypicSexThresholds.get("xxy.ymin") && yAuto <= karyotypicSexThresholds.get("xxy.ymax")) {
+                inferredKaryotypicSex = "XXY";
+            } else if (xAuto >= karyotypicSexThresholds.get("xxx.xmin") && xAuto <= karyotypicSexThresholds.get("xxx.xmax")
+                    && yAuto >= karyotypicSexThresholds.get("xxx.ymin") && yAuto <= karyotypicSexThresholds.get("xxx.ymax")) {
+                inferredKaryotypicSex = "XXX";
+            } else if (xAuto >= karyotypicSexThresholds.get("xyy.xmin") && xAuto <= karyotypicSexThresholds.get("xyy.xmax")
+                    && yAuto >= karyotypicSexThresholds.get("xyy.ymin") && yAuto <= karyotypicSexThresholds.get("xyy.ymax")) {
+                inferredKaryotypicSex = "XYY";
+            } else if (xAuto >= karyotypicSexThresholds.get("xxxy.xmin") && xAuto <= karyotypicSexThresholds.get("xxxy.xmax")
+                    && yAuto >= karyotypicSexThresholds.get("xxxy.ymin") && yAuto <= karyotypicSexThresholds.get("xxxy.ymax")) {
+                inferredKaryotypicSex = "XXXY";
+            } else if (xAuto >= karyotypicSexThresholds.get("xyyy.xmin") && xAuto <= karyotypicSexThresholds.get("xyyy.xmax")
+                    && yAuto >= karyotypicSexThresholds.get("xyyy.ymin") && yAuto <= karyotypicSexThresholds.get("xyyy.ymax")) {
+                inferredKaryotypicSex = "XYYY";
+            }
+        }
 
+        // Set coverage ratio
         Map<String, Object> values = new HashMap<>();
-        values.put("ratioX", ratios[0]);
-        values.put("ratioY", ratios[1]);
+        values.put("ratioX", xAuto);
+        values.put("ratioY", yAuto);
 
         // Set inferred sex report (individual fields will be set later)
         qualityControl.getInferredSexReports().add(new InferredSexReport("CoverageRatio", inferredKaryotypicSex, values,
@@ -118,20 +134,19 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
     }
 
     private void runMendelianErrors() throws ToolException {
-        if (qualityControl.getMendelianErrorReport() != null) {
-            addWarning("Skipping mendelian error: it was already computed");
+        // Compute mendelian inconsitencies
+        try {
+            // Get managers
+            VariantStorageManager variantStorageManager = getVariantStorageManager();
+
+            MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(studyId, sampleId, motherSampleId,
+                    fatherSampleId, variantStorageManager, getToken());
+
+            // Set relatedness report
+            qualityControl.setMendelianErrorReport(mendelianErrorReport);
+        } catch (ToolException e) {
+            addWarning("Skipping mendelian errors: " + e.getMessage());
             return;
         }
-
-        // Get managers
-        VariantStorageManager variantStorageManager = getVariantStorageManager();
-        CatalogManager catalogManager = variantStorageManager.getCatalogManager();
-
-        // Compute mendelian inconsitencies
-        MendelianErrorReport mendelianErrorReport = MendelianInconsistenciesComputation.compute(studyId, family.getId(),
-                variantStorageManager, getToken());
-
-        // Set relatedness report
-        qualityControl.setMendelianErrorReport(mendelianErrorReport);
     }
 }

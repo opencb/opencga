@@ -16,12 +16,11 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+
+import java.util.Map;
 
 public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
 
@@ -33,9 +32,11 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     protected String studyId;
     protected Individual individual;
-    protected Sample sample;
-    protected Family family;
+    protected String sampleId;
+    protected String motherSampleId;
+    protected String fatherSampleId;
     protected String inferredSexMethod;
+    protected Map<String, Double> karyotypicSexThresholds;
 
     protected QcType qcType;
 
@@ -62,21 +63,30 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public Sample getSample() {
-        return sample;
+    public String getSampleId() {
+        return sampleId;
     }
 
-    public IndividualQcAnalysisExecutor setSample(Sample sample) {
-        this.sample = sample;
+    public IndividualQcAnalysisExecutor setSampleId(String sampleId) {
+        this.sampleId = sampleId;
         return this;
     }
 
-    public Family getFamily() {
-        return family;
+    public String getMotherSampleId() {
+        return motherSampleId;
     }
 
-    public IndividualQcAnalysisExecutor setFamily(Family family) {
-        this.family = family;
+    public IndividualQcAnalysisExecutor setMotherSampleId(String motherSampleId) {
+        this.motherSampleId = motherSampleId;
+        return this;
+    }
+
+    public String getFatherSampleId() {
+        return fatherSampleId;
+    }
+
+    public IndividualQcAnalysisExecutor setFatherSampleId(String fatherSampleId) {
+        this.fatherSampleId = fatherSampleId;
         return this;
     }
 
@@ -86,6 +96,15 @@ public abstract class IndividualQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public IndividualQcAnalysisExecutor setInferredSexMethod(String inferredSexMethod) {
         this.inferredSexMethod = inferredSexMethod;
+        return this;
+    }
+
+    public Map<String, Double> getKaryotypicSexThresholds() {
+        return karyotypicSexThresholds;
+    }
+
+    public IndividualQcAnalysisExecutor setKaryotypicSexThresholds(Map<String, Double> karyotypicSexThresholds) {
+        this.karyotypicSexThresholds = karyotypicSexThresholds;
         return this;
     }
 
