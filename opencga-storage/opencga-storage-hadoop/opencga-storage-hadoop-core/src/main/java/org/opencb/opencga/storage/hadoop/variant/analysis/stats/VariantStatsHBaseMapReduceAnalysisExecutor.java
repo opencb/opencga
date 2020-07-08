@@ -31,7 +31,7 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
 
         VariantHadoopDBAdaptor dbAdaptor;
         int studyId;
-        List<Integer> cohortIds = new ArrayList<>();
+        List<Integer> temporaryCohortIds = new ArrayList<>();
         List<String> temporaryCohortNames = new ArrayList<>();
         try {
             dbAdaptor = engine.getDBAdaptor();
@@ -43,7 +43,7 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
                 CohortMetadata temporaryCohort = dbAdaptor.getMetadataManager()
                         .registerTemporaryCohort(getStudy(), entry.getKey(), entry.getValue());
                 temporaryCohortNames.add(temporaryCohort.getName());
-                cohortIds.add(temporaryCohort.getId());
+                temporaryCohortIds.add(temporaryCohort.getId());
             }
 
 
@@ -53,11 +53,13 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
 
         try {
             Query variantsQuery = new Query(getVariantsQuery());
-            // Don't need for these params
-            variantsQuery.remove(VariantQueryParam.INCLUDE_SAMPLE.key());
-            variantsQuery.remove(VariantQueryParam.SAMPLE.key());
             variantsQuery = engine.preProcessQuery(variantsQuery, new QueryOptions());
-            ObjectMap params = new ObjectMap(variantsQuery)
+            // Don't need for these params
+            variantsQuery.remove(VariantQueryParam.SAMPLE.key());
+            variantsQuery.remove(VariantQueryParam.INCLUDE_SAMPLE.key());
+            variantsQuery.remove(VariantQueryParam.INCLUDE_FILE.key());
+            ObjectMap params = new ObjectMap(engine.getOptions())
+                    .appendAll(variantsQuery)
                     .append(VariantStatsDriver.COHORTS, temporaryCohortNames)
                     .append(VariantStatsDriver.OUTPUT, getOutputFile().toAbsolutePath().toUri());
             engine.getMRExecutor().run(VariantStatsDriver.class, VariantStatsDriver.buildArgs(
@@ -71,7 +73,7 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
         } catch (VariantQueryException | StorageEngineException e) {
             throw new ToolExecutorException(e);
         } finally {
-            for (Integer cohortId : cohortIds) {
+            for (Integer cohortId : temporaryCohortIds) {
                 dbAdaptor.getMetadataManager().removeCohort(studyId, cohortId);
             }
         }
