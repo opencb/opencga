@@ -125,7 +125,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             clearDB(DB_NAME);
             ObjectMap params = new ObjectMap()
                     .append(VariantStorageOptions.ANNOTATE.key(), true)
-                    .append(VariantStorageOptions.ANNOTATION_CHECKPOINT_SIZE.key(), 100)
+                    .append(VariantStorageOptions.ANNOTATION_CHECKPOINT_SIZE.key(), 500)
                     .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DS,GL")
                     .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), CellBaseRestVariantAnnotator.class.getName())
                     .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
