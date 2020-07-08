@@ -52,7 +52,6 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
     @Before
     public void before() throws Exception {
         if (!loaded) {
-            loaded = true;
             HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
             URI outputUri = newOutputUri();
 
@@ -74,6 +73,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
             VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+            loaded = true;
         }
         sampleIndexQueryParser = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor().getSampleIndexQueryParser();
     }

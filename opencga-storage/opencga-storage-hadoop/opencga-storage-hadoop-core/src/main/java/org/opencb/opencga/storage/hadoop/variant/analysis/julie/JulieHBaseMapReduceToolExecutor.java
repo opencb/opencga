@@ -25,7 +25,7 @@ public class JulieHBaseMapReduceToolExecutor extends JulieToolExecutor implement
         try {
             VariantHadoopDBAdaptor dbAdaptor = engine.getDBAdaptor();
 
-            ObjectMap params = new ObjectMap();
+            ObjectMap params = new ObjectMap(engine.getOptions());
 
             if (getCohorts() != null && !getCohorts().isEmpty()) {
                 String cohorts = getCohorts().entrySet()

@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
@@ -1490,6 +1491,19 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public Integer registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
         return registerCohorts(study, Collections.singletonMap(cohortName, samples)).get(cohortName);
+    }
+
+    public CohortMetadata registerTemporaryCohort(String study, String alias, List<String> samples) throws StorageEngineException {
+        int studyId = getStudyId(study);
+        String temporaryCohortName = "TEMP_" + alias + "_" + TimeUtils.getTimeMillis();
+
+        int cohortId = registerCohort(study, temporaryCohortName, samples);
+
+        return updateCohortMetadata(studyId, cohortId, cohortMetadata -> {
+            cohortMetadata.getAttributes().put("alias", alias);
+            cohortMetadata.setStatus("TEMPORARY", TaskMetadata.Status.RUNNING);
+            return cohortMetadata;
+        });
     }
 
     public Map<String, Integer> registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)
