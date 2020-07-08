@@ -403,7 +403,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
 
         // Build variant query from cli options
-        BasicVariantQueryParams variantStatsQuery = ToolParams.fromParams(BasicVariantQueryParams.class, cliOptions.variantStatsQuery);
+        AbstractBasicVariantQueryParams variantStatsQuery = ToolParams.fromParams(AbstractBasicVariantQueryParams.class,
+                cliOptions.variantStatsQuery);
 
         // Build signature query from cli options
         SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class, cliOptions.signatureQuery);

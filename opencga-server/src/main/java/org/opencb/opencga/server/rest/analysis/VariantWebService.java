@@ -76,6 +76,7 @@ import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -1049,19 +1050,19 @@ public class VariantWebService extends AnalysisWebService {
             return createErrorResponse(e);
         }
 
-        // Check sample/stats
+        // Check variant stats
         if (OPENCGA_ALL.equals(params.getVariantStatsId())) {
             return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
                     + " variant stats ID"));
         }
-//        if (StringUtils.isEmpty(params.getVariantStatsId()) && !params.getVariantStatsQuery().isEmpty()) {
-//            return createErrorResponse(new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
-//                    + " empty too"));
-//        }
-//        if (StringUtils.isNotEmpty(params.getVariantStatsId()) && MapUtils.isEmpty(params.getVariantStatsQuery())) {
-//            return createErrorResponse(new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
-//                    + " can not be empty"));
-//        }
+        if (StringUtils.isEmpty(params.getVariantStatsId()) && params.getVariantStatsQuery() != null) {
+            return createErrorResponse(new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
+                    + " null"));
+        }
+        if (StringUtils.isNotEmpty(params.getVariantStatsId()) && params.getVariantStatsQuery() == null) {
+            return createErrorResponse(new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
+                    + " can not be null"));
+        }
         if (StringUtils.isEmpty(params.getVariantStatsId())) {
             params.setVariantStatsId(OPENCGA_ALL);
         }
@@ -1073,6 +1074,13 @@ public class VariantWebService extends AnalysisWebService {
                 if (bamId.equals(metrics.getBamFileId())) {
                     if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && OPENCGA_ALL.equals(params.getVariantStatsId())) {
                         runVariantStats = false;
+                    } else {
+                        for (SampleQcVariantStats variantStats : metrics.getVariantStats()) {
+                            if (variantStats.getId().equals(params.getVariantStatsId())) {
+                                return createErrorResponse(new ToolException("Invalid parameters: variant stats ID '"
+                                        + params.getVariantStatsId() + "' is already used"));
+                            }
+                        }
                     }
                     break;
                 }
@@ -1127,9 +1135,12 @@ public class VariantWebService extends AnalysisWebService {
 //
         // Run variant stats if necessary
         if (runVariantStats) {
+            // TODO set query for sample variant stats
+//            AbstractBasicVariantQueryParams variantStatsQuery = params.getVariantStatsQuery();
+//            Map<String, Object> paramsMap = (variantStatsQuery == null) ? new HashMap<>() : variantStatsQuery.toParams();
             Map<String, Object> paramsMap = new HashMap<>();
-            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
-            paramsMap.putIfAbsent("sample", params.getSample());
+            paramsMap.put(ParamConstants.STUDY_PARAM, study);
+            paramsMap.put("sample", params.getSample());
             DataResult<Job> jobResult;
             try {
                 jobResult = (DataResult<Job>) submitJobRaw(SampleVariantStatsAnalysis.ID, null, study, paramsMap, null, null, null, null);

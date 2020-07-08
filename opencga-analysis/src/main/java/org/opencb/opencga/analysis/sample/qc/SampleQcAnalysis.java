@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.analysis.sample.qc;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -204,9 +206,15 @@ public class SampleQcAnalysis extends OpenCgaTool {
                     throw new ToolException(e);
                 }
 
-                // Add to metrics
-                metrics.getVariantStats().add(new SampleQcVariantStats(variantStatsId, variantStatsDecription, null, //variantStatsQuery,
-                        stats.get(0)));
+                // Convert variant stats query to a map, and then add to metrics
+                Map<String, String> query = new HashMap<>();
+                Iterator<String> iterator = variantStatsQuery.keySet().iterator();
+                while (iterator.hasNext()) {
+                    String key = iterator.next();
+                    query.put(key, variantStatsQuery.getString(key));
+                }
+
+                metrics.getVariantStats().add(new SampleQcVariantStats(variantStatsId, variantStatsDecription, query, stats.get(0)));
             }
         }
     }
