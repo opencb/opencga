@@ -200,7 +200,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             }
         }
         if (indexFile == null) {
-            throw new ToolException("Missing muational signature context index file for sample " + getSampleName());
+            throw new ToolException("Missing mutational signature context index file for sample " + getSampleName());
         }
 
         // Read context index
