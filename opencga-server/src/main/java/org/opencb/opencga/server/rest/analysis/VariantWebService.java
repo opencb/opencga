@@ -1055,11 +1055,13 @@ public class VariantWebService extends AnalysisWebService {
             return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
                     + " variant stats ID"));
         }
-        if (StringUtils.isEmpty(params.getVariantStatsId()) && !params.getVariantStatsQuery().toParams().isEmpty()) {
+        if (StringUtils.isEmpty(params.getVariantStatsId()) && params.getSignatureQuery() != null
+                && params.getVariantStatsQuery().toParams().isEmpty()) {
             return createErrorResponse(new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
                     + " empty"));
         }
-        if (StringUtils.isNotEmpty(params.getVariantStatsId()) && params.getVariantStatsQuery().toParams().isEmpty()) {
+        if (StringUtils.isNotEmpty(params.getVariantStatsId())
+                && (params.getVariantStatsQuery() == null || params.getVariantStatsQuery().toParams().isEmpty())) {
             return createErrorResponse(new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
                     + " can not be empty"));
         }
@@ -1097,11 +1099,13 @@ public class VariantWebService extends AnalysisWebService {
                         + " signature ID"));
             }
 
-            if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery() != null) {
+            if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery() != null
+                    && params.getSignatureQuery().toParams().isEmpty()) {
                 return createErrorResponse(new ToolException("Invalid parameters: if signature ID is empty, signature query must be"
                         + " null"));
             }
-            if (StringUtils.isNotEmpty(params.getSignatureId()) && params.getSignatureQuery() == null) {
+            if (StringUtils.isNotEmpty(params.getSignatureId())
+                    && (params.getSignatureQuery() == null || params.getSignatureQuery().toParams().isEmpty())) {
                 return createErrorResponse(new ToolException("Invalid parameters: if you provide a signature ID, signature query"
                         + " can not be null"));
             }
