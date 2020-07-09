@@ -28,7 +28,7 @@ public class SampleQcAnalysisParams extends ToolParams {
     private String targetFile;
     private String variantStatsId;
     private String variantStatsDecription;
-    private BasicVariantQueryParams variantStatsQuery;
+    private AbstractBasicVariantQueryParams variantStatsQuery;
     private String signatureId;
     private SampleQcSignatureQueryParams signatureQuery;
     private List<String> genesForCoverageStats;
@@ -39,7 +39,7 @@ public class SampleQcAnalysisParams extends ToolParams {
     }
 
     public SampleQcAnalysisParams(String sample, String fastaFile, String baitFile, String targetFile, String variantStatsId,
-                                  String variantStatsDecription, BasicVariantQueryParams variantStatsQuery, String signatureId,
+                                  String variantStatsDecription, AbstractBasicVariantQueryParams variantStatsQuery, String signatureId,
                                   SampleQcSignatureQueryParams signatureQuery, List<String> genesForCoverageStats, String outdir) {
         this.sample = sample;
         this.fastaFile = fastaFile;
@@ -126,11 +126,11 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public BasicVariantQueryParams getVariantStatsQuery() {
+    public AbstractBasicVariantQueryParams getVariantStatsQuery() {
         return variantStatsQuery;
     }
 
-    public SampleQcAnalysisParams setVariantStatsQuery(BasicVariantQueryParams variantStatsQuery) {
+    public SampleQcAnalysisParams setVariantStatsQuery(AbstractBasicVariantQueryParams variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
         return this;
     }

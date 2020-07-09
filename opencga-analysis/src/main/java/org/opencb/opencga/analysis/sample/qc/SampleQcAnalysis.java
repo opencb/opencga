@@ -16,16 +16,24 @@
 
 package org.opencb.opencga.analysis.sample.qc;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -42,7 +50,9 @@ import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -51,6 +61,8 @@ import java.util.*;
 
 import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS;
 import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_SAMPLES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
 public class SampleQcAnalysis extends OpenCgaTool {
@@ -175,7 +187,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
         step(FLAG_STATS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.FLAG_STATS).execute());
         step(HS_METRICS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.HS_METRICS).execute());
         step(GENE_COVERAGE_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.GENE_COVERAGE_STATS).execute());
-        step(MUTATIONAL_SIGNATUR_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.MUTATIONAL_SIGNATURE).execute());
+        step(MUTATIONAL_SIGNATUR_STEP, () -> runSignature());
 
         // Finally, update sample quality control metrics
         metrics = executor.getMetrics();
@@ -204,10 +216,69 @@ public class SampleQcAnalysis extends OpenCgaTool {
                     throw new ToolException(e);
                 }
 
-                // Add to metrics
-                metrics.getVariantStats().add(new SampleQcVariantStats(variantStatsId, variantStatsDecription, null, //variantStatsQuery,
-                        stats.get(0)));
+                // Convert variant stats query to a map, and then add to metrics
+                Map<String, String> query = new HashMap<>();
+                Iterator<String> iterator = variantStatsQuery.keySet().iterator();
+                while (iterator.hasNext()) {
+                    String key = iterator.next();
+                    query.put(key, variantStatsQuery.getString(key));
+                }
+
+                metrics.getVariantStats().add(new SampleQcVariantStats(variantStatsId, variantStatsDecription, query, stats.get(0)));
             }
+        }
+    }
+
+    private void runSignature() throws ToolException {
+        if (!sample.isSomatic()) {
+            addWarning("Skipping mutational signature: sample '" + sampleId + " is not somatic");
+            return;
+        }
+
+        // mutationalSignature/run
+        if (signatureJob != null) {
+            Path path = Paths.get(signatureJob.getOutDir().getUri().getPath()).resolve("context.txt");
+            if (path.toFile().exists()) {
+                Signature.SignatureCount[] signatureCounts = MutationalSignatureAnalysis.parseSignatureCounts(path.toFile());
+
+                // Add to metrics
+                metrics.getSignatures().add(new Signature("ALL", new HashMap<>(), "SNV", signatureCounts, new ArrayList()));
+            }
+        }
+
+        // mutationalSignature/query
+        if (StringUtils.isNotEmpty(signatureId) && signatureQuery != null && !signatureQuery.isEmpty()) {
+            // Create signature directory
+            Path signaturePath = getOutDir().resolve("mutational-signature");
+            signaturePath.toFile().mkdir();
+
+            MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor();
+            ObjectMap executorParams = new ObjectMap();
+            executorParams.put("opencgaHome", opencgaHome);
+            executorParams.put("token", token);
+            executorParams.put("fitting", false);
+            executor.setUp(null, executorParams, signaturePath);
+            executor.setStudy(studyId);
+            executor.setSampleName(sampleId);
+
+            try {
+                signatureQuery.put("study", studyId);
+                signatureQuery.put("sample", sampleId);
+                MutationalSignature mutationalSignature = executor.query(signatureQuery, QueryOptions.empty());
+
+                // Add signature to metrics
+                Map<String, String> map = new HashMap<>();
+                for (String key : signatureQuery.keySet()) {
+                    map.put(key, signatureQuery.getString(key));
+                }
+                metrics.getSignatures().add(new Signature(signatureId, map, "SNV", mutationalSignature.getSignature().getCounts(),
+                        new ArrayList()));
+            } catch (CatalogException | StorageEngineException | IOException e) {
+                throw new ToolException("Error computing mutational signature for query '" + signatureId + "'", e);
+            }
+        } else {
+            addWarning("Skipping mutational signature: invalid parameters signature ID ('" + signatureId + "') and signature query('"
+                    + signatureQuery + "')");
         }
     }
 
