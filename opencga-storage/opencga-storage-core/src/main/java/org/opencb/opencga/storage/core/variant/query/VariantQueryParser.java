@@ -482,7 +482,8 @@ public class VariantQueryParser {
             }
             if (VariantQueryUtils.isValidParam(query, INCLUDE_SAMPLE)) {
                 List<String> includeSamples = query.getAsStringList(INCLUDE_SAMPLE.key());
-                if (!includeSamples.containsAll(samplesAndParents)) {
+                boolean includeAll = isAllOrNull(includeSamples);
+                if (!includeAll && !includeSamples.containsAll(samplesAndParents)) {
                     throw new VariantQueryException("Invalid list of '" + INCLUDE_SAMPLE.key() + "'. "
                             + "It must include, at least, all parents.");
                 }

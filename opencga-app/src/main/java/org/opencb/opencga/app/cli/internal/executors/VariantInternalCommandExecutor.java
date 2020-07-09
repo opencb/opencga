@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.SequenceWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.DataResult;
@@ -855,21 +856,15 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         // Build variant query from cli options
-        Query variantStatsQuery = null;
-        if (cliOptions.variantStatsQuery != null) {
-            variantStatsQuery = new Query();
-            for (Map.Entry<String, String> e : cliOptions.variantStatsQuery.entrySet()) {
-                variantStatsQuery.append(e.getKey(), e.getValue());
-            }
+        Query variantStatsQuery = new Query();
+        if (MapUtils.isNotEmpty(cliOptions.variantStatsQuery)) {
+            cliOptions.variantStatsQuery.entrySet().forEach(e -> variantStatsQuery.append(e.getKey(), e.getValue()));
         }
 
         // Build signature query from cli options
-        Query signatureQuery = null;
-        if (cliOptions.signatureQuery != null) {
-            signatureQuery = new Query();
-            for (Map.Entry<String, String> e : cliOptions.signatureQuery.entrySet()) {
-                signatureQuery.append(e.getKey(), e.getValue());
-            }
+        Query signatureQuery = new Query();
+        if (MapUtils.isNotEmpty(cliOptions.signatureQuery)) {
+            cliOptions.signatureQuery.entrySet().forEach(e -> signatureQuery.append(e.getKey(), e.getValue()));
         }
 
         // Build list of genes from cli options

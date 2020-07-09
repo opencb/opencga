@@ -489,66 +489,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
             // The job(s) it depended on finished successfully. Check if the input files are correct.
-            // Look for input files
-            String fileParamSuffix = "file";
-            List<File> inputFiles = new ArrayList<>();
-            if (job.getParams() != null) {
-                Map<String, Object> dynamicParams = null;
-                for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
-                    // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
-                    if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                        for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
-                            try {
-                                // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(job.getStudy().getId(), fileStr,
-                                        FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                                inputFiles.add(file);
-                            } catch (CatalogException e) {
-                                String msg = "Cannot find file '" + entry.getValue() + "' "
-                                        + "from job param '" + entry.getKey() + "'; (study = " + job.getStudy().getId() + ", token = "
-                                        + token + ") :" + e.getMessage();
-                                logger.error(msg, e);
-                                return abortJob(job, msg);
-                            }
-                        }
-                    } else if (entry.getValue() instanceof Map) {
-                        if (dynamicParams != null) {
-                            List<String> dynamicParamKeys = job.getParams()
-                                    .entrySet()
-                                    .stream()
-                                    .filter(e -> e.getValue() instanceof Map)
-                                    .map(Map.Entry::getKey)
-                                    .collect(Collectors.toList());
-
-                            String msg = "Found multiple dynamic param maps in job params: " + dynamicParamKeys;
-                            logger.error(msg);
-                            return abortJob(job, msg);
-                        }
-                        // If we have found a map for further dynamic params...
-                        dynamicParams = (Map<String, Object>) entry.getValue();
-                    }
-                }
-                if (dynamicParams != null) {
-                    // We look for files in the dynamic params
-                    for (Map.Entry<String, Object> entry : dynamicParams.entrySet()) {
-                        if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                            // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in
-                            // catalog
-                            try {
-                                // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(job.getStudy().getId(), (String) entry.getValue(),
-                                        FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                                inputFiles.add(file);
-                            } catch (CatalogException e) {
-                                String msg = "Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey() + "'. ";
-                                logger.error(msg, e);
-                                return abortJob(job, msg);
-                            }
-                        }
-                    }
-                }
+            try {
+                List<File> inputFiles = catalogManager.getJobManager().getJobInputFilesFromParams(job.getStudy().getId(), job, token);
+                updateParams.setInput(inputFiles);
+            } catch (CatalogException e) {
+                logger.error(e.getMessage(), e);
+                return abortJob(job, e.getMessage());
             }
-            updateParams.setInput(inputFiles);
         }
 
 
@@ -689,22 +636,23 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 .append(internalCli)
                 .append(" ").append(TOOL_CLI_MAP.get(toolId));
         for (Map.Entry<String, Object> entry : params.entrySet()) {
+            String key = entry.getKey();
+            String param = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key);
             if (entry.getValue() instanceof Map) {
                 Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
                 for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
-                    cliBuilder.append(" ").append("-D");
+                    cliBuilder.append(" ").append("--").append(param).append(" ");
                     escapeCliArg(cliBuilder, dynamicEntry.getKey());
                     cliBuilder.append("=");
                     escapeCliArg(cliBuilder, dynamicEntry.getValue());
                 }
             } else {
-                String key = entry.getKey();
                 if (!StringUtils.isAlphanumeric(StringUtils.replaceChars(key, "-_", ""))) {
                     // This should never happen
                     throw new IllegalArgumentException("Invalid job param key '" + key + "'");
                 }
                 cliBuilder
-                        .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key))
+                        .append(" --").append(param)
                         .append(" ");
                 escapeCliArg(cliBuilder, entry.getValue().toString());
             }

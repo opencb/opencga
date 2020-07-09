@@ -29,9 +29,12 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 
@@ -42,6 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS;
 import static org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
 
 @Tool(id = IndividualQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = IndividualQcAnalysis.DESCRIPTION)
@@ -80,18 +84,19 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             throw new ToolException("Missing study ID.");
         }
 
+        // Check permissions
         try {
-            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
+            Study study = catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token).first();
+            String userId = catalogManager.getUserManager().getUserId(token);
+            catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId, WRITE_INDIVIDUALS);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
 
-        // Sanity check
+        // Get individual
         if (StringUtils.isEmpty(individualId)) {
             throw new ToolException("Missing individual ID.");
         }
-
-        // Get individual
         individual = IndividualQcUtils.getIndividualById(studyId, individualId, catalogManager, token);
 
         // Get samples of that individual, but only germline samples
@@ -153,12 +158,17 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         // Get individual quality control metrics to update
         qualityControl = individual.getQualityControl();
         if (qualityControl == null) {
-            qualityControl = new IndividualQualityControl().setSampleId(sample.getId());
+            qualityControl = new IndividualQualityControl();
         } else {
             if (StringUtils.isNotEmpty(qualityControl.getSampleId()) && !qualityControl.getSampleId().equals(sample.getId())) {
                 throw new ToolException("Individual quality control was computed previously for the sample '" + qualityControl.getSampleId()
                         + "'");
             }
+        }
+
+        // Set sample ID
+        if (StringUtils.isEmpty(qualityControl.getSampleId())) {
+            qualityControl.setSampleId(sample.getId());
         }
 
         executor = getToolExecutor(IndividualQcAnalysisExecutor.class)

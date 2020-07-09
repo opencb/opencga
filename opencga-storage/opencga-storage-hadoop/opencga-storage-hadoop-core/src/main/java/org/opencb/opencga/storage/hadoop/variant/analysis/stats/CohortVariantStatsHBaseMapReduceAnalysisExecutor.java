@@ -50,7 +50,8 @@ public class CohortVariantStatsHBaseMapReduceAnalysisExecutor
 //            Query variantsQuery = getVariantsQuery();
             Query variantsQuery = new Query();
 
-            ObjectMap params = new ObjectMap(variantsQuery)
+            ObjectMap params = new ObjectMap(engine.getOptions())
+                    .appendAll(variantsQuery)
                     .append(CohortVariantStatsDriver.COHORT, temporaryCohortName)
                     .append(CohortVariantStatsDriver.OUTPUT, getOutputFile().toAbsolutePath().toUri());
             engine.getMRExecutor().run(CohortVariantStatsDriver.class, CohortVariantStatsDriver.buildArgs(

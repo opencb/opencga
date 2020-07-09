@@ -4,12 +4,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
@@ -40,18 +40,10 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
 
             for (Map.Entry<String, List<String>> entry : getCohorts().entrySet()) {
 
-                String realCohortName = entry.getKey();
-                String temporaryCohortName = "TEMP_" + realCohortName + "_" + TimeUtils.getTimeMillis();
-                temporaryCohortNames.add(temporaryCohortName);
-
-                int cohortId = dbAdaptor.getMetadataManager().registerCohort(getStudy(), temporaryCohortName, entry.getValue());
-
-                dbAdaptor.getMetadataManager().updateCohortMetadata(studyId, cohortId, cohortMetadata -> {
-                    cohortMetadata.getAttributes().put("alias", realCohortName);
-                    cohortMetadata.setStatus("TEMPORARY", TaskMetadata.Status.RUNNING);
-                    return cohortMetadata;
-                });
-                cohortIds.add(cohortId);
+                CohortMetadata temporaryCohort = dbAdaptor.getMetadataManager()
+                        .registerTemporaryCohort(getStudy(), entry.getKey(), entry.getValue());
+                temporaryCohortNames.add(temporaryCohort.getName());
+                cohortIds.add(temporaryCohort.getId());
             }
 
 
@@ -60,7 +52,10 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
         }
 
         try {
-            Query variantsQuery = getVariantsQuery();
+            Query variantsQuery = new Query(getVariantsQuery());
+            // Don't need for these params
+            variantsQuery.remove(VariantQueryParam.INCLUDE_SAMPLE.key());
+            variantsQuery.remove(VariantQueryParam.SAMPLE.key());
             variantsQuery = engine.preProcessQuery(variantsQuery, new QueryOptions());
             ObjectMap params = new ObjectMap(variantsQuery)
                     .append(VariantStatsDriver.COHORTS, temporaryCohortNames)

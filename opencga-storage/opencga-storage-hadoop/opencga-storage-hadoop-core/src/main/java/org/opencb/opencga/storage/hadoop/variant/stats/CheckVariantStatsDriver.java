@@ -151,10 +151,10 @@ public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
 
                     for (VariantType value : VariantType.values()) {
                         out.print("\t");
-                        out.print(stats.getTypeCount().getOrDefault(value.name(), 0));
+                        out.print(stats.getTypeCount().getOrDefault(value.name(), 0L));
                     }
 
-                    Map<String, Integer> chromosomeCounts = stats.getChromosomeCount().entrySet()
+                    Map<String, Long> chromosomeCounts = stats.getChromosomeCount().entrySet()
                             .stream()
                             .collect(Collectors.toMap(
                                     e -> Region.normalizeChromosome(e.getKey()), // Normalize chromosomes
@@ -164,14 +164,14 @@ public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
                         out.print("\t");
                         if (chr.equals("OTHER")) {
                             int count = 0;
-                            for (Map.Entry<String, Integer> entry : chromosomeCounts.entrySet()) {
+                            for (Map.Entry<String, Long> entry : chromosomeCounts.entrySet()) {
                                 if (FileStatsWritable.getChromosomeIdx(entry.getKey()) == i) {
                                     count += entry.getValue();
                                 }
                             }
                             out.print(count);
                         } else {
-                            out.print(chromosomeCounts.getOrDefault(chr, 0));
+                            out.print(chromosomeCounts.getOrDefault(chr, 0L));
                         }
                     }
                     out.println();

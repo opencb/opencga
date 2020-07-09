@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created on 07/09/17.
@@ -76,13 +77,19 @@ public class VariantSourceToVariantFileMetadataConverter implements Converter<Va
         return VariantSetStats.newBuilder()
                 .setVariantCount(legacyStats.getNumRecords())
                 .setQualityAvg(legacyStats.getMeanQuality().floatValue())
-                .setFilterCount(Collections.singletonMap("PASS", legacyStats.getPassCount()))
+                .setFilterCount(Collections.singletonMap("PASS", (long) legacyStats.getPassCount()))
                 .setSampleCount(legacyStats.getSamplesCount())
                 .setTiTvRatio(legacyStats.getTransitionsCount() / (float) legacyStats.getTransversionsCount())
-                .setTypeCount(legacyStats.getVariantTypeCounts())
-                .setConsequenceTypeCount(legacyStats.getConsequenceTypesCount())
+                .setTypeCount(legacyStats.getVariantTypeCounts()
+                        .entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> (long) e.getValue())))
+                .setConsequenceTypeCount(legacyStats.getConsequenceTypesCount()
+                        .entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> (long) e.getValue())))
                 .setQualityStdDev(0)
-                .setChromosomeCount(legacyStats.getChromosomeCounts()).build();
+                .setChromosomeCount(legacyStats.getChromosomeCounts()
+                        .entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> (long) e.getValue()))).build();
     }
 
     protected String takeFromMap(Map<String, String> map, String key) {

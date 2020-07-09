@@ -154,6 +154,7 @@ variant:
         storage.hadoop.variant.table.compression: "snappy"           # Allowed values: none, snappy, gz
         storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit: 15
         storage.hadoop.sampleIndex.table.compression: "snappy"       # Allowed values: none, snappy, gz
+        storage.hadoop.sampleIndex.annotation.maxSamplesPerMR: 5000
         storage.hadoop.annotationIndex.table.compression: "snappy"   # Allowed values: none, snappy, gz
         storage.hadoop.pendingAnnotation.table.compression: "snappy" # Allowed values: none, snappy, gz
 
@@ -178,6 +179,14 @@ variant:
         # Increase the ScannerTimeoutPeriod from 60000 (1min) to 300000 (5min) to avoid ScannerTimeoutExceptions
         # See opencb/opencga#352 for more info.
         storage.hadoop.mr.scanner.timeout: 300000
+
+        mapreduce.map.memory.mb: 2048
+        DiscoverPendingVariantsDriver:
+          mapreduce.map.memory.mb: 750
+        VariantStatsDriver:
+          mapreduce.map.memory.mb: 2048
+        SampleIndexAnnotationLoaderDriver:
+          mapreduce.map.memory.mb: 4096
 
 
 ## PENDING

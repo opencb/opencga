@@ -85,8 +85,12 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         numFiles = fileIds.size();
 
         query = new Query(VariantMapReduceUtil.getQueryFromConfig(getConf()))
-                .append(VariantQueryParam.STUDY.key(), getStudyId())
-                .append(VariantQueryParam.FILE.key(), fileIds);
+                .append(VariantQueryParam.STUDY.key(), getStudyId());
+        if (numFiles < 100) {
+            query.append(VariantQueryParam.FILE.key(), fileIds);
+        } else {
+            query.append(VariantQueryParam.INCLUDE_FILE.key(), fileIds);
+        }
         query.remove(VariantQueryParam.COHORT.key());
 
         queryOptions = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_STATS));
@@ -222,7 +226,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
             super(studyId, files, 0, null);
         }
 
-        public ExposedVariantSetStatsCalculator(String studyId, Set<String> files, int numSamples, Map<String, Integer> chrLengthMap) {
+        public ExposedVariantSetStatsCalculator(String studyId, Set<String> files, int numSamples, Map<String, Long> chrLengthMap) {
             super(studyId, files, numSamples, chrLengthMap);
         }
 
@@ -365,7 +369,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
             }
 
             int numSamples = context.getConfiguration().getInt(NUM_SAMPLES, 0);
-            Map<String, Integer> chrLengthMap = null;
+            Map<String, Long> chrLengthMap = null;
 
             ExposedVariantSetStatsCalculator calculator = new ExposedVariantSetStatsCalculator("", null, numSamples, chrLengthMap)
                     .setTransitionsCount(stats.transitionsCount)
@@ -377,7 +381,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
 
             calculator.post();
 
-            stats.getValue().setFilesCount(getFiles(context.getConfiguration()).size());
+            stats.getValue().setFilesCount((long) getFiles(context.getConfiguration()).size());
 
             context.write(n, new Text(stats.getValue().toString()));
         }

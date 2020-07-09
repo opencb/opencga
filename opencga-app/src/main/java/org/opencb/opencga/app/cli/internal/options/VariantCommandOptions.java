@@ -43,7 +43,6 @@ import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.AbstractBasicVariantQueryParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
-import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -1367,14 +1366,14 @@ public class VariantCommandOptions {
         @Parameter(names = {"--variant-stats-description"}, description = "Variant stats description.")
         public String variantStatsDecription;
 
-        @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2V\" --vsq ct=\"missense_variant\"")
-        public Map<String, String> variantStatsQuery = null; //new HashMap<>();
+        @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
+        public Map<String, String> variantStatsQuery = new HashMap<>();
 
         @Parameter(names = {"--signature-id"}, description = "Signature ID.")
         public String signatureId;
 
         @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
-        public Map<String, String> signatureQuery = null; //new HashMap<>();
+        public Map<String, String> signatureQuery = new HashMap<>();
 
         @Parameter(names = {"--genes-for-coverage-stats"}, description = "A comma separated list of genes to compute the coverage stats.")
         public String genesForCoverageStats;
