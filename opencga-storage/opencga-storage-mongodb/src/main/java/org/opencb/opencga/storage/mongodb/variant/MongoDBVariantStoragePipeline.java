@@ -282,7 +282,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri);
         VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(studyId));
-        int numRecords = fileMetadata.getStats().getVariantCount();
+        long numRecords = fileMetadata.getStats().getVariantCount();
         int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
         int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
         final int numReaders = 1;
@@ -388,7 +388,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(getStudyId()));
-        int numRecords = fileMetadata.getStats().getVariantCount();
+        long numRecords = fileMetadata.getStats().getVariantCount();
         int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
         int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
         final int numReaders = 1;
@@ -758,7 +758,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         long expectedSkippedVariants = 0;
         long alreadyLoadedVariants = options.getLong(ALREADY_LOADED_VARIANTS.key(), 0L);
 
-        for (Map.Entry<String, Integer> entry : fileMetadata.getStats().getTypeCount().entrySet()) {
+        for (Map.Entry<String, Long> entry : fileMetadata.getStats().getTypeCount().entrySet()) {
             if (SKIPPED_VARIANTS.contains(VariantType.valueOf(entry.getKey()))) {
                 expectedSkippedVariants += entry.getValue();
             } else {
@@ -786,7 +786,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         } else if (writeResult.getSkippedVariants() > 0) {
             logger.warn("There were " + writeResult.getSkippedVariants() + " skipped variants.");
             for (VariantType type : SKIPPED_VARIANTS) {
-                Integer countByType = fileMetadata.getStats().getTypeCount().get(type.toString());
+                Long countByType = fileMetadata.getStats().getTypeCount().get(type.toString());
                 if (countByType != null && countByType > 0) {
                     logger.info("  * Of which " + countByType + " are " + type.toString() + " variants.");
                 }

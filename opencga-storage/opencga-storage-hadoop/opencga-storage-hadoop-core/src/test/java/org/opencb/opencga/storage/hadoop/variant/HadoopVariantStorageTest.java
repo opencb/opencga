@@ -471,7 +471,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     default int getExpectedNumLoadedVariants(VariantFileMetadata fileMetadata) {
         int numRecords = 0;
         for (VariantType variantType : HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET) {
-            numRecords += fileMetadata.getStats().getTypeCount().getOrDefault(variantType.name(), 0);
+            numRecords += fileMetadata.getStats().getTypeCount().getOrDefault(variantType.name(), 0L).intValue();
         }
         return numRecords;
     }

@@ -746,11 +746,10 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
                                                        VariantFileMetadata fileMetadata) {
         int fileId = Integer.parseInt(fileMetadata.getId());
         Set<String> variants = getVariants(dbAdaptor, studyMetadata, fileId);
-        int expected = fileMetadata.getStats().getTypeCount().entrySet().stream()
+        int expected = (int) fileMetadata.getStats().getTypeCount().entrySet().stream()
                 .filter(entry -> VARIANT_TYPES.contains(VariantType.valueOf(entry.getKey())))
-                .map(Map.Entry::getValue)
-                .reduce(Integer::sum)
-                .orElse(0);
+                .mapToLong(Map.Entry::getValue)
+                .sum();
         assertEquals(expected, variants.size());
         return variants;
     }

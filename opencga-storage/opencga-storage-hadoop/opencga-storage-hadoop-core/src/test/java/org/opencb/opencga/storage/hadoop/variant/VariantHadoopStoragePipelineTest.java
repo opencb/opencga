@@ -136,7 +136,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         long totalCount = dbAdaptor.count(new Query()).first();
 
         long count = TARGET_VARIANT_TYPE_SET.stream()
-                .mapToInt(type -> fileMetadata.getStats().getTypeCount().getOrDefault(type.name(), 0))
+                .mapToLong(type -> fileMetadata.getStats().getTypeCount().getOrDefault(type.name(), 0L))
                 .sum();
 //        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
         assertEquals(count, totalCount);
@@ -215,7 +215,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         System.out.println("End query from HBase : " + dbAdaptor.getVariantTable());
         System.out.println(fileMetadata.getStats().getTypeCount());
         long count = TARGET_VARIANT_TYPE_SET.stream()
-                .mapToLong(type -> fileMetadata.getStats().getTypeCount().getOrDefault(type.name(), 0))
+                .mapToLong(type -> fileMetadata.getStats().getTypeCount().getOrDefault(type.name(), 0L))
                 .sum();
 //        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
         assertEquals(count, numVariants);
