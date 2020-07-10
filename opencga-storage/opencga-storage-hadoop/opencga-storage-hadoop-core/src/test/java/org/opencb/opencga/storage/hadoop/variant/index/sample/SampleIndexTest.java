@@ -349,6 +349,9 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("#Query SampleIndex+DBAdaptor");
         queryResult = variantStorageEngine.get(new Query(query), new QueryOptions());
         int indexAndDBAdaptor = queryResult.getNumResults();
+        long indexAndDBAdaptorMatches = queryResult.getNumMatches();
+        assertEquals(indexAndDBAdaptorMatches, indexAndDBAdaptor);
+
         System.out.println("queryResult.source = " + queryResult.getSource());
 
         System.out.println("--- RESULTS -----");
@@ -422,31 +425,42 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testCount() throws StorageEngineException {
-        List<List<Region>> regionLists = Arrays.asList(null, Arrays.asList(new Region("22", 36591300, 46000000), new Region("1", 1000, 16400000)));
+        List<Query> queries = Arrays.asList(
+                new Query(),
+                new Query(REGION.key(), "1").append(ANNOT_BIOTYPE.key(), "protein_coding"),
+                new Query(REGION.key(), Arrays.asList(new Region("22", 36591300, 46000000), new Region("1", 1000, 16400000)))
+        );
 
         for (String study : studies) {
             for (String sampleName : sampleNames.get(study)) {
-                for (List<Region> regions : regionLists) {
+                for (Query baseQuery : queries) {
                     System.out.println("-----------------------------------");
                     System.out.println("study = " + study);
                     System.out.println("sampleName = " + sampleName);
-                    System.out.println("regions = " + regions);
+                    System.out.println("baseQuery = " + baseQuery.toJson());
                     StopWatch stopWatch = StopWatch.createStarted();
-                    long actualCount = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
-                            .count(regions, study, sampleName, Arrays.asList("1|0", "0|1", "1|1"));
-                    Query query = new Query(VariantQueryParam.STUDY.key(), study).append(GENOTYPE.key(), sampleName + ":1|0,0|1,1|1");
-                    if (regions != null) {
-                        query.append(VariantQueryParam.REGION.key(), regions);
-                    }
+                    Query query = new Query(baseQuery)
+                            .append(VariantQueryParam.STUDY.key(), study)
+                            .append(GENOTYPE.key(), sampleName + ":1|0,0|1,1|1");
+                    SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
+                    long actualCount = sampleIndexDBAdaptor.count(sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(new Query(query)));
+
                     System.out.println("---");
                     System.out.println("Count indexTable " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
                     System.out.println("Count = " + actualCount);
+
+                    stopWatch = StopWatch.createStarted();
+                    long actualCountIterator = sampleIndexDBAdaptor.iterator(sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(new Query(query))).toDataResult().getNumResults();
+                    System.out.println("---");
+                    System.out.println("Count indexTable iterator " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+                    System.out.println("Count = " + actualCountIterator);
                     stopWatch = StopWatch.createStarted();
                     long expectedCount = dbAdaptor.count(query).first();
                     System.out.println("Count variants   " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
                     System.out.println("Count = " + expectedCount);
                     System.out.println("-----------------------------------");
                     assertEquals(expectedCount, actualCount);
+                    assertEquals(expectedCount, actualCountIterator);
                 }
             }
         }
