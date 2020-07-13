@@ -1338,7 +1338,7 @@ public class JobManager extends ResourceManager<Job> {
 
 
         int jobsLimit = limit;
-        final List<Job> running = new ArrayList<>(jobsLimit);
+        List<Job> running = new ArrayList<>(jobsLimit);
         for (Study study : studies) {
             if (jobsLimit == 0) {
                 break;
@@ -1352,11 +1352,18 @@ public class JobManager extends ResourceManager<Job> {
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, "execution.start"),
                     userId).getResults();
-            jobsLimit -= results.size();
             running.addAll(results);
         }
+        running.sort(Comparator.comparing(
+                j -> j.getExecution() == null || j.getExecution().getStart() == null
+                        ? new Date()
+                        : j.getExecution().getStart()));
+        if (running.size() > jobsLimit) {
+            running = running.subList(0, jobsLimit);
+        }
+        jobsLimit -= running.size();
 
-        final List<Job> queued = new ArrayList<>(jobsLimit);
+        List<Job> queued = new ArrayList<>(jobsLimit);
         for (Study study : studies) {
             if (jobsLimit == 0) {
                 break;
@@ -1370,11 +1377,15 @@ public class JobManager extends ResourceManager<Job> {
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
                     userId).getResults();
-            jobsLimit -= results.size();
             queued.addAll(results);
         }
+        queued.sort(Comparator.comparing(Job::getCreationDate));
+        if (queued.size() > jobsLimit) {
+            queued = queued.subList(0, jobsLimit);
+        }
+        jobsLimit -= queued.size();
 
-        final List<Job> pending = new ArrayList<>(jobsLimit);
+        List<Job> pending = new ArrayList<>(jobsLimit);
         for (Study study : studies) {
             if (jobsLimit == 0) {
                 break;
@@ -1388,11 +1399,15 @@ public class JobManager extends ResourceManager<Job> {
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
                     userId).getResults();
-            jobsLimit -= results.size();
             pending.addAll(results);
         }
+        pending.sort(Comparator.comparing(Job::getCreationDate));
+        if (pending.size() > jobsLimit) {
+            pending = pending.subList(0, jobsLimit);
+        }
+        jobsLimit -= pending.size();
 
-        final List<Job> finishedJobs = new ArrayList<>(jobsLimit);
+        List<Job> finishedJobs = new ArrayList<>(jobsLimit);
         for (Study study : studies) {
             if (jobsLimit == 0) {
                 break;
@@ -1410,11 +1425,16 @@ public class JobManager extends ResourceManager<Job> {
                             .append(QueryOptions.ORDER, QueryOptions.DESCENDING), // Get last n elements,
                     userId).getResults();
             Collections.reverse(results); // Reverse elements
-            jobsLimit -= results.size();
             finishedJobs.addAll(results);
         }
+        finishedJobs.sort(Comparator.comparing((Job j) -> j.getExecution() == null || j.getExecution().getStart() == null
+                ? new Date()
+                : j.getExecution().getStart()).reversed());
+        if (finishedJobs.size() > jobsLimit) {
+            finishedJobs = finishedJobs.subList(0, jobsLimit);
+        }
 
-        List<Job> allJobs = new ArrayList<>(running.size() + pending.size() + queued.size());
+        List<Job> allJobs = new ArrayList<>(finishedJobs.size() + running.size() + pending.size() + queued.size());
         allJobs.addAll(finishedJobs);
         allJobs.addAll(running);
         allJobs.addAll(queued);

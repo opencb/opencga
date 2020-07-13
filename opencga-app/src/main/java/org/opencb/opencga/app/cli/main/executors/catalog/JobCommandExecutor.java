@@ -174,7 +174,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, c.priority);
         query.putAll(c.commonOptions.params);
 
-        new JobsTopManager(openCGAClient, query, c.iterations, c.jobsLimit, c.delay).run();
+        new JobsTopManager(openCGAClient, query, c.iterations, c.jobsLimit, c.delay, c.plain).run();
     }
 
     private void log() throws Exception {
