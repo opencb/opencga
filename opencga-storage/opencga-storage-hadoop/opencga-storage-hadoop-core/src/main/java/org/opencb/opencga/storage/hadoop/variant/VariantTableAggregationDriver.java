@@ -89,6 +89,8 @@ public abstract class VariantTableAggregationDriver extends AbstractVariantsTabl
 
     protected abstract int getNumReduceTasks();
 
+    public abstract boolean isOutputWithHeaders();
+
     protected String generateOutputFileName() {
         return null;
     }
@@ -142,7 +144,7 @@ public abstract class VariantTableAggregationDriver extends AbstractVariantsTabl
         super.postExecution(succeed);
         if (succeed) {
             if (localOutput != null) {
-                concatMrOutputToLocal(outdir, localOutput);
+                concatMrOutputToLocal(outdir, localOutput, isOutputWithHeaders());
             }
         }
         if (localOutput != null) {
