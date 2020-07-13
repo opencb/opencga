@@ -64,3 +64,6 @@ migrateCollection("clinical", {}, {}, function(bulk, doc) {
         }
     });
 });
+
+// Set all _individualUid to NumberLong(-1) from sample collection
+db.sample.update({_individualUid:-1},{$set:{_individualUid:NumberLong(-1)}},{multi:true})
