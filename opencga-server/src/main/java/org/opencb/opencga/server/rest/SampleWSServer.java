@@ -154,6 +154,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_ID_PARAM) String id,
             @ApiParam(value = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_SOMATIC_PARAM) Boolean somatic,
             @ApiParam(value = ParamConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_INDIVIDUAL_ID_PARAM) String individual,
+            @ApiParam(value = ParamConstants.SAMPLE_FILE_IDS_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_FILE_IDS_PARAM) String fileIds,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.PHENOTYPES_PARAM) String phenotypes,

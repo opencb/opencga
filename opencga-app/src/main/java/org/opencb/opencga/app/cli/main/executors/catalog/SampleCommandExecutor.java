@@ -156,6 +156,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ParamConstants.ATTRIBUTES_PARAM, c.attributes);
         params.putIfNotNull(ParamConstants.SAMPLE_SOMATIC_PARAM, c.somatic);
         params.putIfNotEmpty(ParamConstants.SAMPLE_INDIVIDUAL_ID_PARAM, c.individual);
+        params.putIfNotEmpty(ParamConstants.SAMPLE_FILE_IDS_PARAM, c.fileIds);
         params.putIfNotEmpty(Constants.ANNOTATION, c.annotation);
         params.putIfNotNull(ParamConstants.DELETED_PARAM, c.deleted);
         params.putIfNotNull(ParamConstants.RELEASE_PARAM, c.release);
