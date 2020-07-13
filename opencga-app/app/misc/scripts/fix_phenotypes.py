@@ -21,7 +21,7 @@ def fix_phenotypes(phenotypes, hpo_info):
 def fix_sample_phenotypes(oc, query, hpo_info):
     sys.stderr.write('Processing samples...\n')
     sample_resp = oc.samples.search(include='id,phenotypes', **query)
-    for sample in sample_resp.get_results():
+    for sample in sample_resp.result_iterator():
         print(sample['id'])
         sys.stderr.write('Fixing HPOs for sample "{}"\n'.format(sample['id']))
         if 'phenotypes' in sample and sample['phenotypes']:
@@ -34,7 +34,7 @@ def fix_sample_phenotypes(oc, query, hpo_info):
 def fix_individual_phenotypes(oc, query, hpos):
     sys.stderr.write('Processing individuals...\n')
     individual_resp = oc.individuals.search(include='id,phenotypes', **query)
-    for individual in individual_resp.get_results():
+    for individual in individual_resp.result_iterator():
         sys.stderr.write('Fixing HPOs for individual "{}"\n'.format(individual['id']))
         if 'phenotypes' in individual and individual['phenotypes']:
             phenotypes = fix_phenotypes(individual['phenotypes'], hpos)
@@ -97,7 +97,7 @@ def main():
     # Define parameters
     parser = argparse.ArgumentParser()
     parser.add_argument('action', help='Action to execute', choices=['sample', 'individual'])
-    parser.add_argument('--hpo', required=True, help='Load HPO ontology terms')
+    parser.add_argument('--hpo', required=True, help='Load HPO ontology terms (download from http://compbio.charite.de/jenkins/job/hpo.annotations/lastSuccessfulBuild/artifact/util/annotation/phenotype_to_genes.txt)')
     parser.add_argument('-s', '--study', required=True, help='Study ID or fqn')
     parser.add_argument('--id', help='Comma-separated list of sample ID')
     parser.add_argument('--phenotypes', help='Comma-separated list of phenotype ID, e.g. hp:12345')
