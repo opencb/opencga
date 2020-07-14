@@ -242,7 +242,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
 
         if (!OPENCGA.equals(userId) && !ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
-            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to assign permissions");
+            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to assign or see all permissions");
         }
     }
 
