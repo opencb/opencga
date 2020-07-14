@@ -661,9 +661,15 @@ public final class VariantQueryUtils {
 
             List<String> samples;
             String sampleFilter = query.getString(SAMPLE.key());
-            Pair<QueryOperation, List<String>> pair = splitValue(sampleFilter);
-            samples = new LinkedList<>(pair.getValue());
-            samplesOperator = pair.getKey();
+            if (sampleFilter.contains(IS)) {
+                ParsedQuery<KeyOpValue<String, List<String>>> gtQ = parseGenotypeFilter(sampleFilter);
+                samples = gtQ.getValues().stream().map(KeyOpValue::getKey).collect(Collectors.toList());
+                samplesOperator = gtQ.getOperation();
+            } else {
+                Pair<QueryOperation, List<String>> pair = splitValue(sampleFilter);
+                samples = new LinkedList<>(pair.getValue());
+                samplesOperator = pair.getKey();
+            }
             samples.removeIf(VariantQueryUtils::isNegated);
 
             if (samples.isEmpty()) {

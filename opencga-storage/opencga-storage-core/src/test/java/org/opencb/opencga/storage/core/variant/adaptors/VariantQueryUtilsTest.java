@@ -237,6 +237,14 @@ public class VariantQueryUtilsTest extends GenericTest {
                 QueryOperation.AND,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
+        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1,1/1;HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
+                QueryOperation.AND,
+                "HG00096", "DP>8",
+                "HG00097", "DP>8");
+        checkParseFormat(new Query(SAMPLE.key(), "HG00096:0/1,1/1;HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
+                QueryOperation.AND,
+                "HG00096", "DP>8",
+                "HG00097", "DP>8");
 
         checkParseFormat(new Query(SAMPLE_DATA.key(), "HG00096:GQ>5.0,HG00097:DP>8"),
                 QueryOperation.OR,

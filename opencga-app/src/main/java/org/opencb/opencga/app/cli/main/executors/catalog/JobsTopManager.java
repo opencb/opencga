@@ -39,6 +39,7 @@ public class JobsTopManager {
     private final int iterations;
     private final int jobsLimit;
     private final long delay;
+    private final boolean plain;
 
     // FIXME: Use an intermediate buffer to prepare the table, and print in one system call to avoid flashes
     private final ByteArrayOutputStream buffer;
@@ -57,12 +58,13 @@ public class JobsTopManager {
         END
     }
 
-    public JobsTopManager(OpenCGAClient openCGAClient, Query query, Integer iterations, Integer jobsLimit, long delay) {
+    public JobsTopManager(OpenCGAClient openCGAClient, Query query, Integer iterations, Integer jobsLimit, long delay, boolean plain) {
         this(openCGAClient, query, Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END), iterations,
-                jobsLimit, delay);
+                jobsLimit, delay, plain);
     }
 
-    public JobsTopManager(OpenCGAClient openCGAClient, Query query, List<Columns> columns, Integer iterations, Integer jobsLimit, long delay) {
+    public JobsTopManager(OpenCGAClient openCGAClient, Query query, List<Columns> columns, Integer iterations, Integer jobsLimit, long delay,
+                          boolean plain) {
         this.openCGAClient = openCGAClient;
         this.baseQuery = new Query(query);
         this.buffer = new ByteArrayOutputStream();
@@ -79,6 +81,7 @@ public class JobsTopManager {
             this.jobsLimit = jobsLimit;
         }
         this.delay = delay < 0 ? 2 : delay;
+        this.plain = plain;
 
         List<TableColumnSchema<Job>> tableColumnList = new ArrayList<>(columns.size());
         for (Columns column : columns) {
@@ -218,14 +221,16 @@ public class JobsTopManager {
                                 .setInternal(new JobInternal(new Enums.ExecutionStatus(entry.getKey()))));
                     }
                 }
-                for (int i = 0; i < dependsOn.size(); i++) {
-                    Job auxJob = dependsOn.get(i);
-                    if (i + 1 < dependsOn.size()) {
-                        auxJob.setId("├── " + auxJob.getId());
-                    } else {
-                        auxJob.setId("└── " + auxJob.getId());
+                if (!plain) {
+                    for (int i = 0; i < dependsOn.size(); i++) {
+                        Job auxJob = dependsOn.get(i);
+                        if (i + 1 < dependsOn.size()) {
+                            auxJob.setId("├── " + auxJob.getId());
+                        } else {
+                            auxJob.setId("└── " + auxJob.getId());
+                        }
+                        jobList.add(auxJob);
                     }
-                    jobList.add(auxJob);
                 }
             }
         }

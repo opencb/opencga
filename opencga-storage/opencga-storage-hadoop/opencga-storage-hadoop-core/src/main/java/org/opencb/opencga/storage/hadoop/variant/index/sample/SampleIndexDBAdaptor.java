@@ -340,7 +340,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     List<Region> subRegions = region == null ? Collections.singletonList((Region) null) : splitRegion(region);
                     for (Region subRegion : subRegions) {
                         HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(configuration);
-                        boolean noRegionFilter = subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion);
+                        boolean noRegionFilter = matchesWithBatch(subRegion);
                         // Don't need to parse the variant to filter
                         boolean simpleCount = !query.isMultiFileSample()
                                 && CollectionUtils.isEmpty(query.getVariantTypes())
@@ -453,16 +453,24 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         return regions;
     }
 
+    protected static boolean matchesWithBatch(Region region) {
+        return region == null || startsAtBatch(region) && endsAtBatch(region);
+    }
+
     protected static boolean startsAtBatch(Region region) {
         return region.getStart() % SampleIndexSchema.BATCH_SIZE == 0;
     }
 
     protected static boolean endsAtBatch(Region region) {
-        return (region.getEnd() + 1) % SampleIndexSchema.BATCH_SIZE == 0;
+        return region.getEnd() == Integer.MAX_VALUE || (region.getEnd() + 1) % SampleIndexSchema.BATCH_SIZE == 0;
     }
 
     public SampleIndexEntryFilter buildSampleIndexEntryFilter(SingleSampleIndexQuery query, Region region) {
-        return new SampleIndexEntryFilter(query, region);
+        if (matchesWithBatch(region)) {
+            return new SampleIndexEntryFilter(query, null);
+        } else {
+            return new SampleIndexEntryFilter(query, region);
+        }
     }
 
     public Scan parse(SingleSampleIndexQuery query, Region region) {

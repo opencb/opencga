@@ -589,7 +589,8 @@ public class VariantHBaseQueryParser {
         if (regionOrVariant != null) {
             logger.info("\tRegion = " + regionOrVariant);
         }
-        logger.info("columns = " + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
+        logger.info("columns (" + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet()).size() + ") = "
+                + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
                 .stream().map(Bytes::toString).collect(Collectors.joining(",")));
         logger.info("MaxResultSize = " + scan.getMaxResultSize());
         logger.info("Filters = " + scan.getFilter());

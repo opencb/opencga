@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors.sample;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Get;
@@ -70,8 +69,11 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
         int studyId = metadataManager.getStudyId(study);
 
-        boolean includeAllSamples = CollectionUtils.isEmpty(includeSamples)
-                || includeSamples.size() == 1 && VariantQueryUtils.ALL.equals(includeSamples.get(0));
+        boolean includeNoneSamples = VariantQueryUtils.isNoneOrEmpty(includeSamples);
+        if (includeNoneSamples) {
+            throw new VariantQueryException("Unable to continue including none sample");
+        }
+        boolean includeAllSamples = VariantQueryUtils.isAllOrNull(includeSamples);
         Set<Integer> includeSampleIds = new HashSet<>();
         if (!includeAllSamples) {
             for (String sample : includeSamples) {

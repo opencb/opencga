@@ -44,7 +44,7 @@ import static org.opencb.opencga.storage.hadoop.variant.stats.HBaseVariantStatsC
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantStatsDriver extends AbstractVariantsTableDriver {
+public class    VariantStatsDriver extends AbstractVariantsTableDriver {
     private static final String STATS_OPERATION_NAME = "stats";
     public static final String STATS_PARTIAL_RESULTS = "stats.partial-results";
     public static final String OUTPUT = "output";
