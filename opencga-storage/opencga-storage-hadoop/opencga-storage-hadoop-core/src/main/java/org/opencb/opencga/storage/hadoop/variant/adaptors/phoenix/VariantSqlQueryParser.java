@@ -148,12 +148,20 @@ public class VariantSqlQueryParser {
             appendProjectedColumns(sb, variantQuery.getProjection(), options);
             appendFromStatement(sb, dynamicColumns);
             appendWhereStatement(sb, regionFilters, filters);
+            appendOrderby(options, sb);
+            appendLimitSkip(options, sb);
 
         } catch (VariantQueryException e) {
             e.setQuery(query);
             throw e;
         }
+        return sb.toString();
+    }
 
+    private void appendOrderby(QueryOptions options, StringBuilder sb) {
+        if (options.getBoolean(QueryOptions.COUNT)) {
+            return;
+        }
         if (options.getBoolean(QueryOptions.SORT)) {
             sb.append(" ORDER BY ").append(VariantColumn.CHROMOSOME.column()).append(',').append(VariantColumn.POSITION.column());
 
@@ -164,7 +172,12 @@ public class VariantSqlQueryParser {
                 sb.append(" DESC ");
             }
         }
+    }
 
+    private void appendLimitSkip(QueryOptions options, StringBuilder sb) {
+        if (options.getBoolean(QueryOptions.COUNT)) {
+            return;
+        }
         if (clientSideSkip) {
             int skip = Math.max(0, options.getInt(QueryOptions.SKIP));
             if (options.getInt(QueryOptions.LIMIT, -1) >= 0) {
@@ -179,8 +192,6 @@ public class VariantSqlQueryParser {
                 sb.append(" OFFSET ").append(options.getInt(QueryOptions.SKIP));
             }
         }
-
-        return sb.toString();
     }
 
     /**

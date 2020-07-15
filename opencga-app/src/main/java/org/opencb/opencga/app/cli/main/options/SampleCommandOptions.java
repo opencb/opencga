@@ -152,6 +152,9 @@ public class SampleCommandOptions {
         @Parameter(names = {"--individual-id"}, description = ParamConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION, arity = 1)
         public String individual;
 
+        @Parameter(names = {"--file-ids"}, description = ParamConstants.SAMPLE_FILE_IDS_DESCRIPTION, arity = 1)
+        public String fileIds;
+
         @Parameter(names = {"--somatic"}, description = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION, arity = 1)
         public Boolean somatic;
 

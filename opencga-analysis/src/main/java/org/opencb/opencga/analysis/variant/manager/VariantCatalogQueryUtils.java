@@ -432,14 +432,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
                 List<Member> children;
                 if (StringUtils.isNotEmpty(proband)) {
+                    String memberIndividualId = toIndividualId(defaultStudyStr, proband, token);
+
                     Member probandMember = pedigree.getMembers()
                             .stream()
-                            .filter(member -> member.getId().equals(proband))
+                            .filter(member -> member.getId().equals(memberIndividualId))
                             .findFirst()
                             .orElse(null);
                     if (probandMember == null) {
                         throw VariantQueryException.malformedParam(FAMILY_PROBAND, proband,
-                                "Individual '" + proband + "' " + "not found in family '" + familyId + "'.");
+                                "Individual '" + memberIndividualId + "' " + "not found in family '" + familyId + "'.");
                     }
                     children = Collections.singletonList(probandMember);
                 } else {
@@ -640,6 +642,25 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         logger.debug("Catalog parsed query : " + VariantQueryUtils.printQuery(query));
 
         return query;
+    }
+
+    /**
+     * Gets the individual ID given an individual or sample id.
+     * @param study             study
+     * @param individuaOrSample either an individual or sample
+     * @param token             user's token
+     * @return                  individualId
+     * @throws CatalogException on catalog exception
+     */
+    private String toIndividualId(String study, String individuaOrSample, String token) throws CatalogException {
+        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().search(study,
+                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individuaOrSample),
+                new QueryOptions(INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()),
+                token);
+        if (result.getNumResults() == 1) {
+            individuaOrSample = result.first().getId();
+        }
+        return individuaOrSample;
     }
 
     private void processSampleFilter(Query query, String defaultStudyStr, String token) throws CatalogException {

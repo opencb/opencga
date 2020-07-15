@@ -161,6 +161,10 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         return 1;
     }
 
+    @Override
+    public boolean isOutputWithHeaders() {
+        return true;
+    }
 
     public static class CohortVariantStatsWritable extends AvroWritable<VariantSetStats> {
         protected int transitionsCount;

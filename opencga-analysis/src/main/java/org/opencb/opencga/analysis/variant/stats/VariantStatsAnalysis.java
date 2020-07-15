@@ -203,7 +203,7 @@ public class VariantStatsAnalysis extends OpenCgaTool {
             variantsQuery.put(VariantQueryParam.REGION.key(), toolParams.getRegion());
         }
         if (StringUtils.isNotEmpty(toolParams.getGene())) {
-            variantsQuery.put(VariantQueryParam.REGION.key(), toolParams.getGene());
+            variantsQuery.put(VariantQueryParam.GENE.key(), toolParams.getGene());
         }
 
         aggregation = getAggregation(catalogManager, studyFqn, params, token);

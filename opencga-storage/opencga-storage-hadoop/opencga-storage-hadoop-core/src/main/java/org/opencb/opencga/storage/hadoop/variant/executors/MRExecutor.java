@@ -81,6 +81,7 @@ public abstract class MRExecutor {
         }
     }
 
+    @Deprecated
     public <T extends Tool> int run(Class<T> execClass, String[] args, ObjectMap options) throws StorageEngineException {
         String hadoopRoute = options.getString(MR_HADOOP_BIN.key(), MR_HADOOP_BIN.defaultValue());
         String jar = getJarWithDependencies(options);
@@ -90,7 +91,14 @@ public abstract class MRExecutor {
             logger.debug(executable + ' ' + Arrays.toString(args));
         }
 
-        return run(executable, Commandline.toString(args));
+        try {
+            return run(executable, Commandline.toString(args));
+        } catch (Exception e) {
+            if (e.getMessage().contains("Argument list too long")) {
+                logger.error("Error executing: " + executable + ' ' + Arrays.toString(args));
+            }
+            throw e;
+        }
     }
 
     public abstract int run(String executable, String args) throws StorageEngineException;

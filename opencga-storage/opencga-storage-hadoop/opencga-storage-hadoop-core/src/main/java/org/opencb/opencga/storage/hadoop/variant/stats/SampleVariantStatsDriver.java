@@ -202,6 +202,11 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     }
 
     @Override
+    public boolean isOutputWithHeaders() {
+        return false;
+    }
+
+    @Override
     protected String generateOutputFileName() {
         return "sample_variant_stats." + TimeUtils.getTime() + ".json";
     }

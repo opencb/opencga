@@ -120,7 +120,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             throw new CatalogDBException("Missing sample id");
         }
 
-        long individualUid = -1;
+        long individualUid = -1L;
         if (StringUtils.isNotEmpty(sample.getIndividualId())) {
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId)

@@ -347,6 +347,55 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testWrongAnnotation() throws CatalogException {
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("a", "a", "", Variable.VariableType.MAP_INTEGER, null, true, false, null, null, 0, "", "",
+                Collections.emptySet(), Collections.emptyMap()));
+        variables.add(new Variable("b", "b", "", Variable.VariableType.STRING, null, true, false, null, null, 0, "", "",
+                Collections.emptySet(), Collections.emptyMap()));
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
+
+        ObjectMap annotation = new ObjectMap()
+                .append("a", 5)
+                .append("b", "my_string");
+
+        try {
+            catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
+                            .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotation))),
+                    QueryOptions.empty(), token);
+            fail("Annotation '5' should not be valid for variable MAP_INTEGER");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("does not seem appropriate for variable"));
+        }
+
+        annotation.put("a", new ObjectMap("b", "test"));
+        try {
+            catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
+                            .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotation))),
+                    QueryOptions.empty(), token);
+            fail("Annotation 'a.b' should not be INTEGER instead of STRING");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("Expected an integer map"));
+        }
+
+        annotation.put("a", new ObjectMap("b", "46"));
+        try {
+            catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
+                            .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotation))),
+                    QueryOptions.empty(), token);
+            fail("Annotation 'a.b' should not be INTEGER instead of STRING");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("Expected an integer map"));
+        }
+
+        annotation.put("a", new ObjectMap("b", 46));
+        catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotation))),
+                QueryOptions.empty(), token);
+}
+
+    @Test
     public void testVariableAllowedKeys() throws CatalogException, IOException {
         List<String> allowedKeys = Arrays.asList("x", "y", "z");
 
@@ -545,7 +594,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
 
         catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
-                        .setAnnotationSets(Collections.singletonList(annotationSet)), QueryOptions.empty(), token);
+                .setAnnotationSets(Collections.singletonList(annotationSet)), QueryOptions.empty(), token);
 
         Query query = new Query(Constants.ANNOTATION, "var_name=Joe;" + vs1.getId() + ":AGE=25");
         DataResult<Sample> annotDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(),
@@ -718,7 +767,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("NUM", "5");
         catalogManager.getSampleManager().update(studyFqn, sampleId, new SampleUpdateParams()
-                .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotations))),
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotations))),
                 QueryOptions.empty(), token);
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, sampleId,
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()), token);
@@ -726,7 +775,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         annotations.put("NUM", "6.8");
         catalogManager.getSampleManager().update(studyFqn, sampleId, new SampleUpdateParams()
-                .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation2", vs1.getId(), annotations))),
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation2", vs1.getId(), annotations))),
                 QueryOptions.empty(), token);
         sampleDataResult = catalogManager.getSampleManager().get(studyFqn, sampleId,
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()), token);
@@ -761,7 +810,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         annotations.put("RANGE_NUM", "14"); // 1:14
         catalogManager.getSampleManager().update(studyFqn, sampleId, new SampleUpdateParams()
-                .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation2", vs1.getId(), annotations))),
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation2", vs1.getId(), annotations))),
                 QueryOptions.empty(), token);
         sampleDataResult = catalogManager.getSampleManager().get(studyFqn, sampleId,
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()), token);
@@ -863,7 +912,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                         .append("string", "my value")
                         .append("numberList", Arrays.asList(2, 3, 4))));
         catalogManager.getSampleManager().update(studyFqn, sampleId1, new SampleUpdateParams()
-                    .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotations))),
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotations))),
                 QueryOptions.empty(), token);
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, sampleId1,
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()), token);

@@ -316,7 +316,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                             is = new DataInputStream(new BufferedInputStream(fsIs));
                             String line;
                             do {
-                                is.mark(10000);
+                                is.mark(10 * 1024 * 1024); //10MB
                                 line = is.readLine();
                             } while (line != null && line.startsWith("#"));
                             is.reset();

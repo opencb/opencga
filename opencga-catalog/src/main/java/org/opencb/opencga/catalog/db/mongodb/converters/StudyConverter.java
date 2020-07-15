@@ -25,7 +25,7 @@ import org.opencb.opencga.core.models.study.Study;
 /**
  * Created by pfurio on 18/01/16.
  */
-public class StudyConverter extends GenericDocumentComplexConverter<Study> {
+public class StudyConverter extends OpenCgaMongoConverter<Study> {
 
     public StudyConverter() {
         super(Study.class);

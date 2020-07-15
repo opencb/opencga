@@ -541,15 +541,12 @@ public class ClinicalWebService extends AnalysisWebService {
     })
     public Response variantQuery() {
         // Get all query options
-        QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-        Query query = getVariantQuery(queryOptions);
+        return run(() -> {
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = getVariantQuery(queryOptions);
 
-        // Get clinical variants
-        try {
-            return createOkResponse(clinicalInterpretationManager.get(query, queryOptions, token));
-        } catch (CatalogException | IOException | StorageEngineException e) {
-            return createErrorResponse(e);
-        }
+            return clinicalInterpretationManager.get(query, queryOptions, token);
+        });
     }
 
     @GET

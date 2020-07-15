@@ -161,7 +161,11 @@ public class FileMetadataReader {
                     try {
                         Map<String, Object> fileMetadataMap = JacksonUtils.getDefaultObjectMapper()
                                 .readValue(JacksonUtils.getDefaultObjectMapper().writeValueAsString(fileMetadata), Map.class);
-                        updateParams.setAttributes(file.getAttributes());
+                        if (file.getAttributes() == null) {
+                            updateParams.setAttributes(new HashMap<>());
+                        } else {
+                            updateParams.setAttributes(new HashMap<>(file.getAttributes()));
+                        }
                         updateParams.getAttributes().put(VARIANT_FILE_METADATA, fileMetadataMap);
                     } catch (IOException e) {
                         file.getAttributes().put(VARIANT_FILE_METADATA, fileMetadata);
