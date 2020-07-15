@@ -141,8 +141,7 @@ public class AnnotationUtils {
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
         }
 
-        //Check default value
-        variable.setDefaultValue(getValue(variable.getType(), variable.getDefaultValue()));
+        variable.setDefaultValue(getAllowedValue(variable, variable.getDefaultValue()));
         if (variable.getDefaultValue() != null) {
             checkAllowedValue(variable, variable.getDefaultValue(), "Default");
         }
@@ -265,7 +264,7 @@ public class AnnotationUtils {
                             values = Collections.singletonList(entry.getValue());
                         }
                         for (Object value : values) {
-                            Map<String, Object> valueMap = getMapValue(value);
+                            Map<String, Object> valueMap = (Map<String, Object>) checkAndGetAllowedValue(variable, value, "Annotation");
                             Set<String> allowedKeys = new HashSet<>(variable.getAllowedKeys());
                             for (String key : valueMap.keySet()) {
                                 if (!allowedKeys.contains(key)) {
@@ -276,23 +275,11 @@ public class AnnotationUtils {
                         }
                     }
                 }
-                annotations.put(id, getValue(variable.getType(), entry.getValue()));
-                checkAllowedValue(variable, entry.getValue(), "Annotation");
+                Object value = checkAndGetAllowedValue(variable, entry.getValue(), "Annotation");
+                annotations.put(id, value);
             }
         }
     }
-
-//    public static void checkAnnotation(Map<String, Variable> variableMap, Annotation annotation) throws CatalogException {
-//        String id = annotation.getName();
-//        if (!variableMap.containsKey(id)) {
-//            throw new CatalogException("Annotation id '" + annotation + "' is not an accepted id");
-//        } else {
-//            Variable variable = variableMap.get(id);
-//            annotation.setValue(getValue(variable.getType(), annotation.getValue()));
-//            checkAllowedValue(variable, annotation.getValue(), "Annotation");
-//        }
-//
-//    }
 
     /**
      * Adds the default annotation of a variable if present and returns true if it has been added to the annotation object, false otherwise.
@@ -350,23 +337,21 @@ public class AnnotationUtils {
     }
 
     private static void checkAllowedValue(Variable variable, Object value, String message) throws CatalogException {
-
         List listValues;
-        Object realValue = getValue(variable.getType(), value);
-        if (realValue == null) {
+        if (value == null) {
             if (variable.isRequired()) {
                 throw new CatalogException(message + " value '" + value + "' is a required value for " + variable);
             } else {
                 return;
             }
         }
-        if (realValue instanceof Collection) {
-            listValues = new ArrayList((Collection) realValue);
+        if (value instanceof Collection) {
+            listValues = new ArrayList((Collection) value);
             if (!variable.isMultiValue()) {
                 throw new CatalogException(message + " value '" + value + "' does not accept multiple values for " + variable);
             }
         } else {
-            listValues = Collections.singletonList(realValue);
+            listValues = Collections.singletonList(value);
         }
 
         if (listValues.isEmpty()) {
@@ -519,35 +504,47 @@ public class AnnotationUtils {
         }
     }
 
-    private static Object getValue(Variable.VariableType variableType, Object value) throws CatalogException {
+    private static Object getAllowedValue(Variable variable, Object value) throws CatalogException {
         Collection valueCollection;
         if (value instanceof Collection) {
             valueCollection = ((Collection) value);
             ArrayList<Object> list = new ArrayList<>(valueCollection.size());
             for (Object o : valueCollection) {
-                list.add(getValue(variableType, o));
+                list.add(getAllowedValue(variable, o));
             }
             return list;
         }
-        switch (variableType) {
-            case BOOLEAN:
-                return getBooleanValue(value);
-            case STRING:
-            case CATEGORICAL:
-                return getStringValue(value);
-            case DOUBLE:
-                return getNumericValue(value);
-            case INTEGER:
-                return getIntegerValue(value);
-            case OBJECT:
-            case MAP_BOOLEAN:
-            case MAP_INTEGER:
-            case MAP_DOUBLE:
-            case MAP_STRING:
-                return getMapValue(value);
-            default:
-                throw new CatalogException("Unknown VariableType " + variableType.name());
+
+        try {
+            switch (variable.getType()) {
+                case BOOLEAN:
+                    return getBooleanValue(value);
+                case STRING:
+                case CATEGORICAL:
+                    return getStringValue(value);
+                case DOUBLE:
+                    return getNumericValue(value);
+                case INTEGER:
+                    return getIntegerValue(value);
+                case OBJECT:
+                case MAP_BOOLEAN:
+                case MAP_INTEGER:
+                case MAP_DOUBLE:
+                case MAP_STRING:
+                    return getMapValue(value);
+                default:
+                    throw new CatalogException("Unexpected error - Unknown VariableType " + variable.getType().name());
+            }
+        } catch (CatalogException e) {
+            throw new CatalogException("Annotation value '" + value + "' does not seem appropriate for variable " + variable);
         }
+    }
+
+
+    private static Object checkAndGetAllowedValue(Variable variable, Object value, String message) throws CatalogException {
+        Object realValue = getAllowedValue(variable, value);
+        checkAllowedValue(variable, realValue, message);
+        return realValue;
     }
 
     /**
@@ -666,7 +663,11 @@ public class AnnotationUtils {
             return ((Map) value);
         }
         try {
-            return new ObjectMap(getDefaultObjectMapper().writeValueAsString(value));
+            ObjectMap realValue = new ObjectMap(getDefaultObjectMapper().writeValueAsString(value));
+            if (realValue.isEmpty()) {
+                throw new CatalogException("Value " + value + " is not a Map");
+            }
+            return realValue;
         } catch (JsonProcessingException e) {
             throw new CatalogException(e);
         }

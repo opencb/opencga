@@ -25,7 +25,7 @@ import org.opencb.opencga.core.models.study.VariableSet;
 /**
  * Created by pfurio on 04/04/16.
  */
-public class VariableSetConverter extends GenericDocumentComplexConverter<VariableSet> {
+public class VariableSetConverter extends OpenCgaMongoConverter<VariableSet> {
 
     public VariableSetConverter() {
         super(VariableSet.class);

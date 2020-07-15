@@ -25,7 +25,7 @@ import org.opencb.opencga.core.models.user.User;
 /**
  * Created by pfurio on 19/01/16.
  */
-public class UserConverter extends GenericDocumentComplexConverter<User> {
+public class UserConverter extends OpenCgaMongoConverter<User> {
 
     public UserConverter() {
         super(User.class);

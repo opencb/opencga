@@ -25,7 +25,7 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 
 import java.io.UncheckedIOException;
 
-public class InterpretationConverter extends GenericDocumentComplexConverter<Interpretation> {
+public class InterpretationConverter extends OpenCgaMongoConverter<Interpretation> {
 
     private final ObjectMapper objectMapper;
 

@@ -25,7 +25,7 @@ import org.opencb.opencga.core.models.project.Project;
 /**
  * Created by pfurio on 18/01/16.
  */
-public class ProjectConverter extends GenericDocumentComplexConverter<Project> {
+public class ProjectConverter extends OpenCgaMongoConverter<Project> {
 
     public ProjectConverter() {
         super(Project.class);
