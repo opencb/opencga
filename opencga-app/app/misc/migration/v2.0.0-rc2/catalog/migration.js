@@ -67,3 +67,66 @@ migrateCollection("clinical", {}, {}, function(bulk, doc) {
 
 // Set all _individualUid to NumberLong(-1) from sample collection
 db.sample.update({_individualUid:-1},{$set:{_individualUid:NumberLong(-1)}},{multi:true})
+
+
+// Remove proband and family references in clinical analysis #1625
+function _getSampleIdReferences(sample) {
+    if (isUndefinedOrNull(sample)) {
+        return sample;
+    }
+    return {
+        'uid': sample['uid'],
+        'id': sample['id'],
+        'version': sample['version']
+    }
+}
+
+function _getMemberAndSampleIdReferences(member) {
+    if (isUndefinedOrNull(member)) {
+        return member;
+    }
+    var newMember = {
+        'uid': member['uid'],
+        'id': member['id'],
+        'version': member['version'],
+        'samples': member['samples']
+    };
+
+    if (isNotEmptyArray(member.samples)) {
+        var samples = [];
+        for (var sample of member.samples) {
+            samples.push(_getSampleIdReferences(sample));
+        }
+        newMember['samples'] = samples;
+    }
+
+    return newMember;
+}
+
+migrateCollection("clinical", {}, {proband: 1, family: 1}, function(bulk, doc) {
+    var toset = {};
+
+    if (isNotUndefinedOrNull(doc.family)) {
+        var family = {
+            'uid': doc.family['uid'],
+            'id': doc.family['id'],
+            'version': doc.family['version'],
+            'members': doc.family['members']
+        };
+        if (isNotEmptyArray(doc.family.members)) {
+            var members = [];
+            for (var member of doc.family.members) {
+                members.push(_getMemberAndSampleIdReferences(member));
+            }
+            family['members'] = members;
+        }
+
+        toset['family'] = family;
+    }
+
+    if (isNotUndefinedOrNull(doc.proband)) {
+        toset['proband'] = _getMemberAndSampleIdReferences(doc.proband);
+    }
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": toset});
+});

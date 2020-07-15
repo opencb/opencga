@@ -79,26 +79,6 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         }
     }
 
-    private void validateParentsToUpdate(Document member) {
-        Document father = (Document) member.get(IndividualDBAdaptor.QueryParams.FATHER.key());
-        if (father != null) {
-            member.put(IndividualDBAdaptor.QueryParams.FATHER.key(), new Document()
-                    .append(IndividualDBAdaptor.QueryParams.UID.key(), getLongValue(father, IndividualDBAdaptor.QueryParams.UID.key()))
-                    .append(IndividualDBAdaptor.QueryParams.ID.key(), father.get(IndividualDBAdaptor.QueryParams.ID.key()))
-                    .append(IndividualDBAdaptor.QueryParams.VERSION.key(), father.get(IndividualDBAdaptor.QueryParams.VERSION.key()))
-            );
-        }
-
-        Document mother = (Document) member.get(IndividualDBAdaptor.QueryParams.MOTHER.key());
-        if (mother != null) {
-            member.put(IndividualDBAdaptor.QueryParams.MOTHER.key(), new Document()
-                    .append(IndividualDBAdaptor.QueryParams.UID.key(), getLongValue(mother, IndividualDBAdaptor.QueryParams.UID.key()))
-                    .append(IndividualDBAdaptor.QueryParams.ID.key(), mother.get(IndividualDBAdaptor.QueryParams.ID.key()))
-                    .append(IndividualDBAdaptor.QueryParams.VERSION.key(), mother.get(IndividualDBAdaptor.QueryParams.VERSION.key()))
-            );
-        }
-    }
-
     public void validateSamplesToUpdate(Document document) {
         List<Document> samples = (List) document.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
         if (samples == null) {
@@ -134,7 +114,6 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         }
 
         validateSamplesToUpdate(proband);
-        validateParentsToUpdate(proband);
 
         document.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), new Document()
                 .append(IndividualDBAdaptor.QueryParams.UID.key(), getLongValue(proband, IndividualDBAdaptor.QueryParams.UID.key()))
@@ -142,8 +121,6 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
                 .append(IndividualDBAdaptor.QueryParams.VERSION.key(),
                         proband.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()))
                 .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), proband.get(IndividualDBAdaptor.QueryParams.SAMPLES.key()))
-                .append(IndividualDBAdaptor.QueryParams.FATHER.key(), proband.get(IndividualDBAdaptor.QueryParams.FATHER.key()))
-                .append(IndividualDBAdaptor.QueryParams.MOTHER.key(), proband.get(IndividualDBAdaptor.QueryParams.MOTHER.key()))
         );
     }
 
@@ -155,7 +132,6 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
 
         for (Document member : members) {
             validateSamplesToUpdate(member);
-            validateParentsToUpdate(member);
         }
 
         document.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(),
@@ -165,8 +141,6 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
                         .append(IndividualDBAdaptor.QueryParams.VERSION.key(),
                                 entry.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()))
                         .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), entry.get(IndividualDBAdaptor.QueryParams.SAMPLES.key()))
-                        .append(IndividualDBAdaptor.QueryParams.FATHER.key(), entry.get(IndividualDBAdaptor.QueryParams.FATHER.key()))
-                        .append(IndividualDBAdaptor.QueryParams.MOTHER.key(), entry.get(IndividualDBAdaptor.QueryParams.MOTHER.key()))
                 )
                 .collect(Collectors.toList()));
     }
