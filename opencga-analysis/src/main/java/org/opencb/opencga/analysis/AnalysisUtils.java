@@ -61,21 +61,21 @@ public class AnalysisUtils {
         throw new ToolException("BAM file " + filename + " not found for sample " + sampleId);
     }
 
-    public static File getCatalogFile(String baitFile, String studyId, FileManager fileManager, String token) {
+    public static File getCatalogFile(String file, String studyId, FileManager fileManager, String token) throws CatalogException {
         OpenCGAResult<File> fileQueryResult;
 
-        Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), baitFile);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key());
+        Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), file);
 
-        try {
-            fileQueryResult = fileManager.search(studyId, query, queryOptions, token);
-        } catch (CatalogException e) {
-            return null;
-        }
+        fileQueryResult = fileManager.search(studyId, query, QueryOptions.empty(), token);
 
         // Sanity check
-        if (fileQueryResult.getNumResults() != 1) {
-            return null;
+        if (fileQueryResult.getNumResults() == 0) {
+            throw new CatalogException("File '" + file + "' not found in study '" + studyId  + "'");
+        }
+
+        if (fileQueryResult.getNumResults() > 1) {
+            throw new CatalogException("More than one file '" + file + "' found (" + fileQueryResult.getNumResults() + ") in study '"
+                    + studyId  + "'");
         }
 
         return fileQueryResult.first();

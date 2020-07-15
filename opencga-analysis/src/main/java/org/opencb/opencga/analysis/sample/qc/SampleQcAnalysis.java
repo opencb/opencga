@@ -16,12 +16,8 @@
 
 package org.opencb.opencga.analysis.sample.qc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
@@ -35,7 +31,6 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
-import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -50,7 +45,6 @@ import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
@@ -59,10 +53,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS;
 import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_SAMPLES;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.SAMPLE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
 public class SampleQcAnalysis extends OpenCgaTool {
@@ -80,9 +71,8 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
     private String studyId;
     private String sampleId;
-    private String fastaFile;
+    private String dictFile;
     private String baitFile;
-    private String targetFile;
     private String variantStatsId;
     private String variantStatsDecription;
     private Query variantStatsQuery;
@@ -170,9 +160,8 @@ public class SampleQcAnalysis extends OpenCgaTool {
         executor.setStudyId(studyId)
                 .setSample(sample)
                 .setCatalogBamFile(catalogBamFile)
-                .setFastaFile(fastaFile)
+                .setDictFile(dictFile)
                 .setBaitFile(baitFile)
-                .setTargetFile(targetFile)
                 .setVariantStatsId(variantStatsId)
                 .setVariantStatsDecription(variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)
@@ -340,12 +329,12 @@ public class SampleQcAnalysis extends OpenCgaTool {
         return this;
     }
 
-    public String getFastaFile() {
-        return fastaFile;
+    public String getDictFile() {
+        return dictFile;
     }
 
-    public SampleQcAnalysis setFastaFile(String fastaFile) {
-        this.fastaFile = fastaFile;
+    public SampleQcAnalysis setDictFile(String dictFile) {
+        this.dictFile = dictFile;
         return this;
     }
 
@@ -355,15 +344,6 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
     public SampleQcAnalysis setBaitFile(String baitFile) {
         this.baitFile = baitFile;
-        return this;
-    }
-
-    public String getTargetFile() {
-        return targetFile;
-    }
-
-    public SampleQcAnalysis setTargetFile(String targetFile) {
-        this.targetFile = targetFile;
         return this;
     }
 

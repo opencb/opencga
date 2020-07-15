@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.biodata.formats.alignment.picard.HsMetrics;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
@@ -18,7 +19,7 @@ public class SampleQualityControlMetrics {
     private List<SampleQcVariantStats> variantStats;
     private FastQc fastQc;
     private SamtoolsFlagstats samtoolsFlagstats;
-    private HsMetricsReport hsMetricsReport;
+    private HsMetrics hsMetrics;
     private List<GeneCoverageStats> geneCoverageStats;
     private List<Signature> signatures;
 
@@ -30,14 +31,14 @@ public class SampleQualityControlMetrics {
     }
 
     public SampleQualityControlMetrics(String bamFileId, List<SampleQcVariantStats> variantStats, FastQc fastQc,
-                                       SamtoolsFlagstats samtoolsFlagstats, HsMetricsReport hsMetricsReport,
+                                       SamtoolsFlagstats samtoolsFlagstats, HsMetrics hsMetrics,
                                        List<GeneCoverageStats> geneCoverageStats, List<Signature> signatures, List<String> fileIds,
                                        List<Comment> comments) {
         this.bamFileId = bamFileId;
         this.variantStats = variantStats;
         this.fastQc = fastQc;
         this.samtoolsFlagstats = samtoolsFlagstats;
-        this.hsMetricsReport = hsMetricsReport;
+        this.hsMetrics = hsMetrics;
         this.geneCoverageStats = geneCoverageStats;
         this.signatures = signatures;
         this.fileIds = fileIds;
@@ -51,9 +52,9 @@ public class SampleQualityControlMetrics {
         sb.append(", variantStats=").append(variantStats);
         sb.append(", fastQc=").append(fastQc);
         sb.append(", samtoolsFlagstats=").append(samtoolsFlagstats);
-        sb.append(", hsMetricsReport=").append(hsMetricsReport);
+        sb.append(", hsMetrics=").append(hsMetrics);
         sb.append(", geneCoverageStats=").append(geneCoverageStats);
-        sb.append(", signature=s").append(signatures);
+        sb.append(", signatures=").append(signatures);
         sb.append(", fileIds=").append(fileIds);
         sb.append(", comments=").append(comments);
         sb.append('}');
@@ -96,12 +97,12 @@ public class SampleQualityControlMetrics {
         return this;
     }
 
-    public HsMetricsReport getHsMetricsReport() {
-        return hsMetricsReport;
+    public HsMetrics getHsMetrics() {
+        return hsMetrics;
     }
 
-    public SampleQualityControlMetrics setHsMetricsReport(HsMetricsReport hsMetricsReport) {
-        this.hsMetricsReport = hsMetricsReport;
+    public SampleQualityControlMetrics setHsMetrics(HsMetrics hsMetrics) {
+        this.hsMetrics = hsMetrics;
         return this;
     }
 
