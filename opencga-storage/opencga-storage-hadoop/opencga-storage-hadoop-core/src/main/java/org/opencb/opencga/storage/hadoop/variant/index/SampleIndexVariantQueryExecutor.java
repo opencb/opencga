@@ -150,6 +150,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             // Ensure results are sorted
             QueryOptions options = new QueryOptions(inputOptions);
             options.put(QueryOptions.SORT, true);
+            options.put(QueryOptions.COUNT, false);
 
             int skip = getSkip(options);
             int limit = getLimit(options);
