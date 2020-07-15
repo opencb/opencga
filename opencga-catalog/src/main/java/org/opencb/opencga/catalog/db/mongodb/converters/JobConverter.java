@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.apache.avro.generic.GenericRecord;
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.file.File;
