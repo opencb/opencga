@@ -815,6 +815,7 @@ public class SampleIndexQueryParser {
             if (soNames.size() == 1 && soNames.get(0).equals(VariantAnnotationUtils.MISSENSE_VARIANT)) {
                 ctFilterCoveredBySummary = true;
                 annotationIndex |= MISSENSE_VARIANT_MASK;
+                query.remove(ANNOT_CONSEQUENCE_TYPE.key());
             }
 
             // Do not use ctIndex if the CT filter is covered by the summary
