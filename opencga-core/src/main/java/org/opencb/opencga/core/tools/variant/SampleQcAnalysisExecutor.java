@@ -33,9 +33,8 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
     protected String studyId;
     protected Sample sample;
     protected File catalogBamFile;
-    protected String fastaFile;
+    protected String dictFile;
     protected String baitFile;
-    protected String targetFile;
     protected String variantStatsId;
     protected String variantStatsDecription;
     protected Query variantStatsQuery;
@@ -77,12 +76,12 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public String getFastaFile() {
-        return fastaFile;
+    public String getDictFile() {
+        return dictFile;
     }
 
-    public SampleQcAnalysisExecutor setFastaFile(String fastaFile) {
-        this.fastaFile = fastaFile;
+    public SampleQcAnalysisExecutor setDictFile(String dictFile) {
+        this.dictFile = dictFile;
         return this;
     }
 
@@ -92,15 +91,6 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public SampleQcAnalysisExecutor setBaitFile(String baitFile) {
         this.baitFile = baitFile;
-        return this;
-    }
-
-    public String getTargetFile() {
-        return targetFile;
-    }
-
-    public SampleQcAnalysisExecutor setTargetFile(String targetFile) {
-        this.targetFile = targetFile;
         return this;
     }
 

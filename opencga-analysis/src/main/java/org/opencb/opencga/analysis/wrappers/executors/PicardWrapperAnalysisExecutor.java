@@ -19,6 +19,9 @@ public class PicardWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecuto
     public PicardWrapperAnalysisExecutor(String studyId, ObjectMap params, Path outDir, Path scratchDir, CatalogManager catalogManager,
                                          String token) {
         super(studyId, params, outDir, scratchDir, catalogManager, token);
+        this.sep = "=";
+        this.shortPrefix = "";
+        this.longPrefix = "";
     }
 
     @Override
@@ -150,11 +153,16 @@ public class PicardWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecuto
     }
 
     private void runCollectHsMetrics() throws ToolException, FileNotFoundException {
+        List<Pair<String, String>> inputFilenames = new ArrayList<>();
+
         String bamFilename = "";
         if (StringUtils.isNotEmpty(params.getString("INPUT"))) {
             bamFilename = params.getString("INPUT");
         } else if (StringUtils.isNotEmpty(params.getString("I"))) {
             bamFilename = params.getString("I");
+        }
+        if (StringUtils.isNotEmpty(bamFilename)) {
+            inputFilenames.add(new ImmutablePair<>("I", bamFilename));
         }
 
         String outFilename = "";
@@ -170,12 +178,18 @@ public class PicardWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecuto
         } else if (StringUtils.isNotEmpty(params.getString("R"))) {
             refFilename = params.getString("R");
         }
+        if (StringUtils.isNotEmpty(refFilename)) {
+            inputFilenames.add(new ImmutablePair<>("R", refFilename));
+        }
 
         String baitFilename = "";
         if (StringUtils.isNotEmpty(params.getString("BAIT_INTERVALS"))) {
             baitFilename = params.getString("BAIT_INTERVALS");
         } else if (StringUtils.isNotEmpty(params.getString("BI"))) {
             baitFilename = params.getString("BI");
+        }
+        if (StringUtils.isNotEmpty(baitFilename)) {
+            inputFilenames.add(new ImmutablePair<>("BI", baitFilename));
         }
 
         String targetFilename = "";
@@ -184,12 +198,13 @@ public class PicardWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecuto
         } else if (StringUtils.isNotEmpty(params.getString("TI"))) {
             targetFilename = params.getString("TI");
         }
+        if (StringUtils.isNotEmpty(targetFilename)) {
+            inputFilenames.add(new ImmutablePair<>("TI", targetFilename));
+        }
 
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("I", bamFilename),
-                new ImmutablePair<>("R", refFilename), new ImmutablePair<>("BI", baitFilename), new ImmutablePair<>("TI", targetFilename)));
         Map<String, String> srcTargetMap = new HashMap<>();
         appendMounts(inputFilenames, srcTargetMap, sb);
 

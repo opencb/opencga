@@ -60,6 +60,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -68,7 +69,6 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.IOException;
@@ -877,9 +877,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 variantCommandOptions.internalJobOptions.jobId, token);
         sampleQcAnalysis.setStudyId(cliOptions.study)
                 .setSampleId(cliOptions.sample)
-                .setFastaFile(cliOptions.fastaFile)
+                .setDictFile(cliOptions.dictFile)
                 .setBaitFile(cliOptions.baitFile)
-                .setTargetFile(cliOptions.targetFile)
                 .setVariantStatsId(cliOptions.variantStatsId)
                 .setVariantStatsDecription(cliOptions.variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)

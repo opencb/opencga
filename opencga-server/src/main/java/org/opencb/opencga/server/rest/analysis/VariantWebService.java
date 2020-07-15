@@ -932,7 +932,6 @@ public class VariantWebService extends AnalysisWebService {
             if (!outDir.exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for mutational-signature/query analysis"));
             }
-            System.out.println(">>> outDir = " + outDir);
 
             MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor();
             ObjectMap executorParams = new ObjectMap();
@@ -1055,8 +1054,9 @@ public class VariantWebService extends AnalysisWebService {
             return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
                     + " variant stats ID"));
         }
-        if (StringUtils.isEmpty(params.getVariantStatsId()) && params.getSignatureQuery() != null
-                && params.getVariantStatsQuery().toParams().isEmpty()) {
+
+        if (StringUtils.isEmpty(params.getVariantStatsId()) && params.getVariantStatsQuery() != null
+                && !params.getVariantStatsQuery().toParams().isEmpty()) {
             return createErrorResponse(new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
                     + " empty"));
         }
@@ -1252,7 +1252,6 @@ public class VariantWebService extends AnalysisWebService {
             if (!outDir.exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for Circos analysis"));
             }
-            System.out.println(">>> outDir = " + outDir);
 
             CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor();
             ObjectMap executorParams = new ObjectMap();
