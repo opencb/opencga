@@ -17,33 +17,30 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.formats.alignment.picard.HsMetrics;
+import org.opencb.biodata.formats.alignment.picard.io.HsMetricsParser;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
-import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
-import org.opencb.biodata.models.clinical.qc.Signature;
-import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.wrappers.executors.FastqcWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.executors.PicardWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.executors.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.opencb.opencga.core.api.ParamConstants.LOW_COVERAGE_REGION_THRESHOLD_DEFAULT;
@@ -64,11 +61,6 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         catalogManager = getVariantStorageManager().getCatalogManager();
 
         switch (qcType) {
-            case VARIAN_STATS: {
-                runVariantStats();
-                break;
-            }
-
             case FASTQC: {
                 runFastqc();
                 break;
@@ -89,51 +81,10 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
                 break;
             }
 
-            case MUTATIONAL_SIGNATURE: {
-                runMutationalSignature();
-                break;
-            }
             default: {
                 throw new ToolException("Unknown quality control type: " + qcType);
             }
         }
-    }
-
-    private void runVariantStats() throws ToolException {
-//        if (StringUtils.isEmpty(variantStatsJobId)) {
-//            addWarning("Skipping sample variant stats");
-//        } else {
-//            OpenCGAResult<Job> jobResult;
-//            try {
-//                jobResult = catalogManager.getJobManager().get(studyId, Collections.singletonList(variantStatsJobId),
-//                        QueryOptions.empty(), false, getToken());
-//            } catch (CatalogException e) {
-//                throw new ToolException(e);
-//            }
-//
-//            Job job = jobResult.first();
-//
-//            Path path = Paths.get(job.getOutDir().getUri().getPath()).resolve("sample-variant-stats.json");
-//            if (path.toFile().exists()) {
-//                if (metrics.getVariantStats() == null) {
-//                    metrics.setVariantStats(new ArrayList<>());
-//                }
-//
-//                List<SampleVariantStats> stats = new ArrayList<>();
-//                try {
-//                    JacksonUtils.getDefaultObjectMapper()
-//                            .readerFor(SampleVariantStats.class)
-//                            .<SampleVariantStats>readValues(path.toFile())
-//                            .forEachRemaining(stats::add);
-//                } catch (IOException e) {
-//                    throw new ToolException(e);
-//                }
-//
-//                // Add to metrics
-//                metrics.getVariantStats().add(new SampleQcVariantStats(variantStatsId, variantStatsDecription, variantStatsQuery,
-//                        stats.get(0)));
-//            }
-//        }
     }
 
     private void runFastqc() throws ToolException {
@@ -199,68 +150,104 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         SamtoolsFlagstats flagtats = executor.getFlagstatsResult();
         if (flagtats != null) {
             metrics.setSamtoolsFlagstats(flagtats);
-            System.out.println(flagtats);
         }
     }
 
     private void runHsMetrics() throws ToolException {
         addWarning("Skipping picard/CollectHsMetrics analysis: not yet implemented");
 
-        //        if (metrics.getHsMetricsReport() != null) {
-//            // Hs metrics already exists!
-//            addWarning("Skipping picard/CollectHsMetrics analysis: it was already computed");
-//            return;
-//        }
-//
-//        // Check BAM file
-//        File bamFile = getBamFileFromCatalog();
-//        if (bamFile == null) {
-//            addWarning("Skipping picard/CollectHsMetrics analysis: no BAM file was provided and no BAM file found for sample " + sample.getId());
-//            return;
-//        }
-//
-//        // Check bait file
-//        if (StringUtils.isEmpty(getBaitFile())) {
-//            addWarning("Skipping picard/CollectHsMetrics analysis: no bait file was provided");
-//        }
-//        File baitFile = AnalysisUtils.getCatalogFile(getBaitFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-//        if (baitFile == null) {
-//            addWarning("Skipping picard/CollectHsMetrics analysis: no bait file '" + getBaitFile() + "' found in catalog database");
-//            return;
-//        }
-//
-//        // Check target file
-//        if (StringUtils.isEmpty(getTargetFile())) {
-//            addWarning("Skipping picard/CollectHsMetrics analysis: no target file was provided");
-//        }
-//        File targetFile = AnalysisUtils.getCatalogFile(getTargetFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-//        if (targetFile == null) {
-//            addWarning("Skipping picard/CollectHsMetrics analysis: no target file '" + getBaitFile() + "' found in catalog database");
-//            return;
-//        }
-//
-//        // Check fasta file
-//        if (StringUtils.isEmpty(getFastaFile())) {
-//            addWarning("Skipping picard/CollectHsMetrics analysis: no fasta file was provided");
-//        }
-//        File fastaFile = AnalysisUtils.getCatalogFile(getFastaFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-//        if (fastaFile == null) {
-//            addWarning("Skipping picard/CollectHsMetrics analysis: no fasta file '" + getFastaFile() + "' found in catalog database");
-//            return;
-//        }
+        if (metrics.getHsMetrics() != null) {
+            // Hs metrics already exists!
+            addWarning("Skipping picard/CollectHsMetrics analysis: it was already computed");
+            return;
+        }
+
+        // Check BAM file
+        if (catalogBamFile == null) {
+            addWarning("Skipping picard/CollectHsMetrics analysis: no BAM file was provided and no BAM file found for sample " + sample.getId());
+            return;
+        }
+
+        // Check bait file
+        if (StringUtils.isEmpty(getBaitFile())) {
+            addWarning("Skipping picard/CollectHsMetrics analysis: no bait file was provided");
+            return;
+        }
+        File bedBaitFile;
+        try {
+            bedBaitFile = AnalysisUtils.getCatalogFile(getBaitFile(), getStudyId(), catalogManager.getFileManager(), getToken());
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+
+        // Check dictionary file
+        if (StringUtils.isEmpty(getDictFile())) {
+            addWarning("Skipping picard/CollectHsMetrics analysis: no dictionary file was provided");
+            return;
+        }
+        File dictFile;
+        try {
+            dictFile = AnalysisUtils.getCatalogFile(getDictFile(), getStudyId(), catalogManager.getFileManager(), getToken());
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+
+        // Run picard/BedToIntervalList, to convert BED file to INTERVAL
+        String intervalFilename = bedBaitFile.getName() + ".interval";
+        ObjectMap params = new ObjectMap()
+                .append("I", bedBaitFile.getId())
+                .append("SD", dictFile.getId())
+                .append("O", intervalFilename);
 
 
-//        ObjectMap params = new ObjectMap();
-//        params.put("INPUT", getBamFile());
-//
-//        Path outDir = getOutDir().resolve("/fastqc");
-//        Path scratchDir = outDir.resolve("/scratch");
-//
-//        FastqcWrapperAnalysisExecutor executor = new FastqcWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir, catalogManager,
-//                getToken());
-//
-//        executor.setFile(getBamFile());
-//        executor.run();
+        Path picardDir = getOutDir().resolve("picard");
+        Path picardScratchDir = picardDir.resolve("scratch");
+        picardScratchDir.toFile().mkdirs();
+
+        PicardWrapperAnalysisExecutor picardExecutor = new PicardWrapperAnalysisExecutor(getStudyId(), params, picardDir, picardScratchDir,
+                catalogManager, getToken());
+
+        picardExecutor.setCommand("BedToIntervalList");
+        picardExecutor.run();
+
+        if (!picardDir.resolve(intervalFilename).toFile().exists()) {
+            throw new ToolException("Error converting BED file '" + getBaitFile() + "' to interval format using Picard"
+                    + " command: " + picardExecutor.getCommand());
+        }
+
+        // Link interval file to catalog, we need to do it to execute CollectHsMetrics
+        File intervalFile;
+        try {
+            intervalFile = catalogManager.getFileManager().link(getStudyId(), picardDir.resolve(intervalFilename).toUri(),
+                    "BedToIntervalList." + RandomStringUtils.randomAlphabetic(6), new ObjectMap("parents", true), getToken()).first();
+
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+
+        // Run picard/CollectHsMetrics
+        String hsMetricsFilename = "hsmetrics.txt";
+        params = new ObjectMap()
+                .append("I", catalogBamFile.getId())
+                .append("BI", intervalFile.getId())
+                .append("TI", intervalFile.getId())
+                .append("O", hsMetricsFilename);
+        picardExecutor = new PicardWrapperAnalysisExecutor(getStudyId(), params, picardDir, picardScratchDir, catalogManager, getToken());
+
+        picardExecutor.setCommand("CollectHsMetrics");
+        picardExecutor.run();
+
+        if (!picardDir.resolve(hsMetricsFilename).toFile().exists()) {
+            throw new ToolException("Error running Picard command: " + picardExecutor.getCommand());
+        }
+
+        try {
+            // Parse Hs metrics and update sample quality control
+            HsMetrics hsMetrics = HsMetricsParser.parse(picardDir.resolve(hsMetricsFilename).toFile());
+            metrics.setHsMetrics(hsMetrics);
+        } catch (IOException e) {
+            throw new ToolException(e);
+        }
     }
 
     private void runGeneCoverageStats() throws ToolException {
@@ -317,39 +304,5 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
                 throw new ToolException(e);
             }
         }
-    }
-
-    private void runMutationalSignature() throws ToolException {
-//        if (!sample.isSomatic()) {
-//            addWarning("Skipping mutational signature analysis: sample " + sample.getId() + " is not somatic");
-//        } else {
-//            if (metrics.getSignatures() == null) {
-//                metrics.setSignatures(new ArrayList<>());
-//            }
-//
-//            if (StringUtils.isEmpty(variantStatsJobId)) {
-//                // mutationalSignature/query
-//                addWarning("Skipping mutational signature analysis: not yet implemented mutationalSignature/query");
-//            } else {
-//                // mutationalSignature/run
-//                OpenCGAResult<Job> jobResult;
-//                try {
-//                    jobResult = catalogManager.getJobManager().get(studyId, Collections.singletonList(variantStatsJobId),
-//                            QueryOptions.empty(), false, getToken());
-//                } catch (CatalogException e) {
-//                    throw new ToolException(e);
-//                }
-//
-//                Job job = jobResult.first();
-//
-//                Path path = Paths.get(job.getOutDir().getUri().getPath()).resolve("context.txt");
-//                if (path.toFile().exists()) {
-//                    Signature.SignatureCount[] signatureCounts = MutationalSignatureAnalysis.parseSignatureCounts(path.toFile());
-//
-//                    // Add to metrics
-//                    metrics.getSignatures().add(new Signature(signatureId, signatureQuery, "SNV", signatureCounts, new ArrayList()));
-//                }
-//            }
-//        }
     }
 }

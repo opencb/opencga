@@ -23,9 +23,8 @@ import java.util.List;
 public class SampleQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Sample QC analysis params";
     private String sample;
-    private String fastaFile;
+    private String dictFile;
     private String baitFile;
-    private String targetFile;
     private String variantStatsId;
     private String variantStatsDecription;
     private AbstractBasicVariantQueryParams variantStatsQuery;
@@ -38,13 +37,12 @@ public class SampleQcAnalysisParams extends ToolParams {
     public SampleQcAnalysisParams() {
     }
 
-    public SampleQcAnalysisParams(String sample, String fastaFile, String baitFile, String targetFile, String variantStatsId,
-                                  String variantStatsDecription, AbstractBasicVariantQueryParams variantStatsQuery, String signatureId,
+    public SampleQcAnalysisParams(String sample, String dictFile, String baitFile, String variantStatsId, String variantStatsDecription,
+                                  AbstractBasicVariantQueryParams variantStatsQuery, String signatureId,
                                   SampleQcSignatureQueryParams signatureQuery, List<String> genesForCoverageStats, String outdir) {
         this.sample = sample;
-        this.fastaFile = fastaFile;
+        this.dictFile = dictFile;
         this.baitFile = baitFile;
-        this.targetFile = targetFile;
         this.variantStatsId = variantStatsId;
         this.variantStatsDecription = variantStatsDecription;
         this.variantStatsQuery = variantStatsQuery;
@@ -58,9 +56,8 @@ public class SampleQcAnalysisParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQcAnalysisParams{");
         sb.append("sample='").append(sample).append('\'');
-        sb.append(", fastaFile='").append(fastaFile).append('\'');
+        sb.append(", dictFile='").append(dictFile).append('\'');
         sb.append(", baitFile='").append(baitFile).append('\'');
-        sb.append(", targetFile='").append(targetFile).append('\'');
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
         sb.append(", variantStatsDecription='").append(variantStatsDecription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
@@ -81,12 +78,12 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getFastaFile() {
-        return fastaFile;
+    public String getDictFile() {
+        return dictFile;
     }
 
-    public SampleQcAnalysisParams setFastaFile(String fastaFile) {
-        this.fastaFile = fastaFile;
+    public SampleQcAnalysisParams setDictFile(String dictFile) {
+        this.dictFile = dictFile;
         return this;
     }
 
@@ -96,15 +93,6 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setBaitFile(String baitFile) {
         this.baitFile = baitFile;
-        return this;
-    }
-
-    public String getTargetFile() {
-        return targetFile;
-    }
-
-    public SampleQcAnalysisParams setTargetFile(String targetFile) {
-        this.targetFile = targetFile;
         return this;
     }
 

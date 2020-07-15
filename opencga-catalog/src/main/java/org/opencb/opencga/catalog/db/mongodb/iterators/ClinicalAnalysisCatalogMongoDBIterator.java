@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import org.bson.Document;
-import org.forester.archaeopteryx.Configuration;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
@@ -28,7 +27,6 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,8 +128,8 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             counter++;
 
             if (!options.getBoolean(NATIVE_QUERY)) {
-                extract_family_info((Document) clinicalDocument.get(FAMILY.key()), familySet, individualSet, sampleSet);
-                extract_individual_info((Document) clinicalDocument.get(PROBAND.key()), individualSet, sampleSet);
+                extractFamilyInfo((Document) clinicalDocument.get(FAMILY.key()), familySet, individualSet, sampleSet);
+                extractIndividualInfo((Document) clinicalDocument.get(PROBAND.key()), individualSet, sampleSet);
 
                 // Extract the interpretations
                 Document interpretationDoc = (Document) clinicalDocument.get(INTERPRETATION.key());
@@ -389,7 +387,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         return interpretationMap;
     }
 
-    private void extract_family_info(Document familyDocument, Set<String> familySet, Set<String> individualSet, Set<String> sampleSet) {
+    private void extractFamilyInfo(Document familyDocument, Set<String> familySet, Set<String> individualSet, Set<String> sampleSet) {
         // Extract the family id
         if (familyDocument != null && familyDocument.getLong(UID) > 0) {
             familySet.add(familyDocument.get(UID) + UID_VERSION_SEP + familyDocument.get(VERSION));
@@ -398,13 +396,13 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             if (members != null && !members.isEmpty()) {
                 // Extract individual and sample ids
                 for (Document member : members) {
-                    extract_individual_info(member, individualSet, sampleSet);
+                    extractIndividualInfo(member, individualSet, sampleSet);
                 }
             }
         }
     }
 
-    private void extract_individual_info(Document memberDocument, Set<String> individualSet, Set<String> sampleSet) {
+    private void extractIndividualInfo(Document memberDocument, Set<String> individualSet, Set<String> sampleSet) {
         // Extract individual id
         if (memberDocument != null && memberDocument.getLong(UID) > 0) {
             individualSet.add(memberDocument.get(UID) + UID_VERSION_SEP + memberDocument.get(VERSION));

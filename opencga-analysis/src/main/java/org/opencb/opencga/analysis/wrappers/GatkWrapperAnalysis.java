@@ -40,7 +40,7 @@ public class GatkWrapperAnalysis extends OpenCgaWrapperAnalysis {
     public final static String GATK_DOCKER_IMAGE = "broadinstitute/gatk";
 
     public static final String COMMAND_PARAM = "command";
-    public static final String FASTA_FILE_PARAM = "fastaFile";
+    public static final String FASTA_FILE_PARAM = "dictFile";
     public static final String BAM_FILE_PARAM = "bamFile";
     public static final String VCF_FILENAME_PARAM = "vcfFilename";
 
