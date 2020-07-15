@@ -42,7 +42,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisStatus;
-import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -203,7 +202,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         String[] acceptedObjectParams = {QueryParams.FILES.key(), QueryParams.FAMILY.key(), QueryParams.DISORDER.key(),
                 QueryParams.PROBAND.key(), QueryParams.COMMENTS.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(),
-                QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key()};
+                QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -212,46 +211,30 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedMapParams = {QueryParams.ROLE_TO_PROBAND.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
+        clinicalConverter.validateInterpretationToUpdate(document.getSet());
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateProbandToUpdate(document.getSet());
 
-        // Interpretation (primary)
-        if (parameters.containsKey(QueryParams.INTERPRETATION.key())) {
-            document.getSet().put(QueryParams.INTERPRETATION.key(),
-                    clinicalConverter.convertInterpretation((Interpretation) parameters.get(QueryParams.INTERPRETATION.key())));
-        }
-
         // Secondary interpretations
         if (parameters.containsKey(QueryParams.SECONDARY_INTERPRETATIONS.key())) {
-            List<Object> objectInterpretationList = parameters.getAsList(QueryParams.SECONDARY_INTERPRETATIONS.key());
-            List<Interpretation> interpretationList = new ArrayList<>();
-            for (Object interpretation : objectInterpretationList) {
-                if (interpretation instanceof Interpretation) {
-                    if (!dbAdaptorFactory.getInterpretationDBAdaptor().exists(((Interpretation) interpretation).getUid())) {
-                        throw CatalogDBException.uidNotFound("Secondary interpretation", ((Interpretation) interpretation).getUid());
-                    }
-                    interpretationList.add((Interpretation) interpretation);
-                }
-            }
+            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+            String operation = (String) actionMap.getOrDefault(QueryParams.SECONDARY_INTERPRETATIONS.key(), "ADD");
 
-            if (!interpretationList.isEmpty()) {
-                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-                String operation = (String) actionMap.getOrDefault(QueryParams.SECONDARY_INTERPRETATIONS.key(), "ADD");
-                switch (operation) {
-                    case "SET":
-                        document.getSet().put(QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                                clinicalConverter.convertInterpretations(interpretationList));
-                        break;
-                    case "REMOVE":
-                        document.getPullAll().put(QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                                clinicalConverter.convertInterpretations(interpretationList));
-                        break;
-                    case "ADD":
-                    default:
-                        document.getAddToSet().put(QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                                clinicalConverter.convertInterpretations(interpretationList));
-                        break;
-                }
+            String[] secondaryInterpretationParams = {QueryParams.SECONDARY_INTERPRETATIONS.key()};
+            switch (operation) {
+                case "SET":
+                    filterObjectParams(parameters, document.getSet(), secondaryInterpretationParams);
+                    clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
+                    break;
+                case "REMOVE":
+                    filterObjectParams(parameters, document.getPullAll(), secondaryInterpretationParams);
+                    clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
+                    break;
+                case "ADD":
+                default:
+                    filterObjectParams(parameters, document.getAddToSet(), secondaryInterpretationParams);
+                    clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
+                    break;
             }
         }
 

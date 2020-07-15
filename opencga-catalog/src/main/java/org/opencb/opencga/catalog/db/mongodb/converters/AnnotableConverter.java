@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class AnnotableConverter<T extends Annotable> extends GenericDocumentComplexConverter<T> {
+public class AnnotableConverter<T extends Annotable> extends OpenCgaMongoConverter<T> {
 
     private static final String ANNOTATION_SETS = AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key();
     private static final String PRIVATE_VS_MAP =  AnnotationMongoDBAdaptor.AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key();

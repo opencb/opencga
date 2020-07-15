@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Created by pfurio on 19/01/16.
  */
-public class JobConverter extends GenericDocumentComplexConverter<Job> {
+public class JobConverter extends OpenCgaMongoConverter<Job> {
 
     public JobConverter() {
         super(Job.class);

@@ -26,7 +26,7 @@ import org.opencb.opencga.core.models.panel.Panel;
 /**
  * Created by pfurio on 01/06/16.
  */
-public class PanelConverter extends GenericDocumentComplexConverter<Panel> {
+public class PanelConverter extends OpenCgaMongoConverter<Panel> {
 
     public PanelConverter() {
         super(Panel.class, JacksonUtils.getDefaultObjectMapper());
