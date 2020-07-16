@@ -442,10 +442,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
-//        queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
 
-        if (!overwrite) {
-            new SecondaryIndexPendingVariantsManager(getDBAdaptor()).discoverPending(getMRExecutor(), getMergedOptions(queryOptions));
+//        boolean pendingVariants = !overwrite;
+        boolean pendingVariants = true;
+
+        if (pendingVariants) {
+            new SecondaryIndexPendingVariantsManager(getDBAdaptor())
+                    .discoverPending(getMRExecutor(), overwrite, getMergedOptions(queryOptions));
         }
 
         return super.secondaryIndex(query, queryOptions, overwrite);
@@ -454,19 +457,24 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
             throws StorageEngineException {
-        if (overwrite) {
-            logger.info("Get variants to index");
-            return super.getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor);
-        } else {
+
+//        boolean pendingVariants = !overwrite;
+        boolean pendingVariants = true;
+
+        if (pendingVariants) {
             logger.info("Get variants to index from pending variants table");
             logger.info("Query: " + query.toJson());
             return new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
+        } else {
+            logger.info("Get variants to index");
+            return super.getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor);
         }
     }
 
     @Override
-    protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
-        return new HadoopVariantSearchLoadListener(getDBAdaptor(), new SecondaryIndexPendingVariantsManager(getDBAdaptor()).cleaner());
+    protected VariantSearchLoadListener newVariantSearchLoadListener(boolean overwrite) throws StorageEngineException {
+        return new HadoopVariantSearchLoadListener(getDBAdaptor(),
+                new SecondaryIndexPendingVariantsManager(getDBAdaptor()).cleaner(), overwrite);
     }
 
     @Override

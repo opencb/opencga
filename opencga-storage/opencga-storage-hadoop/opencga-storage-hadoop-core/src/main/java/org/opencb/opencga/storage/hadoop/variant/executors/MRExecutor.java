@@ -74,7 +74,7 @@ public abstract class MRExecutor {
         int exitValue = run(execClass, args, options);
         logger.info("------------------------------------------------------");
         logger.info("Exit value: {}", exitValue);
-        logger.info("Total time: {}s", TimeUtils.durationToString(stopWatch));
+        logger.info("Total time: {}", TimeUtils.durationToString(stopWatch));
 
         if (exitValue != 0) {
             throw new StorageEngineException("Error executing MapReduce for : \"" + taskDescription + "\"");

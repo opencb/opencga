@@ -24,8 +24,10 @@ import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -90,6 +92,12 @@ public class VariantRow {
         walker().onFile(consumer).walk();
     }
 
+    public Set<Integer> getStudies() {
+        Set<Integer> studies = new HashSet<>();
+        walker().onStudy(studies::add).walk();
+        return studies;
+    }
+
     public VariantRowWalkerBuilder walker() {
         return new VariantRowWalkerBuilder();
     }
@@ -123,7 +131,7 @@ public class VariantRow {
                     } else if (score && columnName.endsWith(VARIANT_SCORE_SUFIX)) {
                         walker.score(new BytesVariantScoreColumn(bytes, extractStudyId(columnName), extractScoreId(columnName)));
                     } else if (columnName.endsWith(FILL_MISSING_SUFIX)) {
-                        int studyId = Integer.valueOf(columnName.split("_")[1]);
+                        int studyId = Integer.parseInt(columnName.split("_")[1]);
                         walker.fillMissing(studyId, resultSet.getInt(i));
                     } else if (annotation && columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {
                         walker.variantAnnotation(new BytesVariantAnnotationColumn(bytes));

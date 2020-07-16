@@ -195,25 +195,21 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
             }
         }
 
-        byte[] studiesValue = result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_STUDIES.bytes());
-
-        List<Integer> studies;
-        if (studiesValue != null) {
-            studies = toList((PhoenixArray) VariantColumn.INDEX_STUDIES.getPDataType().toObject(studiesValue));
-        } else {
-            studies = null;
-        }
+        Cell studyCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_STUDIES.bytes());
         Cell notSyncCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_NOT_SYNC.bytes());
         Cell unknownCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_UNKNOWN.bytes());
 
-        // Don't need to check the value. If present, only check the timestamp.
-        boolean notSync = notSyncCell != null && notSyncCell.getTimestamp() > ts;
-        // Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_NOT_SYNC.bytes()))
-        boolean unknown = unknownCell != null && unknownCell.getTimestamp() > ts;
-        // Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_UNKNOWN.bytes()))
+        List<Integer> studies;
+        if (studyCell != null && studyCell.getValueLength() != 0) {
+            studies = toList((PhoenixArray) VariantColumn.INDEX_STUDIES.getPDataType()
+                    .toObject(studyCell.getValueArray(), studyCell.getValueOffset(), studyCell.getValueLength()));
+        } else {
+            studies = null;
+        }
+
         VariantStorageEngine.SyncStatus syncStatus;
         if (includeIndexStatus) {
-            syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(notSync, unknown, studies);
+            syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(ts, studyCell, notSyncCell, unknownCell);
         } else {
             syncStatus = null;
         }

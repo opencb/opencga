@@ -57,10 +57,9 @@ public class AnnotationPendingVariantsDescriptor implements PendingVariantsDescr
     }
 
 
-    public Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager) {
+    public Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager, boolean overwrite) {
         return value -> {
-            boolean pending = isPending(value);
-            if (pending) {
+            if (overwrite || isPending(value)) {
                 Put put = new Put(value.getRow());
                 put.addColumn(FAMILY, COLUMN, VALUE);
                 return put;
