@@ -532,6 +532,8 @@ public class StudyManager extends AbstractManager {
         }
 
         try {
+            fixQueryObject(query);
+
             OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, qOptions, userId);
             auditManager.auditSearch(userId, Enums.Resource.STUDY, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

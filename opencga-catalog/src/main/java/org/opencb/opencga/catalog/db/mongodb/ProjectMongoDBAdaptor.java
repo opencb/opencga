@@ -53,6 +53,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.ProjectDBAdaptor.QueryParams.INTERNAL_STATUS_NAME;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 /**
@@ -362,9 +363,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
         }
 
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            projectParameters.put("projects.$." + QueryParams.INTERNAL_STATUS_NAME.key(),
-                    parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+        if (parameters.containsKey(INTERNAL_STATUS_NAME.key())) {
+            projectParameters.put("projects.$." + INTERNAL_STATUS_NAME.key(),
+                    parameters.get(INTERNAL_STATUS_NAME.key()));
             projectParameters.put("projects.$." + QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -420,7 +421,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public OpenCGAResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        query.append(QueryParams.INTERNAL_STATUS_NAME.key(), Status.READY);
+        query.append(INTERNAL_STATUS_NAME.key(), Status.READY);
         OpenCGAResult<Project> projectDataResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.UID.key()));
         OpenCGAResult writeResult = new OpenCGAResult();
         for (Project project : projectDataResult.getResults()) {
@@ -470,7 +471,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         // Mark the study as deleted
         ObjectMap updateParams = new ObjectMap()
-                .append(QueryParams.INTERNAL_STATUS_NAME.key(), Status.DELETED)
+                .append(INTERNAL_STATUS_NAME.key(), Status.DELETED)
                 .append(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime())
                 .append(QueryParams.ID.key(), project.getId() + deleteSuffix);
 
@@ -495,12 +496,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     OpenCGAResult setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
+        return update(query, new ObjectMap(INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     private OpenCGAResult setStatus(long projectId, String status)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(projectId, new ObjectMap(QueryParams.INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
+        return update(projectId, new ObjectMap(INTERNAL_STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override
@@ -515,7 +516,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        query.put(QueryParams.INTERNAL_STATUS_NAME.key(), Status.DELETED);
+        query.put(INTERNAL_STATUS_NAME.key(), Status.DELETED);
         return setStatus(query, Status.READY);
     }
 
@@ -526,7 +527,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         checkId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.UID.key(), id)
-                .append(QueryParams.INTERNAL_STATUS_NAME.key(), Status.DELETED);
+                .append(INTERNAL_STATUS_NAME.key(), Status.DELETED);
         if (count(query).getNumMatches() == 0) {
             throw new CatalogDBException("The project {" + id + "} is not deleted");
         }
@@ -545,7 +546,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public OpenCGAResult<Project> get(long projectId, QueryOptions options) throws CatalogDBException {
         checkId(projectId);
-        Query query = new Query(QueryParams.UID.key(), projectId).append(QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), projectId).append(INTERNAL_STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
 //        // Fixme: Check the code below
 //        List<Project> projects = user.getProjects();
@@ -721,8 +722,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
 
-        if (!query.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            query.append(QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + Status.DELETED);
+        if (!query.containsKey(INTERNAL_STATUS_NAME.key())) {
+            query.append(INTERNAL_STATUS_NAME.key(), "!=" + Status.DELETED);
         }
         List<Bson> aggregates = new ArrayList<>();
 
@@ -838,11 +839,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
                                 Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery("projects." + INTERNAL_STATUS_NAME.key(), queryParam.key(), query, INTERNAL_STATUS_NAME.type(),
+                                andBsonList);
                         break;
                     case NAME:
                     case UUID:

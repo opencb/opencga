@@ -307,6 +307,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     private void fixQueryObject(Study study, Query query, String sessionId) throws CatalogException {
+        super.fixQueryObject(query);
 
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MEMBERS.key()))
                 && StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()))) {

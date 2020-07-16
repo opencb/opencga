@@ -797,11 +797,18 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
+                    case STATUS_NAME:
+                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), finalQuery, QueryParams.STATUS_NAME.type(),
+                                andBsonList);
+                        break;
+                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         finalQuery.put(queryParam.key(),
                                 Status.getPositiveStatus(CohortStatus.STATUS_LIST, finalQuery.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), finalQuery, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), finalQuery,
+                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
                     case UUID:
                     case ID:

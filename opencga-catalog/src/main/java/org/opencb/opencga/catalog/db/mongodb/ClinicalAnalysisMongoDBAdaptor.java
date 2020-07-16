@@ -658,11 +658,16 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
+                    case STATUS_NAME:
+                        addAutoOrQuery(STATUS_NAME.key(), queryParam.key(), queryCopy, STATUS_NAME.type(), andBsonList);
+                        break;
+                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
                                 Status.getPositiveStatus(ClinicalAnalysisStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
                     case FAMILY:
                     case FAMILY_ID:
@@ -688,7 +693,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case FAMILY_UID:
                     case DESCRIPTION:
                     case RELEASE:
-                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_DATE:
                     case FLAGS:
                     case ACL:

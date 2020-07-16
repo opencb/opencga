@@ -851,6 +851,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
@@ -871,7 +872,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:
-                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_DESCRIPTION:
                     case INTERNAL_STATUS_DATE:
                     case SIZE:

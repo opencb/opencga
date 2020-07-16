@@ -138,7 +138,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
         params.putIfNotEmpty(ParamConstants.JOB_ID_PARAM, commandOptions.id);
         params.putIfNotEmpty(ParamConstants.JOB_TOOL_ID_PARAM, commandOptions.toolId);
-        params.putIfNotEmpty(ParamConstants.JOB_INTERNAL_STATUS_PARAM, commandOptions.internalStatus);
+        params.putIfNotEmpty(ParamConstants.INTERNAL_STATUS_PARAM, commandOptions.internalStatus);
         params.putIfNotEmpty(ParamConstants.JOB_USER_PARAM, commandOptions.userId);
         params.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, commandOptions.priority);
         params.putIfNotEmpty(ParamConstants.CREATION_DATE_PARAM, commandOptions.creationDate);
@@ -169,7 +169,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), c.study);
         query.putIfNotEmpty(ParamConstants.JOB_TOOL_ID_PARAM, c.toolId);
-        query.putIfNotEmpty(ParamConstants.JOB_INTERNAL_STATUS_PARAM, c.internalStatus);
+        query.putIfNotEmpty(ParamConstants.INTERNAL_STATUS_PARAM, c.internalStatus);
         query.putIfNotEmpty(ParamConstants.JOB_USER_PARAM, c.userId);
         query.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, c.priority);
         query.putAll(c.commonOptions.params);

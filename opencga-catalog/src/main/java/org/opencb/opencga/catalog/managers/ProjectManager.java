@@ -369,6 +369,7 @@ public class ProjectManager extends AbstractManager {
                 .append("token", token);
 
         try {
+            fixQueryObject(query);
             // If study is provided, we need to check if it will be study alias or id
             if (StringUtils.isNotEmpty(query.getString(ProjectDBAdaptor.QueryParams.STUDY.key()))) {
                 List<Study> studies = catalogManager.getStudyManager()

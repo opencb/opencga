@@ -53,6 +53,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         ORGANISM_ASSEMBLY("organism.assembly", TEXT, ""),
         CURRENT_RELEASE("currentRelease", INTEGER, ""),
         FQN("fqn", TEXT, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_MSG("internal.status.msg", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),

@@ -305,6 +305,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
+        super.fixQueryObject(query);
 //        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
 //        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
 //            OpenCGAResult<Individual> queryResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
