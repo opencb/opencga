@@ -232,11 +232,12 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Clinical analysis ID") @QueryParam("id") String id,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") String type,
             @ApiParam(value = "Priority") @QueryParam("priority") String priority,
-            @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
             @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = "Due date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)") @QueryParam("dueDate") String dueDate,
             @ApiParam(value = "Description") @QueryParam("description") String description,
             @ApiParam(value = "Family id") @QueryParam("family") String family,

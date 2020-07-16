@@ -193,7 +193,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
                 @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,

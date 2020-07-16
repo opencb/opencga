@@ -1292,6 +1292,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     void fixQueryObject(Study study, Query query, String user) throws CatalogException {
+        super.fixQueryObject(query);
+
         if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.ID.key()))) {
             OpenCGAResult<File> queryResult = internalGet(study.getUid(), query.getAsStringList(FileDBAdaptor.QueryParams.ID.key()),
                     INCLUDE_FILE_IDS, user, true);

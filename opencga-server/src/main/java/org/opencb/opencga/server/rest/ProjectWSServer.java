@@ -114,7 +114,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
             @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes) {
         try {
             if (StringUtils.isNotEmpty(owner)) {

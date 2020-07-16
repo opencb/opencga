@@ -1153,7 +1153,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return clinicalDBAdaptor.get(study.getUid(), query, options, userId);
     }
 
-    private void fixQueryObject(Query query) {
+    protected void fixQueryObject(Query query) {
+        super.fixQueryObject(query);
+
         if (query.containsKey("sample")) {
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_SAMPLES_ID.key(), query.get("sample"));
             query.remove("sample");

@@ -334,6 +334,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
+        super.fixQueryObject(query);
+
         if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
 

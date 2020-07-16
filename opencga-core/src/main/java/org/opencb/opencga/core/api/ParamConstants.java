@@ -37,6 +37,12 @@ public class ParamConstants {
     public static final String RELEASE_PARAM = "release";
     public static final String RELEASE_DESCRIPTION = "Release when it was created";
 
+    public static final String INTERNAL_STATUS_PARAM = "internalStatus";
+    public static final String INTERNAL_STATUS_DESCRIPTION = "Filter by internal status";
+
+    public static final String STATUS_PARAM = "status";
+    public static final String STATUS_DESCRIPTION = "Filter by status";
+
     public static final String ACL_PARAM = "acl";
     public static final String ACL_FORMAT = "Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return "
             + "all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators "
@@ -200,7 +206,6 @@ public class ParamConstants {
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
     public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
-    public static final String JOB_INTERNAL_STATUS_PARAM = "internalStatus";
     public static final String JOB_STATUS_DESCRIPTION = "Job internal status";
     public static final String JOB_VISITED_PARAM = "visited";
     public static final String JOB_VISITED_DESCRIPTION = "Visited status of job";

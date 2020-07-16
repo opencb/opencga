@@ -1645,6 +1645,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     // Checks if father or mother are in query and transforms them into father.id and mother.id respectively
 
     private void fixQuery(Study study, Query query, String userId) throws CatalogException {
+        super.fixQueryObject(query);
+
         if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
             Individual ind = internalGet(study.getUid(), query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()),
                     INCLUDE_INDIVIDUAL_IDS, userId).first();
