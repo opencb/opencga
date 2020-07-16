@@ -620,13 +620,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
         try (VariantDBIterator iterator = getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor)) {
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
-            VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
+            VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger,
+                    newVariantSearchLoadListener());
 
-            long value = System.currentTimeMillis();
-            getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
-                return projectMetadata;
-            });
+            if (isValidParam(query, VariantQueryParam.REGION)) {
+                logger.info("Partial secondary index. Do not update {} timestamp", SEARCH_INDEX_LAST_TIMESTAMP.key());
+            } else {
+                long value = System.currentTimeMillis();
+                getMetadataManager().updateProjectMetadata(projectMetadata -> {
+                    projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
+                    return projectMetadata;
+                });
+            }
 
             return load;
         } catch (StorageEngineException | IOException | RuntimeException e) {

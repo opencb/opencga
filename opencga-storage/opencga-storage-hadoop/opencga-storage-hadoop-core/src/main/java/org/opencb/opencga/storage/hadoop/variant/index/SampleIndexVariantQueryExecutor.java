@@ -150,6 +150,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             // Ensure results are sorted
             QueryOptions options = new QueryOptions(inputOptions);
             options.put(QueryOptions.SORT, true);
+            options.put(QueryOptions.COUNT, false);
 
             int skip = getSkip(options);
             int limit = getLimit(options);
@@ -171,11 +172,11 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             if (result.getNumResults() < tmpLimit) {
                 // Not an approximate count!
                 result.setApproximateCount(false);
-                result.setNumTotalResults(result.getNumResults() + skip);
+                result.setNumMatches(result.getNumResults() + skip);
             } else if (asyncCount) {
                 result.setApproximateCount(false);
                 try {
-                    result.setNumTotalResults(asyncCountFuture.get());
+                    result.setNumMatches(asyncCountFuture.get());
                 } catch (InterruptedException | ExecutionException e) {
                     throw VariantQueryException.internalException(e);
                 }

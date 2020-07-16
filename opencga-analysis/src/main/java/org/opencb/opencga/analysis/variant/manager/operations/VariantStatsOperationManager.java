@@ -176,7 +176,8 @@ public class VariantStatsOperationManager extends OperationManager {
             throws CatalogException, StorageEngineException {
         Map<String, List<String>> cohortMap = new HashMap<>(cohortIds.size());
         for (String cohortId : cohortIds) {
-            Cohort cohort = catalogManager.getCohortManager().get(studyFqn, cohortId, null, sessionId).first();
+            Cohort cohort = catalogManager.getCohortManager()
+                    .get(studyFqn, cohortId, CatalogStorageMetadataSynchronizer.COHORT_QUERY_OPTIONS, sessionId).first();
             switch (cohort.getInternal().getStatus().getName()) {
                 case CohortStatus.NONE:
                 case CohortStatus.INVALID:
@@ -224,7 +225,11 @@ public class VariantStatsOperationManager extends OperationManager {
         List<String> cohorts = new ArrayList<>();
         // Silent query, so it does not fail for missing cohorts
         Set<String> catalogCohorts = catalogManager.getCohortManager().get(studyId, new ArrayList<>(cohortNames),
-                new QueryOptions(QueryOptions.INCLUDE, "name,id"), true, sessionId)
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        CohortDBAdaptor.QueryParams.ID.key(),
+                        CohortDBAdaptor.QueryParams.UID.key(),
+                        CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key()
+                )), true, sessionId)
                 .getResults()
                 .stream()
                 .filter(Objects::nonNull)

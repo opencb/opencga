@@ -75,6 +75,12 @@ public class CatalogStorageMetadataSynchronizer {
             .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
             .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF.toString(), File.Format.GVCF.toString()));
 
+    public static final QueryOptions COHORT_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            CohortDBAdaptor.QueryParams.ID.key(),
+            CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
+            CohortDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key()
+    ));
+
     protected static Logger logger = LoggerFactory.getLogger(CatalogStorageMetadataSynchronizer.class);
 
     private final CatalogManager catalogManager;
@@ -215,7 +221,7 @@ public class CatalogStorageMetadataSynchronizer {
                     .map(sampleNameMap::get)
                     .collect(Collectors.toSet());
             Cohort defaultCohort = catalogManager.getCohortManager()
-                    .get(study.getName(), defaultCohortName, null, sessionId).first();
+                    .get(study.getName(), defaultCohortName, COHORT_QUERY_OPTIONS, sessionId).first();
             List<String> cohortFromCatalog = defaultCohort
                     .getSamples()
                     .stream()
@@ -251,7 +257,7 @@ public class CatalogStorageMetadataSynchronizer {
             Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), calculatedStats.keySet());
 
             try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(study.getName(),
-                    query, new QueryOptions(), sessionId)) {
+                    query, COHORT_QUERY_OPTIONS, sessionId)) {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
                     CohortMetadata storageCohort = calculatedStats.get(cohort.getId());
@@ -296,7 +302,7 @@ public class CatalogStorageMetadataSynchronizer {
             Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), invalidStats.keySet());
             try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(study.getName(),
                     query,
-                    new QueryOptions(), sessionId)) {
+                    COHORT_QUERY_OPTIONS, sessionId)) {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
                     if (cohort.getInternal().getStatus() == null || !cohort.getInternal().getStatus().getName().equals(CohortStatus.INVALID)) {

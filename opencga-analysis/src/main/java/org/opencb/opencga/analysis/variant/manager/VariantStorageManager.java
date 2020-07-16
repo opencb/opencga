@@ -700,7 +700,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public Set<String> getIndexedSamples(String study, String token) throws CatalogException {
         OpenCGAResult<Cohort> cohortResult = catalogManager
                 .getCohortManager()
-                .search(study, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), token);
+                .search(study, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
+                        new QueryOptions(INCLUDE, Arrays.asList(
+                                CohortDBAdaptor.QueryParams.ID.key(),
+                                CohortDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key()
+                        )), token);
         if (cohortResult.getNumResults() == 0) {
             return Collections.emptySet();
         } else {
