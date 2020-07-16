@@ -492,7 +492,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             Document tmpPanel = panelDBIterator.next();
 
             // Set status to DELETED
-            tmpPanel.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
+            nestedPut(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpPanel);
 
             int panelVersion = tmpPanel.getInteger(QueryParams.VERSION.key());
 

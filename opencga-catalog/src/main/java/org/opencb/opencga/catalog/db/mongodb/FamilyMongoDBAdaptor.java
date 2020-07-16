@@ -564,7 +564,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             Document tmpFamily = familyDbIterator.next();
 
             // Set status to DELETED
-            tmpFamily.put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
+            nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpFamily);
 
             int sampleVersion = tmpFamily.getInteger(QueryParams.VERSION.key());
 
