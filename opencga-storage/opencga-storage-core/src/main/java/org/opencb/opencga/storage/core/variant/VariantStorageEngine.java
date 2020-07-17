@@ -621,7 +621,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         try (VariantDBIterator iterator = getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor)) {
             ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
             VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger,
-                    newVariantSearchLoadListener());
+                    newVariantSearchLoadListener(overwrite));
 
             if (isValidParam(query, VariantQueryParam.REGION)) {
                 logger.info("Partial secondary index. Do not update {} timestamp", SEARCH_INDEX_LAST_TIMESTAMP.key());
@@ -659,8 +659,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
-        return VariantSearchLoadListener.empty();
+    protected VariantSearchLoadListener newVariantSearchLoadListener(boolean overwrite) throws StorageEngineException {
+        return VariantSearchLoadListener.empty(overwrite);
     }
 
     public void secondaryIndexSamples(String study, List<String> samples)
@@ -692,7 +692,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
 
                 ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
-                variantSearchManager.load(collectionName, iterator, progressLogger, VariantSearchLoadListener.empty());
+                variantSearchManager.load(collectionName, iterator, progressLogger, VariantSearchLoadListener.empty(false));
             } else {
                 throw new StorageEngineException("Solr is not alive!");
             }

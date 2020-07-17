@@ -33,7 +33,7 @@ public interface PendingVariantsDescriptor {
 
     Scan configureScan(Scan scan, VariantStorageMetadataManager metadataManager);
 
-    Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager);
+    Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager, boolean overwrite);
 
     default boolean createTableIfNeeded(String tableName, HBaseManager hBaseManager, Compression.Algorithm compression) throws IOException {
         checkValidPendingTableName(tableName);

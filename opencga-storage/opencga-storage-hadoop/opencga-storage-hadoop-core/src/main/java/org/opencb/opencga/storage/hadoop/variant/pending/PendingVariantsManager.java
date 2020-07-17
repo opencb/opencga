@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.pending;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -38,6 +39,10 @@ public abstract class PendingVariantsManager {
 
     public PendingVariantsDBCleaner cleaner() {
         return new PendingVariantsDBCleaner(hBaseManager, descriptor.getTableName(tableNameGenerator), descriptor);
+    }
+
+    public void discoverPending(MRExecutor mrExecutor, boolean overwrite, ObjectMap options) throws StorageEngineException {
+        discoverPending(mrExecutor, new QueryOptions(options).append(DiscoverPendingVariantsDriver.OVERWRITE, overwrite));
     }
 
     public void discoverPending(MRExecutor mrExecutor, ObjectMap options) throws StorageEngineException {

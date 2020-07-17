@@ -23,10 +23,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 
 import java.sql.Array;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created on 07/07/16.
@@ -159,7 +156,9 @@ public abstract class AbstractPhoenixConverter {
     @SuppressWarnings("unchecked")
     public static <T> List<T> toList(PhoenixArray value) {
         try {
-            if (value.isPrimitiveType()) {
+            if (value == null) {
+                return Collections.emptyList();
+            } else if (value.isPrimitiveType()) {
                 return toModifiableList(value);
             } else {
                 return Arrays.asList((T[]) value.getArray());

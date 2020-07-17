@@ -23,12 +23,18 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.Addi
 public abstract class VariantSearchLoadListener {
 
     protected final Map<String, Integer> studiesMap;
+    protected final boolean overwrite;
 
-    protected VariantSearchLoadListener(Map<String, Integer> studiesMap) {
+    protected VariantSearchLoadListener(Map<String, Integer> studiesMap, boolean overwrite) {
         this.studiesMap = studiesMap;
+        this.overwrite = overwrite;
     }
 
     public void preLoad(List<Variant> variants) throws IOException {
+        if (overwrite) {
+            // Do nothing. All variants should be synchronized
+            return;
+        }
         List<Variant> alreadySynchronizedVariants = new ArrayList<>();
         Iterator<Variant> iterator = variants.iterator();
         while (iterator.hasNext()) {
@@ -73,8 +79,8 @@ public abstract class VariantSearchLoadListener {
 
     public abstract void postLoad(List<Variant> variantList) throws IOException;
 
-    public static VariantSearchLoadListener empty() {
-        return new VariantSearchLoadListener(null) {
+    public static VariantSearchLoadListener empty(boolean overwrite) {
+        return new VariantSearchLoadListener(null, overwrite) {
             @Override
             protected void processAlreadySynchronizedVariants(List<Variant> alreadySynchronizedVariants) {
             }

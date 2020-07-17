@@ -6,6 +6,7 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
@@ -64,12 +65,22 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsD
         return scan;
     }
 
-    public Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager) {
-        long ts = metadataManager.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
-        return (value) -> isPending(value, ts);
+    public Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager, boolean overwrite) {
+        if (overwrite) {
+            // When overwriting mark all variants as pending
+            return (value) -> getMutation(value, true);
+        } else {
+            long ts = metadataManager.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+            return (value) -> {
+                VariantStorageEngine.SyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(ts, value);
+                boolean pending = syncStatus != VariantStorageEngine.SyncStatus.SYNCHRONIZED;
+                return getMutation(value, pending);
+            };
+        }
     }
 
-    private Mutation isPending(Result value, long ts) {
+    @Deprecated
+    private boolean isPending(Result value, long ts) {
         final boolean pending;
         boolean unknown = false;
         int studies = 0;
@@ -117,6 +128,10 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsD
                 pending = false;
             }
         }
+        return pending;
+    }
+
+    private Mutation getMutation(Result value, boolean pending) {
         if (pending) {
             Put put = new Put(value.getRow());
             try {

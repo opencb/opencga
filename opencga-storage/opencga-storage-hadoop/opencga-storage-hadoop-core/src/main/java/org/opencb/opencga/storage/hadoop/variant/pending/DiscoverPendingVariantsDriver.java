@@ -41,6 +41,7 @@ import java.util.function.Function;
  */
 public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
 
+    public static final String OVERWRITE = "overwrite";
     private final Logger logger = LoggerFactory.getLogger(DiscoverPendingVariantsDriver.class);
 
     private PendingVariantsDescriptor descriptor;
@@ -143,10 +144,11 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
             variants = 0;
             readyVariants = 0;
             pendingVariants = 0;
+            boolean overwrite = context.getConfiguration().getBoolean(OVERWRITE, false);
             pendingEvaluator = descriptor.getPendingEvaluatorMapper(
                     new VariantStorageMetadataManager(
                             new HBaseVariantStorageMetadataDBAdaptorFactory(
-                                    new VariantTableHelper(context.getConfiguration()))));
+                                    new VariantTableHelper(context.getConfiguration()))), overwrite);
         }
 
         @Override
