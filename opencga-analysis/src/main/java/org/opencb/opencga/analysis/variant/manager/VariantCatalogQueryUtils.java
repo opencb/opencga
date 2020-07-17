@@ -740,6 +740,17 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                             "Sample '" + sampleId + "' does not have parents defined or indexed in storage.");
                 }
 
+                if (!isValidParam(query, INCLUDE_SAMPLE)) {
+                    List<String> includeSample = new ArrayList<>(3);
+                    includeSample.add(member.getId());
+                    if (member.getFather() != null) {
+                        includeSample.add(member.getFather().getId());
+                    }
+                    if (member.getMother() != null) {
+                        includeSample.add(member.getMother().getId());
+                    }
+                    query.put(INCLUDE_SAMPLE.key(), includeSample);
+                }
 
                 if (segregationMode == SegregationMode.COMPOUND_HETEROZYGOUS) {
                     String fatherId = member.getFather() != null ? member.getFather().getId() : MISSING_SAMPLE;
