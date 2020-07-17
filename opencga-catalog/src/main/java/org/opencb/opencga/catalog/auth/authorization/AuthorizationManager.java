@@ -75,6 +75,7 @@ public interface AuthorizationManager {
                 StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.DOWNLOAD_FILES,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.VIEW_SAMPLES,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS,
+                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS, StudyAclEntry.StudyPermissions.VIEW_SAMPLE_VARIANTS,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_COHORTS,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_PANELS,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILIES, StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS,
