@@ -476,6 +476,7 @@ public class JobManager extends ResourceManager<Job> {
                 job.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
                         new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
             }
+            job.getInternal().getStatus().setDescription(e.toString());
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
 
             throw e;
