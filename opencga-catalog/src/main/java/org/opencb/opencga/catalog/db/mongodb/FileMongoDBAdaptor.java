@@ -146,7 +146,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
                     // Update list of fileIds from sample
                     Query query = new Query()
-                            .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), file.getStudyUid())
+                            .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                             .append(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid());
                     ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
                     ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), UpdateAction.ADD.name());
