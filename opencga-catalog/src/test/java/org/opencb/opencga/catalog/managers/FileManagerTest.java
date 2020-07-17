@@ -164,6 +164,20 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testLinkVCFandBAMPair() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null), false, token);
+
+        String bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
+        fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", null, null, null), false, token);
+
+        Sample sample = catalogManager.getSampleManager().get(studyFqn, "NA19600",
+                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), token).first();
+        assertEquals(2, sample.getFileIds().size());
+        assertTrue(Arrays.asList("variant-test-file.vcf.gz", "NA19600.chrom20.small.bam").containsAll(sample.getFileIds()));
+    }
+
+    @Test
     public void testGetBase64Image() throws CatalogException {
         String qualityImageFile = getClass().getResource("/fastqc-per_base_sequence_quality.png").getFile();
         fileManager.link(studyFqn, new FileLinkParams(qualityImageFile, "", "", null, null, null), false, token);
