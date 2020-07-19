@@ -1186,7 +1186,7 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("User '" + userFromToken + "' not found. Please, call to login first or talk to your administrator");
         }
 
-        if (userId.equals(userOpenCGAResult.first().getEmail())) {
+        if (userId.equalsIgnoreCase(userOpenCGAResult.first().getEmail())) {
             return userFromToken;
         } else {
             throw new CatalogAuthorizationException("User '" + userFromToken + "' cannot operate on behalf of user '" + userId + "'.");
