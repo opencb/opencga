@@ -1497,13 +1497,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         int studyId = getStudyId(study);
         String temporaryCohortName = "TEMP_" + alias + "_" + TimeUtils.getTimeMillis();
 
-        int cohortId = registerCohort(study, temporaryCohortName, samples);
+        List<Integer> sampleIds = registerSamples(studyId, samples);
+        int cohortId = newCohortId(studyId);
+        CohortMetadata cohortMetadata = new CohortMetadata(studyId, cohortId, temporaryCohortName,
+                sampleIds,
+                Collections.emptyList());
+        cohortMetadata.getAttributes().put("alias", alias);
+        cohortMetadata.setStatus("TEMPORARY", TaskMetadata.Status.RUNNING);
 
-        return updateCohortMetadata(studyId, cohortId, cohortMetadata -> {
-            cohortMetadata.getAttributes().put("alias", alias);
-            cohortMetadata.setStatus("TEMPORARY", TaskMetadata.Status.RUNNING);
-            return cohortMetadata;
-        });
+        unsecureUpdateCohortMetadata(studyId, cohortMetadata);
+        return cohortMetadata;
     }
 
     public Map<String, Integer> registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)
