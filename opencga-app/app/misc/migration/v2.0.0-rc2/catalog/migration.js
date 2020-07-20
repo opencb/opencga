@@ -153,3 +153,33 @@ migrateCollection("sample", {}, {}, function(bulk, doc) {
         bulk.find({"_id": doc._id}).updateOne({"$set": set});
     }
 });
+
+// Add new Variant permission
+migrateCollection("study", {}, {}, function(bulk, doc) {
+    if (isNotEmptyArray(doc._acl)) {
+        var acls = new Set();
+        for (var acl of doc._acl) {
+            if (acl.endsWith("VIEW_SAMPLES")) {
+                var member = acl.split("__VIEW_SAMPLES")[0];
+                acls.add(member + "__VIEW_AGGREGATED_VARIANTS");
+                acls.add(member + "__VIEW_SAMPLE_VARIANTS");
+            }
+            acls.add(acl);
+        }
+        bulk.find({"_id": doc._id}).updateOne({"$set": {"_acl": Array.from(acls)}});
+    }
+});
+
+migrateCollection("sample", {}, {}, function(bulk, doc) {
+    if (isNotEmptyArray(doc._acl)) {
+        var acls = new Set();
+        for (var acl of doc._acl) {
+            if (acl.endsWith("__VIEW")) {
+                var member = acl.split("__VIEW")[0];
+                acls.add(member + "__VIEW_VARIANTS");
+            }
+            acls.add(acl);
+        }
+        bulk.find({"_id": doc._id}).updateOne({"$set": {"_acl": Array.from(acls)}});
+    }
+});
