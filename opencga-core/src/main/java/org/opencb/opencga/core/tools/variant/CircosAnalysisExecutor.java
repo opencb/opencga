@@ -16,22 +16,20 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-
-import java.io.File;
-import java.io.PrintWriter;
-import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 public abstract class CircosAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String study;
-    private Query query;
+    private CircosAnalysisParams circosParams;
 
     public CircosAnalysisExecutor() {
+    }
+
+    public CircosAnalysisExecutor(String study, CircosAnalysisParams circosParams) {
+        this.study = study;
+        this.circosParams = circosParams;
     }
 
     public String getStudy() {
@@ -43,12 +41,12 @@ public abstract class CircosAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public Query getQuery() {
-        return query;
+    public CircosAnalysisParams getCircosParams() {
+        return circosParams;
     }
 
-    public CircosAnalysisExecutor setQuery(Query query) {
-        this.query = query;
+    public CircosAnalysisExecutor setCircosParams(CircosAnalysisParams params) {
+        this.circosParams = params;
         return this;
     }
 }
