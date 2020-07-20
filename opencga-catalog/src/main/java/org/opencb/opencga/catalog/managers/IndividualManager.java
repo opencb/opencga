@@ -483,80 +483,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         individualList, individualList.size());
             }
 
-            Map<ClinicalAnalysis.FamiliarRelationship, ClinicalAnalysis.FamiliarRelationship> relationMap = new HashMap<>();
-            // ------------------ Processing degree 1
-            relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.MOTHER);
-            relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.FATHER);
-            relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.SON);
-            relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.DAUGHTER);
-            relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
-                    ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX);
-            Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> relativeMap = lookForParentsAndChildren(study, proband,
-                    new HashSet<>(), queryOptions, userId);
-            addDegreeRelatives(relativeMap, relationMap, 1, individualList);
-
-            if (degree == 1) {
-                auditManager.audit(userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
-                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-                return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), individualList.size(),
-                        individualList, individualList.size());
-            }
-
-            Individual mother = relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.MOTHER)
-                    ? relativeMap.get(ClinicalAnalysis.FamiliarRelationship.MOTHER).get(0) : null;
-            Individual father = relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.FATHER)
-                    ? relativeMap.get(ClinicalAnalysis.FamiliarRelationship.FATHER).get(0) : null;
-            List<Individual> children = new LinkedList<>();
-            if (relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.SON)) {
-                children.addAll(relativeMap.get(ClinicalAnalysis.FamiliarRelationship.SON));
-            }
-            if (relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.DAUGHTER)) {
-                children.addAll(relativeMap.get(ClinicalAnalysis.FamiliarRelationship.DAUGHTER));
-            }
-            if (relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX)) {
-                children.addAll(relativeMap.get(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX));
-            }
-
-            // ------------------ Processing degree 2
-            if (mother != null) {
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDMOTHER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDFATHER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
-                        ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
-
-                // Update set of already obtained individuals
-                Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
-                relativeMap = lookForParentsAndChildren(study, mother, skipIndividuals, queryOptions, userId);
-                addDegreeRelatives(relativeMap, relationMap, 2, individualList);
-            }
-            if (father != null) {
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.PATERNAL_GRANDMOTHER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.PATERNAL_GRANDFATHER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
-                        ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
-
-                // Update set of already obtained individuals
-                Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
-                relativeMap = lookForParentsAndChildren(study, father, skipIndividuals, queryOptions, userId);
-                addDegreeRelatives(relativeMap, relationMap, 2, individualList);
-            }
-
-            // Update set of already obtained individuals
-            Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
-            for (Individual child : children) {
-                // TODO: Change relations !!
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
-                relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
-                        ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
-
-                relativeMap = lookForChildren(study, child, skipIndividuals, queryOptions, userId);
-                addDegreeRelatives(relativeMap, relationMap, 2, individualList);
-            }
+            individualList.addAll(calculateRelationship(study, proband, degree, queryOptions, userId));
 
             auditManager.audit(userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -616,6 +543,90 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     break;
             }
         }
+    }
+
+    List<Individual> calculateRelationship(Study study, Individual proband, int maxDegree, QueryOptions options, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        List<Individual> individualList = new LinkedList<>();
+        individualList.add(proband);
+
+        Map<ClinicalAnalysis.FamiliarRelationship, ClinicalAnalysis.FamiliarRelationship> relationMap = new HashMap<>();
+        // ------------------ Processing degree 1
+        relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.MOTHER);
+        relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.FATHER);
+        relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.SON);
+        relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.DAUGHTER);
+        relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
+                ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX);
+        Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> relativeMap = lookForParentsAndChildren(study, proband,
+                new HashSet<>(), options, userId);
+        addDegreeRelatives(relativeMap, relationMap, 1, individualList);
+
+        if (maxDegree == 1) {
+            // Remove proband from list
+            individualList.remove(0);
+            return individualList;
+        }
+
+        Individual mother = relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.MOTHER)
+                ? relativeMap.get(ClinicalAnalysis.FamiliarRelationship.MOTHER).get(0) : null;
+        Individual father = relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.FATHER)
+                ? relativeMap.get(ClinicalAnalysis.FamiliarRelationship.FATHER).get(0) : null;
+        List<Individual> children = new LinkedList<>();
+        if (relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.SON)) {
+            children.addAll(relativeMap.get(ClinicalAnalysis.FamiliarRelationship.SON));
+        }
+        if (relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.DAUGHTER)) {
+            children.addAll(relativeMap.get(ClinicalAnalysis.FamiliarRelationship.DAUGHTER));
+        }
+        if (relativeMap.containsKey(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX)) {
+            children.addAll(relativeMap.get(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX));
+        }
+
+        // ------------------ Processing degree 2
+        if (mother != null) {
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDMOTHER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.MATERNAL_GRANDFATHER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
+                    ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
+
+            // Update set of already obtained individuals
+            Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
+            relativeMap = lookForParentsAndChildren(study, mother, skipIndividuals, options, userId);
+            addDegreeRelatives(relativeMap, relationMap, 2, individualList);
+        }
+        if (father != null) {
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.MOTHER, ClinicalAnalysis.FamiliarRelationship.PATERNAL_GRANDMOTHER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.FATHER, ClinicalAnalysis.FamiliarRelationship.PATERNAL_GRANDFATHER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
+                    ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
+
+            // Update set of already obtained individuals
+            Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
+            relativeMap = lookForParentsAndChildren(study, father, skipIndividuals, options, userId);
+            addDegreeRelatives(relativeMap, relationMap, 2, individualList);
+        }
+
+        // Update set of already obtained individuals
+        Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
+        for (Individual child : children) {
+            // TODO: Change relations !!
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.SON, ClinicalAnalysis.FamiliarRelationship.BROTHER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.DAUGHTER, ClinicalAnalysis.FamiliarRelationship.SISTER);
+            relationMap.put(ClinicalAnalysis.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
+                    ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
+
+            relativeMap = lookForChildren(study, child, skipIndividuals, options, userId);
+            addDegreeRelatives(relativeMap, relationMap, 2, individualList);
+        }
+
+        // Remove proband from list
+        individualList.remove(0);
+        return individualList;
     }
 
     private Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> lookForParentsAndChildren(Study study, Individual proband,
@@ -755,6 +766,19 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         return queryOptions;
+    }
+
+    /**
+     * Assuming the individual entry contains the OPENCGA_RELATIVE attributes, it will extract the relation.
+     *
+     * @param individual Individual entry.
+     * @return The relation out of OPENCGA_RELATIVE attributes.
+     */
+    static ClinicalAnalysis.FamiliarRelationship extractIndividualRelation(Individual individual) {
+        if (individual.getAttributes() != null && individual.getAttributes().containsKey("OPENCGA_RELATIVE")) {
+            return (ClinicalAnalysis.FamiliarRelationship) ((ObjectMap) individual.getAttributes().get("OPENCGA_RELATIVE")).get("RELATION");
+        }
+        return ClinicalAnalysis.FamiliarRelationship.UNKNOWN;
     }
 
     private void addRelativeToList(Individual individual, ClinicalAnalysis.FamiliarRelationship relation, int degree,
