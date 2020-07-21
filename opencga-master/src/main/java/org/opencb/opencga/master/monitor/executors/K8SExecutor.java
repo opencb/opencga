@@ -104,6 +104,7 @@ public class K8SExecutor implements BatchExecutor {
                         .withName(DOCKER_GRAPH_STORAGE)
                         .withMountPath("/var/lib/docker")
                         .build())
+                .addAllToVolumeMounts(volumeMounts)
                 .build();
 
         jobsWatcher = getKubernetesClient().batch().jobs().watch(new Watcher<Job>() {
@@ -171,7 +172,7 @@ public class K8SExecutor implements BatchExecutor {
                                 .withSpec(new PodSpecBuilder()
                                         .addToContainers(dockerDaemonSidecar)
                                         .addToContainers(new ContainerBuilder()
-                                                .withName(jobName)
+                                                .withName("opencga")
                                                 .withImage(imageName)
                                                 .withImagePullPolicy("Always")
                                                 .withResources(resources)
