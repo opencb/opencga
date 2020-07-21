@@ -1213,37 +1213,15 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(KnockoutAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
-    @GET
-    @Path("/circos")
-    @ApiOperation(value = CircosAnalysis.DESCRIPTION + " Use context index.", response = String.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query")
-    })
+    @POST
+    @Path("/circos/run")
+    @ApiOperation(value = CircosAnalysis.DESCRIPTION, response = String.class)
     public Response circos(
-            @ApiParam(value = "Plot copy-number track", defaultValue = "true") @QueryParam("plotCopyNumber") boolean plotCopyNumber,
-            @ApiParam(value = "Plot INDELs track", defaultValue = "true") @QueryParam("plotIndels") boolean plotIndels,
-            @ApiParam(value = "Plot rearrangements track", defaultValue = "true") @QueryParam("plotRearrangements") boolean plotRearrangements,
-            @ApiParam(value = "Density plot: LOW, MEDIUM or HIGH", defaultValue = "LOW") @QueryParam("density") String strDensity) {
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = CircosAnalysisParams.DESCRIPTION, required = true) CircosAnalysisParams params) {
         try {
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            Query query = getVariantQuery(queryOptions);
-
-            if (!query.containsKey(SAMPLE.key())) {
-                return createErrorResponse(new Exception("Missing sample name"));
-            }
-            CircosAnalysis.Density density;
-            try {
-                density = CircosAnalysis.Density.valueOf(strDensity);
-            } catch (Exception e) {
-                return createErrorResponse(new Exception("Invalid density value: '" + strDensity + "'. Valid values:  LOW, MEDIUM or HIGH"));
+            if (StringUtils.isEmpty(params.getTitle())) {
+                params.setTitle("UNTITLED");
             }
 
             // Create temporal directory
@@ -1253,21 +1231,20 @@ public class VariantWebService extends AnalysisWebService {
                 return createErrorResponse(new Exception("Error creating temporal directory for Circos analysis"));
             }
 
-            CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor();
+            // Create and set up Circos executor
+            CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor(study, params);
+
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);
-            executorParams.put("plotCopyNumber", plotCopyNumber);
-            executorParams.put("plotIndels", plotIndels);
-            executorParams.put("plotRearrangements", plotRearrangements);
-            executorParams.put("density", density);
             executor.setUp(null, executorParams, outDir.toPath());
-            executor.setStudy(query.getString(STUDY.key()));
-            executor.setQuery(query);
 
+            // Run Circos executor
             StopWatch watch = StopWatch.createStarted();
             executor.run();
-            File imgFile = outDir.toPath().resolve(query.getString(SAMPLE.key()) + CircosAnalysis.SUFFIX_FILENAME).toFile();
+
+            // Check results by reading the output file
+            File imgFile = outDir.toPath().resolve(params.getTitle() + CircosAnalysis.SUFFIX_FILENAME).toFile();
             if (imgFile.exists()) {
                 FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
                 byte[] bytes = new byte[(int) imgFile.length()];
@@ -1282,6 +1259,8 @@ public class VariantWebService extends AnalysisWebService {
                 // Delete temporal directory
                 FileUtils.deleteDirectory(outDir);
 
+                //System.out.println(result.toString());
+
                 return createOkResponse(result);
             } else {
                 // Delete temporal directory
@@ -1289,8 +1268,6 @@ public class VariantWebService extends AnalysisWebService {
 
                 return createErrorResponse(new Exception("Error plotting Circos graph"));
             }
-
-
         } catch (ToolException | IOException e) {
             return createErrorResponse(e);
         }

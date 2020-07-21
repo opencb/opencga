@@ -98,6 +98,7 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(5, familyDataResult.first().getMembers().size());
         assertEquals(2, familyDataResult.first().getPhenotypes().size());
+        assertEquals(5, familyDataResult.first().getRoles().size());
 
         boolean motherIdUpdated = false;
         boolean fatherIdUpdated = false;
@@ -119,6 +120,7 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(5, familyDataResult.first().getMembers().size());
         assertEquals(2, familyDataResult.first().getPhenotypes().size());
+        assertEquals(5, familyDataResult.first().getRoles().size());
 
         motherIdUpdated = false;
         fatherIdUpdated = false;
@@ -508,21 +510,8 @@ public class FamilyManagerTest extends GenericTest {
 //    }
 
     @Test
-    public void updateFamilyMissingMember() throws CatalogException, JsonProcessingException {
+    public void updateFamilyMissingMember() throws CatalogException {
         DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
-
-        Individual father = new Individual().setId("father");
-        Individual mother = new Individual().setId("mother2");
-
-        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
-        // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-
-        Individual relChild1 = new Individual().setId("child3")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
-                .setFather(father)
-                .setMother(mother)
-                .setParentalConsanguinity(true);
 
         FamilyUpdateParams updateParams = new FamilyUpdateParams().setMembers(Arrays.asList("child3", "father"));
 
