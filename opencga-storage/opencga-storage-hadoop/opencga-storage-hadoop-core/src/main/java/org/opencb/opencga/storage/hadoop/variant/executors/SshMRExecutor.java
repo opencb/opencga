@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.util.RunJar;
+import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -34,7 +35,7 @@ public class SshMRExecutor extends MRExecutor {
     private static Logger logger = LoggerFactory.getLogger(SshMRExecutor.class);
 
     @Override
-    public int run(String executable, String args) throws StorageEngineException {
+    public int run(String executable, String[] args) throws StorageEngineException {
         String commandLine = buildCommand(executable, args);
         List<String> env = buildEnv();
 
@@ -48,8 +49,8 @@ public class SshMRExecutor extends MRExecutor {
         return exitValue;
     }
 
-    private Path copyOutputFiles(String args, List<String> env) throws StorageEngineException {
-        List<String> argsList = Arrays.asList(args.split(" "));
+    private Path copyOutputFiles(String[] args, List<String> env) throws StorageEngineException {
+        List<String> argsList = Arrays.asList(args);
         int outputIdx = argsList.indexOf("output");
         if (outputIdx > 0 && argsList.size() > outputIdx + 1) {
             String targetOutput = UriUtils.createUriSafe(argsList.get(outputIdx + 1)).getPath();
@@ -79,16 +80,21 @@ public class SshMRExecutor extends MRExecutor {
         return null;
     }
 
-    protected String buildCommand(String executable, String args) {
+    protected String buildCommand(String executable, String... args) {
+        int passwordIdx = Arrays.binarySearch(args, MR_EXECUTOR_SSH_PASSWORD.key());
+        if (passwordIdx > 0 && args.length > passwordIdx) {
+            args[passwordIdx + 1] = "_redacted_";
+        }
+        String argsString = Commandline.toString(args);
         String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
         String commandLine = getBinPath(HADOOP_SSH_BIN);
 
         if (StringUtils.isNotEmpty(remoteOpencgaHome)) {
-            args = args.replaceAll(getOpencgaHome(), remoteOpencgaHome);
+            argsString = argsString.replaceAll(getOpencgaHome(), remoteOpencgaHome);
             executable = executable.replaceAll(getOpencgaHome(), remoteOpencgaHome);
         }
 
-        commandLine += ' ' + executable + ' ' + args;
+        commandLine += ' ' + executable + ' ' + argsString;
         return commandLine;
     }
 

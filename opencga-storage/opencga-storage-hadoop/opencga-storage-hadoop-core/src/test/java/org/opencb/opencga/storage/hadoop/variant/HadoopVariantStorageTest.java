@@ -515,7 +515,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
 
         @Override
-        public int run(String executable, String args) {
+        public int run(String executable, String[] args) {
             try {
                 // Copy configuration
                 Configuration conf = new Configuration(false);
@@ -523,9 +523,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
                 String className = executable.substring(executable.lastIndexOf(" ") + 1);
                 Class<?> clazz = Class.forName(className);
-                System.out.println("Executing " + clazz.getSimpleName() + ": " + executable + " " + args);
+                System.out.println("Executing " + clazz.getSimpleName() + ": " + executable + " " + Arrays.toString(args));
                 Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
-                Object o = method.invoke(clazz.newInstance(), Commandline.translateCommandline(args), conf);
+                Object o = method.invoke(clazz.newInstance(), args, conf);
                 System.out.println("Finish execution " + clazz.getSimpleName());
                 if (((Number) o).intValue() != 0) {
                     throw new RuntimeException("Exit code = " + o);

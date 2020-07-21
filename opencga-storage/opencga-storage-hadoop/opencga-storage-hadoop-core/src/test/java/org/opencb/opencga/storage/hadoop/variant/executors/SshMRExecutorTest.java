@@ -42,8 +42,8 @@ public class SshMRExecutorTest {
         SshMRExecutor sshMRExecutor = new SshMRExecutor();
         sshMRExecutor.init(options);
 
-        String cmd = sshMRExecutor.buildCommand("echo", "hello world");
-        assertEquals("/opt/opencga/conf/hadoop/hadoop-ssh.sh echo hello world", cmd);
+        String cmd = sshMRExecutor.buildCommand("echo", "hello world", HadoopVariantStorageOptions.MR_EXECUTOR_SSH_PASSWORD.key(), "password");
+        assertEquals("/opt/opencga/conf/hadoop/hadoop-ssh.sh echo \"hello world\" " + HadoopVariantStorageOptions.MR_EXECUTOR_SSH_PASSWORD.key() + " _redacted_", cmd);
 
         List<String> env = sshMRExecutor.buildEnv();
 
