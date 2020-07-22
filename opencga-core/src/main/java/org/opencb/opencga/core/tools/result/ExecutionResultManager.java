@@ -23,6 +23,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
@@ -96,7 +97,7 @@ public class ExecutionResultManager {
         ExecutionResult execution = new ExecutionResult()
                 .setExecutor(new ExecutorInfo()
                         .setId(executorParams.getString(OpenCgaToolExecutor.EXECUTOR_ID))
-                        .setParams(executorParams))
+                        .setParams(removeTokenFromParams(executorParams)))
                 .setStart(now);
         execution.getStatus()
                 .setDate(now)
@@ -184,7 +185,20 @@ public class ExecutionResultManager {
     }
 
     public void setExecutorInfo(ExecutorInfo executorInfo) throws ToolException {
+        if (executorInfo != null) {
+            ObjectMap params = executorInfo.getParams();
+            executorInfo.setParams(removeTokenFromParams(params));
+        }
         updateResult(result -> result.setExecutor(executorInfo));
+    }
+
+    private ObjectMap removeTokenFromParams(ObjectMap params) {
+        if (params != null && params.containsKey(ParamConstants.TOKEN)) {
+            ObjectMap paramsCopy = new ObjectMap(params);
+            paramsCopy.put(ParamConstants.TOKEN, "xxxxxxxxxxxxxx");
+            return paramsCopy;
+        }
+        return params;
     }
 
     public void addEvent(Event.Type type, String message) throws ToolException {

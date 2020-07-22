@@ -24,6 +24,8 @@ public class ParamConstants {
 
     public static final String ID = "id";
 
+    public static final String TOKEN = "token";
+
     public static final String INCLUDE_DESCRIPTION = "Fields included in the response, whole JSON path must be provided";
     public static final String EXCLUDE_DESCRIPTION = "Fields excluded in the response, whole JSON path must be provided";
     public static final String LIMIT_DESCRIPTION = "Number of results to be returned";

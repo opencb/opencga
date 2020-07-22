@@ -26,6 +26,7 @@ import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -448,7 +449,7 @@ public abstract class OpenCgaTool {
 
     private final void setUpStorageEngineExecutor(String projectId, String study) throws ToolException {
         executorParams.put("opencgaHome", opencgaHome);
-        executorParams.put("token", token);
+        executorParams.put(ParamConstants.TOKEN, token);
         try {
             DataStore dataStore;
             if (study == null) {
