@@ -345,6 +345,17 @@ public class FamilyManagerTest extends GenericTest {
 
         family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
         assertEquals(0, family.first().getDisorders().size());
+
+        // Updating the individual version from family should also update the phenotypes and disorders
+        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams(), new QueryOptions(Constants.REFRESH, true),
+                sessionIdUser);
+        family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
+        for (Individual member : family.first().getMembers()) {
+            if (member.getId().equals(child1.first().getId())) {
+                assertEquals(child1.first().getVersion(), member.getVersion());
+            }
+        }
+        assertEquals(1, family.first().getDisorders().size());
     }
 
     @Test

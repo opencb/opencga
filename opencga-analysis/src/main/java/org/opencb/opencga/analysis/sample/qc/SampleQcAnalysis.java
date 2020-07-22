@@ -304,7 +304,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
         try {
             catalogManager.getSampleManager().update(getStudyId(), getSampleId(), new SampleUpdateParams().setQualityControl(qualityControl),
-                    new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+                    QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException(e);
         }
