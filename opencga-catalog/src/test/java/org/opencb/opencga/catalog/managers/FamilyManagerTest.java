@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
@@ -518,6 +519,16 @@ public class FamilyManagerTest extends GenericTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in the members list");
         familyManager.update(STUDY, originalFamily.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void recalculateRoles() throws CatalogException {
+        DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
+
+        FamilyUpdateParams updateParams = null;
+        QueryOptions options = new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true);
+
+        assertEquals(1, familyManager.update(STUDY, originalFamily.first().getId(), updateParams, options, sessionIdUser).getNumUpdated());
     }
 
     @Test

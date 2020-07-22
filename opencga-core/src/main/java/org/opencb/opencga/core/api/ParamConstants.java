@@ -160,6 +160,8 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String FAMILIES_DESCRIPTION = "Comma separated list of family IDs or names" + UP_TO_100;
+    public static final String FAMILY_UPDATE_ROLES_PARAM = "updateRoles";
+    public static final String FAMILY_UPDATE_ROLES_DESCRIPTION = "Update the member roles within the family";
 
     // ---------------------------------------------
 

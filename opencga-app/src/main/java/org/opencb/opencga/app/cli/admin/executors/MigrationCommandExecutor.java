@@ -7,7 +7,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
@@ -22,10 +21,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.io.BufferedReader;
@@ -264,10 +265,21 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         }
         if (!skipRc2) {
             try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-                catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+                String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
                 logger.info("Starting Catalog migration for 2.0.0 RC2");
                 runMigration(catalogManager, appHome + "/misc/migration/v2.0.0-rc2/", "opencga_catalog_v2.0.0-rc1_to_v2.0.0-rc2.js");
+
+                // Add automatically roles to all the family members
+                QueryOptions familyUpdateOptions = new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true);
+                for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+                    if (project.getStudies() != null) {
+                        for (Study study : project.getStudies()) {
+                            logger.info("Updating family roles from study {}", study.getFqn());
+                            catalogManager.getFamilyManager().update(study.getFqn(), new Query(), null, familyUpdateOptions, adminToken);
+                        }
+                    }
+                }
             }
         }
     }
