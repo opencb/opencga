@@ -37,6 +37,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
     export INIT_CATALOG_DATABASE_HOSTS=localhost:27017
     export INIT_CATALOG_DATABASE_USER=""
     export INIT_CATALOG_DATABASE_PASSWORD=""
+    export INIT_CATALOG_DATABASE_SSL="false"
     export INIT_CATALOG_SEARCH_HOSTS=http://localhost:8983/solr/
     export INIT_REST_HOST="http://localhost:9090/`ls ../opencga*.war | rev | cut -d "." -f 2- | rev | xargs basename`"
     export INIT_GRPC_HOST="localhost:9091"
