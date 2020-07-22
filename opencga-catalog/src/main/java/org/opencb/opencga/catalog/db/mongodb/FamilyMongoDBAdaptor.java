@@ -24,6 +24,8 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -398,15 +400,34 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             return;
         }
 
+        // If we update to the latest version, we will also need to fetch the disorders and phenotypes
         List<Long> individualIds = family.getMembers().stream().map(Individual::getUid).collect(Collectors.toList());
         Query individualQuery = new Query()
                 .append(IndividualDBAdaptor.QueryParams.UID.key(), individualIds);
         options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.VERSION.key()
+                IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.VERSION.key(),
+                IndividualDBAdaptor.QueryParams.DISORDERS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key()
         ));
         OpenCGAResult<Individual> individualDataResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor()
                 .get(clientSession, individualQuery, options);
         parameters.put(QueryParams.MEMBERS.key(), individualDataResult.getResults());
+
+        Map<String, Disorder> disorders = new HashMap<>();
+        Map<String, Phenotype> phenotypes = new HashMap<>();
+        for (Individual individual : individualDataResult.getResults()) {
+            if (individual.getDisorders() != null) {
+                for (Disorder disorder : individual.getDisorders()) {
+                    disorders.put(disorder.getId(), disorder);
+                }
+            }
+            if (individual.getPhenotypes() != null) {
+                for (Phenotype phenotype : individual.getPhenotypes()) {
+                    phenotypes.put(phenotype.getId(), phenotype);
+                }
+            }
+        }
+        parameters.put(QueryParams.PHENOTYPES.key(), new ArrayList<>(phenotypes.values()));
+        parameters.put(QueryParams.DISORDERS.key(), new ArrayList<>(disorders.values()));
     }
 
     private void createNewVersion(ClientSession clientSession, long studyUid, long familyUid)

@@ -1249,7 +1249,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
+        if (parameters.isEmpty() && !options.getBoolean(Constants.REFRESH, false)
+                && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
             ParamUtils.checkUpdateParametersMap(parameters);
         }
 
