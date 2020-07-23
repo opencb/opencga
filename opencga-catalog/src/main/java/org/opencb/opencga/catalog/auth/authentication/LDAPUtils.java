@@ -167,8 +167,8 @@ public class LDAPUtils {
         }
     }
 
-    public static String getFullName(Attributes attributes) throws NamingException {
-        return (String) attributes.get("displayname").get(0);
+    public static String getFullName(Attributes attributes, String fullNameKey) throws NamingException {
+        return (String) attributes.get(fullNameKey).get(0);
     }
 
     public static List<String> getGroupsFromLdapUser(String host, String user, String base) throws NamingException {
