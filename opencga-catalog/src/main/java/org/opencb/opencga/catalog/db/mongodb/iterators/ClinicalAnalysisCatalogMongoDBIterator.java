@@ -192,11 +192,11 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
 
     private Document fillIndividualData(Document individualDoc, Map<String, Document> individualMap, Map<String, Document> sampleMap) {
         if (individualDoc != null && individualDoc.getLong(UID) > 0) {
-            Object version = individualDoc.get(VERSION);
+            Integer version = individualDoc.getInteger(VERSION);
             String individualId;
 
             if (version != null) {
-                individualId = individualDoc.get(UID) + UID_VERSION_SEP + individualDoc.get(VERSION);
+                individualId = individualDoc.get(UID) + UID_VERSION_SEP + version;
             } else {
                 individualId = String.valueOf(individualDoc.get(UID));
             }
