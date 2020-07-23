@@ -92,8 +92,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
             if (uid > 0) {
                 Sample tmpSample = new Sample()
                         .setUid(uid)
-                        .setId(sample.getString(SampleDBAdaptor.QueryParams.ID.key()))
-                        .setVersion(sample.getInteger(SampleDBAdaptor.QueryParams.VERSION.key()));
+                        .setId(sample.getString(SampleDBAdaptor.QueryParams.ID.key()));
                 sampleMap.put(uid, tmpSample);
             }
         }
@@ -102,8 +101,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
                 sampleMap.entrySet().stream()
                         .map(entry -> new Document()
                                 .append(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue().getId())
-                                .append(SampleDBAdaptor.QueryParams.UID.key(), entry.getValue().getUid())
-                                .append(SampleDBAdaptor.QueryParams.VERSION.key(), entry.getValue().getVersion()))
+                                .append(SampleDBAdaptor.QueryParams.UID.key(), entry.getValue().getUid()))
                         .collect(Collectors.toList()));
     }
 
@@ -138,8 +136,6 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
                 members.stream().map(entry -> new Document()
                         .append(IndividualDBAdaptor.QueryParams.UID.key(), getLongValue(entry, IndividualDBAdaptor.QueryParams.UID.key()))
                         .append(IndividualDBAdaptor.QueryParams.ID.key(), entry.getString(IndividualDBAdaptor.QueryParams.ID.key()))
-                        .append(IndividualDBAdaptor.QueryParams.VERSION.key(),
-                                entry.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()))
                         .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), entry.get(IndividualDBAdaptor.QueryParams.SAMPLES.key()))
                 )
                 .collect(Collectors.toList()));

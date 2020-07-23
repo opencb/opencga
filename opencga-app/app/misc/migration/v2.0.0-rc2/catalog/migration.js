@@ -76,21 +76,22 @@ function _getSampleIdReferences(sample) {
     }
     return {
         'uid': sample['uid'],
-        'id': sample['id'],
-        'version': sample['version']
+        'id': sample['id']
     }
 }
 
-function _getMemberAndSampleIdReferences(member) {
+function _getMemberAndSampleIdReferences(member, keepVersion) {
     if (isUndefinedOrNull(member)) {
         return member;
     }
     var newMember = {
         'uid': member['uid'],
         'id': member['id'],
-        'version': member['version'],
         'samples': member['samples']
     };
+    if (keepVersion) {
+        newMember['version'] = member['version'];
+    }
 
     if (isNotEmptyArray(member.samples)) {
         var samples = [];
@@ -116,7 +117,7 @@ migrateCollection("clinical", {}, {proband: 1, family: 1}, function(bulk, doc) {
         if (isNotEmptyArray(doc.family.members)) {
             var members = [];
             for (var member of doc.family.members) {
-                members.push(_getMemberAndSampleIdReferences(member));
+                members.push(_getMemberAndSampleIdReferences(member, false));
             }
             family['members'] = members;
         }
@@ -125,7 +126,7 @@ migrateCollection("clinical", {}, {proband: 1, family: 1}, function(bulk, doc) {
     }
 
     if (isNotUndefinedOrNull(doc.proband)) {
-        toset['proband'] = _getMemberAndSampleIdReferences(doc.proband);
+        toset['proband'] = _getMemberAndSampleIdReferences(doc.proband, true);
     }
 
     bulk.find({"_id": doc._id}).updateOne({"$set": toset});
