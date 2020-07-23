@@ -53,10 +53,16 @@ def build():
         run(command)
 
 def tag_latest(image):
+    if "hdp" in tag or "dev" in tag:
+        print("Don't use tag " + tag + " as latest")
+        return
+
     latest_tag = os.popen(("curl -s https://registry.hub.docker.com/v1/repositories/" + org + "/opencga-" + image + "/tags"
                             + " | jq -r .[].name"
                             + " | grep -v latest"
-                            + " | sort -h"
+                            + " | grep -v hdp"
+                            + " | grep -v dev"
+                            + " | sort -r -h"
                             + " | head"))
     if tag >= latest_tag.read():
         print("*********************************************")
@@ -64,6 +70,8 @@ def tag_latest(image):
         print("*********************************************")
         run("docker tag " + org + "/opencga-" + image + ":" + tag + " " + org + "/opencga-" + image + ":latest")
         run("docker push " + org + "/opencga-" + image + ":latest")
+    else:
+        print("Don't use tag " + tag + " as latest")
 
 def push():
     print("Pushing images to Docker hub")
