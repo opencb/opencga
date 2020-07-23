@@ -261,14 +261,19 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> sampleStats() throws ClientException {
+        // Build variant query from cli options
+        Query variantQuery = new Query();
+        variantQuery.putAll(variantCommandOptions.sampleVariantStatsCommandOptions.variantQuery);
+
         return openCGAClient.getVariantClient().runSampleStats(
                 new SampleVariantStatsAnalysisParams(
                         variantCommandOptions.sampleVariantStatsCommandOptions.sample,
                         variantCommandOptions.sampleVariantStatsCommandOptions.family,
                         variantCommandOptions.sampleVariantStatsCommandOptions.index,
                         variantCommandOptions.sampleVariantStatsCommandOptions.samplesAnnotation,
-                        variantCommandOptions.sampleVariantStatsCommandOptions.outdir
-                ), getParams(variantCommandOptions.sampleVariantStatsCommandOptions.study));
+                        variantQuery,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.outdir),
+                getParams(variantCommandOptions.sampleVariantStatsCommandOptions.study));
     }
 
     private RestResponse<SampleVariantStats> sampleStatsQuery() throws ClientException {
@@ -403,7 +408,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
 
         // Build variant query from cli options
-        AbstractBasicVariantQueryParams variantStatsQuery = ToolParams.fromParams(AbstractBasicVariantQueryParams.class,
+        AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
                 cliOptions.variantStatsQuery);
 
         // Build signature query from cli options

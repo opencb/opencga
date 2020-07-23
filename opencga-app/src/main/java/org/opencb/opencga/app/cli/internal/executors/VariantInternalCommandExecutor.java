@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.SequenceWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.DataResult;
@@ -701,25 +700,22 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     private void sampleStats() throws Exception {
         VariantCommandOptions.SampleVariantStatsCommandOptions cliOptions = variantCommandOptions.sampleVariantStatsCommandOptions;
-        ObjectMap params = new ObjectMap();
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, cliOptions.study);
         params.putAll(cliOptions.commonOptions.params);
 
-        Query query = null;
-        if (StringUtils.isNotEmpty(cliOptions.samplesAnnotation)) {
-            query = new Query();
-            query.append(SampleDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
-            query.append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.samplesAnnotation);
-        }
 
-        SampleVariantStatsAnalysis sampleVariantStatsAnalysis = new SampleVariantStatsAnalysis();
-        sampleVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
-        sampleVariantStatsAnalysis.setStudy(cliOptions.study)
-                .setIndexResults(cliOptions.index)
-                .setFamily(cliOptions.family)
-                .setSamplesQuery(query)
-                .setSampleNames(cliOptions.sample)
-                .start();
+        // Build variant query from cli options
+        Query variantQuery = new Query();
+        variantQuery.putAll(cliOptions.variantQuery);
+
+        SampleVariantStatsAnalysisParams toolParams = new SampleVariantStatsAnalysisParams(
+                cliOptions.sample,
+                cliOptions.family,
+                cliOptions.index,
+                cliOptions.samplesAnnotation,
+                variantQuery,
+                cliOptions.outdir);
+        toolRunner.execute(SampleVariantStatsAnalysis.class, toolParams, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void cohortStats() throws Exception {
@@ -857,15 +853,11 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         // Build variant query from cli options
         Query variantStatsQuery = new Query();
-        if (MapUtils.isNotEmpty(cliOptions.variantStatsQuery)) {
-            cliOptions.variantStatsQuery.entrySet().forEach(e -> variantStatsQuery.append(e.getKey(), e.getValue()));
-        }
+        variantStatsQuery.putAll(cliOptions.variantStatsQuery);
 
         // Build signature query from cli options
         Query signatureQuery = new Query();
-        if (MapUtils.isNotEmpty(cliOptions.signatureQuery)) {
-            cliOptions.signatureQuery.entrySet().forEach(e -> signatureQuery.append(e.getKey(), e.getValue()));
-        }
+        signatureQuery.putAll(cliOptions.signatureQuery);
 
         // Build list of genes from cli options
         List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)

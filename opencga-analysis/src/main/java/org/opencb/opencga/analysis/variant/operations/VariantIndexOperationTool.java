@@ -20,7 +20,6 @@ import io.jsonwebtoken.lang.Collections;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
@@ -49,10 +48,6 @@ public class VariantIndexOperationTool extends OperationTool {
 
     private VariantIndexParams indexParams = new VariantIndexParams();
     private String study;
-
-    public void setStudy(String study) {
-        params.put(ParamConstants.STUDY_PARAM, study);
-    }
 
     public void setFile(String file) {
         indexParams.setFile(file);

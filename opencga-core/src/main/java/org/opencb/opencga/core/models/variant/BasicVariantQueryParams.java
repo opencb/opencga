@@ -19,7 +19,7 @@ package org.opencb.opencga.core.models.variant;
 /**
  * Basic set of VariantQueryParams, containing only the most used ones.
  */
-public class BasicVariantQueryParams extends AbstractBasicVariantQueryParams {
+public class BasicVariantQueryParams extends AnnotationVariantQueryParams {
 
     private String project;
     private String study;

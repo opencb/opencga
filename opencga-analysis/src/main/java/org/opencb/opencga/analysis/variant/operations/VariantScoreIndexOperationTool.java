@@ -38,11 +38,6 @@ public class VariantScoreIndexOperationTool extends OperationTool {
     private VariantScoreIndexParams indexParams = new VariantScoreIndexParams();
     private URI scoreFile;
 
-    public VariantScoreIndexOperationTool setStudy(String study) {
-        params.put(STUDY_PARAM, study);
-        return this;
-    }
-
     public VariantScoreIndexOperationTool setInput(URI scoreFile) {
         indexParams.setInput(scoreFile.toString());
         return this;

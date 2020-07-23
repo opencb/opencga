@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 
@@ -28,10 +29,9 @@ import java.util.List;
 
 public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaToolExecutor {
 
-    protected String study;
-    protected List<String> sampleNames;
-    protected String individualId;
-    protected String familyId;
+    private Query variantQuery;
+    private String study;
+    private List<String> sampleNames;
     private Path outputFile;
 
     public SampleVariantStatsAnalysisExecutor() {
@@ -41,8 +41,6 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaToolExec
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleStatsExecutor{");
         sb.append("sampleNames=").append(sampleNames);
-        sb.append(", individualId='").append(individualId).append('\'');
-        sb.append(", familyId='").append(familyId).append('\'');
         sb.append(", executorParams=").append(getExecutorParams());
         sb.append(", outDir=").append(getOutDir());
         sb.append('}');
@@ -67,21 +65,12 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaToolExec
         return this;
     }
 
-    public String getIndividualId() {
-        return individualId;
+    public Query getVariantQuery() {
+        return variantQuery;
     }
 
-    public SampleVariantStatsAnalysisExecutor setIndividualId(String individualId) {
-        this.individualId = individualId;
-        return this;
-    }
-
-    public String getFamilyId() {
-        return familyId;
-    }
-
-    public SampleVariantStatsAnalysisExecutor setFamilyId(String familyId) {
-        this.familyId = familyId;
+    public SampleVariantStatsAnalysisExecutor setVariantQuery(Query variantQuery) {
+        this.variantQuery = variantQuery;
         return this;
     }
 

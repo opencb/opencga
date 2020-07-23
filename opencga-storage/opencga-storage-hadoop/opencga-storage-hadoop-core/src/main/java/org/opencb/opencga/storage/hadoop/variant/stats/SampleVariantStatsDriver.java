@@ -151,7 +151,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
     @Override
     protected Query getQuery() {
-        return new Query()
+        return super.getQuery()
                 .append(VariantQueryParam.STUDY.key(), getStudyId())
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
     }
