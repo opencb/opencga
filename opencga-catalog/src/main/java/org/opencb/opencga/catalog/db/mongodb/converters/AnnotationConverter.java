@@ -365,7 +365,12 @@ public class AnnotationConverter {
                     List<Object> values = new ArrayList<>();
                     List<Object> numberElements = new ArrayList<>();
 
-                    List annotationLevel1 = (List) annotation; // a.b[]
+                    List annotationLevel1;
+                    if (!(annotation instanceof List)) {
+                        annotationLevel1 = Collections.singletonList(annotation);
+                    } else {
+                        annotationLevel1 = (List) annotation; // a.b[]
+                    }
 
                     if (arrayLevel.get(0) + 1 == keys.size()) {
                         // The last element is an array of the primitive value
