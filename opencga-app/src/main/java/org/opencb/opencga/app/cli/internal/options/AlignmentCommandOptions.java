@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.app.cli.internal.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
@@ -460,6 +460,9 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--bam-file"}, description = "BAM file.")
         public String bamFile;
+
+        @DynamicParameter(names = {"--deeptools-params"}, description = "Deeptools parameters e.g.:. --deeptools-params bs=1 --deeptools-params of=bigwig")
+        public Map<String, String> deeptoolsParams = new HashMap<>();
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
