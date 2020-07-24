@@ -38,6 +38,9 @@ public class AuthenticationOrigin {
     // Possible keys of the options map
     public static final String USERS_SEARCH = "usersSearch";
     public static final String GROUPS_SEARCH = "groupsSearch";
+    public static final String FULLNAME_KEY = "fullNameKey";
+    public static final String DN_KEY = "dnKey";
+    public static final String DN_FORMAT = "dnFormat";
 
     public AuthenticationOrigin() {
         this("internal", AuthenticationType.OPENCGA.name(), "localhost", Collections.emptyMap());
