@@ -228,11 +228,13 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             } else {
                 ObjectMap finalParams = params;
                 progressLogger = new ProgressLogger("Annotated variants:", () -> {
+                    long count = countVariantsToAnnotate(query, finalParams);
                     long limit = iteratorQueryOptions.getLong(QueryOptions.LIMIT, 0);
                     if (limit > 0) {
-                        return limit;
+                        return Math.min(limit, count);
+                    } else {
+                        return count;
                     }
-                    return countVariantsToAnnotate(query, finalParams);
                 }, 200);
             }
             Task<Variant, VariantAnnotation> annotationTask = variantList -> {

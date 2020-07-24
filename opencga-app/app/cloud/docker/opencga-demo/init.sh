@@ -76,7 +76,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
         echo "Login user demo ...."
         ./opencga.sh users login -u demo <<< demo
         echo "Loading default template ...."
-        ./opencga.sh users template --file /opt/opencga/misc/demo/main.yml
+        ./opencga.sh users template --file /opt/opencga/misc/demo/main.yml --study corpasome
     fi
 else
     echo 'demo' | /opt/opencga/bin/opencga-admin.sh server rest --start &

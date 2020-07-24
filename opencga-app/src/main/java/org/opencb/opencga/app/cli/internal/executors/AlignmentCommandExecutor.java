@@ -195,6 +195,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         AlignmentCommandOptions.DeeptoolsCommandOptions cliOptions = alignmentCommandOptions.deeptoolsCommandOptions;
         ObjectMap params = new ObjectMap();
         params.putAll(cliOptions.commonOptions.params);
+        params.putAll(cliOptions.deeptoolsParams);
 
         DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
         deeptools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
