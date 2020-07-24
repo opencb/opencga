@@ -185,7 +185,7 @@ public class AlignmentWebService extends AnalysisWebService {
         deeptoolsParams.setBamFile(params.getFile());
 
         Map<String, String> bamCoverageParams = new HashMap<>();
-        bamCoverageParams.put("bs", String.valueOf(params.getWindowSize()));
+        bamCoverageParams.put("bs", String.valueOf(params.getWindowSize() < 1 ? 1 : params.getWindowSize()));
         bamCoverageParams.put("of", "bigwig");
         bamCoverageParams.put("minMappingQuality", "20");
         deeptoolsParams.setDeeptoolsParams(bamCoverageParams);
