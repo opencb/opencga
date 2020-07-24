@@ -130,10 +130,10 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         int studyId = metadataManager.getStudyId(study);
-        for (int i = 0; i < trios.size(); i += 3) {
-            Integer father = metadataManager.getSampleId(studyId, trios.get(i));
-            Integer mother = metadataManager.getSampleId(studyId, trios.get(i + 1));
-            Integer child = metadataManager.getSampleId(studyId, trios.get(i + 2));
+        for (List<String> trio : trios) {
+            Integer father = metadataManager.getSampleId(studyId, trio.get(0));
+            Integer mother = metadataManager.getSampleId(studyId, trio.get(1));
+            Integer child = metadataManager.getSampleId(studyId, trio.get(2));
             metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
                 sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
                 if (father != null && father > 0) {

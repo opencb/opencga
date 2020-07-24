@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
@@ -191,8 +192,14 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
 
     private Document fillIndividualData(Document individualDoc, Map<String, Document> individualMap, Map<String, Document> sampleMap) {
         if (individualDoc != null && individualDoc.getLong(UID) > 0) {
-            // Extract the individual id
-            String individualId = individualDoc.get(UID) + UID_VERSION_SEP + individualDoc.get(VERSION);
+            Integer version = individualDoc.getInteger(VERSION);
+            String individualId;
+
+            if (version != null) {
+                individualId = individualDoc.get(UID) + UID_VERSION_SEP + version;
+            } else {
+                individualId = String.valueOf(individualDoc.get(UID));
+            }
 
             if (individualMap.containsKey(individualId)) {
                 Document completeIndividualDocument = individualMap.get(individualId);
@@ -204,7 +211,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                     for (Document sampleDoc : samples) {
                         if (sampleDoc != null && sampleDoc.getLong(UID) > 0) {
                             // Extract sample id
-                            String sampleId = sampleDoc.get(UID) + UID_VERSION_SEP + sampleDoc.get(VERSION);
+                            String sampleId = String.valueOf(sampleDoc.get(UID));
                             if (sampleMap.containsKey(sampleId)) {
                                 finalSamples.add(sampleMap.get(sampleId));
                             }
@@ -287,20 +294,44 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         }
 
         // Extract list of uids and versions
+        List<Long> singleIndividualUids = new ArrayList<>(individualSet.size());
         List<Long> individualUids = new ArrayList<>(individualSet.size());
         List<Integer> individualUidVersions = new ArrayList<>(individualSet.size());
         for (String individualId : individualSet) {
             String[] split = individualId.split(UID_VERSION_SEP);
-            individualUids.add(Long.parseLong(split[0]));
-            individualUidVersions.add(Integer.parseInt(split[1]));
+            if (split.length == 2) {
+                individualUids.add(Long.parseLong(split[0]));
+                individualUidVersions.add(Integer.parseInt(split[1]));
+            } else {
+                singleIndividualUids.add(Long.parseLong(individualId));
+            }
+        }
+
+        // Fill individuals with version
+        List<Document> individualList = queryIndividuals(individualUids, individualUidVersions);
+        individualList.forEach(individual
+                -> individualMap.put(individual.get(UID) + UID_VERSION_SEP + individual.get(VERSION), individual));
+
+        // Fill individuals without version
+        individualList = queryIndividuals(singleIndividualUids, null);
+        individualList.forEach(individual -> individualMap.put(String.valueOf(individual.get(UID)), individual));
+
+        return individualMap;
+    }
+
+    private List<Document> queryIndividuals(List<Long> individualUids, List<Integer> individualUidVersions) {
+        List<Document> individualList = new LinkedList<>();
+
+        if (individualUids.isEmpty()) {
+            return individualList;
         }
 
         // Build query object
-        Query query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.UID.key(), individualUids)
-                .append(IndividualDBAdaptor.QueryParams.VERSION.key(), individualUidVersions);
+        Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(), individualUids);
+        if (individualUidVersions != null && !individualUidVersions.isEmpty()) {
+            query.put(IndividualDBAdaptor.QueryParams.VERSION.key(), individualUidVersions);
+        }
 
-        List<Document> individualList;
         QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key());
         try {
             if (user != null) {
@@ -311,13 +342,8 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
             logger.warn("Could not obtain the individuals associated to the clinical analyses: {}", e.getMessage(), e);
-            return individualMap;
         }
-
-        // Map each individual uid to the individual entry
-        individualList.forEach(individual
-                -> individualMap.put(individual.get(UID) + UID_VERSION_SEP + individual.get(VERSION), individual));
-        return individualMap;
+        return individualList;
     }
 
     private Map<String, Document> fetchSamples(Set<String> sampleSet) {
@@ -327,19 +353,11 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             return sampleMap;
         }
 
-        // Extract list of uids and versions
-        List<Long> sampleUids = new ArrayList<>(sampleSet.size());
-        List<Integer> sampleUidVersions = new ArrayList<>(sampleSet.size());
-        for (String sampleId : sampleSet) {
-            String[] split = sampleId.split(UID_VERSION_SEP);
-            sampleUids.add(Long.parseLong(split[0]));
-            sampleUidVersions.add(Integer.parseInt(split[1]));
-        }
+        // Extract list of uids
+        List<Long> sampleUids = sampleSet.stream().map(Long::parseLong).collect(Collectors.toList());
 
         // Build query object
-        Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.UID.key(), sampleUids)
-                .append(SampleDBAdaptor.QueryParams.VERSION.key(), sampleUidVersions);
+        Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleUids);
 
         List<Document> sampleList;
         QueryOptions options = new QueryOptions(NATIVE_QUERY, true);
@@ -356,7 +374,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         }
 
         // Map each sample uid to the sample entry
-        sampleList.forEach(sample -> sampleMap.put(sample.get(UID) + UID_VERSION_SEP + sample.get(VERSION), sample));
+        sampleList.forEach(sample -> sampleMap.put(String.valueOf(sample.get(UID)), sample));
         return sampleMap;
     }
 
@@ -405,14 +423,19 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     private void extractIndividualInfo(Document memberDocument, Set<String> individualSet, Set<String> sampleSet) {
         // Extract individual id
         if (memberDocument != null && memberDocument.getLong(UID) > 0) {
-            individualSet.add(memberDocument.get(UID) + UID_VERSION_SEP + memberDocument.get(VERSION));
+            Object version = memberDocument.get(VERSION);
+            if (version != null) {
+                individualSet.add(memberDocument.get(UID) + UID_VERSION_SEP + memberDocument.get(VERSION));
+            } else {
+                individualSet.add(String.valueOf(memberDocument.get(UID)));
+            }
 
             List<Document> samples = (List<Document>) memberDocument.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
             if (samples != null && !samples.isEmpty()) {
                 // Extract sample ids
                 for (Document sampleDocument : samples) {
                     if (sampleDocument != null && sampleDocument.getLong(UID) > 0) {
-                        sampleSet.add(sampleDocument.get(UID) + UID_VERSION_SEP + sampleDocument.get(VERSION));
+                        sampleSet.add(String.valueOf(sampleDocument.get(UID)));
                     }
                 }
             }

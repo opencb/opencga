@@ -16,17 +16,14 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
-import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -64,7 +61,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -76,7 +72,6 @@ import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -84,8 +79,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -1125,16 +1120,18 @@ public class VariantWebService extends AnalysisWebService {
 
         // Run variant stats if necessary
         if (runVariantStats) {
-            // TODO set query for sample variant stats
-//            AbstractBasicVariantQueryParams variantStatsQuery = params.getVariantStatsQuery();
-//            Map<String, Object> paramsMap = (variantStatsQuery == null) ? new HashMap<>() : variantStatsQuery.toParams();
-            Map<String, Object> paramsMap = new HashMap<>();
-            paramsMap.put(ParamConstants.STUDY_PARAM, study);
-            paramsMap.put("sample", params.getSample());
+            SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
+                    Collections.singletonList(params.getSample()),
+                    null,
+                    false,
+                    null,
+                    params.getVariantStatsQuery(),
+                    params.getOutdir()
+            );
 
             try {
-                DataResult<Job> jobResult = (DataResult<Job>) submitJobRaw(SampleVariantStatsAnalysis.ID, null, study, paramsMap, null,
-                        null, null, null);
+                DataResult<Job> jobResult = submitJobRaw(SampleVariantStatsAnalysis.ID, null, study,
+                        sampleVariantStatsParams, null, null, null, null);
                 Job sampleStatsJob = jobResult.first();
                 dependsOnList.add(sampleStatsJob.getId());
             } catch (CatalogException e) {
@@ -1144,12 +1141,10 @@ public class VariantWebService extends AnalysisWebService {
 
         // Run signature if necessary
         if (runSignature) {
-            Map<String, Object> paramsMap = new HashMap<>();
-            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
-            paramsMap.putIfAbsent("sample", params.getSample());
-
+            MutationalSignatureAnalysisParams mutationalSignatureParams =
+                    new MutationalSignatureAnalysisParams(params.getSample(), params.getOutdir());
             try {
-                DataResult<Job> jobResult = (DataResult<Job>) submitJobRaw(MutationalSignatureAnalysis.ID, null, study, paramsMap,
+                DataResult<Job> jobResult = submitJobRaw(MutationalSignatureAnalysis.ID, null, study, mutationalSignatureParams,
                         null, null, null, null);
                 Job signatureJob = jobResult.first();
                 dependsOnList.add(signatureJob.getId());

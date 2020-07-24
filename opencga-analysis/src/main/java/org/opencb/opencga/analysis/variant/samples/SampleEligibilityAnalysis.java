@@ -16,12 +16,11 @@
 
 package org.opencb.opencga.analysis.variant.samples;
 
-import com.fasterxml.jackson.databind.SequenceWriter;
-import org.apache.commons.collections.CollectionUtils;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
@@ -34,7 +33,6 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -54,6 +52,7 @@ import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
@@ -172,59 +171,14 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
 
     @Override
     protected void run() throws Exception {
-        List<String> samplesResult = new ArrayList<>();
+        Set<String> samplesResult = new HashSet<>();
         step(() -> {
-            List<String> inputSamples = new ArrayList<>(getVariantStorageManager().getIndexedSamples(studyFqn, getToken()));
-            Query baseQuery = new Query();
-            baseQuery.put(VariantQueryParam.STUDY.key(), studyFqn);
-
-            samplesResult.addAll(resolveNode(treeQuery.getRoot(), baseQuery, inputSamples));
+            samplesResult.addAll(resolve(treeQuery));
 
             addAttribute("numSamples", samplesResult.size());
             logger.info("Found {} samples", samplesResult.size());
 
-            try (SequenceWriter sequenceWriter = JacksonUtils.getDefaultObjectMapper()
-                    .writerFor(Individual.class)
-                    .writeValues(getOutDir().resolve("individuals.json").toFile())) {
-                // TODO: Iterator should work here
-//                Iterator<Individual> it = getCatalogManager().getIndividualManager()
-//                        .iterator(studyFqn,
-//                                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesResult),
-//                                new QueryOptions(), getToken());
-                Iterator<Individual> it = getCatalogManager().getIndividualManager()
-                        .search(studyFqn,
-                                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesResult),
-                                new QueryOptions(), getToken()).getResults().iterator();
-                while (it.hasNext()) {
-                    Individual individual = it.next();
-                    sequenceWriter.write(individual);
-                }
-            }
-            try (PrintStream out = new PrintStream(getOutDir().resolve("samples.tsv").toFile())) {
-                out.println("##num_samples=" + samplesResult.size());
-                out.println("#SAMPLE\tINDIVIDUAL\tPHENOTYPES\tDISOREDERS");
-                for (String sample : samplesResult) {
-                    Individual individual = getCatalogManager().getIndividualManager().search(studyFqn,
-                            new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sample), new QueryOptions(), getToken()).first();
-                    String individualId;
-                    String phenotypes;
-                    String disorders;
-                    if (individual == null) {
-                        individualId = ".";
-                        phenotypes = ".";
-                        disorders = ".";
-                    } else {
-                        individualId = individual.getId();
-                        phenotypes = CollectionUtils.isNotEmpty(individual.getPhenotypes())
-                                ? individual.getPhenotypes().stream().map(Phenotype::getId).collect(Collectors.joining(","))
-                                : ".";
-                        disorders = CollectionUtils.isNotEmpty(individual.getDisorders())
-                                ? individual.getDisorders().stream().map(Disorder::getId).collect(Collectors.joining(","))
-                                : ".";
-                    }
-                    out.println(sample + "\t" + individualId + "\t" + phenotypes + "\t" + disorders);
-                }
-            }
+            printResult(samplesResult);
         });
 
         if (analysisParams.isIndex()) {
@@ -236,6 +190,71 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                 getCatalogManager().getCohortManager().create(studyFqn, cohort, new QueryOptions(), getToken());
             });
         }
+    }
+
+    private void printResult(Set<String> samplesResult) throws CatalogException, IOException {
+        SampleEligibilityAnalysisResult analysisResult = new SampleEligibilityAnalysisResult()
+                .setDate(TimeUtils.getTime())
+                .setQuery(analysisParams.getQuery())
+                .setQueryPlan(treeQuery.getRoot())
+                .setStudy(getStudyFqn())
+                .setNumSamples(samplesResult.size())
+                .setIndividuals(new ArrayList<>(samplesResult.size()));
+
+        if (!samplesResult.isEmpty()) {
+          // TODO: Iterator should work here
+//                Iterator<Individual> it = getCatalogManager().getIndividualManager()
+//                        .iterator(studyFqn,
+//                                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesResult),
+//                                new QueryOptions(), getToken());
+            Iterator<Individual> it = getCatalogManager().getIndividualManager()
+                    .search(studyFqn,
+                            new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesResult),
+                            new QueryOptions(), getToken()).getResults().iterator();
+            while (it.hasNext()) {
+                Individual individual = it.next();
+                List<Sample> samples = individual.getSamples().stream()
+                        .filter(s -> samplesResult.contains(s.getId()))
+                        .collect(Collectors.toList());
+                for (Sample sample : samples) {
+                    analysisResult.getIndividuals().add(new SampleEligibilityAnalysisResult.ElectedIndividual()
+                            .setName(individual.getName())
+                            .setId(individual.getId())
+                            .setSex(individual.getSex())
+                            .setDisorders(getIds(individual.getDisorders()))
+                            .setPhenotypes(getIds(individual.getPhenotypes()))
+                            .setSample(new SampleEligibilityAnalysisResult.SampleSummary()
+                                    .setId(sample.getId())
+                                    .setCreationDate(sample.getCreationDate())
+                                    .setSomatic(sample.isSomatic()))
+                    );
+                }
+            }
+        }
+        String fileNamePrefix = "sampleEligibilityAnalysisResult";
+        File resultFile = getOutDir().resolve(fileNamePrefix + ".json").toFile();
+        new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL).writeValue(resultFile, analysisResult);
+
+        try (PrintStream out = new PrintStream(getOutDir().resolve(fileNamePrefix + ".tsv").toFile())) {
+            out.println("##study=" + analysisResult.getStudy());
+            out.println("##query=" + analysisResult.getQuery());
+            out.println("##num_samples=" + samplesResult.size());
+            out.println("##date=" + analysisResult.getDate());
+            out.println("#INDIVIDUAL\tSAMPLE\tPHENOTYPES\tDISOREDERS");
+            for (SampleEligibilityAnalysisResult.ElectedIndividual individual : analysisResult.getIndividuals()) {
+                String individualId = individual.getId();
+                String sampleId = individual.getSample().getId();
+                String phenotypes = String.join(",", individual.getPhenotypes());
+                String disorders = String.join(",", individual.getDisorders());
+                out.println(individualId + "\t" + sampleId + "\t" + phenotypes + "\t" + disorders);
+            }
+        }
+    }
+
+    private List<String> getIds(List<? extends OntologyTermAnnotation> elements) {
+        return elements == null
+                ? Collections.emptyList()
+                : elements.stream().map(OntologyTermAnnotation::getId).collect(Collectors.toList());
     }
 
     // Return a value that will depend on the likely of the node to return a large or small number of samples
@@ -280,6 +299,15 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                 throw new IllegalArgumentException("Unknown node type " + node.getType());
         }
 
+    }
+
+    private List<String> resolve(TreeQuery treeQuery)
+            throws CatalogException, StorageEngineException, IOException {
+        List<String> allSamples = new ArrayList<>(getVariantStorageManager().getIndexedSamples(studyFqn, getToken()));
+        Query baseQuery = new Query();
+        baseQuery.put(VariantQueryParam.STUDY.key(), studyFqn);
+
+        return resolveNode(treeQuery.getRoot(), baseQuery, allSamples);
     }
 
     private List<String> resolveNode(TreeQuery.Node node, Query baseQuery, List<String> includeSamples)

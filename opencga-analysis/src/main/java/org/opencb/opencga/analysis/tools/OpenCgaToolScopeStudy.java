@@ -21,6 +21,10 @@ import org.opencb.opencga.core.api.ParamConstants;
 
 public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
 
+    public void setStudy(String study) {
+        getParams().put(ParamConstants.STUDY_PARAM, study);
+    }
+
     protected final String getStudyFqn() throws CatalogException {
         String userId = getCatalogManager().getUserManager().getUserId(getToken());
         return getCatalogManager().getStudyManager().resolveId(getParams().getString(ParamConstants.STUDY_PARAM), userId).getFqn();

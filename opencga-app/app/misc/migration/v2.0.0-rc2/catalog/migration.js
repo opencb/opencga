@@ -76,21 +76,22 @@ function _getSampleIdReferences(sample) {
     }
     return {
         'uid': sample['uid'],
-        'id': sample['id'],
-        'version': sample['version']
+        'id': sample['id']
     }
 }
 
-function _getMemberAndSampleIdReferences(member) {
+function _getMemberAndSampleIdReferences(member, keepVersion) {
     if (isUndefinedOrNull(member)) {
         return member;
     }
     var newMember = {
         'uid': member['uid'],
         'id': member['id'],
-        'version': member['version'],
         'samples': member['samples']
     };
+    if (keepVersion) {
+        newMember['version'] = NumberInt(member['version']);
+    }
 
     if (isNotEmptyArray(member.samples)) {
         var samples = [];
@@ -110,13 +111,13 @@ migrateCollection("clinical", {}, {proband: 1, family: 1}, function(bulk, doc) {
         var family = {
             'uid': doc.family['uid'],
             'id': doc.family['id'],
-            'version': doc.family['version'],
+            'version': NumberInt(doc.family['version']),
             'members': doc.family['members']
         };
         if (isNotEmptyArray(doc.family.members)) {
             var members = [];
             for (var member of doc.family.members) {
-                members.push(_getMemberAndSampleIdReferences(member));
+                members.push(_getMemberAndSampleIdReferences(member, false));
             }
             family['members'] = members;
         }
@@ -125,7 +126,7 @@ migrateCollection("clinical", {}, {proband: 1, family: 1}, function(bulk, doc) {
     }
 
     if (isNotUndefinedOrNull(doc.proband)) {
-        toset['proband'] = _getMemberAndSampleIdReferences(doc.proband);
+        toset['proband'] = _getMemberAndSampleIdReferences(doc.proband, true);
     }
 
     bulk.find({"_id": doc._id}).updateOne({"$set": toset});
@@ -151,5 +152,35 @@ migrateCollection("sample", {}, {}, function(bulk, doc) {
             'fileIds': sampleFileMap[sampleUid]
         };
         bulk.find({"_id": doc._id}).updateOne({"$set": set});
+    }
+});
+
+// Add new Variant permission
+migrateCollection("study", {}, {}, function(bulk, doc) {
+    if (isNotEmptyArray(doc._acl)) {
+        var acls = new Set();
+        for (var acl of doc._acl) {
+            if (acl.endsWith("VIEW_SAMPLES")) {
+                var member = acl.split("__VIEW_SAMPLES")[0];
+                acls.add(member + "__VIEW_AGGREGATED_VARIANTS");
+                acls.add(member + "__VIEW_SAMPLE_VARIANTS");
+            }
+            acls.add(acl);
+        }
+        bulk.find({"_id": doc._id}).updateOne({"$set": {"_acl": Array.from(acls)}});
+    }
+});
+
+migrateCollection("sample", {}, {}, function(bulk, doc) {
+    if (isNotEmptyArray(doc._acl)) {
+        var acls = new Set();
+        for (var acl of doc._acl) {
+            if (acl.endsWith("__VIEW")) {
+                var member = acl.split("__VIEW")[0];
+                acls.add(member + "__VIEW_VARIANTS");
+            }
+            acls.add(acl);
+        }
+        bulk.find({"_id": doc._id}).updateOne({"$set": {"_acl": Array.from(acls)}});
     }
 });

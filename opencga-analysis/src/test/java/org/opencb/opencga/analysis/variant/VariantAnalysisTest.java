@@ -44,6 +44,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -53,9 +54,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
-import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
-import org.opencb.opencga.core.models.variant.VariantExportParams;
+import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -314,17 +313,16 @@ public class VariantAnalysisTest {
 
     @Test
     public void testSampleStats() throws Exception {
-
-        ObjectMap executorParams = new ObjectMap();
-        SampleVariantStatsAnalysis analysis = new SampleVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_sample_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
-        analysis.setSampleNames(samples)
-                .setStudy(STUDY)
-                .setIndexResults(true);
-        checkExecutionResult(analysis.start(), storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
+        SampleVariantStatsAnalysisParams params = new SampleVariantStatsAnalysisParams()
+                .setSample(samples)
+                .setVariantQuery(new AnnotationVariantQueryParams().setRegion("1,2"))
+                .setIndex(true);
+        ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, token);
+
+        checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
         for (String sample : samples) {
             AnnotationSet annotationSet = catalogManager.getSampleManager().get(STUDY, sample, null, token).first().getAnnotationSets().get(0);
@@ -332,7 +330,7 @@ public class VariantAnalysisTest {
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(annotationSet));
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sampleVariantStats));
 
-//            Assert.assertEquals(DummySampleVariantStatsAnalysisExecutor.getSampleVariantStats(sample), sampleVariantStats);
+            Assert.assertEquals(new HashSet<>(Arrays.asList("1", "2")), sampleVariantStats.getChromosomeCount().keySet());
         }
     }
 

@@ -1052,19 +1052,26 @@ public class VariantSqlQueryParser {
             List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(defaultStudyMetadata);
 
             StringBuilder sb = new StringBuilder();
-            int i = -1;
+            boolean firstElement = true;
             for (Map.Entry<String, String> entry : infoValuesMap.entrySet()) {
-                i++;
+                if (firstElement) {
+                    firstElement = false;
+                } else {
+                    sb.append(infoOperation.toString());
+                }
 
                 String infoValues = entry.getValue();
                 Pair<Integer, Integer> fileIdPair = metadataManager
                         .getFileIdPair(entry.getKey(), false, defaultStudyMetadata);
                 Pair<QueryOperation, List<String>> infoPair = splitValue(infoValues);
+                boolean firstSubElement = true;
                 for (String infoValue : infoPair.getValue()) {
-
-                    if (sb.length() > 0) {
-                        sb.append(infoOperation.toString());
+                    if (firstSubElement) {
+                        firstSubElement = false;
+                    } else {
+                        sb.append(infoPair.getKey().toString());
                     }
+
                     sb.append(" ( ");
 
                     String[] strings = splitOperator(infoValue);

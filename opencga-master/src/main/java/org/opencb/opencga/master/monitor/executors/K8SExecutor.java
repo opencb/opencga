@@ -49,7 +49,26 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_NODE_SELECTOR = "k8s.nodeSelector";
     public static final String K8S_TOLERATIONS = "k8s.tolerations";
     public static final EnvVar DOCKER_HOST = new EnvVar("DOCKER_HOST", "tcp://localhost:2375", null);
-    public static final String DOCKER_GRAPH_STORAGE = "docker-graph-storage";
+
+    private static final Volume DOCKER_GRAPH_STORAGE_VOLUME = new VolumeBuilder()
+            .withName("docker-graph-storage")
+            .withEmptyDir(new EmptyDirVolumeSource())
+            .build();
+    private static final VolumeMount DOCKER_GRAPH_VOLUMEMOUNT = new VolumeMountBuilder()
+            .withName("docker-graph-storage")
+            .withMountPath("/var/lib/docker")
+            .build();
+
+    // Use tmp-pod volume to communicate the dind container when the main job container has finished.
+    // Otherwise, this container would be running forever
+    private static final Volume TMP_POD_VOLUME = new VolumeBuilder()
+            .withName("tmp-pod")
+            .withEmptyDir(new EmptyDirVolumeSource())
+            .build();
+    private static final VolumeMount TMP_POD_VOLUMEMOUNT = new VolumeMountBuilder()
+            .withName("tmp-pod")
+            .withMountPath("/usr/share/pod")
+            .build();
 
     private final String k8sClusterMaster;
     private final String namespace;
@@ -100,10 +119,11 @@ public class K8SExecutor implements BatchExecutor {
                 .withSecurityContext(new SecurityContextBuilder().withPrivileged(true).build())
                 .withEnv(new EnvVar("DOCKER_TLS_CERTDIR", "", null))
 //                .withResources(resources) // TODO: Should we add resources here?
-                .withVolumeMounts(new VolumeMountBuilder()
-                        .withName(DOCKER_GRAPH_STORAGE)
-                        .withMountPath("/var/lib/docker")
-                        .build())
+                .withCommand("/bin/sh", "-c")
+                .addToArgs("dockerd-entrypoint.sh & while ! test -f /usr/share/pod/done; do sleep 5; done; exit 0")
+                .addToVolumeMounts(DOCKER_GRAPH_VOLUMEMOUNT)
+                .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
+                .addAllToVolumeMounts(volumeMounts)
                 .build();
 
         jobsWatcher = getKubernetesClient().batch().jobs().watch(new Watcher<Job>() {
@@ -171,19 +191,23 @@ public class K8SExecutor implements BatchExecutor {
                                 .withSpec(new PodSpecBuilder()
                                         .addToContainers(dockerDaemonSidecar)
                                         .addToContainers(new ContainerBuilder()
-                                                .withName(jobName)
+                                                .withName("opencga")
                                                 .withImage(imageName)
                                                 .withImagePullPolicy("Always")
                                                 .withResources(resources)
                                                 .addToEnv(DOCKER_HOST)
-                                                .withCommand("/bin/sh")
-                                                .withArgs("-c", getCommandLine(commandLine, stdout, stderr))
+                                                .withCommand("/bin/sh", "-c")
+                                                .withArgs("trap 'touch /usr/share/pod/done' EXIT ; "
+                                                        + getCommandLine(commandLine, stdout, stderr))
                                                 .withVolumeMounts(volumeMounts)
+                                                .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
                                                 .build())
                                         .withNodeSelector(nodeSelector)
                                         .withTolerations(tolerations)
                                         .withRestartPolicy("Never")
-                                        .withVolumes(volumes)
+                                        .addAllToVolumes(volumes)
+                                        .addToVolumes(DOCKER_GRAPH_STORAGE_VOLUME)
+                                        .addToVolumes(TMP_POD_VOLUME)
                                         .build())
                                 .build())
                         .build()
@@ -366,10 +390,6 @@ public class K8SExecutor implements BatchExecutor {
             ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
             volumes.add(mapper.convertValue(o, Volume.class));
         }
-        volumes.add(new VolumeBuilder()
-                .withName(DOCKER_GRAPH_STORAGE)
-                .withEmptyDir(new EmptyDirVolumeSource())
-                .build());
         return volumes;
     }
 

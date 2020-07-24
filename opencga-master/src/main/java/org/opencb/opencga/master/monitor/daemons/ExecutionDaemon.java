@@ -73,6 +73,7 @@ import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -125,6 +126,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     public static final String OUTDIR_PARAM = "outdir";
     public static final String JOB_ID_PARAM = "job-id";
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
+    public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
@@ -319,8 +321,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         switch (jobStatus.getName()) {
             case Enums.ExecutionStatus.RUNNING:
-                ExecutionResult result = readAnalysisResult(job);
+                ExecutionResult result = readExecutionResult(job);
                 if (result != null) {
+                    if (result.getExecutor() != null
+                            && result.getExecutor().getParams() != null
+                            && result.getExecutor().getParams().containsKey(ParamConstants.TOKEN)) {
+                        result.getExecutor().getParams().put(ParamConstants.TOKEN, REDACTED_TOKEN);
+                    }
                     // Update the result of the job
                     PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(result);
                     try {
@@ -530,7 +537,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         // Create cli
         String commandLine = buildCli(internalCli, job.getTool().getId(), params);
         String authenticatedCommandLine = commandLine + " --token " + userToken;
-        String shadedCommandLine = commandLine + " --token xxxxxxxxxxxxxxxxxxxxx";
+        String shadedCommandLine = commandLine + " --token " + REDACTED_TOKEN;
 
         updateParams.setCommandLine(shadedCommandLine);
 
@@ -767,11 +774,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private Enums.ExecutionStatus getCurrentStatus(Job job) {
 
-        Path resultJson = getAnalysisResultPath(job);
+        Path resultJson = getExecutionResultPath(job);
 
         // Check if analysis result file is there
         if (resultJson != null && Files.exists(resultJson)) {
-            ExecutionResult execution = readAnalysisResult(resultJson);
+            ExecutionResult execution = readExecutionResult(resultJson);
             if (execution != null) {
                 long lastStatusUpdate = execution.getStatus().getDate().getTime();
                 long fileAgeInMillis = Instant.now().toEpochMilli() - lastStatusUpdate;
@@ -812,7 +819,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     }
 
-    private Path getAnalysisResultPath(Job job) {
+    private Path getExecutionResultPath(Job job) {
         Path resultJson = null;
         try (Stream<Path> stream = Files.list(Paths.get(job.getOutDir().getUri()))) {
             resultJson = stream
@@ -829,15 +836,15 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return resultJson;
     }
 
-    private ExecutionResult readAnalysisResult(Job job) {
-        Path resultJson = getAnalysisResultPath(job);
+    private ExecutionResult readExecutionResult(Job job) {
+        Path resultJson = getExecutionResultPath(job);
         if (resultJson != null) {
-            return readAnalysisResult(resultJson);
+            return readExecutionResult(resultJson);
         }
         return null;
     }
 
-    private ExecutionResult readAnalysisResult(Path file) {
+    private ExecutionResult readExecutionResult(Path file) {
         if (file == null) {
             return null;
         }
@@ -874,13 +881,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("[{}] - Processing finished job with status {}", job.getId(), status.getName());
 
         Path outDirUri = Paths.get(job.getOutDir().getUri());
-        Path analysisResultPath = getAnalysisResultPath(job);
+        Path analysisResultPath = getExecutionResultPath(job);
 
         logger.info("[{}] - Registering job results from '{}'", job.getId(), outDirUri);
 
         ExecutionResult execution;
         if (analysisResultPath != null) {
-            execution = readAnalysisResult(analysisResultPath);
+            execution = readExecutionResult(analysisResultPath);
             if (execution != null) {
                 PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
                 try {

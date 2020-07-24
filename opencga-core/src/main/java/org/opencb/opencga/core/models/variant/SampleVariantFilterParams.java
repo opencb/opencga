@@ -19,7 +19,7 @@ package org.opencb.opencga.core.models.variant;
 import java.util.Arrays;
 import java.util.List;
 
-public class SampleVariantFilterParams extends AbstractBasicVariantQueryParams {
+public class SampleVariantFilterParams extends AnnotationVariantQueryParams {
 
     public static final String DESCRIPTION = "Sample variant filter params";
     private List<String> genotypes = Arrays.asList("0/1", "1/1");

@@ -25,22 +25,22 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
-import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
-import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.exceptions.ToolExecutorException;
 
 import java.util.List;
 
 @ToolExecutor(id="opencga-local", tool = SampleVariantStatsAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
-public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements VariantStorageToolExecutor {
+public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements StorageToolExecutor {
 
     @Override
     public void run() throws ToolException {
@@ -49,7 +49,7 @@ public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsA
 
         List<String> sampleNames = getSampleNames();
 
-        Query query = new Query()
+        Query query = new Query(getVariantQuery())
                 .append(VariantQueryParam.STUDY.key(), getStudy())
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleNames);
 

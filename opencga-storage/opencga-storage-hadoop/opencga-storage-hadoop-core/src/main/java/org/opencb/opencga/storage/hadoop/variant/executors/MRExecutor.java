@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.util.Tool;
-import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -92,7 +91,7 @@ public abstract class MRExecutor {
         }
 
         try {
-            return run(executable, Commandline.toString(args));
+            return run(executable, args);
         } catch (Exception e) {
             if (e.getMessage().contains("Argument list too long")) {
                 logger.error("Error executing: " + executable + ' ' + Arrays.toString(args));
@@ -101,7 +100,7 @@ public abstract class MRExecutor {
         }
     }
 
-    public abstract int run(String executable, String args) throws StorageEngineException;
+    public abstract int run(String executable, String[] args) throws StorageEngineException;
 
     protected ObjectMap getOptions() {
         return options;

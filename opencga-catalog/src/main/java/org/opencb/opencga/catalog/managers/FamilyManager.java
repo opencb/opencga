@@ -36,13 +36,16 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
@@ -248,16 +251,26 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             validateNewAnnotationSets(study.getVariableSets(), family.getAnnotationSets());
 
+            boolean membersToCreate = family.getMembers() != null && family.getMembers().size() > 0;
+
             autoCompleteFamilyMembers(study, family, members, userId);
             validateFamily(family);
             validatePhenotypes(family);
             validateDisorders(family);
+            if (!membersToCreate) {
+                calculateRoles(study, family, userId);
+            }
 
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
 
             familyDBAdaptor.insert(study.getUid(), family, study.getVariableSets(), options);
             OpenCGAResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), options);
+            if (membersToCreate) {
+                calculateRoles(study, queryResult.first(), userId);
+                ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.ROLES.key(), queryResult.first().getRoles());
+                familyDBAdaptor.update(family.getUid(), params, QueryOptions.empty());
+            }
 
             auditManager.auditCreate(userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -676,7 +689,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = familyDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_FAMILY_IDS, userId);
+            iterator = familyDBAdaptor.iterator(study.getUid(), finalQuery, QueryOptions.empty(), userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -848,7 +861,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
+        // If there is nothing to update, we fail
+        if (parameters.isEmpty() && !options.getBoolean(Constants.REFRESH, false)
+                && !options.getBoolean(Constants.INCREMENT_VERSION, false)
+                && !options.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, false)) {
             ParamUtils.checkUpdateParametersMap(parameters);
         }
 
@@ -879,10 +895,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             ParamUtils.checkAlias(updateParams.getId(), FamilyDBAdaptor.QueryParams.ID.key());
         }
 
-        if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getPhenotypes())
-                || ListUtils.isNotEmpty(updateParams.getMembers()) || ListUtils.isNotEmpty(updateParams.getDisorders()))) {
+        boolean updateRoles = options.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM);
+
+        if (updateRoles || (updateParams != null && (ListUtils.isNotEmpty(updateParams.getPhenotypes())
+                || ListUtils.isNotEmpty(updateParams.getMembers()) || ListUtils.isNotEmpty(updateParams.getDisorders())))) {
             Family tmpFamily = new Family();
-            if (ListUtils.isNotEmpty(updateParams.getMembers())) {
+            if (updateParams != null && ListUtils.isNotEmpty(updateParams.getMembers())) {
                 // We obtain the members from catalog
                 autoCompleteFamilyMembers(study, tmpFamily, updateParams.getMembers(), userId);
             } else {
@@ -890,15 +908,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 tmpFamily.setMembers(family.getMembers());
             }
 
-            if (ListUtils.isEmpty(updateParams.getPhenotypes())) {
-                tmpFamily.setPhenotypes(family.getPhenotypes());
-            } else {
+            if (updateParams != null && ListUtils.isNotEmpty(updateParams.getPhenotypes())) {
                 tmpFamily.setPhenotypes(updateParams.getPhenotypes());
-            }
-            if (ListUtils.isEmpty(updateParams.getDisorders())) {
-                tmpFamily.setDisorders(family.getDisorders());
             } else {
+                tmpFamily.setPhenotypes(family.getPhenotypes());
+            }
+            if (updateParams != null && ListUtils.isNotEmpty(updateParams.getDisorders())) {
                 tmpFamily.setDisorders(updateParams.getDisorders());
+            } else {
+                tmpFamily.setDisorders(family.getDisorders());
             }
 
             validateFamily(tmpFamily);
@@ -916,6 +934,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             if (parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
                 parameters.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
+
+                // Recalculate roles
+                calculateRoles(study, tmpFamily, userId);
+                parameters.put(FamilyDBAdaptor.QueryParams.ROLES.key(), tmpFamily.getRoles());
+            } else if (updateRoles) {
+                // Recalculate roles
+                calculateRoles(study, tmpFamily, userId);
+                parameters.put(FamilyDBAdaptor.QueryParams.ROLES.key(), tmpFamily.getRoles());
             }
             if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())) {
                 parameters.put(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(),
@@ -1448,6 +1474,33 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 throw new CatalogException("Some of the disorders are not present in any member of the family");
             }
         }
+    }
+
+
+    private void calculateRoles(Study study, Family family, String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (family.getMembers() == null || family.getMembers().size() <= 1) {
+            family.setRoles(Collections.emptyMap());
+            // Nothing to calculate
+            return;
+        }
+
+        Set<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+        Map<String, Map<String, ClinicalAnalysis.FamiliarRelationship>> roles = new HashMap<>();
+        for (Individual member : family.getMembers()) {
+            List<Individual> individualList = catalogManager.getIndividualManager().calculateRelationship(study, member, 2, options, user);
+            Map<String, ClinicalAnalysis.FamiliarRelationship> memberRelation = new HashMap<>();
+            for (Individual individual : individualList) {
+                if (individualIds.contains(individual.getId())) {
+                    memberRelation.put(individual.getId(), IndividualManager.extractIndividualRelation(individual));
+                }
+            }
+            roles.put(member.getId(), memberRelation);
+        }
+
+        family.setRoles(roles);
     }
 
 }

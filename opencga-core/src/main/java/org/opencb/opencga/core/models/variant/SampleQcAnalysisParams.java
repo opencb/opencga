@@ -26,8 +26,8 @@ public class SampleQcAnalysisParams extends ToolParams {
     private String dictFile;
     private String baitFile;
     private String variantStatsId;
-    private String variantStatsDecription;
-    private AbstractBasicVariantQueryParams variantStatsQuery;
+    private String variantStatsDescription;
+    private AnnotationVariantQueryParams variantStatsQuery;
     private String signatureId;
     private SampleQcSignatureQueryParams signatureQuery;
     private List<String> genesForCoverageStats;
@@ -37,14 +37,14 @@ public class SampleQcAnalysisParams extends ToolParams {
     public SampleQcAnalysisParams() {
     }
 
-    public SampleQcAnalysisParams(String sample, String dictFile, String baitFile, String variantStatsId, String variantStatsDecription,
-                                  AbstractBasicVariantQueryParams variantStatsQuery, String signatureId,
+    public SampleQcAnalysisParams(String sample, String dictFile, String baitFile, String variantStatsId, String variantStatsDescription,
+                                  AnnotationVariantQueryParams variantStatsQuery, String signatureId,
                                   SampleQcSignatureQueryParams signatureQuery, List<String> genesForCoverageStats, String outdir) {
         this.sample = sample;
         this.dictFile = dictFile;
         this.baitFile = baitFile;
         this.variantStatsId = variantStatsId;
-        this.variantStatsDecription = variantStatsDecription;
+        this.variantStatsDescription = variantStatsDescription;
         this.variantStatsQuery = variantStatsQuery;
         this.signatureId = signatureId;
         this.signatureQuery = signatureQuery;
@@ -59,7 +59,7 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", dictFile='").append(dictFile).append('\'');
         sb.append(", baitFile='").append(baitFile).append('\'');
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
-        sb.append(", variantStatsDecription='").append(variantStatsDecription).append('\'');
+        sb.append(", variantStatsDecription='").append(variantStatsDescription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
         sb.append(", signatureId='").append(signatureId).append('\'');
         sb.append(", signatureQuery=").append(signatureQuery);
@@ -105,20 +105,20 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getVariantStatsDecription() {
-        return variantStatsDecription;
+    public String getVariantStatsDescription() {
+        return variantStatsDescription;
     }
 
-    public SampleQcAnalysisParams setVariantStatsDecription(String variantStatsDecription) {
-        this.variantStatsDecription = variantStatsDecription;
+    public SampleQcAnalysisParams setVariantStatsDescription(String variantStatsDescription) {
+        this.variantStatsDescription = variantStatsDescription;
         return this;
     }
 
-    public AbstractBasicVariantQueryParams getVariantStatsQuery() {
+    public AnnotationVariantQueryParams getVariantStatsQuery() {
         return variantStatsQuery;
     }
 
-    public SampleQcAnalysisParams setVariantStatsQuery(AbstractBasicVariantQueryParams variantStatsQuery) {
+    public SampleQcAnalysisParams setVariantStatsQuery(AnnotationVariantQueryParams variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
         return this;
     }

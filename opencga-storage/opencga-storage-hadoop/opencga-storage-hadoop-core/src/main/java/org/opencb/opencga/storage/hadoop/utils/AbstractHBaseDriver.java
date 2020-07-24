@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_EXECUTOR_SSH_PASSWORD;
+
 /**
  * Created on 24/04/18.
  *
@@ -348,7 +350,11 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             } else {
                 String value = options.getString(key);
                 if (StringUtils.isNotEmpty(key) && StringUtils.isNotEmpty(value)) {
-                    args.add(keyPrefix + key);
+                    String finalKey = keyPrefix + key;
+                    if (finalKey.equals(MR_EXECUTOR_SSH_PASSWORD.key())) {
+                        continue;
+                    }
+                    args.add(finalKey);
                     args.add(value);
                 }
             }

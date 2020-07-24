@@ -39,6 +39,7 @@ public class SampleVariantStatsHBaseMapReduceAnalysisExecutor
             }
 
             ObjectMap params = new ObjectMap(engine.getOptions())
+                    .appendAll(getVariantQuery())
                     .append(SampleVariantStatsDriver.SAMPLES, sampleNames)
                     .append(SampleVariantStatsDriver.OUTPUT, getOutputFile().toAbsolutePath().toUri());
             engine.getMRExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(

@@ -46,6 +46,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
@@ -393,6 +394,9 @@ public class OpenCGAWSServer {
                 case ParamConstants.FLATTEN_ANNOTATIONS:
                     queryOptions.put(ParamConstants.FLATTEN_ANNOTATIONS, Boolean.parseBoolean(value));
                     break;
+                case ParamConstants.FAMILY_UPDATE_ROLES_PARAM:
+                    queryOptions.put(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, Boolean.parseBoolean(value));
+                    break;
                 case ParamConstants.OTHER_STUDIES_FLAG:
                     queryOptions.put(ParamConstants.OTHER_STUDIES_FLAG, Boolean.parseBoolean(value));
                     break;
@@ -729,17 +733,21 @@ public class OpenCGAWSServer {
 
     public Response submitJob(String toolId, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
                               String jobDependsOnStr, String jobTagsStr) {
-        return run(() -> {
-            Map<String, Object> paramsMap = bodyParams.toParams();
-            if (StringUtils.isNotEmpty(study)) {
-                paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
-            }
-            return submitJobRaw(toolId, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
-        });
+        return run(() -> submitJobRaw(toolId, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr));
     }
 
-    protected DataResult<?> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap,
+    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, ToolParams bodyParams,
                                          String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+            throws CatalogException {
+        Map<String, Object> paramsMap = bodyParams.toParams();
+        if (StringUtils.isNotEmpty(study)) {
+            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+        }
+        return submitJobRaw(toolId, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+    }
+
+    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap,
+                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
             throws CatalogException {
 
         if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {

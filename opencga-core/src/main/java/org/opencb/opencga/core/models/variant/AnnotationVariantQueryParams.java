@@ -3,7 +3,7 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.tools.ToolParams;
 
-public class AbstractBasicVariantQueryParams extends ToolParams {
+public class AnnotationVariantQueryParams extends ToolParams {
     private String id;
     private String region;
     private String gene;
@@ -24,6 +24,18 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
     private String functionalScore;
     private String clinicalSignificance;
 
+    public AnnotationVariantQueryParams() {
+    }
+
+    public AnnotationVariantQueryParams(Query query) {
+        appendQuery(query);
+    }
+
+    public AnnotationVariantQueryParams appendQuery(Query query) {
+        updateParams(query);
+        return this;
+    }
+
     public Query toQuery() {
         return new Query(toObjectMap());
     }
@@ -32,7 +44,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return id;
     }
 
-    public AbstractBasicVariantQueryParams setId(String id) {
+    public AnnotationVariantQueryParams setId(String id) {
         this.id = id;
         return this;
     }
@@ -41,7 +53,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return region;
     }
 
-    public AbstractBasicVariantQueryParams setRegion(String region) {
+    public AnnotationVariantQueryParams setRegion(String region) {
         this.region = region;
         return this;
     }
@@ -50,7 +62,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return gene;
     }
 
-    public AbstractBasicVariantQueryParams setGene(String gene) {
+    public AnnotationVariantQueryParams setGene(String gene) {
         this.gene = gene;
         return this;
     }
@@ -59,7 +71,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return type;
     }
 
-    public AbstractBasicVariantQueryParams setType(String type) {
+    public AnnotationVariantQueryParams setType(String type) {
         this.type = type;
         return this;
     }
@@ -68,7 +80,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return panel;
     }
 
-    public AbstractBasicVariantQueryParams setPanel(String panel) {
+    public AnnotationVariantQueryParams setPanel(String panel) {
         this.panel = panel;
         return this;
     }
@@ -77,7 +89,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return cohortStatsRef;
     }
 
-    public AbstractBasicVariantQueryParams setCohortStatsRef(String cohortStatsRef) {
+    public AnnotationVariantQueryParams setCohortStatsRef(String cohortStatsRef) {
         this.cohortStatsRef = cohortStatsRef;
         return this;
     }
@@ -86,7 +98,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return cohortStatsAlt;
     }
 
-    public AbstractBasicVariantQueryParams setCohortStatsAlt(String cohortStatsAlt) {
+    public AnnotationVariantQueryParams setCohortStatsAlt(String cohortStatsAlt) {
         this.cohortStatsAlt = cohortStatsAlt;
         return this;
     }
@@ -95,7 +107,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return cohortStatsMaf;
     }
 
-    public AbstractBasicVariantQueryParams setCohortStatsMaf(String cohortStatsMaf) {
+    public AnnotationVariantQueryParams setCohortStatsMaf(String cohortStatsMaf) {
         this.cohortStatsMaf = cohortStatsMaf;
         return this;
     }
@@ -104,7 +116,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return ct;
     }
 
-    public AbstractBasicVariantQueryParams setCt(String ct) {
+    public AnnotationVariantQueryParams setCt(String ct) {
         this.ct = ct;
         return this;
     }
@@ -113,7 +125,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return xref;
     }
 
-    public AbstractBasicVariantQueryParams setXref(String xref) {
+    public AnnotationVariantQueryParams setXref(String xref) {
         this.xref = xref;
         return this;
     }
@@ -122,7 +134,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return biotype;
     }
 
-    public AbstractBasicVariantQueryParams setBiotype(String biotype) {
+    public AnnotationVariantQueryParams setBiotype(String biotype) {
         this.biotype = biotype;
         return this;
     }
@@ -131,7 +143,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return proteinSubstitution;
     }
 
-    public AbstractBasicVariantQueryParams setProteinSubstitution(String proteinSubstitution) {
+    public AnnotationVariantQueryParams setProteinSubstitution(String proteinSubstitution) {
         this.proteinSubstitution = proteinSubstitution;
         return this;
     }
@@ -140,7 +152,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return conservation;
     }
 
-    public AbstractBasicVariantQueryParams setConservation(String conservation) {
+    public AnnotationVariantQueryParams setConservation(String conservation) {
         this.conservation = conservation;
         return this;
     }
@@ -149,7 +161,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return populationFrequencyMaf;
     }
 
-    public AbstractBasicVariantQueryParams setPopulationFrequencyMaf(String populationFrequencyMaf) {
+    public AnnotationVariantQueryParams setPopulationFrequencyMaf(String populationFrequencyMaf) {
         this.populationFrequencyMaf = populationFrequencyMaf;
         return this;
     }
@@ -158,7 +170,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return populationFrequencyAlt;
     }
 
-    public AbstractBasicVariantQueryParams setPopulationFrequencyAlt(String populationFrequencyAlt) {
+    public AnnotationVariantQueryParams setPopulationFrequencyAlt(String populationFrequencyAlt) {
         this.populationFrequencyAlt = populationFrequencyAlt;
         return this;
     }
@@ -167,7 +179,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return populationFrequencyRef;
     }
 
-    public AbstractBasicVariantQueryParams setPopulationFrequencyRef(String populationFrequencyRef) {
+    public AnnotationVariantQueryParams setPopulationFrequencyRef(String populationFrequencyRef) {
         this.populationFrequencyRef = populationFrequencyRef;
         return this;
     }
@@ -176,7 +188,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return transcriptFlag;
     }
 
-    public AbstractBasicVariantQueryParams setTranscriptFlag(String transcriptFlag) {
+    public AnnotationVariantQueryParams setTranscriptFlag(String transcriptFlag) {
         this.transcriptFlag = transcriptFlag;
         return this;
     }
@@ -185,7 +197,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return functionalScore;
     }
 
-    public AbstractBasicVariantQueryParams setFunctionalScore(String functionalScore) {
+    public AnnotationVariantQueryParams setFunctionalScore(String functionalScore) {
         this.functionalScore = functionalScore;
         return this;
     }
@@ -194,7 +206,7 @@ public class AbstractBasicVariantQueryParams extends ToolParams {
         return clinicalSignificance;
     }
 
-    public AbstractBasicVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
+    public AnnotationVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
         this.clinicalSignificance = clinicalSignificance;
         return this;
     }
