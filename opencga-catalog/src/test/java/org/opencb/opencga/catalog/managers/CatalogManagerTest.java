@@ -517,21 +517,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testUpdateGroupInfo() throws CatalogException {
-        StudyManager studyManager = catalogManager.getStudyManager();
-
-        studyManager.createGroup(studyFqn, "group1", null, token);
-        studyManager.createGroup(studyFqn, "group2", null, token);
-
-        Group.Sync syncFrom = new Group.Sync("auth", "aaa");
-        studyManager.syncGroupWith(studyFqn, "group2", syncFrom, token);
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("Cannot modify already existing sync information");
-        studyManager.syncGroupWith(studyFqn, "group2", syncFrom, token);
-    }
-
-    @Test
     public void testCreatePermissionRules() throws CatalogException {
         PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
                 Arrays.asList("VIEW", "UPDATE"));

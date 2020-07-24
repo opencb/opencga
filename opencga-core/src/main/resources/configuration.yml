@@ -47,6 +47,18 @@ authentication:
 #    options:
 #      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
 #      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
+
+# Custom LDAPS configuration example
+#  - id: ldaps            # Any id
+#    type: LDAP
+#    host: ldaps://localhost:636
+#    options:
+#      usersSearch: dc=ge,dc=co,dc=uk                       # Base search to look for users
+#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for groups
+#      fullNameKey: displayname                             # Key to get the user's full name when importing users
+#      dnKey: gecos                                         # Get the user's unique identifier...
+#      dnFormat: "uid=%s,ou=people,dc=ge,dc=co,dc=uk"       # ...and pass a distinguished name to the auth request in the right format
+
 # Azure AD configuration example
 #  - id: aad                                               # Any id
 #    type: AzureAD

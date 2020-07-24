@@ -132,21 +132,31 @@ public class AdminWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/users/sync")
-    @ApiOperation(value = "Synchronise groups of users with LDAP groups", response = Group.class,
-            notes = "Mandatory fields: <b>authOriginId</b>, <b>study</b>, <b>from</b> and <b>to</b><br>"
+    @ApiOperation(value = "Synchronise a group of users from an authentication origin with a group in a study from catalog", response = Group.class,
+            notes = "Mandatory fields: <b>authOriginId</b>, <b>study</b><br>"
                     + "<ul>"
                     + "<li><b>authOriginId</b>: Authentication origin id defined in the main Catalog configuration.</li>"
-                    + "<li><b>study</b>: Study [[user@]project:]study where the group of users will be synced with the LDAP group.</li>"
-                    + "<li><b>from</b>: LDAP group to be synced with a catalog group.</li>"
-                    + "<li><b>to</b>: Catalog group that will be synced with the LDAP group.</li>"
+                    + "<li><b>study</b>: Study [[user@]project:]study where the list of users will be associated to.</li>"
+                    + "<li><b>from</b>: Group defined in the authenticated origin to be synchronised.</li>"
+                    + "<li><b>to</b>: Group in a study that will be synchronised.</li>"
+                    + "<li><b>syncAll</b>: Flag indicating whether to synchronise all the groups present in the study with"
+                    + " their corresponding authenticated groups automatically. --from and --to parameters will not be needed when the flag"
+                    + "is active..</li>"
+                    + "<li><b>type</b>: User account type of the users to be imported (guest or full).</li>"
                     + "<li><b>force</b>: Boolean to force the synchronisation with already existing Catalog groups that are not yet "
                     + "synchronised with any other group.</li>"
                     + "</ul>"
     )
     public Response externalSync(@ApiParam(value = "JSON containing the parameters", required = true) GroupSyncParams syncParams) {
         try {
-            return createOkResponse(catalogManager.getStudyManager().syncGroupWith(syncParams.getStudy(), syncParams.getFrom(), syncParams.getTo(),
-                    syncParams.getAuthenticationOriginId(), syncParams.isForce(), token));
+            // TODO: These two methods should return an OpenCGAResult containing at least the number of changes
+            if (syncParams.isSyncAll()) {
+                catalogManager.getUserManager().syncAllUsersOfExternalGroup(syncParams.getStudy(), syncParams.getAuthenticationOriginId(), token);
+            } else {
+                catalogManager.getUserManager().importRemoteGroupOfUsers(syncParams.getAuthenticationOriginId(), syncParams.getFrom(),
+                        syncParams.getTo(), syncParams.getStudy(), true, token);
+            }
+            return createOkResponse(OpenCGAResult.empty(Group.class));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

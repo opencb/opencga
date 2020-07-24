@@ -16,22 +16,29 @@
 
 package org.opencb.opencga.core.models.admin;
 
+import org.opencb.opencga.core.models.user.Account;
+
 public class GroupSyncParams {
 
     private String authenticationOriginId;
     private String from;
     private String to;
     private String study;
+    private boolean syncAll;
+    private Account.AccountType type;
     private boolean force;
 
     public GroupSyncParams() {
     }
 
-    public GroupSyncParams(String authenticationOriginId, String from, String to, String study, boolean force) {
+    public GroupSyncParams(String authenticationOriginId, String from, String to, String study, boolean syncAll, Account.AccountType type,
+                           boolean force) {
         this.authenticationOriginId = authenticationOriginId;
         this.from = from;
         this.to = to;
         this.study = study;
+        this.syncAll = syncAll;
+        this.type = type;
         this.force = force;
     }
 
@@ -42,6 +49,8 @@ public class GroupSyncParams {
         sb.append(", from='").append(from).append('\'');
         sb.append(", to='").append(to).append('\'');
         sb.append(", study='").append(study).append('\'');
+        sb.append(", syncAll=").append(syncAll);
+        sb.append(", type=").append(type);
         sb.append(", force=").append(force);
         sb.append('}');
         return sb.toString();
@@ -80,6 +89,24 @@ public class GroupSyncParams {
 
     public GroupSyncParams setStudy(String study) {
         this.study = study;
+        return this;
+    }
+
+    public boolean isSyncAll() {
+        return syncAll;
+    }
+
+    public GroupSyncParams setSyncAll(boolean syncAll) {
+        this.syncAll = syncAll;
+        return this;
+    }
+
+    public Account.AccountType getType() {
+        return type;
+    }
+
+    public GroupSyncParams setType(Account.AccountType type) {
+        this.type = type;
         return this;
     }
 
