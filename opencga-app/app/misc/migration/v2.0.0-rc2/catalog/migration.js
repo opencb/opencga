@@ -90,7 +90,7 @@ function _getMemberAndSampleIdReferences(member, keepVersion) {
         'samples': member['samples']
     };
     if (keepVersion) {
-        newMember['version'] = member['version'];
+        newMember['version'] = NumberInt(member['version']);
     }
 
     if (isNotEmptyArray(member.samples)) {
@@ -111,7 +111,7 @@ migrateCollection("clinical", {}, {proband: 1, family: 1}, function(bulk, doc) {
         var family = {
             'uid': doc.family['uid'],
             'id': doc.family['id'],
-            'version': doc.family['version'],
+            'version': NumberInt(doc.family['version']),
             'members': doc.family['members']
         };
         if (isNotEmptyArray(doc.family.members)) {

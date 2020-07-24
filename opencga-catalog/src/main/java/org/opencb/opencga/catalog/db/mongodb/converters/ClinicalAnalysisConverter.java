@@ -152,7 +152,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         document.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), new Document()
                 .append(FamilyDBAdaptor.QueryParams.UID.key(), getLongValue(family, FamilyDBAdaptor.QueryParams.UID.key()))
                 .append(FamilyDBAdaptor.QueryParams.ID.key(), family.get(FamilyDBAdaptor.QueryParams.ID.key()))
-                .append(FamilyDBAdaptor.QueryParams.VERSION.key(), family.get(FamilyDBAdaptor.QueryParams.VERSION.key()))
+                .append(FamilyDBAdaptor.QueryParams.VERSION.key(), family.getInteger(FamilyDBAdaptor.QueryParams.VERSION.key()))
                 .append(FamilyDBAdaptor.QueryParams.MEMBERS.key(), family.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()))
         );
     }
