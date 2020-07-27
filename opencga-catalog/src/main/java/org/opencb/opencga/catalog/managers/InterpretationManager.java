@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.Analyst;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -31,6 +33,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -218,20 +221,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
                     userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
-            options = ParamUtils.defaultObject(options, QueryOptions::new);
-            ParamUtils.checkObj(interpretation, "interpretation");
-            ParamUtils.checkAlias(interpretation.getId(), "id");
-
-            interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
-
-            interpretation.setCreationDate(TimeUtils.getTime());
-            interpretation.setDescription(ParamUtils.defaultString(interpretation.getDescription(), ""));
-            interpretation.setInternal(ParamUtils.defaultObject(interpretation.getInternal(), InterpretationInternal::new));
-            interpretation.getInternal().setStatus(ParamUtils.defaultObject(interpretation.getInternal().getStatus(),
-                    InterpretationStatus::new));
-            interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
-
-            interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
+            validateNewInterpretation(interpretation, clinicalAnalysis.getId());
 
             OpenCGAResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, primary);
             OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
@@ -247,6 +237,34 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+    }
+
+    void validateNewInterpretation(Interpretation interpretation, String clinicalAnalysisId) throws CatalogParameterException {
+        ParamUtils.checkObj(interpretation, "Interpretation");
+        ParamUtils.checkParameter(clinicalAnalysisId, "ClinicalAnalysisId");
+
+        if (StringUtils.isNotEmpty(interpretation.getId())) {
+            ParamUtils.checkAlias(interpretation.getId(), "id");
+        } else {
+            interpretation.setId(clinicalAnalysisId);
+        }
+
+        interpretation.setClinicalAnalysisId(clinicalAnalysisId);
+
+        interpretation.setCreationDate(TimeUtils.getTime());
+        interpretation.setDescription(ParamUtils.defaultString(interpretation.getDescription(), ""));
+        interpretation.setInternal(ParamUtils.defaultObject(interpretation.getInternal(), InterpretationInternal::new));
+        interpretation.getInternal().setStatus(ParamUtils.defaultObject(interpretation.getInternal().getStatus(),
+                InterpretationStatus::new));
+        interpretation.setAnalyst(ParamUtils.defaultObject(interpretation.getAnalyst(), Analyst::new));
+        interpretation.setMethod(ParamUtils.defaultObject(interpretation.getMethod(), InterpretationMethod::new));
+        interpretation.setPrimaryFindings(ParamUtils.defaultObject(interpretation.getPrimaryFindings(), Collections.emptyList()));
+        interpretation.setSecondaryFindings(ParamUtils.defaultObject(interpretation.getSecondaryFindings(), Collections.emptyList()));
+        interpretation.setComments(ParamUtils.defaultObject(interpretation.getComments(), Collections.emptyList()));
+        interpretation.setStatus(ParamUtils.defaultString(interpretation.getStatus(), ""));
+        interpretation.setVersion(ParamUtils.defaultObject(interpretation.getVersion(), 1));
+        interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
+        interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
     }
 
     public OpenCGAResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams, QueryOptions options,
