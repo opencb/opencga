@@ -80,7 +80,7 @@ public class MendelianInconsistenciesComputation {
             throw new ToolException(e);
         }
 
-        return buildMendelianErrorReport(iterator, getTotalVariants(studyId, storageManager, token));
+        return buildMendelianErrorReport(iterator, getTotalVariants(studyId, childId, storageManager, token));
     }
 
 
@@ -172,10 +172,11 @@ public class MendelianInconsistenciesComputation {
         return meReport;
     }
 
-    private static long getTotalVariants(String studyId, VariantStorageManager storageManager, String token) throws ToolException {
+    private static long getTotalVariants(String studyId, String sampleId, VariantStorageManager storageManager, String token) throws ToolException {
         // Create query to count the total number of variants
         Query query = new Query()
-                .append(VariantQueryParam.STUDY.key(), studyId);
+                .append(VariantQueryParam.STUDY.key(), studyId)
+                .append(VariantQueryParam.SAMPLE.key(), sampleId);
 
         // Get total number of variants
         long numVariants;
