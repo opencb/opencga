@@ -61,10 +61,6 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         catalogManager = getVariantStorageManager().getCatalogManager();
 
         switch (qcType) {
-            case FASTQC: {
-                runFastqc();
-                break;
-            }
 
             case FLAG_STATS: {
                 runFlagStats();
@@ -84,39 +80,6 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
             default: {
                 throw new ToolException("Unknown quality control type: " + qcType);
             }
-        }
-    }
-
-    private void runFastqc() throws ToolException {
-        if (metrics.getFastQc() != null) {
-            // FastQC already exists!
-            addWarning("Skipping FastQC analysis: it was already computed");
-            return;
-        }
-
-        // Check BAM file
-        if (catalogBamFile == null) {
-            addWarning("Skipping FastQC analysis: no BAM file was provided");
-            return;
-        }
-
-        ObjectMap params = new ObjectMap();
-        params.put("extract", "");
-
-        Path outDir = getOutDir().resolve("fastqc");
-        Path scratchDir = outDir.resolve("scratch");
-        scratchDir.toFile().mkdirs();
-
-        FastqcWrapperAnalysisExecutor executor = new FastqcWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir, catalogManager,
-                getToken());
-
-        executor.setFile(catalogBamFile.getId());
-        executor.run();
-
-        // Check for result
-        FastQc fastQc = executor.getResult();
-        if (fastQc != null) {
-            metrics.setFastQc(fastQc);
         }
     }
 

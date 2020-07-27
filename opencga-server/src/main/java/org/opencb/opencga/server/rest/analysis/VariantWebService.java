@@ -54,6 +54,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
@@ -63,6 +64,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.alignment.FastQcWrapperParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.job.Job;
@@ -1118,6 +1120,21 @@ public class VariantWebService extends AnalysisWebService {
             }
         }
 
+        boolean runFastQc = false;
+        if (catalogBamFile != null) {
+            if (sample.getQualityControl() == null || CollectionUtils.isEmpty(sample.getQualityControl().getMetrics())) {
+                runFastQc = true;
+            } else {
+                runFastQc = true;
+                for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                    if (catalogBamFile.getId().equals(metrics.getBamFileId()) && metrics.getFastQc() != null) {
+                        runFastQc = false;
+                        break;
+                    }
+                }
+            }
+        }
+
         // Run variant stats if necessary
         if (runVariantStats) {
             SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
@@ -1148,6 +1165,22 @@ public class VariantWebService extends AnalysisWebService {
                         null, null, null, null);
                 Job signatureJob = jobResult.first();
                 dependsOnList.add(signatureJob.getId());
+            } catch (CatalogException e) {
+                return createErrorResponse(e);
+            }
+        }
+
+        // Run FastQC, if bam file exists
+        if (runFastQc) {
+            Map<String, String> dynamicParams = new HashMap<>();
+            dynamicParams.put("extract", "true");
+            FastQcWrapperParams fastQcParams = new FastQcWrapperParams(catalogBamFile.getId(), null, dynamicParams);
+            System.out.println("fastQcParams = " + fastQcParams);
+            try {
+                DataResult<Job> jobResult = submitJobRaw(FastqcWrapperAnalysis.ID, null, study, fastQcParams,
+                        null, null, null, null);
+                Job fastqcJob = jobResult.first();
+                dependsOnList.add(fastqcJob.getId());
             } catch (CatalogException e) {
                 return createErrorResponse(e);
             }
