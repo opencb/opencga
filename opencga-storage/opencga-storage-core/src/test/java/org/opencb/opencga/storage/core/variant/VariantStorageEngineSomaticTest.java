@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -21,8 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.gt;
 
@@ -52,7 +52,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         VariantDBIterator iterator = engine.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
-            assertThat(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"), anyOf(is("./."), is(".")));
+            assertThat(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"), is(GenotypeClass.NA_GT_VALUE));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "DP"));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GL"));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "AU"));
@@ -92,10 +92,14 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
                 new ObjectMap(VariantStorageOptions.STATS_CALCULATE.key(), false)
                         .append(VariantStorageOptions.ANNOTATE.key(), false)
         );
-        VariantDBIterator iterator = engine.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
+        VariantDBIterator iterator = engine.iterator(new Query(), new QueryOptions());
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
-            assertThat(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"), anyOf(is("./."), is(".")));
+            if (variant.getStudy(STUDY_NAME).getFile("variant-test-somatic.vcf") == null) {
+                assertThat(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"), is(GenotypeClass.UNKNOWN_GENOTYPE));
+            } else {
+                assertThat(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"), is(GenotypeClass.NA_GT_VALUE));
+            }
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "DP"));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GL"));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "AU"));
@@ -119,6 +123,36 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         checkSampleData(engine, VARIANT_A);
         checkSampleData(engine, VARIANT_B);
         checkSampleData(engine, RS);
+    }
+
+    @Test
+    public void indexExcludeGenotype() throws Exception {
+        VariantStorageEngine engine = getVariantStorageEngine();
+        runETL(engine, getPlatinumFile(0), STUDY_NAME, new ObjectMap(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), true));
+        runETL(engine, getPlatinumFile(1), STUDY_NAME, new ObjectMap(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), false));
+
+        VariantDBIterator iterator = engine.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
+        while (iterator.hasNext()) {
+            Variant variant = iterator.next();
+            Variant sampleData = engine.getSampleData(variant.toString(), STUDY_NAME, new QueryOptions()).first();
+            StudyEntry study = variant.getStudy(STUDY_NAME);
+            StudyEntry study_2 = sampleData.getStudies().get(0);
+            if (study.getFile("1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz") != null) {
+                assertThat(study.getSampleData("NA12877", "GT"), is(GenotypeClass.NA_GT_VALUE));
+                assertThat(study_2.getSampleData("NA12877", "GT"), is(GenotypeClass.NA_GT_VALUE));
+            } else {
+                assertThat(study.getSampleData("NA12877", "GT"), is("./."));
+                assertThat(study_2.getSampleData("NA12877", "GT"), nullValue());
+            }
+            if (study.getFile("1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz") != null) {
+                assertThat(study.getSampleData("NA12878", "GT"), not(is(GenotypeClass.NA_GT_VALUE)));
+                assertThat(study_2.getSampleData("NA12878", "GT"), not(is(GenotypeClass.NA_GT_VALUE)));
+            } else {
+                assertThat(study.getSampleData("NA12878", "GT"), is("./."));
+                assertThat(study_2.getSampleData("NA12878", "GT"), nullValue());
+            }
+        }
+        assertThat(iterator.getCount(), gt(0));
     }
 
     @Test
@@ -148,13 +182,16 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
                         .append(VariantStorageOptions.ANNOTATE.key(), false)
         );
         studyMetadata = engine.getMetadataManager().getStudyMetadata(studyMetadata.getId());
-        assertEquals(true, studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), false));
+        assertFalse(studyMetadata.getAttributes().containsKey(VariantStorageOptions.EXCLUDE_GENOTYPES.key()));
         assertEquals(extraFields, studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()));
 
         for (Variant variant : engine) {
 //            System.out.println(variant.toJson());
-            assertNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"));
-            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "DP"));
+            if (variant.getStudy(STUDY_NAME).getFile("variant-test-somatic.vcf") == null) {
+                assertThat(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"), is(GenotypeClass.UNKNOWN_GENOTYPE));
+            } else {
+                assertThat(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"), is(GenotypeClass.NA_GT_VALUE));
+            }            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "DP"));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GL"));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "AU"));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "CU"));

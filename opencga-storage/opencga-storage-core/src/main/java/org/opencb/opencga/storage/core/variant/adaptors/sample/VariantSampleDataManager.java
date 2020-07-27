@@ -50,16 +50,10 @@ public class VariantSampleDataManager {
 
 
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-        boolean studyWithGts = !studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
-                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
 
         Set<String> genotypes = new HashSet<>(options.getAsStringList(VariantQueryParam.GENOTYPE.key()));
         if (genotypes.isEmpty()) {
-            if (studyWithGts) {
-                genotypes.add(GenotypeClass.MAIN_ALT.toString());
-            } else {
-                genotypes.add(GenotypeClass.NA_GT_VALUE);
-            }
+            genotypes.add(GenotypeClass.MAIN_ALT.toString());
         }
         List<String> loadedGenotypes = studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
         if (loadedGenotypes.size() == 1) {
@@ -68,17 +62,21 @@ public class VariantSampleDataManager {
             }
         } else if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE)) {
             genotypes.add(GenotypeClass.NA_GT_VALUE);
+        }
+        genotypes = new HashSet<>(GenotypeClass.filter(genotypes, loadedGenotypes));
+
+        List<String> includeSamples;
+        if (options.containsKey(VariantQueryParam.INCLUDE_SAMPLE.key())) {
+            includeSamples = options.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
         } else {
-            genotypes = new HashSet<>(GenotypeClass.filter(genotypes, loadedGenotypes));
+            includeSamples = null;
         }
 
-        List<String> includeSamples = options.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
-
-        return getSampleData(variant, study, options, includeSamples, studyWithGts, genotypes, sampleLimit);
+        return getSampleData(variant, study, options, includeSamples, genotypes, sampleLimit);
     }
 
     protected DataResult<Variant> getSampleData(
-            String variantStr, String study, QueryOptions options, List<String> includeSamples, boolean studyWithGts, Set<String> genotypes,
+            String variantStr, String study, QueryOptions options, List<String> includeSamples, Set<String> genotypes,
             int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
         int studyId = metadataManager.getStudyId(study);

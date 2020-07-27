@@ -253,7 +253,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, archiveTableName, dbAdaptor.getHBaseManager());
         VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(dbAdaptor.getVariantTable(),
                 sc.getId(),
-                fileId, metadataManager, dbAdaptor.getHBaseManager(), false);
+                fileId, metadataManager, dbAdaptor.getHBaseManager(), false, false);
 
         // TaskMetadata
         HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null, null);

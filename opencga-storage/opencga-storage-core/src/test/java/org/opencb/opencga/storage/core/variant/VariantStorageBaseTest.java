@@ -281,6 +281,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         return runETL(variantStorageManager, options, true, true, true);
     }
 
+    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI input, String study, ObjectMap options)
+            throws IOException, FileFormatException, StorageEngineException {
+        return runETL(variantStorageManager, input, outputUri, options.append(VariantStorageOptions.STUDY.key(), study), true, true, true);
+    }
+
     public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, ObjectMap options,
                                                boolean doExtract,
                                                boolean doTransform,

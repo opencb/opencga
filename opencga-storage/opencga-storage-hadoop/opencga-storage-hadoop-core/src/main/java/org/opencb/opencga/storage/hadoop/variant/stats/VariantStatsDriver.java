@@ -130,7 +130,7 @@ public class    VariantStatsDriver extends AbstractVariantsTableDriver {
     protected void preExecution() throws IOException, StorageEngineException {
         super.preExecution();
         StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(getStudyId());
-        if (!HBaseToVariantConverter.getFixedFormat(studyMetadata.getAttributes()).contains("GT")) {
+        if (!HBaseToVariantConverter.getFixedFormat(studyMetadata).contains("GT")) {
             throw new IllegalArgumentException("Study '" + studyMetadata.getName() + "' does not have Genotypes");
         }
     }

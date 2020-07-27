@@ -88,13 +88,13 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
             LOGGER.info("Update sample index annotation to " + sampleIds.size() + " samples");
         }
 
-        ObjectMap attributes = metadataManager.getStudyMetadata(getStudyId()).getAttributes();
-        hasGenotype = HBaseToVariantConverter.getFixedFormat(attributes).contains(VCFConstants.GENOTYPE_KEY);
+        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(metadataManager.getStudyMetadata(getStudyId()));
+        hasGenotype = fixedFormat.contains(VCFConstants.GENOTYPE_KEY);
 
         if (hasGenotype) {
-            LOGGER.info("Study with genotypes. Study fixed format: " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study with genotypes. Study fixed format: " + fixedFormat);
         } else {
-            LOGGER.info("Study without genotypes. Study fixed format: " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study without genotypes. Study fixed format: " + fixedFormat);
         }
 
         region = getParam(VariantQueryParam.REGION.key(), "");

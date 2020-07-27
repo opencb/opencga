@@ -61,7 +61,8 @@ public class FillGapsTask {
         studyConverter = new StudyEntryMultiFileToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyMetadata.getId(), metadataManager,
                 true,
                 null, // Do not update release
-                true); // Do not skip any genotype
+                true, // Do not skip any genotype
+                false);
         variantMerger = new VariantMerger(false).configure(studyMetadata.getVariantHeader());
         this.simplifiedNewMultiAllelicVariants = simplifiedNewMultiAllelicVariants;
     }

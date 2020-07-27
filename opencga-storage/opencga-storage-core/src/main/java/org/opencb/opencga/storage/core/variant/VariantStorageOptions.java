@@ -88,6 +88,9 @@ public enum VariantStorageOptions implements ConfigurationOption {
     APPROXIMATE_COUNT_SAMPLING_SIZE("approximateCountSamplingSize", 1000),
     APPROXIMATE_COUNT("approximateCount", false),
 
+    // Do not store genotypes from the current file.
+    // Not stored anymore in StudyMetadata
+    EXCLUDE_GENOTYPES("exclude.genotypes", false),
 
     /////////////
     // These params are stored in {@link org.opencb.opencga.storage.core.metadata.models.StudyMetadata#getAttributes}.
@@ -97,7 +100,6 @@ public enum VariantStorageOptions implements ConfigurationOption {
     LOADED_GENOTYPES("loadedGenotypes", null), // List of loaded genotypes.
     EXTRA_FORMAT_FIELDS("include.extra-fields", ""),  //Include other sample information (like DP, GQ, ...)
     EXTRA_FORMAT_FIELDS_TYPE("include.extra-fields-format", ""),  //Other sample information format (String, Integer, Float)
-    EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
 
     RELEASE("release", 1),
 

@@ -49,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.variant.VariantBuilder.REF_ONLY_ALT;
+import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.NA_GT_VALUE;
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
@@ -294,8 +295,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         sampleData = remapSamplesData(sampleData, sampleDataKeysMap);
         Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
         // Replace UNKNOWN_GENOTYPE, if any
-        if (gtIdx != null && UNKNOWN_GENOTYPE.equals(sampleData.get(gtIdx))) {
-            sampleData.set(gtIdx, configuration.getUnknownGenotype());
+        if (gtIdx != null) {
+            String gt = sampleData.get(gtIdx);
+            if (gt == null) {
+                sampleData.set(gtIdx, NA_GT_VALUE);
+            } else if (UNKNOWN_GENOTYPE.equals(gt)) {
+                sampleData.set(gtIdx, configuration.getUnknownGenotype());
+            }
         }
 
         String sampleName = getSampleName(studyMetadata.getId(), sampleId);
@@ -812,7 +818,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private List<String> getFixedSampleDataKeys(StudyMetadata studyMetadata) {
         return fixedFormatsMap.computeIfAbsent(studyMetadata.getId(),
-                (s) -> HBaseToVariantConverter.getFixedFormat(studyMetadata.getAttributes()));
+                (s) -> HBaseToVariantConverter.getFixedFormat(studyMetadata));
     }
 
     private Set<Integer> getFilesFromReturnedSamples(int studyId) {

@@ -52,7 +52,7 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
 //    private final StudyConfiguration studyConfiguration;
     protected final StudyMetadata studyMetadata;
     private final List<String> fixedFormat;
-    private final Set<String> fixedFormatSet;
+    private final boolean excludeGenotypes;
     private final List<String> fileAttributes;
     private final PhoenixHelper.Column studyColumn;
     private final Map<String, Integer> sampleIdsMap;
@@ -60,22 +60,24 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
     private final PhoenixHelper.Column releaseColumn;
 
     public StudyEntryToHBaseConverter(byte[] columnFamily, int studyId, VariantStorageMetadataManager metadataManager,
-                                      boolean addSecondaryAlternates, Integer release, boolean includeReferenceVariantsData) {
+                                      boolean addSecondaryAlternates, Integer release, boolean excludeGenotypes,
+                                      boolean includeReferenceVariantsData) {
         this(columnFamily, studyId, metadataManager, addSecondaryAlternates,
-                release, includeReferenceVariantsData
+                release, excludeGenotypes, includeReferenceVariantsData
                         ? Collections.emptySet()
                         : new HashSet<>(Arrays.asList("0/0", "0|0")));
     }
 
     private StudyEntryToHBaseConverter(byte[] columnFamily, int studyId, VariantStorageMetadataManager metadataManager,
-                                       boolean addSecondaryAlternates, Integer release, Set<String> defaultGenotypes) {
+                                       boolean addSecondaryAlternates, Integer release, boolean excludeGenotypes,
+                                       Set<String> defaultGenotypes) {
         super(columnFamily);
         this.studyMetadata = metadataManager.getStudyMetadata(studyId);
         studyColumn = VariantPhoenixHelper.getStudyColumn(studyMetadata.getId());
         this.addSecondaryAlternates = addSecondaryAlternates;
         this.defaultGenotypes = defaultGenotypes;
-        fixedFormat = HBaseToVariantConverter.getFixedFormat(studyMetadata.getAttributes());
-        fixedFormatSet = new HashSet<>(fixedFormat);
+        fixedFormat = HBaseToVariantConverter.getFixedFormat(studyMetadata);
+        this.excludeGenotypes = excludeGenotypes;
         fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
 
         sampleIdsMap = new HashMap<>();
@@ -254,7 +256,7 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
 
     private int[] buildFormatRemap(StudyEntry studyEntry) {
         int[] formatReMap;
-        if (fixedFormat.equals(studyEntry.getSampleDataKeys())) {
+        if (fixedFormat.equals(studyEntry.getSampleDataKeys()) && !excludeGenotypes) {
             formatReMap = null;
         } else {
             formatReMap = new int[fixedFormat.size()];
@@ -269,6 +271,12 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
                     }
                 }
                 formatReMap[i] = idx;
+            }
+            if (excludeGenotypes) {
+                int gtIdx = fixedFormat.indexOf(VariantMerger.GT_KEY);
+                if (gtIdx >= 0) {
+                    formatReMap[gtIdx] = UNKNOWN_FIELD;
+                }
             }
         }
         return formatReMap;

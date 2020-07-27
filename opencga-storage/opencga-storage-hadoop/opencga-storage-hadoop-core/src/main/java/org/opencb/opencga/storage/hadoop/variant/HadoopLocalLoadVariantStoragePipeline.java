@@ -437,12 +437,15 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         boolean includeReferenceVariantsData = getOptions().getBoolean(
                 VARIANT_TABLE_LOAD_REFERENCE.key(),
                 VARIANT_TABLE_LOAD_REFERENCE.defaultValue());
+        boolean excludeGenotypes = getOptions().getBoolean(
+                EXCLUDE_GENOTYPES.key(),
+                EXCLUDE_GENOTYPES.defaultValue());
         return new VariantHadoopDBWriter(
                 dbAdaptor.getCredentials().getTable(),
                 getStudyId(),
                 getFileId(),
                 getMetadataManager(),
-                dbAdaptor.getHBaseManager(), includeReferenceVariantsData);
+                dbAdaptor.getHBaseManager(), includeReferenceVariantsData, excludeGenotypes);
     }
 
     protected static class GroupedVariantsTask implements Task<ImmutablePair<Long, List<Variant>>, Object> {

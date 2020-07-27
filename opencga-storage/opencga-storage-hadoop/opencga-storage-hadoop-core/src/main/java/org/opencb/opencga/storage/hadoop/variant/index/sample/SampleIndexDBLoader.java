@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.EXCLUDE_GENOTYPES;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
 
 /**
@@ -40,6 +41,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     private final ObjectMap options;
     private final SampleIndexDBAdaptor dbAdaptor;
     private final VariantFileIndexConverter variantFileIndexConverter = new VariantFileIndexConverter();;
+    private final boolean excludeGenotypes;
 
     public SampleIndexDBLoader(SampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
                                String tableName, VariantStorageMetadataManager metadataManager,
@@ -79,6 +81,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                 i++;
             }
         }
+        excludeGenotypes = options.getBoolean(
+                EXCLUDE_GENOTYPES.key(),
+                EXCLUDE_GENOTYPES.defaultValue());
         this.dbAdaptor = dbAdaptor;
     }
 
@@ -185,7 +190,8 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
             IndexChunk indexChunk = new IndexChunk(variant.getChromosome(), getChunkStart(variant.getStart()));
             int sampleIdx = 0;
             StudyEntry studyEntry = variant.getStudies().get(0);
-            boolean hasGT = studyEntry.getSampleDataKeys().get(0).equals("GT");
+            // The variant hasGT if has the SampleDataKey GT AND the genotypes are not being excluded
+            boolean hasGT = studyEntry.getSampleDataKeys().get(0).equals("GT") && !excludeGenotypes;
             for (SampleEntry sample : studyEntry.getSamples()) {
                 String gt = hasGT ? sample.getData().get(0) : GenotypeClass.NA_GT_VALUE;
                 if (validVariant(variant) && validGenotype(gt)) {

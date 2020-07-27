@@ -56,7 +56,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
     @Override
     protected DataResult<Variant> getSampleData(String variantStr, String study, QueryOptions options,
                                                 List<String> includeSamples,
-                                                boolean studyWithGts, Set<String> genotypes,
+                                                Set<String> genotypes,
                                                 int sampleLimit) {
         StopWatch stopWatch = StopWatch.createStarted();
 
@@ -101,25 +101,23 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                         new BinaryPrefixComparator(Bytes.toBytes(buildStudyColumnsPrefix(studyId)))));
                 // Filter columns by sample sufix
                 filters.add(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
-                        new RegexStringComparator(buildStudyColumnsPrefix(studyId) + "[0-9]*" + SAMPLE_DATA_SUFIX)));
+                        new RegexStringComparator(buildStudyColumnsPrefix(studyId) + "[0-9_]*" + SAMPLE_DATA_SUFIX)));
 
-                if (studyWithGts) {
-                    LinkedList<Filter> genotypeFilters = new LinkedList<>();
-                    for (String genotype : genotypes) {
-                        byte[] gtBytes;
-                        if (genotype.equals(GenotypeClass.NA_GT_VALUE)) {
-                            gtBytes = new byte[]{0};
-                        } else {
-                            gtBytes = new byte[genotype.length() + 1];
-                            System.arraycopy(Bytes.toBytes(genotype), 0, gtBytes, 0, genotype.length());
-                        }
-                        genotypeFilters.add(new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(gtBytes)));
-                    }
-                    if (genotypeFilters.size() == 1) {
-                        filters.add(genotypeFilters.getFirst());
+                LinkedList<Filter> genotypeFilters = new LinkedList<>();
+                for (String genotype : genotypes) {
+                    byte[] gtBytes;
+                    if (genotype.equals(GenotypeClass.NA_GT_VALUE)) {
+                        gtBytes = new byte[]{0};
                     } else {
-                        filters.add(new FilterList(FilterList.Operator.MUST_PASS_ONE, genotypeFilters));
+                        gtBytes = new byte[genotype.length() + 1];
+                        System.arraycopy(Bytes.toBytes(genotype), 0, gtBytes, 0, genotype.length());
                     }
+                    genotypeFilters.add(new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(gtBytes)));
+                }
+                if (genotypeFilters.size() == 1) {
+                    filters.add(genotypeFilters.getFirst());
+                } else {
+                    filters.add(new FilterList(FilterList.Operator.MUST_PASS_ONE, genotypeFilters));
                 }
 
                 filters.add(new ColumnPaginationFilter(limit, skip));
