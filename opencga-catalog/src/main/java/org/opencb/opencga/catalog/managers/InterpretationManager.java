@@ -262,7 +262,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setSecondaryFindings(ParamUtils.defaultObject(interpretation.getSecondaryFindings(), Collections.emptyList()));
         interpretation.setComments(ParamUtils.defaultObject(interpretation.getComments(), Collections.emptyList()));
         interpretation.setStatus(ParamUtils.defaultString(interpretation.getStatus(), ""));
-        interpretation.setVersion(ParamUtils.defaultObject(interpretation.getVersion(), 1));
+        interpretation.setVersion(1);
         interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
         interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
     }

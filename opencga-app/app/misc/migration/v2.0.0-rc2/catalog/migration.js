@@ -1,3 +1,52 @@
+// ------------------  Store uuids as actual uuids instead of applying base64 over them
+var Entity = Object.freeze({"AUDIT": 0, "PROJECT": 1, "STUDY": 2, "FILE": 3, "SAMPLE": 4, "COHORT": 5, "INDIVIDUAL": 6, "FAMILY": 7,
+    "JOB": 8, "CLINICAL": 9, "PANEL": 10, "INTERPRETATION": 11});
+
+function generateOpenCGAUUID(entity, date) {
+    var mostSignificantBits = getMostSignificantBits(entity, date);
+    var leastSignificantBits = getLeastSignificantBits();
+    return _generateUUID(mostSignificantBits, leastSignificantBits);
+}
+
+function _generateUUID(mostSigBits, leastSigBits) {
+    return (digits(mostSigBits.shiftRightUnsigned(32), 8) + "-" +
+        digits(mostSigBits.shiftRightUnsigned(16), 4) + "-" +
+        digits(mostSigBits, 4) + "-" +
+        digits(leastSigBits.shiftRightUnsigned(48), 4) + "-" +
+        digits(leastSigBits, 12));
+}
+
+function digits(value, digits) {
+    hi = Long.fromNumber(1).shiftLeft(digits * 4).toUnsigned();
+    return hi.or(value.and(hi - 1)).toString(16).substring(1);
+}
+
+function getMostSignificantBits(entity, date) {
+    var time = Long.fromNumber(date.getTime());
+
+    var timeLow = time.and(0xffffffff);
+    var timeMid = time.shiftRightUnsigned(32).and(0xffff);
+
+    var uuidVersion = Long.fromNumber(0);
+    var internalVersion = Long.fromNumber(0);
+    var entityBin = Long.fromNumber(0xff & Entity[entity]);
+
+    return timeLow.shiftLeft(32).toUnsigned().or(timeMid.shiftLeft(16).toUnsigned().or(uuidVersion.shiftLeft(12).toUnsigned()
+        .or(internalVersion.shiftLeft(8).toUnsigned().or(entityBin))));
+}
+
+function getLeastSignificantBits() {
+    var installation = Long.fromNumber(0x1);
+
+    // 12 hex digits random
+    var rand = Long.fromNumber(Math.random() * 100000000000000000);
+    var randomNumber = rand.and(0xffffffffffff);
+    return installation.shiftLeft(48).or(randomNumber);
+}
+
+
+
+
 // Remove null values of jobId
 db.file.update({"jobId": null}, {"$set": {"jobId": ""}});
 db.job.find({}, {id:1, output:1, stdout:1, stderr:1}).forEach(function(job) {
@@ -182,5 +231,64 @@ migrateCollection("sample", {}, {}, function(bulk, doc) {
             acls.add(acl);
         }
         bulk.find({"_id": doc._id}).updateOne({"$set": {"_acl": Array.from(acls)}});
+    }
+});
+
+
+// Create default interpretations for all clinical analyses
+function _createNewInterpretation(clinical) {
+    var newUid = db.metadata.findAndModify({
+        query: { },
+        update: { $inc: { idCounter: 1 } }
+    })['idCounter'];
+
+    var interpretation = {
+        'id': clinical['id'] + "_1",
+        'uuid': generateOpenCGAUUID("INTERPRETATION", clinical['_creationDate']),
+        'description': '',
+        'clinicalAnalysisId': clinical['id'],
+        'analyst': {
+
+        },
+        'methods': [{
+
+        }],
+        'primaryFindings': [],
+        'secondaryFindings': [],
+        'comments': [],
+        'status': '',
+        'creationDate': clinical['creationDate'],
+        'version': 1,
+        'attributes': {},
+        'studyUid': clinical['studyUid'],
+        'uid': NumberLong(newUid),
+        'internal': {
+            'status': {
+                'name': 'NOT_REVIEWED',
+                'date': clinical['creationDate'],
+                'description': ''
+            }
+        },
+        '_creationDate': clinical['_creationDate'],
+        '_modificationDate': clinical['_creationDate']
+    }
+
+    db.interpretation.insert(interpretation);
+    return interpretation;
+}
+
+
+migrateCollection("clinical", {}, {'id': 1, 'studyUid': 1, '_creationDate': 1, 'creationDate': 1}, function(bulk, doc) {
+    if (isUndefinedOrNull(doc.interpretation)) {
+        var interpretationUid = _createNewInterpretation(doc)['uid'];
+        doc['interpretation'] = {
+            'uid': interpretationUid
+        };
+
+        var toset = {
+            'interpretation': doc.interpretation
+        };
+
+        bulk.find({"_id": doc._id}).updateOne({"$set": toset});
     }
 });
