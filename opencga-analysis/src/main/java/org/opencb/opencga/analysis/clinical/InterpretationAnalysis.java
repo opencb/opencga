@@ -90,7 +90,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
                 .setAnalyst(analyst)
                 .setClinicalAnalysisId(clinicalAnalysis.getId())
                 .setCreationDate(TimeUtils.getTime())
-                .setMethod(method);
+                .setMethods(Collections.singletonList(method));
 
         // Store interpretation analysis in DB
         try {

@@ -360,7 +360,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         i.setId("interpretationId");
         i.setDescription("description");
         i.setClinicalAnalysisId(dummyEnvironment.first().getId());
-        i.setMethod(method);
+        i.setMethods(Collections.singletonList(method));
         i.setAnalyst(new Analyst("user2", "mail@mail.com", "company"));
         i.setComments(Collections.singletonList(new Comment("author", "type", "comment 1", "date")));
         i.setPrimaryFindings(Collections.emptyList());
