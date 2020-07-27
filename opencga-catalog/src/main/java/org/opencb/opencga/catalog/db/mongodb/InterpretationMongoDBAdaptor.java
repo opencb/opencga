@@ -42,7 +42,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -92,7 +91,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }, e -> logger.error("Could not create interpretation {}: {}", interpretation.getId(), e.getMessage()));
     }
 
-    private void insert(ClientSession clientSession, long studyId, Interpretation interpretation, boolean primary)
+    Interpretation insert(ClientSession clientSession, long studyId, Interpretation interpretation, boolean primary)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
         List<Bson> filterList = new ArrayList<>();
@@ -123,30 +122,23 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         interpretationObject.put(PRIVATE_MODIFICATION_DATE, interpretationObject.get(PRIVATE_CREATION_DATE));
         interpretationCollection.insert(clientSession, interpretationObject, null);
 
-        Query query = new Query()
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), interpretation.getClinicalAnalysisId());
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key());
-        // Check clinical analysis does not have any primary interpretation already
-        OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(clientSession, query, options);
-        if (result.getNumResults() == 0) {
-            throw new CatalogDBException("Clinical analysis '" + interpretation.getClinicalAnalysisId() + "' does not exist.");
-        }
+        if (!primary) {
+            // insert for primary interpretations are called from ClinicalAnalysisMongoDBAdaptor, meaning that the clinicalAnalysis at this
+            // point still does not exist. For secondary interpretations, it must be called from the InterpretationManager, so we can check
+            // that the CA exists.
 
-        if (primary) {
-            if (result.first().getInterpretation() != null && StringUtils.isNotEmpty(result.first().getInterpretation().getId())) {
-                throw new CatalogDBException("Clinical analysis '" + interpretation.getClinicalAnalysisId() + "' already has a "
-                        + "primary interpretation.");
+            Query query = new Query()
+                    .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                    .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), interpretation.getClinicalAnalysisId());
+            // Check clinical analysis exists
+            OpenCGAResult<Long> result = clinicalDBAdaptor.count(clientSession, query);
+            if (result.getNumMatches() == 0) {
+                throw new CatalogDBException("Clinical analysis '" + interpretation.getClinicalAnalysisId() + "' does not exist.");
             }
 
-            ObjectMap updateParams = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
-            UpdateDocument updateDocument = clinicalDBAdaptor.parseAndValidateUpdateParams(updateParams, query, QueryOptions.empty());
-            clinicalDBAdaptor.getClinicalCollection().update(clientSession, clinicalDBAdaptor.parseQuery(query),
-                    updateDocument.toFinalUpdateDocument(), null);
-        } else {
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.ADD.name());
-            options = new QueryOptions(Constants.ACTIONS, actionMap);
+            QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
             ObjectMap updateParams = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
                             Collections.singletonList(interpretation));
 
@@ -155,6 +147,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             clinicalDBAdaptor.getClinicalCollection().update(clientSession, clinicalDBAdaptor.parseQuery(query),
                     updateDocument.toFinalUpdateDocument(), null);
         }
+
+        return interpretation;
     }
 
     @Override

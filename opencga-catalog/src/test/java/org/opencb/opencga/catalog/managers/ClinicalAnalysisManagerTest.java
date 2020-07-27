@@ -314,14 +314,49 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("child3", clinicalAnalysisDataResult.first().getFamily().getMembers().get(4).getId());
     }
 
+//    @Test
+//    public void createInterpretationTest() throws CatalogException {
+//        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
+//
+//        InterpretationMethod method = new InterpretationMethod("method", Collections.emptyMap(), Collections.emptyList(),
+//                Collections.singletonList(new Software("name", "version", "repo", "commit", "web", Collections.emptyMap())));
+//
+//        Interpretation i = new Interpretation();
+//        i.setId("interpretationId");
+//        i.setDescription("description");
+//        i.setClinicalAnalysisId(dummyEnvironment.first().getId());
+//        i.setMethod(method);
+//        i.setAnalyst(new Analyst("user2", "mail@mail.com", "company"));
+//        i.setComments(Collections.singletonList(new Comment("author", "type", "comment 1", "date")));
+//        i.setPrimaryFindings(Collections.emptyList());
+//
+//        DataResult<Interpretation> interpretationDataResult = catalogManager.getInterpretationManager()
+//                .create(STUDY, dummyEnvironment.first().getId(), i, true, QueryOptions.empty(), sessionIdUser);
+//        System.out.println(interpretationDataResult.first());
+//
+//        DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
+//                dummyEnvironment.first().getId(), QueryOptions.empty(), sessionIdUser);
+//        assertEquals(0, clinicalAnalysisDataResult.first().getSecondaryInterpretations().size());
+//        assertEquals("interpretationId", clinicalAnalysisDataResult.first().getInterpretation().getId());
+//        assertEquals("description", clinicalAnalysisDataResult.first().getInterpretation().getDescription());
+//
+//        clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
+//                dummyEnvironment.first().getId(), new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+//                        ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+//                        ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key())), sessionIdUser);
+//        assertEquals(0, clinicalAnalysisDataResult.first().getSecondaryInterpretations().size());
+//        assertEquals("interpretationId", clinicalAnalysisDataResult.first().getInterpretation().getId());
+//        assertEquals(null, clinicalAnalysisDataResult.first().getInterpretation().getDescription());
+//    }
+
     @Test
-    public void createInterpretationTest() throws CatalogException {
+    public void updateInterpretationTest() throws CatalogException {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
 
         InterpretationMethod method = new InterpretationMethod("method", Collections.emptyMap(), Collections.emptyList(),
                 Collections.singletonList(new Software("name", "version", "repo", "commit", "web", Collections.emptyMap())));
 
-        Interpretation i = new Interpretation();
+        InterpretationUpdateParams i = new InterpretationUpdateParams();
         i.setId("interpretationId");
         i.setDescription("description");
         i.setClinicalAnalysisId(dummyEnvironment.first().getId());
@@ -331,8 +366,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         i.setPrimaryFindings(Collections.emptyList());
 
         DataResult<Interpretation> interpretationDataResult = catalogManager.getInterpretationManager()
-                .create(STUDY, dummyEnvironment.first().getId(), i, true, QueryOptions.empty(), sessionIdUser);
-        System.out.println(interpretationDataResult.first());
+                .update(STUDY, dummyEnvironment.first().getId(), i, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, interpretationDataResult.getNumUpdated());
 
         DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
                 dummyEnvironment.first().getId(), QueryOptions.empty(), sessionIdUser);

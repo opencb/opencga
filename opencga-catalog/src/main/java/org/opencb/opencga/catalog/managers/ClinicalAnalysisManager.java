@@ -453,6 +453,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                             new ClinicalAnalysisVariantQc(Collections.emptyList(), Collections.emptyList()),
                             new ClinicalAnalysisAlignmentQc(Collections.emptyList(), Collections.emptyList(), Collections.emptyList()),
                             new Analyst("", "", ""), Collections.emptyList(), TimeUtils.getTime())));
+            clinicalAnalysis.setInterpretation(ParamUtils.defaultObject(clinicalAnalysis.getInterpretation(), Interpretation::new));
             clinicalAnalysis.setSecondaryInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getSecondaryInterpretations(),
                     ArrayList::new));
             clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), Enums.Priority.MEDIUM));
@@ -463,6 +464,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             sortMembersFromFamily(clinicalAnalysis);
 
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
+            catalogManager.getInterpretationManager().validateNewInterpretation(clinicalAnalysis.getInterpretation(),
+                    clinicalAnalysis.getId());
+            clinicalAnalysis.getInterpretation().setId(clinicalAnalysis.getId() + "_1");
+
             OpenCGAResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
 
             auditManager.auditCreate(userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),

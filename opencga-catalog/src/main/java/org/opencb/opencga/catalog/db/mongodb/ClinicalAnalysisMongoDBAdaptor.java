@@ -42,6 +42,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisStatus;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -78,16 +79,26 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     @Override
     public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return count(null, query);
+    }
+
+    OpenCGAResult<Long> count(ClientSession clientSession, Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query);
-        return new OpenCGAResult<>(clinicalCollection.count(bson));
+        return new OpenCGAResult<>(clinicalCollection.count(clientSession, bson));
     }
 
     @Override
     public OpenCGAResult<Long> count(final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return count(null, query, user);
+    }
+
+    OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         logger.debug("Clinical count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return new OpenCGAResult<>(clinicalCollection.count(bson));
+        return new OpenCGAResult<>(clinicalCollection.count(clientSession, bson));
     }
 
     @Override
@@ -508,36 +519,64 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.ID.key(), clinicalAnalysis.getId()));
-        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
+    public OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        try {
+            return runTransaction(clientSession -> {
+                long tmpStartTime = startQuery();
+                logger.debug("Starting ClinicalAnalysis insert transaction for ClinicalAnalysis id '{}'", clinicalAnalysis.getId());
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+                insert(clientSession, studyId, clinicalAnalysis);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+            });
+        } catch (Exception e) {
+            logger.error("Could not create ClinicalAnalysis {}: {}", clinicalAnalysis.getId(), e.getMessage(), e);
+            throw e;
+        }
+    }
 
-        Bson bson = Filters.and(filterList);
-        DataResult<Long> count = clinicalCollection.count(bson);
-        if (count.getNumMatches() > 0) {
-            throw new CatalogDBException("Cannot create clinical analysis. A clinical analysis with { id: '"
-                    + clinicalAnalysis.getId() + "'} already exists.");
+    ClinicalAnalysis insert(ClientSession clientSession, long studyId, ClinicalAnalysis clinicalAnalysis)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (clinicalAnalysis.getInterpretation() != null) {
+            InterpretationMongoDBAdaptor interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
+            Interpretation interpretation = interpretationDBAdaptor.insert(clientSession, studyId, clinicalAnalysis.getInterpretation(),
+                    true);
+            clinicalAnalysis.setInterpretation(interpretation);
         }
 
-        long clinicalAnalysisId = getNewUid();
-        clinicalAnalysis.setUid(clinicalAnalysisId);
+        if (StringUtils.isEmpty(clinicalAnalysis.getId())) {
+            throw new CatalogDBException("Missing ClinicalAnalysis id");
+        }
+        if (!get(clientSession, new Query(ID.key(), clinicalAnalysis.getId())
+                .append(STUDY_UID.key(), studyId), new QueryOptions()).getResults().isEmpty()) {
+            throw CatalogDBException.alreadyExists("ClinicalAnalysis", "id", clinicalAnalysis.getId());
+        }
+
+        long clinicalUid = getNewUid(clientSession);
+
+        clinicalAnalysis.setUid(clinicalUid);
         clinicalAnalysis.setStudyUid(studyId);
         if (StringUtils.isEmpty(clinicalAnalysis.getUuid())) {
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
         }
-
-        Document clinicalObject = clinicalConverter.convertToStorageType(clinicalAnalysis);
-        if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
-            clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
-        } else {
-            clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        if (StringUtils.isEmpty(clinicalAnalysis.getCreationDate())) {
+            clinicalAnalysis.setCreationDate(TimeUtils.getTime());
         }
-        clinicalObject.put(PRIVATE_MODIFICATION_DATE, clinicalObject.get(PRIVATE_CREATION_DATE));
-        clinicalObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
-        return new OpenCGAResult(clinicalCollection.insert(clinicalObject, null));
+        Document clinicalDocument = clinicalConverter.convertToStorageType(clinicalAnalysis);
+        if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
+            clinicalDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
+        } else {
+            clinicalDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
+        clinicalDocument.put(PRIVATE_MODIFICATION_DATE, clinicalDocument.get(PRIVATE_CREATION_DATE));
+        clinicalDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+
+        logger.debug("Inserting ClinicalAnalysis '{}' ({})...", clinicalAnalysis.getId(), clinicalAnalysis.getUid());
+        clinicalCollection.insert(clientSession, clinicalDocument, null);
+        logger.debug("ClinicalAnalysis '{}' successfully inserted", clinicalAnalysis.getId());
+
+        return clinicalAnalysis;
     }
 
     @Override
