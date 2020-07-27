@@ -114,26 +114,19 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
     protected void check() throws Exception {
         super.check();
         toolParams.updateParams(params);
+        study = getStudyFqn();
         setUpStorageEngineExecutor(study);
-
         Set<String> allSamples = new HashSet<>();
 
-        try {
-            study = getStudyFqn();
-        } catch (CatalogException e) {
-            throw new ToolException(e);
+        Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
+        List<String> sampleNames = toolParams.getSample();
+        if (CollectionUtils.isNotEmpty(sampleNames)) {
+            catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), token)
+                    .getResults()
+                    .stream()
+                    .map(Sample::getId)
+                    .forEach(allSamples::add);
         }
-
-        try {
-            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
-            List<String> sampleNames = toolParams.getSample();
-            if (CollectionUtils.isNotEmpty(sampleNames)) {
-                catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), token)
-                        .getResults()
-                        .stream()
-                        .map(Sample::getId)
-                        .forEach(allSamples::add);
-            }
 
 //            if (samplesQuery != null) {
 //                List<String> samplesFromQuery = new LinkedList<>();
@@ -154,34 +147,31 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
 //                        .map(Sample::getId)
 //                        .forEach(allSamples::add);
 //            }
-            if (StringUtils.isNotEmpty(toolParams.getFamily())) {
-                Family family = catalogManager.getFamilyManager().get(study, toolParams.getFamily(), null, token).first();
-                List<String> individualIds = new ArrayList<>(family.getMembers().size());
-                for (Individual member : family.getMembers()) {
-                    individualIds.add(member.getId());
-                }
-                Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualIds);
-                catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
-                        .getResults()
-                        .stream()
-                        .map(Sample::getId)
-                        .forEach(allSamples::add);
+        if (StringUtils.isNotEmpty(toolParams.getFamily())) {
+            Family family = catalogManager.getFamilyManager().get(study, toolParams.getFamily(), null, token).first();
+            List<String> individualIds = new ArrayList<>(family.getMembers().size());
+            for (Individual member : family.getMembers()) {
+                individualIds.add(member.getId());
             }
-
-            List<String> nonIndexedSamples = new ArrayList<>();
-            // Remove non-indexed samples
-            for (String sample : allSamples) {
-                if (!indexedSamples.contains(sample)) {
-                    nonIndexedSamples.add(sample);
-                }
-            }
-            if (!nonIndexedSamples.isEmpty()) {
-                throw new IllegalArgumentException("Samples " + nonIndexedSamples + " are not indexed into the Variant Storage");
-            }
-
-        } catch (CatalogException e) {
-            throw new ToolException(e);
+            Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualIds);
+            catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
+                    .getResults()
+                    .stream()
+                    .map(Sample::getId)
+                    .forEach(allSamples::add);
         }
+
+        List<String> nonIndexedSamples = new ArrayList<>();
+        // Remove non-indexed samples
+        for (String sample : allSamples) {
+            if (!indexedSamples.contains(sample)) {
+                nonIndexedSamples.add(sample);
+            }
+        }
+        if (!nonIndexedSamples.isEmpty()) {
+            throw new IllegalArgumentException("Samples " + nonIndexedSamples + " are not indexed into the Variant Storage");
+        }
+
         checkedSamplesList = new ArrayList<>(allSamples);
         checkedSamplesList.sort(String::compareTo);
 
@@ -190,16 +180,13 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // check read permission
-        try {
-            variantStorageManager.checkQueryPermissions(
-                    new Query()
-                            .append(VariantQueryParam.STUDY.key(), study)
-                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), checkedSamplesList),
-                    new QueryOptions(),
-                    token);
-        } catch (CatalogException | StorageEngineException e) {
-            throw new ToolException(e);
-        }
+        variantStorageManager.checkQueryPermissions(
+                new Query()
+                        .append(VariantQueryParam.STUDY.key(), study)
+                        .append(VariantQueryParam.INCLUDE_SAMPLE.key(), checkedSamplesList),
+                new QueryOptions(),
+                token);
+
         outputFile = getOutDir().resolve(getId() + ".json");
     }
 
