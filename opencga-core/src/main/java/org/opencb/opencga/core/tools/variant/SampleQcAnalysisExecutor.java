@@ -27,7 +27,7 @@ import java.util.List;
 public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     public enum QcType {
-        VARIAN_STATS, FASTQC, FLAG_STATS, HS_METRICS, GENE_COVERAGE_STATS, MUTATIONAL_SIGNATURE
+        FLAG_STATS, HS_METRICS, GENE_COVERAGE_STATS
     }
 
     protected String studyId;

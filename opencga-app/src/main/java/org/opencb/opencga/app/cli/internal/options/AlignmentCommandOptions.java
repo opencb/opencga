@@ -489,6 +489,9 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--file"}, description = INPUT_FILE_DESCRIPTION)
         public String file;
 
+        @DynamicParameter(names = {"--fastqc-params"}, description = "FastQc parameters e.g.:. --fastqc-params kmers=10")
+        public Map<String, String> fastqcParams = new HashMap<>();
+
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
     }

@@ -454,7 +454,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.deeptoolsCommandOptions.executable,
                 alignmentCommandOptions.deeptoolsCommandOptions.bamFile,
                 alignmentCommandOptions.deeptoolsCommandOptions.outdir,
-                alignmentCommandOptions.deeptoolsCommandOptions.commonOptions.params
+                alignmentCommandOptions.deeptoolsCommandOptions.deeptoolsParams
         );
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.deeptoolsCommandOptions.study);
         return openCGAClient.getAlignmentClient().runDeeptools(deeptoolsWrapperParams, params);
@@ -466,7 +466,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         FastQcWrapperParams fastQcWrapperParams = new FastQcWrapperParams(
                 alignmentCommandOptions.fastqcCommandOptions.file,
                 alignmentCommandOptions.fastqcCommandOptions.outdir,
-                alignmentCommandOptions.fastqcCommandOptions.commonOptions.params
+                alignmentCommandOptions.fastqcCommandOptions.fastqcParams
         );
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.fastqcCommandOptions.study);
         return openCGAClient.getAlignmentClient().runFastqc(fastQcWrapperParams, params);
