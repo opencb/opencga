@@ -239,7 +239,7 @@ migrateCollection("sample", {}, {}, function(bulk, doc) {
 function _createNewInterpretation(clinical) {
     var newUid = db.metadata.findAndModify({
         query: { },
-        update: { $inc: { idCounter: 1 } }
+        update: { $inc: { idCounter: NumberLong(1) } }
     })['idCounter'];
 
     var interpretation = {
