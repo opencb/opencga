@@ -1097,7 +1097,7 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery() != null
-                    && params.getSignatureQuery().toParams().isEmpty()) {
+                    && !params.getSignatureQuery().toParams().isEmpty()) {
                 return createErrorResponse(new ToolException("Invalid parameters: if signature ID is empty, signature query must be"
                         + " null"));
             }

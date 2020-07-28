@@ -48,6 +48,7 @@ import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
@@ -56,7 +57,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor.CONTEXT_FILENAME;
 import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_SAMPLES;
+import static org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor.getContextIndexFilename;
 
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
 public class SampleQcAnalysis extends OpenCgaTool {
@@ -231,7 +234,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
         // mutationalSignature/run
         if (signatureJob != null) {
-            Path path = Paths.get(signatureJob.getOutDir().getUri().getPath()).resolve("context.txt");
+            Path path = Paths.get(signatureJob.getOutDir().getUri().getPath()).resolve(CONTEXT_FILENAME);
             if (path.toFile().exists()) {
                 Signature.SignatureCount[] signatureCounts = MutationalSignatureAnalysis.parseSignatureCounts(path.toFile());
 
