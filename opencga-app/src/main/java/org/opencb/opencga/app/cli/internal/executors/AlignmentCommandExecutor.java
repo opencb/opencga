@@ -215,6 +215,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         AlignmentCommandOptions.FastqcCommandOptions cliOptions = alignmentCommandOptions.fastqcCommandOptions;
         ObjectMap params = new ObjectMap();
         params.putAll(cliOptions.commonOptions.params);
+        params.putAll(cliOptions.fastqcParams);
 
         FastqcWrapperAnalysis fastqc = new FastqcWrapperAnalysis();
         fastqc.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);

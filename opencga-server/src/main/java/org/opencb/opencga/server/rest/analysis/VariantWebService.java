@@ -54,6 +54,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
@@ -63,6 +64,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.alignment.FastQcWrapperParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.job.Job;
@@ -913,6 +915,7 @@ public class VariantWebService extends AnalysisWebService {
     public Response mutationalSignatureQuery(
             @ApiParam(value = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour",
                     defaultValue = "false") @QueryParam("fitting") boolean fitting) {
+        File outDir = null;
         try {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
@@ -922,7 +925,7 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             // Create temporal directory
-            File outDir = Paths.get("/tmp/mutational-signature-" + System.nanoTime()).toFile();
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + System.nanoTime()).toFile();
             outDir.mkdir();
             if (!outDir.exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for mutational-signature/query analysis"));
@@ -942,13 +945,20 @@ public class VariantWebService extends AnalysisWebService {
             watch.stop();
             OpenCGAResult<MutationalSignature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                     Collections.singletonList(signatureResult), 1);
-
-            // Delete temporal directory
-            FileUtils.deleteDirectory(outDir);
-
             return createOkResponse(result);
         } catch (CatalogException | ToolException | IOException | StorageEngineException e) {
             return createErrorResponse(e);
+        } finally {
+            if (outDir != null) {
+                // Delete temporal directory
+                try {
+                    if (outDir.exists()) {
+                        FileUtils.deleteDirectory(outDir);
+                    }
+                } catch (IOException e) {
+                    logger.warn("Error cleaning scratch directory " + outDir, e);
+                }
+            }
         }
     }
 
@@ -1095,7 +1105,7 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery() != null
-                    && params.getSignatureQuery().toParams().isEmpty()) {
+                    && !params.getSignatureQuery().toParams().isEmpty()) {
                 return createErrorResponse(new ToolException("Invalid parameters: if signature ID is empty, signature query must be"
                         + " null"));
             }
@@ -1112,6 +1122,21 @@ public class VariantWebService extends AnalysisWebService {
                         if (CollectionUtils.isNotEmpty(metrics.getSignatures())) {
                             runSignature = false;
                         }
+                        break;
+                    }
+                }
+            }
+        }
+
+        boolean runFastQc = false;
+        if (catalogBamFile != null) {
+            if (sample.getQualityControl() == null || CollectionUtils.isEmpty(sample.getQualityControl().getMetrics())) {
+                runFastQc = true;
+            } else {
+                runFastQc = true;
+                for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                    if (catalogBamFile.getId().equals(metrics.getBamFileId()) && metrics.getFastQc() != null) {
+                        runFastQc = false;
                         break;
                     }
                 }
@@ -1148,6 +1173,22 @@ public class VariantWebService extends AnalysisWebService {
                         null, null, null, null);
                 Job signatureJob = jobResult.first();
                 dependsOnList.add(signatureJob.getId());
+            } catch (CatalogException e) {
+                return createErrorResponse(e);
+            }
+        }
+
+        // Run FastQC, if bam file exists
+        if (runFastQc) {
+            Map<String, String> dynamicParams = new HashMap<>();
+            dynamicParams.put("extract", "true");
+            FastQcWrapperParams fastQcParams = new FastQcWrapperParams(catalogBamFile.getId(), null, dynamicParams);
+            System.out.println("fastQcParams = " + fastQcParams);
+            try {
+                DataResult<Job> jobResult = submitJobRaw(FastqcWrapperAnalysis.ID, null, study, fastQcParams,
+                        null, null, null, null);
+                Job fastqcJob = jobResult.first();
+                dependsOnList.add(fastqcJob.getId());
             } catch (CatalogException e) {
                 return createErrorResponse(e);
             }
@@ -1214,13 +1255,14 @@ public class VariantWebService extends AnalysisWebService {
     public Response circos(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = CircosAnalysisParams.DESCRIPTION, required = true) CircosAnalysisParams params) {
+        File outDir = null;
         try {
             if (StringUtils.isEmpty(params.getTitle())) {
                 params.setTitle("UNTITLED");
             }
 
             // Create temporal directory
-            File outDir = Paths.get("/tmp/circos-" + System.nanoTime()).toFile();
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "circos-" + System.nanoTime()).toFile();
             outDir.mkdir();
             if (!outDir.exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for Circos analysis"));
@@ -1251,20 +1293,24 @@ public class VariantWebService extends AnalysisWebService {
                 OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                         Collections.singletonList(img), 1);
 
-                // Delete temporal directory
-                FileUtils.deleteDirectory(outDir);
-
                 //System.out.println(result.toString());
-
                 return createOkResponse(result);
             } else {
-                // Delete temporal directory
-                FileUtils.deleteDirectory(outDir);
-
                 return createErrorResponse(new Exception("Error plotting Circos graph"));
             }
         } catch (ToolException | IOException e) {
             return createErrorResponse(e);
+        } finally {
+            if (outDir != null) {
+                // Delete temporal directory
+                try {
+                    if (outDir.exists()) {
+                        FileUtils.deleteDirectory(outDir);
+                    }
+                } catch (IOException e) {
+                    logger.warn("Error cleaning scratch directory " + outDir, e);
+                }
+            }
         }
     }
 

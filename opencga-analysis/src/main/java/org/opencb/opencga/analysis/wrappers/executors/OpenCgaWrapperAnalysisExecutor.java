@@ -140,7 +140,8 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
                 }
                 sb.append(paramName).append(sep);
             }
-            if (StringUtils.isNotEmpty(params.getString(paramName))) {
+            String value = params.getString(paramName);
+            if (StringUtils.isNotEmpty(value) && !"true".equals(value)) {
                 sb.append(params.getString(paramName));
             }
         }

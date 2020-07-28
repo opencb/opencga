@@ -18,6 +18,8 @@ package org.opencb.opencga.analysis.sample.qc;
 
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.formats.sequence.fastqc.FastQc;
+import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
@@ -31,6 +33,7 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -45,6 +48,7 @@ import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
@@ -53,7 +57,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor.CONTEXT_FILENAME;
 import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_SAMPLES;
+import static org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor.getContextIndexFilename;
 
 @Tool(id = SampleQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = SampleQcAnalysis.DESCRIPTION)
 public class SampleQcAnalysis extends OpenCgaTool {
@@ -85,6 +91,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
     private SampleQualityControlMetrics metrics;
     private Job variantStatsJob = null;
     private Job signatureJob = null;
+    private Job fastQcJob = null;
 
     @Override
     protected void check() throws Exception {
@@ -139,11 +146,12 @@ public class SampleQcAnalysis extends OpenCgaTool {
                     if (dependsOnJob.getId().startsWith(SampleVariantStatsAnalysis.ID)) {
                         variantStatsJob = catalogManager.getJobManager().get(studyId, dependsOnJob.getId(), QueryOptions.empty(), token)
                                 .first();
-                        break;
                     } else if (dependsOnJob.getId().startsWith(MutationalSignatureAnalysis.ID)) {
                         signatureJob = catalogManager.getJobManager().get(studyId, dependsOnJob.getId(), QueryOptions.empty(), token)
                                 .first();
-                        break;
+                    } else if (dependsOnJob.getId().startsWith(FastqcWrapperAnalysis.ID)) {
+                        fastQcJob = catalogManager.getJobManager().get(studyId, dependsOnJob.getId(), QueryOptions.empty(), token)
+                                .first();
                     }
                 }
             }
@@ -172,7 +180,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
         // Step by step
         step(VARIANT_STATS_STEP, () -> runVariantStats());
-        step(FASTQC_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.FASTQC).execute());
+        step(FASTQC_STEP, () -> runFastQc());//executor.setQcType(SampleQcAnalysisExecutor.QcType.FASTQC).execute());
         step(FLAG_STATS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.FLAG_STATS).execute());
         step(HS_METRICS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.HS_METRICS).execute());
         step(GENE_COVERAGE_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.GENE_COVERAGE_STATS).execute());
@@ -226,7 +234,7 @@ public class SampleQcAnalysis extends OpenCgaTool {
 
         // mutationalSignature/run
         if (signatureJob != null) {
-            Path path = Paths.get(signatureJob.getOutDir().getUri().getPath()).resolve("context.txt");
+            Path path = Paths.get(signatureJob.getOutDir().getUri().getPath()).resolve(CONTEXT_FILENAME);
             if (path.toFile().exists()) {
                 Signature.SignatureCount[] signatureCounts = MutationalSignatureAnalysis.parseSignatureCounts(path.toFile());
 
@@ -268,6 +276,71 @@ public class SampleQcAnalysis extends OpenCgaTool {
         } else {
             addWarning("Skipping mutational signature: invalid parameters signature ID ('" + signatureId + "') and signature query('"
                     + signatureQuery + "')");
+        }
+    }
+
+
+    private void runFastQc() throws ToolException {
+        if (fastQcJob == null) {
+            addWarning("Skipping FastQc analysis");
+            return;
+        }
+
+        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(fastQcJob.getOutput())) {
+            FastQc fastQc = null;
+
+            // First, look for fastqc_data.txt to parse it
+            for (File file: fastQcJob.getOutput()) {
+                if (file.getName().equals("fastqc_data.txt")) {
+                    try {
+                        fastQc = FastQcParser.parse(Paths.get(file.getUri().getPath()).toFile());
+                    } catch (IOException e) {
+                        throw new ToolException(e);
+                    }
+                }
+            }
+
+            // Second, add images to the FastQc object
+            if (fastQc != null) {
+                for (File file : fastQcJob.getOutput()) {
+                    switch (file.getName()) {
+                        case "adapter_content.png": {
+                            fastQc.getAdapterContent().setFile(file.getId());
+                            break;
+                        }
+                        case "per_base_n_content.png": {
+                            fastQc.getPerBaseNContent().setFile(file.getId());
+                            break;
+                        }
+                        case "per_base_sequence_content.png": {
+                            fastQc.getPerBaseSeqContent().setFile(file.getId());
+                            break;
+                        }
+                        case "per_sequence_quality.png": {
+                            fastQc.getPerSeqQualityScore().setFile(file.getId());
+                            break;
+                        }
+                        case "duplication_levels.png": {
+                            fastQc.getSeqDuplicationLevel().setFile(file.getId());
+                            break;
+                        }
+                        case "per_base_quality.png": {
+                            fastQc.getPerBaseSeqQuality().setFile(file.getId());
+                            break;
+                        }
+                        case "per_sequence_gc_content.png": {
+                            fastQc.getPerSeqGcContent().setFile(file.getId());
+                            break;
+                        }
+                        case "sequence_length_distribution.png": {
+                            fastQc.getSeqLengthDistribution().setFile(file.getId());
+                            break;
+                        }
+                    }
+                }
+
+                metrics.setFastQc(fastQc);
+            }
         }
     }
 
