@@ -97,7 +97,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
-        filterList.add(Filters.eq(QueryParams.STATUS.key(), Status.READY));
+        filterList.add(Filters.eq(QueryParams.INTERNAL_STATUS.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = interpretationCollection.count(clientSession, bson);
@@ -245,29 +245,35 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 throw new CatalogDBException("Update interpretation: Cannot set the same id parameter for different interpretations");
             }
 
-            // Check that the new clinical analysis id will be unique
-            long studyId = getStudyId(interpretationDataResult.first().getUid());
+            if (!interpretationDataResult.first().getId().equals(parameters.getString(QueryParams.ID.key()))) {
+                // Check that the new clinical analysis id will be unique
+                long studyId = getStudyId(interpretationDataResult.first().getUid());
 
-            tmpQuery = new Query()
-                    .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
-                    .append(QueryParams.STUDY_UID.key(), studyId);
-            OpenCGAResult<Long> count = count(tmpQuery);
-            if (count.getNumMatches() > 0) {
-                throw new CatalogDBException("Cannot set id for interpretation. A interpretation with { id: '"
-                        + parameters.get(QueryParams.ID.key()) + "'} already exists.");
+                tmpQuery = new Query()
+                        .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
+                        .append(QueryParams.STUDY_UID.key(), studyId);
+                OpenCGAResult<Long> count = count(tmpQuery);
+                if (count.getNumMatches() > 0) {
+                    throw new CatalogDBException("Cannot set id for interpretation. A interpretation with { id: '"
+                            + parameters.get(QueryParams.ID.key()) + "'} already exists.");
+                }
+
+                document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
             }
-
-            document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.STATUS.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.FILTERS.key()};
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
+        }
+
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] objectAcceptedParams = {QueryParams.PANELS.key(), QueryParams.SOFTWARE.key(), QueryParams.ANALYST.key(),
-                QueryParams.DEPENDENCIES.key(), QueryParams.REPORTED_VARIANTS.key(), QueryParams.REPORTED_LOW_COVERAGE.key()};
+        String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.METHODS.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
@@ -286,8 +292,23 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 break;
         }
 
-        operation = (String) actionMap.getOrDefault(QueryParams.REPORTED_VARIANTS.key(), "ADD");
-        objectAcceptedParams = new String[]{QueryParams.REPORTED_VARIANTS.key()};
+        operation = (String) actionMap.getOrDefault(QueryParams.PRIMARY_FINDINGS.key(), "ADD");
+        objectAcceptedParams = new String[]{QueryParams.PRIMARY_FINDINGS.key()};
+        switch (operation) {
+            case "SET":
+                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                break;
+            case "REMOVE":
+                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                break;
+            case "ADD":
+            default:
+                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                break;
+        }
+
+        operation = (String) actionMap.getOrDefault(QueryParams.SECONDARY_FINDINGS.key(), "ADD");
+        objectAcceptedParams = new String[]{QueryParams.SECONDARY_FINDINGS.key()};
         switch (operation) {
             case "SET":
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
@@ -471,8 +492,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         List<Bson> andBsonList = new ArrayList<>();
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -493,32 +512,24 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
-                        break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
-                    case STATUS:
-                    case STATUS_NAME:
+                    case INTERNAL_STATUS:
+                    case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
                                 Status.getPositiveStatus(Enums.ExecutionStatus.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), query, QueryParams.STATUS_NAME.type(),
-                                andBsonList);
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), query,
+                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
-                    case CLINICAL_ANALYSIS:
+                    case CLINICAL_ANALYSIS_ID:
                     case DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;

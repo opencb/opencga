@@ -490,9 +490,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        if (ListUtils.isNotEmpty(interpretation.getPrimaryFindings()) && (parameters.size() > 1
-                || !parameters.containsKey(InterpretationDBAdaptor.QueryParams.REPORTED_VARIANTS.key()))) {
-            throw new CatalogException("Interpretation already has reported variants. Only array of reported variants can be updated.");
+        if ((ListUtils.isNotEmpty(interpretation.getPrimaryFindings()) || ListUtils.isNotEmpty(interpretation.getSecondaryFindings()))
+                && !parameters.containsKey(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key())
+                && !parameters.containsKey(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key())) {
+            throw new CatalogException("Interpretation already has primary or secondary findings. Only array of primary or secondary "
+                    + "findings can be updated.");
         }
 
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {

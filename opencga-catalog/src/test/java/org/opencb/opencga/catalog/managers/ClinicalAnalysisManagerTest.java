@@ -25,8 +25,10 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Comment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Analyst;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -336,7 +338,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         i.setMethods(Collections.singletonList(method));
         i.setAnalyst(new Analyst("user2", "mail@mail.com", "company"));
         i.setComments(Collections.singletonList(new Comment("author", "type", "comment 1", "date")));
-        i.setPrimaryFindings(Collections.emptyList());
+        i.setPrimaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", null, "chr1", 1, 2, "", "", "+", null, 1,
+                null, null, null))));
 
         DataResult<Interpretation> interpretationDataResult = catalogManager.getInterpretationManager()
                 .update(STUDY, dummyEnvironment.first().getId(), i, QueryOptions.empty(), sessionIdUser);
@@ -355,6 +358,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(0, clinicalAnalysisDataResult.first().getSecondaryInterpretations().size());
         assertEquals("interpretationId", clinicalAnalysisDataResult.first().getInterpretation().getId());
         assertEquals(null, clinicalAnalysisDataResult.first().getInterpretation().getDescription());
+        assertEquals(null, clinicalAnalysisDataResult.first().getInterpretation().getPrimaryFindings());
+        clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
+                dummyEnvironment.first().getId(), new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(),
+                        ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key())), sessionIdUser);
+        assertEquals(1, clinicalAnalysisDataResult.first().getInterpretation().getPrimaryFindings().size());
     }
 
     @Test

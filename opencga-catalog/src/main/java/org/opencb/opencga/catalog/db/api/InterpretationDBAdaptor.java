@@ -36,27 +36,22 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         ID("id", TEXT, ""),
         UID("uid", INTEGER, ""),
         UUID("uuid", TEXT, ""),
-        CLINICAL_ANALYSIS("clinicalAnalysisId", TEXT, ""),
+        CLINICAL_ANALYSIS_ID("clinicalAnalysisId", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
-        STATUS("status", OBJECT, ""),
-        STATUS_NAME("status.name", TEXT, ""),
-        VERSION("version", INTEGER, ""),
+        INTERNAL_STATUS("internal.status", TEXT, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
+        ANALYST("analyst", TEXT_ARRAY, ""),
+        METHODS("methods", TEXT_ARRAY, ""),
+        PRIMARY_FINDINGS("primaryFindings", TEXT_ARRAY, ""),
+        SECONDARY_FINDINGS("secondaryFindings", TEXT_ARRAY, ""),
+        COMMENTS("comments", TEXT_ARRAY, ""),
+        STATUS("status", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
+        VERSION("version", INTEGER, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
 
-        PANELS("panels", TEXT_ARRAY, ""),
-        SOFTWARE("software", TEXT_ARRAY, ""),
-        ANALYST("analyst", TEXT_ARRAY, ""),
-        DEPENDENCIES("dependencies", TEXT_ARRAY, ""),
-        FILTERS("filters", TEXT_ARRAY, ""),
-        REPORTED_VARIANTS("clinicalVariants", TEXT_ARRAY, ""),
-        REPORTED_LOW_COVERAGE("reportedLowCoverages", TEXT_ARRAY, ""),
-        COMMENTS("comments", TEXT_ARRAY, ""),
-
-
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
