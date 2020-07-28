@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.variant.circos;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
 import org.opencb.biodata.models.variant.avro.StructuralVariantType;
@@ -24,14 +25,17 @@ import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
+import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.CircosTrack;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.CircosAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,7 +49,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 
 @ToolExecutor(id="opencga-local", tool = CircosAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
-public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements VariantStorageToolExecutor {
+public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements StorageToolExecutor {
 
     public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc1";
 
@@ -59,6 +63,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
     private boolean plotCopynumber = false;
     private boolean plotIndels = false;
     private boolean plotRearrangements = false;
+
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public CircosLocalAnalysisExecutor() {
         super();
@@ -121,8 +127,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 + " " + DOCKER_OUTPUT_PATH + "/" + rearrsFile.getName()
                 + " " + getCircosParams().getTitle();
 
+        StopWatch stopWatch = StopWatch.createStarted();
         String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
-        System.out.println("Docker command line: " + cmdline);
+        logger.info("Docker command line: " + cmdline);
+        logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
     }
 
     /**
