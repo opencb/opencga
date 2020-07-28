@@ -292,3 +292,10 @@ migrateCollection("clinical", {}, {'id': 1, 'studyUid': 1, '_creationDate': 1, '
         bulk.find({"_id": doc._id}).updateOne({"$set": toset});
     }
 });
+
+// Delete roleToProband and qualityControl from Clinical Analysis
+db.clinical.update({}, {"$unset": {
+        "qualityControl": "",
+        "roleToProband": ""
+    }}
+);

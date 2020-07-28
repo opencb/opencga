@@ -219,9 +219,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
-        String[] acceptedMapParams = {QueryParams.ROLE_TO_PROBAND.key()};
-        filterMapParams(parameters, document.getSet(), acceptedMapParams);
-
         clinicalConverter.validateInterpretationToUpdate(document.getSet());
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateProbandToUpdate(document.getSet());
@@ -247,24 +244,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
                     break;
             }
-        }
-
-        if (parameters.containsKey(QueryParams.QUALITY_CONTROL.key())) {
-            // Check all quality control parameters
-            String[] qualityObjectParams = {QueryParams.QUALITY_CONTROL_VARIANT.key(), QueryParams.QUALITY_CONTROL_ALIGNMENT.key(),
-                    QueryParams.QUALITY_CONTROL_ANALYST.key()};
-            filterObjectParams(parameters, document.getSet(), qualityObjectParams);
-
-            String[] qualityStringParams = {QueryParams.QUALITY_CONTROL_QUALITY.key()};
-            filterStringParams(parameters, document.getSet(), qualityStringParams);
-
-            // We don't set the list of comments, we always add to the current list
-            String[] qualityListParams = {QueryParams.QUALITY_CONTROL_COMMENTS.key()};
-            filterObjectParams(parameters, document.getAddToSet(), qualityListParams);
-
-            // We always update the date
-            document.getSet().put(QueryParams.QUALITY_CONTROL_DATE.key(), TimeUtils.getTime());
-//            nestedPut(QueryParams.QUALITY_CONTROL_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {

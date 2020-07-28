@@ -37,16 +37,16 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         super();
     }
 
-    public Interpretation(String id, String description, String clinicalAnalysisId, Analyst analyst, InterpretationMethod method,
+    public Interpretation(String id, String description, String clinicalAnalysisId, Analyst analyst, List<InterpretationMethod> methods,
                           String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
                           List<Comment> comments, Map<String, Object> attributes) {
-        super(id, "", description, clinicalAnalysisId, analyst, method, primaryFindings, secondaryFindings, comments, null, creationDate,
+        super(id, "", description, clinicalAnalysisId, analyst, methods, primaryFindings, secondaryFindings, comments, null, creationDate,
                 0, attributes);
     }
 
     public Interpretation(org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
         this(interpretation.getId(), interpretation.getDescription(), interpretation.getClinicalAnalysisId(), interpretation.getAnalyst(),
-                interpretation.getMethod(), interpretation.getCreationDate(), interpretation.getPrimaryFindings(),
+                interpretation.getMethods(), interpretation.getCreationDate(), interpretation.getPrimaryFindings(),
                 interpretation.getSecondaryFindings(), interpretation.getComments(), interpretation.getAttributes());
     }
 

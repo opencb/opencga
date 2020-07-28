@@ -216,33 +216,6 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
-    public void updateQualityControl() throws CatalogException, InterruptedException {
-        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
-
-        ClinicalAnalysisQcUpdateParams updateParams = new ClinicalAnalysisQcUpdateParams()
-                .setQuality(ClinicalAnalysisQc.Quality.LOW)
-                .setComments(Arrays.asList(new Comment("pfurio", "INFO", "message1", TimeUtils.getTime())));
-        catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
-                new ClinicalUpdateParams().setQualityControl(updateParams), QueryOptions.empty(), sessionIdUser);
-        OpenCGAResult<ClinicalAnalysis> result1 = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(),
-                new QueryOptions(), sessionIdUser);
-
-        assertEquals(ClinicalAnalysisQc.Quality.LOW, result1.first().getQualityControl().getQuality());
-        assertEquals(1, result1.first().getQualityControl().getComments().size());
-
-        updateParams = new ClinicalAnalysisQcUpdateParams()
-                .setComments(Arrays.asList(new Comment("jcoll", "INFO", "message2", TimeUtils.getTime())));
-        catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
-                new ClinicalUpdateParams().setQualityControl(updateParams), QueryOptions.empty(), sessionIdUser);
-        OpenCGAResult<ClinicalAnalysis> result2 = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(),
-                new QueryOptions(), sessionIdUser);
-
-        assertEquals(2, result2.first().getQualityControl().getComments().size());
-        assertEquals("message1", result2.first().getQualityControl().getComments().get(0).getMessage());
-        assertEquals("message2", result2.first().getQualityControl().getComments().get(1).getMessage());
-    }
-
-    @Test
     public void updateDisorder() throws CatalogException {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
 
@@ -360,7 +333,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         i.setId("interpretationId");
         i.setDescription("description");
         i.setClinicalAnalysisId(dummyEnvironment.first().getId());
-        i.setMethod(method);
+        i.setMethods(Collections.singletonList(method));
         i.setAnalyst(new Analyst("user2", "mail@mail.com", "company"));
         i.setComments(Collections.singletonList(new Comment("author", "type", "comment 1", "date")));
         i.setPrimaryFindings(Collections.emptyList());

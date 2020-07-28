@@ -18,11 +18,8 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.interpretation.Analyst;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -85,10 +82,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key()));
-    public static final QueryOptions INCLUDE_QUALITY_CONTROL = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-            ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key()));
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                             DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -117,11 +110,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-//                ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(),
-//                ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
-//                ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key(), ClinicalAnalysisDBAdaptor.QueryParams.ID.key(),
-//                ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key()));
         OpenCGAResult<ClinicalAnalysis> analysisDataResult = clinicalDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (analysisDataResult.getNumResults() == 0) {
             analysisDataResult = clinicalDBAdaptor.get(queryCopy, queryOptions);
@@ -448,19 +436,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
             clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
-            clinicalAnalysis.setQualityControl(ParamUtils.defaultObject(clinicalAnalysis.getQualityControl(),
-                    new ClinicalAnalysisQc(ClinicalAnalysisQc.Quality.UNKNOWN,
-                            new ClinicalAnalysisVariantQc(Collections.emptyList(), Collections.emptyList()),
-                            new ClinicalAnalysisAlignmentQc(Collections.emptyList(), Collections.emptyList(), Collections.emptyList()),
-                            new Analyst("", "", ""), Collections.emptyList(), TimeUtils.getTime())));
-            clinicalAnalysis.setInterpretation(ParamUtils.defaultObject(clinicalAnalysis.getInterpretation(), Interpretation::new));
             clinicalAnalysis.setSecondaryInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getSecondaryInterpretations(),
                     ArrayList::new));
             clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), Enums.Priority.MEDIUM));
             clinicalAnalysis.setFlags(ParamUtils.defaultObject(clinicalAnalysis.getFlags(), ArrayList::new));
             clinicalAnalysis.setConsent(ParamUtils.defaultObject(clinicalAnalysis.getConsent(), new ClinicalConsent()));
 
-            validateRoleToProband(clinicalAnalysis);
             sortMembersFromFamily(clinicalAnalysis);
 
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
@@ -503,80 +484,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             if (!found) {
                 throw new CatalogException("Disorder '" + clinicalAnalysis.getDisorder().getId() + "' does not seem to be one of the "
                         + "proband disorders");
-            }
-        }
-    }
-
-    private void validateRoleToProband(ClinicalAnalysis clinicalAnalysis) throws CatalogException {
-        // Get as many automatic roles as possible
-        Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband = new HashMap<>();
-        if (clinicalAnalysis.getProband() != null && StringUtils.isNotEmpty(clinicalAnalysis.getProband().getId())) {
-            roleToProband.put(clinicalAnalysis.getProband().getId(), ClinicalAnalysis.FamiliarRelationship.PROBAND);
-
-            String motherId = null;
-            String fatherId = null;
-            if (clinicalAnalysis.getProband().getFather() != null
-                    && StringUtils.isNotEmpty(clinicalAnalysis.getProband().getFather().getId())) {
-                fatherId = clinicalAnalysis.getProband().getFather().getId();
-                roleToProband.put(fatherId, ClinicalAnalysis.FamiliarRelationship.FATHER);
-            }
-            if (clinicalAnalysis.getProband().getMother() != null
-                    && StringUtils.isNotEmpty(clinicalAnalysis.getProband().getMother().getId())) {
-                motherId = clinicalAnalysis.getProband().getMother().getId();
-                roleToProband.put(motherId, ClinicalAnalysis.FamiliarRelationship.MOTHER);
-            }
-
-            if (clinicalAnalysis.getFamily() != null && ListUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())
-                    && motherId != null && fatherId != null) {
-                // We look for possible brothers or sisters of the proband
-                for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-                    if (!roleToProband.containsKey(member.getId())) {
-                        if (member.getFather() != null && fatherId.equals(member.getFather().getId()) && member.getMother() != null
-                                && motherId.equals(member.getMother().getId())) {
-                            // They are siblings for sure
-                            if (member.getSex() == null || IndividualProperty.Sex.UNKNOWN.equals(member.getSex())
-                                    || IndividualProperty.Sex.UNDETERMINED.equals(member.getSex())) {
-                                roleToProband.put(member.getId(), ClinicalAnalysis.FamiliarRelationship.FULL_SIBLING);
-                            } else if (IndividualProperty.Sex.MALE.equals(member.getSex())) {
-                                roleToProband.put(member.getId(), ClinicalAnalysis.FamiliarRelationship.BROTHER);
-                            } else if (IndividualProperty.Sex.FEMALE.equals(member.getSex())) {
-                                roleToProband.put(member.getId(), ClinicalAnalysis.FamiliarRelationship.SISTER);
-                            }
-                        } else {
-                            // We don't know the relation
-                            roleToProband.put(member.getId(), ClinicalAnalysis.FamiliarRelationship.UNKNOWN);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (MapUtils.isNotEmpty(clinicalAnalysis.getRoleToProband())) {
-            // We will always keep the roles provided by the user and add any other that might be missing
-            for (String memberId : roleToProband.keySet()) {
-                if (!clinicalAnalysis.getRoleToProband().containsKey(memberId)) {
-                    clinicalAnalysis.getRoleToProband().put(memberId, roleToProband.get(memberId));
-                }
-            }
-        } else {
-            // Set automatic roles
-            clinicalAnalysis.setRoleToProband(roleToProband);
-        }
-
-        // Validate that proband, mother and father only exists once.
-        Map<ClinicalAnalysis.FamiliarRelationship, Long> roleCount = clinicalAnalysis.getRoleToProband().values().stream().
-                collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        for (Map.Entry<ClinicalAnalysis.FamiliarRelationship, Long> roleEntry : roleCount.entrySet()) {
-            switch (roleEntry.getKey()) {
-                case PROBAND:
-                case FATHER:
-                case MOTHER:
-                    if (roleEntry.getValue() > 1) {
-                        throw new CatalogException("Found duplicated " + roleEntry.getKey() + " role");
-                    }
-                    break;
-                default:
-                    break;
             }
         }
     }
@@ -1059,24 +966,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), clinicalAnalysis.getFiles());
         }
 
-        if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.ROLE_TO_PROBAND.key())
-                && (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())
-                || parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key()))) {
-            // We need to validate the role to proband
-            Map<String, String> map = parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.ROLE_TO_PROBAND.key(), Map.class);
-            for (String memberId : map.keySet()) {
-                clinicalAnalysis.getRoleToProband().put(memberId, ClinicalAnalysis.FamiliarRelationship.valueOf(map.get(memberId)));
-            }
-            validateRoleToProband(clinicalAnalysis);
-            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.ROLE_TO_PROBAND.key(), clinicalAnalysis.getRoleToProband());
-
-            if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {
-                if (sortMembersFromFamily(clinicalAnalysis)) {
-                    parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), clinicalAnalysis.getFamily());
-                }
-            }
-        }
-
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.DISORDER.key())) {
             // Assign the disorder to be updated to the clinicalAnalysis obtained from the DB so it can be checked in context
             clinicalAnalysis.setDisorder(updateParams.getDisorder().toDisorder());
@@ -1103,15 +992,26 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
      * @return false if it could not be sorted, true otherwise.
      */
     private boolean sortMembersFromFamily(ClinicalAnalysis clinicalAnalysis) {
-        if (clinicalAnalysis.getRoleToProband().isEmpty() || clinicalAnalysis.getFamily() == null
-                || ListUtils.isEmpty(clinicalAnalysis.getFamily().getMembers())) {
+        if (clinicalAnalysis.getFamily() == null || ListUtils.isEmpty(clinicalAnalysis.getFamily().getMembers())
+                || clinicalAnalysis.getFamily().getRoles().isEmpty()) {
+            return false;
+        }
+
+        Family family = clinicalAnalysis.getFamily();
+        String probandId = clinicalAnalysis.getProband().getId();
+        if (family.getRoles().get(probandId).isEmpty()) {
             return false;
         }
 
         // Role -> list of individuals
         Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> roleToProband = new HashMap<>();
-        for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-            ClinicalAnalysis.FamiliarRelationship role = clinicalAnalysis.getRoleToProband().get(member.getId());
+        roleToProband.put(ClinicalAnalysis.FamiliarRelationship.PROBAND, Collections.singletonList(clinicalAnalysis.getProband()));
+        for (Individual member : family.getMembers()) {
+            if (member.getId().equals(probandId)) {
+                continue;
+            }
+
+            ClinicalAnalysis.FamiliarRelationship role = family.getRoles().get(probandId).get(member.getId());
             if (role == null) {
                 return false;
             }
@@ -1121,7 +1021,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             roleToProband.get(role).add(member);
         }
 
-        List<Individual> members = new ArrayList<>(clinicalAnalysis.getFamily().getMembers().size());
+        List<Individual> members = new ArrayList<>(family.getMembers().size());
         if (roleToProband.containsKey(ClinicalAnalysis.FamiliarRelationship.PROBAND)) {
             members.add(roleToProband.get(ClinicalAnalysis.FamiliarRelationship.PROBAND).get(0));
             roleToProband.remove(ClinicalAnalysis.FamiliarRelationship.PROBAND);
@@ -1141,7 +1041,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        clinicalAnalysis.getFamily().setMembers(members);
+        family.setMembers(members);
         return true;
     }
 
