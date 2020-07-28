@@ -915,6 +915,7 @@ public class VariantWebService extends AnalysisWebService {
     public Response mutationalSignatureQuery(
             @ApiParam(value = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour",
                     defaultValue = "false") @QueryParam("fitting") boolean fitting) {
+        File outDir = null;
         try {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
@@ -924,7 +925,7 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             // Create temporal directory
-            File outDir = Paths.get("/tmp/mutational-signature-" + System.nanoTime()).toFile();
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + System.nanoTime()).toFile();
             outDir.mkdir();
             if (!outDir.exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for mutational-signature/query analysis"));
@@ -944,13 +945,20 @@ public class VariantWebService extends AnalysisWebService {
             watch.stop();
             OpenCGAResult<MutationalSignature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                     Collections.singletonList(signatureResult), 1);
-
-            // Delete temporal directory
-            FileUtils.deleteDirectory(outDir);
-
             return createOkResponse(result);
         } catch (CatalogException | ToolException | IOException | StorageEngineException e) {
             return createErrorResponse(e);
+        } finally {
+            if (outDir != null) {
+                // Delete temporal directory
+                try {
+                    if (outDir.exists()) {
+                        FileUtils.deleteDirectory(outDir);
+                    }
+                } catch (IOException e) {
+                    logger.warn("Error cleaning scratch directory " + outDir, e);
+                }
+            }
         }
     }
 
@@ -1247,13 +1255,14 @@ public class VariantWebService extends AnalysisWebService {
     public Response circos(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = CircosAnalysisParams.DESCRIPTION, required = true) CircosAnalysisParams params) {
+        File outDir = null;
         try {
             if (StringUtils.isEmpty(params.getTitle())) {
                 params.setTitle("UNTITLED");
             }
 
             // Create temporal directory
-            File outDir = Paths.get("/tmp/circos-" + System.nanoTime()).toFile();
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "circos-" + System.nanoTime()).toFile();
             outDir.mkdir();
             if (!outDir.exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for Circos analysis"));
@@ -1284,20 +1293,24 @@ public class VariantWebService extends AnalysisWebService {
                 OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                         Collections.singletonList(img), 1);
 
-                // Delete temporal directory
-                FileUtils.deleteDirectory(outDir);
-
                 //System.out.println(result.toString());
-
                 return createOkResponse(result);
             } else {
-                // Delete temporal directory
-                FileUtils.deleteDirectory(outDir);
-
                 return createErrorResponse(new Exception("Error plotting Circos graph"));
             }
         } catch (ToolException | IOException e) {
             return createErrorResponse(e);
+        } finally {
+            if (outDir != null) {
+                // Delete temporal directory
+                try {
+                    if (outDir.exists()) {
+                        FileUtils.deleteDirectory(outDir);
+                    }
+                } catch (IOException e) {
+                    logger.warn("Error cleaning scratch directory " + outDir, e);
+                }
+            }
         }
     }
 
