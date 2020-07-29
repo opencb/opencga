@@ -2,31 +2,47 @@ package org.opencb.opencga.storage.core.variant.query;
 
 import org.opencb.commons.datastore.core.QueryParam;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
-public class ParsedQuery<T> {
+public class ParsedQuery<T> extends Values<T> {
 
-    private final QueryParam param;
-    private final VariantQueryUtils.QueryOperation operation;
-    private final List<T> values;
+    private QueryParam key;
 
-    public ParsedQuery(QueryParam param, VariantQueryUtils.QueryOperation operation, List<T> values) {
-        this.param = param;
-        this.operation = operation;
-        this.values = values;
+    public ParsedQuery(QueryParam key, VariantQueryUtils.QueryOperation operation, List<T> value) {
+        super(operation, value);
+        this.key = key;
     }
 
-    public QueryParam getParam() {
-        return param;
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("ParsedQuery{");
+        sb.append("key=").append(key.key());
+        sb.append(", operation=").append(getOperation());
+        sb.append(", values=").append(getValues());
+        sb.append('}');
+        return sb.toString();
     }
 
-    @Nullable
-    public VariantQueryUtils.QueryOperation getOperation() {
-        return operation;
+    @Override
+    public void toQuery(StringBuilder sb) {
+        super.toQuery(sb);
     }
 
-    public List<T> getValues() {
-        return values;
+//    @Override
+//    public String describe() {
+//        StringBuilder sb = new StringBuilder();
+//        super.describe(sb);
+//        String describe = sb.toString();
+//        if (describe.startsWith("( ") && describe.endsWith(" )")) {
+//            describe = describe.substring(2, describe.length() - 2);
+//        }
+//        return key.key() + " : " + describe;
+//    }
+
+    @Override
+    public void describe(StringBuilder sb) {
+        sb.append(key.key());
+        sb.append(" : ");
+        super.describe(sb);
     }
 }

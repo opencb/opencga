@@ -121,22 +121,13 @@ public class VariantHBaseQueryParser {
 //            otherParams.remove(REGION);
 //        }
         if (otherParams.contains(STUDY)) {
-            String value = query.getString(STUDY.key());
-            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
-                messages.add("Negated studies not supported");
-            }
-            otherParams.remove(STUDY);
-        }
-        if (otherParams.contains(STUDY)) {
-            String value = query.getString(STUDY.key());
-            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
+            if (splitValue(query, STUDY).getValues().stream().anyMatch(VariantQueryUtils::isNegated)) {
                 messages.add("Negated studies not supported");
             }
             otherParams.remove(STUDY);
         }
         if (otherParams.contains(FILE)) {
-            String value = query.getString(FILE.key());
-            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
+            if (splitValue(query, FILE).getValues().stream().anyMatch(VariantQueryUtils::isNegated)) {
                 messages.add("Negated files not supported");
             }
             otherParams.remove(FILE);
