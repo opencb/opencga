@@ -1067,6 +1067,8 @@ public class VariantSqlQueryParser {
                     sb.append(fileDataOperation.toString());
                 }
 
+                sb.append(" ( ");
+
                 Pair<Integer, Integer> fileIdPair = metadataManager
                         .getFileIdPair(fileDataValues.getKey(), false, defaultStudyMetadata);
 
@@ -1131,6 +1133,7 @@ public class VariantSqlQueryParser {
                     }
                     sb.append(" ) ");
                 }
+                sb.append(" ) ");
             }
             filters.add(sb.toString());
         }

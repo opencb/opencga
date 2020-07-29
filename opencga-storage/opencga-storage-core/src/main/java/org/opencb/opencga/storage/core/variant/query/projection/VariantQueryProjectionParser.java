@@ -358,12 +358,12 @@ public class VariantQueryProjectionParser {
             includeFiles = VariantQueryUtils.splitValue(files, VariantQueryUtils.checkOperator(files))
                     .stream()
                     .filter(value -> !VariantQueryUtils.isNegated(value))
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
         }
         if (VariantQueryUtils.isValidParam(query, FILE_DATA)) {
             ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery = VariantQueryUtils.parseFileData(query);
             if (includeFiles == null) {
-                includeFiles = new HashSet<>(parsedQuery.getValues().size());
+                includeFiles = new LinkedHashSet<>(parsedQuery.getValues().size());
             }
             parsedQuery.getValues().stream().map(KeyValues::getKey).forEach(includeFiles::add);
         }

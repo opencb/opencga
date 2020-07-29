@@ -301,13 +301,13 @@ public class VariantQueryParser {
                         if (isValidParam(query, FILTER)) {
                             throw VariantQueryException.unsupportedParamsCombination(
                                     FILE_DATA, query.getString(FILE_DATA.key()),
-                                    FILTER, null);
+                                    FILTER, query.getString(FILTER.key()));
                         }
                     } else if (fileDataKey.equals(StudyEntry.QUAL)) {
                         if (isValidParam(query, QUAL)) {
                             throw VariantQueryException.unsupportedParamsCombination(
                                     FILE_DATA, query.getString(FILE_DATA.key()),
-                                    QUAL, null);
+                                    QUAL, query.getString(QUAL.key()));
                         }
                     } else {
                         VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("INFO", fileDataKey);
