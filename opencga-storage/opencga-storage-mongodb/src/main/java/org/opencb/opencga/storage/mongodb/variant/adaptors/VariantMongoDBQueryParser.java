@@ -24,7 +24,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
@@ -335,14 +334,13 @@ public class VariantMongoDBQueryParser {
             }
 
             if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
-                String value = query.getString(ANNOT_CLINICAL_SIGNIFICANCE.key());
                 String key = DocumentToVariantConverter.ANNOTATION_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.CLINICAL_CLINVAR_FIELD
                         + '.' + "clinicalSignificance";
-                Pair<QueryOperation, List<String>> pair = splitValue(value);
-                List<DBObject> list = new ArrayList<>(pair.getValue().size());
-                for (String clinicalSignificance : pair.getValue()) {
+                ParsedQuery<String> values = splitValue(query, ANNOT_CLINICAL_SIGNIFICANCE);
+                List<DBObject> list = new ArrayList<>(values.getValues().size());
+                for (String clinicalSignificance : values) {
                     ClinicalSignificance enumValue = EnumUtils.getEnum(ClinicalSignificance.class, clinicalSignificance);
                     if (enumValue != null) {
                         for (Map.Entry<String, ClinicalSignificance> entry : VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.entrySet()) {
@@ -355,7 +353,7 @@ public class VariantMongoDBQueryParser {
                     list.add(new QueryBuilder().and(key).regex(Pattern.compile("^"
                             + clinicalSignificance, Pattern.CASE_INSENSITIVE)).get());
                 }
-                if (QueryOperation.OR.equals(pair.getKey())) {
+                if (QueryOperation.OR.equals(values.getOperation())) {
                     builder.or(list.toArray(new DBObject[0]));
                 } else {
                     builder.and(list.toArray(new DBObject[0]));
@@ -561,13 +559,12 @@ public class VariantMongoDBQueryParser {
                 String filterValue = query.getString(FILTER.key());
                 QueryOperation filterOperation = checkOperator(filterValue);
                 List<String> filterValues = splitValue(filterValue, filterOperation);
-                Pair<QueryOperation, Map<String, String>> infoParamPair = parseInfo(query);
-                QueryOperation infoOperator = infoParamPair.getKey();
-                Map<String, String> infoMap = infoParamPair.getValue();
+                ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedFileData = parseFileData(query);
+                QueryOperation fileDataOperation = parsedFileData.getOperation();
 
 
                 boolean useFileElemMatch = !fileIds.isEmpty();
-                boolean infoInFileElemMatch = useFileElemMatch && (infoOperator == null || filesOperation == infoOperator);
+                boolean infoInFileElemMatch = useFileElemMatch && (fileDataOperation == null || filesOperation == fileDataOperation);
 
 //                values = query.getString(QUAL.key());
 //                QueryOperation qualOperation = checkOperator(values);
@@ -609,15 +606,25 @@ public class VariantMongoDBQueryParser {
                             addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), fileBuilder, false);
                         }
 
-                        if (infoInFileElemMatch && !infoMap.isEmpty()) {
+                        if (infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
                             if (defaultStudy == null) {
                                 throw VariantQueryException.missingStudyForFile(fileId.toString(),
                                         metadataManager.getStudyNames());
                             }
                             String fileName = metadataManager.getFileName(defaultStudy.getId(), fileId);
-                            String infoValue = infoMap.get(fileName);
-                            if (infoValue != null) {
-                                addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, infoValue, fileBuilder, true);
+                            KeyValues<String, KeyOpValue<String, String>> fileDataValue =
+                                    parsedFileData.getValue(kv -> kv.getKey().equals(fileName));
+                            if (fileDataValue.getValues() != null) {
+                                KeyOpValue<String, String> filterKeyOp = fileDataValue.getValue(s -> s.getKey().equals(StudyEntry.FILTER));
+                                Values<DBObject> extraFilterFilters = null;
+                                if (filterKeyOp != null) {
+                                    fileDataValue.getValues().remove(filterKeyOp);
+                                    Values<String> splitFilterValues = splitValues(filterKeyOp.getValue());
+                                    DBObject[] regexFilter = getFileFilterDBObjects(key + StudyEntry.FILTER, splitFilterValues.getValues());
+                                    extraFilterFilters = new Values<>(splitFilterValues.getOperation(), Arrays.asList(regexFilter));
+                                }
+                                addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, fileDataValue, fileBuilder,
+                                        true, extraFilterFilters);
                             }
                         }
 
@@ -632,24 +639,34 @@ public class VariantMongoDBQueryParser {
 
                 }
 
-                if (!infoInFileElemMatch && !infoMap.isEmpty()) {
-                    DBObject[] infoElemMatch = new DBObject[infoMap.size()];
+                if (!infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
+                    DBObject[] infoElemMatch = new DBObject[parsedFileData.getValues().size()];
                     int i = 0;
-                    for (Map.Entry<String, String> entry : infoMap.entrySet()) {
+                    for (KeyValues<String, KeyOpValue<String, String>> fileDataValue : parsedFileData.getValues()) {
                         if (defaultStudy == null) {
-                            throw VariantQueryException.missingStudyForFile(entry.getKey(), metadataManager.getStudyNames());
+                            throw VariantQueryException.missingStudyForFile(fileDataValue.getKey(), metadataManager.getStudyNames());
                         }
                         QueryBuilder infoBuilder = new QueryBuilder();
-                        Integer fileId = metadataManager.getFileId(defaultStudy.getId(), entry.getKey(), true);
+                        Integer fileId = metadataManager.getFileId(defaultStudy.getId(), fileDataValue.getKey(), true);
                         infoBuilder.and(DocumentToStudyVariantEntryConverter.FILEID_FIELD).is(fileId);
-                        String infoValue = entry.getValue();
-                        if (infoValue != null) {
-                            addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, infoValue, infoBuilder, true);
+                        if (fileDataValue.getValues() != null) {
+                            KeyOpValue<String, String> filterKeyOp = fileDataValue.getValue(s -> s.getKey().equals(StudyEntry.FILTER));
+                            Values<DBObject> extraFilterFilters = null;
+                            if (filterKeyOp != null) {
+                                fileDataValue.getValues().remove(filterKeyOp);
+                                Values<String> splitFilterValues = splitValues(filterKeyOp.getValue());
+                                String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + ".";
+                                DBObject[] regexFilter = getFileFilterDBObjects(key + StudyEntry.FILTER, splitFilterValues.getValues());
+                                extraFilterFilters = new Values<>(splitFilterValues.getOperation(), Arrays.asList(regexFilter));
+                            }
+
+                            addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, fileDataValue, infoBuilder,
+                                    true, extraFilterFilters);
                         }
                         infoElemMatch[i++] = new BasicDBObject(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD,
                                 new BasicDBObject("$elemMatch", infoBuilder.get()));
                     }
-                    if (infoOperator == QueryOperation.OR) {
+                    if (fileDataOperation == QueryOperation.OR) {
                         builder.or(infoElemMatch);
                     } else {
                         builder.and(infoElemMatch);
@@ -1327,15 +1344,59 @@ public class VariantMongoDBQueryParser {
         return builder;
     }
 
-    private QueryBuilder addCompQueryFilter(String key, String value, QueryBuilder builder, boolean extendKey) {
-        String[] strings = splitOperator(value);
-        String op = "";
-        if (strings.length == 3) {
-            if (extendKey && !strings[0].isEmpty()) {
-                key = key + "." + strings[0];
+    private QueryBuilder addCompListQueryFilter(String key, KeyValues<String, KeyOpValue<String, String>> value, QueryBuilder builder,
+                                                boolean extendKey) {
+        return addCompListQueryFilter(key, value, builder, extendKey, null);
+    }
+
+    private QueryBuilder addCompListQueryFilter(String key, KeyValues<String, KeyOpValue<String, String>> value, QueryBuilder builder,
+                                                boolean extendKey, Values<DBObject> extraFilters) {
+        VariantQueryUtils.QueryOperation op = value.getOperation();
+
+        if (extraFilters == null && value.getValues() == null) {
+            return builder;
+        }
+
+        QueryBuilder compBuilder;
+        if (op == QueryOperation.OR) {
+            compBuilder = QueryBuilder.start();
+        } else {
+            compBuilder = builder;
+        }
+
+        for (KeyOpValue<String, String> elem : value.getValues()) {
+            addCompQueryFilter(key, elem, compBuilder, extendKey);
+        }
+        if (extraFilters != null) {
+            if (extraFilters.getOperation() == QueryOperation.OR) {
+                builder.or(extraFilters.getValues().toArray(new DBObject[0]));
+            } else {
+                builder.and(extraFilters.getValues().toArray(new DBObject[0]));
             }
-            value = strings[2];
-            op = strings[1];
+        }
+
+        if (op == QueryOperation.OR) {
+            builder.or(compBuilder.get());
+        }
+        return builder;
+    }
+
+    private QueryBuilder addCompQueryFilter(String key, KeyOpValue<String, String> keyOpValue, QueryBuilder builder, boolean extendKey) {
+        if (extendKey && !keyOpValue.getKey().isEmpty()) {
+            key = key + "." + keyOpValue.getKey();
+        }
+        return addCompQueryFilter(key, keyOpValue.getValue(), builder, keyOpValue.getOp());
+    }
+
+    private QueryBuilder addCompQueryFilter(String key, String value, QueryBuilder builder, boolean extendKey) {
+        KeyOpValue<String, String> keyOpValue = parseKeyOpValue(value);
+        String op = "";
+        if (keyOpValue.getKey() != null) {
+            if (extendKey && !keyOpValue.getKey().isEmpty()) {
+                key = key + "." + keyOpValue.getKey();
+            }
+            value = keyOpValue.getValue();
+            op = keyOpValue.getOp();
         }
         return addCompQueryFilter(key, value, builder, op);
     }
