@@ -373,7 +373,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Action to be performed if the array of secondary findings is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("secondaryFindingsAction") ParamUtils.UpdateAction secondaryFindingsAction,
             @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("commentsFindingsAction") ParamUtils.UpdateAction commentsAction,
+            @QueryParam("commentsAction") ParamUtils.UpdateAction commentsAction,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
                     InterpretationUpdateParams params) {
