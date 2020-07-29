@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import com.google.common.collect.Iterators;
-import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -10,6 +9,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.slf4j.Logger;
@@ -112,8 +112,7 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
             // At any case, filter only by first sample
             // TODO: Use sample with less variants?
 
-            String value = query.getString(SAMPLE.key());
-            scanQuery.putIfNotNull(SAMPLE.key(), splitValue(value).getValue().get(0));
+            scanQuery.putIfNotNull(SAMPLE.key(), splitValue(query, SAMPLE).getValues().get(0));
         } else if (isValidParam(query, GENOTYPE)) {
             // Get the genotype sample with fewer genotype filters (i.e., the most strict filter)
 
@@ -129,14 +128,13 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
             scanQuery.putIfNotNull(GENOTYPE.key(),
                     currentEntry.getKey() + ":" + currentEntry.getValue().stream().collect(Collectors.joining(",")));
         } else if (isValidParam(query, FILE)) {
-            String value = query.getString(FILE.key());
-            Pair<QueryOperation, List<String>> pair = splitValue(value);
-            if (pair.getKey() == QueryOperation.OR) {
+            ParsedQuery<String> pair = splitValue(query, FILE);
+            if (pair.getOperation() == QueryOperation.OR) {
                 // Because we want all the variants with ANY of this files, use ALL files to filter
-                scanQuery.putIfNotNull(FILE.key(), value);
+                scanQuery.putIfNotNull(FILE.key(), query.get(FILE.key()));
             } else {
                 // Filter only by one file
-                scanQuery.putIfNotNull(FILE.key(), pair.getValue().get(0));
+                scanQuery.putIfNotNull(FILE.key(), pair.getValues().get(0));
             }
 
         }

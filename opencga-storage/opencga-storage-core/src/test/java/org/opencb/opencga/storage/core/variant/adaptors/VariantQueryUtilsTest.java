@@ -26,6 +26,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
+import org.opencb.opencga.storage.core.variant.query.KeyValues;
+import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.lang.reflect.Field;
@@ -209,61 +212,61 @@ public class VariantQueryUtilsTest extends GenericTest {
     }
 
     @Test
-    public void testParseFormatFilter() throws Exception {
+    public void testParseSampleFilter() throws Exception {
 
-        checkParseFormat(new Query(SAMPLE.key(), "HG00096").append(SAMPLE_DATA.key(), "DP>8"),
+        checkParseSampleData(new Query(SAMPLE.key(), "HG00096").append(SAMPLE_DATA.key(), "DP>8"),
                 null,
                 "HG00096", "DP>8");
-        checkParseFormat(new Query(SAMPLE.key(), "HG00096,!HG00097").append(SAMPLE_DATA.key(), "DP>8"),
+        checkParseSampleData(new Query(SAMPLE.key(), "HG00096,!HG00097").append(SAMPLE_DATA.key(), "DP>8"),
                 null,
                 "HG00096", "DP>8");
-        checkParseFormat(new Query(SAMPLE.key(), "HG00096,HG00097").append(SAMPLE_DATA.key(), "DP>8"),
+        checkParseSampleData(new Query(SAMPLE.key(), "HG00096,HG00097").append(SAMPLE_DATA.key(), "DP>8"),
                 QueryOperation.OR,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
-        checkParseFormat(new Query(SAMPLE.key(), "HG00096;HG00097").append(SAMPLE_DATA.key(), "DP>8"),
+        checkParseSampleData(new Query(SAMPLE.key(), "HG00096;HG00097").append(SAMPLE_DATA.key(), "DP>8"),
                 QueryOperation.AND,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
 
-        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1").append(SAMPLE_DATA.key(), "DP>8"),
+        checkParseSampleData(new Query(GENOTYPE.key(), "HG00096:0/1").append(SAMPLE_DATA.key(), "DP>8"),
                 null,
                 "HG00096", "DP>8");
-        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1,HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
+        checkParseSampleData(new Query(GENOTYPE.key(), "HG00096:0/1,HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
                 QueryOperation.OR,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
-        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1;HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
+        checkParseSampleData(new Query(GENOTYPE.key(), "HG00096:0/1;HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
                 QueryOperation.AND,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
-        checkParseFormat(new Query(GENOTYPE.key(), "HG00096:0/1,1/1;HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
+        checkParseSampleData(new Query(GENOTYPE.key(), "HG00096:0/1,1/1;HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
                 QueryOperation.AND,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
-        checkParseFormat(new Query(SAMPLE.key(), "HG00096:0/1,1/1;HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
+        checkParseSampleData(new Query(SAMPLE.key(), "HG00096:0/1,1/1;HG00097:0/1").append(SAMPLE_DATA.key(), "DP>8"),
                 QueryOperation.AND,
                 "HG00096", "DP>8",
                 "HG00097", "DP>8");
 
-        checkParseFormat(new Query(SAMPLE_DATA.key(), "HG00096:GQ>5.0,HG00097:DP>8"),
+        checkParseSampleData(new Query(SAMPLE_DATA.key(), "HG00096:GQ>5.0,HG00097:DP>8"),
                 QueryOperation.OR,
                 "HG00096", "GQ>5.0",
                 "HG00097", "DP>8");
-        checkParseFormat(new Query(SAMPLE_DATA.key(), "HG00097:DP>8,HG00096:GQ>5.0"),
+        checkParseSampleData(new Query(SAMPLE_DATA.key(), "HG00097:DP>8,HG00096:GQ>5.0"),
                 QueryOperation.OR,
                 "HG00097", "DP>8",
                 "HG00096", "GQ>5.0");
-        checkParseFormat(new Query(SAMPLE_DATA.key(), "HG00096:GT=0/1,1/1;HG00097:GT=1/1;DP>3"),
+        checkParseSampleData(new Query(SAMPLE_DATA.key(), "HG00096:GT=0/1,1/1;HG00097:GT=1/1;DP>3"),
                 QueryOperation.AND,
                 "HG00096", "GT=0/1,1/1",
                 "HG00097", "GT=1/1;DP>3");
-        checkParseFormat(new Query(SAMPLE_DATA.key(), "HG00096:GT=0/1,1/1;HG00097:GT=1/1;HG00097:DP>3"),
+        checkParseSampleData(new Query(SAMPLE_DATA.key(), "HG00096:GT=0/1,1/1;HG00097:GT=1/1;HG00097:DP>3"),
                 QueryOperation.AND,
                 "HG00096", "GT=0/1,1/1",
                 "HG00097", "GT=1/1;DP>3");
 
-        checkParseFormat(new Query(SAMPLE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10,"
+        checkParseSampleData(new Query(SAMPLE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10,"
                         + "1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100"),
                 QueryOperation.OR,
                 "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "HaplotypeScore<10",
@@ -271,8 +274,8 @@ public class VariantQueryUtilsTest extends GenericTest {
 
     }
 
-    protected void checkParseFormat(Query query, QueryOperation expectedOperation, String ...expected) {
-        Pair<QueryOperation, Map<String, String>> pair = parseFormat(query);
+    protected void checkParseSampleData(Query query, QueryOperation expectedOperation, String ...expected) {
+        Pair<QueryOperation, Map<String, String>> pair = parseSampleData(query);
         QueryOperation operation = pair.getKey();
         Map<String, String> map = pair.getValue();
 
@@ -335,6 +338,53 @@ public class VariantQueryUtilsTest extends GenericTest {
                 : expected.isEmpty() ? Collections.emptyList() : Arrays.asList(expected.split(","));
 
         assertEquals(expectedList, getIncludeSampleData(query));
+    }
+
+    @Test
+    public void testFileDataFilter() {
+        checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf:DP<=10,QUAL<10"),
+                null,
+                "f1.vcf", "DP<10,QUAL<10");
+        checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf:FILTER=PASS;DP>30;f2.vcf:FILTER=LowDP;DP<20"),
+                null,
+                "f1.vcf", "DP<10,QUAL<10");
+        checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf:DP<10,f1.vcf:QUAL<10"),
+                null,
+                "f1.vcf", "DP<10,QUAL<10");
+        checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf:DP<10,f1.vcf:FILTER=LowGQX;LowMQ"),
+                null,
+                "f1.vcf", "DP<10,FILTER=LowGQX;LowMQ");
+        checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf:DP<10,FILTER=LowGQX;LowMQ"),
+                null,
+                "f1.vcf", "DP<10,FILTER=LowGQX;LowMQ");
+        checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf:DP<10,FILTER=\"LowGQX;LowMQ\""),
+                null,
+                "f1.vcf", "DP<10,FILTER=\"LowGQX;LowMQ\"");
+        checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf : DP < 10 , FILTER = \"LowGQX;LowMQ\""),
+                null,
+                "f1.vcf", "DP<10,FILTER=\"LowGQX;LowMQ\"");
+    }
+
+    protected void checkParseFileData(Query query, QueryOperation expectedOperation, String ...expected) {
+        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> pq = parseFileData(query);
+        System.out.println(query.getString(FILE_DATA.key()));
+        System.out.println(pq);
+        System.out.println(pq.toQuery());
+        System.out.println(pq.describe());
+        System.out.println();
+//        Pair<QueryOperation, Map<String, String>> pair = parseFileData_OLD(query);
+//        QueryOperation operation = pair.getKey();
+//        Map<String, String> map = pair.getValue();
+//
+//        HashMap<String, String> expectedMap = new HashMap<>();
+//
+//        for (int i = 0; i < expected.length; i+=2) {
+//            expectedMap.put(expected[i], expected[i + 1]);
+//        }
+//
+//        assertEquals(expectedMap, map);
+//        assertEquals(expectedOperation, operation);
+
     }
 
     @Test

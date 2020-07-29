@@ -149,10 +149,10 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam FILE = new VariantQueryParam("file", TEXT_ARRAY, FILE_DESCR);
 
     public static final String FILE_DATA_DESCR
-            = "Filter by file data (i.e. INFO column from VCF file). [{file}:]{key}{op}{value}[,;]* . "
+            = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . "
             + "If no file is specified, will use all files from \"file\" filter. "
             + "e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . "
-            + "Many INFO fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10";
+            + "Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP";
     public static final VariantQueryParam FILE_DATA = new VariantQueryParam("fileData", TEXT_ARRAY, FILE_DATA_DESCR);
 
     public static final String FILTER_DESCR

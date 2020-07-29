@@ -112,10 +112,10 @@ public class MetaWSServer extends OpenCGAWSServer {
         long elapsedTime = Duration.between(lastAccess, LocalTime.now()).getSeconds();
 
         if (!isHealthy() || elapsedTime > configuration.getHealthCheck().getInterval()) {
-            logger.info("HealthCheck results without cache!");
+            logger.debug("Update HealthCheck cache status");
             updateHealthCheck();
         } else {
-            logger.info("HealthCheck results from cache at " + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+            logger.debug("HealthCheck results from cache at " + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
             queryResult.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, "HealthCheck results from cache at "
                     + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
         }
@@ -124,7 +124,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         queryResult.setResults(Collections.singletonList(healthCheckResults));
 
         if (isHealthy()) {
-            logger.info("HealthCheck : " + healthCheckResults.toString());
+            logger.debug("HealthCheck : " + healthCheckResults.toString());
             return createOkResponse(queryResult);
         } else {
             logger.error("HealthCheck : " + healthCheckResults.toString());

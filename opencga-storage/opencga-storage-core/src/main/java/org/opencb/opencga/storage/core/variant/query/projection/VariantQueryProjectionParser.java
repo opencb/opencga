@@ -11,6 +11,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
+import org.opencb.opencga.storage.core.variant.query.KeyValues;
+import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.*;
@@ -337,8 +340,8 @@ public class VariantQueryProjectionParser {
     }
 
     public static List<String> getIncludeFilesList(Query query) {
-        List<String> includeFiles = null;
         if (query.containsKey(INCLUDE_FILE.key())) {
+            List<String> includeFiles = null;
             String files = query.getString(INCLUDE_FILE.key());
             if (files.equals(VariantQueryUtils.ALL)) {
                 includeFiles = null;
@@ -349,24 +352,26 @@ public class VariantQueryProjectionParser {
             }
             return includeFiles;
         }
+        Set<String> includeFiles = null;
         if (VariantQueryUtils.isValidParam(query, FILE)) {
             String files = query.getString(FILE.key());
             includeFiles = VariantQueryUtils.splitValue(files, VariantQueryUtils.checkOperator(files))
                     .stream()
                     .filter(value -> !VariantQueryUtils.isNegated(value))
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
         }
         if (VariantQueryUtils.isValidParam(query, FILE_DATA)) {
-            Map<String, String> infoMap = VariantQueryUtils.parseInfo(query).getValue();
+            ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery = VariantQueryUtils.parseFileData(query);
             if (includeFiles == null) {
-                includeFiles = new ArrayList<>(infoMap.size());
+                includeFiles = new LinkedHashSet<>(parsedQuery.getValues().size());
             }
-            includeFiles.addAll(infoMap.keySet());
+            parsedQuery.getValues().stream().map(KeyValues::getKey).forEach(includeFiles::add);
         }
         if (CollectionUtils.isEmpty(includeFiles)) {
-            includeFiles = null;
+            return null;
+        } else {
+            return new ArrayList<>(includeFiles);
         }
-        return includeFiles;
     }
 
     public static boolean isIncludeSamplesDefined(Query query, Set<VariantField> fields) {
@@ -517,7 +522,7 @@ public class VariantQueryProjectionParser {
                 map.keySet().stream().map(Object::toString).forEach(samples::add);
             }
             if (VariantQueryUtils.isValidParam(query, SAMPLE_DATA)) {
-                Map<String, String> formatMap = VariantQueryUtils.parseFormat(query).getValue();
+                Map<String, String> formatMap = VariantQueryUtils.parseSampleData(query).getValue();
                 if (samples == null) {
                     samples = new ArrayList<>(formatMap.size());
                 }

@@ -1038,163 +1038,149 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = SampleQcAnalysisParams.DESCRIPTION, required = true) SampleQcAnalysisParams params) {
 
-        final String OPENCGA_ALL = "ALL";
+        return run(() -> {
+            final String OPENCGA_ALL = "ALL";
 
-        List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
+            List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
 
-        Sample sample;
-        org.opencb.opencga.core.models.file.File catalogBamFile;
-        try {
+            Sample sample;
+            org.opencb.opencga.core.models.file.File catalogBamFile;
             sample = IndividualQcUtils.getValidSampleById(study, params.getSample(), catalogManager, token);
             if (sample == null) {
-                return createErrorResponse(new ToolException("Sample '" + params.getSample() + "' not found."));
+                throw new ToolException("Sample '" + params.getSample() + "' not found.");
             }
             catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), study, catalogManager.getFileManager(), token);
-        } catch (ToolException e) {
-            return createErrorResponse(e);
-        }
 
-        // Check variant stats
-        if (OPENCGA_ALL.equals(params.getVariantStatsId())) {
-            return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
-                    + " variant stats ID"));
-        }
-
-        if (StringUtils.isEmpty(params.getVariantStatsId()) && params.getVariantStatsQuery() != null
-                && !params.getVariantStatsQuery().toParams().isEmpty()) {
-            return createErrorResponse(new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
-                    + " empty"));
-        }
-        if (StringUtils.isNotEmpty(params.getVariantStatsId())
-                && (params.getVariantStatsQuery() == null || params.getVariantStatsQuery().toParams().isEmpty())) {
-            return createErrorResponse(new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
-                    + " can not be empty"));
-        }
-        if (StringUtils.isEmpty(params.getVariantStatsId())) {
-            params.setVariantStatsId(OPENCGA_ALL);
-        }
-
-        boolean runVariantStats = true;
-        if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
-            String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
-            for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
-                if (bamId.equals(metrics.getBamFileId())) {
-                    if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && OPENCGA_ALL.equals(params.getVariantStatsId())) {
-                        runVariantStats = false;
-                    } else {
-                        for (SampleQcVariantStats variantStats : metrics.getVariantStats()) {
-                            if (variantStats.getId().equals(params.getVariantStatsId())) {
-                                return createErrorResponse(new ToolException("Invalid parameters: variant stats ID '"
-                                        + params.getVariantStatsId() + "' is already used"));
-                            }
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Check mutational signature
-        boolean runSignature = true;
-        if (!sample.isSomatic()) {
-            runSignature = false;
-        } else {
-            if (OPENCGA_ALL.equals(params.getSignatureId())) {
-                return createErrorResponse(new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
-                        + " signature ID"));
+            // Check variant stats
+            if (OPENCGA_ALL.equals(params.getVariantStatsId())) {
+                throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
+                        + " variant stats ID");
             }
 
-            if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery() != null
-                    && !params.getSignatureQuery().toParams().isEmpty()) {
-                return createErrorResponse(new ToolException("Invalid parameters: if signature ID is empty, signature query must be"
-                        + " null"));
+            if (StringUtils.isEmpty(params.getVariantStatsId()) && params.getVariantStatsQuery() != null
+                    && !params.getVariantStatsQuery().toParams().isEmpty()) {
+                throw new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
+                        + " empty");
             }
-            if (StringUtils.isNotEmpty(params.getSignatureId())
-                    && (params.getSignatureQuery() == null || params.getSignatureQuery().toParams().isEmpty())) {
-                return createErrorResponse(new ToolException("Invalid parameters: if you provide a signature ID, signature query"
-                        + " can not be null"));
+            if (StringUtils.isNotEmpty(params.getVariantStatsId())
+                    && (params.getVariantStatsQuery() == null || params.getVariantStatsQuery().toParams().isEmpty())) {
+                throw new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
+                        + " can not be empty");
+            }
+            if (StringUtils.isEmpty(params.getVariantStatsId())) {
+                params.setVariantStatsId(OPENCGA_ALL);
             }
 
-            if (sample.getQualityControl() != null || CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+            boolean runVariantStats = true;
+            if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
                 String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
                 for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
                     if (bamId.equals(metrics.getBamFileId())) {
-                        if (CollectionUtils.isNotEmpty(metrics.getSignatures())) {
-                            runSignature = false;
+                        if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && OPENCGA_ALL.equals(params.getVariantStatsId())) {
+                            runVariantStats = false;
+                        } else {
+                            for (SampleQcVariantStats variantStats : metrics.getVariantStats()) {
+                                if (variantStats.getId().equals(params.getVariantStatsId())) {
+                                    throw new ToolException("Invalid parameters: variant stats ID '"
+                                            + params.getVariantStatsId() + "' is already used");
+                                }
+                            }
                         }
                         break;
                     }
                 }
             }
-        }
 
-        boolean runFastQc = false;
-        if (catalogBamFile != null) {
-            if (sample.getQualityControl() == null || CollectionUtils.isEmpty(sample.getQualityControl().getMetrics())) {
-                runFastQc = true;
+            // Check mutational signature
+            boolean runSignature = true;
+            if (!sample.isSomatic()) {
+                runSignature = false;
             } else {
-                runFastQc = true;
-                for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
-                    if (catalogBamFile.getId().equals(metrics.getBamFileId()) && metrics.getFastQc() != null) {
-                        runFastQc = false;
-                        break;
+                if (OPENCGA_ALL.equals(params.getSignatureId())) {
+                    throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
+                            + " signature ID");
+                }
+
+                if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery() != null
+                        && !params.getSignatureQuery().toParams().isEmpty()) {
+                    throw new ToolException("Invalid parameters: if signature ID is empty, signature query must be null");
+                }
+                if (StringUtils.isNotEmpty(params.getSignatureId())
+                        && (params.getSignatureQuery() == null || params.getSignatureQuery().toParams().isEmpty())) {
+                    throw new ToolException("Invalid parameters: if you provide a signature ID, signature query"
+                            + " can not be null");
+                }
+
+                if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+                    String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
+                    for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                        if (bamId.equals(metrics.getBamFileId())) {
+                            if (CollectionUtils.isNotEmpty(metrics.getSignatures())) {
+                                runSignature = false;
+                            }
+                            break;
+                        }
                     }
                 }
             }
-        }
 
-        // Run variant stats if necessary
-        if (runVariantStats) {
-            SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
-                    Collections.singletonList(params.getSample()),
-                    null,
-                    false,
-                    null,
-                    params.getVariantStatsQuery(),
-                    params.getOutdir()
-            );
+            boolean runFastQc = false;
+            if (catalogBamFile != null) {
+                if (sample.getQualityControl() == null || CollectionUtils.isEmpty(sample.getQualityControl().getMetrics())) {
+                    runFastQc = true;
+                } else {
+                    runFastQc = true;
+                    for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                        if (catalogBamFile.getId().equals(metrics.getBamFileId()) && metrics.getFastQc() != null) {
+                            runFastQc = false;
+                            break;
+                        }
+                    }
+                }
+            }
 
-            try {
+            // Run variant stats if necessary
+            if (runVariantStats) {
+                SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
+                        Collections.singletonList(params.getSample()),
+                        null,
+                        false,
+                        null,
+                        params.getVariantStatsQuery(),
+                        params.getOutdir()
+                );
+
                 DataResult<Job> jobResult = submitJobRaw(SampleVariantStatsAnalysis.ID, null, study,
                         sampleVariantStatsParams, null, null, null, null);
                 Job sampleStatsJob = jobResult.first();
                 dependsOnList.add(sampleStatsJob.getId());
-            } catch (CatalogException e) {
-                return createErrorResponse(e);
             }
-        }
 
-        // Run signature if necessary
-        if (runSignature) {
-            MutationalSignatureAnalysisParams mutationalSignatureParams =
-                    new MutationalSignatureAnalysisParams(params.getSample(), params.getOutdir());
-            try {
+            // Run signature if necessary
+            if (runSignature) {
+                MutationalSignatureAnalysisParams mutationalSignatureParams =
+                        new MutationalSignatureAnalysisParams(params.getSample(), params.getOutdir());
                 DataResult<Job> jobResult = submitJobRaw(MutationalSignatureAnalysis.ID, null, study, mutationalSignatureParams,
                         null, null, null, null);
                 Job signatureJob = jobResult.first();
                 dependsOnList.add(signatureJob.getId());
-            } catch (CatalogException e) {
-                return createErrorResponse(e);
             }
-        }
 
-        // Run FastQC, if bam file exists
-        if (runFastQc) {
-            Map<String, String> dynamicParams = new HashMap<>();
-            dynamicParams.put("extract", "true");
-            FastQcWrapperParams fastQcParams = new FastQcWrapperParams(catalogBamFile.getId(), null, dynamicParams);
-            System.out.println("fastQcParams = " + fastQcParams);
-            try {
+            // Run FastQC, if bam file exists
+            if (runFastQc) {
+                Map<String, String> dynamicParams = new HashMap<>();
+                dynamicParams.put("extract", "true");
+                FastQcWrapperParams fastQcParams = new FastQcWrapperParams(catalogBamFile.getId(), null, dynamicParams);
+                logger.info("fastQcParams = " + fastQcParams);
+
                 DataResult<Job> jobResult = submitJobRaw(FastqcWrapperAnalysis.ID, null, study, fastQcParams,
                         null, null, null, null);
                 Job fastqcJob = jobResult.first();
                 dependsOnList.add(fastqcJob.getId());
-            } catch (CatalogException e) {
-                return createErrorResponse(e);
             }
-        }
 
-        return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);
+            return submitJobRaw(SampleQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);
+        });
     }
 
     @POST
