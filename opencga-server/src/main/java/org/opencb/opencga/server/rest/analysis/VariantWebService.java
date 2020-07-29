@@ -1115,7 +1115,7 @@ public class VariantWebService extends AnalysisWebService {
                         + " can not be null"));
             }
 
-            if (sample.getQualityControl() != null || CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+            if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
                 String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
                 for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
                     if (bamId.equals(metrics.getBamFileId())) {
