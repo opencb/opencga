@@ -981,6 +981,11 @@ public class FileManagerTest extends AbstractManagerTest {
         result = fileManager.search(studyFqn, query, null, token);
         assertEquals(1, result.getNumResults());
 
+        //Get all files in data
+        query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), "/data/");
+        result = fileManager.search(studyFqn, query, null, token);
+        assertEquals(1, result.getNumResults());
+
         //Get all files in data recursively
         query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), "data/.*");
         result = fileManager.search(studyFqn, query, null, token);
