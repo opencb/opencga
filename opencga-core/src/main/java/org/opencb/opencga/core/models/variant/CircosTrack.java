@@ -1,20 +1,19 @@
 package org.opencb.opencga.core.models.variant;
 
-import java.util.List;
 import java.util.Map;
 
 public class CircosTrack {
     private String id;
     private String type;
-    private List<Map<String, String>> filters;
+    private Map<String, String> query;
 
     public CircosTrack() {
     }
 
-    public CircosTrack(String id, String type, List<Map<String, String>> filters) {
+    public CircosTrack(String id, String type, Map<String, String> query) {
         this.id = id;
         this.type = type;
-        this.filters = filters;
+        this.query = query;
     }
 
     @Override
@@ -22,7 +21,7 @@ public class CircosTrack {
         final StringBuilder sb = new StringBuilder("CircosTrack{");
         sb.append("id='").append(id).append('\'');
         sb.append(", type='").append(type).append('\'');
-        sb.append(", filters=").append(filters);
+        sb.append(", query=").append(query);
         sb.append('}');
         return sb.toString();
     }
@@ -45,12 +44,12 @@ public class CircosTrack {
         return this;
     }
 
-    public List<Map<String, String>> getFilters() {
-        return filters;
+    public Map<String, String> getQuery() {
+        return query;
     }
 
-    public CircosTrack setFilters(List<Map<String, String>> filters) {
-        this.filters = filters;
+    public CircosTrack setQuery(Map<String, String> query) {
+        this.query = query;
         return this;
     }
 }
