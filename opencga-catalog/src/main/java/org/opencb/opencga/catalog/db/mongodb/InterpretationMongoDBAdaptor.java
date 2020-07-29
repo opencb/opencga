@@ -276,50 +276,54 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.METHODS.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
-        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        String operation = (String) actionMap.getOrDefault(QueryParams.COMMENTS.key(), "ADD");
         objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
+        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
+                ParamUtils.UpdateAction.ADD);
         switch (operation) {
-            case "SET":
+            case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
                 break;
-            case "REMOVE":
+            case REMOVE:
                 filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
                 break;
-            case "ADD":
-            default:
+            case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
+            default:
+                throw new IllegalStateException("Unknown operation " + operation);
         }
 
-        operation = (String) actionMap.getOrDefault(QueryParams.PRIMARY_FINDINGS.key(), "ADD");
         objectAcceptedParams = new String[]{QueryParams.PRIMARY_FINDINGS.key()};
+        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
         switch (operation) {
-            case "SET":
+            case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
                 break;
-            case "REMOVE":
+            case REMOVE:
                 filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
                 break;
-            case "ADD":
-            default:
+            case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
+            default:
+                throw new IllegalStateException("Unknown operation " + operation);
         }
 
-        operation = (String) actionMap.getOrDefault(QueryParams.SECONDARY_FINDINGS.key(), "ADD");
         objectAcceptedParams = new String[]{QueryParams.SECONDARY_FINDINGS.key()};
+        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
         switch (operation) {
-            case "SET":
+            case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
                 break;
-            case "REMOVE":
+            case REMOVE:
                 filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
                 break;
-            case "ADD":
-            default:
+            case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
+            default:
+                throw new IllegalStateException("Unknown operation " + operation);
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {

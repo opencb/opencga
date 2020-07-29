@@ -1,10 +1,7 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import javax.net.SocketFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -23,7 +20,27 @@ public class MySSLSocketFactory extends SocketFactory {
     public MySSLSocketFactory() {
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
-                    new X509TrustManager() {
+                    new X509ExtendedTrustManager() {
+                        @Override
+                        public void checkClientTrusted(X509Certificate[] x509Certificates, String s, Socket socket)
+                                throws CertificateException {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(X509Certificate[] x509Certificates, String s, Socket socket)
+                                throws CertificateException {
+                        }
+
+                        @Override
+                        public void checkClientTrusted(X509Certificate[] x509Certificates, String s, SSLEngine sslEngine)
+                                throws CertificateException {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(X509Certificate[] x509Certificates, String s, SSLEngine sslEngine)
+                                throws CertificateException {
+                        }
+
                         public X509Certificate[] getAcceptedIssuers() {
                             return new X509Certificate[0];
                         }
@@ -53,6 +70,11 @@ public class MySSLSocketFactory extends SocketFactory {
             return DEFAULT_FACTORY.get();
         }
         return value;
+    }
+
+    @Override
+    public Socket createSocket() throws IOException {
+        return sf.createSocket();
     }
 
     @Override
