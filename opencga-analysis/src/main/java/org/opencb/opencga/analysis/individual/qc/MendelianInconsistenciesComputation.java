@@ -174,14 +174,16 @@ public class MendelianInconsistenciesComputation {
 
     private static long getTotalVariants(String studyId, String sampleId, VariantStorageManager storageManager, String token) throws ToolException {
         // Create query to count the total number of variants
-        Query query = new Query()
-                .append(VariantQueryParam.STUDY.key(), studyId)
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.SAMPLE.key(), sampleId);
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 0)
+                .append(QueryOptions.COUNT, true);
 
         // Get total number of variants
         long numVariants;
         try {
-            numVariants = storageManager.count(query, token).first();
+            numVariants = storageManager.get(query, queryOptions, token).getNumMatches();
         } catch (CatalogException | StorageEngineException | IOException e) {
             throw new ToolException(e);
         }
