@@ -360,24 +360,25 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        String operation = (String) actionMap.getOrDefault(QueryParams.SAMPLES.key(), "ADD");
+        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD);
         String[] sampleObjectParams = new String[]{QueryParams.SAMPLES.key()};
 
-        if ("SET".equals(operation) || !parameters.getAsList(QueryParams.SAMPLES.key()).isEmpty()) {
+        if (operation == ParamUtils.UpdateAction.SET || !parameters.getAsList(QueryParams.SAMPLES.key()).isEmpty()) {
             switch (operation) {
-                case "SET":
+                case SET:
                     filterObjectParams(parameters, document.getSet(), sampleObjectParams);
                     cohortConverter.validateSamplesToUpdate(document.getSet());
                     break;
-                case "REMOVE":
+                case REMOVE:
                     filterObjectParams(parameters, document.getPullAll(), sampleObjectParams);
                     cohortConverter.validateSamplesToUpdate(document.getPullAll());
                     break;
-                case "ADD":
-                default:
+                case ADD:
                     filterObjectParams(parameters, document.getAddToSet(), sampleObjectParams);
                     cohortConverter.validateSamplesToUpdate(document.getAddToSet());
                     break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
             }
         }
 

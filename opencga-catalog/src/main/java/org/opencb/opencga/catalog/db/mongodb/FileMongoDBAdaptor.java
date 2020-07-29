@@ -505,8 +505,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             List<String> tagList = parameters.getAsStringList(QueryParams.TAGS.key());
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            UpdateAction operation =
-                    UpdateAction.from(actionMap, QueryParams.TAGS.key(), UpdateAction.ADD);
+            UpdateAction operation = UpdateAction.from(actionMap, QueryParams.TAGS.key(), UpdateAction.ADD);
             if (UpdateAction.SET.equals(operation) || !tagList.isEmpty()) {
                 switch (operation) {
                     case SET:
@@ -547,7 +546,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
             UpdateAction operation = UpdateAction.from(actionMap, QueryParams.RELATED_FILES.key(), UpdateAction.ADD);
-
             switch (operation) {
                 case SET:
                     document.getSet().put(QueryParams.RELATED_FILES.key(), relatedFileDocument);

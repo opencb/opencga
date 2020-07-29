@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -226,23 +227,24 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         // Secondary interpretations
         if (parameters.containsKey(QueryParams.SECONDARY_INTERPRETATIONS.key())) {
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            String operation = (String) actionMap.getOrDefault(QueryParams.SECONDARY_INTERPRETATIONS.key(), "ADD");
-
+            ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SECONDARY_INTERPRETATIONS.key(),
+                    ParamUtils.UpdateAction.ADD);
             String[] secondaryInterpretationParams = {QueryParams.SECONDARY_INTERPRETATIONS.key()};
             switch (operation) {
-                case "SET":
+                case SET:
                     filterObjectParams(parameters, document.getSet(), secondaryInterpretationParams);
                     clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
                     break;
-                case "REMOVE":
+                case REMOVE:
                     filterObjectParams(parameters, document.getPullAll(), secondaryInterpretationParams);
                     clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
                     break;
-                case "ADD":
-                default:
+                case ADD:
                     filterObjectParams(parameters, document.getAddToSet(), secondaryInterpretationParams);
                     clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
                     break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
             }
         }
 

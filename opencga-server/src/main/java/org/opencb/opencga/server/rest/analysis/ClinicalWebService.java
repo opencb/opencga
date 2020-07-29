@@ -389,8 +389,8 @@ public class ClinicalWebService extends AnalysisWebService {
             }
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), primaryFindingsAction.name());
-            actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), secondaryFindingsAction.name());
+            actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), primaryFindingsAction);
+            actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), secondaryFindingsAction);
             actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), commentsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
