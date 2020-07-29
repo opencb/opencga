@@ -20,10 +20,9 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.URLUtils;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,27 +39,30 @@ public class RoleInCancerManager {
     public Map<String, ClinicalProperty.RoleInCancer> getRoleInCancer() throws IOException {
         // Lazy loading
         if (roleInCancer == null) {
-            roleInCancer = loadRoleInCancer();
+            synchronized (ROLE_IN_CANCER_URL) {
+                if (roleInCancer == null) {
+                    roleInCancer = loadRoleInCancer();
+                }
+            }
         }
         return roleInCancer;
     }
 
     private Map<String, ClinicalProperty.RoleInCancer> loadRoleInCancer() throws IOException {
-
-        // Donwload 'role in cancer' file
-        File roleFile = URLUtils.download(new URL(ROLE_IN_CANCER_URL), Paths.get("/tmp"));
-
-//        System.out.println("---------- RoleInCancer: roleFile = " + roleFile);
-
-        try {
-            FileUtils.checkFile(roleFile.toPath());
-        } catch (Exception e) {
+        // Read 'role in cancer' file
+        try (InputStream in = new URL(ROLE_IN_CANCER_URL).openStream()) {
+            return loadRoleInCancer(in);
+        } catch (FileNotFoundException e) {
+            // FIXME: Should we ignore this error?
             return null;
         }
+    }
+
+    private Map<String, ClinicalProperty.RoleInCancer> loadRoleInCancer(InputStream in) {
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
 
         Map<String, ClinicalProperty.RoleInCancer> roleInCancer = new HashMap<>();
 
-        BufferedReader bufferedReader = newBufferedReader(roleFile.toPath());
         List<String> lines = bufferedReader.lines().collect(Collectors.toList());
         Set<ClinicalProperty.RoleInCancer> set = new HashSet<>();
 
@@ -101,9 +103,6 @@ public class RoleInCancerManager {
         }
 
 //        System.out.println("---------- RoleInCancer: size = " + roleInCancer.size());
-
-        // Delete 'role in cancer' file
-        roleFile.delete();
 
         return roleInCancer;
     }
