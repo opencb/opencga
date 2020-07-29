@@ -32,7 +32,6 @@ import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -42,7 +41,6 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -370,10 +368,32 @@ public class ClinicalWebService extends AnalysisWebService {
             response = Interpretation.class)
     public Response updateInterpretation(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Action to be performed if the array of primary findings is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("primaryFindingsAction") ParamUtils.UpdateAction primaryFindingsAction,
+            @ApiParam(value = "Action to be performed if the array of secondary findings is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("secondaryFindingsAction") ParamUtils.UpdateAction secondaryFindingsAction,
+            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("commentsFindingsAction") ParamUtils.UpdateAction commentsAction,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
                     InterpretationUpdateParams params) {
         try {
+            if (primaryFindingsAction == null) {
+                primaryFindingsAction = ParamUtils.UpdateAction.ADD;
+            }
+            if (secondaryFindingsAction == null) {
+                secondaryFindingsAction = ParamUtils.UpdateAction.ADD;
+            }
+            if (commentsAction == null) {
+                commentsAction = ParamUtils.UpdateAction.ADD;
+            }
+
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), primaryFindingsAction.name());
+            actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), secondaryFindingsAction.name());
+            actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), commentsAction);
+            queryOptions.put(Constants.ACTIONS, actionMap);
+
             return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, params, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);

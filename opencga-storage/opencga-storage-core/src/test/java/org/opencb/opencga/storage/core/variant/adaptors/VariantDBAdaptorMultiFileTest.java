@@ -736,10 +736,6 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         testGetByFilter(s -> new Query()
                 .append(VariantQueryParam.FILE_DATA.key(), file12877 + ":FILTER=" + s)
                 .append(VariantQueryParam.STUDY.key(), study1));
-        testGetByFilter(s -> new Query()
-                .append(VariantQueryParam.FILTER.key(), s)
-                .append(VariantQueryParam.FILE.key(), file12877)
-                .append(VariantQueryParam.STUDY.key(), study1));
     }
 
     public void testGetByFilter(Function<String, Query> queryBuilder) {

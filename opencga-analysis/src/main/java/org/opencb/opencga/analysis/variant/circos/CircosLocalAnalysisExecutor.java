@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.variant.circos;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
@@ -79,10 +80,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
         // Create query
         Query query = new Query();
-        query.put(STUDY.key(), getStudy());
-        if (getCircosParams().getFilters() != null) {
-            query.putAll(getCircosParams().getFilters());
+        if (MapUtils.isNotEmpty(getCircosParams().getQuery())) {
+            query.putAll(getCircosParams().getQuery());
         }
+        query.put(STUDY.key(), getStudy());
 
         // Launch a thread per query
         VariantStorageManager storageManager = getVariantStorageManager();
@@ -166,77 +167,35 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     break;
             }
 
-            List<Map<String, String>> filtersList = buildFiltersList(snvTrack);
-            if (filtersList.size() == 1) {
-                // Only one item in the filters list
-                Query snvQuery = new Query(query);
-                snvQuery.putAll(filtersList.get(0));
-                snvQuery.put("type", "SNV");
-                QueryOptions queryOptions = new QueryOptions()
-                        .append(QueryOptions.INCLUDE, "id")
-                        .append(QueryOptions.SORT, true);
+            Map<String, String> trackQuery = checkTrackQuery(snvTrack);
 
-                VariantDBIterator iterator = storageManager.iterator(snvQuery, queryOptions, getToken());
+            Query snvQuery = new Query(query);
+            snvQuery.putAll(trackQuery);
 
-                int prevStart = 0;
-                String currentChrom = "";
-                while (iterator.hasNext()) {
-                    Variant v = iterator.next();
-                    if (v.getStart() > v.getEnd()) {
-                        // Sanity check
-                        addWarning("Skipping variant " + v.toString() + ", start = " + v.getStart() + ", end = " + v.getEnd());
-                    } else {
-                        if (!v.getChromosome().equals(currentChrom)) {
-                            prevStart = 0;
-                            currentChrom = v.getChromosome();
-                        }
-                        int dist = v.getStart() - prevStart;
-                        if (dist < threshold) {
-                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
-                                    + v.getAlternate() + "\t" + Math.log10(dist));
-                        }
-                        prevStart = v.getStart();
+            QueryOptions queryOptions = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, "id")
+                    .append(QueryOptions.SORT, true);
+
+            VariantDBIterator iterator = storageManager.iterator(snvQuery, queryOptions, getToken());
+
+            int prevStart = 0;
+            String currentChrom = "";
+            while (iterator.hasNext()) {
+                Variant v = iterator.next();
+                if (v.getStart() > v.getEnd()) {
+                    // Sanity check
+                    addWarning("Skipping variant " + v.toString() + ", start = " + v.getStart() + ", end = " + v.getEnd());
+                } else {
+                    if (!v.getChromosome().equals(currentChrom)) {
+                        prevStart = 0;
+                        currentChrom = v.getChromosome();
                     }
-                }
-            } else {
-                // More than one item in the filters list
-                List<Variant> nextList = new LinkedList<>();
-                List<VariantDBIterator> iteratorsList = new LinkedList<>();
-                for (Map<String, String> filters : filtersList) {
-                    Query snvQuery = new Query(query);
-                    snvQuery.putAll(filters);
-                    snvQuery.put("type", "SNV");
-                    QueryOptions queryOptions = new QueryOptions()
-                            .append(QueryOptions.INCLUDE, "id")
-                            .append(QueryOptions.SORT, true);
-
-                    // Initilize iterator list
-                    VariantDBIterator iterator = storageManager.iterator(snvQuery, queryOptions, getToken());
-                    iteratorsList.add(iterator);
-
-                    // Initialize next list
-                    nextList.add(iterator.hasNext() ? iterator.next() : null);
-                }
-
-                int prevStart = 0;
-                String currentChrom = "";
-                while (computeHasNext(nextList)) {
-                    Variant v = computeNext(iteratorsList, nextList);
-                    if (v.getStart() > v.getEnd()) {
-                        // Sanity check
-                        addWarning("Skipping variant " + v.toString() + ", start = " + v.getStart() + ", end = " + v.getEnd());
-                    } else {
-                        if (!v.getChromosome().equals(currentChrom)) {
-                            prevStart = 0;
-                            currentChrom = v.getChromosome();
-                        }
-                        int dist = v.getStart() - prevStart;
-                        if (dist < threshold) {
-                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
-                                    + v.getAlternate() + "\t" + Math.log10(dist));
-                        }
-                        prevStart = v.getStart();
+                    int dist = v.getStart() - prevStart;
+                    if (dist < threshold) {
+                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
+                                + v.getAlternate() + "\t" + Math.log10(dist));
                     }
+                    prevStart = v.getStart();
                 }
             }
 
@@ -245,50 +204,6 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             return false;
         }
         return true;
-    }
-
-
-    private boolean computeHasNext(List<Variant> nextList) {
-        for (Variant next : nextList) {
-            if (next != null) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private Variant computeNext(List<VariantDBIterator> iteratorsList, List<Variant> nextList) throws ToolException {
-        int index = 0;
-        Variant selected = nextList.get(0);
-        for (int i = 1; i < nextList.size(); i++) {
-            if (selected == null) {
-                selected = nextList.get(i);
-                index = i;
-            } else {
-                if (isPrevious(nextList.get(i), selected)) {
-                    selected = nextList.get(i);
-                    index = i;
-                }
-            }
-        }
-
-        if (selected == null) {
-            throw new ToolException("Something wrong happened computing next variant in Circos analysis");
-        }
-
-        // Update next list and return the selected one
-        nextList.set(index, iteratorsList.get(index).hasNext() ? iteratorsList.get(index).next() : null);
-        return selected;
-    }
-
-    private boolean isPrevious(Variant v1, Variant v2) {
-        if (v1 == null) {
-            return false;
-        }
-        if (v1.getChromosome().equals(v2.getChromosome())) {
-            return v1.getStart() <= v2.getStart();
-        }
-        return v1.getChromosome().compareToIgnoreCase(v2.getChromosome()) <= 0 ;
     }
 
     /**
@@ -308,33 +223,30 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             if (copyNumberTrack != null) {
                 plotCopynumber = true;
 
-                List<Map<String, String>> filtersList = buildFiltersList(copyNumberTrack);
+                Map<String, String> trackQuery = checkTrackQuery(copyNumberTrack);
+
+                Query copyNumberQuery = new Query(query);
+                copyNumberQuery.putAll(trackQuery);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
 
-                for (Map<String, String> filters : filtersList) {
-                    Query copyNumberQuery = new Query(query);
-                    copyNumberQuery.putAll(filters);
-                    copyNumberQuery.put("type", "CNV");
+                VariantDBIterator iterator = storageManager.iterator(copyNumberQuery, queryOptions, getToken());
 
-                    VariantDBIterator iterator = storageManager.iterator(copyNumberQuery, queryOptions, getToken());
-
-                    while (iterator.hasNext()) {
-                        Variant v = iterator.next();
-                        StructuralVariation sv = v.getSv();
-                        if (sv != null) {
-                            if (sv.getType() == StructuralVariantType.COPY_NUMBER_GAIN) {
-                                pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
-                                        + sv.getCopyNumber() + "\t1");
-                            } else if (sv.getType() == StructuralVariantType.COPY_NUMBER_LOSS) {
-                                pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
-                                        + "1\t" + sv.getCopyNumber());
-                            } else {
-                                addWarning("Skipping variant " + v.toString() + ": invalid SV type " + sv.getType() + " for copy-number (CNV)");
-                            }
+                while (iterator.hasNext()) {
+                    Variant v = iterator.next();
+                    StructuralVariation sv = v.getSv();
+                    if (sv != null) {
+                        if (sv.getType() == StructuralVariantType.COPY_NUMBER_GAIN) {
+                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
+                                    + sv.getCopyNumber() + "\t1");
+                        } else if (sv.getType() == StructuralVariantType.COPY_NUMBER_LOSS) {
+                            pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
+                                    + "1\t" + sv.getCopyNumber());
                         } else {
-                            addWarning("Skipping variant " + v.toString() + ": SV is empty for copy-number (CNV)");
+                            addWarning("Skipping variant " + v.toString() + ": invalid SV type " + sv.getType() + " for copy-number (CNV)");
                         }
+                    } else {
+                        addWarning("Skipping variant " + v.toString() + ": SV is empty for copy-number (CNV)");
                     }
                 }
             }
@@ -359,42 +271,39 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             PrintWriter pw = new PrintWriter(indelsFile);
             pw.println("Chromosome\tchromStart\tchromEnd\ttype\tclassification");
 
-            CircosTrack copyNumberTrack = getCircosParams().getCircosTrackByType("INDEL");
-            if (copyNumberTrack != null) {
+            CircosTrack indelTrack = getCircosParams().getCircosTrackByType("INDEL");
+            if (indelTrack != null) {
                 plotIndels = true;
 
-                List<Map<String, String>> filtersList = buildFiltersList(copyNumberTrack);
+                Map<String, String> trackQuery = checkTrackQuery(indelTrack);
+
+                Query indelQuery = new Query(query);
+                indelQuery.putAll(trackQuery);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
 
-                for (Map<String, String> filters : filtersList) {
-                    Query indelQuery = new Query(query);
-                    indelQuery.putAll(filters);
-                    indelQuery.put("type", "INSERTION,DELETION,INDEL");
+                VariantDBIterator iterator = storageManager.iterator(indelQuery, queryOptions, getToken());
 
-                    VariantDBIterator iterator = storageManager.iterator(indelQuery, queryOptions, getToken());
-
-                    while (iterator.hasNext()) {
-                        Variant v = iterator.next();
-                        switch (v.getType()) {
-                            case INSERTION: {
-                                pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
-                                break;
-                            }
-                            case DELETION: {
-                                pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
-                                break;
-                            }
-                            case INDEL: {
-                                pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
-                                break;
-                            }
-                            default: {
-                                // Sanity check
-                                addWarning("Skipping variant " + v.toString() + ": invalid type " + v.getType()
-                                        + " for INSERTION, DELETION, INDEL");
-                                break;
-                            }
+                while (iterator.hasNext()) {
+                    Variant v = iterator.next();
+                    switch (v.getType()) {
+                        case INSERTION: {
+                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
+                            break;
+                        }
+                        case DELETION: {
+                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
+                            break;
+                        }
+                        case INDEL: {
+                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
+                            break;
+                        }
+                        default: {
+                            // Sanity check
+                            addWarning("Skipping variant " + v.toString() + ": invalid type " + v.getType()
+                                    + " for INSERTION, DELETION, INDEL");
+                            break;
                         }
                     }
                 }
@@ -425,66 +334,62 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             if (rearrangementTrack != null) {
                 plotRearrangements = true;
 
-                List<Map<String, String>> filtersList = buildFiltersList(rearrangementTrack);
+                Map<String, String> trackQuery = checkTrackQuery(rearrangementTrack);
 
+                Query rearrangementQuery = new Query(query);
+                rearrangementQuery.putAll(trackQuery);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
 
-                for (Map<String, String> filters : filtersList) {
-                    Query rearrangementQuery = new Query(query);
-                    rearrangementQuery.putAll(filters);
-                    rearrangementQuery.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
+                VariantDBIterator iterator = storageManager.iterator(rearrangementQuery, queryOptions, getToken());
 
-                    VariantDBIterator iterator = storageManager.iterator(rearrangementQuery, queryOptions, getToken());
-
-                    while (iterator.hasNext()) {
-                        Variant v = iterator.next();
-                        String type = null;
-                        switch (v.getType()) {
-                            case DELETION: {
-                                type = "DEL";
-                                break;
-                            }
-                            case BREAKEND:
-                            case TRANSLOCATION: {
-                                type = "BND";
-                                break;
-                            }
-                            case DUPLICATION: {
-                                type = "DUP";
-                                break;
-                            }
-                            case INVERSION: {
-                                type = "INV";
-                                break;
-                            }
-                            default: {
-                                // Sanity check
-                                addWarning("Skipping variant " + v.toString() + ": invalid type " + v.getType() + " for rearrangement");
-                                break;
-                            }
+                while (iterator.hasNext()) {
+                    Variant v = iterator.next();
+                    String type = null;
+                    switch (v.getType()) {
+                        case DELETION: {
+                            type = "DEL";
+                            break;
                         }
+                        case BREAKEND:
+                        case TRANSLOCATION: {
+                            type = "BND";
+                            break;
+                        }
+                        case DUPLICATION: {
+                            type = "DUP";
+                            break;
+                        }
+                        case INVERSION: {
+                            type = "INV";
+                            break;
+                        }
+                        default: {
+                            // Sanity check
+                            addWarning("Skipping variant " + v.toString() + ": invalid type " + v.getType() + " for rearrangement");
+                            break;
+                        }
+                    }
 
-                        if (type != null) {
-                            // Check structural variation
-                            StructuralVariation sv = v.getSv();
-                            if (sv != null) {
-                                if (sv.getBreakend() != null) {
-                                    if (sv.getBreakend().getMate() != null) {
-                                        BreakendMate mate = sv.getBreakend().getMate();
-                                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
-                                                + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
-                                    } else {
-                                        addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", breakend mate is empty for"
-                                                + " rearrangement");
-                                    }
+                    if (type != null) {
+                        // Check structural variation
+                        StructuralVariation sv = v.getSv();
+                        if (sv != null) {
+                            if (sv.getBreakend() != null) {
+                                if (sv.getBreakend().getMate() != null) {
+                                    BreakendMate mate = sv.getBreakend().getMate();
+                                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
+                                            + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
                                 } else {
-                                    addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", breakend is empty for"
+                                    addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", breakend mate is empty for"
                                             + " rearrangement");
                                 }
                             } else {
-                                addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", SV is empty for rearrangement");
+                                addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", breakend is empty for"
+                                        + " rearrangement");
                             }
+                        } else {
+                            addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", SV is empty for rearrangement");
                         }
                     }
                 }
@@ -505,25 +410,25 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         };
     }
 
-    private List<Map<String, String>> buildFiltersList(CircosTrack track) throws ToolException {
-        if (CollectionUtils.isNotEmpty(track.getFilters())) {
-            return track.getFilters();
+    private Map<String, String> checkTrackQuery(CircosTrack track) throws ToolException {
+        Map<String, String> query = new HashMap<>();
+
+        if (MapUtils.isNotEmpty(track.getQuery())) {
+            query = track.getQuery();
         }
 
-        Map<String, String> map = new HashMap<>();
         if ("COPY-NUMBER".equals(track.getType())) {
-            map.put("type", "CNV");
+            query.put("type", "CNV");
         } else if ("INDEL".equals(track.getType())) {
-            map.put("type", "INSERTION,DELETION,INDEL");
+            query.put("type", "INSERTION,DELETION,INDEL");
         } else if ("REARRANGEMENT".equals(track.getType())) {
-            map.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
+            query.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
         } else if ("SNV".equals(track.getType())) {
-            map.put("type", "SNV");
+            query.put("type", "SNV");
         } else {
             throw new ToolException("Unknown Circos track type: '" + track.getType() + "'");
         }
-        List<Map<String, String>> filtersList = new ArrayList<>();
-        filtersList.add(map);
-        return filtersList;
+
+        return query;
     }
 }

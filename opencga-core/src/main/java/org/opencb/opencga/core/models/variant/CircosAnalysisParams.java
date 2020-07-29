@@ -24,11 +24,11 @@ import java.util.Map;
 
 public class CircosAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Circos analysis params to customize the plot. These parameters include the title,  the "
-    + "plot density (i.e., the number of points to display), the set of general filters and the list of tracks. Currently, the supported "
-    + "track types are: COPY-NUMBER, INDEL, REARRANGEMENT and SNV. In addition, each track allows users to define its own set of filters";
+    + "plot density (i.e., the number of points to display), the general query and the list of tracks. Currently, the supported "
+    + "track types are: COPY-NUMBER, INDEL, REARRANGEMENT and SNV. In addition, each track can contain a specific query";
     private String title;
     private String density; // Density plot: LOW, MEDIUM or HIGH
-    private Map<String, String> filters;
+    private Map<String, String> query;
     private List<CircosTrack> tracks;
 
     private String outdir;
@@ -52,10 +52,10 @@ public class CircosAnalysisParams extends ToolParams {
         return null;
     }
 
-    public CircosAnalysisParams(String title, String density, Map<String, String> filters, List<CircosTrack> tracks, String outdir) {
+    public CircosAnalysisParams(String title, String density, Map<String, String> query, List<CircosTrack> tracks, String outdir) {
         this.title = title;
         this.density = density;
-        this.filters = filters;
+        this.query = query;
         this.tracks = tracks;
         this.outdir = outdir;
     }
@@ -65,7 +65,7 @@ public class CircosAnalysisParams extends ToolParams {
         final StringBuilder sb = new StringBuilder("CircosAnalysisParams{");
         sb.append("title='").append(title).append('\'');
         sb.append(", density='").append(density).append('\'');
-        sb.append(", filters=").append(filters);
+        sb.append(", query=").append(query);
         sb.append(", tracks=").append(tracks);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
@@ -90,12 +90,12 @@ public class CircosAnalysisParams extends ToolParams {
         return this;
     }
 
-    public Map<String, String> getFilters() {
-        return filters;
+    public Map<String, String> getQuery() {
+        return query;
     }
 
-    public CircosAnalysisParams setFilters(Map<String, String> filters) {
-        this.filters = filters;
+    public CircosAnalysisParams setQuery(Map<String, String> query) {
+        this.query = query;
         return this;
     }
 
