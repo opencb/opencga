@@ -54,6 +54,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
     private static final String OPENCGA_DISTINGUISHED_NAME = "opencga_dn";
     private boolean ldaps;
+    private boolean sslInvalidCertificatesAllowed;
 
     public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String secretKeyString, long expiration) {
         super();
@@ -76,6 +77,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         this.fullNameKey = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_FULLNAME_KEY, "displayname"));
         this.memberKey = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_MEMBER_KEY, "member"));
         this.dnFormat = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_DN_FORMAT, "%s"));  // no formatting by default
+        this.sslInvalidCertificatesAllowed = Boolean.parseBoolean(
+                String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_SSL_INVALID_CERTIFICATES_ALLOWED, false))
+        );
 
         this.expiration = expiration;
 
@@ -108,6 +112,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             if (ldaps) {
 //                String uid = userInfoFromLDAP.get(0).get(dnKey).get(0).toString();
 //                String dn = String.format(dnFormat, uid);
+                if (sslInvalidCertificatesAllowed) {
+                    env.put("java.naming.ldap.factory.socket", "org.opencb.opencga.catalog.auth.authentication.MySSLSocketFactory");
+                }
                 env.put(Context.SECURITY_PRINCIPAL, rdn);
                 env.put(Context.SECURITY_PROTOCOL, "ssl");
             } else {
@@ -239,8 +246,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                 env.put(DirContext.SECURITY_CREDENTIALS, authPassword);
             }
 
-            if (ldaps) {
-//                env.put("java.naming.ldap.factory.socket", "org.opencb.opencga.catalog.auth.authentication.MySSLSocketFactory");
+            if (ldaps && sslInvalidCertificatesAllowed) {
+                env.put("java.naming.ldap.factory.socket", "org.opencb.opencga.catalog.auth.authentication.MySSLSocketFactory");
             }
 
             // Specify timeout to be 0.5 seconds
