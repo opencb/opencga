@@ -176,8 +176,8 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                                 String catalogPath = getCatalogPath(inputFile);
                                 File file = new File(fileUriMap.get(inputFile).getPath());
 
-                                Path dest = new File(file.getParent()).toPath();
                                 Path src = outputFile.toPath();
+                                Path dest = new File(file.getParent()).toPath();
 
                                 moveFile(getStudy(), src, dest, catalogPath, token);
                             }

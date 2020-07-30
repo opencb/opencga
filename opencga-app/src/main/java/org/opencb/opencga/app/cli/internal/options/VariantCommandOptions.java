@@ -1035,7 +1035,7 @@ public class VariantCommandOptions {
         @DynamicParameter(names = {"--vq", "--variant-query"}, description = "Variant query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
         public Map<String, String> variantQuery = new HashMap<>();
 
-        @Parameter(names = {"--index"}, description = "Index results in catalog1111."
+        @Parameter(names = {"--index"}, description = "Index results in catalog."
                 + "Create an AnnotationSet for the VariableSet " + SampleVariantStatsAnalysis.VARIABLE_SET_ID)
         public boolean index;
 

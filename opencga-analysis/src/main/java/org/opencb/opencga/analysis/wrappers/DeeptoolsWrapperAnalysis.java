@@ -79,7 +79,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 Path newCoveragePath = getOutDir().resolve(bamPath.getFileName() + ".bw");
                 Path prevCoveragePath = bamPath.getParent().resolve(newCoveragePath.getFileName());
 
-                if (getParams().getBoolean("overwrite", false) || !prevCoveragePath.toFile().exists()) {
+                if (!prevCoveragePath.toFile().exists()) {
                     String commandLine = getCommandLine();
                     logger.info("Deeptools command line: " + commandLine);
                     // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
@@ -92,10 +92,9 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     cmd.run();
 
                     if (newCoveragePath.toFile().exists()) {
-                        if (prevCoveragePath.toFile().exists()) {
-                            prevCoveragePath.toFile().delete();
-                        }
-                        FileUtils.moveFile(newCoveragePath.toFile(), prevCoveragePath.toFile());
+                        Path dest = Paths.get(new File(catalogBamFile.getUri()).getParent());
+
+                        moveFile(getStudy(), newCoveragePath, dest, catalogBamFile.getPath(), token);
                     } else {
                         File file = new File(getScratchDir() + "/" + STDERR_FILENAME);
                         String msg = "Something wrong executing Deeptools bamCoverage";
@@ -104,22 +103,24 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         }
                         throw new ToolException(msg);
                     }
+                } else {
+                    addWarning("Skipping BAM coverage from Deeptools: coverage BigWig file already exists at " + prevCoveragePath);
                 }
-
-                boolean isLinked = true;
-                OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
-                try {
-                    fileResult = catalogManager.getFileManager().get(getStudy(), catalogBamFile.getPath(), QueryOptions.empty(), token);
-                    if (fileResult.getNumResults() <= 0) {
-                        isLinked = false;
-                    }
-                } catch (CatalogException e) {
-                    isLinked = false;
-                }
-                if (!isLinked) {
-                    catalogManager.getFileManager().link(getStudy(), prevCoveragePath.toUri(), Paths.get(catalogBamFile.getPath())
-                                    .getParent().toString(), new ObjectMap("parents", true), token);
-                }
+//
+//                boolean isLinked = true;
+//                OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
+//                try {
+//                    fileResult = catalogManager.getFileManager().get(getStudy(), catalogBamFile.getPath(), QueryOptions.empty(), token);
+//                    if (fileResult.getNumResults() <= 0) {
+//                        isLinked = false;
+//                    }
+//                } catch (CatalogException e) {
+//                    isLinked = false;
+//                }
+//                if (!isLinked) {
+//                    catalogManager.getFileManager().link(getStudy(), prevCoveragePath.toUri(), Paths.get(catalogBamFile.getPath())
+//                                    .getParent().toString(), new ObjectMap("parents", true), token);
+//                }
             }
         });
     }

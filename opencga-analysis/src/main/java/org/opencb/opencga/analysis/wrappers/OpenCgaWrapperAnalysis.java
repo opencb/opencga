@@ -63,7 +63,8 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
     }
 
     protected String getCatalogPath(String inputFile) throws ToolException {
-        return new File(getCatalogFile(inputFile).getPath()).getParent();
+//        return new File(getCatalogFile(inputFile).getPath()).getParent();
+        return getCatalogFile(inputFile).getPath();
     }
 
     protected org.opencb.opencga.core.models.file.File getCatalogFile(String inputFile) throws ToolException {

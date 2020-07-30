@@ -54,19 +54,20 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
 import org.opencb.opencga.core.models.alignment.FastQcWrapperParams;
+import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -91,6 +92,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
+import static org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis.INDEX_STATS_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -1024,7 +1026,88 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = IndividualQcAnalysisParams.DESCRIPTION, required = true) IndividualQcAnalysisParams params) {
-        return submitJob(IndividualQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+
+        return run(() -> {
+            List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
+
+            Individual individual = IndividualQcUtils.getIndividualById(study, params.getIndividual(), catalogManager, token);
+
+            // Get samples of that individual, but only germline samples
+            List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(study, individual.getId(),
+                    catalogManager, token);
+            if (CollectionUtils.isEmpty(childGermlineSamples)) {
+                throw new ToolException("Germline sample not found for individual '" +  params.getIndividual() + "'");
+            }
+
+            Sample sample = null;
+            if (StringUtils.isNotEmpty(params.getSample())) {
+                for (Sample germlineSample : childGermlineSamples) {
+                    if (params.getSample().equals(germlineSample.getId())) {
+                        sample = germlineSample;
+                        break;
+                    }
+                }
+                if (sample == null) {
+                    throw new ToolException("The provided sample '" + params.getSample() + "' not found in the individual '"
+                            + params.getIndividual() + "'");
+                }
+            } else {
+                // If multiple germline samples, we take the first one
+                sample = childGermlineSamples.get(0);
+            }
+
+            org.opencb.opencga.core.models.file.File catalogBamFile;
+            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), study, catalogManager.getFileManager(), token);
+
+            if (catalogBamFile != null) {
+                // Check if .bw (coverage file) exists
+                OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
+
+                Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bw");
+                fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
+                Job deeptoolsJob = null;
+                if (fileResult.getNumResults() == 0) {
+                    // Coverage file does not exit, a job must be submitted to create the .bw file
+                    // but first, check if .bai (bam index file) exist
+
+                    query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bai");
+                    fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
+
+                    Job samtoolsJob = null;
+                    if (fileResult.getNumResults() == 0) {
+                        // BAM index file does not exit, a job must be submitted to create the .bai file
+                        SamtoolsWrapperParams samtoolsParams = new SamtoolsWrapperParams()
+                                .setCommand("index")
+                                .setInputFile(catalogBamFile.getId())
+                                .setSamtoolsParams(new HashMap<>());
+
+                        DataResult<Job> jobResult = submitJobRaw(SamtoolsWrapperAnalysis.ID, null, study, samtoolsParams, null, null, null,
+                                null);
+                        samtoolsJob = jobResult.first();
+                    }
+
+                    // Coverage file does not exit, a job must be submitted to create the .bw file
+                    DeeptoolsWrapperParams deeptoolsParams = new DeeptoolsWrapperParams()
+                            .setCommand("bamCoverage")
+                            .setBamFile(catalogBamFile.getId());
+
+                    Map<String, String> bamCoverageParams = new HashMap<>();
+                    bamCoverageParams.put("bs", "1");
+                    bamCoverageParams.put("of", "bigwig");
+                    bamCoverageParams.put("minMappingQuality", "20");
+                    deeptoolsParams.setDeeptoolsParams(bamCoverageParams);
+
+                    DataResult<Job> jobResult = submitJobRaw(DeeptoolsWrapperAnalysis.ID, null, study, deeptoolsParams, null, null,
+                            samtoolsJob == null ? null : samtoolsJob.getId(), null);
+                    deeptoolsJob = jobResult.first();
+                    dependsOnList.add(deeptoolsJob.getId());
+                }
+            }
+
+            return submitJobRaw(IndividualQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","),
+                    jobTags);
+
+        });
     }
 
     @POST
