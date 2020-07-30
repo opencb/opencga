@@ -176,6 +176,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     .append(QueryOptions.INCLUDE, "id")
                     .append(QueryOptions.SORT, true);
 
+            logger.info("SNV track, query: " + snvQuery.toJson());
+            logger.info("SNV track, query options: " + queryOptions.toJson());
+
             VariantDBIterator iterator = storageManager.iterator(snvQuery, queryOptions, getToken());
 
             int prevStart = 0;
@@ -230,6 +233,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
 
+                logger.info("COPY-NUMBER track, query: " + copyNumberQuery.toJson());
+                logger.info("COPY-NUMBER track, query options: " + queryOptions.toJson());
+
                 VariantDBIterator iterator = storageManager.iterator(copyNumberQuery, queryOptions, getToken());
 
                 while (iterator.hasNext()) {
@@ -281,6 +287,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 indelQuery.putAll(trackQuery);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
+
+                logger.info("INDEL track, query: " + indelQuery.toJson());
+                logger.info("INDEL track, query options: " + queryOptions.toJson());
 
                 VariantDBIterator iterator = storageManager.iterator(indelQuery, queryOptions, getToken());
 
@@ -340,6 +349,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 rearrangementQuery.putAll(trackQuery);
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
+
+                logger.info("REARRANGEMENT track, query: " + rearrangementQuery.toJson());
+                logger.info("REARRANGEMENT track, query options: " + queryOptions.toJson());
 
                 VariantDBIterator iterator = storageManager.iterator(rearrangementQuery, queryOptions, getToken());
 
