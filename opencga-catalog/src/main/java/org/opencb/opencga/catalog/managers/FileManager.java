@@ -1302,6 +1302,9 @@ public class FileManager extends AnnotationSetManager<File> {
                     .collect(Collectors.toList()));
         }
 
+        validateQueryPath(query, FileDBAdaptor.QueryParams.PATH.key());
+        validateQueryPath(query, FileDBAdaptor.QueryParams.DIRECTORY.key());
+
         // Convert jobId=NONE to jobId=""
         if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.JOB_ID.key()))
                 && "NONE".equalsIgnoreCase(query.getString(FileDBAdaptor.QueryParams.JOB_ID.key()))) {
@@ -1315,6 +1318,24 @@ public class FileManager extends AnnotationSetManager<File> {
             query.put(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleDataResult.getResults().stream().map(Sample::getUid)
                     .collect(Collectors.toList()));
             query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
+        }
+    }
+
+    private void validateQueryPath(Query query, String key) {
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            // Path never starts with /
+            List<String> pathList = query.getAsStringList(key);
+            List<String> finalPathList = new ArrayList<>(pathList.size());
+
+            for (String path : pathList) {
+                String auxPath = path;
+                if (auxPath.startsWith("/")) {
+                    auxPath = auxPath.substring(1);
+                }
+                finalPathList.add(auxPath);
+            }
+
+            query.put(key, StringUtils.join(finalPathList, ","));
         }
     }
 
