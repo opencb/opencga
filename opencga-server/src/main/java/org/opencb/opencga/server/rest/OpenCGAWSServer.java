@@ -347,9 +347,6 @@ public class OpenCGAWSServer {
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", multivaluedMap.get("metadata") == null || multivaluedMap.get("metadata").get(0).equals("true"));
 
-        // By default, we will avoid counting the number of documents unless explicitly specified.
-        queryOptions.put(QueryOptions.SKIP_COUNT, true);
-
         // Add all the others QueryParams from the URL
         for (Map.Entry<String, List<String>> entry : multivaluedMap.entrySet()) {
             String value = entry.getValue().get(0);
@@ -371,9 +368,6 @@ public class OpenCGAWSServer {
                 case QueryOptions.SORT:
                 case QueryOptions.ORDER:
                     queryOptions.put(entry.getKey(), value);
-                    break;
-                case QueryOptions.SKIP_COUNT:
-                    queryOptions.put(QueryOptions.SKIP_COUNT, Boolean.parseBoolean(value));
                     break;
                 case Constants.INCREMENT_VERSION:
                     queryOptions.put(Constants.INCREMENT_VERSION, Boolean.parseBoolean(value));
