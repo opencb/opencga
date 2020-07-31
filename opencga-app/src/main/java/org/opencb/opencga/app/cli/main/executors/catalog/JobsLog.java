@@ -36,6 +36,7 @@ public class JobsLog {
     private final boolean logAllRunningJobs;
     private final boolean logMultipleJobs;
     private String lastFile = null;
+    public static final int MAX_ERRORS = 3;
 
     public JobsLog(OpenCGAClient openCGAClient, JobCommandOptions.LogCommandOptions c, PrintStream out) {
         this.openCGAClient = openCGAClient;
@@ -125,15 +126,15 @@ public class JobsLog {
                 if (c.tailLines == null || c.tailLines < 0) {
                     // Undefined tail. Print all.
                     params.append("lines", BATCH_SIZE);
-                    content = openCGAClient.getJobClient().headLog(jobId, params).firstResult();
+                    content = secureOp(() -> openCGAClient.getJobClient().headLog(jobId, params).firstResult());
                 } else {
                     params.append("lines", c.tailLines);
-                    content = openCGAClient.getJobClient().tailLog(jobId, params).firstResult();
+                    content = secureOp(() -> openCGAClient.getJobClient().headLog(jobId, params).firstResult());
                 }
             } else {
                 params.put("lines", Math.min(maxLines - printedLines.get(), BATCH_SIZE));
                 params.put("offset", content.getOffset());
-                content = openCGAClient.getJobClient().headLog(jobId, params).firstResult();
+                content = secureOp(() -> openCGAClient.getJobClient().headLog(jobId, params).firstResult());
             }
             jobs.put(jobId, content);
             printedLines.addAndGet(printContent(content));
@@ -162,6 +163,25 @@ public class JobsLog {
             }
         }
         return eof;
+    }
+
+    interface Op<R> {
+        R apply() throws ClientException;
+    }
+
+    private <T> T secureOp(Op<T> op) throws ClientException {
+        int errors = 0;
+        while (true) {
+            try {
+                return op.apply();
+            } catch (Exception e) {
+                errors++;
+                if (errors > MAX_ERRORS) {
+                    logger.error("Got " + errors + " consecutive errors trying to print Jobs Top");
+                    throw e;
+                }
+            }
+        }
     }
 
     private int printContent(FileContent content) {
