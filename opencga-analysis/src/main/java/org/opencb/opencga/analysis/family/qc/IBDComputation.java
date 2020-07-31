@@ -137,11 +137,11 @@ public class IBDComputation {
                 score.setInferredRelationship(splits[4]);
 
                 Map<String, Object> values = new LinkedHashMap<>();
-                values.put("ez", Double.parseDouble(splits[5]));
-                values.put("z0", Double.parseDouble(splits[6]));
-                values.put("z1", Double.parseDouble(splits[7]));
-                values.put("z2", Double.parseDouble(splits[8]));
-                values.put("PiHat", Double.parseDouble(splits[9]));
+                values.put("ez", splits[5]);
+                values.put("z0", splits[6]);
+                values.put("z1", splits[7]);
+                values.put("z2", splits[8]);
+                values.put("PiHat", splits[9]);
                 score.setValues(values);
 
                 // Add relatedness score to the report
