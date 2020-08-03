@@ -35,17 +35,22 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -164,6 +169,73 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setProband(individual);
         OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, clinical.getNumResults());
+    }
+
+    @Test
+    public void assignPermissions() throws CatalogException {
+        ClinicalAnalysis clinicalAnalysis = createDummyEnvironment(true).first();
+        catalogManager.getUserManager().create("external", "User Name", "external@mail.com", PASSWORD, "", null, Account.AccountType.GUEST, null);
+
+        OpenCGAResult<Map<String, List<String>>> aclResult = catalogManager.getClinicalAnalysisManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getId()), "external", false, sessionIdUser);
+        assertEquals(0, aclResult.getNumResults());
+
+        aclResult = catalogManager.getFamilyManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getFamily().getId()), "external", false, sessionIdUser);
+        assertEquals(0, aclResult.getNumResults());
+
+        aclResult = catalogManager.getIndividualManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getProband().getId()), "external", false, sessionIdUser);
+        assertEquals(0, aclResult.getNumResults());
+
+        aclResult = catalogManager.getSampleManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
+        assertEquals(0, aclResult.getNumResults());
+
+        // Assign permissions to clinical analysis without propagating the permissions
+        catalogManager.getClinicalAnalysisManager().updateAcl(STUDY, Collections.singletonList(clinicalAnalysis.getId()), "external",
+                new AclParams(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name()), ParamUtils.AclAction.ADD, false, sessionIdUser);
+
+        aclResult = catalogManager.getClinicalAnalysisManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getId()), "external", false, sessionIdUser);
+        assertEquals(1, aclResult.getNumResults());
+        assertEquals(3, aclResult.first().get("external").size());
+
+        aclResult = catalogManager.getFamilyManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getFamily().getId()), "external", false, sessionIdUser);
+        assertEquals(0, aclResult.getNumResults());
+
+        aclResult = catalogManager.getIndividualManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getProband().getId()), "external", false, sessionIdUser);
+        assertEquals(0, aclResult.getNumResults());
+
+        aclResult = catalogManager.getSampleManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
+        assertEquals(0, aclResult.getNumResults());
+
+        // Assign permissions to clinical analysis PROPAGATING the permissions
+        catalogManager.getClinicalAnalysisManager().updateAcl(STUDY, Collections.singletonList(clinicalAnalysis.getId()), "external",
+                new AclParams(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name()), ParamUtils.AclAction.ADD, true, sessionIdUser);
+
+        aclResult = catalogManager.getClinicalAnalysisManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getId()), "external", false, sessionIdUser);
+        assertEquals(1, aclResult.getNumResults());
+        assertEquals(3, aclResult.first().get("external").size());
+
+        aclResult = catalogManager.getFamilyManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getFamily().getId()), "external", false, sessionIdUser);
+        assertEquals(1, aclResult.getNumResults());
+        assertEquals(2, aclResult.first().get("external").size());
+
+        aclResult = catalogManager.getIndividualManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getProband().getId()), "external", false, sessionIdUser);
+        assertEquals(1, aclResult.getNumResults());
+        assertEquals(2, aclResult.first().get("external").size());
+
+        aclResult = catalogManager.getSampleManager().getAcls(STUDY,
+                Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
+        assertEquals(1, aclResult.getNumResults());
+        assertEquals(2, aclResult.first().get("external").size());
     }
 
     @Test

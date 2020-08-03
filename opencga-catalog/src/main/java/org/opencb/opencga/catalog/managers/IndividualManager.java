@@ -1558,34 +1558,32 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(study.getUid(), members);
-//        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
             List<Long> individualUids = individualList.stream().map(Individual::getUid).collect(Collectors.toList());
+            List<AuthorizationManager.CatalogAclParams> aclParamsList = new LinkedList<>();
+            aclParamsList.add(new AuthorizationManager.CatalogAclParams(individualUids, permissions, Enums.Resource.INDIVIDUAL));
 
-            Enums.Resource resource2 = null;
-            List<Long> sampleUids = null;
             if (propagate) {
-                resource2 = Enums.Resource.SAMPLE;
-                sampleUids = getSampleUidsFromIndividuals(study.getUid(), individualUids);
+                List<Long> sampleUids = getSampleUidsFromIndividuals(study.getUid(), individualUids);
+                aclParamsList.add(new AuthorizationManager.CatalogAclParams(sampleUids, permissions, Enums.Resource.SAMPLE));
             }
 
             OpenCGAResult<Map<String, List<String>>> queryResults;
             switch (action) {
                 case SET:
-                    queryResults = authorizationManager.setAcls(study.getUid(), individualUids, sampleUids, members, permissions,
-                            Enums.Resource.INDIVIDUAL, resource2);
+                    queryResults = authorizationManager.setAcls(study.getUid(), members, aclParamsList);
                     break;
                 case ADD:
-                    queryResults = authorizationManager.addAcls(study.getUid(), individualUids, sampleUids, members, permissions,
-                            Enums.Resource.INDIVIDUAL, resource2);
+                    queryResults = authorizationManager.addAcls(study.getUid(), members, aclParamsList);
                     break;
                 case REMOVE:
-                    queryResults = authorizationManager.removeAcls(individualUids, sampleUids, members, permissions,
-                            Enums.Resource.INDIVIDUAL, resource2);
+                    queryResults = authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 case RESET:
-                    queryResults = authorizationManager.removeAcls(individualUids, sampleUids, members, null, Enums.Resource.INDIVIDUAL,
-                            resource2);
+                    for (AuthorizationManager.CatalogAclParams catalogAclParams : aclParamsList) {
+                        catalogAclParams.setPermissions(null);
+                    }
+                    queryResults = authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

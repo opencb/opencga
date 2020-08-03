@@ -31,8 +31,8 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -322,24 +322,23 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
-                                      List<String> permissionList, Enums.Resource resource, Enums.Resource resource2)
+    public OpenCGAResult setToMembers(long studyId, List<String> members, List<AuthorizationManager.CatalogAclParams> aclParams)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long startTime = startQuery();
+
             // We obtain which of those members are actually users to add them to the @members group automatically
             addToMembersGroupInStudy(studyId, members, clientSession);
 
-            setToMembers(resourceIds, members, permissionList, resource, clientSession);
+            for (AuthorizationManager.CatalogAclParams aclParam : aclParams) {
+                setToMembers(aclParam.getIds(), members, aclParam.getPermissions(), aclParam.getResource(), clientSession);
 
-            if (ListUtils.isNotEmpty(resourceIds2) && resource2 != null) {
-                setToMembers(resourceIds2, members, permissionList, resource2, clientSession);
+                // We store that those members have internal permissions
+                setMembersHaveInternalPermissionsDefined(studyId, members, aclParam.getPermissions(), aclParam.getResource().name(),
+                        clientSession);
             }
 
-            // We store that those members have internal permissions
-            setMembersHaveInternalPermissionsDefined(studyId, members, permissionList, resource.name(), clientSession);
-
-            return endWrite(startTime, 1, 1, null);
+            return endWrite(startTime, aclParams.get(0).getIds().size(), aclParams.get(0).getIds().size(), null);
         });
     }
 
@@ -402,21 +401,21 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
-                                      List<String> permissionList, Enums.Resource resource, Enums.Resource resource2)
+    public OpenCGAResult addToMembers(long studyId, List<String> members, List<AuthorizationManager.CatalogAclParams> aclParams)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long startTime = startQuery();
             addToMembersGroupInStudy(studyId, members, clientSession);
-            addToMembers(resourceIds, members, permissionList, resource, clientSession);
 
-            if (ListUtils.isNotEmpty(resourceIds2) && resource2 != null) {
-                addToMembers(resourceIds2, members, permissionList, resource2, clientSession);
+            for (AuthorizationManager.CatalogAclParams aclParam : aclParams) {
+                addToMembers(aclParam.getIds(), members, aclParam.getPermissions(), aclParam.getResource(), clientSession);
+
+                // We store that those members have internal permissions
+                setMembersHaveInternalPermissionsDefined(studyId, members, aclParam.getPermissions(), aclParam.getResource().name(),
+                        clientSession);
             }
 
-            // We store that those members have internal permissions
-            setMembersHaveInternalPermissionsDefined(studyId, members, permissionList, resource.name(), clientSession);
-            return endWrite(startTime, 1, 1, null);
+            return endWrite(startTime, aclParams.get(0).getIds().size(), aclParams.get(0).getIds().size(), null);
         });
     }
 
@@ -478,22 +477,16 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
-                                           List<String> permissionList, Enums.Resource resource, Enums.Resource resource2)
+    public OpenCGAResult removeFromMembers(List<String> members, List<AuthorizationManager.CatalogAclParams> aclParams)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        if (members == null || members.isEmpty()) {
-            throw new CatalogDBException("Missing members list");
-        }
-
         return runTransaction(clientSession -> {
             long startTime = startQuery();
 
-            removeFromMembers(clientSession, resourceIds, members, permissionList, resource);
-
-            if (ListUtils.isNotEmpty(resourceIds2) && resource2 != null) {
-                removeFromMembers(clientSession, resourceIds2, members, permissionList, resource2);
+            for (AuthorizationManager.CatalogAclParams aclParam : aclParams) {
+                removeFromMembers(clientSession, aclParam.getIds(), members, aclParam.getPermissions(), aclParam.getResource());
             }
-            return endWrite(startTime, 1, 1, null);
+
+            return endWrite(startTime, aclParams.get(0).getIds().size(), aclParams.get(0).getIds().size(), null);
         });
     }
 

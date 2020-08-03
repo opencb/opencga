@@ -229,6 +229,10 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     }
 
     private void fillInterpretationData(Document clinicalAnalysis, Map<String, Document> interpretationMap) {
+        if (interpretationMap.isEmpty()) {
+            return;
+        }
+
         Document primaryInterpretation = (Document) clinicalAnalysis.get(INTERPRETATION.key());
 
         if (primaryInterpretation != null && interpretationMap.containsKey(String.valueOf(primaryInterpretation.get(UID)))) {

@@ -56,6 +56,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
@@ -72,6 +73,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     public static final QueryOptions INCLUDE_CLINICAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key()));
+    public static final QueryOptions INCLUDE_CATALOG_DATA = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.FILES.key()));
     public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
@@ -1337,7 +1343,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyStr, List<String> clinicalList, String memberIds,
-                                                              AclParams clinicalAclParams, ParamUtils.AclAction action, String token)
+                                                              AclParams clinicalAclParams, ParamUtils.AclAction action, boolean propagate,
+                                                              String token)
             throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, user);
@@ -1369,7 +1376,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 checkPermissions(permissions, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf);
             }
 
-            OpenCGAResult<ClinicalAnalysis> queryResult = internalGet(study.getUid(), clinicalList, INCLUDE_CLINICAL_IDS, user, false);
+            OpenCGAResult<ClinicalAnalysis> queryResult = internalGet(study.getUid(), clinicalList, INCLUDE_CATALOG_DATA, user, false);
 
             authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
 
@@ -1383,27 +1390,87 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(study.getUid(), members);
 
+            List<Long> clinicalUidList = queryResult.getResults().stream().map(ClinicalAnalysis::getUid).collect(Collectors.toList());
+            List<AuthorizationManager.CatalogAclParams> aclParamsList = new LinkedList<>();
+            AuthorizationManager.CatalogAclParams.addToList(clinicalUidList, permissions, Enums.Resource.CLINICAL_ANALYSIS, aclParamsList);
+
+            if (propagate) {
+                // Obtain the whole list of implicity permissions
+                Set<String> allPermissions = new HashSet<>(permissions);
+                if (action == ParamUtils.AclAction.ADD || action == ParamUtils.AclAction.SET) {
+                    // We also fetch the implicit permissions just in case
+                    allPermissions.addAll(permissions
+                            .stream()
+                            .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf)
+                            .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                }
+
+                // Only propagate VIEW and WRITE permissions
+                List<String> propagatedPermissions = new LinkedList<>();
+                for (String permission : allPermissions) {
+                    if (ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name().equals(permission)
+                            || ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE.name().equals(permission)) {
+                        propagatedPermissions.add(permission);
+                    }
+                }
+
+                // Extract the family, individual, sample and file uids to propagate permissions
+                List<Long> familyUids = queryResult.getResults().stream()
+                        .map(c -> c.getFamily() != null ? c.getFamily().getUid() : 0)
+                        .filter(familyUid -> familyUid > 0)
+                        .distinct()
+                        .collect(Collectors.toList());
+                AuthorizationManager.CatalogAclParams.addToList(familyUids, propagatedPermissions, Enums.Resource.FAMILY, aclParamsList);
+
+                List<Long> individualUids = queryResult.getResults().stream()
+                        .flatMap(c -> (c.getFamily() != null && !c.getFamily().getMembers().isEmpty())
+                                ? c.getFamily().getMembers().stream()
+                                : Stream.of(c.getProband()))
+                        .map(Individual::getUid)
+                        .distinct()
+                        .collect(Collectors.toList());
+                AuthorizationManager.CatalogAclParams.addToList(individualUids, propagatedPermissions, Enums.Resource.INDIVIDUAL,
+                        aclParamsList);
+
+                List<Long> sampleUids = queryResult.getResults().stream()
+                        .flatMap(c -> (c.getFamily() != null && !c.getFamily().getMembers().isEmpty())
+                                ? c.getFamily().getMembers().stream()
+                                : Stream.of(c.getProband()))
+                        .flatMap(i -> i.getSamples() != null ? i.getSamples().stream() : Stream.empty())
+                        .map(Sample::getUid)
+                        .distinct()
+                        .collect(Collectors.toList());
+                AuthorizationManager.CatalogAclParams.addToList(sampleUids, propagatedPermissions, Enums.Resource.SAMPLE, aclParamsList);
+
+                List<Long> fileUids = queryResult.getResults().stream()
+                        .flatMap(c -> c.getFiles() != null ? c.getFiles().stream() : Stream.empty())
+                        .map(File::getUid)
+                        .distinct()
+                        .collect(Collectors.toList());
+                AuthorizationManager.CatalogAclParams.addToList(fileUids, propagatedPermissions, Enums.Resource.FILE, aclParamsList);
+            }
+
             OpenCGAResult<Map<String, List<String>>> queryResults;
             switch (action) {
                 case SET:
-                    queryResults = authorizationManager.setAcls(study.getUid(), queryResult.getResults().stream()
-                            .map(ClinicalAnalysis::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.CLINICAL_ANALYSIS);
+                    queryResults = authorizationManager.setAcls(study.getUid(), members, aclParamsList);
                     break;
                 case ADD:
-                    queryResults = authorizationManager.addAcls(study.getUid(), queryResult.getResults().stream()
-                            .map(ClinicalAnalysis::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.CLINICAL_ANALYSIS);
+                    queryResults = authorizationManager.addAcls(study.getUid(), members, aclParamsList);
                     break;
                 case REMOVE:
-                    queryResults = authorizationManager.removeAcls(queryResult.getResults().stream()
-                                    .map(ClinicalAnalysis::getUid).collect(Collectors.toList()),
-                            members, permissions, Enums.Resource.CLINICAL_ANALYSIS);
+                    queryResults = authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 case RESET:
-                    queryResults = authorizationManager.removeAcls(queryResult.getResults().stream()
-                                    .map(ClinicalAnalysis::getUid).collect(Collectors.toList()),
-                            members, null, Enums.Resource.CLINICAL_ANALYSIS);
+                    for (AuthorizationManager.CatalogAclParams aclParams : aclParamsList) {
+                        aclParams.setPermissions(null);
+                    }
+                    queryResults = authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

@@ -1628,23 +1628,24 @@ public class JobManager extends ResourceManager<Job> {
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(study.getUid(), members);
 
+            List<Long> jobUids = jobList.stream().map(Job::getUid).collect(Collectors.toList());
+            AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(jobUids, permissions,
+                    Enums.Resource.JOB);
+
             OpenCGAResult<Map<String, List<String>>> queryResultList;
             switch (action) {
                 case SET:
-                    queryResultList = authorizationManager.setAcls(study.getUid(), jobList.stream().map(Job::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.JOB);
+                    queryResultList = authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case ADD:
-                    queryResultList = authorizationManager.addAcls(study.getUid(), jobList.stream().map(Job::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.JOB);
+                    queryResultList = authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case REMOVE:
-                    queryResultList = authorizationManager.removeAcls(jobList.stream().map(Job::getUid).collect(Collectors.toList()),
-                            members, permissions, Enums.Resource.JOB);
+                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 case RESET:
-                    queryResultList = authorizationManager.removeAcls(jobList.stream().map(Job::getUid).collect(Collectors.toList()),
-                            members, null, Enums.Resource.JOB);
+                    catalogAclParams.setPermissions(null);
+                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

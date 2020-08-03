@@ -283,12 +283,13 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group IDs", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = "Propagate permissions to related families, individuals, samples and files", defaultValue = "false") @QueryParam("propagate") boolean propagate,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAclUpdateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAclUpdateParams());
             AclParams clinicalAclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getClinicalAnalysis());
-            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, action, token));
+            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, action, propagate, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
