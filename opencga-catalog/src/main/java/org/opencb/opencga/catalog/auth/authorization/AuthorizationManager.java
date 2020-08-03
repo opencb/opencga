@@ -33,6 +33,7 @@ import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -412,32 +413,28 @@ public interface AuthorizationManager {
     OpenCGAResult<Map<String, List<String>>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
             throws CatalogException;
 
-    default OpenCGAResult<Map<String, List<String>>> setAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
-                                                          Enums.Resource resource) throws CatalogException {
-        return setAcls(studyId, ids, null, members, permissions, resource, null);
+    default OpenCGAResult<Map<String, List<String>>> setAcls(long studyUid, List<String> members, CatalogAclParams... aclParams)
+            throws CatalogException {
+        return setAcls(studyUid, members, Arrays.asList(aclParams));
     }
 
-    OpenCGAResult<Map<String, List<String>>> setAcls(long studyId, List<Long> ids1, List<Long> ids2, List<String> members,
-                                                     List<String> permissions, Enums.Resource resource1, Enums.Resource resource2)
+    OpenCGAResult<Map<String, List<String>>> setAcls(long studyUid, List<String> members, List<CatalogAclParams> aclParams)
             throws CatalogException;
 
-    default OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
-                                                          Enums.Resource resource) throws CatalogException {
-        return addAcls(studyId, ids, null, members, permissions, resource, null);
+    default OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<String> members, CatalogAclParams... aclParams)
+            throws CatalogException {
+        return addAcls(studyId, members, Arrays.asList(aclParams));
     }
 
-    OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<Long> ids1, List<Long> ids2, List<String> members,
-                                                     List<String> permissions, Enums.Resource resource, Enums.Resource resource2)
+    OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<String> members, List<CatalogAclParams> aclParams)
             throws CatalogException;
 
-    default OpenCGAResult<Map<String, List<String>>> removeAcls(List<Long> ids, List<String> members, @Nullable List<String> permissions,
-                                                             Enums.Resource resource) throws CatalogException {
-        return removeAcls(ids, null, members, permissions, resource, null);
+    default OpenCGAResult<Map<String, List<String>>> removeAcls(List<String> members, CatalogAclParams... aclParams)
+            throws CatalogException {
+        return removeAcls(members, Arrays.asList(aclParams));
     }
 
-    OpenCGAResult<Map<String, List<String>>> removeAcls(List<Long> ids1, List<Long> ids2, List<String> members,
-                                                        @Nullable List<String> permissions, Enums.Resource resource,
-                                                        Enums.Resource resource2) throws CatalogException;
+    OpenCGAResult<Map<String, List<String>>> removeAcls(List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
 
     OpenCGAResult<Map<String, List<String>>> replicateAcls(long studyId, List<Long> ids, Map<String, List<String>> aclEntries,
                                                            Enums.Resource resource)
@@ -452,4 +449,54 @@ public interface AuthorizationManager {
     void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Enums.Entity entry) throws CatalogException;
 
     void removePermissionRule(long studyId, String permissionRuleId, Enums.Entity entry) throws CatalogException;
+
+    class CatalogAclParams {
+        private List<Long> ids;
+        private List<String> permissions;
+        private Enums.Resource resource;
+
+        public CatalogAclParams() {
+        }
+
+        public CatalogAclParams(List<Long> ids, List<String> permissions, Enums.Resource resource) {
+            this.ids = ids;
+            this.permissions = permissions;
+            this.resource = resource;
+        }
+
+        public static void addToList(List<Long> ids, List<String> permissions, Enums.Resource resource,
+                                     List<CatalogAclParams> aclParamsList) {
+            if (ids != null && !ids.isEmpty()) {
+                aclParamsList.add(new CatalogAclParams(ids, permissions, resource));
+            }
+        }
+
+        public List<Long> getIds() {
+            return ids;
+        }
+
+        public CatalogAclParams setIds(List<Long> ids) {
+            this.ids = ids;
+            return this;
+        }
+
+        public List<String> getPermissions() {
+            return permissions;
+        }
+
+        public CatalogAclParams setPermissions(List<String> permissions) {
+            this.permissions = permissions;
+            return this;
+        }
+
+        public Enums.Resource getResource() {
+            return resource;
+        }
+
+        public CatalogAclParams setResource(Enums.Resource resource) {
+            this.resource = resource;
+            return this;
+        }
+    }
+
 }

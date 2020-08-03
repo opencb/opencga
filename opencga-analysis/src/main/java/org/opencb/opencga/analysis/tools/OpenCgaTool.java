@@ -205,13 +205,17 @@ public abstract class OpenCgaTool {
                         if (scratch.toFile().isDirectory() && scratch.toFile().canWrite()) {
                             baseScratchDir = scratch;
                         } else {
-                            String warn = "Unable to access scratch folder '" + scratch + "'";
-                            privateLogger.warn(warn);
-                            addWarning(warn);
+                            try {
+                                FileUtils.forceMkdir(scratch.toFile());
+                            } catch (IOException e) {
+                                String warn = "Unable to access scratch folder '" + scratch + "'. " + e.getMessage();
+                                privateLogger.warn(warn);
+                                addWarning(warn);
+                            }
                         }
                     } catch (InvalidPathException e) {
                         String warn = "Unable to access scratch folder '"
-                                + configuration.getAnalysis().getScratchDir() + "'";
+                                + configuration.getAnalysis().getScratchDir() + "'. " + e.getMessage();
                         privateLogger.warn(warn);
                         addWarning(warn);
                     }

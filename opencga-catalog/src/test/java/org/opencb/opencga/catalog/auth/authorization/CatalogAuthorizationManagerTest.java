@@ -714,8 +714,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readSampleExplicitUnshared() throws CatalogException {
         DataResult<Sample> sample = catalogManager.getSampleManager().get(studyFqn, smp1.getId(), null, externalSessionId);
         assertEquals(1, sample.getNumResults());
-        catalogManager.getAuthorizationManager().removeAcls(Collections.singletonList(smp1.getUid()),
-                Collections.singletonList(externalUser), null, Enums.Resource.SAMPLE);
+        catalogManager.getAuthorizationManager().removeAcls(Collections.singletonList(externalUser),
+                new AuthorizationManager.CatalogAclParams(Collections.singletonList(smp1.getUid()), null, Enums.Resource.SAMPLE));
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSampleManager().get(studyFqn, smp1.getId(), null, externalSessionId);
     }

@@ -113,11 +113,27 @@ analysis:
     id: "${OPENCGA.EXECUTION.MODE}"
     defaultQueue: ""            # Default queue to be used to submit jobs
     availableQueues:            # Other queues for specific applications
-#      - fast:
-#        - "alignmentIndex"
-#      - slow:
-#        - "coverage"
-#        - "alignmentStats"
+    toolsPerQueue:
+#       docker:
+#          - "circos"
+#          - "deeptools"
+#          - "bwa"
+#          - "fastqc"
+#          - "gatk"
+#          - "picard"
+#          - "plink"
+#          - "rvtests"
+#          - "samtools"
+#          - "relatedness"
+#          - "family-qc"
+#          - "sample-qc"
+#          - "individual-qc"
+#          - "mutational-signature"
+#       fast:
+#          - "alignmentIndex"
+#       slow:
+#          - "coverage"
+#          - "alignmentStats"
     maxConcurrentJobs:
       variant-index: 20
       variant-annotation-index: 5

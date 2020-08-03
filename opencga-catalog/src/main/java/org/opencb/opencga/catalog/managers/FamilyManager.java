@@ -1145,23 +1145,24 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(study.getUid(), members);
 
+            List<Long> familyUids = familyList.stream().map(Family::getUid).collect(Collectors.toList());
+            AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(familyUids, permissions,
+                    Enums.Resource.FAMILY);
+
             OpenCGAResult<Map<String, List<String>>> aclResults;
             switch (action) {
                 case SET:
-                    aclResults = authorizationManager.setAcls(study.getUid(), familyList.stream().map(Family::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.FAMILY);
+                    aclResults = authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case ADD:
-                    aclResults = authorizationManager.addAcls(study.getUid(), familyList.stream().map(Family::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.FAMILY);
+                    aclResults = authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case REMOVE:
-                    aclResults = authorizationManager.removeAcls(familyList.stream().map(Family::getUid).collect(Collectors.toList()),
-                            members, permissions, Enums.Resource.FAMILY);
+                    aclResults = authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 case RESET:
-                    aclResults = authorizationManager.removeAcls(familyList.stream().map(Family::getUid).collect(Collectors.toList()),
-                            members, null, Enums.Resource.FAMILY);
+                    catalogAclParams.setPermissions(null);
+                    aclResults = authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

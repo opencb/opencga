@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -101,12 +102,13 @@ public class AuthorizationMongoDBAdaptorTest {
 
         aclDBAdaptor.resetMembersFromAllEntries(studyId, Arrays.asList(user1.getId(), user2.getId()));
 
-        aclDBAdaptor.addToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList("user1", "user2", "user3"),
-                Arrays.asList("VIEW", "UPDATE"), Enums.Resource.SAMPLE);
-        aclDBAdaptor.addToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList("user4"), Collections.emptyList(), Enums.Resource.SAMPLE);
+        aclDBAdaptor.addToMembers(studyId, Arrays.asList("user1", "user2", "user3"), Collections.singletonList(
+                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()), Arrays.asList("VIEW", "UPDATE"), Enums.Resource.SAMPLE)));
+        aclDBAdaptor.addToMembers(studyId, Arrays.asList("user4"), Collections.singletonList(
+                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()), Collections.emptyList(), Enums.Resource.SAMPLE)));
         // We attempt to store the same permissions
-        aclDBAdaptor.addToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList("user1", "user2", "user3"),
-                Arrays.asList("VIEW", "UPDATE"), Enums.Resource.SAMPLE);
+        aclDBAdaptor.addToMembers(studyId, Arrays.asList("user1", "user2", "user3"), Collections.singletonList(
+                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()), Arrays.asList("VIEW", "UPDATE"), Enums.Resource.SAMPLE)));
 
         DataResult<Map<String, List<String>>> sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Enums.Resource.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
@@ -120,7 +122,8 @@ public class AuthorizationMongoDBAdaptorTest {
         assertTrue(sampleAcl.first().get("user2").containsAll(Arrays.asList("VIEW", "UPDATE")));
         assertEquals(2, sampleAcl.first().get("user2").size());
 
-        aclDBAdaptor.setToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList("user1"), Arrays.asList("DELETE"), Enums.Resource.SAMPLE);
+        aclDBAdaptor.setToMembers(studyId, Arrays.asList("user1"), Collections.singletonList(
+                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()), Arrays.asList("DELETE"), Enums.Resource.SAMPLE)));
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList("user1", "user2"), Enums.Resource.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
         assertEquals(2, sampleAcl.first().size());
@@ -131,13 +134,15 @@ public class AuthorizationMongoDBAdaptorTest {
         assertEquals(2, sampleAcl.first().get("user2").size());
 
         // Remove one permission from one user
-        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getUid()), Arrays.asList("user1"), Arrays.asList("DELETE"), Enums.Resource.SAMPLE);
+        aclDBAdaptor.removeFromMembers(Arrays.asList("user1"), Collections.singletonList(new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()),
+                Arrays.asList("DELETE"), Enums.Resource.SAMPLE)));
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList("user1"), Enums.Resource.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
         assertEquals(0, sampleAcl.first().get("user1").size());
 
         // Reset user
-        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getUid()), Arrays.asList("user1"), null, Enums.Resource.SAMPLE);
+        aclDBAdaptor.removeFromMembers(Arrays.asList("user1"), Collections.singletonList(new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()),
+                null, Enums.Resource.SAMPLE)));
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList("user1"), Enums.Resource.SAMPLE);
         assertEquals(0, sampleAcl.getNumResults());
 
@@ -155,7 +160,8 @@ public class AuthorizationMongoDBAdaptorTest {
         assertEquals(0, sampleAcl.first().get("user4").size());
 
         // Reset user4
-        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getUid()), Arrays.asList("user4"), null, Enums.Resource.SAMPLE);
+        aclDBAdaptor.removeFromMembers(Arrays.asList("user4"), Collections.singletonList(
+                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()), null, Enums.Resource.SAMPLE)));
         sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Enums.Resource.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
         assertEquals(1, sampleAcl.first().size());
@@ -195,8 +201,9 @@ public class AuthorizationMongoDBAdaptorTest {
         assertEquals(1, sampleAcl.getNumResults());
         assertEquals(1, sampleAcl.first().size());
         assertEquals(3, sampleAcl.first().get(user2.getId()).size());
-        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getUid()), Arrays.asList(user2.getId()),
-                Arrays.asList("VIEW_ANNOTATIONS", "DELETE", "VIEW"), Enums.Resource.SAMPLE);
+        aclDBAdaptor.removeFromMembers(Arrays.asList(user2.getId()), Collections.singletonList(
+                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()),
+                Arrays.asList("VIEW_ANNOTATIONS", "DELETE", "VIEW"), Enums.Resource.SAMPLE)));
 //        sampleDBAdaptor.unsetSampleAcl(s1.getId(), Arrays.asList(user2.getId()),
 //                Arrays.asList("VIEW_ANNOTATIONS", "DELETE", "VIEW"));
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()), Enums.Resource.SAMPLE);
@@ -213,8 +220,9 @@ public class AuthorizationMongoDBAdaptorTest {
         List<String> newPermissions = Collections.singletonList(SampleAclEntry.SamplePermissions.DELETE.name());
         assertTrue(!acls.get(user2.getId()).equals(newPermissions));
 
-        aclDBAdaptor.setToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList(user2.getId()),
-                Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()), Enums.Resource.SAMPLE);
+        aclDBAdaptor.setToMembers(studyId, Arrays.asList(user2.getId()), Collections.singletonList(
+                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()), Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()),
+                        Enums.Resource.SAMPLE)));
 //        sampleDBAdaptor.setSampleAcl(s1.getId(), newAcl, true);
 
         assertEquals(newPermissions, aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()), Enums.Resource.SAMPLE).first().get(user2.getId()));
@@ -245,8 +253,9 @@ public class AuthorizationMongoDBAdaptorTest {
         }
 
         // Assign a manual permission to s2
-        aclDBAdaptor.addToMembers(studyId, Arrays.asList(s2.getUid()), Arrays.asList(user3.getId()),
-                Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()), Enums.Resource.SAMPLE);
+        aclDBAdaptor.addToMembers(studyId, Arrays.asList(user3.getId()), Collections.singletonList(
+                new AuthorizationManager.CatalogAclParams(Arrays.asList(s2.getUid()),
+                Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()), Enums.Resource.SAMPLE)));
     }
 
 }

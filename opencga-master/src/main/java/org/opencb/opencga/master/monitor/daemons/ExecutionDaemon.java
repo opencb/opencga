@@ -76,6 +76,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -551,7 +552,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         try {
-            batchExecutor.execute(job.getId(), authenticatedCommandLine, stdout, stderr);
+            String queue = getQueue(tool);
+            logger.info("Queue job '{}' on queue '{}'", job.getId(), queue);
+            batchExecutor.execute(job.getId(), queue, authenticatedCommandLine, stdout, stderr);
         } catch (Exception e) {
             logger.error("Error executing job {}.", job.getId(), e);
             return abortJob(job, "Error executing job. " + e.getMessage());
@@ -561,6 +564,22 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         notifyStatusChange(job);
 
         return 1;
+    }
+
+    private String getQueue(Tool tool) {
+        String queue = "default";
+        Execution execution = catalogManager.getConfiguration().getAnalysis().getExecution();
+        if (StringUtils.isNotEmpty(execution.getDefaultQueue())) {
+            queue = execution.getDefaultQueue();
+        }
+        if (execution.getToolsPerQueue() != null) {
+            for (Map.Entry<String, List<String>> entry : execution.getToolsPerQueue().entrySet()) {
+                if (entry.getValue().contains(tool.id())) {
+                    queue = entry.getKey();
+                }
+            }
+        }
+        return queue;
     }
 
     private File getValidInternalOutDir(String study, Job job, String outDirPath, String userToken) throws CatalogException {

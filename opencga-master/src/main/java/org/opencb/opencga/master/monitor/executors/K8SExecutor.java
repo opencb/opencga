@@ -175,7 +175,7 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String commandLine, Path stdout, Path stderr) throws Exception {
+    public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
         String jobName = buildJobName(jobId);
         final io.fabric8.kubernetes.api.model.batch.Job k8sJob = new JobBuilder()
                 .withApiVersion("batch/v1")
@@ -189,7 +189,6 @@ public class K8SExecutor implements BatchExecutor {
                         .withBackoffLimit(0) // specify the number of retries before considering a Job as failed
                         .withTemplate(new PodTemplateSpecBuilder()
                                 .withSpec(new PodSpecBuilder()
-                                        .addToContainers(dockerDaemonSidecar)
                                         .addToContainers(new ContainerBuilder()
                                                 .withName("opencga")
                                                 .withImage(imageName)
@@ -213,8 +212,16 @@ public class K8SExecutor implements BatchExecutor {
                         .build()
                 ).build();
 
+        if (shouldAddDockerDaemon(queue)) {
+            k8sJob.getSpec().getTemplate().getSpec().getContainers().add(dockerDaemonSidecar);
+        }
         jobStatusCache.put(jobName, Enums.ExecutionStatus.QUEUED);
         getKubernetesClient().batch().jobs().inNamespace(namespace).create(k8sJob);
+    }
+
+    private boolean shouldAddDockerDaemon(String queue) {
+//        return queue != null && queue.toLowerCase().contains("docker");
+        return true;
     }
 
     /**
