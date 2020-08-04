@@ -54,8 +54,6 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
     public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc1";
 
-    private Query query;
-
     private File snvsFile;
     private File rearrsFile;
     private File indelsFile;
@@ -142,9 +140,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
      * @return True or false depending on successs
      */
     private boolean snvQuery(Query query, VariantStorageManager storageManager) {
+        PrintWriter pw = null;
         try {
             snvsFile = getOutDir().resolve("snvs.tsv").toFile();
-            PrintWriter pw = new PrintWriter(snvsFile);
+            pw = new PrintWriter(snvsFile);
             pw.println("Chromosome\tchromStart\tchromEnd\tref\talt\tlogDistPrev");
 
             CircosTrack snvTrack = getCircosParams().getCircosTrackByType("SNV");
@@ -201,10 +200,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     prevStart = v.getStart();
                 }
             }
-
-            pw.close();
-        } catch(Exception e){
+        } catch(Exception e) {
             return false;
+        } finally {
+            pw.close();
         }
         return true;
     }
@@ -217,9 +216,11 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
      * @return True or false depending on successs
      */
     private boolean copyNumberQuery(Query query, VariantStorageManager storageManager) {
+        PrintWriter pw = null;
         try {
             cnvsFile = getOutDir().resolve("cnvs.tsv").toFile();
-            PrintWriter pw = new PrintWriter(cnvsFile);
+
+            pw = new PrintWriter(cnvsFile);
             pw.println("Chromosome\tchromStart\tchromEnd\tlabel\tmajorCopyNumber\tminorCopyNumber");
 
             CircosTrack copyNumberTrack = getCircosParams().getCircosTrackByType("COPY-NUMBER");
@@ -256,10 +257,12 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     }
                 }
             }
-
-            pw.close();
         } catch (Exception e) {
             return false;
+        } finally {
+            if (pw != null) {
+                pw.close();
+            }
         }
         return true;
     }
@@ -272,9 +275,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
      * @return True or false depending on successs
      */
     private boolean indelQuery(Query query, VariantStorageManager storageManager) {
+        PrintWriter pw = null;
         try {
             indelsFile = getOutDir().resolve("indels.tsv").toFile();
-            PrintWriter pw = new PrintWriter(indelsFile);
+            pw = new PrintWriter(indelsFile);
             pw.println("Chromosome\tchromStart\tchromEnd\ttype\tclassification");
 
             CircosTrack indelTrack = getCircosParams().getCircosTrackByType("INDEL");
@@ -317,11 +321,11 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     }
                 }
             }
-
-            pw.close();
         } catch(Exception e){
             return false;
 //            throw new ToolExecutorException(e);
+        } finally {
+            pw.close();
         }
         return true;
     }
@@ -334,9 +338,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
      * @return True or false depending on successs
      */
     private boolean rearrangementQuery(Query query, VariantStorageManager storageManager) {
+        PrintWriter pw = null;
         try {
             rearrsFile = getOutDir().resolve("rearrs.tsv").toFile();
-            PrintWriter pw = new PrintWriter(rearrsFile);
+            pw = new PrintWriter(rearrsFile);
             pw.println("Chromosome\tchromStart\tchromEnd\tChromosome.1\tchromStart.1\tchromEnd.1\ttype");
 
             CircosTrack rearrangementTrack = getCircosParams().getCircosTrackByType("REARRANGEMENT");
@@ -406,10 +411,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     }
                 }
             }
-
-            pw.close();
         } catch (Exception e) {
             return false;
+        } finally {
+            pw.close();
         }
         return true;
     }
