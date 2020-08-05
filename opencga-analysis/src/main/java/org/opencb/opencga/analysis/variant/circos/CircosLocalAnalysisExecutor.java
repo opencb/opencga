@@ -19,10 +19,12 @@ package org.opencb.opencga.analysis.variant.circos;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
 import org.opencb.biodata.models.variant.avro.StructuralVariantType;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
@@ -34,7 +36,9 @@ import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.CircosTrack;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.CircosAnalysisExecutor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.parboiled.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +48,7 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.opencb.biodata.models.variant.avro.VariantType.*;
 import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_INPUT_PATH;
 import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_OUTPUT_PATH;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
@@ -141,10 +146,13 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
      */
     private boolean snvQuery(Query query, VariantStorageManager storageManager) {
         PrintWriter pw = null;
+        PrintWriter pwOut = null;
         try {
             snvsFile = getOutDir().resolve("snvs.tsv").toFile();
             pw = new PrintWriter(snvsFile);
             pw.println("Chromosome\tchromStart\tchromEnd\tref\talt\tlogDistPrev");
+
+            pwOut = new PrintWriter(getOutDir().resolve("snvs.discarded").toFile());
 
             CircosTrack snvTrack = getCircosParams().getCircosTrackByType("SNV");
             if (snvTrack == null) {
@@ -186,7 +194,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 Variant v = iterator.next();
                 if (v.getStart() > v.getEnd()) {
                     // Sanity check
-                    addWarning("Skipping variant " + v.toString() + ", start = " + v.getStart() + ", end = " + v.getEnd());
+                    pwOut.println(v.toString() + "\tStart  (" + v.getStart() + ") is bigger than end (" + v.getEnd() + ")");
                 } else {
                     if (!v.getChromosome().equals(currentChrom)) {
                         prevStart = 0;
@@ -203,7 +211,12 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         } catch(Exception e) {
             return false;
         } finally {
-            pw.close();
+            if (pw != null) {
+                pw.close();
+            }
+            if (pwOut != null) {
+                pwOut.close();
+            }
         }
         return true;
     }
@@ -217,11 +230,14 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
      */
     private boolean copyNumberQuery(Query query, VariantStorageManager storageManager) {
         PrintWriter pw = null;
+        PrintWriter pwOut = null;
         try {
             cnvsFile = getOutDir().resolve("cnvs.tsv").toFile();
 
             pw = new PrintWriter(cnvsFile);
             pw.println("Chromosome\tchromStart\tchromEnd\tlabel\tmajorCopyNumber\tminorCopyNumber");
+
+            pwOut = new PrintWriter(getOutDir().resolve("cnvs.discarded").toFile());
 
             CircosTrack copyNumberTrack = getCircosParams().getCircosTrackByType("COPY-NUMBER");
             if (copyNumberTrack != null) {
@@ -232,7 +248,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 Query copyNumberQuery = new Query(query);
                 copyNumberQuery.putAll(trackQuery);
 
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies");
 
                 logger.info("COPY-NUMBER track, query: " + copyNumberQuery.toJson());
                 logger.info("COPY-NUMBER track, query options: " + queryOptions.toJson());
@@ -241,19 +257,30 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
                 while (iterator.hasNext()) {
                     Variant v = iterator.next();
-                    StructuralVariation sv = v.getSv();
-                    if (sv != null) {
-                        if (sv.getType() == StructuralVariantType.COPY_NUMBER_GAIN) {
-                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
-                                    + sv.getCopyNumber() + "\t1");
-                        } else if (sv.getType() == StructuralVariantType.COPY_NUMBER_LOSS) {
-                            pw.println(v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
-                                    + "1\t" + sv.getCopyNumber());
-                        } else {
-                            addWarning("Skipping variant " + v.toString() + ": invalid SV type " + sv.getType() + " for copy-number (CNV)");
-                        }
+
+                    if (CollectionUtils.isEmpty(v.getStudies())) {
+                        pwOut.println(v.toString() + "\tStudies is empty");
                     } else {
-                        addWarning("Skipping variant " + v.toString() + ": SV is empty for copy-number (CNV)");
+                        StudyEntry studyEntry = v.getStudies().get(0);
+                        String strTcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()), "TCN");
+                        String strMcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()), "MCN");
+
+                        if (StringUtils.isEmpty(strTcn)) {
+                            pwOut.println(v.toString() + "\tTCN format field is empty");
+                        } else {
+                            if (StringUtils.isEmpty(strMcn)) {
+                                pwOut.println(v.toString() + "\tMCN format field is empty");
+                            } else {
+                                try {
+                                    int tcn = Integer.parseInt(strTcn);
+                                    int mcn = Integer.parseInt(strMcn);
+                                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
+                                            + (tcn - mcn) + "\t" + mcn);
+                                } catch (NumberFormatException e){
+                                    pwOut.println(v.toString() + "\tError parsing TCN/MCN: " + e.getMessage());
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -262,6 +289,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         } finally {
             if (pw != null) {
                 pw.close();
+            }
+            if (pwOut != null) {
+                pwOut.close();
             }
         }
         return true;
@@ -276,10 +306,13 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
      */
     private boolean indelQuery(Query query, VariantStorageManager storageManager) {
         PrintWriter pw = null;
+        PrintWriter pwOut = null;
         try {
             indelsFile = getOutDir().resolve("indels.tsv").toFile();
             pw = new PrintWriter(indelsFile);
             pw.println("Chromosome\tchromStart\tchromEnd\ttype\tclassification");
+
+            pwOut = new PrintWriter(getOutDir().resolve("indels.discarded").toFile());
 
             CircosTrack indelTrack = getCircosParams().getCircosTrackByType("INDEL");
             if (indelTrack != null) {
@@ -314,8 +347,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         }
                         default: {
                             // Sanity check
-                            addWarning("Skipping variant " + v.toString() + ": invalid type " + v.getType()
-                                    + " for INSERTION, DELETION, INDEL");
+                            pwOut.println(v.toString() + "\tInvalid type " + v.getType() + ". Valid values: " + VariantType.INSERTION
+                                    + ", " + DELETION + ", " + VariantType.INDEL);
                             break;
                         }
                     }
@@ -325,7 +358,12 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             return false;
 //            throw new ToolExecutorException(e);
         } finally {
-            pw.close();
+            if (pw != null) {
+                pw.close();
+            }
+            if (pwOut != null) {
+                pwOut.close();
+            }
         }
         return true;
     }
@@ -339,10 +377,13 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
      */
     private boolean rearrangementQuery(Query query, VariantStorageManager storageManager) {
         PrintWriter pw = null;
+        PrintWriter pwOut = null;
         try {
             rearrsFile = getOutDir().resolve("rearrs.tsv").toFile();
             pw = new PrintWriter(rearrsFile);
             pw.println("Chromosome\tchromStart\tchromEnd\tChromosome.1\tchromStart.1\tchromEnd.1\ttype");
+
+            pwOut = new PrintWriter(getOutDir().resolve("rearrs.out").toFile());
 
             CircosTrack rearrangementTrack = getCircosParams().getCircosTrackByType("REARRANGEMENT");
             if (rearrangementTrack != null) {
@@ -383,7 +424,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         }
                         default: {
                             // Sanity check
-                            addWarning("Skipping variant " + v.toString() + ": invalid type " + v.getType() + " for rearrangement");
+                            pwOut.println(v.toString() + "\tUnknown type: " + v.getType() + ". Valid values: " + DELETION + ", " + BREAKEND
+                            + ", " + TRANSLOCATION + ", " + DUPLICATION + ", " + INVERSION);
+
                             break;
                         }
                     }
@@ -398,15 +441,13 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                                     pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
                                             + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
                                 } else {
-                                    addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", breakend mate is empty for"
-                                            + " rearrangement");
+                                    pwOut.println(v.toString() + "\tBreakend mate is empy (variant type: " + v.getType() + ")");
                                 }
                             } else {
-                                addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", breakend is empty for"
-                                        + " rearrangement");
+                                pwOut.println(v.toString() + "\tBreakend is empy (variant type: " + v.getType() + ")");
                             }
                         } else {
-                            addWarning("Skipping variant " + v.toString() + ": " + v.getType() + ", SV is empty for rearrangement");
+                            pwOut.println(v.toString() + "\tSV is empy (variant type: " + v.getType() + ")");
                         }
                     }
                 }
@@ -414,7 +455,12 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         } catch (Exception e) {
             return false;
         } finally {
-            pw.close();
+            if (pw != null) {
+                pw.close();
+            }
+            if (pwOut != null) {
+                pwOut.close();
+            }
         }
         return true;
     }
