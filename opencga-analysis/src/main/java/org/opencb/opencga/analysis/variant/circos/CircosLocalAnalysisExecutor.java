@@ -382,7 +382,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             pw = new PrintWriter(rearrsFile);
             pw.println("Chromosome\tchromStart\tchromEnd\tChromosome.1\tchromStart.1\tchromEnd.1\ttype");
 
-            pwOut = new PrintWriter(getOutDir().resolve("rearrs.out").toFile());
+            pwOut = new PrintWriter(getOutDir().resolve("rearrs.discarded").toFile());
 
             CircosTrack rearrangementTrack = getCircosParams().getCircosTrackByType("REARRANGEMENT");
             if (rearrangementTrack != null) {
@@ -484,7 +484,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         } else if ("INDEL".equals(track.getType())) {
             query.put("type", "INSERTION,DELETION,INDEL");
         } else if ("REARRANGEMENT".equals(track.getType())) {
-            query.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
+            //query.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
+            query.put("type", "BREAKEND");
         } else if ("SNV".equals(track.getType())) {
             query.put("type", "SNV");
         } else {
