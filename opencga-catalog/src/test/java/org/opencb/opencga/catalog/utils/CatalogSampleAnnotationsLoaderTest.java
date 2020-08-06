@@ -66,7 +66,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
             String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
             catalogManager.deleteCatalogDB(token);
         }
-        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
+        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", false);
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
 
         String pedFileName = "20130606_g1k.ped";

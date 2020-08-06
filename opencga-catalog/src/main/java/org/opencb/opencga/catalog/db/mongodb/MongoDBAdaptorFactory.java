@@ -171,7 +171,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                     + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
         }
         COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
-        metaDBAdaptor.createIndexes();
         metaDBAdaptor.initializeMetaCollection(configuration);
     }
 
