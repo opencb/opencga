@@ -397,6 +397,65 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 //    }
 
     @Test
+    public void testQueries() throws CatalogException {
+        DataResult<Family> dummyFamily = createDummyFamily();
+
+        // Remove all samples from the dummy family to avoid errors
+        for (Individual member : dummyFamily.first().getMembers()) {
+            member.setSamples(null);
+        }
+
+        // Leave only sample2 for child1 in family
+        for (Individual member : dummyFamily.first().getMembers()) {
+            if (member.getId().equals("child1")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample2")));
+            } else if (member.getId().equals("child2")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample5")));
+            } else if (member.getId().equals("child3")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample7")));
+            }
+        }
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
+                .setProband(new Individual().setId("child1"));
+        clinicalAnalysis.setFamily(dummyFamily.first());
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        QueryOptions includeClinicalIds = ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS;
+        // Query by members
+        Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(), "child3");
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, includeClinicalIds, sessionIdUser);
+        assertEquals(1, search.getNumResults());
+
+        query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(), "child1");
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, includeClinicalIds, sessionIdUser);
+        assertEquals(1, search.getNumResults());
+
+        query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(), "child4");
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, includeClinicalIds, sessionIdUser);
+        assertEquals(0, search.getNumResults());
+
+        // Query by samples
+        query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), "sample2");
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, includeClinicalIds, sessionIdUser);
+        assertEquals(1, search.getNumResults());
+
+        query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), "sample5");
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, includeClinicalIds, sessionIdUser);
+        assertEquals(1, search.getNumResults());
+
+        query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), "sample4");
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, includeClinicalIds, sessionIdUser);
+        assertEquals(0, search.getNumResults());
+
+        query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), "family");
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY, query, includeClinicalIds, sessionIdUser);
+        assertEquals(1, search.getNumResults());
+    }
+
+    @Test
     public void updateInterpretationTest() throws CatalogException {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
 

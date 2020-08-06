@@ -678,6 +678,19 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case MEMBER:
+                        List<Bson> queryList = new ArrayList<>();
+                        addAutoOrQuery(PROBAND_UID.key(), queryParam.key(), queryCopy, PROBAND_UID.type(), queryList);
+                        addAutoOrQuery(FAMILY_MEMBERS_UID.key(), queryParam.key(), queryCopy, FAMILY_MEMBERS_UID.type(), queryList);
+                        andBsonList.add(Filters.or(queryList));
+                        break;
+                    case SAMPLE:
+                        queryList = new ArrayList<>();
+                        addAutoOrQuery(PROBAND_SAMPLES_UID.key(), queryParam.key(), queryCopy, PROBAND_SAMPLES_UID.type(), queryList);
+                        addAutoOrQuery(FAMILY_MEMBERS_SAMPLES_UID.key(), queryParam.key(), queryCopy, FAMILY_MEMBERS_SAMPLES_UID.type(),
+                                queryList);
+                        andBsonList.add(Filters.or(queryList));
+                        break;
                     case STATUS:
                     case STATUS_NAME:
                         addAutoOrQuery(STATUS_NAME.key(), queryParam.key(), queryCopy, STATUS_NAME.type(), andBsonList);
@@ -690,8 +703,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
                     case FAMILY:
-                    case FAMILY_ID:
-                        addAutoOrQuery(FAMILY_ID.key(), queryParam.key(), queryCopy, FAMILY_ID.type(), andBsonList);
+                    case FAMILY_UID:
+                        addAutoOrQuery(FAMILY_UID.key(), queryParam.key(), queryCopy, FAMILY_UID.type(), andBsonList);
                         break;
                     case PROBAND:
                     case PROBAND_ID:
@@ -710,7 +723,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case PROBAND_SAMPLES_ID:
                     case PROBAND_SAMPLES_UID:
                     case PROBAND_UID:
-                    case FAMILY_UID:
                     case DESCRIPTION:
                     case RELEASE:
                     case INTERNAL_STATUS_DATE:

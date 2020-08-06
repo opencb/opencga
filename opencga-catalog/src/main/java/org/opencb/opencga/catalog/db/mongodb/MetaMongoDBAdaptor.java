@@ -117,13 +117,11 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         createIndexes(dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection(), indexes.get("job"));
         createIndexes(dbAdaptorFactory.getCatalogFamilyDBAdaptor().getFamilyCollection(), indexes.get("family"));
         createIndexes(dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection(), indexes.get("panel"));
-
+        createIndexes(dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getClinicalCollection(), indexes.get("clinical"));
+        createIndexes(dbAdaptorFactory.getInterpretationDBAdaptor().getInterpretationCollection(), indexes.get("interpretation"));
     }
 
     private void createIndexes(MongoDBCollection mongoCollection, List<Map<String, ObjectMap>> indexes) {
-        if (true) {
-            return;
-        }
         DataResult<Document> index = mongoCollection.getIndex();
         // We store the existing indexes
         Set<String> existingIndexes = index.getResults()

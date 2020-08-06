@@ -192,7 +192,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        fixQueryObject(query);
+        fixQueryObject(study, query, userId);
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return clinicalDBAdaptor.iterator(study.getUid(), query, options, userId);
@@ -751,7 +751,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         DBIterator<ClinicalAnalysis> iterator;
         try {
-            fixQueryObject(query);
+            fixQueryObject(study, query, userId);
             query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             iterator = clinicalDBAdaptor.iterator(study.getUid(), query, new QueryOptions(), userId);
         } catch (CatalogException e) {
@@ -1059,19 +1059,52 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
-        fixQueryObject(query);
+        fixQueryObject(study, query, userId);
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return clinicalDBAdaptor.get(study.getUid(), query, options, userId);
     }
 
-    protected void fixQueryObject(Query query) {
+    protected void fixQueryObject(Study study, Query query, String user) throws CatalogException {
         super.fixQueryObject(query);
 
-        if (query.containsKey("sample")) {
-            query.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_SAMPLES_ID.key(), query.get("sample"));
-            query.remove("sample");
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key())) {
+            List<String> samples = query.getAsStringList(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key());
+            InternalGetDataResult<Sample> result = catalogManager.getSampleManager().internalGet(study.getUid(),
+                    samples, SampleManager.INCLUDE_SAMPLE_IDS, user, true);
+            if (result.getNumResults() > 0) {
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(),
+                        result.getResults().stream().map(Sample::getUid).collect(Collectors.toList()));
+            } else {
+                // We won't return any results
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), -1);
+            }
         }
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key())) {
+            List<String> members = query.getAsStringList(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key());
+            InternalGetDataResult<Individual> result = catalogManager.getIndividualManager().internalGet(study.getUid(),
+                    members, IndividualManager.INCLUDE_INDIVIDUAL_IDS, user, true);
+            if (result.getNumResults() > 0) {
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(),
+                        result.getResults().stream().map(Individual::getUid).collect(Collectors.toList()));
+            } else {
+                // We won't return any results
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(), -1);
+            }
+        }
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {
+            List<String> families = query.getAsStringList(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
+            InternalGetDataResult<Family> result = catalogManager.getFamilyManager().internalGet(study.getUid(),
+                    families, FamilyManager.INCLUDE_FAMILY_IDS, user, true);
+            if (result.getNumResults() > 0) {
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(),
+                        result.getResults().stream().map(Family::getUid).collect(Collectors.toList()));
+            } else {
+                // We won't return any results
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), -1);
+            }
+        }
+
         if (query.containsKey("analystAssignee")) {
             query.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYST_ASSIGNEE.key(), query.get("analystAssignee"));
             query.remove("analystAssignee");
@@ -1088,7 +1121,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("query", new Query(query))
                 .append("token", token);
         try {
-            fixQueryObject(query);
+            fixQueryObject(study, query, userId);
             query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             OpenCGAResult<Long> queryResultAux = clinicalDBAdaptor.count(query, userId);
@@ -1220,7 +1253,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         // We try to get an iterator containing all the ClinicalAnalyses to be deleted
         DBIterator<ClinicalAnalysis> iterator;
         try {
-            fixQueryObject(finalQuery);
+            fixQueryObject(study, finalQuery, userId);
             finalQuery.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             iterator = clinicalDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_CLINICAL_INTERPRETATION_IDS, userId);
@@ -1286,7 +1319,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        fixQueryObject(query);
+        fixQueryObject(study, query, userId);
 
         // Add study id to the query
         query.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
