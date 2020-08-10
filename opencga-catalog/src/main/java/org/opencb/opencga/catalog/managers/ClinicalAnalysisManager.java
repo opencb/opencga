@@ -199,14 +199,20 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, QueryOptions options,
-                                                  String token) throws CatalogException {
+    public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, QueryOptions options, String token)
+            throws CatalogException {
+        return create(studyStr, clinicalAnalysis, false, options, token);
+    }
+
+    public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, boolean createDefaultInterpretation,
+                                                  QueryOptions options, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysis", clinicalAnalysis)
+                .append("createDefaultInterpretation", createDefaultInterpretation)
                 .append("options", options)
                 .append("token", token);
         try {
@@ -217,6 +223,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
             ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
             ParamUtils.checkObj(clinicalAnalysis.getProband(), "proband");
+
+            if (clinicalAnalysis.getInterpretation() != null && StringUtils.isNotEmpty(clinicalAnalysis.getInterpretation().getId())
+                    && createDefaultInterpretation) {
+                throw new CatalogException("createDefaultInterpretation flag passed together with interpretation '"
+                        + clinicalAnalysis.getInterpretation().getId() + "'. Please, choose between initialising a default interpretation "
+                        + "or passing an interpretation id");
+            }
+
             clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), CustomStatus::new));
             clinicalAnalysis.setInternal(ParamUtils.defaultObject(clinicalAnalysis.getInternal(), ClinicalAnalysisInternal::new));
             clinicalAnalysis.getInternal().setStatus(ParamUtils.defaultObject(clinicalAnalysis.getInternal().getStatus(),
@@ -225,6 +239,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     new Disorder("", "", "", Collections.emptyMap(), "", Collections.emptyList())));
             clinicalAnalysis.setDueDate(ParamUtils.defaultObject(clinicalAnalysis.getDueDate(),
                     TimeUtils.getTime(TimeUtils.add1MonthtoDate(TimeUtils.getDate()))));
+            clinicalAnalysis.setComments(ParamUtils.defaultObject(clinicalAnalysis.getComments(), Collections.emptyList()));
+            clinicalAnalysis.setAlerts(ParamUtils.defaultObject(clinicalAnalysis.getAlerts(), Collections.emptyList()));
 
             if (clinicalAnalysis.getAnalyst() != null && StringUtils.isNotEmpty(clinicalAnalysis.getAnalyst().getAssignee())) {
                 // We obtain the users with access to the study
@@ -439,10 +455,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
 
             clinicalAnalysis.setCreationDate(TimeUtils.getTime());
+            clinicalAnalysis.setModificationDate(TimeUtils.getTime());
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
             clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
-            clinicalAnalysis.setInterpretation(ParamUtils.defaultObject(clinicalAnalysis.getInterpretation(), Interpretation::new));
             clinicalAnalysis.setSecondaryInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getSecondaryInterpretations(),
                     ArrayList::new));
             clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), Enums.Priority.MEDIUM));
@@ -452,9 +468,16 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             sortMembersFromFamily(clinicalAnalysis);
 
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
-            catalogManager.getInterpretationManager().validateNewInterpretation(clinicalAnalysis.getInterpretation(),
-                    clinicalAnalysis.getId());
-            clinicalAnalysis.getInterpretation().setId(clinicalAnalysis.getId() + "_1");
+            if (createDefaultInterpretation) {
+                clinicalAnalysis.setInterpretation(ParamUtils.defaultObject(clinicalAnalysis.getInterpretation(), Interpretation::new));
+                clinicalAnalysis.getInterpretation().setId(ParamUtils.defaultString(clinicalAnalysis.getInterpretation().getId(),
+                        clinicalAnalysis.getId() + ".1"));
+            }
+
+            if (clinicalAnalysis.getInterpretation() != null) {
+                catalogManager.getInterpretationManager().validateNewInterpretation(clinicalAnalysis.getInterpretation(),
+                        clinicalAnalysis.getId());
+            }
 
             OpenCGAResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
 
@@ -919,19 +942,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                                    String userId, String token) throws CatalogException {
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
-
-        if (clinicalAnalysis.getInterpretation() != null && updateParams.getInterpretation() != null) {
-            // Check things there are no fields that cannot be updated once there are interpretations
-            throw new CatalogException("Cannot update clinical analysis map anymore. Interpretation found in clinical analysis '"
-                    + clinicalAnalysis.getId() + "'.");
-        }
-
-        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())
-                && CollectionUtils.isNotEmpty(updateParams.getSecondaryInterpretations())) {
-            // Check things there are no fields that cannot be updated once there are interpretations
-            throw new CatalogException("Cannot update clinical analysis map anymore. Secondary interpretations found in clinical "
-                    + " analysis '" + clinicalAnalysis.getId() + "'.");
-        }
 
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {

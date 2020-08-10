@@ -97,6 +97,12 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     }
 
     @Override
+    public Interpretation setId(String id) {
+        super.setId(id);
+        return this;
+    }
+
+    @Override
     public long getUid() {
         return uid;
     }

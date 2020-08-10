@@ -44,8 +44,6 @@ public class ClinicalUpdateParams {
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
-    private Interpretation interpretation;
-    private List<Interpretation> secondaryInterpretations;
 
     private ClinicalAnalysisQcUpdateParams qualityControl;
 
@@ -65,10 +63,10 @@ public class ClinicalUpdateParams {
 
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                 List<FileReferenceParam> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
-                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, Interpretation interpretation,
-                                List<Interpretation> secondaryInterpretations, ClinicalAnalysisQcUpdateParams qualityControl,
-                                ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
-                                Enums.Priority priority, List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
+                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
+                                ClinicalAnalysisQcUpdateParams qualityControl, ClinicalConsent consent, String dueDate,
+                                List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
+                                Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -77,8 +75,6 @@ public class ClinicalUpdateParams {
         this.roleToProband = roleToProband;
         this.analyst = analyst;
         this.internal = internal;
-        this.interpretation = interpretation;
-        this.secondaryInterpretations = secondaryInterpretations;
         this.qualityControl = qualityControl;
         this.consent = consent;
         this.dueDate = dueDate;
@@ -106,8 +102,6 @@ public class ClinicalUpdateParams {
         sb.append(", roleToProband=").append(roleToProband);
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
-        sb.append(", interpretation=").append(interpretation);
-        sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
@@ -214,24 +208,6 @@ public class ClinicalUpdateParams {
 
     public ClinicalUpdateParams setAnalyst(ClinicalAnalystParam analyst) {
         this.analyst = analyst;
-        return this;
-    }
-
-    public Interpretation getInterpretation() {
-        return interpretation;
-    }
-
-    public ClinicalUpdateParams setInterpretation(Interpretation interpretation) {
-        this.interpretation = interpretation;
-        return this;
-    }
-
-    public List<Interpretation> getSecondaryInterpretations() {
-        return secondaryInterpretations;
-    }
-
-    public ClinicalUpdateParams setSecondaryInterpretations(List<Interpretation> secondaryInterpretations) {
-        this.secondaryInterpretations = secondaryInterpretations;
         return this;
     }
 
