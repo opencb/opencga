@@ -156,7 +156,7 @@ if args.catalog_search_user is not None:
     config["catalog"]["searchEngine"]["password"] = args.catalog_search_password
 
 # Inject execution settings
-config["analysis"]["scratchDir"] = "/tmp"
+config["analysis"]["scratchDir"] = "/tmp/opencga_scratch"
 if args.max_concurrent_jobs is not None:
     config["analysis"]["execution"]["maxConcurrentJobs"]["variant-index"] = int(args.max_concurrent_jobs)
 
