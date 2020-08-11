@@ -65,6 +65,8 @@ spec:
             mountPath: /opt/opencga/sessions
           - name : variants
             mountPath: /opt/opencga/variants
+          - name: analysisconf
+            mountPath: /opt/opencga/analysis
           - name: opencgascratch
             mountPath: /tmp/opencga_scratch
         - name: dind-daemon
@@ -91,6 +93,8 @@ spec:
               mountPath: /opt/opencga/sessions
             - name: variants
               mountPath: /opt/opencga/variants
+            - name: analysisconf
+              mountPath: /opt/opencga/analysis
             - name: opencgascratch
               mountPath: /tmp/opencga_scratch
       volumes:
@@ -108,6 +112,11 @@ spec:
         azureFile:
           secretName: azure-files-secret
           shareName: variants
+          readOnly: false
+      - name: analysisconf
+        azureFile:
+          secretName: azure-files-secret
+          shareName: analysisconf
           readOnly: false
       - name: docker-graph-storage
         emptyDir: {}

@@ -44,6 +44,8 @@ else
     echo "Initialising volume"
     #mkdir -p /opt/volume/conf /opt/volume/variants
     cp -r /opt/opencga/conf/* /opt/volume/conf
+
+    cp -r /opt/opencga/analysis/* /opt/volume/analysis
 fi
 # wait for mongodb
 echo "About to wait for MongoDB"
