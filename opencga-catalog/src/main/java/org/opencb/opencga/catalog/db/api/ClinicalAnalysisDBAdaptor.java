@@ -65,9 +65,14 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         FLAGS("flags", TEXT_ARRAY, ""),
         RELEASE("release", INTEGER, ""),
 
+        SAMPLE("sample", TEXT_ARRAY, ""), // Alias to search for samples within proband.samples or family.members.samples
+        MEMBER("member", TEXT_ARRAY, ""), // Alias to search for members from proband or family.members
+
         FAMILY("family", TEXT_ARRAY, ""),
         FAMILY_ID("family.id", TEXT, ""),
         FAMILY_UID("family.uid", INTEGER, ""),
+        FAMILY_MEMBERS_UID("family.members.uid", INTEGER_ARRAY, ""),
+        FAMILY_MEMBERS_SAMPLES_UID("family.members.samples.uid", INTEGER_ARRAY, ""),
         FILES("files", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
         ALERTS("alerts", TEXT_ARRAY, ""),

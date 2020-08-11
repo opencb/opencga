@@ -21,6 +21,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.Comment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -240,7 +241,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Description") @QueryParam("description") String description,
             @ApiParam(value = "Family id") @QueryParam("family") String family,
             @ApiParam(value = "Proband id") @QueryParam("proband") String proband,
-            @ApiParam(value = "Proband sample id") @QueryParam("sample") String sample,
+            @ApiParam(value = "Sample id associated to the proband or any member of a family") @QueryParam("sample") String sample,
+            @ApiParam(value = "Proband id or any member id of a family") @QueryParam("member") String member,
             @ApiParam(value = "Clinical analyst assignee") @QueryParam("analystAssignee") String assignee,
             @ApiParam(value = "Disorder ID or name") @QueryParam("disorder") String disorder,
             @ApiParam(value = "Flags") @QueryParam("flags") String flags,
@@ -283,12 +285,13 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group IDs", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = "Propagate permissions to related families, individuals, samples and files", defaultValue = "false") @QueryParam("propagate") boolean propagate,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAclUpdateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAclUpdateParams());
             AclParams clinicalAclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getClinicalAnalysis());
-            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, action, token));
+            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, action, propagate, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

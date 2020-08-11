@@ -1,7 +1,7 @@
 {"collection": "user", "fields": {"id": 1}, "options": {"unique": true, "background": true}}
-{"collection": "user", "fields": {"projects.uid": 1}, "options": {"unique": true, "background": true}}
-{"collection": "user", "fields": {"projects.uuid": 1}, "options": {"unique": true, "background": true}}
-{"collection": "user", "fields": {"projects.fqn": 1}, "options": {"unique": true, "background": true}}
+{"collection": "user", "fields": {"projects.uid": 1, "id": 1}, "options": {"unique": true, "background": true}}
+{"collection": "user", "fields": {"projects.uuid": 1, "id": 1}, "options": {"unique": true, "background": true}}
+{"collection": "user", "fields": {"projects.fqn": 1, "id": 1}, "options": {"unique": true, "background": true}}
 {"collection": "user", "fields": {"projects.id": 1, "id": 1}, "options": {"unique": true, "background": true}}
 
 {"collection": "study", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
@@ -149,9 +149,11 @@
 {"collection": "clinical", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "clinical", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "clinical", "fields": {"studyUid": 1}, "options": {"background": true}}
-{"collection": "clinical", "fields": {"proband.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "clinical", "fields": {"proband.samples.id": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "clinical", "fields": {"family.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"proband.uid": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"family.members.uid": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"proband.samples.uid": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"family.members.samples.uid": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"family.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"type": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"dueDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"priority": 1, "studyUid": 1}, "options": {"background": true}}

@@ -20,9 +20,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.List;
@@ -67,41 +67,21 @@ public interface AuthorizationDBAdaptor {
      */
     OpenCGAResult removeFromStudy(long studyId, String member, Enums.Resource entry) throws CatalogException;
 
-    default OpenCGAResult setToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions,
-                                       Enums.Resource resource)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return setToMembers(studyId, resourceIds, null, members, permissions, resource, null);
-    }
-
-    OpenCGAResult setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
-                               List<String> permissions, Enums.Resource resource, Enums.Resource resource2)
+    OpenCGAResult setToMembers(long studyId, List<String> members, List<AuthorizationManager.CatalogAclParams> aclParams)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     // Special method only to set acls in study
     OpenCGAResult setToMembers(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    default OpenCGAResult addToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions,
-                                       Enums.Resource resource)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return addToMembers(studyId, resourceIds, null, members, permissions, resource, null);
-    }
-
-    OpenCGAResult addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
-                               List<String> permissions, Enums.Resource resource, Enums.Resource resource2)
+    OpenCGAResult addToMembers(long studyId, List<String> members, List<AuthorizationManager.CatalogAclParams> aclParams)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     // Special method only to add acls in study
     OpenCGAResult addToMembers(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    default OpenCGAResult removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Enums.Resource resource)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return removeFromMembers(resourceIds, null, members, permissions, resource, null);
-    }
-
-    OpenCGAResult removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
-                                    Enums.Resource resource, Enums.Resource resource2)
+    OpenCGAResult removeFromMembers(List<String> members, List<AuthorizationManager.CatalogAclParams> aclParams)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult resetMembersFromAllEntries(long studyId, List<String> members)

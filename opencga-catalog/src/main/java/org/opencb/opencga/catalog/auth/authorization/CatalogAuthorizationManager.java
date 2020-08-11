@@ -703,7 +703,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public OpenCGAResult<Map<String, List<String>>> removeStudyAcls(List<Long> studyIds, List<String> members,
                                                                     @Nullable List<String> permissions) throws CatalogException {
-        return removeAcls(studyIds, members, permissions, Enums.Resource.STUDY);
+        return removeAcls(members, new CatalogAclParams(studyIds, permissions, Enums.Resource.STUDY));
     }
 
     private OpenCGAResult<Map<String, List<String>>> getAcls(List<Long> ids, List<String> members, Enums.Resource resource)
@@ -711,175 +711,259 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return aclDBAdaptor.get(ids, members, resource);
     }
 
-    public OpenCGAResult<Map<String, List<String>>> setAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
-                                                            List<String> permissions, Enums.Resource resource, Enums.Resource resource2)
+    @Override
+    public OpenCGAResult<Map<String, List<String>>> setAcls(long studyUid, List<String> members, List<CatalogAclParams> aclParams)
             throws CatalogException {
-        if (ids == null || ids.isEmpty()) {
-            throw new CatalogException("Missing identifiers to set acls");
-        }
-
-        if (resource2 != null && permissions.contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name())) {
-            throw new CatalogException("Cannot propagate permissions when VARIANT permission is assigned");
-        }
-
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.setToMembers(studyId, ids, ids2, members, getImplicitPermissions(permissions, resource), resource, resource2);
-
-        return getAclResult(ids, members, resource, startTime);
+        setImplicitPermissions(aclParams);
+        aclDBAdaptor.setToMembers(studyUid, members, aclParams);
+        return getAclResult(aclParams.get(0).getIds(), members, aclParams.get(0).getResource(), startTime);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
-                                                            List<String> permissions, Enums.Resource resource, Enums.Resource resource2)
+    public OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<String> members, List<CatalogAclParams> aclParams)
             throws CatalogException {
-        if (ids == null || ids.isEmpty()) {
-            throw new CatalogException("Missing identifiers to add acls");
-        }
-
-        if (resource2 != null && permissions.contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name())) {
-            throw new CatalogException("Cannot propagate permissions when VARIANT permission is assigned");
-        }
-
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.addToMembers(studyId, ids, ids2, members, getImplicitPermissions(permissions, resource), resource, resource2);
-        return getAclResult(ids, members, resource, startTime);
+        setImplicitPermissions(aclParams);
+        aclDBAdaptor.addToMembers(studyId, members, aclParams);
+        return getAclResult(aclParams.get(0).getIds(), members, aclParams.get(0).getResource(), startTime);
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> removeAcls(List<Long> ids, List<Long> ids2, List<String> members,
-                                                               @Nullable List<String> permissions, Enums.Resource resource,
-                                                               Enums.Resource resource2) throws CatalogException {
-        if (ids == null || ids.isEmpty()) {
-            throw new CatalogException("Missing identifiers to remove acls");
-        }
-
-        List<String> allPermissions;
-        if (resource2 == Enums.Resource.SAMPLE) {
-            // We do it this way because SAMPLE contains more permissions (VARIANT). If we are propagating the removal from individual
-            // to sample, it is preferable sending VARIANT permission for removal in individual (it doesn't exist) than not sending it
-            // when removing sample permissions
-            allPermissions = getDependentPermissions(permissions, resource2);
-        } else {
-            allPermissions = getDependentPermissions(permissions, resource);
-        }
-
+    public OpenCGAResult<Map<String, List<String>>> removeAcls(List<String> members, List<CatalogAclParams> aclParams)
+            throws CatalogException {
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.removeFromMembers(ids, ids2, members, allPermissions, resource, resource2);
-        return getAclResult(ids, members, resource, startTime);
+        setDependentPermissions(aclParams);
+        aclDBAdaptor.removeFromMembers(members, aclParams);
+        return getAclResult(aclParams.get(0).getIds(), members, aclParams.get(0).getResource(), startTime);
     }
 
-    private List<String> getDependentPermissions(List<String> permissions, Enums.Resource resource) throws CatalogAuthorizationException {
-        if (permissions == null) {
-            return null;
-        }
-        Set<String> allPermissions = new HashSet<>(permissions);
-        switch (resource) {
-            case STUDY:
-                allPermissions.addAll(permissions
-                        .stream()
-                        .map(StudyAclEntry.StudyPermissions::valueOf)
-                        .map(StudyAclEntry.StudyPermissions::getDependentPermissions)
-                        .flatMap(List::stream)
-                        .collect(Collectors.toSet())
-                        .stream().map(Enum::name)
-                        .collect(Collectors.toSet())
-                );
-                break;
-            case FILE:
-                allPermissions.addAll(permissions
-                        .stream()
-                        .map(FileAclEntry.FilePermissions::valueOf)
-                        .map(FileAclEntry.FilePermissions::getDependentPermissions)
-                        .flatMap(List::stream)
-                        .collect(Collectors.toSet())
-                        .stream().map(Enum::name)
-                        .collect(Collectors.toSet())
-                );
-                break;
-            case SAMPLE:
-                allPermissions.addAll(permissions
-                        .stream()
-                        .map(SampleAclEntry.SamplePermissions::valueOf)
-                        .map(SampleAclEntry.SamplePermissions::getDependentPermissions)
-                        .flatMap(List::stream)
-                        .collect(Collectors.toSet())
-                        .stream().map(Enum::name)
-                        .collect(Collectors.toSet())
-                );
-                break;
-            case JOB:
-                allPermissions.addAll(permissions
-                        .stream()
-                        .map(JobAclEntry.JobPermissions::valueOf)
-                        .map(JobAclEntry.JobPermissions::getDependentPermissions)
-                        .flatMap(List::stream)
-                        .collect(Collectors.toSet())
-                        .stream().map(Enum::name)
-                        .collect(Collectors.toSet())
-                );
-                break;
-            case INDIVIDUAL:
-                allPermissions.addAll(permissions
-                        .stream()
-                        .map(IndividualAclEntry.IndividualPermissions::valueOf)
-                        .map(IndividualAclEntry.IndividualPermissions::getDependentPermissions)
-                        .flatMap(List::stream)
-                        .collect(Collectors.toSet())
-                        .stream().map(Enum::name)
-                        .collect(Collectors.toSet())
-                );
-                break;
-            case COHORT:
-                allPermissions.addAll(permissions
-                        .stream()
-                        .map(CohortAclEntry.CohortPermissions::valueOf)
-                        .map(CohortAclEntry.CohortPermissions::getDependentPermissions)
-                        .flatMap(List::stream)
-                        .collect(Collectors.toSet())
-                        .stream().map(Enum::name)
-                        .collect(Collectors.toSet())
-                );
-                break;
-            case DISEASE_PANEL:
-                allPermissions.addAll(permissions
-                        .stream()
-                        .map(PanelAclEntry.PanelPermissions::valueOf)
-                        .map(PanelAclEntry.PanelPermissions::getDependentPermissions)
-                        .flatMap(List::stream)
-                        .collect(Collectors.toSet())
-                        .stream().map(Enum::name)
-                        .collect(Collectors.toSet())
-                );
-                break;
-            case FAMILY:
-                allPermissions.addAll(permissions
-                        .stream()
-                        .map(FamilyAclEntry.FamilyPermissions::valueOf)
-                        .map(FamilyAclEntry.FamilyPermissions::getDependentPermissions)
-                        .flatMap(List::stream)
-                        .collect(Collectors.toSet())
-                        .stream().map(Enum::name)
-                        .collect(Collectors.toSet())
-                );
-                break;
-            case CLINICAL_ANALYSIS:
-                allPermissions.addAll(permissions
-                        .stream()
-                        .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf)
-                        .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::getDependentPermissions)
-                        .flatMap(List::stream)
-                        .collect(Collectors.toSet())
-                        .stream().map(Enum::name)
-                        .collect(Collectors.toSet())
-                );
-                break;
-            default:
-                throw new CatalogAuthorizationException("Unexpected resource '" + resource + "'");
-        }
-        logger.debug("Permissions sent by the user '{}'. Complete list containing dependent permissions '{}'.", permissions,
-                allPermissions);
+    private void setDependentPermissions(List<CatalogAclParams> aclParams) throws CatalogAuthorizationException {
+        for (CatalogAclParams aclParam : aclParams) {
+            if (aclParam.getPermissions() != null) {
+                Set<String> allPermissions = new HashSet<>(aclParam.getPermissions());
+                switch (aclParam.getResource()) {
+                    case STUDY:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(StudyAclEntry.StudyPermissions::valueOf)
+                                .map(StudyAclEntry.StudyPermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
+                    case FILE:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(FileAclEntry.FilePermissions::valueOf)
+                                .map(FileAclEntry.FilePermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
+                    case SAMPLE:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(SampleAclEntry.SamplePermissions::valueOf)
+                                .map(SampleAclEntry.SamplePermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
+                    case JOB:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(JobAclEntry.JobPermissions::valueOf)
+                                .map(JobAclEntry.JobPermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
+                    case INDIVIDUAL:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(IndividualAclEntry.IndividualPermissions::valueOf)
+                                .map(IndividualAclEntry.IndividualPermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
+                    case COHORT:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(CohortAclEntry.CohortPermissions::valueOf)
+                                .map(CohortAclEntry.CohortPermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
+                    case DISEASE_PANEL:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(PanelAclEntry.PanelPermissions::valueOf)
+                                .map(PanelAclEntry.PanelPermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
+                    case FAMILY:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(FamilyAclEntry.FamilyPermissions::valueOf)
+                                .map(FamilyAclEntry.FamilyPermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
+                    case CLINICAL_ANALYSIS:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf)
+                                .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
+                    default:
+                        throw new CatalogAuthorizationException("Unexpected resource '" + aclParam.getResource() + "'");
+                }
+                logger.debug("Permissions sent by the user '{}'. Complete list containing dependent permissions '{}'.",
+                        aclParam.getPermissions(), allPermissions);
 
-        return new ArrayList<>(allPermissions);
+                aclParam.setPermissions(new ArrayList<>(allPermissions));
+            }
+        }
+    }
+
+    private void setImplicitPermissions(List<CatalogAclParams> aclParams) throws CatalogAuthorizationException {
+        for (CatalogAclParams aclParam : aclParams) {
+            Set<String> allPermissions = new HashSet<>(aclParam.getPermissions());
+            switch (aclParam.getResource()) {
+                case STUDY:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(StudyAclEntry.StudyPermissions::valueOf)
+                            .map(StudyAclEntry.StudyPermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
+                case FILE:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(FileAclEntry.FilePermissions::valueOf)
+                            .map(FileAclEntry.FilePermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
+                case SAMPLE:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(SampleAclEntry.SamplePermissions::valueOf)
+                            .map(SampleAclEntry.SamplePermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
+                case JOB:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(JobAclEntry.JobPermissions::valueOf)
+                            .map(JobAclEntry.JobPermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
+                case INDIVIDUAL:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(IndividualAclEntry.IndividualPermissions::valueOf)
+                            .map(IndividualAclEntry.IndividualPermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
+                case COHORT:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(CohortAclEntry.CohortPermissions::valueOf)
+                            .map(CohortAclEntry.CohortPermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
+                case DISEASE_PANEL:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(PanelAclEntry.PanelPermissions::valueOf)
+                            .map(PanelAclEntry.PanelPermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
+                case FAMILY:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(FamilyAclEntry.FamilyPermissions::valueOf)
+                            .map(FamilyAclEntry.FamilyPermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
+                case CLINICAL_ANALYSIS:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf)
+                            .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
+                default:
+                    throw new CatalogAuthorizationException("Unexpected resource '" + aclParam.getResource() + "'");
+            }
+
+            logger.debug("Permissions sent by the user '{}'. Complete list containing implicit permissions '{}'.", aclParam,
+                    allPermissions);
+            aclParam.setPermissions(new ArrayList<>(allPermissions));
+        }
     }
 
     private List<String> getImplicitPermissions(List<String> permissions, Enums.Resource resource) throws CatalogAuthorizationException {

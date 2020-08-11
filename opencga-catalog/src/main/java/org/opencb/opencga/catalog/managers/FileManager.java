@@ -2626,25 +2626,26 @@ public class FileManager extends AnnotationSetManager<File> {
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(study.getUid(), members);
+
+            List<Long> fileUids = extendedFileList.stream().map(File::getUid).collect(Collectors.toList());
+            AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(fileUids, permissions,
+                    Enums.Resource.FILE);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
             OpenCGAResult<Map<String, List<String>>> queryResultList;
             switch (action) {
                 case SET:
-                    queryResultList = authorizationManager.setAcls(study.getUid(), extendedFileList.stream().map(File::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.FILE);
+                    queryResultList = authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case ADD:
-                    queryResultList = authorizationManager.addAcls(study.getUid(), extendedFileList.stream().map(File::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.FILE);
+                    queryResultList = authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case REMOVE:
-                    queryResultList = authorizationManager.removeAcls(extendedFileList.stream().map(File::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.FILE);
+                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 case RESET:
-                    queryResultList = authorizationManager.removeAcls(extendedFileList.stream().map(File::getUid)
-                            .collect(Collectors.toList()), members, null, Enums.Resource.FILE);
+                    catalogAclParams.setPermissions(null);
+                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

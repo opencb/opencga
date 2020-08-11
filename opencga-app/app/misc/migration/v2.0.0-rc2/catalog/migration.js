@@ -299,3 +299,19 @@ db.clinical.update({}, {"$unset": {
         "roleToProband": ""
     }}
 );
+
+
+print("\nFixing user indexes...")
+db.user.createIndex({"projects.uid": 1, "id": 1}, {"unique": true, "background": true});
+db.user.createIndex({"projects.uuid": 1, "id": 1}, {"unique": true, "background": true});
+db.user.createIndex({"projects.fqn": 1, "id": 1}, {"unique": true, "background": true});
+db.user.dropIndex("projects.uid_1");
+db.user.dropIndex("projects.uuid_1");
+db.user.dropIndex("projects.fqn_1");
+
+print("\nFixing clinical indexes...")
+db.clinical.createIndex({"proband.uid": 1, "studyUid": 1}, {"background": true});
+db.clinical.createIndex({"family.members.uid": 1, "studyUid": 1}, {"background": true});
+db.clinical.createIndex({"proband.samples.uid": 1, "studyUid": 1}, {"background": true});
+db.clinical.createIndex({"family.members.samples.uid": 1, "studyUid": 1}, {"background": true});
+db.clinical.createIndex({"family.uid": 1, "studyUid": 1}, {"background": true});

@@ -51,14 +51,15 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createJobTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Job job = new Job()
-                .setInternal(new JobInternal());
-
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        job.setId("jobName1");
+        Job job = new Job()
+                .setInternal(new JobInternal())
+                .setId("jobName1");
         System.out.println(catalogJobDBAdaptor.insert(studyId, job, null));
 
-        job.setId("jobName2");
+        job = new Job()
+                .setInternal(new JobInternal())
+                .setId("jobName2");
         System.out.println(catalogJobDBAdaptor.insert(studyId, job, null));
         try {
             catalogJobDBAdaptor.insert(-1, job, null);
