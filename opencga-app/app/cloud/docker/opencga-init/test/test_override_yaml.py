@@ -295,7 +295,7 @@ class Test_init_script(unittest.TestCase):
         config = configs[1]
         client_config = configs[2]
         self.assertEqual(
-            config["analysis"]["scratchDir"], "/tmp"
+            config["analysis"]["scratchDir"], "/tmp/opencga_scratch"
         )
         self.assertEqual(
             config["analysis"]["execution"]["id"], "k8s"

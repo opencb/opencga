@@ -37,6 +37,9 @@ clusterRoleBinding:
 blobfuse:
   enabled: false
 
+defaultConf:
+  name: "default-conf"
+
 rest:
   name: rest
   replicaCount: 3

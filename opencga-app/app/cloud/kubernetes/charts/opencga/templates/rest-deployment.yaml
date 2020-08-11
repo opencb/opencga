@@ -65,8 +65,6 @@ spec:
             mountPath: /opt/opencga/sessions
           - name : variants
             mountPath: /opt/opencga/variants
-          - name: analysisconf
-            mountPath: /opt/opencga/analysis
           - name: opencgascratch
             mountPath: /tmp/opencga_scratch
         - name: dind-daemon
@@ -93,8 +91,6 @@ spec:
               mountPath: /opt/opencga/sessions
             - name: variants
               mountPath: /opt/opencga/variants
-            - name: analysisconf
-              mountPath: /opt/opencga/analysis
             - name: opencgascratch
               mountPath: /tmp/opencga_scratch
       volumes:
@@ -114,6 +110,8 @@ spec:
           shareName: variants
           readOnly: false
       - name: docker-graph-storage
+        emptyDir: {}
+      - name: opencgascratch
         emptyDir: {}
       {{- with .Values.rest.nodeSelector }}
       nodeSelector:
