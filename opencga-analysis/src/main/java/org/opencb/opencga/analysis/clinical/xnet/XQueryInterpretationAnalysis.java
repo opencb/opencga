@@ -16,11 +16,10 @@
 
 package org.opencb.opencga.analysis.clinical.xnet;
 
-import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.List;
 
@@ -30,8 +29,8 @@ public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
     public final static String ID = "bionet-interpretation";
 
     private List<String> diseasePanelIds;
-    private BioNetDbManager bioNetDbManager;
-    private BionetInterpretationConfiguration config;
+//    private BioNetDbManager bioNetDbManager;
+//    private BionetInterpretationConfiguration config;
 
 //    private List<DiseasePanel> diseasePanels;
 //    private ClinicalAnalysis clinicalAnalysis;
