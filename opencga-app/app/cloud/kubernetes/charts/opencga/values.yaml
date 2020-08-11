@@ -34,6 +34,9 @@ hadoop:
 clusterRoleBinding:
   name: fabric8-rbac
 
+blobfuse:
+  enabled: false
+
 rest:
   name: rest
   replicaCount: 3

@@ -1,3 +1,4 @@
+{{- if .Values.blobfuse.enabled -}}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -16,3 +17,4 @@ spec:
       container: opencgashared
       tmppath: /tmp/blobfuse
       mountoptions: "--file-cache-timeout-in-seconds=120"
+{{- end }}
