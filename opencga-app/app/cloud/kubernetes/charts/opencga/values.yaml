@@ -31,6 +31,9 @@ hadoop:
   sshDns: "FILL_ME"
   sshUsername: "FILL_ME"
 
+clusterRoleBinding:
+  name: fabric8-rbac
+
 init:
   name: init
   image:
