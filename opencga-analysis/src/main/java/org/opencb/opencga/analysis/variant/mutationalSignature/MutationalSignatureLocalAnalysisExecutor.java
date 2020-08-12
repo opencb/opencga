@@ -59,7 +59,7 @@ import static org.opencb.opencga.analysis.variant.mutationalSignature.Mutational
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor implements StorageToolExecutor {
 
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc1";
+    public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc2";
 
     public final static String CONTEXT_FILENAME = "context.txt";
 
