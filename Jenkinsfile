@@ -29,69 +29,7 @@ pipeline {
             }
         }
 
-        stage ('Build With Hadoop Profile against hdp2.5') {
-            options {
-                timeout(time: 30, unit: 'MINUTES')
-            }
-            steps {
-                sh 'mvn clean install -DskipTests -Phdp2.5 -Dcheckstyle.skip'
-            }
-        }
-
-        stage ('Build With Hadoop Profile against hdp3.1') {
-            options {
-                timeout(time: 30, unit: 'MINUTES')
-            }
-            steps {
-                sh 'mvn clean install -DskipTests -Phdp3.1 -Dcheckstyle.skip'
-            }
-        }
-        stage ('Build With Hadoop Profile against hdp2.6') {
-            options {
-                timeout(time: 30, unit: 'MINUTES')
-            }
-            steps {
-                sh 'mvn clean install -DskipTests -Dstorage-mongodb -Dstorage-hadoop -Phdp2.6 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga -Dcheckstyle.skip'
-            }
-        }
-
-        stage ('Validate') {
-            options {
-                timeout(time: 5, unit: 'MINUTES')
-            }
-            steps {
-                sh 'mvn validate'
-            }
-        }
-
-        stage ('Build OpenCGA-Hadoop Docker Images') {
-            options {
-                timeout(time: 25, unit: 'MINUTES')
-            }
-            steps {
-                sh 'make -f opencga-app/app/cloud/docker/Makefile DOCKER_ORG="opencb"'
-            }
-        }
-
-        stage ('Publish OpenCGA-Hadoop Docker Images') {
-             options {
-                    timeout(time: 25, unit: 'MINUTES')
-             }
-             steps {
-                script {
-                   def images = ["opencga", "opencga-app", "opencga-daemon", "opencga-init", "opencga-batch"]
-                   def tag = sh(returnStdout: true, script: "git log -1 --pretty=%h").trim()
-                   withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
-                       for(int i =0; i < images.size(); i++){
-                           sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
-                           sh "docker push opencb/'${images[i]}':${tag}"
-                       }
-                   }
-                }
-             }
-        }
-
-  stage ('Build With Mongo Profile') {
+        stage ('Build With MongoDB storage-engine') {
             options {
                 timeout(time: 30, unit: 'MINUTES')
             }
@@ -100,34 +38,69 @@ pipeline {
             }
         }
 
-        stage ('Build OpenCGA-Mongo Docker Images') {
+        stage ('Build and publish OpenCGA Docker Images') {
             options {
-                timeout(time: 25, unit: 'MINUTES')
+                timeout(time: 30, unit: 'MINUTES')
             }
             steps {
-                sh 'docker build -t opencga-next -f opencga-app/app/cloud/docker/opencga-next/Dockerfile .'
-                sh 'docker build -t opencga-demo -f opencga-app/app/cloud/docker/opencga-demo/Dockerfile .'
+                withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
+                    sh "build/cloud/docker/docker-build.py --org opencb push"
+                }
             }
         }
 
-  stage ('Publish OpenCGA-Mongo Docker Images') {
-             options {
-                    timeout(time: 25, unit: 'MINUTES')
-             }
-             steps {
-                script {
-                   def images = ["opencga-next", "opencga-demo"]
-                   def tag = sh(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim().substring(1)
-                   withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
-                       for(int i =0; i < images.size(); i++){
-                           sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
-                           sh "docker push opencb/'${images[i]}':${tag}"
-                       }
-                   }
-                }
-             }
+        stage ('Build With Hadoop storage-engine against hdp2.5') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn clean install -DskipTests -P storage-hadoop -Phdp2.5 -Dcheckstyle.skip -Dopencga.war.name=opencga'
+            }
         }
-
+        stage ('Build With Hadoop storage-engine against hdp3.1') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn clean install -DskipTests -P storage-hadoop -Phdp3.1 -Dcheckstyle.skip -Dopencga.war.name=opencga'
+            }
+        }
+        stage ('Build and publish OpenCGA Docker Images hdp3.1') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
+                    sh "build/cloud/docker/docker-build.py --org opencb --images base,init push"
+                }
+            }
+        }
+        stage ('Build With Hadoop storage-engine against hdp2.6') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn clean install -DskipTests -Dstorage-mongodb -Dstorage-hadoop -Phdp2.6 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga -Dcheckstyle.skip'
+            }
+        }
+        stage ('Build and publish OpenCGA Docker Images hdp2.6') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
+                    sh "build/cloud/docker/docker-build.py --org opencb --images base,init push"
+                }
+            }
+        }
+        stage ('Validate') {
+            options {
+                timeout(time: 5, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn validate'
+            }
+        }
         stage ('Clean Docker Images') {
             options {
                 timeout(time: 10, unit: 'MINUTES')

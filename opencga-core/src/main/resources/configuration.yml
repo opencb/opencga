@@ -187,6 +187,8 @@ analysis:
           mountPath: /opt/opencga/sessions
         - name: variants
           mountPath: /opt/opencga/variants
+        - name: analysisconf
+          mountPath: /opt/opencga/analysis
       k8s.volumes:
         - name: conf
           azureFile:
@@ -202,6 +204,11 @@ analysis:
           azureFile:
             secretName: azure-files-secret
             shareName: variants
+            readOnly: false
+        - name: analysisconf
+          azureFile:
+            secretName: azure-files-secret
+            shareName: analysisconf
             readOnly: false
 
   # List of analysis frameworks

@@ -96,6 +96,8 @@ spec:
             mountPath: /opt/opencga/default-conf
           - name : conf
             mountPath: /opt/volume/conf
+          - name : analysisconf
+            mountPath: /opt/volume/analysis
           - name : sessions
             mountPath: /opt/volume/sessions
     {{- with .Values.init.nodeSelector }}
@@ -136,6 +138,8 @@ spec:
             mountPath: /opt/opencga/sessions
           - name : variants
             mountPath: /opt/opencga/variants
+          - name : analysisconf
+            mountPath: /opt/opencga/analysis
       volumes:
       - name: conf
         azureFile:
@@ -151,6 +155,11 @@ spec:
         azureFile:
           secretName: azure-files-secret
           shareName: variants
+          readOnly: false
+      - name: analysisconf
+        azureFile:
+          secretName: azure-files-secret
+          shareName: analysisconf
           readOnly: false
       - name: default-conf
         configMap:

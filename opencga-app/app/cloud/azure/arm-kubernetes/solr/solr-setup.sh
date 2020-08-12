@@ -130,7 +130,7 @@ done
 
 # Add OpenCGA Configuration Sets
 # copy configset to volume ready to mount
-docker run --rm -v /datadrive/solr-volume/solr/configsets:/target opencb/opencga-base:2.0.0-rc1 cp -r /opt/opencga/misc/solr/ /target/opencga/
+docker run --rm -v /datadrive/solr-volume/solr/configsets:/target opencb/opencga-base:2.0.0-rc2 cp -r /opt/opencga/misc/solr/ /target/opencga/
 
 for i in `ls  /datadrive/solr-volume/solr/configsets/opencga/ | grep "configset"` ; do
   echo "Install configset ${i}"

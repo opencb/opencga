@@ -125,6 +125,19 @@
       ]
     },
     {
+      "name": "[concat(variables('storageAccountName'), '/default/analysisconf')]",
+      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+      "apiVersion": "2019-06-01",
+      "properties": {
+        "metadata": {
+        },
+        "shareQuota": 100
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ]
+    },
+    {
       "name": "[concat(variables('storageAccountName'), '/default/sessions')]",
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
       "apiVersion": "2019-06-01",

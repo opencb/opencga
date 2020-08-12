@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import os
@@ -147,13 +147,6 @@ if args.tag is None:
     if version is None:
         error("Missing --tag")
 
-    ## Extract qualifier (if any)
-    qualifier = None
-    if "-" in version:
-        split = version.split("-")
-        version = split[0]
-        qualifier = split[1]
-
     ## Find hadoop_flavour
     hadoop_flavour = None
     for file in os.listdir(build_folder + "/libs/"):
@@ -166,8 +159,6 @@ if args.tag is None:
     tag = version
     if hadoop_flavour is not None:
         tag = tag + "-" + hadoop_flavour
-    if qualifier is not None:
-        tag = tag + "-" + qualifier
 
 else:
     tag = args.tag

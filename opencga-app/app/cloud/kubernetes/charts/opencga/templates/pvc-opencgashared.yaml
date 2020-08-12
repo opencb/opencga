@@ -1,3 +1,4 @@
+{{- if .Values.blobfuse.enabled -}}
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -10,3 +11,4 @@ spec:
       storage: 100Gi
   volumeName: pv-opencga-shared-blobfuse
   storageClassName: ""
+{{- end }}
