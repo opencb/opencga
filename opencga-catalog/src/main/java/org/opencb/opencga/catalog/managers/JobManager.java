@@ -1426,10 +1426,10 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         List<Job> allJobs = new ArrayList<>(finishedJobs.size() + running.size() + pending.size() + queued.size());
-        allJobs.addAll(finishedJobs);
         allJobs.addAll(running);
         allJobs.addAll(queued);
         allJobs.addAll(pending);
+        allJobs.addAll(finishedJobs);
 
         JobTopStats stats = new JobTopStats();
         for (Study study : studies) {

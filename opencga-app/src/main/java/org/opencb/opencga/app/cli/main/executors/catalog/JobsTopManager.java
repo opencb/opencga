@@ -1,8 +1,6 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import com.google.common.base.Stopwatch;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -246,6 +244,9 @@ public class JobsTopManager {
     }
 
     private List<Job> trimJobs(List<Job> jobs) {
+        if (jobs.size() <= jobsLimit) {
+            return jobs;
+        }
         List<Job> jobList = jobs.subList(0, jobsLimit);
         for (int i = jobList.size() - 1; i >= 0; i--) {
             if (jobList.get(i).getId().startsWith("└") || (!jobList.get(i).getId().startsWith("├") && (jobList.get(i).getDependsOn() == null || jobList.get(i).getDependsOn().isEmpty()))) {
