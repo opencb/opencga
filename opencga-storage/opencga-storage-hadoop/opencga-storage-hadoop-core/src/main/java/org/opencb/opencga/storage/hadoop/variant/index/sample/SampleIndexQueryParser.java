@@ -570,8 +570,6 @@ public class SampleIndexQueryParser {
                 }
                 fileIndexMask |= VariantFileIndexConverter.FILE_IDX_MASK;
             }
-        } else {
-            sampleFilesFilter.add(null);
         }
 
         boolean filterPass = false;
@@ -712,6 +710,9 @@ public class SampleIndexQueryParser {
             int dpMax = dpQuery == null ? 1 : dpQuery.getMaxCodeExclusive();
             if (typeCodes.isEmpty()) {
                 typeCodes = Collections.singleton(0);
+            }
+            if (sampleFilesFilter.isEmpty()) {
+                sampleFilesFilter = Collections.singletonList(null);
             }
             for (Integer typeCode : typeCodes) {
                 for (Integer fileId : sampleFilesFilter) {
