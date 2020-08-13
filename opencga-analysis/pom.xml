@@ -96,14 +96,14 @@
 
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-deps-hdp2.6</artifactId>
+            <artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</artifactId>
             <version>${opencga.version}</version>
             <classifier>shaded</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-deps-hdp2.6</artifactId>
+            <artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</artifactId>
             <version>${opencga.version}</version>
             <classifier>tests</classifier>
             <type>test-jar</type>
