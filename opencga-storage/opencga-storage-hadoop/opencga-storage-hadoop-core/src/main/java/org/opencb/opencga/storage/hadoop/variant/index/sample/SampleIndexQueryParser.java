@@ -625,6 +625,9 @@ public class SampleIndexQueryParser {
                 }
                 for (String file : files) {
                     KeyValues<String, KeyOpValue<String, String>> keyValues = fileDataMap.get(file);
+                    if (keyValues == null) {
+                        continue;
+                    }
                     for (KeyOpValue<String, String> keyOpValue : keyValues.getValues()) {
                         if (keyOpValue.getKey().equals(VCFConstants.DEPTH_KEY)) {
                             String op = keyOpValue.getOp();

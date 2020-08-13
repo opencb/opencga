@@ -65,6 +65,23 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    private VariantStorageManager storageManager;
+
+    public MutationalSignatureLocalAnalysisExecutor() {
+    }
+
+    public MutationalSignatureLocalAnalysisExecutor(VariantStorageManager storageManager) {
+        this.storageManager = storageManager;
+    }
+
+    @Override
+    public VariantStorageManager getVariantStorageManager() throws ToolExecutorException {
+        if (storageManager == null) {
+            storageManager = StorageToolExecutor.super.getVariantStorageManager();
+        }
+        return storageManager;
+    }
+
     @Override
     public void run() throws ToolException, IOException {
         // Context index filename

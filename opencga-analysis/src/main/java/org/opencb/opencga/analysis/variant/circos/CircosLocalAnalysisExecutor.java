@@ -32,6 +32,7 @@ import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.CircosTrack;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -57,6 +58,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements StorageToolExecutor {
 
     public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc2";
+    private VariantStorageManager storageManager;
 
     private File snvsFile;
     private File rearrsFile;
@@ -73,8 +75,17 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         super();
     }
 
-    public CircosLocalAnalysisExecutor(String study, CircosAnalysisParams params) {
+    public CircosLocalAnalysisExecutor(String study, CircosAnalysisParams params, VariantStorageManager storageManager) {
         super(study, params);
+        this.storageManager = storageManager;
+    }
+
+    @Override
+    public VariantStorageManager getVariantStorageManager() throws ToolExecutorException {
+        if (storageManager == null) {
+            storageManager = StorageToolExecutor.super.getVariantStorageManager();
+        }
+        return storageManager;
     }
 
     @Override

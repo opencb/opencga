@@ -933,7 +933,7 @@ public class VariantWebService extends AnalysisWebService {
                 return createErrorResponse(new Exception("Error creating temporal directory for mutational-signature/query analysis"));
             }
 
-            MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor();
+            MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor(variantManager);
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);
@@ -1338,7 +1338,7 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             // Create and set up Circos executor
-            CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor(study, params);
+            CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor(study, params, variantManager);
 
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
