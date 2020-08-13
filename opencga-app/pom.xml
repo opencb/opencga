@@ -260,6 +260,11 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
+                                <exec executable="chmod">
+                                    <arg value="+x"/>
+                                    <arg value="${app.dir}/cloud/docker/docker-build.py"/>
+                                </exec>
+
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-analysis/src/main/R/"/>
