@@ -148,7 +148,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                                 .get(sampleColumn.getSampleId());
                     }
                     if (!multiFiles.isEmpty()) {
-                        if (sampleColumn.getFileId() != null) {
+                        if (sampleColumn.getFileId() == null) {
                             // Is the first file?
                         } else {
                             if (!multiFiles.contains(sampleColumn.getFileId())) {
@@ -190,7 +190,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                             return;
                         }
                     }
-                    // This is highly improvable
+                    // This is highly unlikely
                     throw VariantQueryException.scoreNotFound(variantScoreColumn.getScoreId(), metadataManager.getStudyName(studyId));
                 })
                 .walk();
