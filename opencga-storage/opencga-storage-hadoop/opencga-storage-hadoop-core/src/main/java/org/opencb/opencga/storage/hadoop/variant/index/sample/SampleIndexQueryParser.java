@@ -546,19 +546,30 @@ public class SampleIndexQueryParser {
 
         List<Integer> sampleFilesFilter = new ArrayList<>();
         // Can only filter by file if the sample was multiFile
-        if (multiFileSample && isValidParam(query, FILE)) {
+        if (multiFileSample) {
             // Lazy get files from sample
             if (files == null) {
                 files = filesFromSample.apply(sample);
             }
-            ParsedQuery<String> filesQuery = splitValue(query, FILE);
-            for (String file : filesQuery.getValues()) {
-                int indexOf = files.indexOf(file);
-                if (indexOf >= 0) {
-                    sampleFilesFilter.add(indexOf);
-                }
+            List<String> filesFromQuery;
+            if (isValidParam(query, FILE)) {
+                ParsedQuery<String> filesQuery = splitValue(query, FILE);
+                filesFromQuery = filesQuery.getValues();
+            } else if (isValidParam(query, FILE_DATA)) {
+                ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileData = parseFileData(query);
+                filesFromQuery = fileData.getValues().stream().map(KeyValues::getKey).collect(Collectors.toList());
+            } else {
+                filesFromQuery = null;
             }
-            fileIndexMask |= VariantFileIndexConverter.FILE_IDX_MASK;
+            if (filesFromQuery != null) {
+                for (String file : filesFromQuery) {
+                    int indexOf = files.indexOf(file);
+                    if (indexOf >= 0) {
+                        sampleFilesFilter.add(indexOf);
+                    }
+                }
+                fileIndexMask |= VariantFileIndexConverter.FILE_IDX_MASK;
+            }
         } else {
             sampleFilesFilter.add(null);
         }
@@ -636,6 +647,10 @@ public class SampleIndexQueryParser {
                             fileIndexMask |= VariantFileIndexConverter.DP_MASK;
                         } else if (keyOpValue.getKey().equals(StudyEntry.FILTER)) {
                             if (keyOpValue.getValue().equals(VCFConstants.PASSES_FILTERS_v4)) {
+                                filterPass = true;
+                                fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
+                            } else if (keyOpValue.getValue().equals(NOT + VCFConstants.PASSES_FILTERS_v4)) {
+                                filterPass = false;
                                 fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
                             }
                         } else if (keyOpValue.getKey().equals(StudyEntry.QUAL)) {
@@ -705,7 +720,7 @@ public class SampleIndexQueryParser {
 
                             int validFile = 0;
                             if (filterPass) {
-                                validFile = VariantFileIndexConverter.FILTER_PASS_MASK;
+                                validFile |= VariantFileIndexConverter.FILTER_PASS_MASK;
                             }
 
                             if (fileId != null) {
