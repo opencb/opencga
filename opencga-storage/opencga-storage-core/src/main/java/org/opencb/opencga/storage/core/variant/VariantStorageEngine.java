@@ -355,10 +355,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 VariantStorageMetadataManager metadataManager = getMetadataManager();
                 int studyId = metadataManager.getStudyId(studyName);
 
-                List<Integer> fileIds = new ArrayList<>(files.size());
+                List<String> fileNames = new ArrayList<>(files.size());
                 for (URI uri : files) {
-                    String fileName = VariantReaderUtils.getOriginalFromTransformedFile(uri);
-                    fileIds.add(metadataManager.getFileId(studyId, fileName));
+                    Integer fileId = metadataManager.getFileId(studyId, VariantReaderUtils.getOriginalFromTransformedFile(uri));
+                    fileNames.add(metadataManager.getFileName(studyId, fileId));
                 }
 
                 // Annotate only the new indexed variants
@@ -366,8 +366,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 if (!options.getBoolean(ANNOTATION_OVERWEITE.key(), false)) {
                     annotationQuery.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
                 }
-                annotationQuery.put(VariantQueryParam.STUDY.key(), Collections.singletonList(studyId));
-                annotationQuery.put(VariantQueryParam.FILE.key(), fileIds);
+                annotationQuery.put(VariantQueryParam.STUDY.key(), Collections.singletonList(studyName));
+                annotationQuery.put(VariantQueryParam.FILE.key(), fileNames);
 
                 ObjectMap annotationOptions = new ObjectMap(options)
                         .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.toString())

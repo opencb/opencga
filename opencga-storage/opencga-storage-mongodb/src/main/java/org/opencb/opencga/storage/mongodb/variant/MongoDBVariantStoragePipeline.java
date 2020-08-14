@@ -745,12 +745,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
 
         VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(getStudyId(), fileId, null).first();
-
+        String file = getMetadataManager().getFileName(getStudyId(), fileId);
         Long count = dbAdaptor.count(new Query()
-                .append(VariantQueryParam.FILE.key(), fileId)
+                .append(VariantQueryParam.FILE.key(), file)
                 .append(VariantQueryParam.STUDY.key(), studyMetadata.getId())).first();
         Long overlappedCount = dbAdaptor.count(new Query()
-                .append(VariantQueryParam.FILE.key(), fileId)
+                .append(VariantQueryParam.FILE.key(), file)
                 .append(OVERLAPPED_FILES_ONLY, true)
                 .append(VariantQueryParam.STUDY.key(), studyMetadata.getId())).first();
         long variantsToLoad = 0;
