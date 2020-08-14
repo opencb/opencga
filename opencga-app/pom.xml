@@ -262,7 +262,7 @@
 
                                 <exec executable="chmod">
                                     <arg value="+x"/>
-                                    <arg value="${app.dir}/cloud/docker/docker-build.py"/>
+                                    <arg value="${build.dir}/cloud/docker/docker-build.py"/>
                                 </exec>
 
                                 <exec executable="cp">
