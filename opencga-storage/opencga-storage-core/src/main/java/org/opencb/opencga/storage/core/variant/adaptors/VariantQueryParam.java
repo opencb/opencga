@@ -88,9 +88,8 @@ public final class VariantQueryParam implements QueryParam {
             + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . "
             + "3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted."
             + "Accepted segregation modes: "
-            + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
-            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, "
-            + "DeNovo, CompoundHeterozygous ]. Value is case insensitive."
+            + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
+            + "deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive."
             + " e.g. HG0097:DeNovo "
             + "Sample must have parents defined and indexed. ";
     public static final VariantQueryParam SAMPLE = new VariantQueryParam("sample", TEXT_ARRAY, SAMPLE_DESCR);

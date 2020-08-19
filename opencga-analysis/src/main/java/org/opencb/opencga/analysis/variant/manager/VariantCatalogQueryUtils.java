@@ -104,9 +104,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final QueryParam FAMILY_PROBAND =
             QueryParam.create("familyProband", FAMILY_PROBAND_DESC, QueryParam.Type.TEXT);
     public static final String FAMILY_SEGREGATION_DESCR = "Filter by segregation mode from a given family. Accepted values: "
-            + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
-            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, "
-            + "DeNovo, CompoundHeterozygous ]";
+            + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
+            + "deNovo, mendelianError, compoundHeterozygous ]";
     public static final QueryParam FAMILY_SEGREGATION =
             QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
 
