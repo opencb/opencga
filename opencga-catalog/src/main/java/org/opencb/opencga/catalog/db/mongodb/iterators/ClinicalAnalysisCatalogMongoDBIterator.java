@@ -191,7 +191,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     }
 
     private Document fillIndividualData(Document individualDoc, Map<String, Document> individualMap, Map<String, Document> sampleMap) {
-        if (individualDoc != null && individualDoc.getLong(UID) > 0) {
+        if (individualDoc != null && individualDoc.get(UID, Number.class).longValue() > 0) {
             Integer version = individualDoc.getInteger(VERSION);
             String individualId;
 
@@ -209,7 +209,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                 if (samples != null && !samples.isEmpty()) {
                     List<Document> finalSamples = new ArrayList<>(samples.size());
                     for (Document sampleDoc : samples) {
-                        if (sampleDoc != null && sampleDoc.getLong(UID) > 0) {
+                        if (sampleDoc != null && sampleDoc.get(UID, Number.class).longValue() > 0) {
                             // Extract sample id
                             String sampleId = String.valueOf(sampleDoc.get(UID));
                             if (sampleMap.containsKey(sampleId)) {
@@ -426,7 +426,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
 
     private void extractIndividualInfo(Document memberDocument, Set<String> individualSet, Set<String> sampleSet) {
         // Extract individual id
-        if (memberDocument != null && memberDocument.getLong(UID) > 0) {
+        if (memberDocument != null && memberDocument.get(UID, Number.class).longValue() > 0) {
             Object version = memberDocument.get(VERSION);
             if (version != null) {
                 individualSet.add(memberDocument.get(UID) + UID_VERSION_SEP + memberDocument.get(VERSION));
@@ -438,7 +438,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             if (samples != null && !samples.isEmpty()) {
                 // Extract sample ids
                 for (Document sampleDocument : samples) {
-                    if (sampleDocument != null && sampleDocument.getLong(UID) > 0) {
+                    if (sampleDocument != null && sampleDocument.get(UID, Number.class).longValue() > 0) {
                         sampleSet.add(String.valueOf(sampleDocument.get(UID)));
                     }
                 }
