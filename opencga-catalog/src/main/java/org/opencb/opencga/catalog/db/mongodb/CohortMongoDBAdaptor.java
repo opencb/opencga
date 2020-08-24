@@ -360,22 +360,26 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        String operation = (String) actionMap.getOrDefault(QueryParams.SAMPLES.key(), "ADD");
+        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD);
         String[] sampleObjectParams = new String[]{QueryParams.SAMPLES.key()};
-        switch (operation) {
-            case "SET":
-                filterObjectParams(parameters, document.getSet(), sampleObjectParams);
-                cohortConverter.validateSamplesToUpdate(document.getSet());
-                break;
-            case "REMOVE":
-                filterObjectParams(parameters, document.getPullAll(), sampleObjectParams);
-                cohortConverter.validateSamplesToUpdate(document.getPullAll());
-                break;
-            case "ADD":
-            default:
-                filterObjectParams(parameters, document.getAddToSet(), sampleObjectParams);
-                cohortConverter.validateSamplesToUpdate(document.getAddToSet());
-                break;
+
+        if (operation == ParamUtils.UpdateAction.SET || !parameters.getAsList(QueryParams.SAMPLES.key()).isEmpty()) {
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), sampleObjectParams);
+                    cohortConverter.validateSamplesToUpdate(document.getSet());
+                    break;
+                case REMOVE:
+                    filterObjectParams(parameters, document.getPullAll(), sampleObjectParams);
+                    cohortConverter.validateSamplesToUpdate(document.getPullAll());
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), sampleObjectParams);
+                    cohortConverter.validateSamplesToUpdate(document.getAddToSet());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
         }
 
         String[] acceptedObjectParams = { QueryParams.STATUS.key() };
@@ -794,11 +798,18 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
+                    case STATUS_NAME:
+                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), finalQuery, QueryParams.STATUS_NAME.type(),
+                                andBsonList);
+                        break;
+                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         finalQuery.put(queryParam.key(),
                                 Status.getPositiveStatus(CohortStatus.STATUS_LIST, finalQuery.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), finalQuery, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), finalQuery,
+                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
                     case UUID:
                     case ID:

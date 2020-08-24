@@ -31,10 +31,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
+import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -43,6 +44,8 @@ import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -54,11 +57,30 @@ import static org.opencb.opencga.analysis.variant.mutationalSignature.Mutational
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
-public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor implements VariantStorageToolExecutor {
+public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor implements StorageToolExecutor {
 
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc1";
+    public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc2";
 
     public final static String CONTEXT_FILENAME = "context.txt";
+
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    private VariantStorageManager storageManager;
+
+    public MutationalSignatureLocalAnalysisExecutor() {
+    }
+
+    public MutationalSignatureLocalAnalysisExecutor(VariantStorageManager storageManager) {
+        this.storageManager = storageManager;
+    }
+
+    @Override
+    public VariantStorageManager getVariantStorageManager() throws ToolExecutorException {
+        if (storageManager == null) {
+            storageManager = StorageToolExecutor.super.getVariantStorageManager();
+        }
+        return storageManager;
+    }
 
     @Override
     public void run() throws ToolException, IOException {
@@ -143,14 +165,14 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             totalWatch.stop();
 
-            System.out.println("number of variants = " + count);
-            System.out.println("number of variantes in context = " + contextCount);
-            System.out.println("number of errors when accessing context = " + ko);
-            System.out.println("get iterator time = " + prepIteratorWatch.getTime());
-            System.out.println("FAI time = " + faiTime);
-            System.out.println("loop time (iterator time + FAI time + ...) = " + loopWatch.getTime());
-            System.out.println("R script time = " + rWatch.getTime());
-            System.out.println("Total time = " + totalWatch.getTime());
+            logger.info("number of variants = " + count);
+            logger.info("number of variantes in context = " + contextCount);
+            logger.info("number of errors when accessing context = " + ko);
+            logger.info("get iterator time = " + TimeUtils.durationToString(prepIteratorWatch));
+            logger.info("FAI time = " + faiTime);
+            logger.info("loop time (iterator time + FAI time + ...) = " + TimeUtils.durationToString(loopWatch));
+            logger.info("R script time = " + TimeUtils.durationToString(rWatch));
+            logger.info("Total time = " + TimeUtils.durationToString(totalWatch));
         } catch (Exception e) {
             throw new ToolExecutorException(e);
         }
@@ -200,7 +222,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             }
         }
         if (indexFile == null) {
-            throw new ToolException("Missing muational signature context index file for sample " + getSampleName());
+            throw new ToolException("Missing mutational signature context index file for sample " + getSampleName());
         }
 
         // Read context index
@@ -263,15 +285,15 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
         totalWatch.stop();
 
-        System.out.println("number of variants = " + count);
-        System.out.println("number of variantes in context = " + contextCount);
-        System.out.println("number of errors when accessing context = " + ko);
-        System.out.println("index size = " + indexMap.size());
-        System.out.println("load index time = " + loadTime);
-        System.out.println("get iterator time = " + prepIteratorWatch.getTime());
-        System.out.println("loop time (iterator time + Map time + ...) = " + loopWatch.getTime());
-        System.out.println("R script time = " + rWatch.getTime());
-        System.out.println("Total time = " + totalWatch.getTime());
+        logger.info("number of variants = " + count);
+        logger.info("number of variantes in context = " + contextCount);
+        logger.info("number of errors when accessing context = " + ko);
+        logger.info("index size = " + indexMap.size());
+        logger.info("load index time = " + TimeUtils.durationToString(loadTime));
+        logger.info("get iterator time = " + TimeUtils.durationToString(prepIteratorWatch));
+        logger.info("loop time (iterator time + Map time + ...) = " + TimeUtils.durationToString(loopWatch));
+        logger.info("R script time = " + TimeUtils.durationToString(rWatch));
+        logger.info("Total time = " + TimeUtils.durationToString(totalWatch));
 
         return parse(getOutDir());
     }
@@ -294,7 +316,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 + "/data/output/" + SIGNATURES_FILENAME + " /data/output ";
 
         String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
-        System.out.println("Docker command line: " + cmdline);
+        logger.info("Docker command line: " + cmdline);
 
         return cmdline;
     }
@@ -306,10 +328,10 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         File contextFile = dir.resolve("context.txt").toFile();
         if (contextFile.exists()) {
             List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
-            Signature.Count[] sigCounts = new Signature.Count[lines.size() - 1];
+            Signature.SignatureCount[] sigCounts = new Signature.SignatureCount[lines.size() - 1];
             for (int i = 1; i < lines.size(); i++) {
                 String[] fields = lines.get(i).split("\t");
-                sigCounts[i-1] = new Signature.Count(fields[2], Math.round(Float.parseFloat((fields[3]))));
+                sigCounts[i-1] = new Signature.SignatureCount(fields[2], Math.round(Float.parseFloat((fields[3]))));
             }
             result.setSignature(new Signature("SNV", sigCounts));
         }

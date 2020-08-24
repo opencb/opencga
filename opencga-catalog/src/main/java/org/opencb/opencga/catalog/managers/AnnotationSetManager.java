@@ -187,10 +187,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 if (annotationSetsObject instanceof List) {
                     ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
 
-                    ParamUtils.UpdateAction action = (ParamUtils.UpdateAction) actionMap.getOrDefault(ANNOTATION_SETS,
-                            ParamUtils.UpdateAction.ADD);
-//                    ParamUtils.UpdateAction action = ParamUtils.UpdateAction.valueOf(
-//                            (String) actionMap.getOrDefault(ANNOTATION_SETS, ParamUtils.UpdateAction.ADD.name()));
+                    ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap, ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
 
                     if (action == ParamUtils.UpdateAction.ADD || action == ParamUtils.UpdateAction.SET) {
                         /* We need to validate that the new annotationSets are fine to be stored */
@@ -308,8 +305,8 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             // Update annotations (ADD, SET, REMOVE or RESET)
             Object annotationSetObject = parameters.get(ANNOTATION_SETS);
             if (annotationSetObject != null) {
-                ParamUtils.CompleteUpdateAction action = (ParamUtils.CompleteUpdateAction) actionMap.getOrDefault(ANNOTATIONS,
-                        ParamUtils.CompleteUpdateAction.ADD);
+                ParamUtils.CompleteUpdateAction action =
+                        ParamUtils.CompleteUpdateAction.from(actionMap, ANNOTATIONS, ParamUtils.CompleteUpdateAction.ADD);
 
                 if (!(annotationSetObject instanceof List)) {
                     throw new CatalogException("Unexpected annotationSets object. Expected a list of annotationSets.");

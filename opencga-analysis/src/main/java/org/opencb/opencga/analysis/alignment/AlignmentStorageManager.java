@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.analysis.alignment;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.*;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
@@ -73,6 +73,7 @@ import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.A
 public class AlignmentStorageManager extends StorageManager {
 
     private AlignmentStorageEngine alignmentStorageEngine;
+    private String jobId;
 
     private static final Map<String, String> statsMap = new HashMap<>();
 
@@ -85,6 +86,16 @@ public class AlignmentStorageManager extends StorageManager {
         initStatsMap();
     }
 
+    public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, String jobId) {
+        super(catalogManager, storageEngineFactory);
+
+        // TODO: Create this alignmentStorageEngine by reflection
+        this.alignmentStorageEngine = new LocalAlignmentStorageEngine();
+        this.jobId = jobId;
+
+        initStatsMap();
+    }
+
     //-------------------------------------------------------------------------
     // INDEX
     //-------------------------------------------------------------------------
@@ -93,7 +104,7 @@ public class AlignmentStorageManager extends StorageManager {
         ObjectMap params = new ObjectMap();
 
         AlignmentIndexOperation indexOperation = new AlignmentIndexOperation();
-        indexOperation.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), token);
+        indexOperation.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
 
         indexOperation.setStudy(study);
         indexOperation.setInputFile(inputFile);
@@ -147,7 +158,7 @@ public class AlignmentStorageManager extends StorageManager {
         params.put(SamtoolsWrapperAnalysis.INDEX_STATS_PARAM, true);
 
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
-        samtools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), token);
+        samtools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
 
         samtools.setStudy(study);
         samtools.setCommand("stats")
@@ -159,7 +170,7 @@ public class AlignmentStorageManager extends StorageManager {
 
     //-------------------------------------------------------------------------
 
-    public OpenCGAResult<AlignmentStats> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
+    public OpenCGAResult<SamtoolsStats> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
         OpenCGAResult<File> fileResult;
         fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
 
@@ -167,8 +178,8 @@ public class AlignmentStorageManager extends StorageManager {
             for (AnnotationSet annotationSet : fileResult.getResults().get(0).getAnnotationSets()) {
                 if ("opencga_alignment_stats".equals(annotationSet.getId())) {
                     StopWatch watch = StopWatch.createStarted();
-                    AlignmentStats stats = JacksonUtils.getDefaultObjectMapper().convertValue(annotationSet.getAnnotations(),
-                            AlignmentStats.class);
+                    SamtoolsStats stats = JacksonUtils.getDefaultObjectMapper().convertValue(annotationSet.getAnnotations(),
+                            SamtoolsStats.class);
                     watch.stop();
                     return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(stats), 1);
                 }
@@ -206,7 +217,7 @@ public class AlignmentStorageManager extends StorageManager {
 
         DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
 
-        deeptools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), token);
+        deeptools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
 
         deeptools.setStudy(study);
         deeptools.setCommand("bamCoverage")
@@ -233,6 +244,7 @@ public class AlignmentStorageManager extends StorageManager {
 
         // Get file
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, token);
+//        System.out.println("file = " + file.getUri());
 
         // Get species and assembly from catalog
         OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
@@ -248,7 +260,7 @@ public class AlignmentStorageManager extends StorageManager {
 
             // Init gene coverage stats
             GeneCoverageStats geneCoverageStats = new GeneCoverageStats();
-            geneCoverageStats.setFileId(file.getId());
+            geneCoverageStats.setFile(file.getId());
 
             geneCoverageStats.setGeneName(geneName);
             if (CollectionUtils.isNotEmpty(file.getSamples())) {
@@ -256,53 +268,94 @@ public class AlignmentStorageManager extends StorageManager {
             }
 
             // Get exon regions per transcript
-            Map<String, List<Region>> exonRegions = getExonRegionsPerTranscript(geneName, species, assembly);
+//            Map<String, List<Region>> exonRegions = getExonRegionsPerTranscript(geneName, species, assembly);
 //            for (Map.Entry<String, List<Region>> entry : exonRegions.entrySet()) {
 //                System.out.println(entry.getKey() + " -> " + StringUtils.join(entry.getValue().toArray(), ","));
 //            }
 
-            // Compute coverage stats per transcript
-            List<TranscriptCoverageStats> transcriptCoverageStatsList = new ArrayList<>();
-            for (String transcriptId : exonRegions.keySet()) {
-                TranscriptCoverageStats transcriptCoverageStats = new TranscriptCoverageStats();
-                transcriptCoverageStats.setTranscriptId(transcriptId);
-                transcriptCoverageStats.setLowCoverageThreshold(threshold);
 
-                // Trasscript length as a sum of exon lengths
-                int length = 0;
-                // Coverage depths: 1x, 5x, 10x, 15x, 20x, 25x, 30x, 40x, 50x, 60x
-                double[] depths = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-                // List of low coverage regions
-                List<LowCoverageRegion> lowCoverageRegions = new ArrayList<>();
+            // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
+            CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
+                    .toClientConfiguration());
+            GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
+            QueryResponse<Gene> response = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty());
+            Gene gene = response.firstResult();
+            if (gene != null) {
+                List<TranscriptCoverageStats> transcriptCoverageStatsList = new ArrayList<>();
+                // Create region from gene coordinates
+                if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
+                    // Compute coverage stats per transcript
+                    for (Transcript transcript : gene.getTranscripts()) {
+                        TranscriptCoverageStats transcriptCoverageStats = new TranscriptCoverageStats();
+                        transcriptCoverageStats.setId(transcript.getId());
+                        transcriptCoverageStats.setName(transcript.getName());
+                        transcriptCoverageStats.setBiotype(transcript.getBiotype());
+                        transcriptCoverageStats.setChromosome(transcript.getChromosome());
+                        transcriptCoverageStats.setStart(transcript.getStart());
+                        transcriptCoverageStats.setEnd(transcript.getEnd());
+                        transcriptCoverageStats.setLowCoverageThreshold(threshold);
 
-                for (Region region : exonRegions.get(transcriptId)) {
-                    length += region.size();
+                        // Trasscript length as a sum of exon lengths
+                        int length = 0;
+                        int numExons = 0;
+                        final int bp = 5;
+                        // Coverage depths: 1x, 5x, 10x, 15x, 20x, 25x, 30x, 40x, 50x, 60x, 75x, 100x
+                        double[] depths = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                        // List of low coverage regions and exon stats
+                        List<LowCoverageRegionStats> lowCoverageRegionStats = new ArrayList<>();
+                        List<ExonCoverageStats> exonCoverageStats = new ArrayList<>();
 
-                    OpenCGAResult<RegionCoverage> regionResult = alignmentStorageEngine.getDBAdaptor().coverageQuery(
-                            Paths.get(file.getUri()), region, 0, threshold, 1);
-                    RegionCoverage regionCoverage = regionResult.first();
-                    if (regionCoverage != null) {
-                        for (double coverage : regionCoverage.getValues()) {
-                            if (coverage >= 1) {
-                                depths[0]++;
-                                if (coverage >= 5) {
-                                    depths[1]++;
-                                    if (coverage >= 10) {
-                                        depths[2]++;
-                                        if (coverage >= 15) {
-                                            depths[3]++;
-                                            if (coverage >= 20) {
-                                                depths[4]++;
-                                                if (coverage >= 25) {
-                                                    depths[5]++;
-                                                    if (coverage >= 30) {
-                                                        depths[6]++;
-                                                        if (coverage >= 40) {
-                                                            depths[7]++;
-                                                            if (coverage >= 50) {
-                                                                depths[8]++;
-                                                                if (coverage >= 60) {
-                                                                    depths[9]++;
+                        if (CollectionUtils.isNotEmpty(transcript.getExons())) {
+                            for (Exon exon : transcript.getExons()) {
+                                if (exon.getStart() != 0 && exon.getEnd() != 0) {
+                                    numExons++;
+                                    Region region = new Region(exon.getChromosome(), exon.getStart() - bp, exon.getEnd() + bp);
+                                    length += (region.size());
+
+                                    OpenCGAResult<RegionCoverage> regionResult = alignmentStorageEngine.getDBAdaptor().coverageQuery(
+                                            Paths.get(file.getUri()), region, 0, Integer.MAX_VALUE, 1);
+
+                                    RegionCoverage regionCoverage = regionResult.first();
+
+                                    // Exon stats (skipping +/- bp)
+                                    RegionCoverageStats stats = computeExonStats(regionCoverage, bp);
+                                    ExonCoverageStats exonStats = new ExonCoverageStats(exon.getId(), exon.getChromosome(), exon.getStart(),
+                                            exon.getEnd(), stats.getAvg(), stats.getMin(), stats.getMax());
+                                    exonCoverageStats.add(exonStats);
+
+                                    // % depths
+                                    if (regionCoverage != null) {
+                                        for (double coverage : regionCoverage.getValues()) {
+                                            if (coverage >= 1) {
+                                                depths[0]++;
+                                                if (coverage >= 5) {
+                                                    depths[1]++;
+                                                    if (coverage >= 10) {
+                                                        depths[2]++;
+                                                        if (coverage >= 15) {
+                                                            depths[3]++;
+                                                            if (coverage >= 20) {
+                                                                depths[4]++;
+                                                                if (coverage >= 25) {
+                                                                    depths[5]++;
+                                                                    if (coverage >= 30) {
+                                                                        depths[6]++;
+                                                                        if (coverage >= 40) {
+                                                                            depths[7]++;
+                                                                            if (coverage >= 50) {
+                                                                                depths[8]++;
+                                                                                if (coverage >= 60) {
+                                                                                    depths[9]++;
+                                                                                    if (coverage >= 75) {
+                                                                                        depths[10]++;
+                                                                                        if (coverage >= 100) {
+                                                                                            depths[11]++;
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
                                                                 }
                                                             }
                                                         }
@@ -310,29 +363,38 @@ public class AlignmentStorageManager extends StorageManager {
                                                 }
                                             }
                                         }
+
+                                        // Get low coverage regions, from 0 to threshold depth
+                                        List<RegionCoverage> filteredRegions = BamUtils.filterByCoverage(regionCoverage, 0, threshold + 1);
+                                        for (RegionCoverage filteredRegion : filteredRegions) {
+                                            if (filteredRegion.getValues() != null && filteredRegion.getValues().length > 0) {
+                                                lowCoverageRegionStats.add(new LowCoverageRegionStats(filteredRegion.getChromosome(),
+                                                        filteredRegion.getStart(), filteredRegion.getEnd(),
+                                                        filteredRegion.getStats().getAvg(), filteredRegion.getStats().getMin()));
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
 
-                        if (regionCoverage.getStats().getAvg() <= threshold) {
-                            lowCoverageRegions.add(new LowCoverageRegion(regionCoverage.getStart(), regionCoverage.getEnd(),
-                                    regionCoverage.getStats().getAvg(), regionCoverage.getStats().getMin()));
-                        }
+                        // Set transcript length taking into account to remove the extra bp
+                        transcriptCoverageStats.setLength(length - (2 * bp * numExons));
 
+                        // Update (%) depths but taking into account the extra bp
+                        for (int i = 0; i < depths.length; i++) {
+                            depths[i] = depths[i] / length * 100.0;
+                        }
+                        transcriptCoverageStats.setDepths(depths);
+                        transcriptCoverageStats.setLowCoverageRegionStats(lowCoverageRegionStats);
+                        transcriptCoverageStats.setExonStats(exonCoverageStats);
+
+                        transcriptCoverageStatsList.add(transcriptCoverageStats);
                     }
                 }
-                transcriptCoverageStats.setLength(length);
-                // Update (%) depths
-                for (int i = 0; i < depths.length; i++) {
-                    depths[i] = depths[i] / length * 100.0;
-                }
-                transcriptCoverageStats.setDepths(depths);
-                transcriptCoverageStats.setLowCoverageRegions(lowCoverageRegions);
 
-                transcriptCoverageStatsList.add(transcriptCoverageStats);
+                geneCoverageStats.setStats(transcriptCoverageStatsList);
             }
-            geneCoverageStats.setStats(transcriptCoverageStatsList);
 
             geneCoverageStatsList.add(geneCoverageStats);
         }
@@ -343,9 +405,28 @@ public class AlignmentStorageManager extends StorageManager {
                 geneCoverageStatsList.size());
     }
 
-    //-------------------------------------------------------------------------
-    // Counts
-    //-------------------------------------------------------------------------
+    private RegionCoverageStats computeExonStats(RegionCoverage regionCoverage, int bp) {
+        double min = Double.MAX_VALUE;
+        double max = Double.MIN_VALUE;
+        double agg = 0;
+
+        double[] values = regionCoverage.getValues();
+        int lastPosition = values.length - bp;
+        for (int i = bp; i < lastPosition; i++) {
+            if (values[i] < min) {
+                min = values[i];
+            }
+            if (values[i] > max) {
+                max = values[i];
+            }
+            agg += values[i];
+        }
+        return new RegionCoverageStats((int) Math.round(min), (int) Math.round(max), agg / (values.length - (2 * bp)));
+    }
+
+//-------------------------------------------------------------------------
+// Counts
+//-------------------------------------------------------------------------
 
     public OpenCGAResult<Long> getTotalCounts(String studyIdStr, String fileIdStr, String sessionId) throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
@@ -366,9 +447,9 @@ public class AlignmentStorageManager extends StorageManager {
         return alignmentStorageEngine.getDBAdaptor().count(studyInfo.getFileInfo().getPhysicalFilePath(), query, options);
     }
 
-    //-------------------------------------------------------------------------
-    // MISCELANEOUS
-    //-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
+// MISCELANEOUS
+//-------------------------------------------------------------------------
 
     public List<Region> mergeRegions(List<Region> regions, List<String> genes, boolean onlyExons, int offset, String study, String token)
             throws CatalogException, IOException, StorageEngineException {
@@ -443,9 +524,9 @@ public class AlignmentStorageManager extends StorageManager {
         }
     }
 
-    //-------------------------------------------------------------------------
-    // PRIVATE METHODS
-    //-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
+// PRIVATE METHODS
+//-------------------------------------------------------------------------
 
     public Map<String, List<Region>> getExonRegionsPerTranscript(String geneName, String species, String assembly)
             throws StorageEngineException, IOException {

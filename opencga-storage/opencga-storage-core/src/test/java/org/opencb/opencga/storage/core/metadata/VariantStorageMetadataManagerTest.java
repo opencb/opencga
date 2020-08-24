@@ -25,6 +25,20 @@ public abstract class VariantStorageMetadataManagerTest extends VariantStorageBa
     }
 
     @Test
+    public void testGetId() throws StorageEngineException {
+        StudyMetadata study = metadataManager.createStudy("study");
+        StudyMetadata study2 = metadataManager.createStudy("study2");
+        int fileId = metadataManager.registerFile(study.getId(), "file.txt", Arrays.asList("s1", "s2"));
+
+        Integer actualSampleId = metadataManager.getSampleId(study.getId(), "s1");
+        Assert.assertEquals(actualSampleId, metadataManager.getSampleId(study.getId(), study.getName() + ":s1"));
+        Assert.assertEquals(actualSampleId, metadataManager.getSampleId(study.getId(), actualSampleId));
+
+        Assert.assertNull(metadataManager.getSampleId(study.getId(), String.valueOf(actualSampleId)));
+        Assert.assertNull(metadataManager.getSampleId(study2.getId(), actualSampleId));
+    }
+
+    @Test
     public void testTask() throws StorageEngineException {
         StudyMetadata study = metadataManager.createStudy("study");
         int id = metadataManager.registerFile(study.getId(), "file.txt");

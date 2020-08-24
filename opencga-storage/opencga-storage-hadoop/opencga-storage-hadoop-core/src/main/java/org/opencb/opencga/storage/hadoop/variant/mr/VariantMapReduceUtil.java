@@ -5,6 +5,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
@@ -488,14 +490,55 @@ public class VariantMapReduceUtil {
 
     public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf, int defaultCacheSize) {
         int caching = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), defaultCacheSize);
+        int maxColumns = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_COLUMNS.key(),
+                HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_COLUMNS.defaultValue());
+        int maxFilters = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_FILTERS.key(),
+                HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_FILTERS.defaultValue());
 
         LOGGER.info("Scan set Caching to " + caching);
+        int actualColumns = scans.get(0).getFamilyMap()
+                .getOrDefault(GenomeHelper.COLUMN_FAMILY_BYTES, Collections.emptyNavigableSet()).size();
+        boolean removeColumns = actualColumns > maxColumns;
+        if (removeColumns) {
+            LOGGER.info("Scan with {} columns exceeds the max threshold of {} columns. Returning all columns",
+                    scans.get(0).getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES).size(),
+                    maxColumns);
+        }
+        Filter f = scans.get(0).getFilter();
+        int numFilters = getNumFilters(f);
+        if (numFilters > maxFilters) {
+            LOGGER.info("Scan with {} filters exceeds the max threshold of {} filters. Do not apply filters",
+                    numFilters,
+                    maxFilters);
+        }
+
         for (Scan scan : scans) {
             scan.setCaching(caching);        // 1 is the default in Scan
             scan.setCacheBlocks(false);  // don't set to true for MR jobs
+            if (removeColumns) {
+                scan.getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES).clear();
+            }
+            if (numFilters > maxColumns) {
+                scan.setFilter(null);
+            }
         }
 
         return scans;
+    }
+
+    private static int getNumFilters(Filter f) {
+        if (f == null) {
+            return 0;
+        } else if (f instanceof FilterList) {
+            List<Filter> filters = ((FilterList) f).getFilters();
+            int i = 1;
+            for (Filter filter : filters) {
+                i += getNumFilters(filter);
+            }
+            return i;
+        } else {
+            return 1;
+        }
     }
 
 }

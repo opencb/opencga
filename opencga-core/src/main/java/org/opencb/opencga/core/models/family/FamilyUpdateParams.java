@@ -37,6 +37,7 @@ public class FamilyUpdateParams {
     private List<Disorder> disorders;
     private List<String> members;
     private Integer expectedSize;
+    private FamilyQualityControl qualityControl;
     private CustomStatusParams status;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
@@ -45,8 +46,8 @@ public class FamilyUpdateParams {
     }
 
     public FamilyUpdateParams(String id, String name, String description, List<Phenotype> phenotypes, List<Disorder> disorders,
-                              List<String> members, Integer expectedSize, CustomStatusParams status, List<AnnotationSet> annotationSets,
-                              Map<String, Object> attributes) {
+                              List<String> members, Integer expectedSize, CustomStatusParams status, FamilyQualityControl qualityControl,
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -55,6 +56,7 @@ public class FamilyUpdateParams {
         this.members = members;
         this.expectedSize = expectedSize;
         this.status = status;
+        this.qualityControl = qualityControl;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
@@ -86,6 +88,7 @@ public class FamilyUpdateParams {
         sb.append(", members=").append(members);
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", status=").append(status);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -161,6 +164,15 @@ public class FamilyUpdateParams {
 
     public FamilyUpdateParams setStatus(CustomStatusParams status) {
         this.status = status;
+        return this;
+    }
+
+    public FamilyQualityControl getQualityControl() {
+        return qualityControl;
+    }
+
+    public FamilyUpdateParams setQualityControl(FamilyQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 

@@ -1777,11 +1777,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                             addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         }
                         break;
+                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
                                 Status.getPositiveStatus(Status.STATUS_LIST, queryCopy.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(StudyDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy,
+                                StudyDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
+                        break;
+                    case STATUS:
+                    case STATUS_NAME:
+                        addAutoOrQuery(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), queryParam.key(), queryCopy,
+                                StudyDBAdaptor.QueryParams.STATUS_NAME.type(), andBsonList);
                         break;
                     case FQN:
                     case UUID:

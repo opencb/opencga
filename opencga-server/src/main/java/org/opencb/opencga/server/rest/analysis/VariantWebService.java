@@ -17,21 +17,27 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
+import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
 import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -48,20 +54,24 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
+import org.opencb.opencga.core.models.alignment.FastQcWrapperParams;
+import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
@@ -82,6 +92,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
+import static org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis.INDEX_STATS_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -620,8 +631,8 @@ public class VariantWebService extends AnalysisWebService {
     })
     public Response sampleAggregationStats(@ApiParam(value =
             "List of facet fields separated by semicolons, e.g.: studies;type."
-            + " For nested faceted fields use >>, e.g.: chromosome>>type ."
-            + " Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter") @QueryParam("fields") String fields) {
+                    + " For nested faceted fields use >>, e.g.: chromosome>>type ."
+                    + " Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter") @QueryParam("fields") String fields) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -906,6 +917,7 @@ public class VariantWebService extends AnalysisWebService {
     public Response mutationalSignatureQuery(
             @ApiParam(value = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour",
                     defaultValue = "false") @QueryParam("fitting") boolean fitting) {
+        File outDir = null;
         try {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
@@ -915,14 +927,13 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             // Create temporal directory
-            File outDir = Paths.get("/tmp/mutational-signature-" + System.nanoTime()).toFile();
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + System.nanoTime()).toFile();
             outDir.mkdir();
             if (!outDir.exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for mutational-signature/query analysis"));
             }
-            System.out.println(">>> outDir = " + outDir);
 
-            MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor();
+            MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor(variantManager);
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);
@@ -936,13 +947,20 @@ public class VariantWebService extends AnalysisWebService {
             watch.stop();
             OpenCGAResult<MutationalSignature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                     Collections.singletonList(signatureResult), 1);
-
-            // Delete temporal directory
-            FileUtils.deleteDirectory(outDir);
-
             return createOkResponse(result);
         } catch (CatalogException | ToolException | IOException | StorageEngineException e) {
             return createErrorResponse(e);
+        } finally {
+            if (outDir != null) {
+                // Delete temporal directory
+                try {
+                    if (outDir.exists()) {
+                        FileUtils.deleteDirectory(outDir);
+                    }
+                } catch (IOException e) {
+                    logger.warn("Error cleaning scratch directory " + outDir, e);
+                }
+            }
         }
     }
 
@@ -986,16 +1004,266 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/geneticChecks/run")
-    @ApiOperation(value = GeneticChecksAnalysis.DESCRIPTION, response = Job.class)
-    public Response geneticChecksRun(
+    @Path("/family/qc/run")
+    @ApiOperation(value = FamilyQcAnalysis.DESCRIPTION, response = Job.class)
+    public Response familyQcRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = GeneticChecksAnalysisParams.DESCRIPTION, required = true) GeneticChecksAnalysisParams params) {
-        return submitJob(GeneticChecksAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+            @ApiParam(value = FamilyQcAnalysisParams.DESCRIPTION, required = true) FamilyQcAnalysisParams params) {
+        return submitJob(FamilyQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/individual/qc/run")
+    @ApiOperation(value = IndividualQcAnalysis.DESCRIPTION, response = Job.class)
+    public Response individualQcRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = IndividualQcAnalysisParams.DESCRIPTION, required = true) IndividualQcAnalysisParams params) {
+
+        return run(() -> {
+            List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
+
+            Individual individual = IndividualQcUtils.getIndividualById(study, params.getIndividual(), catalogManager, token);
+
+            // Get samples of that individual, but only germline samples
+            List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(study, individual.getId(),
+                    catalogManager, token);
+            if (CollectionUtils.isEmpty(childGermlineSamples)) {
+                throw new ToolException("Germline sample not found for individual '" +  params.getIndividual() + "'");
+            }
+
+            Sample sample = null;
+            if (StringUtils.isNotEmpty(params.getSample())) {
+                for (Sample germlineSample : childGermlineSamples) {
+                    if (params.getSample().equals(germlineSample.getId())) {
+                        sample = germlineSample;
+                        break;
+                    }
+                }
+                if (sample == null) {
+                    throw new ToolException("The provided sample '" + params.getSample() + "' not found in the individual '"
+                            + params.getIndividual() + "'");
+                }
+            } else {
+                // If multiple germline samples, we take the first one
+                sample = childGermlineSamples.get(0);
+            }
+
+            org.opencb.opencga.core.models.file.File catalogBamFile;
+            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), study, catalogManager.getFileManager(), token);
+
+            if (catalogBamFile != null) {
+                // Check if .bw (coverage file) exists
+                OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
+
+                Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bw");
+                fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
+                Job deeptoolsJob = null;
+                if (fileResult.getNumResults() == 0) {
+                    // Coverage file does not exit, a job must be submitted to create the .bw file
+                    // but first, check if .bai (bam index file) exist
+
+                    query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bai");
+                    fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
+
+                    Job samtoolsJob = null;
+                    if (fileResult.getNumResults() == 0) {
+                        // BAM index file does not exit, a job must be submitted to create the .bai file
+                        SamtoolsWrapperParams samtoolsParams = new SamtoolsWrapperParams()
+                                .setCommand("index")
+                                .setInputFile(catalogBamFile.getId())
+                                .setSamtoolsParams(new HashMap<>());
+
+                        DataResult<Job> jobResult = submitJobRaw(SamtoolsWrapperAnalysis.ID, null, study, samtoolsParams, null, null, null,
+                                null);
+                        samtoolsJob = jobResult.first();
+                    }
+
+                    // Coverage file does not exit, a job must be submitted to create the .bw file
+                    DeeptoolsWrapperParams deeptoolsParams = new DeeptoolsWrapperParams()
+                            .setCommand("bamCoverage")
+                            .setBamFile(catalogBamFile.getId());
+
+                    Map<String, String> bamCoverageParams = new HashMap<>();
+                    bamCoverageParams.put("bs", "1");
+                    bamCoverageParams.put("of", "bigwig");
+                    bamCoverageParams.put("minMappingQuality", "20");
+                    deeptoolsParams.setDeeptoolsParams(bamCoverageParams);
+
+                    DataResult<Job> jobResult = submitJobRaw(DeeptoolsWrapperAnalysis.ID, null, study, deeptoolsParams, null, null,
+                            samtoolsJob == null ? null : samtoolsJob.getId(), null);
+                    deeptoolsJob = jobResult.first();
+                    dependsOnList.add(deeptoolsJob.getId());
+                }
+            }
+
+            return submitJobRaw(IndividualQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","),
+                    jobTags);
+
+        });
+    }
+
+    @POST
+    @Path("/sample/qc/run")
+    @ApiOperation(value = SampleQcAnalysis.DESCRIPTION, response = Job.class)
+    public Response sampleQcRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = SampleQcAnalysisParams.DESCRIPTION, required = true) SampleQcAnalysisParams params) {
+
+        return run(() -> {
+            final String OPENCGA_ALL = "ALL";
+
+            List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
+
+            Sample sample;
+            org.opencb.opencga.core.models.file.File catalogBamFile;
+            sample = IndividualQcUtils.getValidSampleById(study, params.getSample(), catalogManager, token);
+            if (sample == null) {
+                throw new ToolException("Sample '" + params.getSample() + "' not found.");
+            }
+            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), study, catalogManager.getFileManager(), token);
+
+            // Check variant stats
+            if (OPENCGA_ALL.equals(params.getVariantStatsId())) {
+                throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
+                        + " variant stats ID");
+            }
+
+            if (StringUtils.isEmpty(params.getVariantStatsId()) && params.getVariantStatsQuery() != null
+                    && !params.getVariantStatsQuery().toParams().isEmpty()) {
+                throw new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
+                        + " empty");
+            }
+            if (StringUtils.isNotEmpty(params.getVariantStatsId())
+                    && (params.getVariantStatsQuery() == null || params.getVariantStatsQuery().toParams().isEmpty())) {
+                throw new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
+                        + " can not be empty");
+            }
+            if (StringUtils.isEmpty(params.getVariantStatsId())) {
+                params.setVariantStatsId(OPENCGA_ALL);
+            }
+
+            boolean runVariantStats = true;
+            if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+                String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
+                for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                    if (bamId.equals(metrics.getBamFileId())) {
+                        if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && OPENCGA_ALL.equals(params.getVariantStatsId())) {
+                            runVariantStats = false;
+                        } else {
+                            for (SampleQcVariantStats variantStats : metrics.getVariantStats()) {
+                                if (variantStats.getId().equals(params.getVariantStatsId())) {
+                                    throw new ToolException("Invalid parameters: variant stats ID '"
+                                            + params.getVariantStatsId() + "' is already used");
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Check mutational signature
+            boolean runSignature = true;
+            if (!sample.isSomatic()) {
+                runSignature = false;
+            } else {
+                if (OPENCGA_ALL.equals(params.getSignatureId())) {
+                    throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
+                            + " signature ID");
+                }
+
+                if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery() != null
+                        && !params.getSignatureQuery().toParams().isEmpty()) {
+                    throw new ToolException("Invalid parameters: if signature ID is empty, signature query must be null");
+                }
+                if (StringUtils.isNotEmpty(params.getSignatureId())
+                        && (params.getSignatureQuery() == null || params.getSignatureQuery().toParams().isEmpty())) {
+                    throw new ToolException("Invalid parameters: if you provide a signature ID, signature query"
+                            + " can not be null");
+                }
+
+                if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+                    String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
+                    for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                        if (bamId.equals(metrics.getBamFileId())) {
+                            if (CollectionUtils.isNotEmpty(metrics.getSignatures())) {
+                                runSignature = false;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            boolean runFastQc = false;
+            if (catalogBamFile != null) {
+                if (sample.getQualityControl() == null || CollectionUtils.isEmpty(sample.getQualityControl().getMetrics())) {
+                    runFastQc = true;
+                } else {
+                    runFastQc = true;
+                    for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                        if (catalogBamFile.getId().equals(metrics.getBamFileId()) && metrics.getFastQc() != null) {
+                            runFastQc = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Run variant stats if necessary
+            if (runVariantStats) {
+                SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
+                        Collections.singletonList(params.getSample()),
+                        null,
+                        false,
+                        null,
+                        params.getVariantStatsQuery(),
+                        params.getOutdir()
+                );
+
+                DataResult<Job> jobResult = submitJobRaw(SampleVariantStatsAnalysis.ID, null, study,
+                        sampleVariantStatsParams, null, null, null, null);
+                Job sampleStatsJob = jobResult.first();
+                dependsOnList.add(sampleStatsJob.getId());
+            }
+
+            // Run signature if necessary
+            if (runSignature) {
+                MutationalSignatureAnalysisParams mutationalSignatureParams =
+                        new MutationalSignatureAnalysisParams(params.getSample(), params.getOutdir());
+                DataResult<Job> jobResult = submitJobRaw(MutationalSignatureAnalysis.ID, null, study, mutationalSignatureParams,
+                        null, null, null, null);
+                Job signatureJob = jobResult.first();
+                dependsOnList.add(signatureJob.getId());
+            }
+
+            // Run FastQC, if bam file exists
+            if (runFastQc) {
+                Map<String, String> dynamicParams = new HashMap<>();
+                dynamicParams.put("extract", "true");
+                FastQcWrapperParams fastQcParams = new FastQcWrapperParams(catalogBamFile.getId(), null, dynamicParams);
+                logger.info("fastQcParams = " + fastQcParams);
+
+                DataResult<Job> jobResult = submitJobRaw(FastqcWrapperAnalysis.ID, null, study, fastQcParams,
+                        null, null, null, null);
+                Job fastqcJob = jobResult.first();
+                dependsOnList.add(fastqcJob.getId());
+            }
+
+            return submitJobRaw(SampleQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);
+        });
     }
 
     @POST
@@ -1050,62 +1318,39 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(KnockoutAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
-    @GET
-    @Path("/circos")
-    @ApiOperation(value = CircosAnalysis.DESCRIPTION + " Use context index.", response = String.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query")
-    })
+    @POST
+    @Path("/circos/run")
+    @ApiOperation(value = CircosAnalysis.DESCRIPTION, response = String.class)
     public Response circos(
-            @ApiParam(value = "Plot copy-number track", defaultValue = "true") @QueryParam("plotCopyNumber") boolean plotCopyNumber,
-            @ApiParam(value = "Plot INDELs track", defaultValue = "true") @QueryParam("plotIndels") boolean plotIndels,
-            @ApiParam(value = "Plot rearrangements track", defaultValue = "true") @QueryParam("plotRearrangements") boolean plotRearrangements,
-            @ApiParam(value = "Density plot: LOW, MEDIUM or HIGH", defaultValue = "LOW") @QueryParam("density") String strDensity) {
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = CircosAnalysisParams.DESCRIPTION, required = true) CircosAnalysisParams params) {
+        File outDir = null;
         try {
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            Query query = getVariantQuery(queryOptions);
-
-            if (!query.containsKey(SAMPLE.key())) {
-                return createErrorResponse(new Exception("Missing sample name"));
-            }
-            CircosAnalysis.Density density;
-            try {
-                density = CircosAnalysis.Density.valueOf(strDensity);
-            } catch (Exception e) {
-                return createErrorResponse(new Exception("Invalid density value: '" + strDensity + "'. Valid values:  LOW, MEDIUM or HIGH"));
+            if (StringUtils.isEmpty(params.getTitle())) {
+                params.setTitle("UNTITLED");
             }
 
             // Create temporal directory
-            File outDir = Paths.get("/tmp/circos-" + System.nanoTime()).toFile();
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "circos-" + System.nanoTime()).toFile();
             outDir.mkdir();
             if (!outDir.exists()) {
                 return createErrorResponse(new Exception("Error creating temporal directory for Circos analysis"));
             }
-            System.out.println(">>> outDir = " + outDir);
 
-            CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor();
+            // Create and set up Circos executor
+            CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor(study, params, variantManager);
+
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);
-            executorParams.put("plotCopyNumber", plotCopyNumber);
-            executorParams.put("plotIndels", plotIndels);
-            executorParams.put("plotRearrangements", plotRearrangements);
-            executorParams.put("density", density);
             executor.setUp(null, executorParams, outDir.toPath());
-            executor.setStudy(query.getString(STUDY.key()));
-            executor.setQuery(query);
 
+            // Run Circos executor
             StopWatch watch = StopWatch.createStarted();
             executor.run();
-            File imgFile = outDir.toPath().resolve(query.getString(SAMPLE.key()) + CircosAnalysis.SUFFIX_FILENAME).toFile();
+
+            // Check results by reading the output file
+            File imgFile = outDir.toPath().resolve(params.getTitle() + CircosAnalysis.SUFFIX_FILENAME).toFile();
             if (imgFile.exists()) {
                 FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
                 byte[] bytes = new byte[(int) imgFile.length()];
@@ -1117,20 +1362,24 @@ public class VariantWebService extends AnalysisWebService {
                 OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
                         Collections.singletonList(img), 1);
 
-                // Delete temporal directory
-                FileUtils.deleteDirectory(outDir);
-
+                //System.out.println(result.toString());
                 return createOkResponse(result);
             } else {
-                // Delete temporal directory
-                FileUtils.deleteDirectory(outDir);
-
                 return createErrorResponse(new Exception("Error plotting Circos graph"));
             }
-
-
         } catch (ToolException | IOException e) {
             return createErrorResponse(e);
+        } finally {
+            if (outDir != null) {
+                // Delete temporal directory
+                try {
+                    if (outDir.exists()) {
+                        FileUtils.deleteDirectory(outDir);
+                    }
+                } catch (IOException e) {
+                    logger.warn("Error cleaning scratch directory " + outDir, e);
+                }
+            }
         }
     }
 

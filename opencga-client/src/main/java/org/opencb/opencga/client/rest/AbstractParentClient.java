@@ -197,6 +197,10 @@ public abstract class AbstractParentClient {
             skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
             limit = params.getInt(QueryOptions.LIMIT, defaultLimit);
             batchSize = this.batchSize;
+
+            if (limit == 0) {
+                limit = defaultLimit;
+            }
         } else {
             // Ignore input SKIP and LIMIT from Params
             skip = 0;
@@ -229,6 +233,8 @@ public abstract class AbstractParentClient {
             if (CollectionUtils.isNotEmpty(id1)) {
                 // Select batch of IDs
                 path = path.path(String.join(",", id1.subList(skip, skip + batchLimit)));
+                // FIXME: This should not be needed!
+                params.put(QueryOptions.LIMIT, batchLimit);
             } else {
                 // Select batch with skip/limit
                 params.put(QueryOptions.SKIP, skip);

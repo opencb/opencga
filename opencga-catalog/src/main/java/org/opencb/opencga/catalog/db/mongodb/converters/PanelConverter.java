@@ -16,18 +16,20 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.apache.avro.generic.GenericRecord;
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.panel.Panel;
 
 /**
  * Created by pfurio on 01/06/16.
  */
-public class PanelConverter extends GenericDocumentComplexConverter<Panel> {
+public class PanelConverter extends OpenCgaMongoConverter<Panel> {
 
     public PanelConverter() {
         super(Panel.class, JacksonUtils.getDefaultObjectMapper());
+        getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
     }
 
     @Override

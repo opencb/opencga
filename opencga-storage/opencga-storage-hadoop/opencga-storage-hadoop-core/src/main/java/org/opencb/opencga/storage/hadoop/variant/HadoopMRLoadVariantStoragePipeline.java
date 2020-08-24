@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -110,7 +111,7 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
         logger.info("Loading file {} into archive table '{}'", fileId, getArchiveTable());
         logger.debug(executable + " " + args);
         logger.info("------------------------------------------------------");
-        int exitValue = mrExecutor.run(executable, args);
+        int exitValue = mrExecutor.run(executable, Commandline.translateCommandline(args));
         logger.info("------------------------------------------------------");
         logger.info("Exit value: {}", exitValue);
         logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);

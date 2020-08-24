@@ -46,6 +46,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
@@ -53,7 +54,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
@@ -131,7 +132,7 @@ public class OpenCGAWSServer {
     protected static VariantStorageManager variantManager;
 
     private static final int DEFAULT_LIMIT = AbstractManager.DEFAULT_LIMIT;
-    private static final int MAX_LIMIT = 5000;
+    private static final int MAX_LIMIT = AbstractManager.MAX_LIMIT;
     private static final int MAX_ID_SIZE = 100;
 
     private static String errorMessage;
@@ -346,9 +347,6 @@ public class OpenCGAWSServer {
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", multivaluedMap.get("metadata") == null || multivaluedMap.get("metadata").get(0).equals("true"));
 
-        // By default, we will avoid counting the number of documents unless explicitly specified.
-        queryOptions.put(QueryOptions.SKIP_COUNT, true);
-
         // Add all the others QueryParams from the URL
         for (Map.Entry<String, List<String>> entry : multivaluedMap.entrySet()) {
             String value = entry.getValue().get(0);
@@ -371,9 +369,6 @@ public class OpenCGAWSServer {
                 case QueryOptions.ORDER:
                     queryOptions.put(entry.getKey(), value);
                     break;
-                case QueryOptions.SKIP_COUNT:
-                    queryOptions.put(QueryOptions.SKIP_COUNT, Boolean.parseBoolean(value));
-                    break;
                 case Constants.INCREMENT_VERSION:
                     queryOptions.put(Constants.INCREMENT_VERSION, Boolean.parseBoolean(value));
                     break;
@@ -393,12 +388,14 @@ public class OpenCGAWSServer {
                 case ParamConstants.FLATTEN_ANNOTATIONS:
                     queryOptions.put(ParamConstants.FLATTEN_ANNOTATIONS, Boolean.parseBoolean(value));
                     break;
+                case ParamConstants.FAMILY_UPDATE_ROLES_PARAM:
+                    queryOptions.put(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, Boolean.parseBoolean(value));
+                    break;
                 case ParamConstants.OTHER_STUDIES_FLAG:
                     queryOptions.put(ParamConstants.OTHER_STUDIES_FLAG, Boolean.parseBoolean(value));
                     break;
-                case "includeIndividual": // SampleWS
-                    lazy = !Boolean.parseBoolean(value);
-                    queryOptions.put("lazy", lazy);
+                case ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM: // SampleWS
+                    queryOptions.put(ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM, Boolean.parseBoolean(value));
                     break;
                 case "lazy":
                     lazy = Boolean.parseBoolean(value);
@@ -730,17 +727,21 @@ public class OpenCGAWSServer {
 
     public Response submitJob(String toolId, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
                               String jobDependsOnStr, String jobTagsStr) {
-        return run(() -> {
-            Map<String, Object> paramsMap = bodyParams.toParams();
-            if (StringUtils.isNotEmpty(study)) {
-                paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
-            }
-            return submitJobRaw(toolId, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
-        });
+        return run(() -> submitJobRaw(toolId, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr));
     }
 
-    private DataResult<?> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap,
-                                       String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, ToolParams bodyParams,
+                                         String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+            throws CatalogException {
+        Map<String, Object> paramsMap = bodyParams.toParams();
+        if (StringUtils.isNotEmpty(study)) {
+            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+        }
+        return submitJobRaw(toolId, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+    }
+
+    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap,
+                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
             throws CatalogException {
 
         if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {

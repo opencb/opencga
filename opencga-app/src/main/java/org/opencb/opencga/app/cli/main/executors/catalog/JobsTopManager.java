@@ -1,11 +1,12 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import com.google.common.base.Stopwatch;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.io.Table;
 import org.opencb.opencga.app.cli.main.io.Table.TableColumnSchema;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -39,6 +40,7 @@ public class JobsTopManager {
     private final int iterations;
     private final int jobsLimit;
     private final long delay;
+    private final boolean plain;
 
     // FIXME: Use an intermediate buffer to prepare the table, and print in one system call to avoid flashes
     private final ByteArrayOutputStream buffer;
@@ -57,14 +59,17 @@ public class JobsTopManager {
         END
     }
 
-    public JobsTopManager(OpenCGAClient openCGAClient, Query query, Integer iterations, Integer jobsLimit, long delay) {
+    public JobsTopManager(OpenCGAClient openCGAClient, Query query, Integer iterations, Integer jobsLimit, long delay, boolean plain) {
         this(openCGAClient, query, Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END), iterations,
-                jobsLimit, delay);
+                jobsLimit, delay, plain);
     }
 
-    public JobsTopManager(OpenCGAClient openCGAClient, Query query, List<Columns> columns, Integer iterations, Integer jobsLimit, long delay) {
+    public JobsTopManager(OpenCGAClient openCGAClient, Query query, List<Columns> columns, Integer iterations, Integer jobsLimit, long delay,
+                          boolean plain) {
         this.openCGAClient = openCGAClient;
-        this.baseQuery = new Query(query);
+        this.baseQuery = new Query(query)
+            .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
+            .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
         this.buffer = new ByteArrayOutputStream();
         this.iterations = iterations == null || iterations <= 0 ? -1 : iterations;
         if (jobsLimit == null || jobsLimit <= 0) {
@@ -79,6 +84,7 @@ public class JobsTopManager {
             this.jobsLimit = jobsLimit;
         }
         this.delay = delay < 0 ? 2 : delay;
+        this.plain = plain;
 
         List<TableColumnSchema<Job>> tableColumnList = new ArrayList<>(columns.size());
         for (Columns column : columns) {
@@ -193,7 +199,7 @@ public class JobsTopManager {
 
     private List<Job> processJobs(List<Job> jobs) {
         List<Job> jobList = new LinkedList<>();
-        jobs.sort(Comparator.comparing(Job::getCreationDate).thenComparing(j -> CollectionUtils.size(j.getDependsOn())));
+        jobs.sort(Comparator.comparing(j -> j.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.RUNNING) ? 0 : 1));
         jobs = trimJobs(jobs);
 
         int jobDependsMax = 5;
@@ -218,14 +224,16 @@ public class JobsTopManager {
                                 .setInternal(new JobInternal(new Enums.ExecutionStatus(entry.getKey()))));
                     }
                 }
-                for (int i = 0; i < dependsOn.size(); i++) {
-                    Job auxJob = dependsOn.get(i);
-                    if (i + 1 < dependsOn.size()) {
-                        auxJob.setId("├── " + auxJob.getId());
-                    } else {
-                        auxJob.setId("└── " + auxJob.getId());
+                if (!plain) {
+                    for (int i = 0; i < dependsOn.size(); i++) {
+                        Job auxJob = dependsOn.get(i);
+                        if (i + 1 < dependsOn.size()) {
+                            auxJob.setId("├── " + auxJob.getId());
+                        } else {
+                            auxJob.setId("└── " + auxJob.getId());
+                        }
+                        jobList.add(auxJob);
                     }
-                    jobList.add(auxJob);
                 }
             }
         }
@@ -236,28 +244,18 @@ public class JobsTopManager {
     }
 
     private List<Job> trimJobs(List<Job> jobs) {
-        int i = 0;
-        while (jobs.size() > jobsLimit) {
-            if (i > jobs.size()) {
-                jobs = jobs.subList(jobs.size() - jobsLimit, jobs.size());
-                while (jobs.size() > 0 && (jobs.get(0).getId().startsWith("├") || jobs.get(0).getId().startsWith("└"))) {
-                    jobs.remove(0);
-                }
+        if (jobs.size() <= jobsLimit) {
+            return jobs;
+        }
+        List<Job> jobList = jobs.subList(0, jobsLimit);
+        for (int i = jobList.size() - 1; i >= 0; i--) {
+            if (jobList.get(i).getId().startsWith("└") || (!jobList.get(i).getId().startsWith("├") && (jobList.get(i).getDependsOn() == null || jobList.get(i).getDependsOn().isEmpty()))) {
                 break;
             }
-            Job job = jobs.get(i);
-            if (job.getInternal() != null
-                    && job.getInternal().getStatus() != null
-                    && Enums.ExecutionStatus.RUNNING.equals(job.getInternal().getStatus().getName())) {
-                i++;
-            } else {
-                jobs.remove(i);
-                while (jobs.size() > i && (jobs.get(i).getId().startsWith("├") || jobs.get(i).getId().startsWith("└"))) {
-                    jobs.remove(i);
-                }
-            }
+            jobList.remove(i);
         }
-        return jobs;
+        return jobList;
+
     }
 
     private static Date getStart(Job job) {

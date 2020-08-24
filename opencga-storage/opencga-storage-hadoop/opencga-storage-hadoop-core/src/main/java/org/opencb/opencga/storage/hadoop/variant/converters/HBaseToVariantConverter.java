@@ -31,7 +31,6 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -83,21 +82,21 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     /**
      * Get fixed format for the VARCHAR ARRAY sample columns.
-     * @param attributes study attributes
+     * @param studyMetadata study metadata
      * @return  List of fixed formats
      */
-    public static List<String> getFixedFormat(ObjectMap attributes) {
+    public static List<String> getFixedFormat(StudyMetadata studyMetadata) {
         List<String> format;
-        List<String> extraFields = attributes.getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
+        List<String> extraFields = studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
         if (extraFields.isEmpty()) {
             extraFields = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
         }
 
-        boolean excludeGenotypes = attributes
+        boolean excludeGenotypes = studyMetadata.getAttributes()
                 .getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
 
         if (excludeGenotypes) {
-            format = extraFields;
+            format = new ArrayList<>(extraFields);
         } else {
             format = new ArrayList<>(1 + extraFields.size());
             format.add(VariantMerger.GT_KEY);

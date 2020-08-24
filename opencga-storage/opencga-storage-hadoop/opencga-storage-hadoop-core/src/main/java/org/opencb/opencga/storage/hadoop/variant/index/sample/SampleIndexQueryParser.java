@@ -4,6 +4,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -18,10 +19,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
-import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.*;
@@ -320,9 +318,9 @@ public class SampleIndexQueryParser {
             }
         } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
             onlyDeNovo = false;
-            Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_MENDELIAN_ERROR.key()));
-            mendelianErrorSet = new HashSet<>(mendelianError.getValue());
-            queryOperation = mendelianError.getKey();
+            ParsedQuery<String> mendelianError = splitValue(query, SAMPLE_MENDELIAN_ERROR);
+            mendelianErrorSet = new HashSet<>(mendelianError.getValues());
+            queryOperation = mendelianError.getOperation();
             for (String s : mendelianErrorSet) {
                 // Return any genotype
                 samplesMap.put(s, mainGenotypes);
@@ -333,9 +331,9 @@ public class SampleIndexQueryParser {
             partialIndex = true;
         } else if (isValidParam(query, SAMPLE_DE_NOVO)) {
             onlyDeNovo = true;
-            Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_DE_NOVO.key()));
-            mendelianErrorSet = new HashSet<>(mendelianError.getValue());
-            queryOperation = mendelianError.getKey();
+            ParsedQuery<String> sampleDeNovo = splitValue(query, SAMPLE_DE_NOVO);
+            mendelianErrorSet = new HashSet<>(sampleDeNovo.getValues());
+            queryOperation = sampleDeNovo.getOperation();
             for (String s : mendelianErrorSet) {
                 // Return any genotype
                 samplesMap.put(s, mainGenotypes);
@@ -548,27 +546,36 @@ public class SampleIndexQueryParser {
 
         List<Integer> sampleFilesFilter = new ArrayList<>();
         // Can only filter by file if the sample was multiFile
-        if (multiFileSample && isValidParam(query, FILE)) {
+        if (multiFileSample) {
             // Lazy get files from sample
             if (files == null) {
                 files = filesFromSample.apply(sample);
             }
-            ParsedQuery<String> filesQuery = splitValue(query, FILE);
-            for (String file : filesQuery.getValues()) {
-                int indexOf = files.indexOf(file);
-                if (indexOf >= 0) {
-                    sampleFilesFilter.add(indexOf);
-                }
+            List<String> filesFromQuery;
+            if (isValidParam(query, FILE)) {
+                ParsedQuery<String> filesQuery = splitValue(query, FILE);
+                filesFromQuery = filesQuery.getValues();
+            } else if (isValidParam(query, FILE_DATA)) {
+                ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileData = parseFileData(query);
+                filesFromQuery = fileData.getValues().stream().map(KeyValues::getKey).collect(Collectors.toList());
+            } else {
+                filesFromQuery = null;
             }
-            fileIndexMask |= VariantFileIndexConverter.FILE_IDX_MASK;
-        } else {
-            sampleFilesFilter.add(null);
+            if (filesFromQuery != null) {
+                for (String file : filesFromQuery) {
+                    int indexOf = files.indexOf(file);
+                    if (indexOf >= 0) {
+                        sampleFilesFilter.add(indexOf);
+                    }
+                }
+                fileIndexMask |= VariantFileIndexConverter.FILE_IDX_MASK;
+            }
         }
 
         boolean filterPass = false;
         boolean filterPassCovered = false;
         if (isValidParam(query, FILTER)) {
-            List<String> filterValues = splitValue(query.getString(FILTER.key())).getRight();
+            List<String> filterValues = splitValue(query, FILTER).getValues();
 
             if (filterValues.size() == 1) {
                 if (filterValues.get(0).equals(VCFConstants.PASSES_FILTERS_v4)) {
@@ -600,15 +607,14 @@ public class SampleIndexQueryParser {
         RangeQuery qualQuery = null;
         if (isValidParam(query, QUAL)) {
             String qualValue = query.getString(QUAL.key());
-            List<String> qualValues = VariantQueryUtils.splitValue(qualValue).getValue();
+            List<String> qualValues = VariantQueryUtils.splitValues(qualValue).getValues();
             if (qualValues.size() == 1) {
 
                 fileIndexMask |= VariantFileIndexConverter.QUAL_MASK;
 
-                String[] split = VariantQueryUtils.splitOperator(qualValue);
-                String op = split[1];
-                double value = Double.valueOf(split[2]);
-                qualQuery = getRangeQuery(op, value, SampleIndexConfiguration.QUAL_THRESHOLDS, 0, IndexUtils.MAX);
+                OpValue<String> opValue = parseOpValue(qualValue);
+                double value = Double.parseDouble(opValue.getValue());
+                qualQuery = getRangeQuery(opValue.getOp(), value, SampleIndexConfiguration.QUAL_THRESHOLDS, 0, IndexUtils.MAX);
 
                 if (qualQuery.isExactQuery() && !partialFilesIndex) {
                     query.remove(QUAL.key());
@@ -618,25 +624,39 @@ public class SampleIndexQueryParser {
 
         RangeQuery dpQuery = null;
         if (isValidParam(query, FILE_DATA)) {
-            Pair<QueryOperation, Map<String, String>> pair = parseInfo(query);
-            if (pair.getKey() != QueryOperation.OR) {
-                Map<String, String> infoMap = pair.getValue();
+            ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery = parseFileData(query);
+            if (parsedQuery.getOperation() != QueryOperation.OR) {
+                Map<String, KeyValues<String, KeyOpValue<String, String>>> fileDataMap =
+                        parsedQuery.getValues().stream().collect(Collectors.toMap(KeyValues::getKey, i -> i));
                 // Lazy get files from sample
                 if (files == null) {
                     files = filesFromSample.apply(sample);
                 }
                 for (String file : files) {
-                    String values = infoMap.get(file);
-
-                    if (StringUtils.isNotEmpty(values)) {
-                        for (String value : VariantQueryUtils.splitValue(values).getValue()) {
-                            String[] split = VariantQueryUtils.splitOperator(value);
-                            if (split[0].equals(VCFConstants.DEPTH_KEY)) {
-                                String op = split[1];
-                                double dpValue = Double.parseDouble(split[2]);
-                                dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
-                                fileIndexMask |= VariantFileIndexConverter.DP_MASK;
+                    KeyValues<String, KeyOpValue<String, String>> keyValues = fileDataMap.get(file);
+                    if (keyValues == null) {
+                        continue;
+                    }
+                    for (KeyOpValue<String, String> keyOpValue : keyValues.getValues()) {
+                        if (keyOpValue.getKey().equals(VCFConstants.DEPTH_KEY)) {
+                            String op = keyOpValue.getOp();
+                            double dpValue = Double.parseDouble(keyOpValue.getValue());
+                            dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
+                            fileIndexMask |= VariantFileIndexConverter.DP_MASK;
+                        } else if (keyOpValue.getKey().equals(StudyEntry.FILTER)) {
+                            if (keyOpValue.getValue().equals(VCFConstants.PASSES_FILTERS_v4)) {
+                                filterPass = true;
+                                fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
+                            } else if (keyOpValue.getValue().equals(NOT + VCFConstants.PASSES_FILTERS_v4)) {
+                                filterPass = false;
+                                fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
                             }
+                        } else if (keyOpValue.getKey().equals(StudyEntry.QUAL)) {
+                            fileIndexMask |= VariantFileIndexConverter.QUAL_MASK;
+
+                            double value = Double.parseDouble(keyOpValue.getValue());
+                            qualQuery = getRangeQuery(keyOpValue.getOp(), value,
+                                    SampleIndexConfiguration.QUAL_THRESHOLDS, 0, IndexUtils.MAX);
                         }
                     }
                 }
@@ -644,18 +664,18 @@ public class SampleIndexQueryParser {
         }
 
         if (isValidParam(query, SAMPLE_DATA)) {
-            Pair<QueryOperation, Map<String, String>> pair = parseFormat(query);
+            Pair<QueryOperation, Map<String, String>> pair = parseSampleData(query);
             QueryOperation formatOp = pair.getKey();
             Map<String, String> format = pair.getValue();
             String values = format.get(sample);
 
             if (StringUtils.isNotEmpty(values) && formatOp != QueryOperation.OR) {
-                List<String> sampleFormatFilters = splitValue(values).getValue();
+                List<String> sampleFormatFilters = splitValues(values).getValues();
                 for (String value : sampleFormatFilters) {
-                    String[] split = VariantQueryUtils.splitOperator(value);
-                    if (split[0].equals(VCFConstants.DEPTH_KEY)) {
-                        String op = split[1];
-                        double dpValue = Double.parseDouble(split[2]);
+                    KeyOpValue<String, String> keyOpValue = VariantQueryUtils.parseKeyOpValue(value);
+                    if (keyOpValue.getKey().equals(VCFConstants.DEPTH_KEY)) {
+                        String op = keyOpValue.getOp();
+                        double dpValue = Double.parseDouble(keyOpValue.getValue());
                         dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
                         fileIndexMask |= VariantFileIndexConverter.DP_MASK;
                         if (dpQuery.isExactQuery() && !partialFilesIndex) {
@@ -691,6 +711,9 @@ public class SampleIndexQueryParser {
             if (typeCodes.isEmpty()) {
                 typeCodes = Collections.singleton(0);
             }
+            if (sampleFilesFilter.isEmpty()) {
+                sampleFilesFilter = Collections.singletonList(null);
+            }
             for (Integer typeCode : typeCodes) {
                 for (Integer fileId : sampleFilesFilter) {
                     for (int q = qualMin; q < qualMax; q++) {
@@ -698,7 +721,7 @@ public class SampleIndexQueryParser {
 
                             int validFile = 0;
                             if (filterPass) {
-                                validFile = VariantFileIndexConverter.FILTER_PASS_MASK;
+                                validFile |= VariantFileIndexConverter.FILTER_PASS_MASK;
                             }
 
                             if (fileId != null) {
@@ -815,6 +838,7 @@ public class SampleIndexQueryParser {
             if (soNames.size() == 1 && soNames.get(0).equals(VariantAnnotationUtils.MISSENSE_VARIANT)) {
                 ctFilterCoveredBySummary = true;
                 annotationIndex |= MISSENSE_VARIANT_MASK;
+                query.remove(ANNOT_CONSEQUENCE_TYPE.key());
             }
 
             // Do not use ctIndex if the CT filter is covered by the summary
@@ -940,20 +964,19 @@ public class SampleIndexQueryParser {
         boolean popFreqPartial = false;
         // TODO: This will skip filters ANNOT_POPULATION_REFERENCE_FREQUENCY and ANNOT_POPULATION_MINNOR_ALLELE_FREQUENCY
         if (isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
-            String value = query.getString(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
-            Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(value);
-            popFreqOp = pair.getKey();
+            ParsedQuery<String> popFreqFilter = VariantQueryUtils.splitValue(query, VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY);
+            popFreqOp = popFreqFilter.getOperation();
 
             Set<String> studyPops = new HashSet<>();
             Set<String> popFreqLessThan001 = new HashSet<>();
-            List<String> filtersNotCoveredByPopFreqQuery = new ArrayList<>(pair.getValue().size());
+            List<String> filtersNotCoveredByPopFreqQuery = new ArrayList<>(popFreqFilter.getValues().size());
 
-            for (String popFreq : pair.getValue()) {
-                String[] keyOpValue = VariantQueryUtils.splitOperator(popFreq);
-                String studyPop = keyOpValue[0];
+            for (String popFreq : popFreqFilter) {
+                KeyOpValue<String, String> keyOpValue = VariantQueryUtils.parseKeyOpValue(popFreq);
+                String studyPop = keyOpValue.getKey();
                 studyPops.add(studyPop);
-                double freqFilter = Double.valueOf(keyOpValue[2]);
-                if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<<")) {
+                double freqFilter = Double.valueOf(keyOpValue.getValue());
+                if (keyOpValue.getOp().equals("<") || keyOpValue.getOp().equals("<<")) {
                     if (freqFilter <= POP_FREQ_THRESHOLD_001) {
                         popFreqLessThan001.add(studyPop);
                     }
@@ -965,7 +988,7 @@ public class SampleIndexQueryParser {
                 for (PopulationFrequencyRange populationRange : configuration.getPopulationRanges()) {
                     if (populationRange.getStudyAndPopulation().equals(studyPop)) {
                         populationInSampleIndex = true;
-                        RangeQuery rangeQuery = getRangeQuery(keyOpValue[1], freqFilter, populationRange.getThresholds(),
+                        RangeQuery rangeQuery = getRangeQuery(keyOpValue.getOp(), freqFilter, populationRange.getThresholds(),
                                 0, 1 + IndexUtils.DELTA);
 
                         popFreqQuery.add(new PopulationFrequencyQuery(rangeQuery,
@@ -990,7 +1013,7 @@ public class SampleIndexQueryParser {
 
                     annotationIndex |= POP_FREQ_ANY_001_MASK;
 
-                    if (POP_FREQ_ANY_001_SET.size() == pair.getValue().size()) {
+                    if (POP_FREQ_ANY_001_SET.size() == popFreqFilter.getValues().size()) {
                         // Do not filter using the PopFreq index, as the summary bit covers the filter
                         popFreqQuery.clear();
 

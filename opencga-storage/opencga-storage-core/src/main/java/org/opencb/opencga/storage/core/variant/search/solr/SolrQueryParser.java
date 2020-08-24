@@ -35,7 +35,9 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
@@ -371,13 +373,13 @@ public class SolrQueryParser {
         // clinical significance
         key = ANNOT_CLINICAL_SIGNIFICANCE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            Pair<QueryOperation, List<String>> pair = splitValue(query.getString(key));
-            List<String> clinSig = pair.getRight();
+            Values<String> values = splitValues(query.getString(key));
+            List<String> clinSig = values.getValues();
             StringBuilder sb = new StringBuilder();
             sb.append("(");
             for (int i = 0; i < clinSig.size(); i++) {
                 if (i > 0) {
-                    sb.append(QueryOperation.OR.equals(pair.getLeft()) ? " OR " : " AND ");
+                    sb.append(QueryOperation.OR.equals(values.getOperation()) ? " OR " : " AND ");
                 }
                 sb.append("clinicalSig:\"").append(ClinicalSignificance.valueOf(clinSig.get(i)).name()).append("\"");
             }
@@ -779,29 +781,29 @@ public class SolrQueryParser {
                         "Missing study parameter when filtering by 'format'");
             }
 
-            Pair<QueryOperation, Map<String, String>> parsedSampleFormats = parseFormat(query);
+            Pair<QueryOperation, Map<String, String>> parsedSampleFormats = parseSampleData(query);
             String logicOpStr = parsedSampleFormats.getKey() == QueryOperation.AND ? " AND " : " OR ";
             StringBuilder sb = new StringBuilder();
             sb.append("(");
             boolean first = true;
             for (String sampleId : parsedSampleFormats.getValue().keySet()) {
                 // Sanity check, only DP is permitted
-                Pair<QueryOperation, List<String>> formats = splitValue(parsedSampleFormats.getValue().get(sampleId));
-                if (formats.getValue().size() > 1) {
+                Values<String> formats = splitValues(parsedSampleFormats.getValue().get(sampleId));
+                if (formats.getValues().size() > 1) {
                     throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
                             "Only one format name (and it has to be 'DP') is permitted in Solr search");
                 }
                 if (!first) {
                     sb.append(logicOpStr);
                 }
-                String[] split = splitOperator(parsedSampleFormats.getValue().get(sampleId));
-                if (split[0] == null) {
+                KeyOpValue<String, String> format = parseKeyOpValue(parsedSampleFormats.getValue().get(sampleId));
+                if (format.getKey() == null) {
                     throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
                             "Invalid format value");
                 }
-                if ("DP".equals(split[0].toUpperCase())) {
+                if ("DP".equals(format.getKey().toUpperCase())) {
                     sb.append(parseNumericValue("dp" + FIELD_SEPARATOR + studies[0]
-                            + FIELD_SEPARATOR + sampleId, split[1] + split[2]));
+                            + FIELD_SEPARATOR + sampleId, format.getOp() + format.getValue()));
                     first = false;
                 } else {
                     throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),

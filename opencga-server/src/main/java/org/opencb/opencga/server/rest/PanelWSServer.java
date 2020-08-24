@@ -174,6 +174,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Panel description") @QueryParam("description") String description,
             @ApiParam(value = "Panel author") @QueryParam("author") String author,
             @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)

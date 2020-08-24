@@ -417,20 +417,21 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         if (parameters.containsKey(QueryParams.INTERNAL_EVENTS.key())) {
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
-            String operation = (String) actionMap.getOrDefault(QueryParams.INTERNAL_EVENTS.key(), ParamUtils.UpdateAction.ADD.name());
-
+            ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.INTERNAL_EVENTS.key(),
+                    ParamUtils.UpdateAction.ADD);
             String[] acceptedObjectParams = new String[]{QueryParams.INTERNAL_EVENTS.key()};
             switch (operation) {
-                case "SET":
+                case SET:
                     filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
                     break;
-                case "REMOVE":
+                case REMOVE:
                     filterObjectParams(parameters, document.getPullAll(), acceptedObjectParams);
                     break;
-                case "ADD":
-                default:
+                case ADD:
                     filterObjectParams(parameters, document.getAddToSet(), acceptedObjectParams);
                     break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
             }
         }
 
@@ -851,6 +852,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
@@ -871,7 +873,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:
-                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_DESCRIPTION:
                     case INTERNAL_STATUS_DATE:
                     case SIZE:

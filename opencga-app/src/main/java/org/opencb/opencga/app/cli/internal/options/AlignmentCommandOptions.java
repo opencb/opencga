@@ -16,15 +16,13 @@
 
 package org.opencb.opencga.app.cli.internal.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
+import com.beust.jcommander.*;
+import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
@@ -48,12 +46,22 @@ public class AlignmentCommandOptions {
     public SamtoolsCommandOptions samtoolsCommandOptions;
     public DeeptoolsCommandOptions deeptoolsCommandOptions;
     public FastqcCommandOptions fastqcCommandOptions;
+    public PicardCommandOptions picardCommandOptions;
 
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
+    public final GeneralCliOptions.JobOptions commonJobOptions;
+    public final InternalCliOptionsParser.JobOptions internalJobOptions;
+    private final Object commonJobOptionsObject;
+    private final Object internalJobOptionsObject;
     public JCommander jCommander;
 
-    public AlignmentCommandOptions(GeneralCliOptions.CommonCommandOptions analysisCommonCommandOptions, JCommander jCommander) {
+    public AlignmentCommandOptions(GeneralCliOptions.CommonCommandOptions analysisCommonCommandOptions, JCommander jCommander,
+                                   boolean withFullJobParams) {
         this.analysisCommonOptions = analysisCommonCommandOptions;
+        this.commonJobOptions = new GeneralCliOptions.JobOptions();
+        this.internalJobOptions = new InternalCliOptionsParser.JobOptions();
+        this.commonJobOptionsObject = withFullJobParams ? commonJobOptions : new Object();
+        this.internalJobOptionsObject = withFullJobParams ? new Object() : internalJobOptions;
         this.jCommander = jCommander;
 
         this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
@@ -69,6 +77,7 @@ public class AlignmentCommandOptions {
         this.samtoolsCommandOptions = new SamtoolsCommandOptions();
         this.deeptoolsCommandOptions = new DeeptoolsCommandOptions();
         this.fastqcCommandOptions = new FastqcCommandOptions();
+        this.picardCommandOptions = new PicardCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = ALIGNMENT_INDEX_DESCRIPTION)
@@ -76,6 +85,12 @@ public class AlignmentCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
@@ -92,6 +107,12 @@ public class AlignmentCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--rpc"}, description = RPC_METHOD_DESCRIPTION, arity = 1)
         public String rpc;
@@ -160,6 +181,12 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
 
@@ -173,6 +200,12 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
 
@@ -185,6 +218,12 @@ public class AlignmentCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
@@ -204,6 +243,12 @@ public class AlignmentCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
@@ -235,6 +280,12 @@ public class AlignmentCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--file1"}, description = FILE_ID_1_DESCRIPTION, required = true, arity = 1)
         public String file1;
@@ -270,6 +321,12 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
 
@@ -296,6 +353,12 @@ public class AlignmentCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
@@ -330,6 +393,12 @@ public class AlignmentCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
         public String study;
@@ -377,6 +446,12 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
@@ -385,6 +460,9 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--bam-file"}, description = "BAM file.")
         public String bamFile;
+
+        @DynamicParameter(names = {"--deeptools-params"}, description = "Deeptools parameters e.g.:. --deeptools-params bs=1 --deeptools-params of=bigwig")
+        public Map<String, String> deeptoolsParams = new HashMap<>();
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
@@ -399,11 +477,45 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
         public String study;
 
         @Parameter(names = {"--file"}, description = INPUT_FILE_DESCRIPTION)
         public String file;
+
+        @DynamicParameter(names = {"--fastqc-params"}, description = "FastQc parameters e.g.:. --fastqc-params kmers=10")
+        public Map<String, String> fastqcParams = new HashMap<>();
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    // Picard
+
+    @Parameters(commandNames = PicardWrapperAnalysis.ID, commandDescription = PicardWrapperAnalysis.DESCRIPTION)
+    public class PicardCommandOptions {
+        public static final String PICARD_RUN_COMMAND = PicardWrapperAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
+        public String study;
+
+        @Parameter(names = {"--" + PICARD_TOOL_NAME_PARAMETER}, description = PICARD_TOOL_NAME_DESCRIPTION, required = true)
+        public String command;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;

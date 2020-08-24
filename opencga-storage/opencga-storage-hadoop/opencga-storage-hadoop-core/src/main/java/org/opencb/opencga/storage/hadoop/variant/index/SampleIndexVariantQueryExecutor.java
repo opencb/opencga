@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -150,6 +151,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             // Ensure results are sorted
             QueryOptions options = new QueryOptions(inputOptions);
             options.put(QueryOptions.SORT, true);
+            options.put(QueryOptions.COUNT, false);
 
             int skip = getSkip(options);
             int limit = getLimit(options);
@@ -171,17 +173,23 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             if (result.getNumResults() < tmpLimit) {
                 // Not an approximate count!
                 result.setApproximateCount(false);
-                result.setNumTotalResults(result.getNumResults() + skip);
+                result.setNumMatches(result.getNumResults() + skip);
             } else if (asyncCount) {
                 result.setApproximateCount(false);
                 try {
-                    result.setNumTotalResults(asyncCountFuture.get());
+                    result.setNumMatches(asyncCountFuture.get());
                 } catch (InterruptedException | ExecutionException e) {
                     throw VariantQueryException.internalException(e);
                 }
             } else {
                 // Approximate count
-                setNumTotalResults(variantDBIterator, variants, result, sampleIndexQuery, query, options);
+                QueryOptions numTotalResultsOptions = new QueryOptions(options);
+                // Recover COUNT value from inputOptions
+                numTotalResultsOptions.put(QueryOptions.COUNT,
+                        inputOptions.get(QueryOptions.COUNT));
+                numTotalResultsOptions.put(VariantStorageOptions.APPROXIMATE_COUNT.key(),
+                        inputOptions.get(VariantStorageOptions.APPROXIMATE_COUNT.key()));
+                setNumTotalResults(variantDBIterator, variants, result, sampleIndexQuery, query, numTotalResultsOptions);
             }
 
             // Ensure limit

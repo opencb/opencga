@@ -22,7 +22,10 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
@@ -48,25 +51,21 @@ import java.util.stream.Collectors;
  */
 public class FileMetadataReader {
 
+    @Deprecated
     public static final String VARIANT_FILE_STATS = "variantFileStats";
     @Deprecated
     public static final String VARIANT_STATS = "variantStats";
-
     @Deprecated
     public static final String VARIANT_SOURCE = "variantSource";
+
     public static final String VARIANT_FILE_METADATA = "variantFileMetadata";
-    public static final String VARIANT_FILE_METADATA_VARIABLE_SET = "opencga_variant_file_metadata";
-    private static final QueryOptions STUDY_QUERY_OPTIONS =
-            new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias"));
+    public static final String FILE_VARIANT_STATS_VARIABLE_SET = "opencga_file_variant_stats";
+
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(FileMetadataReader.class);
-    public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
-    private final FileUtils catalogFileUtils;
-
 
     public FileMetadataReader(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        catalogFileUtils = new FileUtils(catalogManager);
     }
 
     public void addMetadataInformation(String studyId, File file) throws CatalogException {
@@ -86,11 +85,24 @@ public class FileMetadataReader {
             ObjectMap updateMap = updateParams.getUpdateMap();
 
             if (!updateMap.isEmpty()) {
-                if (updateParams.getSamples() != null) {
-                    // TODO: Check and create missing samples
+                if (updateParams.getSamples() != null && !updateParams.getSamples().isEmpty()) {
+                    // Check and create missing samples
+                    List<String> missingSamples = new LinkedList<>(updateParams.getSamples());
+                    for (Sample sample : catalogManager.getSampleManager().search(studyId,
+                            new Query(SampleDBAdaptor.QueryParams.ID.key(), updateParams.getSamples()), new QueryOptions(), token)
+                            .getResults()) {
+                        missingSamples.remove(sample.getId());
+                    }
+                    if (!missingSamples.isEmpty()) {
+                        for (String missingSample : missingSamples) {
+                            catalogManager.getSampleManager().create(studyId, new Sample().setId(missingSample), new QueryOptions(), token);
+                        }
+                    }
                 }
 
-                catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams, QueryOptions.empty(), token);
+                catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams,
+                        new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "SET")),
+                        token);
                 return catalogManager.getFileManager().get(studyId, file.getUuid(), QueryOptions.empty(), token).first();
             }
         } catch (JsonProcessingException e) {
@@ -149,7 +161,11 @@ public class FileMetadataReader {
                     try {
                         Map<String, Object> fileMetadataMap = JacksonUtils.getDefaultObjectMapper()
                                 .readValue(JacksonUtils.getDefaultObjectMapper().writeValueAsString(fileMetadata), Map.class);
-                        updateParams.setAttributes(file.getAttributes());
+                        if (file.getAttributes() == null) {
+                            updateParams.setAttributes(new HashMap<>());
+                        } else {
+                            updateParams.setAttributes(new HashMap<>(file.getAttributes()));
+                        }
                         updateParams.getAttributes().put(VARIANT_FILE_METADATA, fileMetadataMap);
                     } catch (IOException e) {
                         file.getAttributes().put(VARIANT_FILE_METADATA, fileMetadata);

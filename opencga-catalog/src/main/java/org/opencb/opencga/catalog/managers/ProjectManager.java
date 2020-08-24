@@ -369,6 +369,7 @@ public class ProjectManager extends AbstractManager {
                 .append("token", token);
 
         try {
+            fixQueryObject(query);
             // If study is provided, we need to check if it will be study alias or id
             if (StringUtils.isNotEmpty(query.getString(ProjectDBAdaptor.QueryParams.STUDY.key()))) {
                 List<Study> studies = catalogManager.getStudyManager()
@@ -683,7 +684,6 @@ public class ProjectManager extends AbstractManager {
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
-        QueryOptions skipCount = new QueryOptions();
 
         // We obtain the owner of the study
         OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().get(studyStr,
@@ -712,7 +712,7 @@ public class ProjectManager extends AbstractManager {
 
                     Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "file://" + vcfFile);
                     OpenCGAResult<org.opencb.opencga.core.models.file.File> fileDataResult = catalogManager.getFileManager()
-                            .search(studyStr, query, skipCount, ownerToken);
+                            .search(studyStr, query, QueryOptions.empty(), ownerToken);
                     if (fileDataResult.getNumResults() == 0) {
                         logger.error("File " + vcfFile + " not found. Skipping...");
                         continue;
@@ -734,7 +734,7 @@ public class ProjectManager extends AbstractManager {
                                         org.opencb.opencga.core.models.file.File.Format.BIGWIG));
 
                         OpenCGAResult<org.opencb.opencga.core.models.file.File> otherFiles = catalogManager.getFileManager()
-                                .search(studyStr, query, skipCount, ownerToken);
+                                .search(studyStr, query, QueryOptions.empty(), ownerToken);
                         if (otherFiles.getNumResults() > 0) {
                             fileList.addAll(otherFiles.getResults());
                         }
@@ -742,7 +742,7 @@ public class ProjectManager extends AbstractManager {
                         // Look for the whole sample information
                         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleUids);
                         OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager()
-                                .search(studyStr, query, skipCount, ownerToken);
+                                .search(studyStr, query, QueryOptions.empty(), ownerToken);
                         if (sampleDataResult.getNumResults() == 0 || sampleDataResult.getNumResults() != sampleUids.size()) {
                             logger.error("Unexpected error when looking for whole sample information. Could only find {} results. "
                                     + "Samples ids {}", sampleDataResult.getNumResults(), sampleUids);
@@ -762,7 +762,7 @@ public class ProjectManager extends AbstractManager {
                         // Look for the whole sample information
                         query = new Query(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids);
                         OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager()
-                                .search(studyStr, query, skipCount, ownerToken);
+                                .search(studyStr, query, QueryOptions.empty(), ownerToken);
 
 //                        for (Individual individual : individualDataResult.getResults()) {
 //                            OpenCGAResult<ObjectMap> annotationSetAsMap = catalogManager.getIndividualManager()
@@ -782,7 +782,7 @@ public class ProjectManager extends AbstractManager {
                                 .append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids)
                                 .append(CohortDBAdaptor.QueryParams.ID.key(), "!=ALL");
                         OpenCGAResult<Cohort> cohortDataResult = catalogManager.getCohortManager()
-                                .search(studyStr, query, skipCount, ownerToken);
+                                .search(studyStr, query, QueryOptions.empty(), ownerToken);
 
 //                        for (Cohort cohort : cohortDataResult.getResults()) {
 //                            OpenCGAResult<ObjectMap> annotationSetAsMap = catalogManager.getCohortManager()

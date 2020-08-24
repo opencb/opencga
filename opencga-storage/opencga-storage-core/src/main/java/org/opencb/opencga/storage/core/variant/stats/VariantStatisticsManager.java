@@ -279,7 +279,7 @@ public abstract class VariantStatisticsManager {
 
     protected static Aggregation getAggregation(StudyMetadata studyMetadata, ObjectMap options) {
         return AggregationUtils.valueOf(options.getString(VariantStorageOptions.STATS_AGGREGATION.key(),
-                studyMetadata.getAggregation().toString()));
+                studyMetadata.getAggregation() == null ? Aggregation.NONE.name() : studyMetadata.getAggregation().toString()));
     }
 
     protected static boolean isAggregated(StudyMetadata studyMetadata, ObjectMap options) {

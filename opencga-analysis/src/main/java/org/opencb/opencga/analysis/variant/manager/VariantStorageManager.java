@@ -39,10 +39,7 @@ import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactor
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -366,11 +363,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    public void familyIndex(String study, List<String> familiesStr, boolean skipIncompleteFamilies, ObjectMap params, String token)
+    public DataResult<List<String>> familyIndex(String study, List<String> familiesStr, boolean skipIncompleteFamilies,
+                                                ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
+        return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             List<List<String>> trios = new LinkedList<>();
-
+            List<Event> events = new LinkedList<>();
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
             if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
@@ -386,14 +384,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 }
             }
 
-            engine.familyIndex(study, trios, params);
-            return null;
+            return engine.familyIndex(study, trios, params);
         });
     }
 
-    public void familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
+    public DataResult<List<String>> familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
+        return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
 
             OpenCGAResult<Individual> individualResult = getCatalogManager().getIndividualManager()
                     .search(study,
@@ -402,8 +399,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
             List<List<String>> trios = catalogUtils.getTrios(study, engine.getMetadataManager(), individualResult.getResults(), token);
 
-            engine.familyIndex(study, trios, params);
-            return null;
+            return engine.familyIndex(study, trios, params);
         });
     }
 
@@ -702,14 +698,23 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     public Set<String> getIndexedSamples(String study, String token) throws CatalogException {
-        return catalogManager
+        OpenCGAResult<Cohort> cohortResult = catalogManager
                 .getCohortManager()
-                .get(study, StudyEntry.DEFAULT_COHORT, new QueryOptions(), token)
-                .first()
-                .getSamples()
-                .stream()
-                .map(Sample::getId)
-                .collect(Collectors.toSet());
+                .search(study, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
+                        new QueryOptions(INCLUDE, Arrays.asList(
+                                CohortDBAdaptor.QueryParams.ID.key(),
+                                CohortDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key()
+                        )), token);
+        if (cohortResult.getNumResults() == 0) {
+            return Collections.emptySet();
+        } else {
+            return cohortResult
+                    .first()
+                    .getSamples()
+                    .stream()
+                    .map(Sample::getId)
+                    .collect(Collectors.toSet());
+        }
     }
 
     public CellBaseUtils getCellBaseUtils(String study, String token) throws StorageEngineException, CatalogException {

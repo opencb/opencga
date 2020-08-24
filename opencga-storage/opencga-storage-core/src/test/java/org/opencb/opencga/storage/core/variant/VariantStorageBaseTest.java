@@ -259,7 +259,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         variantStorageEngine.getOptions().put(VariantStorageOptions.QUERY_LIMIT_MAX.key(), 10000);
         variantStorageEngine.getOptions().put(VariantStorageOptions.QUERY_SAMPLE_LIMIT_DEFAULT.key(), 10000);
         variantStorageEngine.getOptions().put(VariantStorageOptions.QUERY_SAMPLE_LIMIT_MAX.key(), 10000);
-        variantStorageEngine.getOptions().put(VariantStorageOptions.ANNOTATION_NUM_THREADS.key(), 2);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ANNOTATION_THREADS.key(), 2);
         metadataManager = variantStorageEngine.getMetadataManager();
         variantReaderUtils = variantStorageEngine.getVariantReaderUtils();
         ioConnectorProvider = variantStorageEngine.getIOManagerProvider();
@@ -279,6 +279,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, ObjectMap options)
             throws IOException, FileFormatException, StorageEngineException {
         return runETL(variantStorageManager, options, true, true, true);
+    }
+
+    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI input, String study, ObjectMap options)
+            throws IOException, FileFormatException, StorageEngineException {
+        return runETL(variantStorageManager, input, outputUri, options.append(VariantStorageOptions.STUDY.key(), study), true, true, true);
     }
 
     public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, ObjectMap options,

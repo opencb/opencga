@@ -19,12 +19,12 @@ package org.opencb.opencga.analysis.variant.manager;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.clinical.pedigree.PedigreeManager;
-import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -37,8 +37,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
@@ -59,8 +59,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,9 +104,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final QueryParam FAMILY_PROBAND =
             QueryParam.create("familyProband", FAMILY_PROBAND_DESC, QueryParam.Type.TEXT);
     public static final String FAMILY_SEGREGATION_DESCR = "Filter by segregation mode from a given family. Accepted values: "
-            + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
-            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, "
-            + "DeNovo, CompoundHeterozygous ]";
+            + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
+            + "deNovo, mendelianError, compoundHeterozygous ]";
     public static final QueryParam FAMILY_SEGREGATION =
             QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
 
@@ -432,14 +431,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
                 List<Member> children;
                 if (StringUtils.isNotEmpty(proband)) {
+                    String memberIndividualId = toIndividualId(defaultStudyStr, proband, token);
+
                     Member probandMember = pedigree.getMembers()
                             .stream()
-                            .filter(member -> member.getId().equals(proband))
+                            .filter(member -> member.getId().equals(memberIndividualId))
                             .findFirst()
                             .orElse(null);
                     if (probandMember == null) {
                         throw VariantQueryException.malformedParam(FAMILY_PROBAND, proband,
-                                "Individual '" + proband + "' " + "not found in family '" + familyId + "'.");
+                                "Individual '" + memberIndividualId + "' " + "not found in family '" + familyId + "'.");
                     }
                     children = Collections.singletonList(probandMember);
                 } else {
@@ -599,7 +600,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             for (String panelId : panels) {
                 Panel panel = getPanel(defaultStudyStr, panelId, token);
                 for (GenePanel genePanel : panel.getGenes()) {
-                    geneNames.add(genePanel.getName());
+                    String gene = genePanel.getName();
+                    if (StringUtils.isEmpty(gene)) {
+                        gene = genePanel.getId();
+                    }
+                    geneNames.add(gene);
                 }
 
                 if (CollectionUtils.isNotEmpty(panel.getRegions()) || CollectionUtils.isNotEmpty(panel.getVariants())) {
@@ -636,6 +641,25 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         logger.debug("Catalog parsed query : " + VariantQueryUtils.printQuery(query));
 
         return query;
+    }
+
+    /**
+     * Gets the individual ID given an individual or sample id.
+     * @param study             study
+     * @param individuaOrSample either an individual or sample
+     * @param token             user's token
+     * @return                  individualId
+     * @throws CatalogException on catalog exception
+     */
+    private String toIndividualId(String study, String individuaOrSample, String token) throws CatalogException {
+        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().search(study,
+                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individuaOrSample),
+                new QueryOptions(INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()),
+                token);
+        if (result.getNumResults() == 1) {
+            individuaOrSample = result.first().getId();
+        }
+        return individuaOrSample;
     }
 
     private void processSampleFilter(Query query, String defaultStudyStr, String token) throws CatalogException {
@@ -715,6 +739,17 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                             "Sample '" + sampleId + "' does not have parents defined or indexed in storage.");
                 }
 
+                if (!isValidParam(query, INCLUDE_SAMPLE)) {
+                    List<String> includeSample = new ArrayList<>(3);
+                    includeSample.add(member.getId());
+                    if (member.getFather() != null) {
+                        includeSample.add(member.getFather().getId());
+                    }
+                    if (member.getMother() != null) {
+                        includeSample.add(member.getMother().getId());
+                    }
+                    query.put(INCLUDE_SAMPLE.key(), includeSample);
+                }
 
                 if (segregationMode == SegregationMode.COMPOUND_HETEROZYGOUS) {
                     String fatherId = member.getFather() != null ? member.getFather().getId() : MISSING_SAMPLE;

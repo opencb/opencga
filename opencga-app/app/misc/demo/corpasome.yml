@@ -27,7 +27,7 @@ individuals:
         name: Developmental cataract
         source: HPO
         status: OBSERVED
-      - id: HP:00005456
+      - id: HP:0000545
         name: Myopia
         source: HPO
         status: OBSERVED
@@ -45,7 +45,7 @@ individuals:
     karyotypicSex: XX
     lifeStatus: ALIVE
     phenotypes:
-      - id: HP:00005456
+      - id: HP:0000545
         name: Myopia
         source: HPO
         status: OBSERVED
@@ -63,7 +63,7 @@ individuals:
     karyotypicSex: XY
     lifeStatus: ALIVE
     phenotypes:
-      - id: HP:00005456
+      - id: HP:0000545
         name: Myopia
         source: HPO
         status: OBSERVED
@@ -131,3 +131,9 @@ files:
   - name: quartet.variants.annotated.vcf.gz
     path: data
     #uri: http://resources.opencb.org/datasets/corpasome/data/quartet.variants.annotated.vcf.gz
+
+
+attributes:
+  aggregation: NONE
+  variant-index-run:
+    family: true

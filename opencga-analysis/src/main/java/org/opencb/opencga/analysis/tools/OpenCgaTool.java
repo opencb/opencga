@@ -20,11 +20,13 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -59,6 +61,7 @@ public abstract class OpenCgaTool {
     protected StorageConfiguration storageConfiguration;
     protected VariantStorageManager variantStorageManager;
 
+    protected String jobId;
     protected String opencgaHome;
     protected String token;
 
@@ -82,22 +85,19 @@ public abstract class OpenCgaTool {
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                                   ObjectMap params, Path outDir, String token) {
+                                   ObjectMap params, Path outDir, String jobId, String token) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
-        return setUp(opencgaHome, catalogManager, manager, params, outDir, token);
-    }
-
-    public final OpenCgaTool setUp(VariantStorageManager variantStorageManager, ObjectMap params, Path outDir, String token) {
-        return setUp(null, variantStorageManager.getCatalogManager(), variantStorageManager, params, outDir, token);
+        return setUp(opencgaHome, catalogManager, manager, params, outDir, jobId, token);
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                                   ObjectMap params, Path outDir, String token) {
+                                   ObjectMap params, Path outDir, String jobId, String token) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
+        this.jobId = jobId;
         this.token = token;
         if (params != null) {
             this.params.putAll(params);
@@ -205,13 +205,17 @@ public abstract class OpenCgaTool {
                         if (scratch.toFile().isDirectory() && scratch.toFile().canWrite()) {
                             baseScratchDir = scratch;
                         } else {
-                            String warn = "Unable to access scratch folder '" + scratch + "'";
-                            privateLogger.warn(warn);
-                            addWarning(warn);
+                            try {
+                                FileUtils.forceMkdir(scratch.toFile());
+                            } catch (IOException e) {
+                                String warn = "Unable to access scratch folder '" + scratch + "'. " + e.getMessage();
+                                privateLogger.warn(warn);
+                                addWarning(warn);
+                            }
                         }
                     } catch (InvalidPathException e) {
                         String warn = "Unable to access scratch folder '"
-                                + configuration.getAnalysis().getScratchDir() + "'";
+                                + configuration.getAnalysis().getScratchDir() + "'. " + e.getMessage();
                         privateLogger.warn(warn);
                         addWarning(warn);
                     }
@@ -381,6 +385,10 @@ public abstract class OpenCgaTool {
         erm.errorStep();
     }
 
+    protected final void addEvent(Event.Type type, String message) throws ToolException {
+        erm.addEvent(type, message);
+    }
+
     protected final void addWarning(String warning) throws ToolException {
         erm.addWarning(warning);
     }
@@ -445,7 +453,7 @@ public abstract class OpenCgaTool {
 
     private final void setUpStorageEngineExecutor(String projectId, String study) throws ToolException {
         executorParams.put("opencgaHome", opencgaHome);
-        executorParams.put("token", token);
+        executorParams.put(ParamConstants.TOKEN, token);
         try {
             DataStore dataStore;
             if (study == null) {
@@ -479,6 +487,9 @@ public abstract class OpenCgaTool {
         this.storageConfiguration = ConfigurationUtils.loadStorageConfiguration(opencgaHome);
     }
 
+    public ExecutionResultManager getErm() {
+        return erm;
+    }
 
     // TODO can this method be removed?
 //    protected final Analyst getAnalyst(String token) throws ToolException {

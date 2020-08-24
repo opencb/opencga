@@ -162,6 +162,12 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installCatalogDB(String secretKey, String password, String email, String organization) throws CatalogException {
+        installCatalogDB(secretKey, password, email, organization, true);
+    }
+
+    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean installIndexes)
+            throws CatalogException {
+
         if (existsCatalogDB()) {
             throw new CatalogException("Nothing to install. There already exists a catalog database");
         }
@@ -183,6 +189,10 @@ public class CatalogManager implements AutoCloseable {
         projectManager.create("admin", "admin", "Default project", "", "", "", null, token);
         studyManager.create("admin", "admin", "admin", "admin", "Default study", null, null, null, Collections.emptyMap(),
                 null, token);
+
+        if (installIndexes) {
+            installIndexes(token);
+        }
     }
 
     public void installIndexes(String token) throws CatalogException {

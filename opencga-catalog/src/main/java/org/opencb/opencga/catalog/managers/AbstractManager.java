@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -27,6 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
@@ -70,6 +72,7 @@ public abstract class AbstractManager {
 
     public static final int BATCH_OPERATION_SIZE = 100;
     public static final int DEFAULT_LIMIT = 10;
+    public static final int MAX_LIMIT = 5000;
 
     protected static final String INTERNAL_DELIMITER = "__";
 
@@ -95,6 +98,13 @@ public abstract class AbstractManager {
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
 
         logger = LoggerFactory.getLogger(this.getClass());
+    }
+
+    protected void fixQueryObject(Query query) {
+        if (query.containsKey(ParamConstants.INTERNAL_STATUS_PARAM)) {
+            query.put("internal.status", query.get(ParamConstants.INTERNAL_STATUS_PARAM));
+            query.remove(ParamConstants.INTERNAL_STATUS_PARAM);
+        }
     }
 
     /**

@@ -20,6 +20,7 @@ import com.mongodb.BasicDBObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.models.clinical.Comment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -41,6 +42,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.project.Project;
@@ -512,21 +514,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
         List<Study> studies = studyManager.resolveIds(Collections.singletonList("phase3"), "*");
         assertEquals(1, studies.size());
         assertEquals(study.first().getUid(), studies.get(0).getUid());
-    }
-
-    @Test
-    public void testUpdateGroupInfo() throws CatalogException {
-        StudyManager studyManager = catalogManager.getStudyManager();
-
-        studyManager.createGroup(studyFqn, "group1", null, token);
-        studyManager.createGroup(studyFqn, "group2", null, token);
-
-        Group.Sync syncFrom = new Group.Sync("auth", "aaa");
-        studyManager.syncGroupWith(studyFqn, "group2", syncFrom, token);
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("Cannot modify already existing sync information");
-        studyManager.syncGroupWith(studyFqn, "group2", syncFrom, token);
     }
 
     @Test
@@ -1204,6 +1191,38 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId3.getUid()));
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId4.getUid()));
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId5.getUid()));
+
+        options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
+                ParamUtils.UpdateAction.SET.name()));
+        result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
+                new CohortUpdateParams()
+                        .setSamples(Collections.emptyList()),
+                options, token);
+        assertEquals(1, result.getNumUpdated());
+
+        myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
+        assertEquals(0, myModifiedCohort.getSamples().size());
+
+        options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
+                ParamUtils.UpdateAction.ADD.name()));
+        result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
+                new CohortUpdateParams()
+                        .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId())),
+                options, token);
+        assertEquals(1, result.getNumUpdated());
+        myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
+        assertEquals(2, myModifiedCohort.getSamples().size());
+
+        options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
+                ParamUtils.UpdateAction.REMOVE.name()));
+        result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
+                new CohortUpdateParams()
+                        .setSamples(Arrays.asList(sampleId3.getId())),
+                options, token);
+        assertEquals(1, result.getNumUpdated());
+        myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
+        assertEquals(1, myModifiedCohort.getSamples().size());
+        assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId1.getUid()));
     }
 
     /*                    */
@@ -1315,6 +1334,27 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testUpdateIndividualQualityControl() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        DataResult<Individual> individualDataResult = individualManager.create(studyFqn, new Individual().setId("Test")
+                .setDateOfBirth("19870214"), QueryOptions.empty(), token);
+
+        IndividualQualityControl qualityControl = new IndividualQualityControl(null, null, null, Collections.emptyList(),
+                Arrays.asList(new Comment("pfurio", "type", "message", "today")));
+        DataResult<Individual> update = individualManager.update(studyFqn, individualDataResult.first().getId(),
+                new IndividualUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
+        assertEquals(1, update.getNumUpdated());
+
+        Individual individual = individualManager.get(studyFqn, individualDataResult.first().getId(), QueryOptions.empty(), token)
+                .first();
+        assertEquals(1, individual.getQualityControl().getComments().size());
+        assertEquals("pfurio", individual.getQualityControl().getComments().get(0).getAuthor());
+        assertEquals("type", individual.getQualityControl().getComments().get(0).getType());
+        assertEquals("message", individual.getQualityControl().getComments().get(0).getMessage());
+        assertEquals("today", individual.getQualityControl().getComments().get(0).getDate());
+    }
+
+        @Test
     public void testUpdateIndividualInfo() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         DataResult<Individual> individualDataResult = individualManager.create(studyFqn, new Individual().setId("Test")
@@ -1378,6 +1418,29 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         assertEquals("father", individual.getFather().getId());
         assertEquals(1, individual.getFather().getVersion());
+    }
+
+    @Test
+    public void testIndividualRelatives() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        individualManager.create(studyFqn, new Individual().setId("proband").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("brother").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("sister").setSex(IndividualProperty.Sex.FEMALE), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("father").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("mother").setSex(IndividualProperty.Sex.FEMALE), QueryOptions.empty(), token);
+
+        individualManager.update(studyFqn, "proband", new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
+        individualManager.update(studyFqn, "brother", new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
+        individualManager.update(studyFqn, "sister", new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
+
+        OpenCGAResult<Individual> relatives = catalogManager.getIndividualManager().relatives(studyFqn, "proband", 2,
+                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()), token);
+
+        assertEquals(5, relatives.getNumResults());
+        for (Individual individual : relatives.getResults()) {
+            assertEquals(individual.getId().toUpperCase(),
+                    ((ObjectMap) individual.getAttributes().get("OPENCGA_RELATIVE")).getString("RELATION"));
+        }
     }
 
     @Test

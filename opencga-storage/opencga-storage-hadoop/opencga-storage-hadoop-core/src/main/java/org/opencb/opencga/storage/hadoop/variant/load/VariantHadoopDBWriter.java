@@ -57,11 +57,11 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
     };
 
     public VariantHadoopDBWriter(String tableName, int studyId, int fileId, VariantStorageMetadataManager metadataManager,
-                                 HBaseManager hBaseManager, boolean includeReferenceVariantsData) {
+                                 HBaseManager hBaseManager, boolean includeReferenceVariantsData, boolean excludeGenotypes) {
         super(hBaseManager, tableName);
         int release = metadataManager.getProjectMetadata().getRelease();
         converter = new StudyEntrySingleFileToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyId, fileId, metadataManager, true,
-                release, includeReferenceVariantsData);
+                release, includeReferenceVariantsData, excludeGenotypes);
     }
 
     @Override

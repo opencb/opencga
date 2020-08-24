@@ -16,17 +16,19 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.apache.avro.generic.GenericRecord;
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.project.Project;
 
 /**
  * Created by pfurio on 18/01/16.
  */
-public class ProjectConverter extends GenericDocumentComplexConverter<Project> {
+public class ProjectConverter extends OpenCgaMongoConverter<Project> {
 
     public ProjectConverter() {
         super(Project.class);
+        getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
     }
 
     @Override

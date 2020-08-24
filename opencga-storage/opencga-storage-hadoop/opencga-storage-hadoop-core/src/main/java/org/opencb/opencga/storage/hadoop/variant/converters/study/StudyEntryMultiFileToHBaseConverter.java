@@ -12,8 +12,9 @@ public class StudyEntryMultiFileToHBaseConverter extends StudyEntryToHBaseConver
     private final LinkedListMultimap<Integer, Integer> sampleToFileMap;
 
     public StudyEntryMultiFileToHBaseConverter(byte[] columnFamily, int studyId, VariantStorageMetadataManager metadataManager,
-                                               boolean addSecondaryAlternates, Integer release, boolean includeReferenceVariantsData) {
-        super(columnFamily, studyId, metadataManager, addSecondaryAlternates, release, includeReferenceVariantsData);
+                                               boolean addSecondaryAlternates, Integer release, boolean includeReferenceVariantsData,
+                                               boolean excludeGenotypes) {
+        super(columnFamily, studyId, metadataManager, addSecondaryAlternates, release, excludeGenotypes, includeReferenceVariantsData);
 
 
         sampleToFileMap = LinkedListMultimap.create();

@@ -75,6 +75,10 @@ public class VariantQueryException extends IllegalArgumentException {
                 + "and \"" + queryParam2.key() + "\" (value : \"" + value2 + "\"). ");
     }
 
+    public static VariantQueryException unsupportedParamsCombination(QueryParam... queryParams) {
+        return unsupportedParamsCombination(Arrays.asList(queryParams));
+    }
+
     public static VariantQueryException unsupportedParamsCombination(Collection<QueryParam> queryParams) {
         return new VariantQueryException("Unsupported combination of params " + queryParams
                 .stream()

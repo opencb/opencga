@@ -1,0 +1,14 @@
+{{- if .Values.blobfuse.enabled -}}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-opencga-shared-blobfuse
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  volumeName: pv-opencga-shared-blobfuse
+  storageClassName: ""
+{{- end }}

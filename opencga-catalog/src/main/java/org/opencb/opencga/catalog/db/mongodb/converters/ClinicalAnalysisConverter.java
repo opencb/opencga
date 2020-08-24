@@ -16,36 +16,34 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.apache.avro.generic.GenericRecord;
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
-import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 05/06/17.
  */
-public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<ClinicalAnalysis> {
+public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAnalysis> {
 
     public ClinicalAnalysisConverter() {
         super(ClinicalAnalysis.class);
+        getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
     }
 
     @Override
     public Document convertToStorageType(ClinicalAnalysis clinicalAnalysis) {
         Document document = super.convertToStorageType(clinicalAnalysis);
-        document.put("uid", clinicalAnalysis.getUid());
-        document.put("studyUid", clinicalAnalysis.getStudyUid());
-
-        document.put("interpretation", convertInterpretation(clinicalAnalysis.getInterpretation()));
-        document.put("secondaryInterpretations", convertInterpretations(clinicalAnalysis.getSecondaryInterpretations()));
+        document.put(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), clinicalAnalysis.getUid());
+        document.put(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), clinicalAnalysis.getStudyUid());
 
         validateDocumentToUpdate(document);
 
@@ -59,93 +57,104 @@ public class ClinicalAnalysisConverter extends GenericDocumentComplexConverter<C
         validateProbandToUpdate(document);
     }
 
-    public void validateFamilyToUpdate(Document document) {
-        Document family = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
-        if (family != null) {
-            // Store the uid as a long value
-            family.put("uid", getLongValue(family, "uid"));
-            family.remove("studyUid");
-
-            // Check if family contains members
-            List<Document> members = (List<Document>) family.get(FamilyDBAdaptor.QueryParams.MEMBERS.key());
-            if (ListUtils.isNotEmpty(members)) {
-                for (Document member : members) {
-                   validateProbandToUpdate(member);
-                }
-            }
-        }
-    }
-
-    public void validateProbandToUpdate(Document document) {
-        Document member = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
-        if (member != null) {
-            member.put("uid", getLongValue(member, "uid"));
-            member.remove("studyUid");
-
-            Document father = (Document) member.get(IndividualDBAdaptor.QueryParams.FATHER.key());
-            if (father != null) {
-                father.put("uid", getLongValue(father, "uid"));
-                father.remove("studyUid");
-            }
-
-            Document mother = (Document) member.get(IndividualDBAdaptor.QueryParams.MOTHER.key());
-            if (mother != null) {
-                mother.put("uid", getLongValue(mother, "uid"));
-                mother.remove("studyUid");
-            }
-
-            List<Document> samples = (List<Document>) member.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
-            if (ListUtils.isNotEmpty(samples)) {
-                for (Document sample : samples) {
-                    sample.put("uid", getLongValue(sample, "uid"));
-                    sample.remove("studyUid");
-                }
-            }
-        }
-    }
-
     public void validateInterpretationToUpdate(Document document) {
-        Document interpretation = (Document) document.get("interpretation");
+        Document interpretation = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key());
         if (interpretation != null) {
-            document.put("interpretation", new Document("uid", interpretation.get("uid")));
+            document.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(),
+                    new Document(InterpretationDBAdaptor.QueryParams.UID.key(),
+                            getLongValue(interpretation, InterpretationDBAdaptor.QueryParams.UID.key())));
         }
     }
 
     public void validateSecondaryInterpretationsToUpdate(Document document) {
-        List<Document> interpretationList = (List) document.get("secondaryInterpretations");
+        List<Document> interpretationList = (List) document.get(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key());
         if (interpretationList != null) {
             List<Document> newInterpretationList = new ArrayList<>();
             for (int i = 0; i < interpretationList.size(); i++) {
-                newInterpretationList.add(new Document("uid", interpretationList.get(i).get("uid")));
+                newInterpretationList.add(new Document(InterpretationDBAdaptor.QueryParams.UID.key(),
+                        getLongValue(interpretationList.get(i), InterpretationDBAdaptor.QueryParams.UID.key())));
             }
 
-            document.put("secondaryInterpretations", newInterpretationList);
+            document.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), newInterpretationList);
         }
     }
 
-    public List<Document> convertInterpretations(List<Interpretation> interpretationList) {
-        if (interpretationList == null || interpretationList.isEmpty()) {
-            return Collections.emptyList();
+    public void validateSamplesToUpdate(Document document) {
+        List<Document> samples = (List) document.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+        if (samples == null) {
+            return;
         }
-        List<Document> interpretations = new ArrayList(interpretationList.size());
-        for (Interpretation interpretation : interpretationList) {
-            long interpretationId = interpretation != null ? (interpretation.getUid() == 0 ? -1L : interpretation.getUid()) : -1L;
-            if (interpretationId > 0) {
-                interpretations.add(new Document("uid", interpretationId));
+
+        // We make sure we don't store duplicates
+        Map<Long, Sample> sampleMap = new HashMap<>();
+        for (Document sample : samples) {
+            long uid = getLongValue(sample, SampleDBAdaptor.QueryParams.UID.key());
+            if (uid > 0) {
+                Sample tmpSample = new Sample()
+                        .setUid(uid)
+                        .setId(sample.getString(SampleDBAdaptor.QueryParams.ID.key()));
+                sampleMap.put(uid, tmpSample);
             }
         }
-        return interpretations;
+
+        document.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(),
+                sampleMap.entrySet().stream()
+                        .map(entry -> new Document()
+                                .append(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue().getId())
+                                .append(SampleDBAdaptor.QueryParams.UID.key(), entry.getValue().getUid()))
+                        .collect(Collectors.toList()));
     }
 
-    public Document convertInterpretation(Interpretation interpretation) {
-        if (interpretation == null) {
-            return null;
+    public void validateProbandToUpdate(Document document) {
+        Document proband = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
+        if (proband == null) {
+            return;
         }
 
-        long interpretationId = interpretation != null ? (interpretation.getUid() == 0 ? -1L : interpretation.getUid()) : -1L;
-        if (interpretationId > 0) {
-            return new Document("uid", interpretationId);
-        }
-        return null;
+        validateSamplesToUpdate(proband);
+
+        document.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), new Document()
+                .append(IndividualDBAdaptor.QueryParams.UID.key(), getLongValue(proband, IndividualDBAdaptor.QueryParams.UID.key()))
+                .append(IndividualDBAdaptor.QueryParams.ID.key(), proband.getString(IndividualDBAdaptor.QueryParams.ID.key()))
+                .append(IndividualDBAdaptor.QueryParams.VERSION.key(),
+                        proband.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()))
+                .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), proband.get(IndividualDBAdaptor.QueryParams.SAMPLES.key()))
+        );
     }
+
+    public void validateFamilyMembersToUpdate(Document document) {
+        List<Document> members = (List<Document>) document.get(FamilyDBAdaptor.QueryParams.MEMBERS.key());
+        if (members == null) {
+            return;
+        }
+
+        for (Document member : members) {
+            validateSamplesToUpdate(member);
+        }
+
+        document.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(),
+                members.stream().map(entry -> new Document()
+                        .append(IndividualDBAdaptor.QueryParams.UID.key(), getLongValue(entry, IndividualDBAdaptor.QueryParams.UID.key()))
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), entry.getString(IndividualDBAdaptor.QueryParams.ID.key()))
+                        .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), entry.get(IndividualDBAdaptor.QueryParams.SAMPLES.key()))
+                )
+                .collect(Collectors.toList()));
+    }
+
+    public void validateFamilyToUpdate(Document document) {
+        Document family = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
+        if (family == null) {
+            return;
+        }
+
+        validateFamilyMembersToUpdate(family);
+
+        document.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), new Document()
+                .append(FamilyDBAdaptor.QueryParams.UID.key(), getLongValue(family, FamilyDBAdaptor.QueryParams.UID.key()))
+                .append(FamilyDBAdaptor.QueryParams.ID.key(), family.get(FamilyDBAdaptor.QueryParams.ID.key()))
+                .append(FamilyDBAdaptor.QueryParams.VERSION.key(), family.getInteger(FamilyDBAdaptor.QueryParams.VERSION.key()))
+                .append(FamilyDBAdaptor.QueryParams.MEMBERS.key(), family.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()))
+        );
+    }
+
 }

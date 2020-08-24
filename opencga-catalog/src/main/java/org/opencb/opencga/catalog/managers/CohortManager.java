@@ -334,6 +334,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
+        super.fixQueryObject(query);
+
         if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
 
@@ -884,8 +886,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
                 // Override sample list of ids with sample list
                 parameters.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleResult.getResults());
-                options.put(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
-                        ParamUtils.UpdateAction.SET.name()));
             }
         }
 
@@ -1101,19 +1101,23 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
             List<Long> cohortUids = cohortList.stream().map(Cohort::getUid).collect(Collectors.toList());
 
+            AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(cohortUids, permissions,
+                    Enums.Resource.COHORT);
+
             OpenCGAResult<Map<String, List<String>>> queryResultList;
             switch (action) {
                 case SET:
-                    queryResultList = authorizationManager.setAcls(study.getUid(), cohortUids, members, permissions, Enums.Resource.COHORT);
+                    queryResultList = authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case ADD:
-                    queryResultList = authorizationManager.addAcls(study.getUid(), cohortUids, members, permissions, Enums.Resource.COHORT);
+                    queryResultList = authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case REMOVE:
-                    queryResultList = authorizationManager.removeAcls(cohortUids, members, permissions, Enums.Resource.COHORT);
+                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 case RESET:
-                    queryResultList = authorizationManager.removeAcls(cohortUids, members, null, Enums.Resource.COHORT);
+                    catalogAclParams.setPermissions(null);
+                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

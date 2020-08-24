@@ -5,6 +5,7 @@ import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.Genotype;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -238,11 +239,11 @@ public class VariantQueryParser {
         }
 
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
-            Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(query.getString(ANNOT_CONSEQUENCE_TYPE.key()));
-            QueryOperation op = pair.getLeft();
-            List<String> cts = pair.getRight();
-            List<String> parsedCts = parseConsequenceTypes(cts);
-            query.put(ANNOT_CONSEQUENCE_TYPE.key(), op == null ? parsedCts : String.join(op.separator(), parsedCts));
+            Values<String> values = VariantQueryUtils.splitValues(query.getString(ANNOT_CONSEQUENCE_TYPE.key()));
+            List<String> parsedCts = parseConsequenceTypes(values.getValues());
+            query.put(ANNOT_CONSEQUENCE_TYPE.key(), values.operation == null
+                    ? parsedCts
+                    : String.join(values.operation.separator(), parsedCts));
         }
     }
 
@@ -252,7 +253,7 @@ public class VariantQueryParser {
         if (isValidParam(query, SAMPLE_DATA)) {
             extractGenotypeFromFormatFilter(query);
 
-            Pair<QueryOperation, Map<String, String>> pair = parseFormat(query);
+            Pair<QueryOperation, Map<String, String>> pair = parseSampleData(query);
             formatOperator = pair.getKey();
 
             for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
@@ -264,13 +265,13 @@ public class VariantQueryParser {
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sampleName, defaultStudy.getName());
                 }
-                List<String> formats = splitValue(entry.getValue()).getValue();
+                List<String> formats = splitValues(entry.getValue()).getValues();
                 for (String format : formats) {
-                    String[] split = splitOperator(format);
-                    VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("FORMAT", split[0]);
+                    KeyOpValue<String, String> keyOpValue = parseKeyOpValue(format);
+                    VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("FORMAT", keyOpValue.getKey());
                     if (line == null) {
                         throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
-                                "FORMAT field \"" + split[0] + "\" not found. Available keys in study: "
+                                "FORMAT field \"" + keyOpValue.getKey() + "\" not found. Available keys in study: "
                                         + defaultStudy.getVariantHeaderLines("FORMAT").keySet());
                     }
                 }
@@ -278,15 +279,15 @@ public class VariantQueryParser {
         }
 
         if (isValidParam(query, FILE_DATA)) {
-            Pair<QueryOperation, Map<String, String>> pair = parseInfo(query);
-            if (isValidParam(query, FILE) && pair.getKey() != null) {
+            ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery = parseFileData(query);
+            if (isValidParam(query, FILE) && parsedQuery.getOperation() != null) {
                 QueryOperation fileOperator = checkOperator(query.getString(FILE.key()));
-                if (fileOperator != null && pair.getKey() != fileOperator) {
+                if (fileOperator != null && parsedQuery.getOperation() != fileOperator) {
                     throw VariantQueryException.mixedAndOrOperators(FILE, FILE_DATA);
                 }
             }
-            for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
-                String fileName = entry.getKey();
+            for (KeyValues<String, KeyOpValue<String, String>> fileDataFilters : parsedQuery.getValues()) {
+                String fileName = fileDataFilters.getKey();
                 if (defaultStudy == null) {
                     throw VariantQueryException.missingStudyForFile(fileName, metadataManager.getStudyNames());
                 }
@@ -294,14 +295,27 @@ public class VariantQueryParser {
                 if (fileId == null) {
                     throw VariantQueryException.fileNotFound(fileName, defaultStudy.getName());
                 }
-                List<String> infos = splitValue(entry.getValue()).getValue();
-                for (String info : infos) {
-                    String[] split = splitOperator(info);
-                    VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("INFO", split[0]);
-                    if (line == null) {
-                        throw VariantQueryException.malformedParam(FILE_DATA, query.getString(FILE_DATA.key()),
-                                "INFO field \"" + split[0] + "\" not found. Available keys in study: "
-                                        + defaultStudy.getVariantHeaderLines("INFO").keySet());
+                for (KeyOpValue<String, String> fileDataFilter : fileDataFilters.getValues()) {
+                    String fileDataKey = fileDataFilter.getKey();
+                    if (fileDataKey.equals(StudyEntry.FILTER)) {
+                        if (isValidParam(query, FILTER)) {
+                            throw VariantQueryException.unsupportedParamsCombination(
+                                    FILE_DATA, query.getString(FILE_DATA.key()),
+                                    FILTER, query.getString(FILTER.key()));
+                        }
+                    } else if (fileDataKey.equals(StudyEntry.QUAL)) {
+                        if (isValidParam(query, QUAL)) {
+                            throw VariantQueryException.unsupportedParamsCombination(
+                                    FILE_DATA, query.getString(FILE_DATA.key()),
+                                    QUAL, query.getString(QUAL.key()));
+                        }
+                    } else {
+                        VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("INFO", fileDataKey);
+                        if (line == null) {
+                            throw VariantQueryException.malformedParam(FILE_DATA, query.getString(FILE_DATA.key()),
+                                    "INFO field \"" + fileDataKey + "\" not found. Available keys in study: "
+                                            + defaultStudy.getVariantHeaderLines("INFO").keySet());
+                        }
                     }
                 }
             }
@@ -393,18 +407,18 @@ public class VariantQueryParser {
                         GenotypeClass.UNKNOWN_GENOTYPE);
             }
             String genotypes;
+            List<String> mainGts = GenotypeClass.MAIN_ALT.filter(loadedGenotypes);
             if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE)
                     || defaultStudy.getAttributes().getBoolean(EXCLUDE_GENOTYPES.key(), EXCLUDE_GENOTYPES.defaultValue())) {
-                genotypes = GenotypeClass.NA_GT_VALUE;
-            } else {
-                genotypes = String.join(",", GenotypeClass.MAIN_ALT.filter(loadedGenotypes));
+                mainGts.add(GenotypeClass.NA_GT_VALUE);
             }
+            genotypes = String.join(",", mainGts);
 
-            Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(query.getString(SAMPLE.key()));
-            genotypeOperator = pair.getLeft();
+            Values<String> samples = VariantQueryUtils.splitValues(query.getString(SAMPLE.key()));
+            genotypeOperator = samples.getOperation();
 
             StringBuilder sb = new StringBuilder();
-            for (String sample : pair.getValue()) {
+            for (String sample : samples) {
                 if (sb.length() > 0) {
                     sb.append(genotypeOperator.separator());
                 }
@@ -461,7 +475,9 @@ public class VariantQueryParser {
                         genotypeParam, query.getString(genotypeParam.key())
                 );
             }
-            for (String sample : query.getAsStringList(param.key())) {
+            List<String> samples = query.getAsStringList(param.key());
+            Set<String> samplesAndParents = new LinkedHashSet<>(samples);
+            for (String sample : samples) {
                 Integer sampleId = metadataManager.getSampleId(defaultStudy.getId(), sample);
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sample, defaultStudy.getName());
@@ -471,14 +487,29 @@ public class VariantQueryParser {
                     throw VariantQueryException.malformedParam(param, "Sample \"" + sampleMetadata.getName()
                             + "\" does not have the Mendelian Errors precomputed yet");
                 }
+                if (sampleMetadata.getFather() != null) {
+                    samplesAndParents.add(metadataManager.getSampleName(defaultStudy.getId(), sampleMetadata.getFather()));
+                }
+                if (sampleMetadata.getMother() != null) {
+                    samplesAndParents.add(metadataManager.getSampleName(defaultStudy.getId(), sampleMetadata.getMother()));
+                }
+            }
+            if (VariantQueryUtils.isValidParam(query, INCLUDE_SAMPLE)) {
+                List<String> includeSamples = query.getAsStringList(INCLUDE_SAMPLE.key());
+                boolean includeAll = isAllOrNull(includeSamples);
+                if (!includeAll && !includeSamples.containsAll(samplesAndParents)) {
+                    throw new VariantQueryException("Invalid list of '" + INCLUDE_SAMPLE.key() + "'. "
+                            + "It must include, at least, all parents.");
+                }
+            } else {
+                query.put(INCLUDE_SAMPLE.key(), new ArrayList<>(samplesAndParents));
             }
         }
 
         if (isValidParam(query, SCORE)) {
-            String value = query.getString(SCORE.key());
-            List<String> values = splitValue(value).getValue();
-            for (String scoreFilter : values) {
-                String variantScore = splitOperator(scoreFilter)[0];
+            Values<String> scoreValues = splitValues(query.getString(SCORE.key()));
+            for (String scoreFilter : scoreValues) {
+                String variantScore = parseKeyOpValue(scoreFilter).getKey();
                 VariantScoreMetadata variantScoreMetadata;
                 String[] studyScore = splitStudyResource(variantScore);
                 if (studyScore.length == 2) {

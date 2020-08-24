@@ -15,6 +15,7 @@ parser.add_argument("--cellbase-rest-urls", required=False, help="A CSV list of 
 parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
 parser.add_argument("--catalog-database-password", required=True)
+parser.add_argument("--catalog-database-ssl", required=False, default=True)
 parser.add_argument("--catalog-search-hosts", required=True)
 parser.add_argument("--catalog-search-user", required=False)
 parser.add_argument("--catalog-search-password", required=False)
@@ -26,6 +27,7 @@ parser.add_argument("--batch-account-key", required=False)
 parser.add_argument("--batch-endpoint", required=False)
 parser.add_argument("--batch-pool-id", required=False)
 parser.add_argument("--k8s-master-node", required=False)
+parser.add_argument("--k8s-namespace", required=False, default="default")
 parser.add_argument("--max-concurrent-jobs", required=False)
 parser.add_argument("--variant-default-engine", required=False, default="hadoop")
 parser.add_argument("--hadoop-ssh-dns", required=True)
@@ -136,7 +138,7 @@ for i, catalog_host in enumerate(catalog_hosts):
 
 config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
-config["catalog"]["database"]["options"]["sslEnabled"] = True
+config["catalog"]["database"]["options"]["sslEnabled"] = args.catalog_database_ssl
 config["catalog"]["database"]["options"]["sslInvalidCertificatesAllowed"] = True
 config["catalog"]["database"]["options"]["authenticationDatabase"] = "admin"
 
@@ -154,9 +156,9 @@ if args.catalog_search_user is not None:
     config["catalog"]["searchEngine"]["password"] = args.catalog_search_password
 
 # Inject execution settings
-config["analysis"]["scratchDir"] = "/tmp"
+config["analysis"]["scratchDir"] = "/tmp/opencga_scratch"
 if args.max_concurrent_jobs is not None:
-    config["analysis"]["index"]["variant"]["maxConcurrentJobs"] = int(args.max_concurrent_jobs)
+    config["analysis"]["execution"]["maxConcurrentJobs"]["variant-index"] = int(args.max_concurrent_jobs)
 
 if args.analysis_execution_mode is not None:
     config["analysis"]["execution"]["id"] = args.analysis_execution_mode
@@ -169,6 +171,7 @@ if args.analysis_execution_mode == "AZURE":
     config["analysis"]["execution"]["options"]["azure.batchPoolId"] = args.batch_pool_id
 elif args.analysis_execution_mode == "k8s":
     config["analysis"]["execution"]["options"]["k8s.masterUrl"] = args.k8s_master_node
+    config["analysis"]["execution"]["options"]["k8s.namespace"] = args.k8s_namespace
 
   
 

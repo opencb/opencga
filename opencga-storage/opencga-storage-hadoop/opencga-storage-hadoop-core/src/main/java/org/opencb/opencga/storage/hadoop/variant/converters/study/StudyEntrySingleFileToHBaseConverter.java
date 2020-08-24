@@ -12,8 +12,9 @@ public class StudyEntrySingleFileToHBaseConverter extends StudyEntryToHBaseConve
     private final Map<Integer, byte[]> sampleToColumn;
 
     public StudyEntrySingleFileToHBaseConverter(byte[] columnFamily, int studyId, int fileId, VariantStorageMetadataManager metadataManager,
-                                                boolean addSecondaryAlternates, Integer release, boolean includeReferenceVariantsData) {
-        super(columnFamily, studyId, metadataManager, addSecondaryAlternates, release, includeReferenceVariantsData);
+                                                boolean addSecondaryAlternates, Integer release, boolean includeReferenceVariantsData,
+                                                boolean excludeGenotypes) {
+        super(columnFamily, studyId, metadataManager, addSecondaryAlternates, release, excludeGenotypes, includeReferenceVariantsData);
         fileIdList = Collections.singletonList(fileId);
 
         sampleToColumn = new HashMap<>();

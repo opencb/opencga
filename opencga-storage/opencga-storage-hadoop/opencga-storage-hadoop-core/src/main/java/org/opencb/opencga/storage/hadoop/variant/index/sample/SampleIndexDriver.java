@@ -191,13 +191,13 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
 
-        ObjectMap attributes = studyMetadata.getAttributes();
-        hasGenotype = HBaseToVariantConverter.getFixedFormat(attributes).contains(VCFConstants.GENOTYPE_KEY);
+        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyMetadata);
+        hasGenotype = fixedFormat.contains(VCFConstants.GENOTYPE_KEY);
 
         if (hasGenotype) {
-            LOGGER.info("Study with genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study with genotypes : " + fixedFormat);
         } else {
-            LOGGER.info("Study without genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study without genotypes : " + fixedFormat);
         }
     }
 

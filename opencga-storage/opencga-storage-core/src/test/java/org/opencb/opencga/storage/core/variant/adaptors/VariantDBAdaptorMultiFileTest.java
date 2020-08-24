@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
@@ -562,7 +563,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     @Test
-    public void testGetAllVariants_Info() {
+    public void testGetAllVariants_FileData() {
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), study1)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
@@ -571,14 +572,17 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         Query query = new Query(STUDY.key(), study1)
 //                .append(INCLUDE_FILE.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz,1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz")
-                .append(FILE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10"
+                .append(FILE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:HaplotypeScore<10;FILTER=LowGQX"
                         + ",1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz:DP>100");
         queryResult = query(query, new QueryOptions());
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
                 anyOf(
                         withFileId(file12877,
-                                withAttribute("HaplotypeScore", asNumber(lt(10)))
+                                allOf(
+                                        withAttribute("HaplotypeScore", asNumber(lt(10))),
+                                        withAttribute("FILTER", containsString("LowGQX"))
+                                )
                         ),
                         withFileId(file12878,
                                 withAttribute("DP", asNumber(gt(100)))
@@ -721,15 +725,92 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testGetByFilter() {
+        testGetByFilter(s -> new Query()
+                .append(VariantQueryParam.FILTER.key(), s)
+                .append(VariantQueryParam.FILE.key(), file12877)
+                .append(VariantQueryParam.STUDY.key(), study1));
+    }
+
+    @Test
+    public void testGetByFilterInFileData() {
+        Function<String, Query> queryBuilder = s -> new Query()
+                .append(FILE_DATA.key(), file12877 + ":FILTER=" + s)
+                .append(STUDY.key(), study1);
+        testGetByFilter(queryBuilder);
+
+
+        VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), Arrays.asList(file12877, file12878))
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), study1), options);
+
+        query = queryBuilder.apply("LowGQX,LowMQ");
+        query.compute(FILE_DATA.key(), (k, v) -> v + OR + file12878 + ":FILTER=LowMQ");
+        queryResult = query(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study1,
+                anyOf(
+                        withFileId(file12877,
+                                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
+                                        containsString("LowGQX"),
+                                        containsString("LowMQ")
+                                ))),
+                        withFileId(file12878,
+                                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
+                                        containsString("LowMQ")
+                                )))
+                )
+        )));
+
+        query = queryBuilder.apply("LowGQX,LowMQ");
+        query.compute(FILE_DATA.key(), (k, v) -> v + AND + file12878 + ":FILTER=LowMQ");
+        queryResult = query(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study1,
+                allOf(
+                        withFileId(file12877,
+                                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
+                                        containsString("LowGQX"),
+                                        containsString("LowMQ")
+                                ))),
+                        withFileId(file12878,
+                                with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
+                                        containsString("LowMQ")
+                                )))
+                )
+        )));
+
+        query = queryBuilder.apply("LowGQX,LowMQ");
+        query.compute(FILE_DATA.key(), (k, v) -> v + ",DP>60" + AND + file12878 + ":FILTER=LowMQ;DP>60");
+        queryResult = query(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study1,
+                allOf(
+                        withFileId(file12877,
+                                anyOf(
+                                        with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
+                                                containsString("LowGQX"),
+                                                containsString("LowMQ")
+                                        )),
+                                        with("DP", fileEntry -> Integer.valueOf(fileEntry.getData().get("DP")), gt(60))
+                                )),
+                        withFileId(file12878,
+                                allOf(
+                                        with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), containsString("LowMQ")),
+                                        with("DP", fileEntry -> Integer.valueOf(fileEntry.getData().get("DP")), gt(60))
+                                ))
+
+                        ))));
+
+    }
+
+    public void testGetByFilter(Function<String, Query> queryBuilder) {
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877")
                 .append(VariantQueryParam.INCLUDE_FILE.key(), file12877)
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), study1), options);
 
-        query = new Query()
-                .append(VariantQueryParam.FILTER.key(), "LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00")
-                .append(VariantQueryParam.FILE.key(), file12877)
-                .append(VariantQueryParam.STUDY.key(), study1);
+        query = queryBuilder.apply("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00");
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
@@ -740,10 +821,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                         containsString("TruthSensitivityTranche99.90to100.00")
                 ))))));
 
-        query = new Query()
-                .append(VariantQueryParam.FILTER.key(), "MaxDepth")
-                .append(VariantQueryParam.FILE.key(), file12877)
-                .append(VariantQueryParam.STUDY.key(), study1);
+        query = queryBuilder.apply("MaxDepth");
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
@@ -752,10 +830,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 )))
         )));
 
-        query = new Query()
-                .append(VariantQueryParam.FILTER.key(), "LowGQX,LowMQ")
-                .append(VariantQueryParam.FILE.key(), file12877)
-                .append(VariantQueryParam.STUDY.key(), study1);
+        query = queryBuilder.apply("LowGQX,LowMQ");
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
@@ -764,19 +839,31 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                         containsString("LowMQ")
                 ))))));
 
-        query = new Query()
-                .append(VariantQueryParam.FILTER.key(), "\"LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00\"")
-                .append(VariantQueryParam.FILE.key(), file12877)
-                .append(VariantQueryParam.STUDY.key(), study1);
+        query = queryBuilder.apply("LowGQX,LowMQ");
+        if (query.containsKey(FILE_DATA.key())) {
+            query.compute(FILE_DATA.key(), (k, v) -> v + ";DP>60");
+        } else {
+            query.put(FILE_DATA.key(), file12877 + ":DP>60");
+        }
+        queryResult = query(query, options);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
+                allOf(
+                        with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), anyOf(
+                                containsString("LowGQX"),
+                                containsString("LowMQ")
+                        )),
+                        with("DP", fileEntry -> Integer.valueOf(fileEntry.getData().get("DP")), gt(60))
+                )))));
+
+
+        query = queryBuilder.apply("\"LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00\"");
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,
                 with(FILTER, fileEntry -> fileEntry.getData().get(FILTER), is("LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00"))))));
 
-        query = new Query()
-                .append(VariantQueryParam.FILTER.key(), "\"LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00\",\"LowGQX;LowQD;SiteConflict\"")
-                .append(VariantQueryParam.FILE.key(), file12877)
-                .append(VariantQueryParam.STUDY.key(), study1);
+        query = queryBuilder.apply("\"LowGQX;LowMQ;LowQD;TruthSensitivityTranche99.90to100.00\",\"LowGQX;LowQD;SiteConflict\"");
         queryResult = query(query, options);
         System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
         assertThat(queryResult, everyResult(allVariants, withStudy(study1, withFileId(file12877,

@@ -550,7 +550,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.DISORDERS.key(),
-                QueryParams.LOCATION.key(), QueryParams.STATUS.key()};
+                QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -577,25 +577,26 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             Individual individual = checkOnlyOneIndividualMatches(clientSession, query);
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            String operation = (String) actionMap.getOrDefault(QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD.name());
-
+            ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SAMPLES.key(),
+                    ParamUtils.UpdateAction.ADD);
             getSampleChanges(individual, parameters, document, operation);
 
             acceptedObjectParams = new String[]{QueryParams.SAMPLES.key()};
             switch (operation) {
-                case "SET":
+                case SET:
                     filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
                     individualConverter.validateSamplesToUpdate(document.getSet());
                     break;
-                case "REMOVE":
+                case REMOVE:
                     filterObjectParams(parameters, document.getPullAll(), acceptedObjectParams);
                     individualConverter.validateSamplesToUpdate(document.getPullAll());
                     break;
-                case "ADD":
-                default:
+                case ADD:
                     filterObjectParams(parameters, document.getAddToSet(), acceptedObjectParams);
                     individualConverter.validateSamplesToUpdate(document.getAddToSet());
                     break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
             }
         }
 
@@ -610,7 +611,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         return document;
     }
 
-    private void getSampleChanges(Individual individual, ObjectMap parameters, UpdateDocument updateDocument, String operation) {
+    private void getSampleChanges(Individual individual, ObjectMap parameters, UpdateDocument updateDocument,
+                                  ParamUtils.UpdateAction operation) {
         List<Sample> sampleList = parameters.getAsList(QueryParams.SAMPLES.key(), Sample.class);
 
         Set<Long> currentSampleUidList = new HashSet<>();
@@ -618,7 +620,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             currentSampleUidList = individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
         }
 
-        if ("SET".equals(operation) || "ADD".equals(operation)) {
+        if (operation == ParamUtils.UpdateAction.SET || operation == ParamUtils.UpdateAction.ADD) {
             // We will see which of the samples are actually new
             List<Long> samplesToAdd = new ArrayList<>();
 
@@ -632,7 +634,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 updateDocument.getAttributes().put("ADDED_SAMPLES", samplesToAdd);
             }
 
-            if ("SET".equals(operation) && individual.getSamples() != null) {
+            if (operation == ParamUtils.UpdateAction.SET && individual.getSamples() != null) {
                 // We also need to see which samples existed and are not currently in the new list provided by the user to take them out
                 Set<Long> newSampleUids = sampleList.stream().map(Sample::getUid).collect(Collectors.toSet());
 
@@ -647,7 +649,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     updateDocument.getAttributes().put("REMOVED_SAMPLES", samplesToRemove);
                 }
             }
-        } else if ("REMOVE".equals(operation)) {
+        } else if (operation == ParamUtils.UpdateAction.REMOVE) {
             // We will only store the samples to be removed that are already associated to the individual
             List<Long> samplesToRemove = new ArrayList<>();
 
@@ -1125,11 +1127,16 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
+                    case STATUS_NAME:
+                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), query, QueryParams.STATUS_NAME.type(), andBsonList);
+                        break;
+                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
-                        query.put(queryParam.key(),
-                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), query, QueryParams.STATUS_NAME.type(), andBsonList);
+                        query.put(queryParam.key(), Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), query,
+                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
                     case ID:
                     case UUID:

@@ -36,13 +36,17 @@ public class PersistentResultScanner extends AbstractClientScanner {
     }
 
     private void checkValid(Scan scan) {
-        String msg = isValid(scan);
+        String msg = getInvalidScanMessage(scan);
         if (msg != null) {
             throw new IllegalArgumentException(msg);
         }
     }
 
-    static String isValid(Scan scan) {
+    static boolean isValid(Scan scan) {
+        return getInvalidScanMessage(scan) == null;
+    }
+
+    static String getInvalidScanMessage(Scan scan) {
         if (scan == null) {
             return null;
         }

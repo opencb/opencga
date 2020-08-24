@@ -360,45 +360,45 @@ RCircos.Track.Positions.my <- function (side, track.num, track.heights = 1)
 }
 
 
-set.plot.params <- function(){
+set.plot.circosParams <- function(){
   
   # circos parameters
-  params.my <- list()
+  circosParams.my <- list()
   
-  #use these two params to adjust circle size
-  params.my$plot.radius <- 2.15
-  params.my$genomeplot.margin <- 0.25
+  #use these two circosParams to adjust circle size
+  circosParams.my$plot.radius <- 2.15
+  circosParams.my$genomeplot.margin <- 0.25
   
-  params.my$track.background <- 'white'
-  params.my$highlight.width <- 0.2
-  params.my$point.size <- 0.3
-  params.my$point.type <- 16
-  params.my$radius.len <- 3
-  params.my$chr.ideog.pos <- 3.2
-  params.my$highlight.pos <- 2.09 #3.35
-  params.my$chr.name.pos <- 2.14 #3.45
-  params.my$track.in.start <- 3.05
-  params.my$track.out.start <- 3.2
+  circosParams.my$track.background <- 'white'
+  circosParams.my$highlight.width <- 0.2
+  circosParams.my$point.size <- 0.3
+  circosParams.my$point.type <- 16
+  circosParams.my$radius.len <- 3
+  circosParams.my$chr.ideog.pos <- 3.2
+  circosParams.my$highlight.pos <- 2.09 #3.35
+  circosParams.my$chr.name.pos <- 2.14 #3.45
+  circosParams.my$track.in.start <- 3.05
+  circosParams.my$track.out.start <- 3.2
   
-  params.my$tracks.inside <- 10
-  params.my$tracks.outside <- 1
+  circosParams.my$tracks.inside <- 10
+  circosParams.my$tracks.outside <- 1
   
-  params.my$line.width <- 1
-  params.my$link.line.width <- 0.5
+  circosParams.my$line.width <- 1
+  circosParams.my$link.line.width <- 0.5
   
-  params.my$text.size <-  0.6
+  circosParams.my$text.size <-  0.6
   
-  params.my$text.color <- 'black'
+  circosParams.my$text.color <- 'black'
   
-  params.my$track.padding <- c(0.07,  0.0, 0.07, 0.0,0.07, 0)
+  circosParams.my$track.padding <- c(0.07,  0.0, 0.07, 0.0,0.07, 0)
   
-  params.my$grid.line.color <- 'lightgrey'
-  params.my$chr.text.color <- 'grey'
+  circosParams.my$grid.line.color <- 'lightgrey'
+  circosParams.my$chr.text.color <- 'grey'
   
-  params.my$track.heights <- c(0.85, 0.07, 0.07, 0.1, 0.1,  0.1)
-  params.my$track.height <- 0.1
-  params.my$sub.tracks <- 1
-  params.my$heatmap.cols <- c(alpha('lightcoral', 1),
+  circosParams.my$track.heights <- c(0.85, 0.07, 0.07, 0.1, 0.1,  0.1)
+  circosParams.my$track.height <- 0.1
+  circosParams.my$sub.tracks <- 1
+  circosParams.my$heatmap.cols <- c(alpha('lightcoral', 1),
                               alpha('lightcoral', 0.5),
                               alpha('lightgrey',0.10),
                               alpha('olivedrab2', 0.3),
@@ -407,33 +407,33 @@ set.plot.params <- function(){
                               alpha('olivedrab2', 0.75),
                               alpha('olivedrab3', 0.9),
                               alpha('olivedrab4', 0.9))
-  params.my$heatmap.ranges <- c(0,1,3,4,8,16, 32,64,1000)
+  circosParams.my$heatmap.ranges <- c(0,1,3,4,8,16, 32,64,1000)
   
   #Set copynumber (and indel) colour scheme
-  params.my$heatmap.color.gain <- c( alpha('lightgrey',0.10), alpha('olivedrab2', 0.3),  alpha('olivedrab2', 0.5), alpha('olivedrab2',.7), alpha('olivedrab2', 0.75), alpha('olivedrab3', 0.9), alpha('olivedrab4', 0.9))
-  params.my$heatmap.ranges.gain <- c(0,2,4,8,16, 32,64,1000)
+  circosParams.my$heatmap.color.gain <- c( alpha('lightgrey',0.10), alpha('olivedrab2', 0.3),  alpha('olivedrab2', 0.5), alpha('olivedrab2',.7), alpha('olivedrab2', 0.75), alpha('olivedrab3', 0.9), alpha('olivedrab4', 0.9))
+  circosParams.my$heatmap.ranges.gain <- c(0,2,4,8,16, 32,64,1000)
   
-  params.my$heatmap.ranges.loh <- c(0,1,1000)
-  params.my$heatmap.color.loh <- c(alpha('lightcoral', 1), alpha('lightgrey',0.10))
+  circosParams.my$heatmap.ranges.loh <- c(0,1,1000)
+  circosParams.my$heatmap.color.loh <- c(alpha('lightcoral', 1), alpha('lightgrey',0.10))
   
-  params.my$heatmap.key.gain.col <- alpha('olivedrab2', 0.3)
-  params.my$heatmap.key.loh.col <- alpha('lightcoral', 1)
-  params.my$heatmap.key.gain.title <- 'gain'
-  params.my$heatmap.key.loh.title <- 'LOH'
+  circosParams.my$heatmap.key.gain.col <- alpha('olivedrab2', 0.3)
+  circosParams.my$heatmap.key.loh.col <- alpha('lightcoral', 1)
+  circosParams.my$heatmap.key.gain.title <- 'gain'
+  circosParams.my$heatmap.key.loh.title <- 'LOH'
   
   #tumour majorCN
-  params.my$heatmap.data.col.gain <- 8
+  circosParams.my$heatmap.data.col.gain <- 8
   #tumour minorCN
-  params.my$heatmap.data.col.loh <- 7
+  circosParams.my$heatmap.data.col.loh <- 7
   
   #Indel colours
-  params.my$indel.mhomology <- 'firebrick4'
-  params.my$indel.repeatmediated <- 'firebrick1'
-  params.my$indel.other <- 'firebrick3'
-  params.my$indel.insertion <- 'darkgreen'
-  params.my$indel.complex <- 'grey'
+  circosParams.my$indel.mhomology <- 'firebrick4'
+  circosParams.my$indel.repeatmediated <- 'firebrick1'
+  circosParams.my$indel.other <- 'firebrick3'
+  circosParams.my$indel.insertion <- 'darkgreen'
+  circosParams.my$indel.complex <- 'grey'
 
-  return(params.my)
+  return(circosParams.my)
   
 }
 
@@ -448,7 +448,7 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   data(list=genome.ideogram, package = "RCircos");
   species.cyto <- get(genome.ideogram);
   
-  params.my <- set.plot.params()
+  circosParams.my <- set.plot.circosParams()
   
   # rearrangement links colors
   inv.col <- alpha('dodgerblue2', 1)
@@ -485,9 +485,9 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   if (!no_indels && !is.null(indels)) {
     ins <- indels[which(indels$type=='I'),]
     dels <- indels[which(indels$type=='D' | indels$type=='DI'),]
-    dels$color[dels$classification=='Microhomology-mediated'] <- params.my$indel.mhomology
-    dels$color[dels$classification=='Repeat-mediated'] <- params.my$indel.repeatmediated
-    dels$color[dels$classification=='None'] <- params.my$indel.other
+    dels$color[dels$classification=='Microhomology-mediated'] <- circosParams.my$indel.mhomology
+    dels$color[dels$classification=='Repeat-mediated'] <- circosParams.my$indel.repeatmediated
+    dels$color[dels$classification=='None'] <- circosParams.my$indel.other
   } 
   
   # copy number
@@ -522,20 +522,20 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
     stop("Invalid file type. Only png and svg are supported");
   }
   
-  RCircos.Set.Core.Components(cyto.info=species.cyto, chr.exclude=NULL,  tracks.inside=params.my$tracks.inside,
-                              tracks.outside=params.my$tracks.outside);
+  RCircos.Set.Core.Components(cyto.info=species.cyto, chr.exclude=NULL,  tracks.inside=circosParams.my$tracks.inside,
+                              tracks.outside=circosParams.my$tracks.outside);
 
   # set plot colours and parameters
-  params <- RCircos.Get.Plot.Parameters();
-  params$point.type <- params.my$point.type
-  params$point.size <- params.my$point.size
-  RCircos.Reset.Plot.Parameters(params)
+  circosParams <- RCircos.Get.Plot.Parameters();
+  circosParams$point.type <- circosParams.my$point.type
+  circosParams$point.size <- circosParams.my$point.size
+  RCircos.Reset.Plot.Parameters(circosParams)
   
   par(mar=c(0.001, 0.001, 0.001, 0.001))
-  par(mai=c(params.my$genomeplot.margin, params.my$genomeplot.margin, params.my$genomeplot.margin, params.my$genomeplot.margin))
+  par(mai=c(circosParams.my$genomeplot.margin, circosParams.my$genomeplot.margin, circosParams.my$genomeplot.margin, circosParams.my$genomeplot.margin))
   plot.new()
-  plot.window(c(-params.my$plot.radius,params.my$plot.radius), c(-params.my$plot.radius, params.my$plot.radius))
-  RCircos.Chromosome.Ideogram.Plot.my(params.my$chr.text.color, params.my$grid.line.color, params.my$text.size);
+  plot.window(c(-circosParams.my$plot.radius,circosParams.my$plot.radius), c(-circosParams.my$plot.radius, circosParams.my$plot.radius))
+  RCircos.Chromosome.Ideogram.Plot.my(circosParams.my$chr.text.color, circosParams.my$grid.line.color, circosParams.my$text.size);
   
   title(main = sampleID)
   
@@ -557,20 +557,20 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   # print(time.taken)
 
   # Insertions
-  params <- RCircos.Get.Plot.Parameters();
-  params$line.color <- 'white'
-  params$highlight.width <- 0.2
-  params$max.layers <- 5
-  params$tile.color <- 'darkgreen'
-  RCircos.Reset.Plot.Parameters(params)
+  circosParams <- RCircos.Get.Plot.Parameters();
+  circosParams$line.color <- 'white'
+  circosParams$highlight.width <- 0.2
+  circosParams$max.layers <- 5
+  circosParams$tile.color <- 'darkgreen'
+  RCircos.Reset.Plot.Parameters(circosParams)
   if (exists("ins") && nrow(ins)>0) {
     my.RCircos.Tile.Plot(tile.data=ins, track.num=5, side="in");
   }
   
   # Deletions
-  params <- RCircos.Get.Plot.Parameters();
-  params$tile.color <- 'firebrick4'
-  RCircos.Reset.Plot.Parameters(params)
+  circosParams <- RCircos.Get.Plot.Parameters();
+  circosParams$tile.color <- 'firebrick4'
+  RCircos.Reset.Plot.Parameters(circosParams)
   if (exists("dels") && nrow(dels)>0) {
     my.RCircos.Tile.Plot(tile.data=dels, track.num=6, side="in", tile.colors=dels$color);
   }
@@ -578,12 +578,12 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   
   # Copy number
   if (exists('cv.data') && (nrow(cv.data)>0)) {
-    heatmap.ranges.major <-params.my$heatmap.ranges.gain
-    heatmap.color.major <-params.my$heatmap.color.gain
+    heatmap.ranges.major <-circosParams.my$heatmap.ranges.gain
+    heatmap.color.major <-circosParams.my$heatmap.color.gain
     RCircos.Heatmap.Plot.my(heatmap.data=cv.data, data.col=5, track.num=7, side="in", heatmap.ranges=heatmap.ranges.major , heatmap.color=heatmap.color.major ); # major copy number
 
-    heatmap.ranges.minor <-params.my$heatmap.ranges.loh
-    heatmap.color.minor <-params.my$heatmap.color.loh
+    heatmap.ranges.minor <-circosParams.my$heatmap.ranges.loh
+    heatmap.color.minor <-circosParams.my$heatmap.color.loh
     RCircos.Heatmap.Plot.my(heatmap.data=cv.data, data.col=6, track.num=8, side="in", heatmap.ranges=heatmap.ranges.minor , heatmap.color=heatmap.color.minor ); # minor copy number
 
   }

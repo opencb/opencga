@@ -290,6 +290,21 @@
     "description" : "Variants count group by biotype. e.g. protein-coding, miRNA, lncRNA, ....  Each counter is increased at most one per variant. If multiple overlapping genes have the same biotypes, it will count as one.",
     "variableSet" : null,
     "attributes" : null
+  }, {
+    "id" : "clinicalSignificanceCount",
+    "name" : "clinicalSignificanceCount",
+    "category" : "",
+    "type" : "MAP_INTEGER",
+    "defaultValue" : null,
+    "required" : false,
+    "multiValue" : false,
+    "allowedValues" : null,
+    "allowedKeys" : null,
+    "rank" : 14,
+    "dependsOn" : null,
+    "description" : "Variants count group by clinical significance. e.g. benign, likely_benign, likely_pathogenic, pathogenic, uncertain_significance  ....  Each counter is increased at most one per variant. If multiple variant traits have the same clinical significance, it will count as one.",
+    "variableSet" : null,
+    "attributes" : null
   } ],
   "entities" : [ "SAMPLE" ],
   "release" : 0,

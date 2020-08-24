@@ -88,9 +88,8 @@ public final class VariantQueryParam implements QueryParam {
             + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . "
             + "3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted."
             + "Accepted segregation modes: "
-            + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
-            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, "
-            + "DeNovo, CompoundHeterozygous ]. Value is case insensitive."
+            + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
+            + "deNovo, mendelianError, compoundHeterozygous ]. Value is case insensitive."
             + " e.g. HG0097:DeNovo "
             + "Sample must have parents defined and indexed. ";
     public static final VariantQueryParam SAMPLE = new VariantQueryParam("sample", TEXT_ARRAY, SAMPLE_DESCR);
@@ -149,10 +148,10 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam FILE = new VariantQueryParam("file", TEXT_ARRAY, FILE_DESCR);
 
     public static final String FILE_DATA_DESCR
-            = "Filter by file data (i.e. INFO column from VCF file). [{file}:]{key}{op}{value}[,;]* . "
+            = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . "
             + "If no file is specified, will use all files from \"file\" filter. "
             + "e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . "
-            + "Many INFO fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10";
+            + "Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP";
     public static final VariantQueryParam FILE_DATA = new VariantQueryParam("fileData", TEXT_ARRAY, FILE_DATA_DESCR);
 
     public static final String FILTER_DESCR

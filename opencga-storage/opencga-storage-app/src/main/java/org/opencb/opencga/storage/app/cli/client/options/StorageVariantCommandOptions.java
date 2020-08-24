@@ -100,7 +100,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--deduplication-policy"}, description = "Specify how duplicated variants should be handled. Available policies: \"discard\", \"maxQual\"")
         public String deduplicationPolicy = "maxQual";
 
-        @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
+        @Parameter(names = {"--exclude-genotypes"}, description = "Do not load the genotype data for the current file. "
+                + "This only applies to the GT field from the FORMAT. All the rest of fields from the INFO and FORMAT will be loaded. "
+                + "Use this parameter to load data when the GT field is not reliable, or its only value across the file is \"./.\"")
         public boolean excludeGenotype;
 
         @Parameter(names = {"--include-sample-data"}, description = "Index including other sample data fields (i.e. FORMAT fields)."

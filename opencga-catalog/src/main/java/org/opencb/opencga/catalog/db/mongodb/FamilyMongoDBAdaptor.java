@@ -24,6 +24,8 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -398,15 +400,34 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             return;
         }
 
+        // If we update to the latest version, we will also need to fetch the disorders and phenotypes
         List<Long> individualIds = family.getMembers().stream().map(Individual::getUid).collect(Collectors.toList());
         Query individualQuery = new Query()
                 .append(IndividualDBAdaptor.QueryParams.UID.key(), individualIds);
         options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.VERSION.key()
+                IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.VERSION.key(),
+                IndividualDBAdaptor.QueryParams.DISORDERS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key()
         ));
         OpenCGAResult<Individual> individualDataResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor()
                 .get(clientSession, individualQuery, options);
         parameters.put(QueryParams.MEMBERS.key(), individualDataResult.getResults());
+
+        Map<String, Disorder> disorders = new HashMap<>();
+        Map<String, Phenotype> phenotypes = new HashMap<>();
+        for (Individual individual : individualDataResult.getResults()) {
+            if (individual.getDisorders() != null) {
+                for (Disorder disorder : individual.getDisorders()) {
+                    disorders.put(disorder.getId(), disorder);
+                }
+            }
+            if (individual.getPhenotypes() != null) {
+                for (Phenotype phenotype : individual.getPhenotypes()) {
+                    phenotypes.put(phenotype.getId(), phenotype);
+                }
+            }
+        }
+        parameters.put(QueryParams.PHENOTYPES.key(), new ArrayList<>(phenotypes.values()));
+        parameters.put(QueryParams.DISORDERS.key(), new ArrayList<>(disorders.values()));
     }
 
     private void createNewVersion(ClientSession clientSession, long studyUid, long familyUid)
@@ -434,7 +455,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.PHENOTYPES.key(), QueryParams.DISORDERS.key(),
-                QueryParams.STATUS.key()};
+                QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key(), QueryParams.ROLES.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -564,7 +585,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             Document tmpFamily = familyDbIterator.next();
 
             // Set status to DELETED
-            tmpFamily.put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
+            nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpFamily);
 
             int sampleVersion = tmpFamily.getInteger(QueryParams.VERSION.key());
 
@@ -936,11 +957,17 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
+                    case STATUS_NAME:
+                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), query, QueryParams.STATUS_NAME.type(), andBsonList);
+                        break;
+                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
                                 Status.getPositiveStatus(FamilyStatus.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), query,
+                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
                     case MEMBER_UID:
                     case UUID:

@@ -54,9 +54,13 @@ public enum VariantStorageOptions implements ConfigurationOption {
     STATS_AGGREGATION_MAPPING_FILE("stats.aggregation.mappingFile"),
 
     ANNOTATE("annotate", false), // Do annotate after step.
+    ANNOTATION_CHECKPOINT_SIZE("annotation.checkpointSize", 1000000),
     ANNOTATION_BATCH_SIZE("annotation.batchSize", 100),
     ANNOTATION_FILE_FORMAT("annotation.file.format", "json"),
-    ANNOTATION_NUM_THREADS("annotation.numThreads", 8),
+    ANNOTATION_THREADS("annotation.numThreads", 8),
+    ANNOTATION_TIMEOUT("annotation.timeout", 600000), // millis,
+    ANNOTATION_LOAD_BATCH_SIZE("annotation.load.batchSize", 100),
+    ANNOTATION_LOAD_THREADS("annotation.load.numThreads", 4),
     ANNOTATION_OVERWEITE("annotation.overwrite"),
 
     ANNOTATOR("annotator"),
@@ -84,6 +88,9 @@ public enum VariantStorageOptions implements ConfigurationOption {
     APPROXIMATE_COUNT_SAMPLING_SIZE("approximateCountSamplingSize", 1000),
     APPROXIMATE_COUNT("approximateCount", false),
 
+    // Do not store genotypes from the current file.
+    // Not stored anymore in StudyMetadata
+    EXCLUDE_GENOTYPES("exclude.genotypes", false),
 
     /////////////
     // These params are stored in {@link org.opencb.opencga.storage.core.metadata.models.StudyMetadata#getAttributes}.
@@ -93,7 +100,6 @@ public enum VariantStorageOptions implements ConfigurationOption {
     LOADED_GENOTYPES("loadedGenotypes", null), // List of loaded genotypes.
     EXTRA_FORMAT_FIELDS("include.extra-fields", ""),  //Include other sample information (like DP, GQ, ...)
     EXTRA_FORMAT_FIELDS_TYPE("include.extra-fields-format", ""),  //Other sample information format (String, Integer, Float)
-    EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
 
     RELEASE("release", 1),
 

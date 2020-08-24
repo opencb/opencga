@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors.sample;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Get;
@@ -57,7 +56,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
     @Override
     protected DataResult<Variant> getSampleData(String variantStr, String study, QueryOptions options,
                                                 List<String> includeSamples,
-                                                boolean studyWithGts, Set<String> genotypes,
+                                                Set<String> genotypes,
                                                 int sampleLimit) {
         StopWatch stopWatch = StopWatch.createStarted();
 
@@ -70,8 +69,11 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
         int studyId = metadataManager.getStudyId(study);
 
-        boolean includeAllSamples = CollectionUtils.isEmpty(includeSamples)
-                || includeSamples.size() == 1 && VariantQueryUtils.ALL.equals(includeSamples.get(0));
+        boolean includeNoneSamples = VariantQueryUtils.isNoneOrEmpty(includeSamples);
+        if (includeNoneSamples) {
+            throw new VariantQueryException("Unable to continue including none sample");
+        }
+        boolean includeAllSamples = VariantQueryUtils.isAllOrNull(includeSamples);
         Set<Integer> includeSampleIds = new HashSet<>();
         if (!includeAllSamples) {
             for (String sample : includeSamples) {
@@ -99,25 +101,23 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                         new BinaryPrefixComparator(Bytes.toBytes(buildStudyColumnsPrefix(studyId)))));
                 // Filter columns by sample sufix
                 filters.add(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
-                        new RegexStringComparator(buildStudyColumnsPrefix(studyId) + "[0-9]*" + SAMPLE_DATA_SUFIX)));
+                        new RegexStringComparator(buildStudyColumnsPrefix(studyId) + "[0-9_]*" + SAMPLE_DATA_SUFIX)));
 
-                if (studyWithGts) {
-                    LinkedList<Filter> genotypeFilters = new LinkedList<>();
-                    for (String genotype : genotypes) {
-                        byte[] gtBytes;
-                        if (genotype.equals(GenotypeClass.NA_GT_VALUE)) {
-                            gtBytes = new byte[]{0};
-                        } else {
-                            gtBytes = new byte[genotype.length() + 1];
-                            System.arraycopy(Bytes.toBytes(genotype), 0, gtBytes, 0, genotype.length());
-                        }
-                        genotypeFilters.add(new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(gtBytes)));
-                    }
-                    if (genotypeFilters.size() == 1) {
-                        filters.add(genotypeFilters.getFirst());
+                LinkedList<Filter> genotypeFilters = new LinkedList<>();
+                for (String genotype : genotypes) {
+                    byte[] gtBytes;
+                    if (genotype.equals(GenotypeClass.NA_GT_VALUE)) {
+                        gtBytes = new byte[]{0};
                     } else {
-                        filters.add(new FilterList(FilterList.Operator.MUST_PASS_ONE, genotypeFilters));
+                        gtBytes = new byte[genotype.length() + 1];
+                        System.arraycopy(Bytes.toBytes(genotype), 0, gtBytes, 0, genotype.length());
                     }
+                    genotypeFilters.add(new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(gtBytes)));
+                }
+                if (genotypeFilters.size() == 1) {
+                    filters.add(genotypeFilters.getFirst());
+                } else {
+                    filters.add(new FilterList(FilterList.Operator.MUST_PASS_ONE, genotypeFilters));
                 }
 
                 filters.add(new ColumnPaginationFilter(limit, skip));

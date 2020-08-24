@@ -16,9 +16,10 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.apache.avro.generic.GenericRecord;
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 
@@ -27,10 +28,11 @@ import java.util.*;
 /**
  * Created by pfurio on 19/01/16.
  */
-public class JobConverter extends GenericDocumentComplexConverter<Job> {
+public class JobConverter extends OpenCgaMongoConverter<Job> {
 
     public JobConverter() {
         super(Job.class);
+        getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
     }
 
     @Override
@@ -55,7 +57,8 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
         if (file instanceof File) {
             return new Document(JobDBAdaptor.QueryParams.UID.key(), ((File) file).getUid());
         } else if (file instanceof Map) {
-            return new Document(JobDBAdaptor.QueryParams.UID.key(), ((Map) file).get(JobDBAdaptor.QueryParams.UID.key()));
+            return new Document(JobDBAdaptor.QueryParams.UID.key(),
+                    Long.valueOf(String.valueOf(((Map) file).get(JobDBAdaptor.QueryParams.UID.key()))));
         } else {
             return new Document(JobDBAdaptor.QueryParams.UID.key(), -1L);
         }
@@ -88,8 +91,10 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
                     .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), ((Job) job).getStudyUid());
         } else if (job instanceof Map) {
             return new Document()
-                    .append(JobDBAdaptor.QueryParams.UID.key(), ((Map) job).get(JobDBAdaptor.QueryParams.UID.key()))
-                    .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), ((Map) job).get(JobDBAdaptor.QueryParams.STUDY_UID.key()));
+                    .append(JobDBAdaptor.QueryParams.UID.key(),
+                            Long.valueOf(String.valueOf(((Map) job).get(JobDBAdaptor.QueryParams.UID.key()))))
+                    .append(JobDBAdaptor.QueryParams.STUDY_UID.key(),
+                            Long.valueOf(String.valueOf(((Map) job).get(JobDBAdaptor.QueryParams.STUDY_UID.key()))));
         } else {
             return new Document()
                     .append(JobDBAdaptor.QueryParams.UID.key(), -1L)

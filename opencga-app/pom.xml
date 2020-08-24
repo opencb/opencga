@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.0.0-rc1</version>
+        <version>2.0.0-rc2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -258,6 +258,11 @@
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
                                     <arg value="${build.dir}"/>
+                                </exec>
+
+                                <exec executable="chmod">
+                                    <arg value="+x"/>
+                                    <arg value="${build.dir}/cloud/docker/docker-build.py"/>
                                 </exec>
 
                                 <exec executable="cp">

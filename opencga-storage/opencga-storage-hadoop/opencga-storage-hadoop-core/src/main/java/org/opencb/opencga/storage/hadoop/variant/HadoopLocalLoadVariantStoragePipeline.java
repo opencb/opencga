@@ -361,7 +361,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         logger.info("============================================================");
         int expectedCount = 0;
         for (VariantType variantType : TARGET_VARIANT_TYPE_SET) {
-            expectedCount += variantFileMetadata.getStats().getTypeCount().getOrDefault(variantType.toString(), 0);
+            expectedCount += variantFileMetadata.getStats().getTypeCount().getOrDefault(variantType.toString(), 0L);
         }
         expectedCount -= discardedVariants;
         expectedCount -= skippedRefVariants;
@@ -378,7 +378,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             logger.info("There were " + skipped + " skipped variants");
             for (VariantType type : VariantType.values()) {
                 if (!TARGET_VARIANT_TYPE_SET.contains(type)) {
-                    Integer countByType = variantFileMetadata.getStats().getTypeCount().get(type.toString());
+                    Long countByType = variantFileMetadata.getStats().getTypeCount().get(type.toString());
                     if (countByType != null && countByType > 0) {
                         logger.info("  * Of which " + countByType + " are " + type.toString() + " variants.");
                     }
@@ -437,12 +437,15 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         boolean includeReferenceVariantsData = getOptions().getBoolean(
                 VARIANT_TABLE_LOAD_REFERENCE.key(),
                 VARIANT_TABLE_LOAD_REFERENCE.defaultValue());
+        boolean excludeGenotypes = getOptions().getBoolean(
+                EXCLUDE_GENOTYPES.key(),
+                EXCLUDE_GENOTYPES.defaultValue());
         return new VariantHadoopDBWriter(
                 dbAdaptor.getCredentials().getTable(),
                 getStudyId(),
                 getFileId(),
                 getMetadataManager(),
-                dbAdaptor.getHBaseManager(), includeReferenceVariantsData);
+                dbAdaptor.getHBaseManager(), includeReferenceVariantsData, excludeGenotypes);
     }
 
     protected static class GroupedVariantsTask implements Task<ImmutablePair<Long, List<Variant>>, Object> {

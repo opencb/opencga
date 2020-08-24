@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
@@ -52,9 +53,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isNegated;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.removeNegation;
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -580,7 +581,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     private Integer getFileId(int studyId, String fileName) {
         checkName("File name", fileName);
-        return fileIdCache.get(studyId, fileName);
+        // Allow fileIds as fileName
+        if (StringUtils.isNumeric(fileName)) {
+            return Integer.valueOf(fileName);
+        } else {
+            return fileIdCache.get(studyId, fileName);
+        }
     }
 
     public String getFileName(int studyId, int fileId) {
@@ -776,7 +782,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public Integer getSampleId(int studyId, Object sampleObj, boolean indexed) {
         Integer sampleId = parseResourceId(studyId, sampleObj,
                 o -> getSampleId(studyId, o),
-                o -> getSampleName(studyId, o) != null);
+                o -> {
+                    try {
+                        return getSampleName(studyId, o) != null;
+                    } catch (VariantQueryException e) {
+                        return false;
+                    }
+                });
         if (indexed && sampleId != null) {
             if (isSampleIndexed(studyId, sampleId)) {
                 return sampleId;
@@ -1143,24 +1155,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 studyId = sm.getId();
                 id = toId.apply(studyId, resourceStr);
             } else if (defaultStudy != null) {
-                if (NumberUtils.isParsable(resourceStr)) {
-                    id = Integer.parseInt(resourceStr);
-                    if (validId.test(defaultStudy.getId(), id)) {
-                        studyId = defaultStudy.getId();
-                    } else {
-                        studyId = null;
-                    }
+                id = toId.apply(defaultStudy.getId(), resourceStr);
+                if (id != null) {
+                    studyId = defaultStudy.getId();
                 } else {
-                    id = toId.apply(defaultStudy.getId(), resourceStr);
-                    if (id != null) {
-                        studyId = defaultStudy.getId();
-                    } else {
-                        studyId = null;
-                    }
+                    studyId = null;
                 }
-            } else if (NumberUtils.isParsable(resourceStr)) {
-                studyId = null;
-                id = Integer.parseInt(resourceStr);
             } else {
                 studyId = null;
                 id = null;
@@ -1214,39 +1214,28 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             if (isNegated(str)) {
                 str = removeNegation(str);
             }
-            if (StringUtils.isNumeric(str)) {
-                id = Integer.parseInt(str);
-            } else {
-                String[] split = VariantQueryUtils.splitStudyResource(str);
-                if (split.length == 2) {
-                    String study = split[0];
-                    str = split[1];
-                    String studyName = getStudyName(studyId);
-                    if (study.equals(studyName)
-                            || StringUtils.isNumeric(study) && Integer.valueOf(study).equals(studyId)) {
-                        if (StringUtils.isNumeric(str)) {
-                            int aux = Integer.valueOf(str);
-                            if (validId.test(aux)) {
-                                id = aux;
-                            } else {
-                                id = null;
-                            }
+            String[] split = VariantQueryUtils.splitStudyResource(str);
+            if (split.length == 2) {
+                String study = split[0];
+                str = split[1];
+                String studyName = getStudyName(studyId);
+                if (study.equals(studyName)
+                        || StringUtils.isNumeric(study) && Integer.valueOf(study).equals(studyId)) {
+                    if (StringUtils.isNumeric(str)) {
+                        int aux = Integer.valueOf(str);
+                        if (validId.test(aux)) {
+                            id = aux;
                         } else {
-                            id = toId.apply(str);
+                            id = null;
                         }
                     } else {
-                        id = null;
-                    }
-                } else if (StringUtils.isNumeric(str)) {
-                    int aux = Integer.valueOf(str);
-                    if (validId.test(aux)) {
-                        id = aux;
-                    } else {
-                        id = null;
+                        id = toId.apply(str);
                     }
                 } else {
-                    id = toId.apply(str);
+                    id = null;
                 }
+            } else {
+                id = toId.apply(str);
             }
         }
         return id;
@@ -1490,6 +1479,22 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public Integer registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
         return registerCohorts(study, Collections.singletonMap(cohortName, samples)).get(cohortName);
+    }
+
+    public CohortMetadata registerTemporaryCohort(String study, String alias, List<String> samples) throws StorageEngineException {
+        int studyId = getStudyId(study);
+        String temporaryCohortName = "TEMP_" + alias + "_" + TimeUtils.getTimeMillis();
+
+        List<Integer> sampleIds = registerSamples(studyId, samples);
+        int cohortId = newCohortId(studyId);
+        CohortMetadata cohortMetadata = new CohortMetadata(studyId, cohortId, temporaryCohortName,
+                sampleIds,
+                Collections.emptyList());
+        cohortMetadata.getAttributes().put("alias", alias);
+        cohortMetadata.setStatus("TEMPORARY", TaskMetadata.Status.RUNNING);
+
+        unsecureUpdateCohortMetadata(studyId, cohortMetadata);
+        return cohortMetadata;
     }
 
     public Map<String, Integer> registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)

@@ -16,12 +16,11 @@
 
 package org.opencb.opencga.app.cli.internal.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
@@ -40,14 +39,18 @@ import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
+import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.variant.AbstractBasicVariantQueryParams;
+import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
+import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
@@ -119,7 +122,9 @@ public class VariantCommandOptions {
     public final MendelianErrorCommandOptions mendelianErrorCommandOptions;
     public final InferredSexCommandOptions inferredSexCommandOptions;
     public final RelatednessCommandOptions relatednessCommandOptions;
-    public final GeneticChecksCommandOptions geneticChecksCommandOptions;
+    public final FamilyQcCommandOptions familyQcCommandOptions;
+    public final IndividualQcCommandOptions individualQcCommandOptions;
+    public final SampleQcCommandOptions sampleQcCommandOptions;
 
     // Wrappers
     public final PlinkCommandOptions plinkCommandOptions;
@@ -131,15 +136,19 @@ public class VariantCommandOptions {
     public final DataModelOptions commonDataModelOptions;
     public final NumericOptions commonNumericOptions;
     public final GeneralCliOptions.JobOptions commonJobOptions;
+    public final InternalCliOptionsParser.JobOptions internalJobOptions;
     private final Object commonJobOptionsObject;
+    private final Object internalJobOptionsObject;
 
     public VariantCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions,
-                                 NumericOptions numericOptions, JCommander jCommander, boolean withJobParams) {
+                                 NumericOptions numericOptions, JCommander jCommander, boolean withFullJobParams) {
         this.commonCommandOptions = commonCommandOptions;
         this.commonDataModelOptions = dataModelOptions;
         this.commonNumericOptions = numericOptions;
         this.commonJobOptions = new GeneralCliOptions.JobOptions();
-        this.commonJobOptionsObject = withJobParams ? commonJobOptions : new Object();
+        this.internalJobOptions = new InternalCliOptionsParser.JobOptions();
+        this.commonJobOptionsObject = withFullJobParams ? commonJobOptions : new Object();
+        this.internalJobOptionsObject = withFullJobParams ? new Object() : internalJobOptions;
         this.jCommander = jCommander;
 
         this.indexVariantCommandOptions = new VariantIndexCommandOptions();
@@ -178,7 +187,9 @@ public class VariantCommandOptions {
         this.mendelianErrorCommandOptions = new MendelianErrorCommandOptions();
         this.inferredSexCommandOptions = new InferredSexCommandOptions();
         this.relatednessCommandOptions = new RelatednessCommandOptions();
-        this.geneticChecksCommandOptions = new GeneticChecksCommandOptions();
+        this.familyQcCommandOptions = new FamilyQcCommandOptions();
+        this.individualQcCommandOptions = new IndividualQcCommandOptions();
+        this.sampleQcCommandOptions = new SampleQcCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
         this.gatkCommandOptions = new GatkCommandOptions();
@@ -196,6 +207,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--file"}, description = "List of files to be indexed.", required = true, arity = 1)
         public String fileId = null;
@@ -224,6 +238,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
         public String project;
 
@@ -251,6 +268,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--sample"}, description = "Samples to remove. Needs to provide all the samples in the secondary index.",
                 required = true, arity = 1)
         public String sample;
@@ -271,6 +291,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", arity = 1)
         public String outdir = null;
@@ -293,6 +316,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
         public String outdir;
@@ -363,6 +389,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--cohort"}, description = "Cohort Ids for the cohorts to be calculated.")
         public List<String> cohort;
 
@@ -392,6 +421,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir = null;
     }
@@ -407,6 +439,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir = null;
     }
@@ -421,6 +456,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--sample"}, required = true, description = "Samples to include in the index. " +
                 "Use \"" + VariantQueryUtils.ALL + "\" to annotate the index for all samples in the study.")
@@ -446,6 +484,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--family"}, required = true, description = "Families to index. " +
                 "Use \"" + VariantQueryUtils.ALL + "\" to index all families in the study.")
@@ -474,6 +515,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"-p", "--project"}, description = "Project to annotate.", arity = 1)
         public String project;
 
@@ -493,6 +537,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
 
@@ -508,6 +555,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
@@ -525,6 +575,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.DataModelOptions dataModelOptions = new DataModelOptions();
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
 
@@ -540,6 +593,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
@@ -559,6 +615,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
     }
 
     @Parameters(commandNames = {AGGREGATE_COMMAND}, commandDescription = AGGREGATE_COMMAND_DESCRIPTION)
@@ -576,6 +635,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
     }
 
     @Parameters(commandNames = {VariantExportStatsCommandOptions.STATS_EXPORT_RUN_COMMAND}, commandDescription = "Export calculated variant stats and frequencies")
@@ -590,6 +652,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
 //        @ParametersDelegate
 //        public QueryCommandOptions queryOptions = new QueryCommandOptions();
@@ -629,6 +694,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"-s", "--study"}, description = "Study where to load the variants", required = true)
         public String study;
 
@@ -645,6 +713,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
@@ -669,6 +740,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
     }
@@ -682,6 +756,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--variant"}, description = "Variant to query", required = true)
         public String variant;
@@ -726,115 +803,115 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setId(String id) {
+        public AnnotationVariantQueryParams setId(String id) {
             return super.setId(id);
         }
 
         @Parameter(names = {"--region"}, description = VariantQueryParam.REGION_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setRegion(String region) {
+        public AnnotationVariantQueryParams setRegion(String region) {
             return super.setRegion(region);
         }
 
         @Parameter(names = {"--gene"}, description = VariantQueryParam.GENE_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setGene(String gene) {
+        public AnnotationVariantQueryParams setGene(String gene) {
             return super.setGene(gene);
         }
 
         @Parameter(names = {"--type"}, description = VariantQueryParam.TYPE_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setType(String type) {
+        public AnnotationVariantQueryParams setType(String type) {
             return super.setType(type);
         }
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC)
         @Override
-        public AbstractBasicVariantQueryParams setPanel(String panel) {
+        public AnnotationVariantQueryParams setPanel(String panel) {
             return super.setPanel(panel);
         }
 
         @Parameter(names = {"--cohort-stats-ref"}, description = VariantQueryParam.STATS_REF_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setCohortStatsRef(String cohortStatsRef) {
+        public AnnotationVariantQueryParams setCohortStatsRef(String cohortStatsRef) {
             return super.setCohortStatsRef(cohortStatsRef);
         }
 
         @Parameter(names = {"--cohort-stats-alt"}, description = VariantQueryParam.STATS_ALT_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setCohortStatsAlt(String cohortStatsAlt) {
+        public AnnotationVariantQueryParams setCohortStatsAlt(String cohortStatsAlt) {
             return super.setCohortStatsAlt(cohortStatsAlt);
         }
 
         @Parameter(names = {"--cohort-stats-maf"}, description = VariantQueryParam.STATS_MAF_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setCohortStatsMaf(String cohortStatsMaf) {
+        public AnnotationVariantQueryParams setCohortStatsMaf(String cohortStatsMaf) {
             return super.setCohortStatsMaf(cohortStatsMaf);
         }
 
         @Parameter(names = {"--ct", "--consequence-type"}, description = VariantQueryParam.ANNOT_CONSEQUENCE_TYPE_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setCt(String ct) {
+        public AnnotationVariantQueryParams setCt(String ct) {
             return super.setCt(ct);
         }
 
         @Parameter(names = {"--xref"}, description = VariantQueryParam.ANNOT_XREF_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setXref(String xref) {
+        public AnnotationVariantQueryParams setXref(String xref) {
             return super.setXref(xref);
         }
 
         @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setBiotype(String biotype) {
+        public AnnotationVariantQueryParams setBiotype(String biotype) {
             return super.setBiotype(biotype);
         }
 
         @Parameter(names = {"--protein-substitution"}, description = VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setProteinSubstitution(String proteinSubstitution) {
+        public AnnotationVariantQueryParams setProteinSubstitution(String proteinSubstitution) {
             return super.setProteinSubstitution(proteinSubstitution);
         }
 
         @Parameter(names = {"--conservation"}, description = VariantQueryParam.ANNOT_CONSERVATION_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setConservation(String conservation) {
+        public AnnotationVariantQueryParams setConservation(String conservation) {
             return super.setConservation(conservation);
         }
 
         @Parameter(names = {"--population-frequency-maf"}, description = VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setPopulationFrequencyMaf(String populationFrequencyMaf) {
+        public AnnotationVariantQueryParams setPopulationFrequencyMaf(String populationFrequencyMaf) {
             return super.setPopulationFrequencyMaf(populationFrequencyMaf);
         }
 
         @Parameter(names = {"--population-frequency-alt"}, description = VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setPopulationFrequencyAlt(String populationFrequencyAlt) {
+        public AnnotationVariantQueryParams setPopulationFrequencyAlt(String populationFrequencyAlt) {
             return super.setPopulationFrequencyAlt(populationFrequencyAlt);
         }
 
         @Parameter(names = {"--population-frequency-ref"}, description = VariantQueryParam.ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setPopulationFrequencyRef(String populationFrequencyRef) {
+        public AnnotationVariantQueryParams setPopulationFrequencyRef(String populationFrequencyRef) {
             return super.setPopulationFrequencyRef(populationFrequencyRef);
         }
 
         @Parameter(names = {"--transcript-flag"}, description = VariantQueryParam.ANNOT_TRANSCRIPT_FLAG_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setTranscriptFlag(String transcriptFlag) {
+        public AnnotationVariantQueryParams setTranscriptFlag(String transcriptFlag) {
             return super.setTranscriptFlag(transcriptFlag);
         }
 
         @Parameter(names = {"--functional-score"}, description = VariantQueryParam.ANNOT_FUNCTIONAL_SCORE_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setFunctionalScore(String functionalScore) {
+        public AnnotationVariantQueryParams setFunctionalScore(String functionalScore) {
             return super.setFunctionalScore(functionalScore);
         }
 
         @Parameter(names = {"--clinical-significance"}, description = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         @Override
-        public AbstractBasicVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
+        public AnnotationVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
             return super.setClinicalSignificance(clinicalSignificance);
         }
     }
@@ -850,6 +927,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
@@ -873,6 +953,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
@@ -931,6 +1014,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
 
@@ -945,7 +1031,11 @@ public class VariantCommandOptions {
                 + " For more information, please visit " + ParamConstants.ANNOTATION_DOC_URL)
         public String samplesAnnotation;
 
-        @Parameter(names = {"--index"}, description = "Index results in catalog1111."
+
+        @DynamicParameter(names = {"--vq", "--variant-query"}, description = "Variant query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
+        public Map<String, String> variantQuery = new HashMap<>();
+
+        @Parameter(names = {"--index"}, description = "Index results in catalog."
                 + "Create an AnnotationSet for the VariableSet " + SampleVariantStatsAnalysis.VARIABLE_SET_ID)
         public boolean index;
 
@@ -962,6 +1052,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
@@ -980,6 +1073,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
 
@@ -994,7 +1090,7 @@ public class VariantCommandOptions {
                 + " For more information, please visit " + ParamConstants.ANNOTATION_DOC_URL)
         public String samplesAnnotation;
 
-        @Parameter(names = {"--index-stats"}, description = "Index results in catalog. Requires a cohort."
+        @Parameter(names = {"--index"}, description = "Index results in catalog. Requires a cohort."
                 + "Create an AnnotationSet for the VariableSet " + CohortVariantStatsAnalysis.VARIABLE_SET_ID)
         public boolean index;
 
@@ -1012,6 +1108,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
 
@@ -1028,6 +1127,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = ParamConstants.STUDY_DESCRIPTION)
         public String study;
@@ -1068,6 +1170,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = ParamConstants.STUDY_DESCRIPTION)
         public String study;
 
@@ -1091,6 +1196,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
@@ -1107,6 +1215,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
@@ -1131,6 +1242,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study ID where the individual or sample belong to.")
         public String study;
 
@@ -1151,6 +1265,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study ID where all the individuals or samples belong to.")
         public String study;
 
@@ -1166,36 +1283,103 @@ public class VariantCommandOptions {
         @Parameter(names = {"--method"}, description = "Method to compute relatedness.")
         public String method = "IBD";
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
         public String outdir;
     }
 
-    @Parameters(commandNames = GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND, commandDescription = GeneticChecksAnalysis.DESCRIPTION)
-    public class GeneticChecksCommandOptions {
-        public static final String GENETIC_CHECKS_RUN_COMMAND = GeneticChecksAnalysis.ID + "-run";
+    @Parameters(commandNames = FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND, commandDescription = FamilyQcAnalysis.DESCRIPTION)
+    public class FamilyQcCommandOptions {
+        public static final String FAMILY_QC_RUN_COMMAND = FamilyQcAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--family"}, description = "Family ID to get the family members).")
+        @Parameter(names = {"--family"}, description = "Family ID.", required = true)
         public String family;
 
-        @Parameter(names = {"--individual"}, description = "Individual ID: it will be considered a child individual to get the family members).")
+        @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
+        public String relatednessMethod = "PLINK/IBD";
+
+        @Parameter(names = {"--relatedness-maf"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35, cohort:ALL>0.05")
+        public String relatednessMaf = "cohort:ALL>0.05";
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    @Parameters(commandNames = IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND, commandDescription = IndividualQcAnalysis.DESCRIPTION)
+    public class IndividualQcCommandOptions {
+        public static final String INDIVIDUAL_QC_RUN_COMMAND = IndividualQcAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--individual"}, description = "Individual ID.", required = true)
         public String individual;
 
-        @Parameter(names = {"--sample"}, description = "Sample ID: it will be considered a child sample to get the family members).")
+        @Parameter(names = {"--sample"}, description = "Sample ID (in case that individual has multiple samples).")
         public String sample;
 
-        @Parameter(names = {"--maf", "--minor-allele-freq"}, description = "Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU<0.35, cohort:ALL<0.4")
-        public String minorAlleleFreq;
+        @Parameter(names = {"--inferred-sex-method"}, description = "Method to infer sex. Valid values: " + IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD)
+        public String inferredSexMethod = IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
 
-        @Parameter(names = {"--relatedness-method"}, description = "Method to compute relatedness.")
-        public String relatednessMethod = "IBD";
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+    @Parameters(commandNames = SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND, commandDescription = SampleQcAnalysis.DESCRIPTION)
+    public class SampleQcCommandOptions {
+        public static final String SAMPLE_QC_RUN_COMMAND = SampleQcAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
+        public String sample;
+
+        @Parameter(names = {"--dict-file"}, description = "Dictionary file of the reference genome (for computing HS metrics).")
+        public String dictFile;
+
+        @Parameter(names = {"--bait-file"}, description = "Bait intervals file in BED format (for HS metrics).")
+        public String baitFile;
+
+        @Parameter(names = {"--variant-stats-id"}, description = "Variant stats ID.")
+        public String variantStatsId;
+
+        @Parameter(names = {"--variant-stats-description"}, description = "Variant stats description.")
+        public String variantStatsDecription;
+
+        @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
+        public Map<String, String> variantStatsQuery = new HashMap<>();
+
+        @Parameter(names = {"--signature-id"}, description = "Signature ID.")
+        public String signatureId;
+
+        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
+        public Map<String, String> signatureQuery = new HashMap<>();
+
+        @Parameter(names = {"--genes-for-coverage-stats"}, description = "A comma separated list of genes to compute the coverage stats.")
+        public String genesForCoverageStats;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
     }
 
@@ -1206,6 +1390,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         //public GeneralCliOptions.CommonCommandOptions commonOptions = commonOptions;
         public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
@@ -1232,6 +1419,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
@@ -1271,6 +1461,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
 
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;
 
@@ -1298,6 +1491,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
 
     }
 

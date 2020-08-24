@@ -35,6 +35,7 @@ public class SampleUpdateParams {
     private String individualId;
     private SampleProcessing processing;
     private SampleCollection collection;
+    private SampleQualityControl qualityControl;
     private Boolean somatic;
     private List<Phenotype> phenotypes;
     private List<AnnotationSet> annotationSets;
@@ -45,13 +46,14 @@ public class SampleUpdateParams {
     }
 
     public SampleUpdateParams(String id, String description, String individualId, SampleProcessing processing, SampleCollection collection,
-                              Boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets,
-                              Map<String, Object> attributes, CustomStatusParams status) {
+                              SampleQualityControl qualityControl,  Boolean somatic, List<Phenotype> phenotypes,
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.individualId = individualId;
         this.processing = processing;
         this.collection = collection;
+        this.qualityControl = qualityControl;
         this.somatic = somatic;
         this.phenotypes = phenotypes;
         this.annotationSets = annotationSets;
@@ -83,6 +85,7 @@ public class SampleUpdateParams {
         sb.append(", individualId='").append(individualId).append('\'');
         sb.append(", processing=").append(processing);
         sb.append(", collection=").append(collection);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", somatic=").append(somatic);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", annotationSets=").append(annotationSets);
@@ -135,6 +138,15 @@ public class SampleUpdateParams {
 
     public SampleUpdateParams setCollection(SampleCollection collection) {
         this.collection = collection;
+        return this;
+    }
+
+    public SampleQualityControl getQualityControl() {
+        return qualityControl;
+    }
+
+    public SampleUpdateParams setQualityControl(SampleQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 

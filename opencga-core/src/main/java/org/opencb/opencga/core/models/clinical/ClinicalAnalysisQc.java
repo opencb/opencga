@@ -1,7 +1,7 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.Comment;
 import org.opencb.biodata.models.clinical.interpretation.Analyst;
-import org.opencb.biodata.models.clinical.interpretation.Comment;
 
 import java.util.List;
 

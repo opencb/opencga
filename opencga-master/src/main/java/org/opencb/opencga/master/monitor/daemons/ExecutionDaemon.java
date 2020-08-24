@@ -34,15 +34,17 @@ import org.opencb.opencga.analysis.cohort.CohortIndexTask;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyIndexTask;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
+import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
+import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
+import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
@@ -68,10 +70,13 @@ import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -120,7 +125,9 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     public static final String OUTDIR_PARAM = "outdir";
+    public static final String JOB_ID_PARAM = "job-id";
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
+    public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
@@ -173,6 +180,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID + "-run");
             put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID + "-run");
             put(FastqcWrapperAnalysis.ID, "alignment " + FastqcWrapperAnalysis.ID + "-run");
+            put(PicardWrapperAnalysis.ID, "alignment " + PicardWrapperAnalysis.ID + "-run");
 
             put(VariantIndexOperationTool.ID, "variant index-run");
             put(VariantExportTool.ID, "variant export-run");
@@ -203,7 +211,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(MendelianErrorAnalysis.ID, "variant " + MendelianErrorAnalysis.ID + "-run");
             put(InferredSexAnalysis.ID, "variant " + InferredSexAnalysis.ID + "-run");
             put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");
-            put(GeneticChecksAnalysis.ID, "variant " + GeneticChecksAnalysis.ID + "-run");
+            put(FamilyQcAnalysis.ID, "variant " + FamilyQcAnalysis.ID + "-run");
+            put(IndividualQcAnalysis.ID, "variant " + IndividualQcAnalysis.ID + "-run");
+            put(SampleQcAnalysis.ID, "variant " + SampleQcAnalysis.ID + "-run");
 
             put(TeamInterpretationAnalysis.ID, "clinical " + TeamInterpretationAnalysis.ID + "-run");
             put(TieringInterpretationAnalysis.ID, "clinical " + TieringInterpretationAnalysis.ID + "-run");
@@ -312,8 +322,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         switch (jobStatus.getName()) {
             case Enums.ExecutionStatus.RUNNING:
-                ExecutionResult result = readAnalysisResult(job);
+                ExecutionResult result = readExecutionResult(job);
                 if (result != null) {
+                    if (result.getExecutor() != null
+                            && result.getExecutor().getParams() != null
+                            && result.getExecutor().getParams().containsKey(ParamConstants.TOKEN)) {
+                        result.getExecutor().getParams().put(ParamConstants.TOKEN, REDACTED_TOKEN);
+                    }
                     // Update the result of the job
                     PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(result);
                     try {
@@ -482,66 +497,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
             // The job(s) it depended on finished successfully. Check if the input files are correct.
-            // Look for input files
-            String fileParamSuffix = "file";
-            List<File> inputFiles = new ArrayList<>();
-            if (job.getParams() != null) {
-                Map<String, Object> dynamicParams = null;
-                for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
-                    // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
-                    if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                        for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
-                            try {
-                                // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(job.getStudy().getId(), fileStr,
-                                        FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                                inputFiles.add(file);
-                            } catch (CatalogException e) {
-                                String msg = "Cannot find file '" + entry.getValue() + "' "
-                                        + "from job param '" + entry.getKey() + "'; (study = " + job.getStudy().getId() + ", token = "
-                                        + token + ") :" + e.getMessage();
-                                logger.error(msg, e);
-                                return abortJob(job, msg);
-                            }
-                        }
-                    } else if (entry.getValue() instanceof Map) {
-                        if (dynamicParams != null) {
-                            List<String> dynamicParamKeys = job.getParams()
-                                    .entrySet()
-                                    .stream()
-                                    .filter(e -> e.getValue() instanceof Map)
-                                    .map(Map.Entry::getKey)
-                                    .collect(Collectors.toList());
-
-                            String msg = "Found multiple dynamic param maps in job params: " + dynamicParamKeys;
-                            logger.error(msg);
-                            return abortJob(job, msg);
-                        }
-                        // If we have found a map for further dynamic params...
-                        dynamicParams = (Map<String, Object>) entry.getValue();
-                    }
-                }
-                if (dynamicParams != null) {
-                    // We look for files in the dynamic params
-                    for (Map.Entry<String, Object> entry : dynamicParams.entrySet()) {
-                        if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                            // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in
-                            // catalog
-                            try {
-                                // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(job.getStudy().getId(), (String) entry.getValue(),
-                                        FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                                inputFiles.add(file);
-                            } catch (CatalogException e) {
-                                String msg = "Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey() + "'. ";
-                                logger.error(msg, e);
-                                return abortJob(job, msg);
-                            }
-                        }
-                    }
-                }
+            try {
+                List<File> inputFiles = catalogManager.getJobManager().getJobInputFilesFromParams(job.getStudy().getId(), job, token);
+                updateParams.setInput(inputFiles);
+            } catch (CatalogException e) {
+                logger.error(e.getMessage(), e);
+                return abortJob(job, e.getMessage());
             }
-            updateParams.setInput(inputFiles);
         }
 
 
@@ -567,6 +529,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         Path outDirPath = Paths.get(updateParams.getOutDir().getUri());
         params.put(OUTDIR_PARAM, outDirPath.toAbsolutePath().toString());
+        params.put(JOB_ID_PARAM, job.getId());
 
         // Define where the stdout and stderr will be stored
         Path stderr = outDirPath.resolve(getErrorLogFileName(job));
@@ -575,7 +538,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         // Create cli
         String commandLine = buildCli(internalCli, job.getTool().getId(), params);
         String authenticatedCommandLine = commandLine + " --token " + userToken;
-        String shadedCommandLine = commandLine + " --token xxxxxxxxxxxxxxxxxxxxx";
+        String shadedCommandLine = commandLine + " --token " + REDACTED_TOKEN;
 
         updateParams.setCommandLine(shadedCommandLine);
 
@@ -589,7 +552,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         try {
-            batchExecutor.execute(job.getId(), authenticatedCommandLine, stdout, stderr);
+            String queue = getQueue(tool);
+            logger.info("Queue job '{}' on queue '{}'", job.getId(), queue);
+            batchExecutor.execute(job.getId(), queue, authenticatedCommandLine, stdout, stderr);
         } catch (Exception e) {
             logger.error("Error executing job {}.", job.getId(), e);
             return abortJob(job, "Error executing job. " + e.getMessage());
@@ -599,6 +564,22 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         notifyStatusChange(job);
 
         return 1;
+    }
+
+    private String getQueue(Tool tool) {
+        String queue = "default";
+        Execution execution = catalogManager.getConfiguration().getAnalysis().getExecution();
+        if (StringUtils.isNotEmpty(execution.getDefaultQueue())) {
+            queue = execution.getDefaultQueue();
+        }
+        if (execution.getToolsPerQueue() != null) {
+            for (Map.Entry<String, List<String>> entry : execution.getToolsPerQueue().entrySet()) {
+                if (entry.getValue().contains(tool.id())) {
+                    queue = entry.getKey();
+                }
+            }
+        }
+        return queue;
     }
 
     private File getValidInternalOutDir(String study, Job job, String outDirPath, String userToken) throws CatalogException {
@@ -642,7 +623,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private File getValidDefaultOutDir(Job job) throws CatalogException {
         File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
-                        + job.getId(), true, "Job " + job.getTool().getId(), QueryOptions.empty(), token).first();
+                        + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
@@ -668,6 +649,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .collect(Collectors.joining(","));
             fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
                     new FileAclParams(null, allFilePermissions), SET, token);
+            // Remove permissions to the @members group
+            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
+                    StudyManager.MEMBERS, new FileAclParams(null, ""), SET, token);
         }
 
         return folder;
@@ -678,22 +662,23 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 .append(internalCli)
                 .append(" ").append(TOOL_CLI_MAP.get(toolId));
         for (Map.Entry<String, Object> entry : params.entrySet()) {
+            String key = entry.getKey();
+            String param = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key);
             if (entry.getValue() instanceof Map) {
                 Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
                 for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
-                    cliBuilder.append(" ").append("-D");
+                    cliBuilder.append(" ").append("--").append(param).append(" ");
                     escapeCliArg(cliBuilder, dynamicEntry.getKey());
                     cliBuilder.append("=");
                     escapeCliArg(cliBuilder, dynamicEntry.getValue());
                 }
             } else {
-                String key = entry.getKey();
                 if (!StringUtils.isAlphanumeric(StringUtils.replaceChars(key, "-_", ""))) {
                     // This should never happen
                     throw new IllegalArgumentException("Invalid job param key '" + key + "'");
                 }
                 cliBuilder
-                        .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key))
+                        .append(" --").append(param)
                         .append(" ");
                 escapeCliArg(cliBuilder, entry.getValue().toString());
             }
@@ -745,12 +730,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return false;
         }
 
-        switch (job.getTool().getId()) {
-            case "variant-index":
-                int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
-                return canBeQueued("variant-index", maxIndexJobs);
-            default:
-                return true;
+        Integer maxJobs = catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().get(job.getTool().getId());
+        if (maxJobs == null) {
+            // No limit for this tool
+            return true;
+        } else {
+            return canBeQueued(job.getTool().getId(), maxJobs);
         }
     }
 
@@ -808,11 +793,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private Enums.ExecutionStatus getCurrentStatus(Job job) {
 
-        Path resultJson = getAnalysisResultPath(job);
+        Path resultJson = getExecutionResultPath(job);
 
         // Check if analysis result file is there
         if (resultJson != null && Files.exists(resultJson)) {
-            ExecutionResult execution = readAnalysisResult(resultJson);
+            ExecutionResult execution = readExecutionResult(resultJson);
             if (execution != null) {
                 long lastStatusUpdate = execution.getStatus().getDate().getTime();
                 long fileAgeInMillis = Instant.now().toEpochMilli() - lastStatusUpdate;
@@ -853,7 +838,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     }
 
-    private Path getAnalysisResultPath(Job job) {
+    private Path getExecutionResultPath(Job job) {
         Path resultJson = null;
         try (Stream<Path> stream = Files.list(Paths.get(job.getOutDir().getUri()))) {
             resultJson = stream
@@ -870,15 +855,15 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return resultJson;
     }
 
-    private ExecutionResult readAnalysisResult(Job job) {
-        Path resultJson = getAnalysisResultPath(job);
+    private ExecutionResult readExecutionResult(Job job) {
+        Path resultJson = getExecutionResultPath(job);
         if (resultJson != null) {
-            return readAnalysisResult(resultJson);
+            return readExecutionResult(resultJson);
         }
         return null;
     }
 
-    private ExecutionResult readAnalysisResult(Path file) {
+    private ExecutionResult readExecutionResult(Path file) {
         if (file == null) {
             return null;
         }
@@ -915,13 +900,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("[{}] - Processing finished job with status {}", job.getId(), status.getName());
 
         Path outDirUri = Paths.get(job.getOutDir().getUri());
-        Path analysisResultPath = getAnalysisResultPath(job);
+        Path analysisResultPath = getExecutionResultPath(job);
 
         logger.info("[{}] - Registering job results from '{}'", job.getId(), outDirUri);
 
         ExecutionResult execution;
         if (analysisResultPath != null) {
-            execution = readAnalysisResult(analysisResultPath);
+            execution = readExecutionResult(analysisResultPath);
             if (execution != null) {
                 PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
                 try {
@@ -941,8 +926,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(ExecutionResultManager.FILE_EXTENSION)
                     && !uri.getPath().endsWith(ExecutionResultManager.SWAP_FILE_EXTENSION)
                     && !uri.getPath().contains("/scratch_");
-            registeredFiles = fileManager.syncUntrackedFiles(job.getStudy().getId(), job.getOutDir().getPath(), uriPredicate, token)
-                    .getResults();
+            registeredFiles = fileManager.syncUntrackedFiles(job.getStudy().getId(), job.getOutDir().getPath(), uriPredicate, job.getId(),
+                    token).getResults();
         } catch (CatalogException e) {
             logger.error("Could not registered files in Catalog: {}", e.getMessage(), e);
             return 0;

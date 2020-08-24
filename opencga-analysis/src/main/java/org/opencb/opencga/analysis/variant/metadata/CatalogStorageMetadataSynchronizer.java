@@ -21,15 +21,14 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
@@ -63,6 +62,7 @@ public class CatalogStorageMetadataSynchronizer {
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FileDBAdaptor.QueryParams.NAME.key(),
             FileDBAdaptor.QueryParams.PATH.key(),
+            FileDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key(),
             FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(),
             FileDBAdaptor.QueryParams.STUDY_UID.key()));
     public static final Query INDEXED_FILES_QUERY = new Query()
@@ -74,6 +74,12 @@ public class CatalogStorageMetadataSynchronizer {
             .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), Arrays.asList(IndexStatus.LOADING, IndexStatus.INDEXING))
             .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
             .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF.toString(), File.Format.GVCF.toString()));
+
+    public static final QueryOptions COHORT_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            CohortDBAdaptor.QueryParams.ID.key(),
+            CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
+            CohortDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key()
+    ));
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogStorageMetadataSynchronizer.class);
 
@@ -192,9 +198,9 @@ public class CatalogStorageMetadataSynchronizer {
             throws CatalogException {
         logger.info("Synchronizing study " + study.getName());
 
-        boolean modified = synchronizeCohorts(study, sessionId);
+        boolean modified = synchronizeFiles(study, null, sessionId);
 
-        modified |= synchronizeFiles(study, null, sessionId);
+        modified |= synchronizeCohorts(study, sessionId);
 
         return modified;
     }
@@ -215,7 +221,7 @@ public class CatalogStorageMetadataSynchronizer {
                     .map(sampleNameMap::get)
                     .collect(Collectors.toSet());
             Cohort defaultCohort = catalogManager.getCohortManager()
-                    .get(study.getName(), defaultCohortName, null, sessionId).first();
+                    .get(study.getName(), defaultCohortName, COHORT_QUERY_OPTIONS, sessionId).first();
             List<String> cohortFromCatalog = defaultCohort
                     .getSamples()
                     .stream()
@@ -251,7 +257,7 @@ public class CatalogStorageMetadataSynchronizer {
             Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), calculatedStats.keySet());
 
             try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(study.getName(),
-                    query, new QueryOptions(), sessionId)) {
+                    query, COHORT_QUERY_OPTIONS, sessionId)) {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
                     CohortMetadata storageCohort = calculatedStats.get(cohort.getId());
@@ -296,7 +302,7 @@ public class CatalogStorageMetadataSynchronizer {
             Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), invalidStats.keySet());
             try (DBIterator<Cohort> iterator = catalogManager.getCohortManager().iterator(study.getName(),
                     query,
-                    new QueryOptions(), sessionId)) {
+                    COHORT_QUERY_OPTIONS, sessionId)) {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
                     if (cohort.getInternal().getStatus() == null || !cohort.getInternal().getStatus().getName().equals(CohortStatus.INVALID)) {
@@ -315,11 +321,41 @@ public class CatalogStorageMetadataSynchronizer {
         boolean modified = false;
         BiMap<Integer, String> fileNameMap = HashBiMap.create();
         Map<Integer, String> filePathMap = new HashMap<>();
+        Map<String, Set<String>> fileSamplesMap = new HashMap<>();
         LinkedHashSet<Integer> indexedFiles;
         if (CollectionUtils.isEmpty(files)) {
             metadataManager.fileMetadataIterator(study.getId()).forEachRemaining(fileMetadata -> {
                 fileNameMap.put(fileMetadata.getId(), fileMetadata.getName());
                 filePathMap.put(fileMetadata.getId(), fileMetadata.getPath());
+                Set<String> samples;
+                if (!fileMetadata.isIndexed()) {
+                    // Skip non indexed files
+                    return;
+                }
+                if (fileMetadata.getSamples() == null) {
+                    logger.warn("File '{}' with null samples", fileMetadata.getName());
+                    try {
+                        VariantFileMetadata variantFileMetadata =
+                                metadataManager.getVariantFileMetadata(study.getId(), fileMetadata.getId(), new QueryOptions()).first();
+                        if (variantFileMetadata == null) {
+                            logger.error("Missing VariantFileMetadata from file {}", fileMetadata.getName());
+                        } else {
+                            logger.info("Samples from VariantFileMetadata: {}", variantFileMetadata.getSampleIds());
+                        }
+                    } catch (StorageEngineException e) {
+                        logger.error("Error reading VariantFileMetadata for file " + fileMetadata.getName(), e);
+                    }
+                    samples = Collections.emptySet();
+                } else {
+                    if (fileMetadata.getSamples().contains(null)) {
+                        logger.warn("File '{}' has a null sampleId in samples", fileMetadata.getName());
+                    }
+                    samples = fileMetadata.getSamples()
+                            .stream()
+                            .map(s -> metadataManager.getSampleName(study.getId(), s))
+                            .collect(Collectors.toSet());
+                }
+                fileSamplesMap.put(fileMetadata.getName(), samples);
             });
             indexedFiles = metadataManager.getIndexedFiles(study.getId());
         } else {
@@ -363,6 +399,20 @@ public class CatalogStorageMetadataSynchronizer {
                         catalogManager.getFileManager()
                                 .updateFileIndexStatus(file, IndexStatus.READY, "Indexed, regarding Storage Metadata", sessionId);
                         modified = true;
+                    }
+                    Set<String> storageSamples = fileSamplesMap.get(file.getName());
+                    Set<String> catalogSamples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
+                    if (storageSamples == null) {
+                        storageSamples = new HashSet<>();
+                        Integer fileId = metadataManager.getFileId(study.getId(), file.getName());
+                        for (Integer sampleId : metadataManager.getSampleIdsFromFileId(study.getId(), fileId)) {
+                            storageSamples.add(metadataManager.getSampleName(study.getId(), sampleId));
+                        }
+                    }
+                    if (!storageSamples.equals(catalogSamples)) {
+                        logger.warn("File samples does not match between catalog and storage. Update variant file metadata");
+                        file = catalogManager.getFileManager().get(study.getName(), file.getId(), new QueryOptions(), sessionId).first();
+                        new FileMetadataReader(catalogManager).updateMetadataInformation(study.getName(), file, sessionId);
                     }
                 }
                 if (numFiles != indexedFiles.size()) {

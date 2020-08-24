@@ -103,7 +103,7 @@ public class FamilyCreateParams {
         String familyName = StringUtils.isEmpty(name) ? familyId : name;
         int familyExpectedSize = expectedSize != null ? expectedSize : -1;
         return new Family(familyId, familyName, phenotypes, disorders, relatives, "", description, familyExpectedSize, 1, 1, annotationSets,
-                status != null ? status.toCustomStatus() : null, null, attributes);
+                status != null ? status.toCustomStatus() : null, null, null, attributes);
     }
 
     public String getId() {

@@ -36,8 +36,14 @@ public class AuthenticationOrigin {
     }
 
     // Possible keys of the options map
-    public static final String USERS_SEARCH = "usersSearch";
-    public static final String GROUPS_SEARCH = "groupsSearch";
+    public static final String LDAP_AUTHENTICATION_USER = "authUserId";
+    public static final String LDAP_AUTHENTICATION_PASSWORD = "authPassword";
+    public static final String LDAP_USERS_SEARCH = "usersSearch";
+    public static final String LDAP_GROUPS_SEARCH = "groupsSearch";
+    public static final String LDAP_FULLNAME_KEY = "fullNameKey";
+    public static final String LDAP_MEMBER_KEY = "fullNameKey";
+    public static final String LDAP_DN_FORMAT = "dnFormat";
+    public static final String LDAP_SSL_INVALID_CERTIFICATES_ALLOWED = "sslInvalidCertificatesAllowed";
 
     public AuthenticationOrigin() {
         this("internal", AuthenticationType.OPENCGA.name(), "localhost", Collections.emptyMap());

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
+import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.exec.Command;
 
 /**
@@ -26,8 +27,8 @@ import org.opencb.commons.exec.Command;
 public class SystemMRExecutor extends MRExecutor {
 
     @Override
-    public int run(String executable, String args) {
-        return run(executable + " " + args);
+    public int run(String executable, String[] args) {
+        return run(executable + " " + Commandline.toString(args));
     }
 
     public int run(String commandLine) {

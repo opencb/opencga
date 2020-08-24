@@ -29,10 +29,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.managers.SampleManager;
+import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
@@ -49,6 +46,7 @@ import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclParams;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -129,7 +127,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         CatalogManagerExternalResource.clearCatalog(configuration);
 
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
+        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", false);
         fileManager = catalogManager.getFileManager();
 
         catalogManager.getUserManager().create(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null, Account.AccountType.FULL, null);
@@ -716,8 +714,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readSampleExplicitUnshared() throws CatalogException {
         DataResult<Sample> sample = catalogManager.getSampleManager().get(studyFqn, smp1.getId(), null, externalSessionId);
         assertEquals(1, sample.getNumResults());
-        catalogManager.getAuthorizationManager().removeAcls(Collections.singletonList(smp1.getUid()),
-                Collections.singletonList(externalUser), null, Enums.Resource.SAMPLE);
+        catalogManager.getAuthorizationManager().removeAcls(Collections.singletonList(externalUser),
+                new AuthorizationManager.CatalogAclParams(Collections.singletonList(smp1.getUid()), null, Enums.Resource.SAMPLE));
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSampleManager().get(studyFqn, smp1.getId(), null, externalSessionId);
     }
@@ -886,6 +884,35 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("Only study owners or admins");
         sampleManager.search(studyFqn, query, options, memberSessionId);
+    }
+
+    @Test
+    public void getAclsTest() throws CatalogException {
+        StudyManager studyManager = catalogManager.getStudyManager();
+
+        studyManager.createGroup(studyFqn, "group1", Collections.singletonList(externalUser), ownerSessionId);
+        studyManager.createGroup(studyFqn, "group2", Collections.singletonList(externalUser), ownerSessionId);
+
+        studyManager.updateAcl(Collections.singletonList(studyFqn), "@group1",
+                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), ""), ADD, ownerSessionId);
+        studyManager.updateAcl(Collections.singletonList(studyFqn), externalUser,
+                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_FILES.name(), ""), ADD, ownerSessionId);
+
+        OpenCGAResult<Map<String, List<String>>> acls = studyManager.getAcls(Collections.singletonList(studyFqn), externalUser, false,
+                externalSessionId);
+        assertEquals(1, acls.getNumResults());
+        assertTrue(acls.first().keySet().containsAll(Arrays.asList(externalUser, "@group1")));
+
+        studyManager.updateAcl(Collections.singletonList(studyFqn), "@group2",
+                new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), ""), ADD, ownerSessionId);
+        acls = studyManager.getAcls(Collections.singletonList(studyFqn), externalUser, false,
+                externalSessionId);
+        assertEquals(1, acls.getNumResults());
+        assertTrue(acls.first().keySet().containsAll(Arrays.asList(externalUser, "@group1", "@group2")));
+
+        assertEquals(StudyAclEntry.StudyPermissions.VIEW_FILES.name(), acls.first().get(externalUser).get(0));
+        assertEquals(StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), acls.first().get("@group1").get(0));
+        assertEquals(StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), acls.first().get("@group2").get(0));
     }
 
     @Test

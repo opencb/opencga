@@ -45,6 +45,11 @@ public class SolrConverterUtil {
                     } else {
                         // Dynamic annotation
                         String dynamicKey = annotationKey.substring(0, annotationKey.lastIndexOf(".") + 1) + "*";
+                        if (!typeMap.containsKey(dynamicKey)) {
+                            // TODO: This condition should be removed in 3.0. This is here because of a bug that happened annotating
+                            // TODO: This should be completely fixed and removed in future releases
+                            continue;
+                        }
                         result.put("annotations" + type(typeMap.get(dynamicKey)) + annotationSet.getVariableSetId() + "." + annotationKey,
                                 value);
                     }
@@ -106,7 +111,7 @@ public class SolrConverterUtil {
         Map<String, Set<String>> retPermissions = new HashMap<>(internalPermissions.size());
 
         internalPermissions.forEach(aclEntry ->
-            retPermissions.put((String) aclEntry.get("member"), new HashSet<>((List<String>) aclEntry.get("permissions")))
+                retPermissions.put((String) aclEntry.get("member"), new HashSet<>((List<String>) aclEntry.get("permissions")))
         );
 
         return retPermissions;

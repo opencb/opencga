@@ -46,7 +46,7 @@ public class LocalExecutorTest {
     public void test() throws Exception {
         System.out.println(rootDir.toAbsolutePath());
         for (int i = 0; i < 10; i++) {
-            localExecutor.execute("jobId-" + i, "echo Hello World", rootDir.resolve("out_" + i + ".txt"), rootDir.resolve("err_" + i + ".txt"));
+            localExecutor.execute("jobId-" + i, "default", "echo Hello World", rootDir.resolve("out_" + i + ".txt"), rootDir.resolve("err_" + i + ".txt"));
         }
 
         for (int i = 0; i < 10; i++) {

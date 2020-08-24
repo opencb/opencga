@@ -17,9 +17,13 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
+
+import java.util.List;
 
 @Tool(id = VariantFamilyIndexOperationTool.ID, description = VariantFamilyIndexOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
@@ -46,12 +50,17 @@ public class VariantFamilyIndexOperationTool extends OperationTool {
     @Override
     protected void run() throws Exception {
         step(() -> {
-            variantStorageManager.familyIndex(
+            DataResult<List<String>> trios = variantStorageManager.familyIndex(
                     study,
                     variantFamilyIndexParams.getFamily(),
                     variantFamilyIndexParams.isSkipIncompleteFamilies(),
                     params,
                     token);
+            if (trios.getEvents() != null) {
+                for (Event event : trios.getEvents()) {
+                    addEvent(event.getType(), event.getMessage());
+                }
+            }
         });
     }
 }

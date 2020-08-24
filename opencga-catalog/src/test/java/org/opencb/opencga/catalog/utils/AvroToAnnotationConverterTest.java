@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.utils;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -19,7 +20,7 @@ import java.util.*;
 public class AvroToAnnotationConverterTest {
 
     @Test
-    public void generateVariantSetStats() throws IOException {
+    public void generateCohortVariantSetStats() throws IOException {
         List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(VariantSetStats.getClassSchema());
 
         Variable biotypeCount = variables.stream().filter(v -> v.getId().equals("biotypeCount")).findFirst().get();
@@ -40,6 +41,30 @@ public class AvroToAnnotationConverterTest {
 
 
         serialize(variableSet, "cohort-variant-stats-variableset.json");
+    }
+
+    @Test
+    public void generateFileVariantSetStats() throws IOException {
+        List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(VariantSetStats.getClassSchema());
+
+        Variable biotypeCount = variables.stream().filter(v -> v.getId().equals("biotypeCount")).findFirst().get();
+        addBiotypeKeys(biotypeCount);
+
+        Variable consequenceTypeCount = variables.stream().filter(v -> v.getId().equals("consequenceTypeCount")).findFirst().get();
+        addConsequenceTypeKeys(consequenceTypeCount);
+
+        VariableSet variableSet = new VariableSet()
+                .setId(FileMetadataReader.FILE_VARIANT_STATS_VARIABLE_SET)
+                .setName(FileMetadataReader.FILE_VARIANT_STATS_VARIABLE_SET)
+                .setDescription("OpenCGA file variant stats")
+                .setEntities(Collections.singletonList(VariableSet.AnnotableDataModels.FILE))
+                .setUnique(true)
+                .setConfidential(false)
+                .setAttributes(Collections.singletonMap("avroClass", VariantSetStats.class.toString()))
+                .setVariables(new LinkedHashSet<>(variables));
+
+
+        serialize(variableSet, "file-variant-stats-variableset.json");
     }
 
     @Test
@@ -66,6 +91,7 @@ public class AvroToAnnotationConverterTest {
     }
 
     @Test
+    @Ignore
     public void generateVariantFileMetadata() throws IOException {
         List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(VariantFileMetadata.getClassSchema());
 

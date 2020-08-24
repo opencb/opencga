@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -51,7 +52,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.ANALYST_ASSIGNEE;
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -79,16 +80,26 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     @Override
     public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return count(null, query);
+    }
+
+    OpenCGAResult<Long> count(ClientSession clientSession, Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query);
-        return new OpenCGAResult<>(clinicalCollection.count(bson));
+        return new OpenCGAResult<>(clinicalCollection.count(clientSession, bson));
     }
 
     @Override
     public OpenCGAResult<Long> count(final Query query, final String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return count(null, query, user);
+    }
+
+    OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         logger.debug("Clinical count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return new OpenCGAResult<>(clinicalCollection.count(bson));
+        return new OpenCGAResult<>(clinicalCollection.count(clientSession, bson));
     }
 
     @Override
@@ -203,74 +214,38 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         String[] acceptedObjectParams = {QueryParams.FILES.key(), QueryParams.FAMILY.key(), QueryParams.DISORDER.key(),
                 QueryParams.PROBAND.key(), QueryParams.COMMENTS.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(),
-                QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key()};
+                QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
-        String[] acceptedMapParams = {QueryParams.ROLE_TO_PROBAND.key()};
-        filterMapParams(parameters, document.getSet(), acceptedMapParams);
-
+        clinicalConverter.validateInterpretationToUpdate(document.getSet());
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateProbandToUpdate(document.getSet());
 
-        // Interpretation (primary)
-        if (parameters.containsKey(QueryParams.INTERPRETATION.key())) {
-            document.getSet().put(QueryParams.INTERPRETATION.key(),
-                    clinicalConverter.convertInterpretation((Interpretation) parameters.get(QueryParams.INTERPRETATION.key())));
-        }
-
         // Secondary interpretations
         if (parameters.containsKey(QueryParams.SECONDARY_INTERPRETATIONS.key())) {
-            List<Object> objectInterpretationList = parameters.getAsList(QueryParams.SECONDARY_INTERPRETATIONS.key());
-            List<Interpretation> interpretationList = new ArrayList<>();
-            for (Object interpretation : objectInterpretationList) {
-                if (interpretation instanceof Interpretation) {
-                    if (!dbAdaptorFactory.getInterpretationDBAdaptor().exists(((Interpretation) interpretation).getUid())) {
-                        throw CatalogDBException.uidNotFound("Secondary interpretation", ((Interpretation) interpretation).getUid());
-                    }
-                    interpretationList.add((Interpretation) interpretation);
-                }
+            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SECONDARY_INTERPRETATIONS.key(),
+                    ParamUtils.UpdateAction.ADD);
+            String[] secondaryInterpretationParams = {QueryParams.SECONDARY_INTERPRETATIONS.key()};
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), secondaryInterpretationParams);
+                    clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
+                    break;
+                case REMOVE:
+                    filterObjectParams(parameters, document.getPullAll(), secondaryInterpretationParams);
+                    clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), secondaryInterpretationParams);
+                    clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
             }
-
-            if (!interpretationList.isEmpty()) {
-                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-                String operation = (String) actionMap.getOrDefault(QueryParams.SECONDARY_INTERPRETATIONS.key(), "ADD");
-                switch (operation) {
-                    case "SET":
-                        document.getSet().put(QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                                clinicalConverter.convertInterpretations(interpretationList));
-                        break;
-                    case "REMOVE":
-                        document.getPullAll().put(QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                                clinicalConverter.convertInterpretations(interpretationList));
-                        break;
-                    case "ADD":
-                    default:
-                        document.getAddToSet().put(QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                                clinicalConverter.convertInterpretations(interpretationList));
-                        break;
-                }
-            }
-        }
-
-        if (parameters.containsKey(QueryParams.QUALITY_CONTROL.key())) {
-            // Check all quality control parameters
-            String[] qualityObjectParams = {QueryParams.QUALITY_CONTROL_VARIANT.key(), QueryParams.QUALITY_CONTROL_ALIGNMENT.key(),
-                    QueryParams.QUALITY_CONTROL_ANALYST.key()};
-            filterObjectParams(parameters, document.getSet(), qualityObjectParams);
-
-            String[] qualityStringParams = {QueryParams.QUALITY_CONTROL_QUALITY.key()};
-            filterStringParams(parameters, document.getSet(), qualityStringParams);
-
-            // We don't set the list of comments, we always add to the current list
-            String[] qualityListParams = {QueryParams.QUALITY_CONTROL_COMMENTS.key()};
-            filterObjectParams(parameters, document.getAddToSet(), qualityListParams);
-
-            // We always update the date
-            document.getSet().put(QueryParams.QUALITY_CONTROL_DATE.key(), TimeUtils.getTime());
-//            nestedPut(QueryParams.QUALITY_CONTROL_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -525,36 +500,64 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.ID.key(), clinicalAnalysis.getId()));
-        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
+    public OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        try {
+            return runTransaction(clientSession -> {
+                long tmpStartTime = startQuery();
+                logger.debug("Starting ClinicalAnalysis insert transaction for ClinicalAnalysis id '{}'", clinicalAnalysis.getId());
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+                insert(clientSession, studyId, clinicalAnalysis);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+            });
+        } catch (Exception e) {
+            logger.error("Could not create ClinicalAnalysis {}: {}", clinicalAnalysis.getId(), e.getMessage(), e);
+            throw e;
+        }
+    }
 
-        Bson bson = Filters.and(filterList);
-        DataResult<Long> count = clinicalCollection.count(bson);
-        if (count.getNumMatches() > 0) {
-            throw new CatalogDBException("Cannot create clinical analysis. A clinical analysis with { id: '"
-                    + clinicalAnalysis.getId() + "'} already exists.");
+    ClinicalAnalysis insert(ClientSession clientSession, long studyId, ClinicalAnalysis clinicalAnalysis)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (clinicalAnalysis.getInterpretation() != null) {
+            InterpretationMongoDBAdaptor interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
+            Interpretation interpretation = interpretationDBAdaptor.insert(clientSession, studyId, clinicalAnalysis.getInterpretation(),
+                    true);
+            clinicalAnalysis.setInterpretation(interpretation);
         }
 
-        long clinicalAnalysisId = getNewUid();
-        clinicalAnalysis.setUid(clinicalAnalysisId);
+        if (StringUtils.isEmpty(clinicalAnalysis.getId())) {
+            throw new CatalogDBException("Missing ClinicalAnalysis id");
+        }
+        if (!get(clientSession, new Query(ID.key(), clinicalAnalysis.getId())
+                .append(STUDY_UID.key(), studyId), new QueryOptions()).getResults().isEmpty()) {
+            throw CatalogDBException.alreadyExists("ClinicalAnalysis", "id", clinicalAnalysis.getId());
+        }
+
+        long clinicalUid = getNewUid(clientSession);
+
+        clinicalAnalysis.setUid(clinicalUid);
         clinicalAnalysis.setStudyUid(studyId);
         if (StringUtils.isEmpty(clinicalAnalysis.getUuid())) {
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
         }
-
-        Document clinicalObject = clinicalConverter.convertToStorageType(clinicalAnalysis);
-        if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
-            clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
-        } else {
-            clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        if (StringUtils.isEmpty(clinicalAnalysis.getCreationDate())) {
+            clinicalAnalysis.setCreationDate(TimeUtils.getTime());
         }
-        clinicalObject.put(PRIVATE_MODIFICATION_DATE, clinicalObject.get(PRIVATE_CREATION_DATE));
-        clinicalObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
-        return new OpenCGAResult(clinicalCollection.insert(clinicalObject, null));
+        Document clinicalDocument = clinicalConverter.convertToStorageType(clinicalAnalysis);
+        if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
+            clinicalDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(clinicalAnalysis.getCreationDate()));
+        } else {
+            clinicalDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        }
+        clinicalDocument.put(PRIVATE_MODIFICATION_DATE, clinicalDocument.get(PRIVATE_CREATION_DATE));
+        clinicalDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+
+        logger.debug("Inserting ClinicalAnalysis '{}' ({})...", clinicalAnalysis.getId(), clinicalAnalysis.getUid());
+        clinicalCollection.insert(clientSession, clinicalDocument, null);
+        logger.debug("ClinicalAnalysis '{}' successfully inserted", clinicalAnalysis.getId());
+
+        return clinicalAnalysis;
     }
 
     @Override
@@ -675,11 +678,37 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case MEMBER:
+                        List<Bson> queryList = new ArrayList<>();
+                        addAutoOrQuery(PROBAND_UID.key(), queryParam.key(), queryCopy, PROBAND_UID.type(), queryList);
+                        addAutoOrQuery(FAMILY_MEMBERS_UID.key(), queryParam.key(), queryCopy, FAMILY_MEMBERS_UID.type(), queryList);
+                        andBsonList.add(Filters.or(queryList));
+                        break;
+                    case SAMPLE:
+                        queryList = new ArrayList<>();
+                        addAutoOrQuery(PROBAND_SAMPLES_UID.key(), queryParam.key(), queryCopy, PROBAND_SAMPLES_UID.type(), queryList);
+                        addAutoOrQuery(FAMILY_MEMBERS_SAMPLES_UID.key(), queryParam.key(), queryCopy, FAMILY_MEMBERS_SAMPLES_UID.type(),
+                                queryList);
+                        andBsonList.add(Filters.or(queryList));
+                        break;
+                    case STATUS:
+                    case STATUS_NAME:
+                        addAutoOrQuery(STATUS_NAME.key(), queryParam.key(), queryCopy, STATUS_NAME.type(), andBsonList);
+                        break;
+                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
                                 Status.getPositiveStatus(ClinicalAnalysisStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_NAME.type(), andBsonList);
+                        break;
+                    case FAMILY:
+                    case FAMILY_UID:
+                        addAutoOrQuery(FAMILY_UID.key(), queryParam.key(), queryCopy, FAMILY_UID.type(), andBsonList);
+                        break;
+                    case PROBAND:
+                    case PROBAND_ID:
+                        addAutoOrQuery(PROBAND_ID.key(), queryParam.key(), queryCopy, PROBAND_ID.type(), andBsonList);
                         break;
                     case ANALYST:
                     case ANALYST_ASSIGNEE:
@@ -691,12 +720,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case TYPE:
                     case DUE_DATE:
                     case PRIORITY:
-                    case SAMPLE_UID:
+                    case PROBAND_SAMPLES_ID:
+                    case PROBAND_SAMPLES_UID:
                     case PROBAND_UID:
-                    case FAMILY_UID:
                     case DESCRIPTION:
                     case RELEASE:
-                    case INTERNAL_STATUS:
                     case INTERNAL_STATUS_DATE:
                     case FLAGS:
                     case ACL:

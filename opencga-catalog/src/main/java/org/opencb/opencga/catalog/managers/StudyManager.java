@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.auth.authentication.LDAPUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -39,7 +38,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
@@ -66,7 +64,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import javax.naming.NamingException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -85,8 +82,8 @@ public class StudyManager extends AbstractManager {
 
     private final CatalogIOManager catalogIOManager;
 
-    private static final String MEMBERS = "@members";
-    private static final String ADMINS = "@admins";
+    public static final String MEMBERS = "@members";
+    public static final String ADMINS = "@admins";
     //[A-Za-z]([-_.]?[A-Za-z0-9]
     private static final String USER_PATTERN = "[A-Za-z][[-_.]?[A-Za-z0-9]?]*";
     private static final String PROJECT_PATTERN = "[A-Za-z0-9][[-_.]?[A-Za-z0-9]?]*";
@@ -326,24 +323,7 @@ public class StudyManager extends AbstractManager {
             fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty());
 
             // Read and process installation variable sets
-            Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
-            for (String variableSetFile : variablesets) {
-                VariableSet vs = null;
-                try {
-                    vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
-                            getClass().getClassLoader().getResourceAsStream(variableSetFile), VariableSet.class);
-                } catch (IOException e) {
-                    logger.error("Could not parse variable set '{}'", variableSetFile, e);
-                }
-                if (vs != null) {
-                    if (vs.getAttributes() == null) {
-                        vs.setAttributes(new HashMap<>());
-                    }
-                    vs.getAttributes().put("resource", variableSetFile);
-                    createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.getDescription(),
-                            vs.getAttributes(), new ArrayList<>(vs.getVariables()), vs.getEntities(), token);
-                }
-            }
+            createDefaultVariableSets(study, token);
 
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -354,6 +334,38 @@ public class StudyManager extends AbstractManager {
             auditManager.auditCreate(userId, Enums.Resource.STUDY, id, "", id, "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
+        }
+    }
+
+    public void createDefaultVariableSets(String studyStr, String token) throws CatalogException {
+        Study study = get(studyStr, new QueryOptions(), token).first();
+        createDefaultVariableSets(study, token);
+    }
+
+    private void createDefaultVariableSets(Study study, String token) throws CatalogException {
+        Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
+        for (String variableSetFile : variablesets) {
+            VariableSet vs;
+            try {
+                vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
+                        getClass().getClassLoader().getResourceAsStream(variableSetFile), VariableSet.class);
+            } catch (IOException e) {
+                logger.error("Could not parse variable set '{}'", variableSetFile, e);
+                continue;
+            }
+            if (vs != null) {
+                if (vs.getAttributes() == null) {
+                    vs.setAttributes(new HashMap<>());
+                }
+                vs.getAttributes().put("resource", variableSetFile);
+
+                if (study.getVariableSets().stream().anyMatch(tvs -> tvs.getId().equals(vs.getId()))) {
+                    logger.debug("Skip already existing variable set " + vs.getId());
+                } else {
+                    createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.getDescription(),
+                            vs.getAttributes(), new ArrayList<>(vs.getVariables()), vs.getEntities(), token);
+                }
+            }
         }
     }
 
@@ -517,6 +529,8 @@ public class StudyManager extends AbstractManager {
         }
 
         try {
+            fixQueryObject(query);
+
             OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, qOptions, userId);
             auditManager.auditSearch(userId, Enums.Resource.STUDY, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -958,109 +972,42 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Group> syncGroupWith(String studyStr, String externalGroup, String catalogGroup, String authenticationOriginId,
-                                              boolean force, String token) throws CatalogException {
-        if (!OPENCGA.equals(catalogManager.getUserManager().getUserId(token))) {
-            throw new CatalogAuthorizationException("Only the root of OpenCGA can synchronise groups");
-        }
-
-        ParamUtils.checkObj(studyStr, "study");
-        ParamUtils.checkObj(externalGroup, "external group");
-        ParamUtils.checkObj(catalogGroup, "catalog group");
-        ParamUtils.checkObj(authenticationOriginId, "authentication origin");
-
-        AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authenticationOriginId);
-        if (authenticationOrigin == null) {
-            throw new CatalogException("Authentication origin " + authenticationOriginId + " not found");
-        }
-
-        try {
-            String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.GROUPS_SEARCH));
-            if (!LDAPUtils.existsLDAPGroup(authenticationOrigin.getHost(), externalGroup, base)) {
-                throw new CatalogException("Group " + externalGroup + " not found in origin " + authenticationOriginId);
-            }
-        } catch (NamingException e) {
-            logger.error("{}", e.getMessage(), e);
-            throw new CatalogException("Unexpected LDAP error: " + e.getMessage());
-        }
-
-        Study study = resolveId(studyStr, OPENCGA);
-
-        // Fix the groupId
-        if (!catalogGroup.startsWith("@")) {
-            catalogGroup = "@" + catalogGroup;
-        }
-
-        OpenCGAResult<Group> group = studyDBAdaptor.getGroup(study.getUid(), catalogGroup, Collections.emptyList());
-        if (group.getNumResults() == 1) {
-            if (group.first().getSyncedFrom() != null && StringUtils.isNotEmpty(group.first().getSyncedFrom().getAuthOrigin())
-                    && StringUtils.isNotEmpty(group.first().getSyncedFrom().getRemoteGroup())) {
-                if (authenticationOriginId.equals(group.first().getSyncedFrom().getAuthOrigin())
-                        && externalGroup.equals(group.first().getSyncedFrom().getRemoteGroup())) {
-                    // It is already synced with that group from that authentication origin
-                    return group;
-                } else {
-                    throw new CatalogException("The group " + catalogGroup + " is already synced with the group " + externalGroup + " "
-                            + "from " + authenticationOriginId + ". If you still want to sync the group with the new external group, "
-                            + "please use the force parameter.");
-                }
-            }
-
-            if (!force) {
-                throw new CatalogException("Cannot sync the group " + catalogGroup + " because it already exist in Catalog. Please, use "
-                        + "force parameter if you still want sync it.");
-            }
-
-            // We remove all the users belonging to that group and resync it with the new external group
-            studyDBAdaptor.removeUsersFromGroup(study.getUid(), catalogGroup, group.first().getUserIds());
-            studyDBAdaptor.syncGroup(study.getUid(), catalogGroup, new Group.Sync(authenticationOriginId, externalGroup));
-        } else {
-            // We need to create a new group
-            Group newGroup = new Group(catalogGroup, Collections.emptyList(), new Group.Sync(authenticationOriginId,
-                    externalGroup));
-            studyDBAdaptor.createGroup(study.getUid(), newGroup);
-        }
-
-        return studyDBAdaptor.getGroup(study.getUid(), catalogGroup, Collections.emptyList());
-    }
-
-
-    public OpenCGAResult<Group> syncGroupWith(String studyStr, String groupId, Group.Sync syncedFrom, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkObj(syncedFrom, "sync");
-
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = resolveId(studyStr, userId);
-
-        if (StringUtils.isEmpty(groupId)) {
-            throw new CatalogException("Missing group name parameter");
-        }
-
-        // Fix the groupId
-        if (!groupId.startsWith("@")) {
-            groupId = "@" + groupId;
-        }
-
-        authorizationManager.checkSyncGroupPermissions(study.getUid(), userId, groupId);
-
-        OpenCGAResult<Group> group = studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
-        if (group.first().getSyncedFrom() != null && StringUtils.isNotEmpty(group.first().getSyncedFrom().getAuthOrigin())
-                && StringUtils.isNotEmpty(group.first().getSyncedFrom().getRemoteGroup())) {
-            throw new CatalogException("Cannot modify already existing sync information.");
-        }
-
-        // Check the group exists
-        Query query = new Query()
-                .append(StudyDBAdaptor.QueryParams.UID.key(), study.getUid())
-                .append(StudyDBAdaptor.QueryParams.GROUP_ID.key(), groupId);
-        if (studyDBAdaptor.count(query).getNumMatches() == 0) {
-            throw new CatalogException("The group " + groupId + " does not exist.");
-        }
-
-        studyDBAdaptor.syncGroup(study.getUid(), groupId, syncedFrom);
-
-        return studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
-    }
+//    public OpenCGAResult<Group> syncGroupWith(String studyStr, String groupId, Group.Sync syncedFrom, String sessionId)
+//            throws CatalogException {
+//        ParamUtils.checkObj(syncedFrom, "sync");
+//
+//        String userId = catalogManager.getUserManager().getUserId(sessionId);
+//        Study study = resolveId(studyStr, userId);
+//
+//        if (StringUtils.isEmpty(groupId)) {
+//            throw new CatalogException("Missing group name parameter");
+//        }
+//
+//        // Fix the groupId
+//        if (!groupId.startsWith("@")) {
+//            groupId = "@" + groupId;
+//        }
+//
+//        authorizationManager.checkSyncGroupPermissions(study.getUid(), userId, groupId);
+//
+//        OpenCGAResult<Group> group = studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
+//        if (group.first().getSyncedFrom() != null && StringUtils.isNotEmpty(group.first().getSyncedFrom().getAuthOrigin())
+//                && StringUtils.isNotEmpty(group.first().getSyncedFrom().getRemoteGroup())) {
+//            throw new CatalogException("Cannot modify already existing sync information.");
+//        }
+//
+//        // Check the group exists
+//        Query query = new Query()
+//                .append(StudyDBAdaptor.QueryParams.UID.key(), study.getUid())
+//                .append(StudyDBAdaptor.QueryParams.GROUP_ID.key(), groupId);
+//        if (studyDBAdaptor.count(query).getNumMatches() == 0) {
+//            throw new CatalogException("The group " + groupId + " does not exist.");
+//        }
+//
+//        studyDBAdaptor.syncGroup(study.getUid(), groupId, syncedFrom);
+//
+//        return studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
+//    }
 
     public OpenCGAResult<Group> deleteGroup(String studyId, String groupId, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);

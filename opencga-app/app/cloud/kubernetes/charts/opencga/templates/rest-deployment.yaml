@@ -27,9 +27,8 @@ spec:
             {{- toYaml .Values.rest.securityContext | nindent 12 }}
           image: "{{ .Values.rest.image.repository }}"
           imagePullPolicy: {{ .Values.rest.image.pullPolicy }}
-          command: ["/bin/sh"]
-          args: 
-          - "-c"
+          command: ["/bin/sh", "-c"]
+          args:
           - "echo $PASSWORD | /opt/opencga/bin/opencga-admin.sh server rest --start"
           env:
           - name:  "PASSWORD"
@@ -37,15 +36,23 @@ spec:
               secretKeyRef:
                 name: opencga-secrets
                 key: openCgaAdminPassword
+          - name: DOCKER_HOST
+            value: tcp://localhost:2375
           ports:
             - name: http
               containerPort: 9090
               protocol: TCP
-          livenessProbe:
+          readinessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 20
             httpGet:
               path: /opencga/webservices/rest/v1/meta/status
               port: 9090
-          readinessProbe:
+          livenessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 20
             httpGet:
               path: /opencga/webservices/rest/v1/meta/status
               port: 9090
@@ -58,6 +65,38 @@ spec:
             mountPath: /opt/opencga/sessions
           - name : variants
             mountPath: /opt/opencga/variants
+          - name: analysisconf
+            mountPath: /opt/opencga/analysis
+          - name: opencgascratch
+            mountPath: /tmp/opencga_scratch
+        - name: dind-daemon
+          image: docker:dind
+          securityContext:
+            privileged: true
+          command: ["/bin/sh", "-c"]
+          args:
+          - |
+            dockerd-entrypoint.sh &
+            sleep 5
+            umount /tmp
+            docker pull opencb/opencga-r:2.0.0-rc2
+            sleep infinity
+          env:
+              - name: DOCKER_TLS_CERTDIR
+                value: ""
+          volumeMounts:
+            - name: docker-graph-storage
+              mountPath: /var/lib/docker
+            - name: conf
+              mountPath: /opt/opencga/conf
+            - name: sessions
+              mountPath: /opt/opencga/sessions
+            - name: variants
+              mountPath: /opt/opencga/variants
+            - name: analysisconf
+              mountPath: /opt/opencga/analysis
+            - name: opencgascratch
+              mountPath: /tmp/opencga_scratch
       volumes:
       - name: conf
         azureFile:
@@ -74,6 +113,15 @@ spec:
           secretName: azure-files-secret
           shareName: variants
           readOnly: false
+      - name: analysisconf
+        azureFile:
+          secretName: azure-files-secret
+          shareName: analysisconf
+          readOnly: false
+      - name: docker-graph-storage
+        emptyDir: {}
+      - name: opencgascratch
+        emptyDir: {}
       {{- with .Values.rest.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

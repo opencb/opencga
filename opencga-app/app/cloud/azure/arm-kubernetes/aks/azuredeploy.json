@@ -657,8 +657,6 @@
                         "vnetSubnetID": "[parameters('kubernetesSubnetId')]",
                         "dnsPrefix": "agents",
                         "type": "VirtualMachineScaleSets"
-
-
                     }
                 ]
             },
@@ -666,7 +664,6 @@
 
             ],
             "resources": [
-
                 {
                     "condition": "[equals(parameters('jobsAgentPoolOrVirtualNode'),'AgentPool')]",
                     "name": "jobs",

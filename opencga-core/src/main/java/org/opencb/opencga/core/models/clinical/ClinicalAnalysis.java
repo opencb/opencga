@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.Comment;
 import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
@@ -45,9 +45,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     private Individual proband;
     private Family family;
-    private Map<String, FamiliarRelationship> roleToProband;
-
-    private ClinicalAnalysisQc qualityControl;
 
     private Interpretation interpretation;
     private List<Interpretation> secondaryInterpretations;
@@ -150,11 +147,10 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
-                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalAnalysisQc qualityControl,
-                            Interpretation interpretation, List<Interpretation> secondaryInterpretations, ClinicalConsent consent,
-                            ClinicalAnalysisAnalyst analyst, Enums.Priority priority, List<String> flags, String creationDate,
-                            String modificationDate, String dueDate, int release, List<Comment> comments, List<Alert> alerts,
-                            ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
+                            Family family, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
+                            ClinicalConsent consent, ClinicalAnalysisAnalyst analyst, Enums.Priority priority, List<String> flags,
+                            String creationDate, String modificationDate, String dueDate, int release, List<Comment> comments,
+                            List<Alert> alerts, ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -162,8 +158,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.files = files;
         this.proband = proband;
         this.family = family;
-        this.roleToProband = roleToProband;
-        this.qualityControl = qualityControl;
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
         this.consent = consent;
@@ -192,8 +186,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
-        sb.append(", roleToProband=").append(roleToProband);
-        sb.append(", qc=").append(qualityControl);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
@@ -285,24 +277,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setFamily(Family family) {
         this.family = family;
-        return this;
-    }
-
-    public Map<String, FamiliarRelationship> getRoleToProband() {
-        return roleToProband;
-    }
-
-    public ClinicalAnalysis setRoleToProband(Map<String, FamiliarRelationship> roleToProband) {
-        this.roleToProband = roleToProband;
-        return this;
-    }
-
-    public ClinicalAnalysisQc getQualityControl() {
-        return qualityControl;
-    }
-
-    public ClinicalAnalysis setQualityControl(ClinicalAnalysisQc qualityControl) {
-        this.qualityControl = qualityControl;
         return this;
     }
 

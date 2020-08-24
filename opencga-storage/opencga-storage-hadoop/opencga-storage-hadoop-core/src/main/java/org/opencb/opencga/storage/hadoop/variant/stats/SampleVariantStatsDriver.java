@@ -151,7 +151,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
     @Override
     protected Query getQuery() {
-        return new Query()
+        return super.getQuery()
                 .append(VariantQueryParam.STUDY.key(), getStudyId())
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
     }
@@ -199,6 +199,11 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     @Override
     protected int getNumReduceTasks() {
         return Math.min(sampleIds.size(), 10);
+    }
+
+    @Override
+    public boolean isOutputWithHeaders() {
+        return false;
     }
 
     @Override
@@ -338,6 +343,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             studyId = context.getConfiguration().getInt(STUDY_ID, -1);
             samples = context.getConfiguration().getInts(SAMPLES);
             sampleIdsPosition = new int[IntStream.of(samples).max().orElse(0) + 1];
+            Arrays.fill(sampleIdsPosition, -1);
             for (int i = 0; i < samples.length; i++) {
                 sampleIdsPosition[samples[i]] = i;
             }
@@ -351,7 +357,12 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
         private List<Integer> getSamplesFromFileId(int fileId) {
             return fileToSampleIds.computeIfAbsent(fileId,
-                    id -> new ArrayList<>(vsm.getFileMetadata(studyId, id).getSamples()));
+                    id -> {
+                        ArrayList<Integer> sampleIds = new ArrayList<>(vsm.getFileMetadata(studyId, id).getSamples());
+                        // Discard unused samples
+                        sampleIds.removeIf(s -> sampleIdsPosition.length <= s || sampleIdsPosition[s] < 0);
+                        return sampleIds;
+                    });
         }
 
         @Override

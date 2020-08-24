@@ -21,11 +21,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -33,40 +32,30 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Tool(id = SampleVariantStatsAnalysis.ID, resource = Enums.Resource.VARIANT, description = SampleVariantStatsAnalysis.DESCRIPTION)
-public class SampleVariantStatsAnalysis extends OpenCgaTool {
+public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "sample-variant-stats";
     public static final String DESCRIPTION = "Compute sample variant stats for the selected list of samples.";
     public static final String VARIABLE_SET_ID = "opencga_sample_variant_stats";
     private String study;
-    private Query samplesQuery;
-    private List<String> sampleNames;
-    private String individual;
-    private String family;
-    private ArrayList<String> checkedSamplesList;
-    private boolean indexResults = false;
-    private Path outputFile;
 
-    /**
-     * Study of the samples.
-     * @param study Study id
-     * @return this
-     */
-    public SampleVariantStatsAnalysis setStudy(String study) {
-        this.study = study;
-        return this;
-    }
+    private final SampleVariantStatsAnalysisParams toolParams = new SampleVariantStatsAnalysisParams();
+    private ArrayList<String> checkedSamplesList;
+    private Path outputFile;
 
     /**
      * List of samples.
@@ -74,29 +63,29 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
      * @return this
      */
     public SampleVariantStatsAnalysis setSampleNames(List<String> sampleNames) {
-        this.sampleNames = sampleNames;
+        toolParams.setSample(sampleNames);
         return this;
     }
 
-    /**
-     * Samples query to select samples to be used.
-     * @param samplesQuery Samples query
-     * @return this
-     */
-    public SampleVariantStatsAnalysis setSamplesQuery(Query samplesQuery) {
-        this.samplesQuery = samplesQuery;
-        return this;
-    }
-
-    /**
-     * Select samples from this individual.
-     * @param individualId individual
-     * @return this
-     */
-    public SampleVariantStatsAnalysis setIndividual(String individualId) {
-        this.individual = individualId;
-        return this;
-    }
+//    /**
+//     * Samples query to select samples to be used.
+//     * @param samplesQuery Samples query
+//     * @return this
+//     */
+//    public SampleVariantStatsAnalysis setSamplesQuery(Query samplesQuery) {
+//        this.samplesQuery = samplesQuery;
+//        return this;
+//    }
+//
+//    /**
+//     * Select samples from this individual.
+//     * @param individualId individual
+//     * @return this
+//     */
+//    public SampleVariantStatsAnalysis setIndividual(String individualId) {
+//        this.individual = individualId;
+//        return this;
+//    }
 
     /**
      * Select samples form the individuals of this family.
@@ -104,7 +93,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
      * @return this
      */
     public SampleVariantStatsAnalysis setFamily(String family) {
-        this.family = family;
+        this.toolParams.setFamily(family);
         return this;
     }
 
@@ -117,67 +106,72 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
      * @return boolean
      */
     public SampleVariantStatsAnalysis setIndexResults(boolean indexResults) {
-        this.indexResults = indexResults;
+        toolParams.setIndex(indexResults);
         return this;
     }
 
     @Override
     protected void check() throws Exception {
         super.check();
+        toolParams.updateParams(params);
+        study = getStudyFqn();
         setUpStorageEngineExecutor(study);
-
         Set<String> allSamples = new HashSet<>();
 
-        try {
-            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
-        } catch (CatalogException e) {
-            throw new ToolException(e);
+        Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
+        List<String> sampleNames = toolParams.getSample();
+        if (CollectionUtils.isNotEmpty(sampleNames)) {
+            catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), token)
+                    .getResults()
+                    .stream()
+                    .map(Sample::getId)
+                    .forEach(allSamples::add);
         }
 
-        try {
-            if (CollectionUtils.isNotEmpty(sampleNames)) {
-                catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), token)
-                        .getResults()
-                        .stream()
-                        .map(Sample::getId)
-                        .forEach(allSamples::add);
+//            if (samplesQuery != null) {
+//                List<String> samplesFromQuery = new LinkedList<>();
+//                catalogManager.getSampleManager().search(study, samplesQuery, new QueryOptions(), token)
+//                        .getResults()
+//                        .stream()
+//                        .map(Sample::getId)
+//                        .forEach(samplesFromQuery::add);
+//                // Remove non-indexed samples
+//                samplesFromQuery.removeIf(s -> !indexedSamples.contains(s));
+//                allSamples.addAll(samplesFromQuery);
+//            }
+//            if (StringUtils.isNotEmpty(individual)) {
+//                Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individual);
+//                catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
+//                        .getResults()
+//                        .stream()
+//                        .map(Sample::getId)
+//                        .forEach(allSamples::add);
+//            }
+        if (StringUtils.isNotEmpty(toolParams.getFamily())) {
+            Family family = catalogManager.getFamilyManager().get(study, toolParams.getFamily(), null, token).first();
+            List<String> individualIds = new ArrayList<>(family.getMembers().size());
+            for (Individual member : family.getMembers()) {
+                individualIds.add(member.getId());
             }
-            if (samplesQuery != null) {
-                catalogManager.getSampleManager().search(study, samplesQuery, new QueryOptions(), token)
-                        .getResults()
-                        .stream()
-                        .map(Sample::getId)
-                        .forEach(allSamples::add);
-            }
-            if (StringUtils.isNotEmpty(individual)) {
-                Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individual);
-                catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
-                        .getResults()
-                        .stream()
-                        .map(Sample::getId)
-                        .forEach(allSamples::add);
-            }
-            if (StringUtils.isNotEmpty(family)) {
-                Family family = catalogManager.getFamilyManager().get(study, this.family, null, token).first();
-                List<String> individualIds = new ArrayList<>(family.getMembers().size());
-                for (Individual member : family.getMembers()) {
-                    individualIds.add(member.getId());
-                }
-                Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualIds);
-                catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
-                        .getResults()
-                        .stream()
-                        .map(Sample::getId)
-                        .forEach(allSamples::add);
-            }
-
-            // Remove non-indexed samples
-            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
-            allSamples.removeIf(s -> !indexedSamples.contains(s));
-
-        } catch (CatalogException e) {
-            throw new ToolException(e);
+            Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualIds);
+            catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
+                    .getResults()
+                    .stream()
+                    .map(Sample::getId)
+                    .forEach(allSamples::add);
         }
+
+        List<String> nonIndexedSamples = new ArrayList<>();
+        // Remove non-indexed samples
+        for (String sample : allSamples) {
+            if (!indexedSamples.contains(sample)) {
+                nonIndexedSamples.add(sample);
+            }
+        }
+        if (!nonIndexedSamples.isEmpty()) {
+            throw new IllegalArgumentException("Samples " + nonIndexedSamples + " are not indexed into the Variant Storage");
+        }
+
         checkedSamplesList = new ArrayList<>(allSamples);
         checkedSamplesList.sort(String::compareTo);
 
@@ -186,23 +180,20 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
         }
 
         // check read permission
-        try {
-            variantStorageManager.checkQueryPermissions(
-                    new Query()
-                            .append(VariantQueryParam.STUDY.key(), study)
-                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), checkedSamplesList),
-                    new QueryOptions(),
-                    token);
-        } catch (CatalogException | StorageEngineException e) {
-            throw new ToolException(e);
-        }
+        variantStorageManager.checkQueryPermissions(
+                new Query()
+                        .append(VariantQueryParam.STUDY.key(), study)
+                        .append(VariantQueryParam.INCLUDE_SAMPLE.key(), checkedSamplesList),
+                new QueryOptions(),
+                token);
+
         outputFile = getOutDir().resolve(getId() + ".json");
     }
 
     @Override
     protected List<String> getSteps() {
         List<String> steps = super.getSteps();
-        if (indexResults) {
+        if (toolParams.isIndex()) {
             steps.add("index");
         }
         return steps;
@@ -215,10 +206,11 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
                     .setOutputFile(outputFile)
                     .setStudy(study)
                     .setSampleNames(checkedSamplesList)
+                    .setVariantQuery(toolParams.getVariantQuery() == null ? new Query() : toolParams.getVariantQuery().toQuery())
                     .execute();
         });
 
-        if (indexResults) {
+        if (toolParams.isIndex()) {
             step("index", () -> indexResults(outputFile));
         }
     }
@@ -235,10 +227,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
                 catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), token);
             } catch (CatalogException e) {
                 // Assume variable set not found. Try to create
-                List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(SampleVariantStats.getClassSchema());
-                catalogManager.getStudyManager()
-                        .createVariableSet(study, VARIABLE_SET_ID, VARIABLE_SET_ID, true, false, "", Collections.emptyMap(), variables,
-                        Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token);
+                catalogManager.getStudyManager().createDefaultVariableSets(study, token);
             }
 
             for (SampleVariantStats sampleStats : stats) {

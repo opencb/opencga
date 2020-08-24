@@ -355,10 +355,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 VariantStorageMetadataManager metadataManager = getMetadataManager();
                 int studyId = metadataManager.getStudyId(studyName);
 
-                List<Integer> fileIds = new ArrayList<>(files.size());
+                List<String> fileNames = new ArrayList<>(files.size());
                 for (URI uri : files) {
-                    String fileName = VariantReaderUtils.getOriginalFromTransformedFile(uri);
-                    fileIds.add(metadataManager.getFileId(studyId, fileName));
+                    Integer fileId = metadataManager.getFileId(studyId, VariantReaderUtils.getOriginalFromTransformedFile(uri));
+                    fileNames.add(metadataManager.getFileName(studyId, fileId));
                 }
 
                 // Annotate only the new indexed variants
@@ -366,8 +366,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 if (!options.getBoolean(ANNOTATION_OVERWEITE.key(), false)) {
                     annotationQuery.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
                 }
-                annotationQuery.put(VariantQueryParam.STUDY.key(), Collections.singletonList(studyId));
-                annotationQuery.put(VariantQueryParam.FILE.key(), fileIds);
+                annotationQuery.put(VariantQueryParam.STUDY.key(), Collections.singletonList(studyName));
+                annotationQuery.put(VariantQueryParam.FILE.key(), fileNames);
 
                 ObjectMap annotationOptions = new ObjectMap(options)
                         .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.toString())
@@ -560,8 +560,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *              If a family has two children, two trios should be defined.
      * @param options Other options
      * @throws StorageEngineException in an error occurs
+     * @return List of trios used to index. Empty if there was nothing to do.
      */
-    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException("Unsupported familyIndex");
     }
 
@@ -618,14 +619,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         // then, load variants
         queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
         try (VariantDBIterator iterator = getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor)) {
-            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
-            VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
+            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
+            VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger,
+                    newVariantSearchLoadListener(overwrite));
 
-            long value = System.currentTimeMillis();
-            getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
-                return projectMetadata;
-            });
+            if (isValidParam(query, VariantQueryParam.REGION)) {
+                logger.info("Partial secondary index. Do not update {} timestamp", SEARCH_INDEX_LAST_TIMESTAMP.key());
+            } else {
+                long value = System.currentTimeMillis();
+                getMetadataManager().updateProjectMetadata(projectMetadata -> {
+                    projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
+                    return projectMetadata;
+                });
+            }
 
             return load;
         } catch (StorageEngineException | IOException | RuntimeException e) {
@@ -653,8 +659,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
-        return VariantSearchLoadListener.empty();
+    protected VariantSearchLoadListener newVariantSearchLoadListener(boolean overwrite) throws StorageEngineException {
+        return VariantSearchLoadListener.empty(overwrite);
     }
 
     public void secondaryIndexSamples(String study, List<String> samples)
@@ -686,7 +692,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
 
                 ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
-                variantSearchManager.load(collectionName, iterator, progressLogger, VariantSearchLoadListener.empty());
+                variantSearchManager.load(collectionName, iterator, progressLogger, VariantSearchLoadListener.empty(false));
             } else {
                 throw new StorageEngineException("Solr is not alive!");
             }

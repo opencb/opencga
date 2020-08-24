@@ -18,8 +18,8 @@ package org.opencb.opencga.analysis.clinical.tiering;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
@@ -44,6 +44,8 @@ import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -71,6 +73,8 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
     private final static Query dominantQuery;
     private final static Query recessiveQuery;
     private final static Query mitochondrialQuery;
+
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     static {
         recessiveQuery = new Query()
@@ -193,6 +197,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         Map<String, List<ClinicalProperty.ModeOfInheritance>> variantMoIMap = new HashMap<>();
 
         for (Map.Entry<ClinicalProperty.ModeOfInheritance, List<Variant>> entry : resultMap.entrySet()) {
+            logger.info("MoI: " + entry.getKey().name() + ", num. variants = " + entry.getValue().size());
             for (Variant variant : entry.getValue()) {
                 if (!variantMoIMap.containsKey(variant.getId())) {
                     variantMoIMap.put(variant.getId(), new ArrayList<>());

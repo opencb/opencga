@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -27,10 +26,7 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -42,6 +38,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -52,7 +49,6 @@ import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -88,25 +84,20 @@ import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHetero
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianErrorQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
+import org.opencb.opencga.storage.hadoop.variant.search.SecondaryIndexPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -343,49 +334,86 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-
-        options.put(SampleIndexAnnotationLoaderDriver.SAMPLES, samples);
-        int studyId = getMetadataManager().getStudyId(study);
-        getMRExecutor().run(SampleIndexAnnotationLoaderDriver.class,
-                FamilyIndexDriver.buildArgs(
-                        getArchiveTableName(studyId),
-                        getVariantTableName(),
-                        studyId,
-                        null,
-                        options), options,
-                "Annotate sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));    }
+        new SampleIndexAnnotationLoader(hBaseManager, getTableNameGenerator(), getMetadataManager(), getMRExecutor())
+                .updateSampleAnnotation(study, samples, options);
+    }
 
 
     @Override
-    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        if (trios.size() < 1000) {
-            options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
-        } else {
-            File mendelianErrorsFile = null;
-            try {
-                mendelianErrorsFile = File.createTempFile("mendelian_errors.", ".tmp");
-                try (OutputStream os = FileUtils.openOutputStream(mendelianErrorsFile)) {
-                    for (List<String> trio : trios) {
-                        os.write(String.join(",", trio).getBytes());
-                        os.write('\n');
+        trios = new LinkedList<>(trios);
+        DataResult<List<String>> dr = new DataResult<>();
+        dr.setResults(trios);
+        dr.setEvents(new LinkedList<>());
+
+        boolean overwrite = options.getBoolean(FamilyIndexDriver.OVERWRITE);
+        if (trios.isEmpty()) {
+            throw new StorageEngineException("Undefined family trios");
+        }
+        int studyId = getMetadataManager().getStudyId(study);
+        Iterator<List<String>> iterator = trios.iterator();
+        while (iterator.hasNext()) {
+            List<Integer> trioIds = new ArrayList<>(3);
+            List<String> trio = iterator.next();
+            for (String sample : trio) {
+                Integer sampleId;
+                if (sample.equals("-")) {
+                    sampleId = -1;
+                } else {
+                    sampleId = getMetadataManager().getSampleId(studyId, sample);
+                    if (sampleId == null) {
+                        throw new IllegalArgumentException("Sample '" + sample + "' not found.");
                     }
                 }
-            } catch (IOException e) {
-                if (mendelianErrorsFile == null) {
-                    throw new StorageEngineException("Error generating temporary file.", e);
-                } else {
-                    throw new StorageEngineException("Error writing temporary file " + mendelianErrorsFile, e);
+                trioIds.add(sampleId);
+            }
+            if (trioIds.size() != 3) {
+                throw new IllegalArgumentException("Found trio with " + trioIds.size() + " members, instead of 3: " + trioIds);
+            }
+            SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(studyId, trioIds.get(2));
+            if (!overwrite && sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
+                String msg = "Skip sample " + sampleMetadata.getName() + ". Already precomputed!";
+                logger.info(msg);
+                dr.getEvents().add(new Event(Event.Type.INFO, msg));
+                iterator.remove();
+            } else {
+                Integer fatherId = trioIds.get(0);
+                boolean fatherDefined = fatherId != -1;
+                Integer motherId = trioIds.get(1);
+                boolean motherDefined = motherId != -1;
+                if (fatherDefined && !fatherId.equals(sampleMetadata.getFather())
+                        || motherDefined && !motherId.equals(sampleMetadata.getMother())) {
+                    getMetadataManager().updateSampleMetadata(studyId, sampleMetadata.getId(), s -> {
+                        if (fatherDefined) {
+                            sampleMetadata.setFather(fatherId);
+                        }
+                        if (motherDefined) {
+                            sampleMetadata.setMother(motherId);
+                        }
+                        return sampleMetadata;
+                    });
                 }
             }
-            options.put(FamilyIndexDriver.TRIOS_FILE, mendelianErrorsFile.toPath().toAbsolutePath().toString());
-            options.put(FamilyIndexDriver.TRIOS_FILE_DELETE, true);
+        }
+        if (trios.isEmpty()) {
+            logger.info("Nothing to do!");
+            return dr;
+        }
+        if (trios.size() < 500) {
+            options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+        } else {
+            CohortMetadata cohortMetadata = getMetadataManager().registerTemporaryCohort(study, "pendingFamilyIndexSamples",
+                    trios.stream().map(t -> t.get(2)).collect(Collectors.toList()));
+
+            options.put(FamilyIndexDriver.TRIOS_COHORT, cohortMetadata.getName());
+            options.put(FamilyIndexDriver.TRIOS_COHORT_DELETE, true);
         }
 
-        int studyId = getMetadataManager().getStudyId(study);
         getMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),
                 studyId, null, options), options,
                 "Precompute mendelian errors for " + (trios.size() == 1 ? "trio " + trios.get(0) : trios.size() + " trios"));
+        return dr;
     }
 
 
@@ -414,19 +442,29 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
-        queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
+
+//        boolean pendingVariants = !overwrite;
+        boolean pendingVariants = true;
+
+        if (pendingVariants) {
+            new SecondaryIndexPendingVariantsManager(getDBAdaptor())
+                    .discoverPending(getMRExecutor(), overwrite, getMergedOptions(queryOptions));
+        }
+
         return super.secondaryIndex(query, queryOptions, overwrite);
     }
 
     @Override
     protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
             throws StorageEngineException {
-        if (!overwrite) {
-            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
-            logger.info("Column intersect!");
-//        queryOptions.put("multiIteratorBatchSize", 1000);
-            return new HBaseColumnIntersectVariantQueryExecutor(getDBAdaptor(), getStorageEngineId(), getOptions())
-                    .iterator(query, queryOptions);
+
+//        boolean pendingVariants = !overwrite;
+        boolean pendingVariants = true;
+
+        if (pendingVariants) {
+            logger.info("Get variants to index from pending variants table");
+            logger.info("Query: " + query.toJson());
+            return new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
         } else {
             logger.info("Get variants to index");
             return super.getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor);
@@ -434,8 +472,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    protected VariantSearchLoadListener newVariantSearchLoadListener() throws StorageEngineException {
-        return new HadoopVariantSearchLoadListener(getDBAdaptor());
+    protected VariantSearchLoadListener newVariantSearchLoadListener(boolean overwrite) throws StorageEngineException {
+        return new HadoopVariantSearchLoadListener(getDBAdaptor(),
+                new SecondaryIndexPendingVariantsManager(getDBAdaptor()).cleaner(), overwrite);
     }
 
     @Override

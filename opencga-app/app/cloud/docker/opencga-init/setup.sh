@@ -8,6 +8,8 @@ set -x
 FILE=/opt/volume/conf/hadoop
 if [ -d "$FILE" ]; then
     echo "$FILE already exists"
+    echo "Copy jar-with-dependencies to hadoop"
+    sshpass -p "$INIT_HADOOP_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/*.jar "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
 else
     sshpass -p "$INIT_HADOOP_SSH_PASS" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
 
@@ -42,6 +44,8 @@ else
     echo "Initialising volume"
     #mkdir -p /opt/volume/conf /opt/volume/variants
     cp -r /opt/opencga/conf/* /opt/volume/conf
+
+    cp -r /opt/opencga/analysis/* /opt/volume/analysis
 fi
 # wait for mongodb
 echo "About to wait for MongoDB"

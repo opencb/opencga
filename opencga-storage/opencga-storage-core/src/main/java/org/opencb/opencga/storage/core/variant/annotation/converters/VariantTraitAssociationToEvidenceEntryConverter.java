@@ -1,17 +1,17 @@
 package org.opencb.opencga.storage.core.variant.annotation.converters;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +29,15 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
     private static final String REVIEW_STATUS_IN_SOURCE_FILE = "ReviewStatus_in_source_file";
     private static final String MUTATION_SOMATIC_STATUS_IN_SOURCE_FILE = "mutationSomaticStatus_in_source_file";
     private static final String SYMBOL = "symbol";
+    private static final Map<String, ClinicalSignificance> CLINVAR_CLINSIG_TO_ACMG_WITH_ENUM;
+
+    static {
+        CLINVAR_CLINSIG_TO_ACMG_WITH_ENUM = new HashMap<>(VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG);
+        for (ClinicalSignificance value : ClinicalSignificance.values()) {
+            CLINVAR_CLINSIG_TO_ACMG_WITH_ENUM.put(value.name(), value);
+            CLINVAR_CLINSIG_TO_ACMG_WITH_ENUM.put(value.name().toLowerCase(), value);
+        }
+    }
 
 
     @Override
@@ -65,7 +74,16 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
         if (CollectionUtils.isNotEmpty(clinVar.getTraits())) {
             heritableTraits = clinVar.getTraits()
                     .stream()
-                    .map(trait -> new HeritableTrait(trait, ModeOfInheritance.NA))
+                    .map(trait -> {
+                        if (trait.startsWith("{")) {
+                            try {
+                                return JacksonUtils.getDefaultObjectMapper().readValue(trait, HeritableTrait.class);
+                            } catch (JsonProcessingException ignore) {
+                                logger.debug("Error parsing trait", ignore);
+                            }
+                        }
+                        return new HeritableTrait(trait, ModeOfInheritance.NA);
+                    })
                     .collect(Collectors.toList());
         }
         List<GenomicFeature> genomicFeatures;
@@ -141,12 +159,12 @@ public class VariantTraitAssociationToEvidenceEntryConverter implements Converte
         VariantClassification variantClassification = new VariantClassification();
         for (String value : lineField.split("[,/;]")) {
             value = value.toLowerCase().trim();
-            if (VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.containsKey(value)) {
+            if (CLINVAR_CLINSIG_TO_ACMG_WITH_ENUM.containsKey(value)) {
                 // No value set
                 if (variantClassification.getClinicalSignificance() == null) {
-                    variantClassification.setClinicalSignificance(VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.get(value));
+                    variantClassification.setClinicalSignificance(CLINVAR_CLINSIG_TO_ACMG_WITH_ENUM.get(value));
                     // Seen cases like Benign;Pathogenic;association;not provided;risk factor for the same record
-                } else if (isBenign(VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.get(value))
+                } else if (isBenign(CLINVAR_CLINSIG_TO_ACMG_WITH_ENUM.get(value))
                         && isPathogenic(variantClassification.getClinicalSignificance())) {
                     logger.warn("Benign and Pathogenic clinical significances found for the same record");
                     logger.warn("Will set uncertain_significance instead");

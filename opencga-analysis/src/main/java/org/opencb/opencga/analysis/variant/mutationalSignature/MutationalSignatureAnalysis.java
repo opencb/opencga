@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.analysis.variant.mutationalSignature;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
@@ -31,6 +33,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -136,4 +140,23 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
                     .execute();
         });
     }
+
+    public static Signature.SignatureCount[] parseSignatureCounts(File contextFile) throws ToolException {
+        try {
+            Signature.SignatureCount[] sigCounts = null;
+            if (contextFile.exists()) {
+                List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
+                sigCounts = new Signature.SignatureCount[lines.size() - 1];
+                for (int i = 1; i < lines.size(); i++) {
+                    String[] fields = lines.get(i).split("\t");
+                    sigCounts[i - 1] = new Signature.SignatureCount(fields[2], Math.round(Float.parseFloat((fields[3]))));
+                }
+            }
+            return sigCounts;
+        } catch (IOException e) {
+            throw new ToolException(e);
+        }
+    }
+
 }
+

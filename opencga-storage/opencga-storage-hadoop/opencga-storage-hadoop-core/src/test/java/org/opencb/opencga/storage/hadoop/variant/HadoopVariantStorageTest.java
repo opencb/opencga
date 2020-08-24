@@ -401,6 +401,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         options.put(HadoopVariantStorageOptions.PENDING_ANNOTATION_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
                 ? Compression.Algorithm.SNAPPY.getName()
                 : Compression.Algorithm.NONE.getName());
+        options.put(HadoopVariantStorageOptions.PENDING_SECONDARY_INDEX_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
+                ? Compression.Algorithm.SNAPPY.getName()
+                : Compression.Algorithm.NONE.getName());
 
         FileSystem fs = FileSystem.get(HadoopVariantStorageTest.configuration.get());
         String intermediateDirectory = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();
@@ -468,7 +471,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     default int getExpectedNumLoadedVariants(VariantFileMetadata fileMetadata) {
         int numRecords = 0;
         for (VariantType variantType : HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET) {
-            numRecords += fileMetadata.getStats().getTypeCount().getOrDefault(variantType.name(), 0);
+            numRecords += fileMetadata.getStats().getTypeCount().getOrDefault(variantType.name(), 0L).intValue();
         }
         return numRecords;
     }
@@ -512,7 +515,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
 
         @Override
-        public int run(String executable, String args) {
+        public int run(String executable, String[] args) {
             try {
                 // Copy configuration
                 Configuration conf = new Configuration(false);
@@ -520,9 +523,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
                 String className = executable.substring(executable.lastIndexOf(" ") + 1);
                 Class<?> clazz = Class.forName(className);
-                System.out.println("Executing " + clazz.getSimpleName() + ": " + executable + " " + args);
+                System.out.println("Executing " + clazz.getSimpleName() + ": " + executable + " " + Arrays.toString(args));
                 Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
-                Object o = method.invoke(clazz.newInstance(), Commandline.translateCommandline(args), conf);
+                Object o = method.invoke(clazz.newInstance(), args, conf);
                 System.out.println("Finish execution " + clazz.getSimpleName());
                 if (((Number) o).intValue() != 0) {
                     throw new RuntimeException("Exit code = " + o);

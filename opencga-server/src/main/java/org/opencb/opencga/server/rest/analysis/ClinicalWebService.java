@@ -19,20 +19,20 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
+import org.opencb.biodata.models.clinical.Comment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.Comment;
+import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
-import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -42,7 +42,6 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -232,16 +231,18 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Clinical analysis ID") @QueryParam("id") String id,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") String type,
             @ApiParam(value = "Priority") @QueryParam("priority") String priority,
-            @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
             @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = "Due date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)") @QueryParam("dueDate") String dueDate,
             @ApiParam(value = "Description") @QueryParam("description") String description,
-            @ApiParam(value = "Family") @QueryParam("family") String family,
-            @ApiParam(value = "Proband") @QueryParam("proband") String proband,
-            @ApiParam(value = "Proband sample") @QueryParam("sample") String sample,
+            @ApiParam(value = "Family id") @QueryParam("family") String family,
+            @ApiParam(value = "Proband id") @QueryParam("proband") String proband,
+            @ApiParam(value = "Sample id associated to the proband or any member of a family") @QueryParam("sample") String sample,
+            @ApiParam(value = "Proband id or any member id of a family") @QueryParam("member") String member,
             @ApiParam(value = "Clinical analyst assignee") @QueryParam("analystAssignee") String assignee,
             @ApiParam(value = "Disorder ID or name") @QueryParam("disorder") String disorder,
             @ApiParam(value = "Flags") @QueryParam("flags") String flags,
@@ -284,12 +285,13 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group IDs", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = "Propagate permissions to related families, individuals, samples and files", defaultValue = "false") @QueryParam("propagate") boolean propagate,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAclUpdateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAclUpdateParams());
             AclParams clinicalAclParams = new AclParams(params.getPermissions());
             List<String> idList = getIdList(params.getClinicalAnalysis());
-            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, action, token));
+            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, action, propagate, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -369,10 +371,32 @@ public class ClinicalWebService extends AnalysisWebService {
             response = Interpretation.class)
     public Response updateInterpretation(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Action to be performed if the array of primary findings is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("primaryFindingsAction") ParamUtils.UpdateAction primaryFindingsAction,
+            @ApiParam(value = "Action to be performed if the array of secondary findings is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("secondaryFindingsAction") ParamUtils.UpdateAction secondaryFindingsAction,
+            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("commentsAction") ParamUtils.UpdateAction commentsAction,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
                     InterpretationUpdateParams params) {
         try {
+            if (primaryFindingsAction == null) {
+                primaryFindingsAction = ParamUtils.UpdateAction.ADD;
+            }
+            if (secondaryFindingsAction == null) {
+                secondaryFindingsAction = ParamUtils.UpdateAction.ADD;
+            }
+            if (commentsAction == null) {
+                commentsAction = ParamUtils.UpdateAction.ADD;
+            }
+
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), primaryFindingsAction);
+            actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), secondaryFindingsAction);
+            actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), commentsAction);
+            queryOptions.put(Constants.ACTIONS, actionMap);
+
             return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, params, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -541,15 +565,12 @@ public class ClinicalWebService extends AnalysisWebService {
     })
     public Response variantQuery() {
         // Get all query options
-        QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-        Query query = getVariantQuery(queryOptions);
+        return run(() -> {
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = getVariantQuery(queryOptions);
 
-        // Get clinical variants
-        try {
-            return createOkResponse(clinicalInterpretationManager.get(query, queryOptions, token));
-        } catch (CatalogException | IOException | StorageEngineException e) {
-            return createErrorResponse(e);
-        }
+            return clinicalInterpretationManager.get(query, queryOptions, token);
+        });
     }
 
     @GET

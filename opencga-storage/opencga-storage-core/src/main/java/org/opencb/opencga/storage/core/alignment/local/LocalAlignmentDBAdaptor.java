@@ -159,17 +159,22 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         RegionCoverage regionCoverage;
         if (path.toString().endsWith("bw") || path.toString().endsWith("bigwig")) {
             regionCoverage = BamUtils.getCoverageFromBigWig(region, windowSize, path);
+//            System.out.println("BW region coverage:\t" + regionCoverage.toString());
         } else {
-            BamManager bamManager = new BamManager(path);
-            regionCoverage = bamManager.coverage(region, windowSize);
-            bamManager.close();
+            File bwFile = new File(path.toAbsolutePath() + ".bw");
+            if (bwFile.exists()) {
+                regionCoverage = BamUtils.getCoverageFromBigWig(region, windowSize, bwFile.toPath());
+            } else {
+                BamManager bamManager = new BamManager(path);
+                regionCoverage = bamManager.coverage(region, windowSize);
+                bamManager.close();
+//            System.out.println("BAM region coverage:\t" + regionCoverage.toString());
+            }
         }
 
         // If necessary, filter by coverage range and remove empty regions
         List<RegionCoverage> selectedRegions = new ArrayList<>();
-        if (minCoverage <= 0 && maxCoverage >= Integer.MAX_VALUE) {
-            selectedRegions.add(regionCoverage);
-        } else {
+        if (minCoverage > 0 || maxCoverage < Integer.MAX_VALUE) {
             // Filter region by coverage range
             List<RegionCoverage> regionCoverages = BamUtils.filterByCoverage(regionCoverage, minCoverage, maxCoverage);
 
@@ -179,6 +184,8 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
                     selectedRegions.add(coverage);
                 }
             }
+        } else {
+            selectedRegions.add(regionCoverage);
         }
 
         watch.stop();

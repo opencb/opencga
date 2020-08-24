@@ -861,7 +861,7 @@ public class SampleIndexQueryParserTest {
 
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
         parseAnnotationIndexQuery(query, true);
-        assertFalse(query.isEmpty());
+        assertTrue(query.isEmpty());
 
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_SET));
         parseAnnotationIndexQuery(query, true);

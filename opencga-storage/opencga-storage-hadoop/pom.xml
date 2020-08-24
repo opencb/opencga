@@ -30,12 +30,12 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>2.0.0-rc1</version>
+        <version>2.0.0-rc2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-storage-hadoop</artifactId>
-    <version>2.0.0-rc1</version>
+    <version>2.0.0-rc2</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -151,6 +151,34 @@
                                             </then>
                                         </if>
                                     </else>
+                                </if>
+                                <if>
+                                    <!-- Check default hadoop deps -->
+                                    <and>
+                                        <!--Only compile from parent opencga-storage-hadoop-->
+                                        <equals arg1="${project.artifactId}" arg2="opencga-storage-hadoop" />
+                                        <!--Compile if file is not available-->
+                                        <not>
+                                            <available file="${settings.localRepository}/org/opencb/opencga/opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}/${opencga-storage-hadoop-deps.version}/opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}-${opencga-storage-hadoop-deps.version}-shaded.jar"/>
+                                        </not>
+                                        <!--Compile if opencga-storage-hadoop-deps has not been included as a module-->
+                                        <!--See profile opencga-storage-hadoop-deps-->
+                                        <not>
+                                            <equals arg1="${module-opencga-storage-hadoop-deps}" arg2="true"/>
+                                        </not>
+                                    </and>
+                                    <then>
+                                        <echo>${settings.localRepository}/org/opencb/opencga/opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}/${opencga-storage-hadoop-deps.version}/opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}-${opencga-storage-hadoop-deps.version}-shaded.jar</echo>
+                                        <echo>Compile opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}-${opencga-storage-hadoop-deps.version}</echo>
+                                        <exec executable="mvn">
+                                            <arg value="-f"/>
+                                            <arg value="${project.basedir}/pom.xml"/>
+                                            <arg value="-Popencga-storage-hadoop-deps"/>
+                                            <arg value="-pl"/>
+                                            <arg value=":opencga-storage-hadoop-deps,:opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}"/>
+                                            <arg value="install"/>
+                                        </exec>
+                                    </then>
                                 </if>
                             </target>
                         </configuration>

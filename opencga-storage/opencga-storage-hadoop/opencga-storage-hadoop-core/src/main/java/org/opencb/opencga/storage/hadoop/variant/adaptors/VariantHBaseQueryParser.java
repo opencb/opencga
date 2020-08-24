@@ -121,22 +121,13 @@ public class VariantHBaseQueryParser {
 //            otherParams.remove(REGION);
 //        }
         if (otherParams.contains(STUDY)) {
-            String value = query.getString(STUDY.key());
-            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
-                messages.add("Negated studies not supported");
-            }
-            otherParams.remove(STUDY);
-        }
-        if (otherParams.contains(STUDY)) {
-            String value = query.getString(STUDY.key());
-            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
+            if (splitValue(query, STUDY).getValues().stream().anyMatch(VariantQueryUtils::isNegated)) {
                 messages.add("Negated studies not supported");
             }
             otherParams.remove(STUDY);
         }
         if (otherParams.contains(FILE)) {
-            String value = query.getString(FILE.key());
-            if (splitValue(value).getValue().stream().anyMatch(VariantQueryUtils::isNegated)) {
+            if (splitValue(query, FILE).getValues().stream().anyMatch(VariantQueryUtils::isNegated)) {
                 messages.add("Negated files not supported");
             }
             otherParams.remove(FILE);
@@ -286,7 +277,8 @@ public class VariantHBaseQueryParser {
             regionOrVariant = region;
             logger.debug("region = {}", region);
             addRegionFilter(scan, region);
-        } else if (isValidParam(query, ID)) {
+        }
+        if (isValidParam(query, ID)) {
             List<String> ids = query.getAsStringList(ID.key());
             if (ids.size() != 1) {
                 throw VariantQueryException.malformedParam(ID, ids.toString(), "Unsupported multiple variant ids filter");
@@ -588,7 +580,8 @@ public class VariantHBaseQueryParser {
         if (regionOrVariant != null) {
             logger.info("\tRegion = " + regionOrVariant);
         }
-        logger.info("columns = " + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
+        logger.info("columns (" + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet()).size() + ") = "
+                + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
                 .stream().map(Bytes::toString).collect(Collectors.joining(",")));
         logger.info("MaxResultSize = " + scan.getMaxResultSize());
         logger.info("Filters = " + scan.getFilter());

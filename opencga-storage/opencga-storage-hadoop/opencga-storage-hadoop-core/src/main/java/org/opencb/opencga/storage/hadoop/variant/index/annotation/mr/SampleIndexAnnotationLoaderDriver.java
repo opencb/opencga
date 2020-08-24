@@ -38,6 +38,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleIndexAnnotationLoaderDriver.class);
     public static final String OUTPUT = "output";
     public static final String SAMPLES = "samples";
+    public static final String SAMPLE_IDS = "sampleIds";
 
     private List<Integer> sampleIds;
     private boolean hasGenotype;
@@ -53,6 +54,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
     protected Map<String, String> getParams() {
         Map<String, String> params = new HashMap<>();
         params.put("--" + SAMPLES, "<samples>");
+        params.put("--" + SAMPLE_IDS, "<sample-ids>");
         params.put("--" + OUTPUT, "<output-table>");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
         return params;
@@ -69,6 +71,10 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         String samples = getParam(SAMPLES);
+        String sampleIdsStr = getParam(SAMPLE_IDS);
+        if (StringUtils.isNotEmpty(samples) && StringUtils.isNotEmpty(sampleIdsStr)) {
+            throw new IllegalArgumentException("Incompatible params " + SAMPLES + " and " + SAMPLE_IDS);
+        }
         if (StringUtils.isNotEmpty(samples) && !samples.equals(VariantQueryUtils.ALL)) {
             sampleIds = new LinkedList<>();
             for (String sample : samples.split(",")) {
@@ -77,6 +83,11 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
                     throw new IllegalArgumentException("Sample '" + sample + "' not found.");
                 }
                 sampleIds.add(sampleId);
+            }
+        } else if (StringUtils.isNotEmpty(sampleIdsStr)) {
+            sampleIds = new LinkedList<>();
+            for (String sample : sampleIdsStr.split(",")) {
+                sampleIds.add(Integer.valueOf(sample));
             }
         } else {
             sampleIds = metadataManager.getIndexedSamples(getStudyId());
@@ -88,13 +99,13 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
             LOGGER.info("Update sample index annotation to " + sampleIds.size() + " samples");
         }
 
-        ObjectMap attributes = metadataManager.getStudyMetadata(getStudyId()).getAttributes();
-        hasGenotype = HBaseToVariantConverter.getFixedFormat(attributes).contains(VCFConstants.GENOTYPE_KEY);
+        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(metadataManager.getStudyMetadata(getStudyId()));
+        hasGenotype = fixedFormat.contains(VCFConstants.GENOTYPE_KEY);
 
         if (hasGenotype) {
-            LOGGER.info("Study with genotypes. Study fixed format: " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study with genotypes. Study fixed format: " + fixedFormat);
         } else {
-            LOGGER.info("Study without genotypes. Study fixed format: " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study without genotypes. Study fixed format: " + fixedFormat);
         }
 
         region = getParam(VariantQueryParam.REGION.key(), "");
@@ -109,17 +120,24 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
 
+        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+
+        boolean multiFileSamples = false;
         for (Integer sampleId : sampleIds) {
             SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sampleId);
-            for (PhoenixHelper.Column column : VariantPhoenixHelper.getSampleColumns(sampleMetadata)) {
+            List<PhoenixHelper.Column> sampleColumns = VariantPhoenixHelper.getSampleColumns(sampleMetadata);
+            if (sampleColumns.size() > 1) {
+                multiFileSamples = true;
+            }
+            for (PhoenixHelper.Column column : sampleColumns) {
                 scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column.bytes());
             }
         }
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
 
         SampleIndexAnnotationLoaderMapper.setHasGenotype(job, hasGenotype);
-
-        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        SampleIndexAnnotationLoaderMapper.setMultiFileSamples(job, multiFileSamples);
+        SampleIndexAnnotationLoaderMapper.setSampleIdRange(job, sampleIds);
 
         VariantMapReduceUtil.initTableMapperJob(job, variantTable,
                 scan, getMapperClass(), VariantAlignedInputFormat.class);
@@ -157,7 +175,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
 
     public static String[] buildArgs(String archiveTable, String variantsTable, int studyId, Collection<?> sampleIds, ObjectMap other) {
         ObjectMap params = new ObjectMap(other);
-        params.put(SAMPLES, sampleIds);
+        params.put(SAMPLE_IDS, sampleIds);
         return AbstractVariantsTableDriver.buildArgs(archiveTable, variantsTable, studyId, null, params);
     }
 

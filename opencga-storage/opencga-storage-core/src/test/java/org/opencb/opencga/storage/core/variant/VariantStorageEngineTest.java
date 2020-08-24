@@ -46,7 +46,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -637,7 +637,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         );
 
         VariantFileMetadata fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(etlResult.getTransformResult());
-        checkTransformedVariants(etlResult.getTransformResult(), studyMetadata, fileMetadata.getStats().getVariantCount());
+        checkTransformedVariants(etlResult.getTransformResult(), studyMetadata, fileMetadata.getStats().getVariantCount().intValue());
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         checkLoadedVariants(dbAdaptor, studyMetadata, true, false, false, getExpectedNumLoadedVariants(fileMetadata));
 
@@ -721,7 +721,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         variantReader.close();
 
         if (expectedNumVariants < 0) {
-            expectedNumVariants = source.getStats().getVariantCount();
+            expectedNumVariants = source.getStats().getVariantCount().intValue();
         } else {
             assertEquals(expectedNumVariants, source.getStats().getVariantCount().intValue()); //9792
         }

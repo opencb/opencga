@@ -1,15 +1,14 @@
 package org.opencb.opencga.storage.core.variant.query;
 
-public class KeyOpValue<K, V> {
+import org.apache.commons.lang3.StringUtils;
+
+public class KeyOpValue<K, V> extends OpValue<V> {
 
     private K key;
-    private String op; // TODO: Make an enum for this!
-    private V value;
 
     public KeyOpValue(K key, String op, V value) {
+        super(op, value);
         this.key = key;
-        this.op = op;
-        this.value = value;
     }
 
     public K getKey() {
@@ -37,5 +36,45 @@ public class KeyOpValue<K, V> {
     public KeyOpValue<K, V> setValue(V value) {
         this.value = value;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("KeyOpValue{");
+        sb.append("key=").append(key);
+        sb.append(", op='").append(op).append('\'');
+        sb.append(", value=").append(value);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    @Override
+    public void toQuery(StringBuilder sb) {
+        sb.append(key);
+        if (StringUtils.isEmpty(op)) {
+            sb.append("=");
+        } else {
+            sb.append(op);
+        }
+        sb.append(value);
+    }
+
+    @Override
+    public void describe(StringBuilder sb) {
+        if (key instanceof String) {
+            sb.append("( '").append(key).append("' ");
+        } else {
+            sb.append("( ").append(key).append(" ");
+        }
+        if (StringUtils.isEmpty(op)) {
+            sb.append("=");
+        } else {
+            sb.append(op);
+        }
+        if (value instanceof String) {
+            sb.append(" '").append(value).append("' )");
+        } else {
+            sb.append(" ").append(value).append(" )");
+        }
     }
 }

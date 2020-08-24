@@ -351,7 +351,23 @@ public final class VariantQueryUtils {
     }
 
     public static boolean isNoneOrAll(String value) {
-        return value.equals(NONE) || value.equals(ALL);
+        return isNone(value) || isAll(value);
+    }
+
+    public static boolean isNoneOrEmpty(List<String> value) {
+        return value != null && (value.isEmpty() || value.size() == 1 && isNone(value.get(0)));
+    }
+
+    private static boolean isNone(String value) {
+        return value.equals(NONE);
+    }
+
+    public static boolean isAllOrNull(List<String> value) {
+        return value == null || value.size() == 1 && isAll(value.get(0));
+    }
+
+    public static boolean isAll(String s) {
+        return s.equals(ALL);
     }
 
     /**
@@ -591,38 +607,96 @@ public final class VariantQueryUtils {
     }
 
     /**
-     * Parse INFO param.
+     * Parse FILE_DATA param.
+     *
+     * <code>
+     * f1:QUAL>3;FILTER=LowGQ;LowDP,f2:QUAL>4;FILTER=PASS
+     * ( f1:QUAL>3;FILTER=LowGQ;LowDP ) , ( f2:QUAL>4;FILTER=PASS )
+     * ( f1: ( QUAL>3;FILTER=LowGQ;LowDP ) ) , ( f2: ( QUAL>4;FILTER=PASS ) )
+     * ( f1: ( ( QUAL > 3 ) ; ( FILTER = LowGQ;LowDP ) ) ) , ( f2: ( ( QUAL > 4 ) ; ( FILTER = PASS ) ) )
+     *
+     * ParsedQuery {
+     *   param: FILE_DATA
+     *   operation: OR
+     *   values: [
+     *      KeyValues {
+     *        key: "f1",
+     *        operation: AND
+     *        values: [
+     *           KeyOpValue: {
+     *              key: "QUAL"
+     *              op: ">"
+     *              value: "3"
+     *           }
+     *           KeyOpValue: {
+     *              key: "FILTER"
+     *              op: "="
+     *              value: "LowGQ;LowDP"
+     *           }
+     *        ]
+     *      }
+     *      KeyValues {
+     *        key: "f2",
+     *        operation: AND
+     *        values: [
+     *           KeyOpValue: {
+     *              key: "QUAL"
+     *              op: ">"
+     *              value: "4"
+     *           }
+     *           KeyOpValue: {
+     *              key: "FILTER"
+     *              op: "="
+     *              value: "PASS"
+     *           }
+     *        ]
+     *      }
+     *   ]
+     * }
+     * </code>
      *
      * @param query Query to parse
      * @return a pair with the internal QueryOperation (AND/OR) and a map between Files and INFO filters.
      */
-    public static Pair<QueryOperation, Map<String, String>> parseInfo(Query query) {
+    public static ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parseFileData(Query query) {
         if (!isValidParam(query, FILE_DATA)) {
-            return Pair.of(null, Collections.emptyMap());
+            return new ParsedQuery<>(FILE_DATA, null, Collections.emptyList());
         }
         String value = query.getString(FILE_DATA.key());
         if (value.contains(IS)) {
-            return parseMultiKeyValueFilter(FILE_DATA, value);
-        } else {
-            List<String> files = query.getAsStringList(FILE.key());
-            files.removeIf(VariantQueryUtils::isNegated);
+            Values<KeyOpValue<String, String>> fileValues = parseMultiKeyValueFilter(FILE_DATA, value);
 
-            if (files.isEmpty()) {
-                files = query.getAsStringList(INCLUDE_FILE.key());
+            List<KeyValues<String, KeyOpValue<String, String>>> files = new LinkedList<>();
+            for (KeyOpValue<String, String> fileValue : fileValues.getValues()) {
+                String file = fileValue.getKey();
+                String filtersString = fileValue.getValue();
+
+                Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilter(FILE_DATA, filtersString, "<=", ">=", "=", ">", "<");
+
+                files.add(new KeyValues<>(file, values.getOperation(), values.getValues()));
             }
 
-            if (files.isEmpty()) {
+            return new ParsedQuery<>(FILE_DATA, fileValues.getOperation(), files);
+        } else {
+            ParsedQuery<String> fileIds = splitValue(query, FILE);
+            fileIds.getValues().removeIf(VariantQueryUtils::isNegated);
+
+            if (fileIds.getValues().isEmpty()) {
+                fileIds = splitValue(query, INCLUDE_FILE);
+            }
+
+            if (fileIds.getValues().isEmpty()) {
                 throw VariantQueryException.malformedParam(FILE_DATA, value, "Missing \"" + FILE.key() + "\" param.");
             }
 
-            QueryOperation operator = checkOperator(value);
+            Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilter(FILE_DATA, value, "<=", ">=", "=", ">", "<");
 
-            Map<String, String> map = new LinkedHashMap<>(files.size());
-            for (String file : files) {
-                map.put(file, value);
+            List<KeyValues<String, KeyOpValue<String, String>>> files = new LinkedList<>();
+            for (String file : fileIds.getValues()) {
+                files.add(new KeyValues<>(file, values));
             }
 
-            return Pair.of(operator, map);
+            return new ParsedQuery<>(FILE_DATA, fileIds.operation, files);
         }
     }
 
@@ -632,22 +706,28 @@ public final class VariantQueryUtils {
      * @param query Query to parse
      * @return a pair with the internal QueryOperation (AND/OR) and a map between Samples and FORMAT filters.
      */
-    public static Pair<QueryOperation, Map<String, String>> parseFormat(Query query) {
+    public static Pair<QueryOperation, Map<String, String>> parseSampleData(Query query) {
         if (!isValidParam(query, SAMPLE_DATA)) {
             return Pair.of(null, Collections.emptyMap());
         }
         String value = query.getString(SAMPLE_DATA.key());
         if (value.contains(IS)) {
-            return parseMultiKeyValueFilter(SAMPLE_DATA, value);
+            return parseMultiKeyValueFilterOLD(SAMPLE_DATA, value);
         } else {
             QueryOperation operator = checkOperator(value);
             QueryOperation samplesOperator;
 
             List<String> samples;
             String sampleFilter = query.getString(SAMPLE.key());
-            Pair<QueryOperation, List<String>> pair = splitValue(sampleFilter);
-            samples = new LinkedList<>(pair.getValue());
-            samplesOperator = pair.getKey();
+            if (sampleFilter.contains(IS)) {
+                ParsedQuery<KeyOpValue<String, List<String>>> gtQ = parseGenotypeFilter(sampleFilter);
+                samples = gtQ.getValues().stream().map(KeyOpValue::getKey).collect(Collectors.toList());
+                samplesOperator = gtQ.getOperation();
+            } else {
+                Values<String> values = splitValues(sampleFilter);
+                samples = new LinkedList<>(values.getValues());
+                samplesOperator = values.getOperation();
+            }
             samples.removeIf(VariantQueryUtils::isNegated);
 
             if (samples.isEmpty()) {
@@ -682,60 +762,94 @@ public final class VariantQueryUtils {
         }
     }
 
-    private static Pair<QueryOperation, Map<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue) {
+    @Deprecated
+    private static Pair<QueryOperation, Map<String, String>> parseMultiKeyValueFilterOLD(VariantQueryParam param, String stringValue) {
+        Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilter(param, stringValue, IS);
         Map<String, String> map = new LinkedHashMap<>();
+        for (KeyOpValue<String, String> value : values.getValues()) {
+            map.put(value.getKey(), value.getValue());
+        }
+        return Pair.of(values.getOperation(), map);
+    }
 
+//    private static KeyValues<String, String> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue) {
+//        return parseMultiKeyValueFilter(param, stringValue, IS);
+//    }
+
+    private static Values<KeyOpValue<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue) {
+        return parseMultiKeyValueFilter(param, stringValue, IS);
+    }
+
+    private static Values<KeyOpValue<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue,
+                                                                               String... separators) {
+        Map<String, KeyOpValue<String, String>> map = new LinkedHashMap<>();
         StringTokenizer tokenizer = new StringTokenizer(stringValue, OR + AND, true);
         String key = "";
-        String values = "";
         String op = "";
-        QueryOperation operation = null;
+        String values = "";
+        String logicOpTemp = "";
+        QueryOperation logicOp = null;
 
         while (tokenizer.hasMoreElements()) {
             String token = tokenizer.nextToken();
 
-            if (token.contains(IS)) {
+            if (StringUtils.containsAny(token, separators)) {
                 if (!key.isEmpty()) {
                     // Prev operator is the main operator
-                    if (AND.equals(op)) {
-                        if (operation == QueryOperation.OR) {
+                    if (AND.equals(logicOpTemp)) {
+                        if (logicOp == QueryOperation.OR) {
                             throw VariantQueryException.mixedAndOrOperators(param, stringValue);
                         } else {
-                            operation = QueryOperation.AND;
+                            logicOp = QueryOperation.AND;
                         }
-                    } else if (OR.equals(op)) {
-                        if (operation == QueryOperation.AND) {
+                    } else if (OR.equals(logicOpTemp)) {
+                        if (logicOp == QueryOperation.AND) {
                             throw VariantQueryException.mixedAndOrOperators(param, stringValue);
                         } else {
-                            operation = QueryOperation.OR;
+                            logicOp = QueryOperation.OR;
                         }
                     }
-
+                    key = key.trim();
+                    op = op.trim();
+                    values = values.trim();
                     // Add prev key/value to map
-                    QueryOperation finalOperation = operation;
-                    map.merge(key, values, (v1, v2) -> v1 + finalOperation.separator() + v2);
+                    QueryOperation finalOperation = logicOp;
+                    map.merge(key, new KeyOpValue<>(key, op, values),
+                            (v1, v2) -> v1.setValue(v1.getValue() + finalOperation.separator() + v2.getValue()));
                 }
-
-
-                int idx = token.lastIndexOf(IS);
-                key = token.substring(0, idx);
-                values = token.substring(idx + 1);
+                for (String separator : separators) {
+                    if (token.contains(separator)) {
+                        int idx = token.lastIndexOf(separator);
+                        key = token.substring(0, idx);
+                        op = separator;
+                        values = token.substring(idx + separator.length());
+                        break;
+                    }
+                }
             } else if (token.equals(OR) || token.equals(AND)) {
-                op = token;
+                logicOpTemp = token;
             } else {
                 if (key.isEmpty()) {
                     throw VariantQueryException.malformedParam(param, stringValue);
                 }
-                values += op + token;
+                values += logicOpTemp + token;
             }
         }
 
         if (!key.isEmpty()) {
-            QueryOperation finalOperation = operation;
-            map.merge(key, values, (v1, v2) -> v1 + finalOperation.separator() + v2);
+            key = key.trim();
+            op = op.trim();
+            values = values.trim();
+
+            QueryOperation finalOperation = logicOp;
+            map.merge(key, new KeyOpValue<>(key, op, values),
+                    (v1, v2) -> v1.setValue(v1.getValue() + finalOperation.separator() + v2.getValue()));
+        }
+        if (map.size() == 1 || map.isEmpty()) {
+            logicOp = null;
         }
 
-        return Pair.of(operation, map);
+        return new Values<>(logicOp, new ArrayList<>(map.values()));
     }
 
     /**
@@ -765,10 +879,10 @@ public final class VariantQueryUtils {
      */
     public static QueryOperation parseGenotypeFilter(String sampleGenotypes, Map<Object, List<String>> map) {
 
-        Pair<QueryOperation, Map<String, String>> pair = parseMultiKeyValueFilter(GENOTYPE, sampleGenotypes);
+        Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilter(GENOTYPE, sampleGenotypes);
 
-        for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
-            List<String> gts = splitValue(entry.getValue(), QueryOperation.OR);
+        for (KeyOpValue<String, String> keyOpValue : values.getValues()) {
+            List<String> gts = splitValue(keyOpValue.getValue(), QueryOperation.OR);
             boolean anyNegated = false;
             boolean allNegated = true;
             for (String gt : gts) {
@@ -781,10 +895,10 @@ public final class VariantQueryUtils {
             if (!allNegated && anyNegated) {
                 throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotypes);
             }
-            map.put(entry.getKey(), gts);
+            map.put(keyOpValue.getKey(), gts);
         }
 
-        return pair.getKey();
+        return values.getOperation();
     }
 
     public static List<String> parseConsequenceTypes(List<String> cts) {
@@ -829,7 +943,7 @@ public final class VariantQueryUtils {
     }
 
     public static Query extractGenotypeFromFormatFilter(Query query) {
-        Pair<QueryOperation, Map<String, String>> formatPair = parseFormat(query);
+        Pair<QueryOperation, Map<String, String>> formatPair = parseSampleData(query);
 
         if (formatPair.getValue().values().stream().anyMatch(v -> v.contains("GT"))) {
             if (isValidParam(query, SAMPLE) || isValidParam(query, GENOTYPE)) {
@@ -970,6 +1084,15 @@ public final class VariantQueryUtils {
      * @param value     Value to split
      * @return List of values, without the delimiter
      */
+    public static Values<String> splitValues(String value) {
+        QueryOperation operation = checkOperator(value);
+        return new Values<>(operation, splitValue(value, operation));
+    }
+
+    /*
+     * @deprecated use {@link #splitValues(String)}
+     */
+    @Deprecated
     public static Pair<QueryOperation, List<String>> splitValue(String value) {
         QueryOperation operation = checkOperator(value);
         return Pair.of(operation, splitValue(value, operation));
@@ -1034,13 +1157,48 @@ public final class VariantQueryUtils {
     }
 
     /**
-     * This method split a typical key-op-value param such as 'sift<=0.2' in an array ["sift", "<=", "0.2"].
+     * This method parses a typical key-op-value param such as 'sift<=0.2' in an array ["sift", "<=", "0.2"].
      * In case of not having a key, first element will be empty
      * In case of not matching with {@link #OPERATION_PATTERN}, key will be null and will use the default operator "="
      *
-     * @param value The key-op-value parameter to be split
-     * @return An array with 3 positions for the key, operator and value
+     * @param value The key-op-value parameter to be parsed
+     * @return KeyOpValue
      */
+    public static OpValue<String> parseOpValue(String value) {
+        Matcher matcher = OPERATION_PATTERN.matcher(value);
+
+        if (matcher.find()) {
+            if (StringUtils.isNotEmpty(matcher.group(1).trim())) {
+                throw new VariantQueryException("Malformed op-value. Unexpected key: '" + value + "'");
+            }
+            return new OpValue<>(matcher.group(2).trim(), matcher.group(3).trim());
+        } else {
+            return new OpValue<>("=", value.trim());
+        }
+    }
+
+    /**
+     * This method parses a typical key-op-value param such as 'sift<=0.2' in an array ["sift", "<=", "0.2"].
+     * In case of not having a key, first element will be empty
+     * In case of not matching with {@link #OPERATION_PATTERN}, key will be null and will use the default operator "="
+     *
+     * @param value The key-op-value parameter to be parsed
+     * @return KeyOpValue
+     */
+    public static KeyOpValue<String, String> parseKeyOpValue(String value) {
+        Matcher matcher = OPERATION_PATTERN.matcher(value);
+
+        if (matcher.find()) {
+            return new KeyOpValue<>(matcher.group(1).trim(), matcher.group(2).trim(), matcher.group(3).trim());
+        } else {
+            return new KeyOpValue<>(null, "=", value.trim());
+        }
+    }
+
+    /*
+     * @deprecated Use {@link #parseKeyOpValue(String)}
+     */
+    @Deprecated
     public static String[] splitOperator(String value) {
         Matcher matcher = OPERATION_PATTERN.matcher(value);
         String key;

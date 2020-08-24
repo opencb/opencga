@@ -24,19 +24,20 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.CohortVariantStatsAnalysisExecutor;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Tool(id = CohortVariantStatsAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class CohortVariantStatsAnalysis extends OpenCgaTool {
@@ -101,11 +102,11 @@ public class CohortVariantStatsAnalysis extends OpenCgaTool {
      * containing the stats of the cohort.
      * Requires parameter cohortName to exist.
      *
-     * @param indexResults index results
+     * @param index index results
      * @return boolean
      */
-    public CohortVariantStatsAnalysis setIndexResults(boolean indexResults) {
-        this.indexResults = indexResults;
+    public CohortVariantStatsAnalysis setIndex(boolean index) {
+        this.indexResults = index;
         return this;
     }
 
@@ -200,12 +201,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaTool {
                         catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), token);
                     } catch (CatalogException e) {
                         // Assume variable set not found. Try to create
-                        List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(VariantSetStats.getClassSchema());
-                        catalogManager.getStudyManager()
-                                .createVariableSet(study, VARIABLE_SET_ID, VARIABLE_SET_ID, true, false,
-                                        "", Collections.emptyMap(), variables,
-                                        Arrays.asList(VariableSet.AnnotableDataModels.COHORT, VariableSet.AnnotableDataModels.FILE),
-                                        token);
+                        catalogManager.getStudyManager().createDefaultVariableSets(study, token);
                     }
 
                     AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, VARIABLE_SET_ID);

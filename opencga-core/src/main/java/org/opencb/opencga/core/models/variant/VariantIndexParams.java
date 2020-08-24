@@ -38,7 +38,7 @@ public class VariantIndexParams extends ToolParams {
                               String loadArchive,
                               String loadHomRef,
                               String postLoadCheck,
-                              boolean excludeGenotype, String includeSampleData, String merge,
+                              boolean excludeGenotypes, String includeSampleData, String merge,
                               String deduplicationPolicy,
                               boolean calculateStats, Aggregation aggregated, String aggregationMappingFile, boolean annotate,
                               String annotator, boolean overwriteAnnotations, boolean indexSearch) {
@@ -58,7 +58,7 @@ public class VariantIndexParams extends ToolParams {
         this.loadArchive = loadArchive;
         this.loadHomRef = loadHomRef;
         this.postLoadCheck = postLoadCheck;
-        this.excludeGenotype = excludeGenotype;
+        this.excludeGenotypes = excludeGenotypes;
         this.includeSampleData = includeSampleData;
         this.merge = merge;
         this.deduplicationPolicy = deduplicationPolicy;
@@ -91,7 +91,7 @@ public class VariantIndexParams extends ToolParams {
     private String loadArchive;
     private String loadHomRef;
     private String postLoadCheck;
-    private boolean excludeGenotype;
+    private boolean excludeGenotypes;
     private String includeSampleData = ParamConstants.ALL;
     private String merge;
     private String deduplicationPolicy;
@@ -250,12 +250,12 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
-    public boolean isExcludeGenotype() {
-        return excludeGenotype;
+    public boolean isExcludeGenotypes() {
+        return excludeGenotypes;
     }
 
-    public VariantIndexParams setExcludeGenotype(boolean excludeGenotype) {
-        this.excludeGenotype = excludeGenotype;
+    public VariantIndexParams setExcludeGenotypes(boolean excludeGenotypes) {
+        this.excludeGenotypes = excludeGenotypes;
         return this;
     }
 

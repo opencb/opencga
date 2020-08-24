@@ -196,6 +196,9 @@ public class JobCommandOptions {
         @Parameter(names = {"-d", "--delay"}, description = "Delay between iterations in seconds", arity = 1)
         public int delay = 2;
 
+        @Parameter(names = {"--plain"}, description = "Plain representation, without dependencies.", arity = 0)
+        public boolean plain;
+
         @Parameter(names = { "--iterations"}, description = "Exit after N iterations", arity = 1)
         public Integer iterations;
 

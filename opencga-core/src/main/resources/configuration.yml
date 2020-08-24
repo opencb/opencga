@@ -47,6 +47,18 @@ authentication:
 #    options:
 #      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
 #      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
+
+# Custom LDAPS configuration example
+#  - id: ldaps            # Any id
+#    type: LDAP
+#    host: ldaps://localhost:636
+#    options:
+#      usersSearch: dc=ge,dc=co,dc=uk                       # Base search to look for users
+#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for groups
+#      fullNameKey: displayname                             # Key to get the user's full name when importing users
+#      dnKey: gecos                                         # Get the user's unique identifier...
+#      dnFormat: "uid=%s,ou=people,dc=ge,dc=co,dc=uk"       # ...and pass a distinguished name to the auth request in the right format
+
 # Azure AD configuration example
 #  - id: aad                                               # Any id
 #    type: AzureAD
@@ -95,20 +107,37 @@ healthCheck:
 
 analysis:
   scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"    # Scratch folder for the analysis.
-  index:
-    variant:
-      maxConcurrentJobs: 2
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
     id: "${OPENCGA.EXECUTION.MODE}"
     defaultQueue: ""            # Default queue to be used to submit jobs
     availableQueues:            # Other queues for specific applications
-#      - fast:
-#        - "alignmentIndex"
-#      - slow:
-#        - "coverage"
-#        - "alignmentStats"
+    toolsPerQueue:
+#       docker:
+#          - "circos"
+#          - "deeptools"
+#          - "bwa"
+#          - "fastqc"
+#          - "gatk"
+#          - "picard"
+#          - "plink"
+#          - "rvtests"
+#          - "samtools"
+#          - "relatedness"
+#          - "family-qc"
+#          - "sample-qc"
+#          - "individual-qc"
+#          - "mutational-signature"
+#       fast:
+#          - "alignmentIndex"
+#       slow:
+#          - "coverage"
+#          - "alignmentStats"
+    maxConcurrentJobs:
+      variant-index: 20
+      variant-annotation-index: 5
+      variant-secondary-index: 2
     options:
      ## Local executor configuration
       local.maxConcurrentJobs: 1    # Max number of concurrent jobs to be executed locally in the master
@@ -126,11 +155,11 @@ analysis:
       k8s.imageName: "opencb/opencga-base:2.0.0-hdp3.1-dev"
       k8s.namespace: "default"
       k8s.requests:
-        cpu: 1
-        memory: "4G"
-      k8s.limits:
-        cpu: 2
+        cpu: 3
         memory: "12G"
+      k8s.limits:
+        cpu: 4
+        memory: "13G"
       k8s.nodeSelector:
         agentpool: jobs
         beta.kubernetes.io/os: linux
@@ -158,6 +187,8 @@ analysis:
           mountPath: /opt/opencga/sessions
         - name: variants
           mountPath: /opt/opencga/variants
+        - name: analysisconf
+          mountPath: /opt/opencga/analysis
       k8s.volumes:
         - name: conf
           azureFile:
@@ -173,6 +204,11 @@ analysis:
           azureFile:
             secretName: azure-files-secret
             shareName: variants
+            readOnly: false
+        - name: analysisconf
+          azureFile:
+            secretName: azure-files-secret
+            shareName: analysisconf
             readOnly: false
 
   # List of analysis frameworks

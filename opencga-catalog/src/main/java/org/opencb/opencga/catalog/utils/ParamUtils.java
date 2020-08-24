@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -24,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -178,20 +180,44 @@ public class ParamUtils {
 
     public enum BasicUpdateAction {
         ADD,
-        REMOVE
+        REMOVE;
+
+        public static BasicUpdateAction from(Map<String, ?> map, String key) {
+            return from(map, key, null);
+        }
+
+        public static BasicUpdateAction from(Map<String, ?> map, String key, BasicUpdateAction defaultValue) {
+            return getEnumFromMap(map, key, defaultValue, BasicUpdateAction.class);
+        }
     }
 
     public enum UpdateAction {
         ADD,
         SET,
-        REMOVE
+        REMOVE;
+
+        public static UpdateAction from(Map<String, ?> map, String key) {
+            return from(map, key, null);
+        }
+
+        public static UpdateAction from(Map<String, ?> map, String key, UpdateAction defaultValue) {
+            return getEnumFromMap(map, key, defaultValue, UpdateAction.class);
+        }
     }
 
     public enum AclAction {
         SET,
         ADD,
         REMOVE,
-        RESET
+        RESET;
+
+        public static AclAction from(Map<String, ?> map, String key) {
+            return from(map, key, null);
+        }
+
+        public static AclAction from(Map<String, ?> map, String key, AclAction defaultValue) {
+            return getEnumFromMap(map, key, defaultValue, AclAction.class);
+        }
     }
 
     public enum CompleteUpdateAction {
@@ -199,7 +225,39 @@ public class ParamUtils {
         SET,
         REMOVE,
         RESET,
-        REPLACE
+        REPLACE;
 
+        public static CompleteUpdateAction from(Map<String, ?> map, String key) {
+            return from(map, key, null);
+        }
+
+        public static CompleteUpdateAction from(Map<String, ?> map, String key, CompleteUpdateAction defaultValue) {
+            return getEnumFromMap(map, key, defaultValue, CompleteUpdateAction.class);
+        }
+    }
+
+    public static <T extends Enum<T>> T getEnumFromMap(Map<String, ?> map, String key, T defaultValue, Class<T> enumClass) {
+        if (map == null) {
+            return defaultValue;
+        }
+        Object o = map.get(key);
+        return getEnum(o, enumClass, defaultValue);
+    }
+
+    public static <T extends Enum<T>> T getEnum(Object value, Class<T> enumClass, T defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        } else {
+            if (enumClass.isInstance(value)) {
+                return enumClass.cast(value);
+            } else {
+                try {
+                    return Enum.valueOf(enumClass, value.toString());
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException("Unknown value '" + value.toString() + "'. "
+                            + "Accepted values are: " + EnumUtils.getEnumList(enumClass), e);
+                }
+            }
+        }
     }
 }

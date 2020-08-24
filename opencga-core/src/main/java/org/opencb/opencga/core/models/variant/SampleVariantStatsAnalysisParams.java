@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -26,16 +27,26 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
     private String family;
     private boolean index;
     private String sampleAnnotation;
+    private AnnotationVariantQueryParams variantQuery;
     private String outdir;
 
     public SampleVariantStatsAnalysisParams() {
     }
+
     public SampleVariantStatsAnalysisParams(List<String> sample, String family,
-                                            boolean index, String sampleAnnotation, String outdir) {
+                                            boolean index, String sampleAnnotation,
+                                            Query variantQuery, String outdir) {
+        this(sample, family, index, sampleAnnotation, new AnnotationVariantQueryParams(variantQuery), outdir);
+    }
+
+    public SampleVariantStatsAnalysisParams(List<String> sample, String family,
+                                            boolean index, String sampleAnnotation,
+                                            AnnotationVariantQueryParams variantQuery, String outdir) {
         this.sample = sample;
         this.family = family;
         this.index = index;
         this.sampleAnnotation = sampleAnnotation;
+        this.variantQuery = variantQuery;
         this.outdir = outdir;
     }
 
@@ -81,6 +92,15 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
 
     public SampleVariantStatsAnalysisParams setOutdir(String outdir) {
         this.outdir = outdir;
+        return this;
+    }
+
+    public AnnotationVariantQueryParams getVariantQuery() {
+        return variantQuery;
+    }
+
+    public SampleVariantStatsAnalysisParams setVariantQuery(AnnotationVariantQueryParams variantQuery) {
+        this.variantQuery = variantQuery;
         return this;
     }
 }

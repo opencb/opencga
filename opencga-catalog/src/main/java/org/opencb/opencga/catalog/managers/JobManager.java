@@ -359,63 +359,55 @@ public class JobManager extends ResourceManager<Job> {
         } else {
             // We only check input files if the job does not depend on other job that might be creating the necessary file.
 
-            // Look for input files
-            String fileParamSuffix = "file";
-            List<File> inputFiles = new ArrayList<>();
-            if (job.getParams() != null) {
-                Map<String, Object> dynamicParams = null;
-                for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
-                    // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
-                    if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                        for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
-                            try {
-                                // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(study.getFqn(), fileStr,
-                                        FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                                inputFiles.add(file);
-                            } catch (CatalogException e) {
-                                throw new CatalogException("Cannot find file '" + entry.getValue() + "' "
-                                        + "from job param '" + entry.getKey() + "'; (study = " + study.getName() + ", token = " + token
-                                        + ") :" + e.getMessage(), e);
-                            }
+            List<File> inputFiles = getJobInputFilesFromParams(study.getFqn(), job, token);
+            job.setInput(inputFiles);
+        }
+
+        job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
+    }
+
+    public List<File> getJobInputFilesFromParams(String study, Job job, String token) throws CatalogException {
+        // Look for input files
+        String fileParamSuffix = "file";
+        List<File> inputFiles = new ArrayList<>();
+        if (job.getParams() != null) {
+            for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
+                // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
+                if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
+                    for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
+                        try {
+                            // Validate the user has access to the file
+                            File file = catalogManager.getFileManager().get(study, fileStr,
+                                    FileManager.INCLUDE_FILE_URI_PATH, token).first();
+                            inputFiles.add(file);
+                        } catch (CatalogException e) {
+                            throw new CatalogException("Cannot find file '" + entry.getValue() + "' "
+                                    + "from job param '" + entry.getKey() + "'; (study = " + study + ", token = " + token
+                                    + ") :" + e.getMessage(), e);
                         }
-                    } else if (entry.getValue() instanceof Map) {
-                        if (dynamicParams != null) {
-                            List<String> dynamicParamKeys = job.getParams()
-                                    .entrySet()
-                                    .stream()
-                                    .filter(e -> e.getValue() instanceof Map)
-                                    .map(Map.Entry::getKey)
-                                    .collect(Collectors.toList());
-                            throw new CatalogException("Found multiple dynamic param maps in job params: " + dynamicParamKeys);
-                        }
-                        // If we have found a map for further dynamic params...
-                        dynamicParams = (Map<String, Object>) entry.getValue();
                     }
-                }
-                if (dynamicParams != null) {
+                } else if (entry.getValue() instanceof Map) {
                     // We look for files in the dynamic params
-                    for (Map.Entry<String, Object> entry : dynamicParams.entrySet()) {
-                        if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
+                    Map<String, Object> dynamicParams = (Map<String, Object>) entry.getValue();
+                    for (Map.Entry<String, Object> subEntry : dynamicParams.entrySet()) {
+                        if (subEntry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
                             // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in
                             // catalog
                             try {
                                 // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(study.getFqn(), (String) entry.getValue(),
+                                File file = catalogManager.getFileManager().get(study, (String) subEntry.getValue(),
                                         FileManager.INCLUDE_FILE_URI_PATH, token).first();
                                 inputFiles.add(file);
                             } catch (CatalogException e) {
-                                throw new CatalogException("Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey()
-                                        + "'. ", e);
+                                throw new CatalogException("Cannot find file '" + subEntry.getValue() + "' from variable '"
+                                        + entry.getKey() + "." + subEntry.getKey() + "'. ", e);
                             }
                         }
                     }
                 }
             }
-            job.setInput(inputFiles);
         }
-
-        job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
+        return inputFiles;
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
@@ -484,6 +476,7 @@ public class JobManager extends ResourceManager<Job> {
                 job.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
                         new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
             }
+            job.getInternal().getStatus().setDescription(e.toString());
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
 
             throw e;
@@ -514,10 +507,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
-        if (query.containsKey(ParamConstants.JOB_INTERNAL_STATUS_PARAM)) {
-            query.put(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), query.get(ParamConstants.JOB_INTERNAL_STATUS_PARAM));
-            query.remove(ParamConstants.JOB_INTERNAL_STATUS_PARAM);
-        }
+        super.fixQueryObject(query);
+
         if (query.containsKey(ParamConstants.JOB_TOOL_ID_PARAM)) {
             query.put(JobDBAdaptor.QueryParams.TOOL_ID.key(), query.get(ParamConstants.JOB_TOOL_ID_PARAM));
             query.remove(ParamConstants.JOB_TOOL_ID_PARAM);
@@ -1319,6 +1310,7 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<JobTop> top(List<String> studiesStr, Query baseQuery, int limit, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
+        fixQueryObject(null, baseQuery, userId);
         List<Study> studies = new ArrayList<>(studiesStr.size());
         for (String studyStr : studiesStr) {
             Study study = studyManager.resolveId(studyStr, userId);
@@ -1337,7 +1329,7 @@ public class JobManager extends ResourceManager<Job> {
 
 
         int jobsLimit = limit;
-        final List<Job> running = new ArrayList<>(jobsLimit);
+        List<Job> running = new ArrayList<>(jobsLimit);
         for (Study study : studies) {
             if (jobsLimit == 0) {
                 break;
@@ -1351,11 +1343,18 @@ public class JobManager extends ResourceManager<Job> {
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, "execution.start"),
                     userId).getResults();
-            jobsLimit -= results.size();
             running.addAll(results);
         }
+        running.sort(Comparator.comparing(
+                j -> j.getExecution() == null || j.getExecution().getStart() == null
+                        ? new Date()
+                        : j.getExecution().getStart()));
+        if (running.size() > jobsLimit) {
+            running = running.subList(0, jobsLimit);
+        }
+        jobsLimit -= running.size();
 
-        final List<Job> queued = new ArrayList<>(jobsLimit);
+        List<Job> queued = new ArrayList<>(jobsLimit);
         for (Study study : studies) {
             if (jobsLimit == 0) {
                 break;
@@ -1369,11 +1368,15 @@ public class JobManager extends ResourceManager<Job> {
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
                     userId).getResults();
-            jobsLimit -= results.size();
             queued.addAll(results);
         }
+        queued.sort(Comparator.comparing(Job::getCreationDate));
+        if (queued.size() > jobsLimit) {
+            queued = queued.subList(0, jobsLimit);
+        }
+        jobsLimit -= queued.size();
 
-        final List<Job> pending = new ArrayList<>(jobsLimit);
+        List<Job> pending = new ArrayList<>(jobsLimit);
         for (Study study : studies) {
             if (jobsLimit == 0) {
                 break;
@@ -1387,11 +1390,15 @@ public class JobManager extends ResourceManager<Job> {
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
                     userId).getResults();
-            jobsLimit -= results.size();
             pending.addAll(results);
         }
+        pending.sort(Comparator.comparing(Job::getCreationDate));
+        if (pending.size() > jobsLimit) {
+            pending = pending.subList(0, jobsLimit);
+        }
+        jobsLimit -= pending.size();
 
-        final List<Job> finishedJobs = new ArrayList<>(jobsLimit);
+        List<Job> finishedJobs = new ArrayList<>(jobsLimit);
         for (Study study : studies) {
             if (jobsLimit == 0) {
                 break;
@@ -1409,15 +1416,20 @@ public class JobManager extends ResourceManager<Job> {
                             .append(QueryOptions.ORDER, QueryOptions.DESCENDING), // Get last n elements,
                     userId).getResults();
             Collections.reverse(results); // Reverse elements
-            jobsLimit -= results.size();
             finishedJobs.addAll(results);
         }
+        finishedJobs.sort(Comparator.comparing((Job j) -> j.getExecution() == null || j.getExecution().getStart() == null
+                ? new Date()
+                : j.getExecution().getStart()).reversed());
+        if (finishedJobs.size() > jobsLimit) {
+            finishedJobs = finishedJobs.subList(0, jobsLimit);
+        }
 
-        List<Job> allJobs = new ArrayList<>(running.size() + pending.size() + queued.size());
-        allJobs.addAll(finishedJobs);
+        List<Job> allJobs = new ArrayList<>(finishedJobs.size() + running.size() + pending.size() + queued.size());
         allJobs.addAll(running);
         allJobs.addAll(queued);
         allJobs.addAll(pending);
+        allJobs.addAll(finishedJobs);
 
         JobTopStats stats = new JobTopStats();
         for (Study study : studies) {
@@ -1616,23 +1628,24 @@ public class JobManager extends ResourceManager<Job> {
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(study.getUid(), members);
 
+            List<Long> jobUids = jobList.stream().map(Job::getUid).collect(Collectors.toList());
+            AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(jobUids, permissions,
+                    Enums.Resource.JOB);
+
             OpenCGAResult<Map<String, List<String>>> queryResultList;
             switch (action) {
                 case SET:
-                    queryResultList = authorizationManager.setAcls(study.getUid(), jobList.stream().map(Job::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.JOB);
+                    queryResultList = authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case ADD:
-                    queryResultList = authorizationManager.addAcls(study.getUid(), jobList.stream().map(Job::getUid)
-                            .collect(Collectors.toList()), members, permissions, Enums.Resource.JOB);
+                    queryResultList = authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
                     break;
                 case REMOVE:
-                    queryResultList = authorizationManager.removeAcls(jobList.stream().map(Job::getUid).collect(Collectors.toList()),
-                            members, permissions, Enums.Resource.JOB);
+                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 case RESET:
-                    queryResultList = authorizationManager.removeAcls(jobList.stream().map(Job::getUid).collect(Collectors.toList()),
-                            members, null, Enums.Resource.JOB);
+                    catalogAclParams.setPermissions(null);
+                    queryResultList = authorizationManager.removeAcls(members, catalogAclParams);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

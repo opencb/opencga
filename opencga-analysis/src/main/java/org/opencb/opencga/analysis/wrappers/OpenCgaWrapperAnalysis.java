@@ -42,6 +42,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
     protected Map<String, URI> fileUriMap = new HashMap<>();
 
+    @Deprecated
     public abstract String getDockerImageName();
 
     protected String getCommandLine() throws ToolException {
@@ -62,7 +63,8 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
     }
 
     protected String getCatalogPath(String inputFile) throws ToolException {
-        return new File(getCatalogFile(inputFile).getPath()).getParent();
+//        return new File(getCatalogFile(inputFile).getPath()).getParent();
+        return getCatalogFile(inputFile).getPath();
     }
 
     protected org.opencb.opencga.core.models.file.File getCatalogFile(String inputFile) throws ToolException {
@@ -133,10 +135,12 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
         if (StringUtils.isNotEmpty(uri.toString())) {
             fileUriMap.put(filename, uri);
-            String src = new File(uri.getPath()).getParentFile().getAbsolutePath();
-            if (!srcTargetMap.containsKey(src)) {
-                srcTargetMap.put(src, DOCKER_INPUT_PATH + srcTargetMap.size());
-                sb.append("--mount type=bind,source=\"").append(src).append("\",target=\"").append(srcTargetMap.get(src)).append("\" ");
+            if (srcTargetMap != null) {
+                String src = new File(uri.getPath()).getParentFile().getAbsolutePath();
+                if (!srcTargetMap.containsKey(src)) {
+                    srcTargetMap.put(src, DOCKER_INPUT_PATH + srcTargetMap.size());
+                    sb.append("--mount type=bind,source=\"").append(src).append("\",target=\"").append(srcTargetMap.get(src)).append("\" ");
+                }
             }
         }
     }

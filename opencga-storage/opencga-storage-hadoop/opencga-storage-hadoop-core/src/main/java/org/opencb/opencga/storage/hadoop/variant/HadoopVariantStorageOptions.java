@@ -39,6 +39,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
      */
     MR_HBASE_KEYVALUE_SIZE_MAX("storage.hadoop.mr.hbase.client.keyvalue.maxsize", 10 * 1024 * 1024), // 10MB
     MR_HBASE_SCAN_CACHING("storage.hadoop.mr.scan.caching", 50),
+    MR_HBASE_SCAN_MAX_COLUMNS("storage.hadoop.mr.scan.maxColumns", 25000),
+    MR_HBASE_SCAN_MAX_FILTERS("storage.hadoop.mr.scan.maxFilters", 2000),
 
     /**
      * MapReduce executor. Could be either 'system' or 'ssh'.
@@ -62,6 +64,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     // Do not create phoenix indexes. Testing purposes only
     VARIANT_TABLE_INDEXES_SKIP("storage.hadoop.variant.table.indexes.skip"),
     VARIANT_TABLE_LOAD_REFERENCE("storage.hadoop.variant.table.load.reference", false),
+    PENDING_SECONDARY_INDEX_TABLE_COMPRESSION("storage.hadoop.pendingSecondaryIndex.table.compression",
+            Compression.Algorithm.SNAPPY.getName()),
 
     /////////////////////////
     // Archive table configuration
@@ -82,6 +86,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     /////////////////////////
     SAMPLE_INDEX_TABLE_COMPRESSION("storage.hadoop.sampleIndex.table.compression", Compression.Algorithm.SNAPPY.getName()),
     SAMPLE_INDEX_TABLE_PRESPLIT_SIZE("storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit", 15),
+    SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.annotation.maxSamplesPerMR", 5000),
 
     /////////////////////////
     // Annotation index table  configuration

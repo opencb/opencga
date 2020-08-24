@@ -44,7 +44,7 @@ import static org.opencb.opencga.storage.hadoop.variant.stats.HBaseVariantStatsC
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantStatsDriver extends AbstractVariantsTableDriver {
+public class    VariantStatsDriver extends AbstractVariantsTableDriver {
     private static final String STATS_OPERATION_NAME = "stats";
     public static final String STATS_PARTIAL_RESULTS = "stats.partial-results";
     public static final String OUTPUT = "output";
@@ -130,7 +130,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
     protected void preExecution() throws IOException, StorageEngineException {
         super.preExecution();
         StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(getStudyId());
-        if (!HBaseToVariantConverter.getFixedFormat(studyMetadata.getAttributes()).contains("GT")) {
+        if (!HBaseToVariantConverter.getFixedFormat(studyMetadata).contains("GT")) {
             throw new IllegalArgumentException("Study '" + studyMetadata.getName() + "' does not have Genotypes");
         }
     }

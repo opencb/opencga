@@ -24,6 +24,8 @@ public class ParamConstants {
 
     public static final String ID = "id";
 
+    public static final String TOKEN = "token";
+
     public static final String INCLUDE_DESCRIPTION = "Fields included in the response, whole JSON path must be provided";
     public static final String EXCLUDE_DESCRIPTION = "Fields excluded in the response, whole JSON path must be provided";
     public static final String LIMIT_DESCRIPTION = "Number of results to be returned";
@@ -36,6 +38,12 @@ public class ParamConstants {
     public static final String MODIFICATION_DATE_PARAM = "modificationDate";
     public static final String RELEASE_PARAM = "release";
     public static final String RELEASE_DESCRIPTION = "Release when it was created";
+
+    public static final String INTERNAL_STATUS_PARAM = "internalStatus";
+    public static final String INTERNAL_STATUS_DESCRIPTION = "Filter by internal status";
+
+    public static final String STATUS_PARAM = "status";
+    public static final String STATUS_DESCRIPTION = "Filter by status";
 
     public static final String ACL_PARAM = "acl";
     public static final String ACL_FORMAT = "Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return "
@@ -120,6 +128,8 @@ public class ParamConstants {
     public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
     public static final String SAMPLE_INDIVIDUAL_ID_PARAM = "individualId";
     public static final String SAMPLE_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
+    public static final String SAMPLE_FILE_IDS_PARAM = "fileIds";
+    public static final String SAMPLE_FILE_IDS_DESCRIPTION = "Comma separated list of file IDs";
 
     public static final String SAMPLE_ID_PARAM = "id";
     public static final String SAMPLE_PARAM = "sample";
@@ -150,6 +160,8 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String FAMILIES_DESCRIPTION = "Comma separated list of family IDs or names" + UP_TO_100;
+    public static final String FAMILY_UPDATE_ROLES_PARAM = "updateRoles";
+    public static final String FAMILY_UPDATE_ROLES_DESCRIPTION = "Update the member roles within the family";
 
     // ---------------------------------------------
 
@@ -198,7 +210,6 @@ public class ParamConstants {
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
     public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
-    public static final String JOB_INTERNAL_STATUS_PARAM = "internalStatus";
     public static final String JOB_STATUS_DESCRIPTION = "Job internal status";
     public static final String JOB_VISITED_PARAM = "visited";
     public static final String JOB_VISITED_DESCRIPTION = "Visited status of job";
@@ -303,7 +314,7 @@ public class ParamConstants {
     public static final String ALIGNMENT_COVERAGE_STATS_DESCRIPTION = "Compute coverage stats per transcript for a list of genes.";
     public static final String LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION = "Only regions whose coverage depth is under this threshold will be reported.";
     public static final String LOW_COVERAGE_REGION_THRESHOLD_PARAM = "threshold";
-    public static final String LOW_COVERAGE_REGION_THRESHOLD_DEFAULT = "20";
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_DEFAULT = "30";
 
     public static final String FILE_ID_PARAM = "file";
     public static final String FILE_ID_1_DESCRIPTION = "Input file #1 (e.g. somatic file)";
@@ -366,7 +377,6 @@ public class ParamConstants {
 
     public static final String SAMTOOLS_COMMANDS = "'sort', 'index' , 'view', 'stats', 'dict', 'faidx', 'depth'";
     public static final String SAMTOOLS_COMMAND_DESCRIPTION = "Samtools command: " + SAMTOOLS_COMMANDS;
-    public static final String COMMAND_PARAMETER = "command";
 
     public static final String INPUT_FILE_DESCRIPTION = "Input file (full path).";
     public static final String INPUT_FILE_PARAM = "inputFile";
@@ -389,6 +399,16 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String PICARD_TOOL_NAME_PARAMETER = "command";
+    public static final String PICARD_TOOL_NAME_DESCRIPTION = "Picard tool name to execute. Supported tools: CollectHsMetrics, CollectWgsMetrics, BedToInvervalList";
+    // ---------------------------------------------
+
     public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, gRPC, REST}. When auto, it will first try with gRPC and "
             + "if that does not work, it will try with REST";
+
+    // ---------------------------------------------
+
+    public static final String COMMAND_PARAMETER = "command";
+    public static final String COMMAND_PARAMETER_DESCRIPTION = "Command name to execute in this tool.";
+
 }

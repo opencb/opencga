@@ -65,26 +65,26 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         FLAGS("flags", TEXT_ARRAY, ""),
         RELEASE("release", INTEGER, ""),
 
+        SAMPLE("sample", TEXT_ARRAY, ""), // Alias to search for samples within proband.samples or family.members.samples
+        MEMBER("member", TEXT_ARRAY, ""), // Alias to search for members from proband or family.members
+
         FAMILY("family", TEXT_ARRAY, ""),
+        FAMILY_ID("family.id", TEXT, ""),
         FAMILY_UID("family.uid", INTEGER, ""),
+        FAMILY_MEMBERS_UID("family.members.uid", INTEGER_ARRAY, ""),
+        FAMILY_MEMBERS_SAMPLES_UID("family.members.samples.uid", INTEGER_ARRAY, ""),
         FILES("files", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
         ALERTS("alerts", TEXT_ARRAY, ""),
         PROBAND("proband", TEXT_ARRAY, ""),
+        PROBAND_ID("proband.id", TEXT, ""),
         PROBAND_UID("proband.uid", INTEGER, ""),
-        ROLE_TO_PROBAND("roleToProband", TEXT_ARRAY, ""),
-        SAMPLE_UID("proband.samples.uid", INTEGER, ""),
+        PROBAND_SAMPLES_ID("proband.samples.id", TEXT_ARRAY, ""),
+        PROBAND_SAMPLES_UID("proband.samples.uid", INTEGER, ""),
         INTERPRETATION("interpretation", TEXT, ""),
         INTERPRETATION_ID("interpretation.id", TEXT, ""),
         SECONDARY_INTERPRETATIONS("secondaryInterpretations", TEXT_ARRAY, ""),
         SECONDARY_INTERPRETATIONS_ID("secondaryInterpretations.id", TEXT_ARRAY, ""),
-        QUALITY_CONTROL("qualityControl", TEXT_ARRAY, ""),
-        QUALITY_CONTROL_QUALITY("qualityControl.quality", TEXT, ""),
-        QUALITY_CONTROL_VARIANT("qualityControl.variant", TEXT, ""),
-        QUALITY_CONTROL_ALIGNMENT("qualityControl.alignment", TEXT, ""),
-        QUALITY_CONTROL_ANALYST("qualityControl.analyst", TEXT, ""),
-        QUALITY_CONTROL_COMMENTS("qualityControl.comments", TEXT_ARRAY, ""),
-        QUALITY_CONTROL_DATE("qualityControl.date", TEXT, ""),
 
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
@@ -153,7 +153,8 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
     OpenCGAResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

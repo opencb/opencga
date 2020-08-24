@@ -57,7 +57,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
@@ -488,23 +488,22 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         int fileId = getMetadataManager().registerFile(studyId, fileMetadata);
         setFileId(fileId);
 
-        final boolean excludeGenotypes;
-        if (getMetadataManager().getIndexedFiles(studyId).isEmpty()) {
-            // First indexed file
-            // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyMetadata.attributes
-            excludeGenotypes = options.getBoolean(
-                    VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
-                    VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
-            studyMetadata.setAggregationStr(options.getString(VariantStorageOptions.STATS_AGGREGATION.key(),
-                    VariantStorageOptions.STATS_AGGREGATION.defaultValue().toString()));
-            studyMetadata.getAttributes().put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
-        } else {
-            // Not first indexed file
-            // Use the EXCLUDE_GENOTYPES value from StudyMetadata. Ignore CLI value
-            excludeGenotypes = studyMetadata.getAttributes()
-                    .getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
-            options.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
-        }
+        final boolean excludeGenotypes = options.getBoolean(
+                VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
+                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
+//        if (getMetadataManager().getIndexedFiles(studyId).isEmpty()) {
+//            // First indexed file
+//            // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyMetadata.attributes
+//            studyMetadata.setAggregationStr(options.getString(VariantStorageOptions.STATS_AGGREGATION.key(),
+//                    VariantStorageOptions.STATS_AGGREGATION.defaultValue().toString()));
+//            studyMetadata.getAttributes().put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+//        } else {
+//            // Not first indexed file
+//            // Use the EXCLUDE_GENOTYPES value from StudyMetadata. Ignore CLI value
+//            excludeGenotypes = studyMetadata.getAttributes()
+//                    .getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
+//            options.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+//        }
 
         // Get Extra genotype fields
         Stream<String> stream;
@@ -525,25 +524,18 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     .map(VariantFileHeaderComplexLine::getId);
 
         }
-        List<String> extraGenotypeFields = studyMetadata.getAttributes().getAsStringList(EXTRA_FORMAT_FIELDS.key());
+        List<String> extraFormatFields = studyMetadata.getAttributes().getAsStringList(EXTRA_FORMAT_FIELDS.key());
         stream.forEach(format -> {
-            if (!extraGenotypeFields.contains(format) && !format.equals(VariantMerger.GT_KEY)) {
-                extraGenotypeFields.add(format);
+            if (!extraFormatFields.contains(format) && !format.equals(VariantMerger.GT_KEY)) {
+                extraFormatFields.add(format);
             }
         });
-        studyMetadata.getAttributes().put(EXTRA_FORMAT_FIELDS.key(), extraGenotypeFields);
-        getOptions().put(EXTRA_FORMAT_FIELDS.key(), extraGenotypeFields);
+        studyMetadata.getAttributes().put(EXTRA_FORMAT_FIELDS.key(), extraFormatFields);
+        getOptions().put(EXTRA_FORMAT_FIELDS.key(), extraFormatFields);
 
-        List<String> extraFormatFields = studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
-
-        List<String> formatsFields;
-        if (excludeGenotypes) {
-            formatsFields = extraFormatFields;
-        } else {
-            formatsFields = new ArrayList<>(extraFormatFields.size() + 1);
-            formatsFields.add(VCFConstants.GENOTYPE_KEY);
-            formatsFields.addAll(extraFormatFields);
-        }
+        List<String> formatsFields = new ArrayList<>(extraFormatFields.size() + 1);
+        formatsFields.add(VCFConstants.GENOTYPE_KEY);
+        formatsFields.addAll(extraFormatFields);
         studyMetadata.addVariantFileHeader(fileMetadata.getHeader(), formatsFields);
 
 

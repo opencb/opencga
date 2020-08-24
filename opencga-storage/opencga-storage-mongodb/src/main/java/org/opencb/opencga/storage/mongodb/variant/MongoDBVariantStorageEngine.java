@@ -20,6 +20,7 @@ import com.google.common.base.Throwables;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -126,13 +127,13 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         int studyId = metadataManager.getStudyId(study);
-        for (int i = 0; i < trios.size(); i += 3) {
-            Integer father = metadataManager.getSampleId(studyId, trios.get(i));
-            Integer mother = metadataManager.getSampleId(studyId, trios.get(i + 1));
-            Integer child = metadataManager.getSampleId(studyId, trios.get(i + 2));
+        for (List<String> trio : trios) {
+            Integer father = metadataManager.getSampleId(studyId, trio.get(0));
+            Integer mother = metadataManager.getSampleId(studyId, trio.get(1));
+            Integer child = metadataManager.getSampleId(studyId, trio.get(2));
             metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
                 sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
                 if (father != null && father > 0) {
@@ -144,6 +145,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 return sampleMetadata;
             });
         }
+        return new DataResult<List<String>>().setResults(trios);
     }
 
     @Override

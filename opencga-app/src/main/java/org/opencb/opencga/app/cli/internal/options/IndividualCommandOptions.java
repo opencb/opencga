@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
 
 @Parameters(commandNames = {"individual"}, commandDescription = "Implement several individual tasks")
@@ -16,10 +17,12 @@ public class IndividualCommandOptions {
     public TsvLoad tsvLoad;
 
     public GeneralCliOptions.CommonCommandOptions individualCommandOptions;
+    public final InternalCliOptionsParser.JobOptions internalJobOptions;
     public JCommander jCommander;
 
     public IndividualCommandOptions(GeneralCliOptions.CommonCommandOptions individualCommandOptions, JCommander jCommander) {
         this.individualCommandOptions = individualCommandOptions;
+        this.internalJobOptions = new InternalCliOptionsParser.JobOptions();
         this.jCommander = jCommander;
 
         this.secondaryIndex = new SecondaryIndex();
@@ -30,6 +33,9 @@ public class IndividualCommandOptions {
     public class SecondaryIndex {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = individualCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = false,
                 arity = 1)
@@ -44,6 +50,9 @@ public class IndividualCommandOptions {
     public class TsvLoad {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = individualCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
                 arity = 1)

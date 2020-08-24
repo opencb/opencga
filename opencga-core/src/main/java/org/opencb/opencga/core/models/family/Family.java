@@ -21,15 +21,13 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by pfurio on 02/05/17.
@@ -43,6 +41,8 @@ public class Family extends Annotable {
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
 
+    private FamilyQualityControl qualityControl;
+
     private String creationDate;
     private String modificationDate;
     private int expectedSize;
@@ -52,6 +52,7 @@ public class Family extends Annotable {
     private int version;
     private CustomStatus status;
     private FamilyInternal internal;
+    private Map<String, Map<String, ClinicalAnalysis.FamiliarRelationship>> roles;
     private Map<String, Object> attributes;
 
     public Family() {
@@ -60,12 +61,13 @@ public class Family extends Annotable {
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String description, int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), description, expectedSize, -1, 1, annotationSets,
-                new CustomStatus(), null, attributes);
+                new CustomStatus(), null, null, attributes);
     }
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String creationDate, String description, int expectedSize, int release, int version, List<AnnotationSet> annotationSets,
-                  CustomStatus status, FamilyInternal internal, Map<String, Object> attributes) {
+                  CustomStatus status, FamilyInternal internal, Map<String, Map<String, ClinicalAnalysis.FamiliarRelationship>> roles,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
@@ -79,6 +81,7 @@ public class Family extends Annotable {
         this.annotationSets = ObjectUtils.defaultIfNull(annotationSets, new ArrayList<>());
         this.status = status;
         this.internal = internal;
+        this.roles = roles;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
@@ -91,6 +94,7 @@ public class Family extends Annotable {
         sb.append(", members=").append(members);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", expectedSize=").append(expectedSize);
@@ -99,8 +103,8 @@ public class Family extends Annotable {
         sb.append(", version=").append(version);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
+        sb.append(", roles=").append(roles);
         sb.append(", attributes=").append(attributes);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
     }
@@ -168,6 +172,15 @@ public class Family extends Annotable {
 
     public Family setMembers(List<Individual> members) {
         this.members = members;
+        return this;
+    }
+
+    public FamilyQualityControl getQualityControl() {
+        return qualityControl;
+    }
+
+    public Family setQualityControl(FamilyQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 
@@ -243,6 +256,15 @@ public class Family extends Annotable {
         return this;
     }
 
+    public Map<String, Map<String, ClinicalAnalysis.FamiliarRelationship>> getRoles() {
+        return roles;
+    }
+
+    public Family setRoles(Map<String, Map<String, ClinicalAnalysis.FamiliarRelationship>> roles) {
+        this.roles = roles;
+        return this;
+    }
+
     public Map<String, Object> getAttributes() {
         return attributes;
     }
@@ -251,5 +273,4 @@ public class Family extends Annotable {
         this.attributes = attributes;
         return this;
     }
-
 }

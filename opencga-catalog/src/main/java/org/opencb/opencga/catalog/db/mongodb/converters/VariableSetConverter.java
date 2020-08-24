@@ -16,17 +16,19 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.apache.avro.generic.GenericRecord;
 import org.bson.Document;
-import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.study.VariableSet;
 
 /**
  * Created by pfurio on 04/04/16.
  */
-public class VariableSetConverter extends GenericDocumentComplexConverter<VariableSet> {
+public class VariableSetConverter extends OpenCgaMongoConverter<VariableSet> {
 
     public VariableSetConverter() {
         super(VariableSet.class);
+        getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
     }
 
     @Override

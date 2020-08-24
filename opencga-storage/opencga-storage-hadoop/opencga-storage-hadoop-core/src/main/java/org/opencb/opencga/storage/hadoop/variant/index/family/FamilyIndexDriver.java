@@ -1,7 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.index.family;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -15,6 +13,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.MendelianError;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -31,9 +30,7 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,12 +44,13 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(FamilyIndexDriver.class);
 
     public static final String TRIOS = "trios";
-    public static final String TRIOS_FILE = "triosFile";
-    public static final String TRIOS_FILE_DELETE = "triosFileDelete";
+    public static final String TRIOS_COHORT = "triosCohort";
+    public static final String TRIOS_COHORT_DELETE = "triosCohortDelete";
     public static final String OVERWRITE = "overwrite";
     public static final String OUTPUT = "output";
 
     private static final String TRIOS_LIST = "FamilyIndexDriver.trios_list";
+    private static final int MISSING_SAMPLE = -1;
     private List<Integer> sampleIds;
     private boolean partial;
     private String region;
@@ -84,28 +82,19 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
             sampleIndexTableName = getParam(OUTPUT);
         }
 
-        String triosFile = getParam(TRIOS_FILE);
-        boolean triosFileDelete = Boolean.valueOf(getParam(TRIOS_FILE_DELETE));
-        boolean overwrite = Boolean.valueOf(getParam(OVERWRITE));
-        List<String> trios;
-        if (StringUtils.isNotEmpty(triosFile)) {
-            File file = new File(triosFile);
-            trios = FileUtils.readLines(file);
-            if (triosFileDelete) {
-                Files.delete(file.toPath());
-            }
-        } else {
-            trios = Arrays.asList(getParam(TRIOS).split(";"));
-        }
+        boolean overwrite = Boolean.parseBoolean(getParam(OVERWRITE));
+        String triosCohort = getParam(TRIOS_COHORT);
+        String triosStr = getParam(TRIOS);
 
-        if (CollectionUtils.isNotEmpty(trios)) {
-            sampleIds = new LinkedList<>();
+        sampleIds = new LinkedList<>();
+        if (StringUtils.isNotEmpty(triosStr)) {
+            String[] trios = triosStr.split(";");
             List<Integer> trioList = new ArrayList<>(3);
             for (String trio : trios) {
                 for (String sample : trio.split(",")) {
                     Integer sampleId;
                     if (sample.equals("-")) {
-                        sampleId = -1;
+                        sampleId = MISSING_SAMPLE;
                     } else {
                         sampleId = metadataManager.getSampleId(getStudyId(), sample);
                         if (sampleId == null) {
@@ -125,6 +114,31 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                     LOGGER.info("Trio: " + trio + " -> " + trioList);
                 }
                 trioList.clear();
+            }
+        } else if (StringUtils.isNotEmpty(triosCohort)) {
+            CohortMetadata cohortMetadata;
+            try {
+                cohortMetadata = getMetadataManager().getCohortMetadata(getStudyId(), triosCohort);
+            } finally {
+                boolean triosCohortDelete = Boolean.parseBoolean(getParam(TRIOS_COHORT_DELETE));
+                if (triosCohortDelete) {
+                    getMetadataManager().removeCohort(getStudyId(), triosCohort);
+                }
+            }
+
+            for (Integer sample : cohortMetadata.getSamples()) {
+                SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sample);
+                if (sampleMetadata.getFather() == null) {
+                    sampleIds.add(-1);
+                } else {
+                    sampleIds.add(sampleMetadata.getFather());
+                }
+                if (sampleMetadata.getMother() == null) {
+                    sampleIds.add(-1);
+                } else {
+                    sampleIds.add(sampleMetadata.getMother());
+                }
+                sampleIds.add(sampleMetadata.getId());
             }
         } else {
             throw new IllegalArgumentException("Missing list of trios!");
@@ -158,9 +172,11 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         job.getConfiguration().set(TRIOS_LIST, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
 
         for (Integer sampleId : sampleIds) {
-            SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sampleId);
-            for (PhoenixHelper.Column column : VariantPhoenixHelper.getSampleColumns(sampleMetadata)) {
-                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column.bytes());
+            if (sampleId != MISSING_SAMPLE) {
+                SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sampleId);
+                for (PhoenixHelper.Column column : VariantPhoenixHelper.getSampleColumns(sampleMetadata)) {
+                    scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column.bytes());
+                }
             }
         }
 //        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
@@ -311,7 +327,8 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                                            String fatherGtStr, String motherGtStr, String childGtStr,
                                            Context context,
                                            FamilyIndexPutBuilder builder, int idx) throws IOException {
-            if ((fatherGtStr != null || father == -1) && (motherGtStr != null || mother == -1) && childGtStr != null) {
+            if ((fatherGtStr != null || father == MISSING_SAMPLE)
+                    && (motherGtStr != null || mother == MISSING_SAMPLE) && childGtStr != null) {
                 Genotype fatherGt;
                 Genotype motherGt;
                 Genotype childGt;
