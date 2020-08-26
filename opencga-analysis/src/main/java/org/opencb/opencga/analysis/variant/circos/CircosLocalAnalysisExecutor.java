@@ -69,6 +69,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
     private boolean plotIndels = false;
     private boolean plotRearrangements = false;
 
+    private Map<String, String> errors;
+
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public CircosLocalAnalysisExecutor() {
@@ -103,10 +105,11 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
         ExecutorService threadPool = Executors.newFixedThreadPool(4);
 
+        errors = new HashMap<>();
         List<Future<Boolean>> futureList = new ArrayList<>(4);
         futureList.add(threadPool.submit(getNamedThread("SNV", () -> snvQuery(query, storageManager))));
         futureList.add(threadPool.submit(getNamedThread("COPY_NUMBER", () -> copyNumberQuery(query, storageManager))));
-        futureList.add(threadPool.submit(getNamedThread("INDEL", ()-> indelQuery(query, storageManager))));
+        futureList.add(threadPool.submit(getNamedThread("INDEL", () -> indelQuery(query, storageManager))));
         futureList.add(threadPool.submit(getNamedThread("REARRANGEMENT", () -> rearrangementQuery(query, storageManager))));
 
         threadPool.shutdown();
@@ -119,32 +122,40 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch (InterruptedException e) {
-            throw new ToolException("Error launching threads when executing the Cisco analysis", e);
+            throw new ToolException("Error launching threads when executing the Circos analysis", e);
         }
 
 
-        // Execute R script
-        // circos.R ./snvs.tsv ./indels.tsv ./cnvs.tsv ./rearrs.tsv SampleId
-        String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/" + getToolId();
-        List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-        inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
-        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
-                DOCKER_OUTPUT_PATH);
-        String scriptParams = "R CMD Rscript --vanilla " + DOCKER_INPUT_PATH + "/circos.R"
-                + (plotCopynumber ? "" : " --no_copynumber")
-                + (plotIndels ? "" : " --no_indels")
-                + (plotRearrangements ? "" : " --no_rearrangements")
-                + " --out_path " + DOCKER_OUTPUT_PATH
-                + " " + DOCKER_OUTPUT_PATH + "/" + snvsFile.getName()
-                + " " + DOCKER_OUTPUT_PATH + "/" + indelsFile.getName()
-                + " " + DOCKER_OUTPUT_PATH + "/" + cnvsFile.getName()
-                + " " + DOCKER_OUTPUT_PATH + "/" + rearrsFile.getName()
-                + " " + getCircosParams().getTitle();
+        if (MapUtils.isEmpty(errors)) {
+            // Execute R script
+            // circos.R ./snvs.tsv ./indels.tsv ./cnvs.tsv ./rearrs.tsv SampleId
+            String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/" + getToolId();
+            List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
+            inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
+            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
+                    DOCKER_OUTPUT_PATH);
+            String scriptParams = "R CMD Rscript --vanilla " + DOCKER_INPUT_PATH + "/circos.R"
+                    + (plotCopynumber ? "" : " --no_copynumber")
+                    + (plotIndels ? "" : " --no_indels")
+                    + (plotRearrangements ? "" : " --no_rearrangements")
+                    + " --out_path " + DOCKER_OUTPUT_PATH
+                    + " " + DOCKER_OUTPUT_PATH + "/" + snvsFile.getName()
+                    + " " + DOCKER_OUTPUT_PATH + "/" + indelsFile.getName()
+                    + " " + DOCKER_OUTPUT_PATH + "/" + cnvsFile.getName()
+                    + " " + DOCKER_OUTPUT_PATH + "/" + rearrsFile.getName()
+                    + " " + getCircosParams().getTitle();
 
-        StopWatch stopWatch = StopWatch.createStarted();
-        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
-        logger.info("Docker command line: " + cmdline);
-        logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
+            StopWatch stopWatch = StopWatch.createStarted();
+            String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
+            logger.info("Docker command line: " + cmdline);
+            logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
+        } else {
+            StringBuilder msg = new StringBuilder();
+            for (Map.Entry<String, String> error : errors.entrySet()) {
+                msg.append("Error on track ").append(error.getKey()).append(": ").append(error.getValue()).append(". ");
+            }
+            throw new ToolException(msg.toString());
+        }
     }
 
     /**
@@ -219,6 +230,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch(Exception e) {
+            errors.put("SNV", e.getMessage());
             return false;
         } finally {
             if (pw != null) {
@@ -295,6 +307,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch (Exception e) {
+            errors.put("COPY-NUMBER", e.getMessage());
             return false;
         } finally {
             if (pw != null) {
@@ -365,6 +378,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch(Exception e){
+            errors.put("INDEL", e.getMessage());
             return false;
 //            throw new ToolExecutorException(e);
         } finally {
@@ -463,6 +477,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch (Exception e) {
+            errors.put("REARRANGEMENT", e.getMessage());
             return false;
         } finally {
             if (pw != null) {

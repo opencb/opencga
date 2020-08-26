@@ -1373,7 +1373,7 @@ public class VariantWebService extends AnalysisWebService {
             if (outDir != null) {
                 // Delete temporal directory
                 try {
-                    if (outDir.exists()) {
+                    if (outDir.exists() && !params.getTitle().startsWith("no.delete.")) {
                         FileUtils.deleteDirectory(outDir);
                     }
                 } catch (IOException e) {
