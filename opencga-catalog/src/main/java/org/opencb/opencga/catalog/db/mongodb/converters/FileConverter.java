@@ -22,9 +22,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.util.ArrayList;
@@ -64,15 +64,19 @@ public class FileConverter extends AnnotableConverter<File> {
         return document;
     }
 
-    public List<Document> convertSamples(List<Sample> sampleList) {
+    public List<Document> convertSamples(List<ResourceReference> sampleList) {
         if (sampleList == null || sampleList.isEmpty()) {
             return Collections.emptyList();
         }
         List<Document> samples = new ArrayList(sampleList.size());
-        for (Sample sample : sampleList) {
+        for (ResourceReference sample : sampleList) {
             long sampleId = sample != null ? (sample.getUid() == 0 ? -1L : sample.getUid()) : -1L;
             if (sampleId > 0) {
-                samples.add(new Document("uid", sampleId));
+                samples.add(new Document()
+                        .append(SampleDBAdaptor.QueryParams.UID.key(), sampleId)
+                        .append(SampleDBAdaptor.QueryParams.UUID.key(), sample.getUuid())
+                        .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId())
+                );
             }
         }
         return samples;

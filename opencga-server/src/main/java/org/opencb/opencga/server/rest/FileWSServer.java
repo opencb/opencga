@@ -340,8 +340,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
 
-            if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key())
-                    && (query.get(FileDBAdaptor.QueryParams.NAME.key()) == null
+            if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key()) && (query.get(FileDBAdaptor.QueryParams.NAME.key()) == null
                     || query.getString(FileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
                 query.remove(FileDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");

@@ -112,9 +112,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return new OpenCGAResult(sampleCollection.insert(sampleDocument, null));
     }
 
-    Sample insert(ClientSession clientSession, long studyId, Sample sample, List<VariableSet> variableSetList)
+    Sample insert(ClientSession clientSession, long studyUid, Sample sample, List<VariableSet> variableSetList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyUid);
 
         if (StringUtils.isEmpty(sample.getId())) {
             throw new CatalogDBException("Missing sample id");
@@ -123,7 +123,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         long individualUid = -1L;
         if (StringUtils.isNotEmpty(sample.getIndividualId())) {
             Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(IndividualDBAdaptor.QueryParams.ID.key(), sample.getIndividualId());
 
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
@@ -139,7 +139,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         // Check the sample does not exist
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), sample.getId()));
-        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
+        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyUid));
 
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = sampleCollection.count(clientSession, bson);
@@ -147,16 +147,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             throw new CatalogDBException("Sample { id: '" + sample.getId() + "'} already exists.");
         }
 
-        long sampleId = getNewUid(clientSession);
-        sample.setUid(sampleId);
-        sample.setStudyUid(studyId);
+        initialiseNewSample(sample);
+
+        long sampleUid = getNewUid(clientSession);
+        sample.setUid(sampleUid);
+        sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
+        sample.setStudyUid(studyUid);
         sample.setVersion(1);
-        if (StringUtils.isEmpty(sample.getUuid())) {
-            sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
-        }
-        if (StringUtils.isEmpty(sample.getCreationDate())) {
-            sample.setCreationDate(TimeUtils.getTime());
-        }
+        sample.setRelease(dbAdaptorFactory.getCatalogStudyDBAdaptor().getCurrentRelease(clientSession, studyUid));
 
         Document sampleObject = sampleConverter.convertToStorageType(sample, variableSetList);
 
@@ -689,7 +687,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         logger.debug("Deleting sample {} ({})", sampleId, sampleUid);
 
-        removeSampleReferences(clientSession, studyUid, sampleUid);
+        Sample sample = new Sample()
+                .setUid(sampleUid)
+                .setUuid(sampleDocument.getString(QueryParams.UUID.key()))
+                .setId(sampleId);
+        removeSampleReferences(clientSession, studyUid, sample);
 
         // Look for all the different sample versions
         Query sampleQuery = new Query()
@@ -735,11 +737,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
-    private void removeSampleReferences(ClientSession clientSession, long studyUid, long sampleUid)
+    private void removeSampleReferences(ClientSession clientSession, long studyUid, Sample sample)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        dbAdaptorFactory.getCatalogFileDBAdaptor().removeSampleReferences(clientSession, studyUid, sampleUid);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeSampleReferences(clientSession, studyUid, sampleUid);
-        individualDBAdaptor.removeSampleReferences(clientSession, studyUid, sampleUid);
+        dbAdaptorFactory.getCatalogFileDBAdaptor().removeSampleReferences(clientSession, studyUid, sample);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeSampleReferences(clientSession, studyUid, sample.getUid());
+        individualDBAdaptor.removeSampleReferences(clientSession, studyUid, sample.getUid());
     }
 
     // TODO: Check clean

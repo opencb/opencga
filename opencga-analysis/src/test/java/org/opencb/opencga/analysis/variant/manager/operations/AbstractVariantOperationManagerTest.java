@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -306,7 +307,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
         Cohort defaultCohort = getDefaultCohort(studyId);
         for (File file : expectedLoadedFiles) {
-            List<Long> samplesInFile = file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+            List<Long> samplesInFile = file.getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList());
             List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
             assertTrue(samplesInCohort.containsAll(samplesInFile));
         }
@@ -352,7 +353,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         assertNotNull(defaultCohort);
         List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
         for (File file : expectedLoadedFiles) {
-            Long[] samplesInFiles = file.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).toArray(new Long[0]);
+            Long[] samplesInFiles = file.getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList()).toArray(new Long[0]);
 //            assertTrue(samplesInCohort.containsAll(samplesInFiles));
             assertThat(samplesInCohort, hasItems(samplesInFiles));
         }

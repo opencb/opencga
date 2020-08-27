@@ -41,6 +41,7 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
@@ -546,7 +547,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         Map<String, List<File>> fileMap = new HashMap<>();
         for (File file : fileResults.getResults()) {
-            for (Sample sample : file.getSamples()) {
+            for (ResourceReference sample : file.getSamples()) {
                 if (sampleMap.containsKey(sample.getUid())) {
                     String sampleId = sampleMap.get(sample.getUid());
                     if (!fileMap.containsKey(sampleId)) {
@@ -603,7 +604,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         for (File file : clinicalAnalysis.getFiles()) {
             if (CollectionUtils.isNotEmpty(file.getSamples())) {
                 boolean found = false;
-                for (Sample sample : file.getSamples()) {
+                for (ResourceReference sample : file.getSamples()) {
                     if (sampleMap.containsKey(sample.getId())) {
                         found = true;
                         break;

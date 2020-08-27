@@ -42,7 +42,7 @@
         <pyopencga.version>${opencga.version}</pyopencga.version>
         <cellbase.version>4.8.0</cellbase.version>
         <biodata.version>2.0.1</biodata.version>
-        <java-common-libs.version>4.0.1</java-common-libs.version>
+        <java-common-libs.version>4.0.2-SNAPSHOT</java-common-libs.version>
         <oskar.version>0.2.0-SNAPSHOT</oskar.version>
 <!--        <bionet.version>0.2.0-SNAPSHOT</bionet.version>-->
         <jackson.version>2.10.1</jackson.version>
