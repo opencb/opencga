@@ -39,6 +39,7 @@ public class ClinicalUpdateParams {
 
     private List<FileReferenceParam> files;
 
+    private Boolean locked;
 //    private ProbandParam proband;
 //    private FamilyParam family;
     private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
@@ -62,16 +63,17 @@ public class ClinicalUpdateParams {
     }
 
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
-                                List<FileReferenceParam> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
-                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
-                                ClinicalAnalysisQcUpdateParams qualityControl, ClinicalConsent consent, String dueDate,
-                                List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
+                                List<FileReferenceParam> files, Boolean locked,
+                                Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalystParam analyst,
+                                ClinicalAnalysisInternal internal, ClinicalAnalysisQcUpdateParams qualityControl, ClinicalConsent consent,
+                                String dueDate, List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
                                 Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
         this.disorder = disorder;
         this.files = files;
+        this.locked = locked;
         this.roleToProband = roleToProband;
         this.analyst = analyst;
         this.internal = internal;
@@ -99,6 +101,7 @@ public class ClinicalUpdateParams {
         sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
+        sb.append(", locked=").append(locked);
         sb.append(", roleToProband=").append(roleToProband);
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
@@ -190,6 +193,15 @@ public class ClinicalUpdateParams {
 
     public ClinicalUpdateParams setFiles(List<FileReferenceParam> files) {
         this.files = files;
+        return this;
+    }
+
+    public Boolean getLocked() {
+        return locked;
+    }
+
+    public ClinicalUpdateParams setLocked(Boolean locked) {
+        this.locked = locked;
         return this;
     }
 
