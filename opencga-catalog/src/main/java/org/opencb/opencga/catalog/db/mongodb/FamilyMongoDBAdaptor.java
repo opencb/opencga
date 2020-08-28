@@ -29,6 +29,7 @@ import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -39,10 +40,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -338,12 +341,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 .append(QueryParams.STUDY_UID.key(), family.getStudyUid())
                 .append(QueryParams.UID.key(), family.getUid());
 
+        // TODO: This shouldn't be necessary now
         if (queryOptions.getBoolean(Constants.REFRESH)) {
             getLastVersionOfMembers(clientSession, tmpQuery, parameters);
         }
 
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(clientSession, family.getStudyUid(), family.getUid());
+        } else {
+            checkInUseInLockedClinicalAnalysis(clientSession, family);
         }
 
         DataResult result = updateAnnotationSets(clientSession, family.getUid(), parameters, variableSetList, queryOptions, true);
@@ -374,7 +380,88 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             logger.debug("Family {} successfully updated", family.getId());
         }
 
+        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            updateClinicalAnalysisFamilyReferences(clientSession, family);
+        }
+
         return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    /**
+     * Update Family references from any Clinical Analysis where it was used.
+     *
+     * @param clientSession Client session.
+     * @param family Family object containing the version stored in the Clinical Analysis (before the version increment).
+     */
+    private void updateClinicalAnalysisFamilyReferences(ClientSession clientSession, Family family)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        // We only update clinical analysis that are not locked. Locked ones will remain pointing to old references
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), family.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), false);
+        DBIterator<ClinicalAnalysis> iterator = dbAdaptorFactory.getClinicalAnalysisDBAdaptor()
+                .iterator(clientSession, query, ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
+
+        while (iterator.hasNext()) {
+            ClinicalAnalysis clinicalAnalysis = iterator.next();
+
+            if (clinicalAnalysis.getFamily().getUid() == family.getUid()
+                    && clinicalAnalysis.getFamily().getVersion() == family.getVersion()) {
+
+                Family newFamily = clinicalAnalysis.getFamily();
+
+                // Increase family version
+                newFamily.setVersion(family.getVersion() + 1);
+
+                ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), newFamily);
+                OpenCGAResult result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params,
+                        QueryOptions.empty());
+                if (result.getNumUpdated() != 1) {
+                    throw new CatalogDBException("ClinicalAnalysis '" + clinicalAnalysis.getId() + "' could not be updated to the latest "
+                            + "family version of '" + family.getId() + "'");
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks whether the family that is going to be updated is in use in any locked Clinical Analysis.
+     *
+     * @param clientSession Client session.
+     * @param family Family to be updated.
+     * @throws CatalogDBException CatalogDBException if the family is in use in any Clinical Analysis.
+     */
+    private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Family family)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+
+        // We only need to focus on locked clinical analyses
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), family.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
+
+        OpenCGAResult<ClinicalAnalysis> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().get(clientSession, query,
+                ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
+
+        if (result.getNumResults() == 0) {
+            // No Clinical Analyses are using the member...
+            return;
+        }
+
+        // We need to check if the family version is being used in any of the clinical analyses manually
+        List<String> clinicalAnalysisIds = new ArrayList<>(result.getNumResults());
+        for (ClinicalAnalysis clinicalAnalysis : result.getResults()) {
+            if (clinicalAnalysis.getFamily().getVersion() == family.getVersion()) {
+                clinicalAnalysisIds.add(clinicalAnalysis.getId());
+            }
+        }
+
+        if (!clinicalAnalysisIds.isEmpty()) {
+            throw new CatalogDBException("Family '" + family.getId() + "' is being used in the following clinical analyses: '"
+                    + String.join("', '", clinicalAnalysisIds) + "'.");
+        }
+
     }
 
     private void getLastVersionOfMembers(ClientSession clientSession, Query query, ObjectMap parameters)

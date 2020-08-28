@@ -27,10 +27,7 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.IndividualCatalogMongoDBIterator;
@@ -38,11 +35,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
+import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
@@ -374,6 +374,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(QueryParams.STUDY_UID.key(), individual.getStudyUid())
                 .append(QueryParams.UID.key(), individual.getUid());
 
+        // TODO: This shouldn't be necessary now
         if (queryOptions.getBoolean(Constants.REFRESH)) {
             // Add the latest sample versions in the parameters object
             updateToLastSampleVersions(clientSession, tmpQuery, parameters, queryOptions);
@@ -381,6 +382,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(clientSession, individual.getStudyUid(), individual.getUid());
+        } else {
+            checkInUseInLockedClinicalAnalysis(clientSession, individual);
         }
 
         DataResult result = updateAnnotationSets(clientSession, individual.getUid(), parameters, variableSetList, queryOptions, true);
@@ -458,7 +461,140 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             logger.debug("Individual {} successfully updated", individual.getId());
         }
 
+        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            updateFamilyIndividualReferences(clientSession, individual);
+            updateClinicalAnalysisIndividualReferences(clientSession, individual);
+        }
+
         return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    /**
+     * Update Individual references from any Clinical Analysis where it was used.
+     *
+     * @param clientSession Client session.
+     * @param individual Individual object containing the version stored in the Clinical Analysis (before the version increment).
+     */
+    private void updateClinicalAnalysisIndividualReferences(ClientSession clientSession, Individual individual)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        // We only update clinical analysis that are not locked. Locked ones will remain pointing to old references
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), individual.getStudyUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_UID.key(), individual.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), false);
+        DBIterator<ClinicalAnalysis> iterator = dbAdaptorFactory.getClinicalAnalysisDBAdaptor()
+                .iterator(clientSession, query, ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
+
+        while (iterator.hasNext()) {
+            ClinicalAnalysis clinicalAnalysis = iterator.next();
+
+            if (clinicalAnalysis.getProband().getUid() == individual.getUid()
+                    && clinicalAnalysis.getProband().getVersion() == individual.getVersion()) {
+
+                Individual proband = clinicalAnalysis.getProband();
+                // Increase proband version
+                proband.setVersion(proband.getVersion() + 1);
+
+                ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), proband);
+                OpenCGAResult result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params,
+                        QueryOptions.empty());
+                if (result.getNumUpdated() != 1) {
+                    throw new CatalogDBException("ClinicalAnalysis '" + clinicalAnalysis.getId() + "' could not be updated to the latest "
+                            + "individual version of '" + individual.getId() + "'");
+                }
+            }
+        }
+    }
+
+    /**
+     * Update Individual references from any Family where it was used.
+     *
+     * @param clientSession Client session.
+     * @param individual Individual object containing the previous version (before the version increment).
+     */
+    private void updateFamilyIndividualReferences(ClientSession clientSession, Individual individual)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), individual.getStudyUid())
+                .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), individual.getUid());
+
+        List<String> include = new ArrayList<>(FamilyManager.INCLUDE_FAMILY_IDS.getAsStringList(QueryOptions.INCLUDE));
+        include.add(FamilyDBAdaptor.QueryParams.MEMBERS.key());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, include);
+
+        DBIterator<Family> iterator = dbAdaptorFactory.getCatalogFamilyDBAdaptor().iterator(clientSession, query, options);
+
+        while (iterator.hasNext()) {
+            Family family = iterator.next();
+
+            List<Individual> members = new ArrayList<>(family.getMembers().size());
+            for (Individual member : family.getMembers()) {
+                if (member.getUid() == individual.getUid()) {
+                    member.setVersion(individual.getVersion() + 1);
+                }
+                members.add(member);
+            }
+
+            ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
+
+            ObjectMap action = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), ParamUtils.UpdateAction.SET);
+            options = new QueryOptions()
+                    .append(Constants.INCREMENT_VERSION, true)
+                    .append(Constants.ACTIONS, action);
+
+            OpenCGAResult result = dbAdaptorFactory.getCatalogFamilyDBAdaptor().privateUpdate(clientSession, family, params, null, options);
+            if (result.getNumUpdated() != 1) {
+                throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest "
+                        + "member version of '" + individual.getId() + "'");
+            }
+        }
+    }
+
+    /**
+     * Checks whether the individual that is going to be updated is in use in any locked Clinical Analysis.
+     *
+     * @param clientSession Client session.
+     * @param individual Individual to be updated.
+     * @throws CatalogDBException CatalogDBException if the individual is in use in any Clinical Analysis.
+     */
+    private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Individual individual)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+
+        // We only need to focus on locked clinical analyses
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), individual.getStudyUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(), individual.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
+
+        OpenCGAResult<ClinicalAnalysis> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().get(clientSession, query,
+                ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
+
+        if (result.getNumResults() == 0) {
+            // No Clinical Analyses are using the member...
+            return;
+        }
+
+        // We need to check if the member version is being used in any of the clinical analyses manually
+        Set<String> clinicalAnalysisIds = new HashSet<>(result.getNumResults());
+        for (ClinicalAnalysis clinicalAnalysis : result.getResults()) {
+            if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getUid() == individual.getUid()
+                    && clinicalAnalysis.getProband().getVersion() == individual.getVersion()) {
+                clinicalAnalysisIds.add(clinicalAnalysis.getId());
+                continue;
+            }
+            if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getMembers() != null) {
+                for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                    if (member.getUid() == individual.getUid() && member.getVersion() == individual.getVersion()) {
+                        clinicalAnalysisIds.add(clinicalAnalysis.getId());
+                    }
+                }
+            }
+        }
+
+        if (!clinicalAnalysisIds.isEmpty()) {
+            throw new CatalogDBException("Individual '" + individual.getId() + "' is being used in the following clinical analyses: '"
+                    + String.join("', '", clinicalAnalysisIds) + "'.");
+        }
     }
 
     private void createNewVersion(ClientSession clientSession, long studyUid, long individualUid)

@@ -729,6 +729,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case TYPE:
                     case DUE_DATE:
                     case PRIORITY:
+                    case LOCKED:
                     case PROBAND_SAMPLES_ID:
                     case PROBAND_SAMPLES_UID:
                     case PROBAND_UID:

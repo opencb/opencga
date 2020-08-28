@@ -22,6 +22,7 @@ import org.bson.Document;
 import org.junit.Test;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.formats.sequence.fastqc.Summary;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -36,12 +37,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
@@ -240,6 +243,268 @@ public class SampleManagerTest extends AbstractManagerTest {
 //                new ObjectMap(SampleDBAdaptor.QueryParams.STATS.key(), new ObjectMap("two", "three")), new QueryOptions(), sessionIdUser);
 //        assertEquals(2, update.first().getStats().size());
 //    }
+
+    @Test
+    public void testUpdateWithLockedClinicalAnalysis() throws CatalogException {
+        Sample sample = new Sample().setId("sample1");
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
+
+        sample = new Sample().setId("sample2");
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
+
+        sample = new Sample().setId("sample3");
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
+
+        sample = new Sample().setId("sample4");
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
+
+        Individual individual = new Individual()
+                .setId("proband")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, Arrays.asList("sample1", "sample2"), QueryOptions.empty(), token);
+
+        individual = new Individual().setId("father");
+        catalogManager.getIndividualManager().create(studyFqn, individual, Arrays.asList("sample3", "sample4"), QueryOptions.empty(), token);
+
+        Family family = new Family().setId("family");
+        catalogManager.getFamilyManager().create(studyFqn, family, Arrays.asList("proband", "father"), QueryOptions.empty(), token);
+
+        family.setMembers(Arrays.asList(
+                new Individual().setId("proband").setSamples(Collections.singletonList(new Sample().setId("sample2"))),
+                new Individual().setId("father").setSamples(Collections.singletonList(new Sample().setId("sample3")))
+        ));
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("clinical")
+                .setProband(new Individual().setId("proband"))
+                .setFamily(family)
+                .setType(ClinicalAnalysis.Type.FAMILY);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, QueryOptions.empty(), token);
+
+        // We will create another clinical analysis with the same information. In this test, we will not lock clinical2
+        clinicalAnalysis = new ClinicalAnalysis()
+                .setId("clinical2")
+                .setProband(new Individual().setId("proband"))
+                .setFamily(family)
+                .setType(ClinicalAnalysis.Type.FAMILY);
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, QueryOptions.empty(), token);
+
+        // Update sample1 from proband not used in Clinical Analysis
+        catalogManager.getSampleManager().update(studyFqn, "sample1", new SampleUpdateParams(),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+
+        Sample sampleResult = catalogManager.getSampleManager().get(studyFqn, "sample1", QueryOptions.empty(), token).first();
+        assertEquals(2, sampleResult.getVersion());
+
+        Individual individualResult = catalogManager.getIndividualManager().get(studyFqn, "proband", QueryOptions.empty(), token).first();
+        assertEquals(2, individualResult.getVersion());
+        assertEquals(2, individualResult.getSamples().size());
+        assertEquals(2, individualResult.getSamples().get(0).getVersion());
+        assertEquals(1, individualResult.getSamples().get(1).getVersion());
+
+        Family familyResult = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
+        assertEquals(2, familyResult.getVersion());
+        assertEquals(2, familyResult.getMembers().size());
+        assertEquals(2, familyResult.getMembers().get(0).getVersion());
+        assertEquals(1, familyResult.getMembers().get(1).getVersion());
+
+        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
+        assertEquals(1, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
+        assertEquals(1, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+
+        // Update sample used in Clinical Analysis from father
+        catalogManager.getSampleManager().update(studyFqn, "sample3", new SampleUpdateParams(),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+
+        sampleResult = catalogManager.getSampleManager().get(studyFqn, "sample3", QueryOptions.empty(), token).first();
+        assertEquals(2, sampleResult.getVersion());
+
+        individualResult = catalogManager.getIndividualManager().get(studyFqn, "father", QueryOptions.empty(), token).first();
+        assertEquals(2, individualResult.getVersion());
+        assertEquals(2, individualResult.getSamples().size());
+        assertEquals(2, individualResult.getSamples().get(0).getVersion());
+        assertEquals(1, individualResult.getSamples().get(1).getVersion());
+
+        familyResult = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
+        assertEquals(3, familyResult.getVersion());
+        assertEquals(2, familyResult.getMembers().size());
+        assertEquals(2, familyResult.getMembers().get(0).getVersion());
+        assertEquals(2, familyResult.getMembers().get(1).getVersion());
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(3, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(3, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
+
+        // LOCK CLINICAL ANALYSIS
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, "clinical", new ClinicalUpdateParams().setLocked(true),
+                QueryOptions.empty(), token);
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        assertTrue(clinicalResult.isLocked());
+
+        SampleUpdateParams updateParams = new SampleUpdateParams().setDescription("something so it doesn't complain because there "
+                + "is nothing to be updated");
+//        try {
+//            catalogManager.getSampleManager().update(studyFqn, "sample1", updateParams, QueryOptions.empty(), token);
+//            fail("Although sample1 is not directly in use in ClinicalAnalysis, we should not be able to update information that would "
+//                    + "affect an individual or family from a locked clinical analysis unless the version is incremented");
+//        } catch (CatalogException e) {
+//            // Check nothing changed
+//            checkNothingChanged("sample1");
+//        }
+
+        try {
+            catalogManager.getSampleManager().update(studyFqn, "sample2", updateParams, QueryOptions.empty(), token);
+            fail("We should not be able to update information that is in use in a locked clinical analysis unless the version is incremented");
+        } catch (CatalogException e) {
+            // Check nothing changed
+            checkNothingChanged("sample2", 1);
+        }
+
+        try {
+            catalogManager.getSampleManager().update(studyFqn, "sample3", updateParams, QueryOptions.empty(), token);
+            fail("We should not be able to update information that is in use in a locked clinical analysis unless the version is incremented");
+        } catch (CatalogException e) {
+            // Check nothing changed
+            checkNothingChanged("sample3", 2);
+        }
+
+//        try {
+//            catalogManager.getSampleManager().update(studyFqn, "sample4", updateParams, QueryOptions.empty(), token);
+//            fail("Although sample4 is not directly in use in ClinicalAnalysis, we should not be able to update information that would "
+//                    + "affect an individual or family from a locked clinical analysis unless the version is incremented");
+//        } catch (CatalogException e) {
+//            // Check nothing changed
+//            checkNothingChanged("sample4");
+//        }
+
+        // Update sample 2 from proband
+        catalogManager.getSampleManager().update(studyFqn, "sample2", new SampleUpdateParams(),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+
+        sampleResult = catalogManager.getSampleManager().get(studyFqn, "sample2", QueryOptions.empty(), token).first();
+        assertEquals(2, sampleResult.getVersion());
+
+        individualResult = catalogManager.getIndividualManager().get(studyFqn, "proband", QueryOptions.empty(), token).first();
+        assertEquals(3, individualResult.getVersion());
+        assertEquals(2, individualResult.getSamples().size());
+        assertEquals(2, individualResult.getSamples().get(0).getVersion());
+        assertEquals(2, individualResult.getSamples().get(1).getVersion());
+
+        familyResult = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
+        assertEquals(4, familyResult.getVersion());
+        assertEquals(2, familyResult.getMembers().size());
+        assertEquals(3, familyResult.getMembers().get(0).getVersion());
+        assertEquals(2, familyResult.getMembers().get(1).getVersion());
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
+        assertEquals(3, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+        assertEquals(1, clinicalResult.getFamily().getMembers().get(0).getSamples().get(0).getVersion());   // proband sample2 version
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
+        assertEquals(3, clinicalResult.getProband().getVersion());
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
+        assertEquals(4, clinicalResult.getFamily().getVersion());
+        assertEquals(3, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getSamples().get(0).getVersion());   // proband sample2 version
+
+
+        // Update sample3 from father
+        catalogManager.getSampleManager().update(studyFqn, "sample3", new SampleUpdateParams(),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+
+        sampleResult = catalogManager.getSampleManager().get(studyFqn, "sample3", QueryOptions.empty(), token).first();
+        assertEquals(3, sampleResult.getVersion());
+
+        individualResult = catalogManager.getIndividualManager().get(studyFqn, "proband", QueryOptions.empty(), token).first();
+        assertEquals(3, individualResult.getVersion());
+        assertEquals(2, individualResult.getSamples().size());
+        assertEquals(2, individualResult.getSamples().get(0).getVersion());
+        assertEquals(2, individualResult.getSamples().get(1).getVersion());
+
+        familyResult = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
+        assertEquals(5, familyResult.getVersion());
+        assertEquals(2, familyResult.getMembers().size());
+        assertEquals(3, familyResult.getMembers().get(0).getVersion());
+        assertEquals(3, familyResult.getMembers().get(1).getVersion());
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
+        assertEquals(3, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+        assertEquals(1, clinicalResult.getFamily().getMembers().get(0).getSamples().get(0).getVersion());   // proband sample2 version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
+        assertEquals(3, clinicalResult.getProband().getVersion());
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
+        assertEquals(5, clinicalResult.getFamily().getVersion());
+        assertEquals(3, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
+        assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getSamples().get(0).getVersion());   // proband sample2 version
+        assertEquals(3, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
+    }
+
+    void checkNothingChanged(String sampleId, int sampleVersion) throws CatalogException {
+        Sample sampleResult = catalogManager.getSampleManager().get(studyFqn, sampleId, QueryOptions.empty(), token).first();
+        assertEquals(sampleVersion, sampleResult.getVersion());
+
+        Individual individualResult = catalogManager.getIndividualManager().get(studyFqn, "proband", QueryOptions.empty(), token).first();
+        assertEquals(2, individualResult.getVersion());
+        assertEquals(2, individualResult.getSamples().size());
+        assertEquals(2, individualResult.getSamples().get(0).getVersion());
+        assertEquals(1, individualResult.getSamples().get(1).getVersion());
+
+        Family familyResult = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
+        assertEquals(3, familyResult.getVersion());
+        assertEquals(2, familyResult.getMembers().size());
+        assertEquals(2, familyResult.getMembers().get(0).getVersion());
+        assertEquals(2, familyResult.getMembers().get(1).getVersion());
+
+        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(3, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical2", QueryOptions.empty(), token).first();
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(3, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(0).getVersion());   // proband version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
+        assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
+    }
 
     @Test
     public void testCreateSampleWithDotInName() throws CatalogException {
