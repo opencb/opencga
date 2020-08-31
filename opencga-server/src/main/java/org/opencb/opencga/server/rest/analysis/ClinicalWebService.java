@@ -19,9 +19,8 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -448,7 +447,7 @@ public class ClinicalWebService extends AnalysisWebService {
             // TODO: Think about having an action in this web service. Are we ever going to allow people to set or remove comments?
             @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
             @ApiParam(name = "body", value = "JSON containing a list of comments", required = true)
-                    List<Comment> comments) {
+                    List<ClinicalComment> comments) {
         try {
             InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setComments(comments);
 

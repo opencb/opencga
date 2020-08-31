@@ -20,7 +20,7 @@ import com.mongodb.BasicDBObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -1340,7 +1340,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .setDateOfBirth("19870214"), QueryOptions.empty(), token);
 
         IndividualQualityControl qualityControl = new IndividualQualityControl(null, null, null, Collections.emptyList(),
-                Arrays.asList(new Comment("pfurio", "type", "message", "today")));
+                Arrays.asList(new ClinicalComment("pfurio", "message", Collections.singletonList("tag"), "today")));
         DataResult<Individual> update = individualManager.update(studyFqn, individualDataResult.first().getId(),
                 new IndividualUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
         assertEquals(1, update.getNumUpdated());
@@ -1349,8 +1349,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .first();
         assertEquals(1, individual.getQualityControl().getComments().size());
         assertEquals("pfurio", individual.getQualityControl().getComments().get(0).getAuthor());
-        assertEquals("type", individual.getQualityControl().getComments().get(0).getType());
         assertEquals("message", individual.getQualityControl().getComments().get(0).getMessage());
+        assertEquals("tag", individual.getQualityControl().getComments().get(0).getTags().get(0));
         assertEquals("today", individual.getQualityControl().getComments().get(0).getDate());
     }
 

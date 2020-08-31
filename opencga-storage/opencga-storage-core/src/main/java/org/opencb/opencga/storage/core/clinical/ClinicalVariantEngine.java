@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.clinical;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.commons.datastore.core.*;
@@ -141,10 +141,10 @@ public interface ClinicalVariantEngine {
             throws ClinicalVariantException, IOException;
 
 
-    void addInterpretationComment(long interpretationId, Comment comment, String collection)
+    void addInterpretationComment(long interpretationId, ClinicalComment comment, String collection)
                                     throws IOException, ClinicalVariantException;
 
-    void addClinicalVariantComment(long interpretationId, String variantId, Comment comment, String collection)
+    void addClinicalVariantComment(long interpretationId, String variantId, ClinicalComment comment, String collection)
                                             throws IOException, ClinicalVariantException;
 
     void setStorageConfiguration(StorageConfiguration storageConfiguration);

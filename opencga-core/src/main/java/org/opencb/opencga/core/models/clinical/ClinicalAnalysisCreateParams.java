@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
@@ -48,7 +48,7 @@ public class ClinicalAnalysisCreateParams {
     private ClinicalConsent consent;
 
     private String dueDate;
-    private List<Comment> comments;
+    private List<ClinicalComment> comments;
     private List<Alert> alerts;
     private Enums.Priority priority;
     private List<String> flags;
@@ -64,7 +64,7 @@ public class ClinicalAnalysisCreateParams {
                                         ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
                                         InterpretationCreateParams interpretation,
                                         List<InterpretationCreateParams> secondaryInterpretations, ClinicalConsent consent, String dueDate,
-                                        List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
+                                        List<ClinicalComment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
                                         Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
@@ -305,11 +305,11 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public ClinicalAnalysisCreateParams setComments(List<Comment> comments) {
+    public ClinicalAnalysisCreateParams setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }

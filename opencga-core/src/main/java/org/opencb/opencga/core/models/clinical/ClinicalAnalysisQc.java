@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.Analyst;
 
 import java.util.List;
@@ -11,14 +11,14 @@ public class ClinicalAnalysisQc {
     private ClinicalAnalysisVariantQc variant;
     private ClinicalAnalysisAlignmentQc alignment;
     private Analyst analyst;
-    private List<Comment> comments;
+    private List<ClinicalComment> comments;
     private String date;
 
     public ClinicalAnalysisQc() {
     }
 
     public ClinicalAnalysisQc(Quality quality, ClinicalAnalysisVariantQc variant, ClinicalAnalysisAlignmentQc alignment, Analyst analyst,
-                              List<Comment> comments, String date) {
+                              List<ClinicalComment> comments, String date) {
         this.quality = quality;
         this.variant = variant;
         this.alignment = alignment;
@@ -83,11 +83,11 @@ public class ClinicalAnalysisQc {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public ClinicalAnalysisQc setComments(List<Comment> comments) {
+    public ClinicalAnalysisQc setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }

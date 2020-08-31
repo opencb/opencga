@@ -16,14 +16,14 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.clinical.Comment;
+import org.mortbay.util.SingletonList;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -571,7 +571,7 @@ public class FamilyManagerTest extends GenericTest {
         DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
         FamilyQualityControl qualityControl = new FamilyQualityControl(null, Arrays.asList("file1", "file2"),
-                Collections.singletonList(new Comment("author", "type", "message", "date")));
+                Collections.singletonList(new ClinicalComment("author", "message", Collections.singletonList("tag"), "date")));
 
         FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControl(qualityControl);
 
@@ -583,8 +583,8 @@ public class FamilyManagerTest extends GenericTest {
         assertTrue(Arrays.asList("file1", "file2").containsAll(updatedFamily.first().getQualityControl().getFileIds()));
         assertEquals(1, updatedFamily.first().getQualityControl().getComments().size());
         assertEquals("author", updatedFamily.first().getQualityControl().getComments().get(0).getAuthor());
-        assertEquals("type", updatedFamily.first().getQualityControl().getComments().get(0).getType());
         assertEquals("message", updatedFamily.first().getQualityControl().getComments().get(0).getMessage());
+        assertEquals("tag", updatedFamily.first().getQualityControl().getComments().get(0).getTags().get(0));
         assertEquals("date", updatedFamily.first().getQualityControl().getComments().get(0).getDate());
     }
 

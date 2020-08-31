@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.Analyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
@@ -39,7 +39,7 @@ public class InterpretationUpdateParams {
     private String creationDate;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
-    private List<Comment> comments;
+    private List<ClinicalComment> comments;
     private Map<String, Object> attributes;
 
     public InterpretationUpdateParams() {
@@ -47,7 +47,7 @@ public class InterpretationUpdateParams {
 
     public InterpretationUpdateParams(String id, String description, String clinicalAnalysisId, Analyst analyst,
                                       List<InterpretationMethod> methods, String creationDate, List<ClinicalVariant> primaryFindings,
-                                      List<ClinicalVariant> secondaryFindings, List<Comment> comments, Map<String, Object> attributes) {
+                                      List<ClinicalVariant> secondaryFindings, List<ClinicalComment> comments, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
@@ -154,11 +154,11 @@ public class InterpretationUpdateParams {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public InterpretationUpdateParams setComments(List<Comment> comments) {
+    public InterpretationUpdateParams setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }

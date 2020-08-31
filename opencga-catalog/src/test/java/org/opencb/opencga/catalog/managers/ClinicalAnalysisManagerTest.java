@@ -22,7 +22,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.Analyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -36,14 +36,12 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
@@ -468,7 +466,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         i.setClinicalAnalysisId(dummyEnvironment.first().getId());
         i.setMethods(Collections.singletonList(method));
         i.setAnalyst(new Analyst("user2", "mail@mail.com", "company"));
-        i.setComments(Collections.singletonList(new Comment("author", "type", "comment 1", "date")));
+        i.setComments(Collections.singletonList(new ClinicalComment("author", "comment 1", Collections.singletonList("tag"), "date")));
         i.setPrimaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", null, "chr1", 1, 2, "", "", "+", null, 1,
                 null, null, null))));
 

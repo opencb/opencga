@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -52,7 +52,7 @@ public class ClinicalUpdateParams {
     private ClinicalConsent consent;
 
     private String dueDate;
-    private List<Comment> comments;
+    private List<ClinicalComment> comments;
     private List<Alert> alerts;
     private Enums.Priority priority;
     private List<String> flags;
@@ -67,7 +67,7 @@ public class ClinicalUpdateParams {
                                 List<FileReferenceParam> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
                                 ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, Interpretation interpretation,
                                 List<Interpretation> secondaryInterpretations, ClinicalAnalysisQcUpdateParams qualityControl,
-                                ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
+                                ClinicalConsent consent, String dueDate, List<ClinicalComment> comments, List<Alert> alerts,
                                 Enums.Priority priority, List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
@@ -262,11 +262,11 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public ClinicalUpdateParams setComments(List<Comment> comments) {
+    public ClinicalUpdateParams setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }

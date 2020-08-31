@@ -22,8 +22,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.Comment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.*;
@@ -219,7 +219,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         return clinicalVariantEngine.iterator(query, options, "");
     }
 
-    public void addInterpretationComment(String study, long interpretationId, Comment comment, String token)
+    public void addInterpretationComment(String study, long interpretationId, ClinicalComment comment, String token)
             throws IOException, ClinicalVariantException, CatalogException {
         // Check permissions
         checkInterpretationPermissions(study, interpretationId, token);
@@ -227,7 +227,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalVariantEngine.addInterpretationComment(interpretationId, comment, "");
     }
 
-    public void addClinicalVariantComment(String study, long interpretationId, String variantId, Comment comment, String token)
+    public void addClinicalVariantComment(String study, long interpretationId, String variantId, ClinicalComment comment, String token)
             throws IOException, ClinicalVariantException, CatalogException {
         // Check permissions
         checkInterpretationPermissions(study, interpretationId, token);

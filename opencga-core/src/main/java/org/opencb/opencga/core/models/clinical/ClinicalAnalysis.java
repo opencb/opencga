@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.CustomStatus;
@@ -60,7 +60,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private String dueDate;
     private int release;
 
-    private List<Comment> comments;
+    private List<ClinicalComment> comments;
     private List<Alert> alerts;
     private ClinicalAnalysisInternal internal;
     private Map<String, Object> attributes;
@@ -149,7 +149,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
                             Family family, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
                             ClinicalConsent consent, ClinicalAnalysisAnalyst analyst, Enums.Priority priority, List<String> flags,
-                            String creationDate, String modificationDate, String dueDate, int release, List<Comment> comments,
+                            String creationDate, String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
                             List<Alert> alerts, ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
         this.id = id;
         this.description = description;
@@ -370,11 +370,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public ClinicalAnalysis setComments(List<Comment> comments) {
+    public ClinicalAnalysis setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }
