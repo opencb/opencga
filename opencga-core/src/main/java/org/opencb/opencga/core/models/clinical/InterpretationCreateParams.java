@@ -36,6 +36,7 @@ public class InterpretationCreateParams {
     private ClinicalAnalyst analyst;
     private List<InterpretationMethod> methods;
     private String creationDate;
+    private String modificationDate;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
     private List<ClinicalComment> comments;
@@ -45,15 +46,16 @@ public class InterpretationCreateParams {
     }
 
     public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, ClinicalAnalyst analyst,
-                                      List<InterpretationMethod> methods, String creationDate, List<ClinicalVariant> primaryFindings,
-                                      List<ClinicalVariant> secondaryFindings, List<ClinicalComment> comments,
-                                      Map<String, Object> attributes) {
+                                      List<InterpretationMethod> methods, String creationDate, String modificationDate,
+                                      List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
+                                      List<ClinicalComment> comments, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
         this.analyst = analyst;
         this.methods = methods;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.primaryFindings = primaryFindings;
         this.secondaryFindings = secondaryFindings;
         this.comments = comments;
@@ -63,8 +65,8 @@ public class InterpretationCreateParams {
     public static InterpretationCreateParams of(Interpretation interpretation) {
         return new InterpretationCreateParams(interpretation.getId(), interpretation.getDescription(),
                 interpretation.getClinicalAnalysisId(), interpretation.getAnalyst(), interpretation.getMethods(),
-                interpretation.getCreationDate(), interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(),
-                interpretation.getComments(), interpretation.getAttributes());
+                interpretation.getCreationDate(), interpretation.getModificationDate(), interpretation.getPrimaryFindings(),
+                interpretation.getSecondaryFindings(), interpretation.getComments(), interpretation.getAttributes());
     }
 
     @Override
@@ -76,6 +78,7 @@ public class InterpretationCreateParams {
         sb.append(", analyst=").append(analyst);
         sb.append(", methods=").append(methods);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", primaryFindings=").append(primaryFindings);
         sb.append(", secondaryFindings=").append(secondaryFindings);
         sb.append(", comments=").append(comments);
@@ -85,8 +88,8 @@ public class InterpretationCreateParams {
     }
 
     public Interpretation toClinicalInterpretation() {
-        return new Interpretation(id, description, clinicalAnalysisId, analyst, methods, creationDate, primaryFindings, secondaryFindings,
-                comments, attributes);
+        return new Interpretation(id, description, clinicalAnalysisId, analyst, methods, creationDate, modificationDate, primaryFindings,
+                secondaryFindings, comments, attributes);
     }
 
     public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {
@@ -144,6 +147,15 @@ public class InterpretationCreateParams {
 
     public InterpretationCreateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public InterpretationCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 
