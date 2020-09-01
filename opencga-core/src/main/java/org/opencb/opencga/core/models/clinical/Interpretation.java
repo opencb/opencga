@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.interpretation.Analyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
@@ -37,7 +37,7 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         super();
     }
 
-    public Interpretation(String id, String description, String clinicalAnalysisId, Analyst analyst, List<InterpretationMethod> methods,
+    public Interpretation(String id, String description, String clinicalAnalysisId, ClinicalAnalyst analyst, List<InterpretationMethod> methods,
                           String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
                           List<ClinicalComment> comments, Map<String, Object> attributes) {
         super(id, "", description, clinicalAnalysisId, analyst, methods, primaryFindings, secondaryFindings, comments, null, creationDate,

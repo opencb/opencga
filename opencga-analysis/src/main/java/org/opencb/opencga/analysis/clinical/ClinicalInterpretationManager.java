@@ -22,10 +22,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.*;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
@@ -1019,13 +1016,13 @@ public class ClinicalInterpretationManager extends StorageManager {
 //        return reportedLowCoverages;
 //    }
 
-    public Analyst getAnalyst(String token) throws ToolException {
+    public ClinicalAnalyst getAnalyst(String token) throws ToolException {
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
             OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
-
-            return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
+            User user = userQueryResult.first();
+            return new ClinicalAnalyst(userId, user.getName(), user.getEmail(), "", "");
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

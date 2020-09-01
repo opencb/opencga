@@ -18,8 +18,8 @@ package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.interpretation.Analyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -34,7 +34,7 @@ public class InterpretationUpdateParams {
     private String id;
     private String description;
     private String clinicalAnalysisId;
-    private Analyst analyst;
+    private ClinicalAnalyst analyst;
     private List<InterpretationMethod> methods;
     private String creationDate;
     private List<ClinicalVariant> primaryFindings;
@@ -45,7 +45,7 @@ public class InterpretationUpdateParams {
     public InterpretationUpdateParams() {
     }
 
-    public InterpretationUpdateParams(String id, String description, String clinicalAnalysisId, Analyst analyst,
+    public InterpretationUpdateParams(String id, String description, String clinicalAnalysisId, ClinicalAnalyst analyst,
                                       List<InterpretationMethod> methods, String creationDate, List<ClinicalVariant> primaryFindings,
                                       List<ClinicalVariant> secondaryFindings, List<ClinicalComment> comments, Map<String, Object> attributes) {
         this.id = id;
@@ -109,11 +109,11 @@ public class InterpretationUpdateParams {
         return this;
     }
 
-    public Analyst getAnalyst() {
+    public ClinicalAnalyst getAnalyst() {
         return analyst;
     }
 
-    public InterpretationUpdateParams setAnalyst(Analyst analyst) {
+    public InterpretationUpdateParams setAnalyst(ClinicalAnalyst analyst) {
         this.analyst = analyst;
         return this;
     }

@@ -17,8 +17,8 @@
 package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.interpretation.Analyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -33,7 +33,7 @@ public class InterpretationCreateParams {
     private String id;
     private String description;
     private String clinicalAnalysisId;
-    private Analyst analyst;
+    private ClinicalAnalyst analyst;
     private List<InterpretationMethod> methods;
     private String creationDate;
     private List<ClinicalVariant> primaryFindings;
@@ -44,9 +44,10 @@ public class InterpretationCreateParams {
     public InterpretationCreateParams() {
     }
 
-    public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, Analyst analyst,
+    public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, ClinicalAnalyst analyst,
                                       List<InterpretationMethod> methods, String creationDate, List<ClinicalVariant> primaryFindings,
-                                      List<ClinicalVariant> secondaryFindings, List<ClinicalComment> comments, Map<String, Object> attributes) {
+                                      List<ClinicalVariant> secondaryFindings, List<ClinicalComment> comments,
+                                      Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
@@ -119,11 +120,11 @@ public class InterpretationCreateParams {
         return this;
     }
 
-    public Analyst getAnalyst() {
+    public ClinicalAnalyst getAnalyst() {
         return analyst;
     }
 
-    public InterpretationCreateParams setAnalyst(Analyst analyst) {
+    public InterpretationCreateParams setAnalyst(ClinicalAnalyst analyst) {
         this.analyst = analyst;
         return this;
     }

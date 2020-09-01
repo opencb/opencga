@@ -16,7 +16,11 @@
 
 package org.opencb.opencga.analysis.clinical;
 
-import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
@@ -76,7 +80,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
                 Collections.singletonList(new Software().setName(getId())));
 
         // Analyst
-        Analyst analyst = clinicalInterpretationManager.getAnalyst(token);
+        ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
 
         List<ClinicalVariant> primaryFindings = readClinicalVariants(Paths.get(getOutDir().toString() + "/"
                 + PRIMARY_FINDINGS_FILENAME));

@@ -22,9 +22,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.interpretation.Analyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
@@ -465,7 +465,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         i.setDescription("description");
         i.setClinicalAnalysisId(dummyEnvironment.first().getId());
         i.setMethods(Collections.singletonList(method));
-        i.setAnalyst(new Analyst("user2", "mail@mail.com", "company"));
+        i.setAnalyst(new ClinicalAnalyst("user2-ID", "user2", "mail@mail.com", "boss", "date"));
         i.setComments(Collections.singletonList(new ClinicalComment("author", "comment 1", Collections.singletonList("tag"), "date")));
         i.setPrimaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", null, "chr1", 1, 2, "", "", "+", null, 1,
                 null, null, null))));
