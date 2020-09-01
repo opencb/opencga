@@ -23,6 +23,8 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -433,29 +435,42 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             // If the list of disorders or phenotypes is altered, we will need to update the corresponding effective lists
             // of the families associated (if any)
             if (parameters.containsKey(QueryParams.DISORDERS.key()) || parameters.containsKey(QueryParams.PHENOTYPES.key())) {
+                // We fetch the current updated individual to know how the current list of disorders and phenotypes
+                QueryOptions individualOptions = new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(QueryParams.PHENOTYPES.key(), QueryParams.DISORDERS.key()));
+                Individual currentIndividual = get(clientSession, new Query()
+                        .append(QueryParams.STUDY_UID.key(), individual.getStudyUid())
+                        .append(QueryParams.UID.key(), individual.getUid()), individualOptions).first();
+
                 FamilyMongoDBAdaptor familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
 
                 Query familyQuery = new Query()
                         .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), individual.getUid())
                         .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), individual.getStudyUid());
                 QueryOptions familyOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                        FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.MEMBERS.key()));
+                        FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
+                        FamilyDBAdaptor.QueryParams.MEMBERS.key()));
 
                 DBIterator<Family> familyIterator = familyDBAdaptor.iterator(clientSession, familyQuery, familyOptions);
+
+                ObjectMap actionMap = new ObjectMap()
+                        .append(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), ParamUtils.UpdateAction.SET)
+                        .append(FamilyDBAdaptor.QueryParams.DISORDERS.key(), ParamUtils.UpdateAction.SET);
+                QueryOptions familyUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 while (familyIterator.hasNext()) {
                     Family family = familyIterator.next();
 
-                    // Update the list of disorders and phenotypes
-                    ObjectMap params = new ObjectMap()
-                            .append(FamilyDBAdaptor.QueryParams.DISORDERS.key(), familyDBAdaptor.getAllDisorders(family.getMembers()))
-                            .append(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), familyDBAdaptor.getAllPhenotypes(family.getMembers()));
+                    ObjectMap params = getNewFamilyDisordersAndPhenotypesToUpdate(family, currentIndividual.getDisorders(),
+                            currentIndividual.getPhenotypes(), currentIndividual.getUid());
 
-                    Bson bsonQuery = familyDBAdaptor.parseQuery(new Query(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid()));
-                    Document update = familyDBAdaptor.parseAndValidateUpdateParams(clientSession, params, null)
-                            .toFinalUpdateDocument();
+                    familyDBAdaptor.privateUpdate(clientSession, family, params, null, familyUpdateOptions);
 
-                    familyDBAdaptor.getFamilyCollection().update(clientSession, bsonQuery, update, QueryOptions.empty());
+//                    Bson bsonQuery = familyDBAdaptor.parseQuery(new Query(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid()));
+//                    Document update = familyDBAdaptor.parseAndValidateUpdateParams(clientSession, params, null)
+//                            .toFinalUpdateDocument();
+//
+//                    familyDBAdaptor.getFamilyCollection().update(clientSession, bsonQuery, update, QueryOptions.empty());
                 }
             }
             logger.debug("Individual {} successfully updated", individual.getId());
@@ -467,6 +482,53 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    /**
+     * Calculates the new list of disorders and phenotypes considering Individual individual belongs to Family family and that individual
+     * has a new list of disorders and phenotypes stored.
+     *
+     * @param family Current Family as stored in DB.
+     * @param disorders List of disorders of member of the family individualUid .
+     * @param phenotypes List of phenotypes of member of the family individualUid.
+     * @param individualUid Individual uid.
+     * @return A new ObjectMap tp update the list of disorders and phenotypes in the Family.
+     */
+    private ObjectMap getNewFamilyDisordersAndPhenotypesToUpdate(Family family, List<Disorder> disorders, List<Phenotype> phenotypes,
+                                                                 long individualUid) {
+        Map<String, Disorder> disorderMap = new HashMap();
+        Map<String, Phenotype> phenotypeMap = new HashMap();
+        // Initialise the array of disorders and phenotypes with the content of the individual
+        if (disorders != null) {
+            for (Disorder disorder : disorders) {
+                disorderMap.put(disorder.getId(), disorder);
+            }
+        }
+        if (phenotypes != null) {
+            for (Phenotype phenotype : phenotypes) {
+                phenotypeMap.put(phenotype.getId(), phenotype);
+            }
+        }
+
+        // We get the current list of phenotypes and disorders of the rest of family members discarding the one recently updated.
+        for (Individual member : family.getMembers()) {
+            if (member.getUid() != individualUid) {
+                if (member.getDisorders() != null) {
+                    for (Disorder disorder : member.getDisorders()) {
+                        disorderMap.put(disorder.getId(), disorder);
+                    }
+                }
+                if (member.getPhenotypes() != null) {
+                    for (Phenotype phenotype : member.getPhenotypes()) {
+                        phenotypeMap.put(phenotype.getId(), phenotype);
+                    }
+                }
+            }
+        }
+
+        return new ObjectMap()
+                .append(QueryParams.PHENOTYPES.key(), new ArrayList<>(phenotypeMap.values()))
+                .append(QueryParams.DISORDERS.key(), new ArrayList<>(disorderMap.values()));
     }
 
     /**
@@ -896,10 +958,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 }
             }
             // Remove the member and update the list of disorders and phenotypes
-            ObjectMap params = new ObjectMap()
-                    .append(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members)
-                    .append(FamilyDBAdaptor.QueryParams.DISORDERS.key(), familyDBAdaptor.getAllDisorders(members))
-                    .append(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), familyDBAdaptor.getAllPhenotypes(members));
+            ObjectMap params = getNewFamilyDisordersAndPhenotypesToUpdate(family, null, null, individualUid)
+                    .append(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
 
             Bson bsonQuery = familyDBAdaptor.parseQuery(new Query()
                     .append(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid())
