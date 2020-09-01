@@ -370,7 +370,9 @@ public class ClinicalInterpretationManager extends StorageManager {
         List<ClinicalVariantEvidence> evidences = new ArrayList<>();
 
         for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
-            gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(), null);
+
+            gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(),
+                    ct.getSequenceOntologyTerms(), null);
             panelIds = null;
             if (genePanelMap.containsKey(ct.getEnsemblGeneId())) {
                 panelIds = new ArrayList<>(genePanelMap.get(ct.getEnsemblGeneId()));
@@ -417,11 +419,11 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
 
-        // Consequence types
-        if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
-            // Set consequence type
-            clinicalVariantEvidence.setConsequenceTypes(consequenceType.getSequenceOntologyTerms());
-        }
+//        // Consequence types
+//        if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
+//            // Set consequence type
+//            clinicalVariantEvidence.setConsequenceTypes(consequenceType.getSequenceOntologyTerms());
+//        }
 
         // Genomic feature
         if (genomicFeature != null) {
@@ -464,7 +466,6 @@ public class ClinicalInterpretationManager extends StorageManager {
                 clinicalVariantEvidence.setRoleInCancer(roleInCancer.get(genomicFeature.getGeneName()));
             }
         }
-
 
         // Set tier and actionable if necessary
         if (MapUtils.isNotEmpty(actionableVariants) && actionableVariants.containsKey(variantId)) {
