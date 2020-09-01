@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -49,7 +50,7 @@ public class ClinicalAnalysisCreateParams {
 
     private String dueDate;
     private List<ClinicalComment> comments;
-    private List<Alert> alerts;
+    private List<ClinicalAudit> audit;
     private Enums.Priority priority;
     private List<String> flags;
 
@@ -64,8 +65,8 @@ public class ClinicalAnalysisCreateParams {
                                         ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
                                         InterpretationCreateParams interpretation,
                                         List<InterpretationCreateParams> secondaryInterpretations, ClinicalConsent consent, String dueDate,
-                                        List<ClinicalComment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
-                                        Map<String, Object> attributes, CustomStatusParams status) {
+                                        List<ClinicalComment> comments, List<ClinicalAudit> audit, Enums.Priority priority,
+                                        List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -80,7 +81,7 @@ public class ClinicalAnalysisCreateParams {
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
-        this.alerts = alerts;
+        this.audit = audit;
         this.priority = priority;
         this.flags = flags;
         this.attributes = attributes;
@@ -105,7 +106,7 @@ public class ClinicalAnalysisCreateParams {
                         .collect(Collectors.toList())
                         : Collections.emptyList(),
                 clinicalAnalysis.getConsent(), clinicalAnalysis.getDueDate(),
-                clinicalAnalysis.getComments(), clinicalAnalysis.getAlerts(), clinicalAnalysis.getPriority(), clinicalAnalysis.getFlags(),
+                clinicalAnalysis.getComments(), clinicalAnalysis.getAudit(), clinicalAnalysis.getPriority(), clinicalAnalysis.getFlags(),
                 clinicalAnalysis.getAttributes(), CustomStatusParams.of(clinicalAnalysis.getStatus()));
     }
 
@@ -126,7 +127,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
-        sb.append(", alerts=").append(alerts);
+        sb.append(", audit=").append(audit);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", attributes=").append(attributes);
@@ -185,7 +186,7 @@ public class ClinicalAnalysisCreateParams {
 
         return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f,
                 primaryInterpretation, secondaryInterpretationList, consent, new ClinicalAnalysisAnalyst(assignee, ""), priority, flags,
-                null, null,  dueDate, 1, comments, alerts, internal, attributes, status != null ? status.toCustomStatus() : null);
+                null, null,  dueDate, 1, comments, audit, internal, attributes, status != null ? status.toCustomStatus() : null);
     }
 
     public String getId() {
@@ -314,12 +315,12 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public List<Alert> getAlerts() {
-        return alerts;
+    public List<ClinicalAudit> getAudit() {
+        return audit;
     }
 
-    public ClinicalAnalysisCreateParams setAlerts(List<Alert> alerts) {
-        this.alerts = alerts;
+    public ClinicalAnalysisCreateParams setAudit(List<ClinicalAudit> audit) {
+        this.audit = audit;
         return this;
     }
 

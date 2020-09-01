@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.opencga.core.models.PrivateStudyUid;
@@ -61,7 +62,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private int release;
 
     private List<ClinicalComment> comments;
-    private List<Alert> alerts;
+    private List<ClinicalAudit> audit;
     private ClinicalAnalysisInternal internal;
     private Map<String, Object> attributes;
 
@@ -150,7 +151,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
                             Family family, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
                             ClinicalConsent consent, ClinicalAnalysisAnalyst analyst, Enums.Priority priority, List<String> flags,
                             String creationDate, String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
-                            List<Alert> alerts, ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
+                            List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, Map<String, Object> attributes,
+                            CustomStatus status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -169,7 +171,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.dueDate = dueDate;
         this.release = release;
         this.comments = comments;
-        this.alerts = alerts;
+        this.audit = audit;
         this.internal = internal;
         this.attributes = attributes;
         this.status = status;
@@ -197,7 +199,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", release=").append(release);
         sb.append(", comments=").append(comments);
-        sb.append(", alerts=").append(alerts);
+        sb.append(", audit=").append(audit);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
@@ -379,12 +381,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public List<Alert> getAlerts() {
-        return alerts;
+    public List<ClinicalAudit> getAudit() {
+        return audit;
     }
 
-    public ClinicalAnalysis setAlerts(List<Alert> alerts) {
-        this.alerts = alerts;
+    public ClinicalAnalysis setAlerts(List<ClinicalAudit> audit) {
+        this.audit = audit;
         return this;
     }
 
