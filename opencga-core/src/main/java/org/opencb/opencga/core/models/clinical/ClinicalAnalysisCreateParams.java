@@ -16,8 +16,10 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
@@ -175,7 +177,7 @@ public class ClinicalAnalysisCreateParams {
                         .collect(Collectors.toList())
                         : new ArrayList<>();
 
-        String assignee = analyst != null ? analyst.assignee : "";
+        String assignee = analyst != null ? analyst.id : "";
 
         List<File> caFiles = new LinkedList<>();
         if (files != null) {
@@ -185,8 +187,9 @@ public class ClinicalAnalysisCreateParams {
         }
 
         return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f,
-                primaryInterpretation, secondaryInterpretationList, consent, new ClinicalAnalysisAnalyst(assignee, ""), priority, flags,
-                null, null,  dueDate, 1, comments, audit, internal, attributes, status != null ? status.toCustomStatus() : null);
+                primaryInterpretation, secondaryInterpretationList, consent, new ClinicalAnalyst(assignee, assignee, "", "",
+                TimeUtils.getTime()), priority, flags, null, null,  dueDate, 1, comments, audit, internal, attributes,
+                status != null ? status.toCustomStatus() : null);
     }
 
     public String getId() {
@@ -487,33 +490,33 @@ public class ClinicalAnalysisCreateParams {
     }
 
     private static class ClinicalAnalystParam {
-        private String assignee;
+        private String id;
 
         public ClinicalAnalystParam() {
         }
 
-        public ClinicalAnalystParam(String assignee) {
-            this.assignee = assignee;
+        public ClinicalAnalystParam(String id) {
+            this.id = id;
         }
 
-        public static ClinicalAnalystParam of(ClinicalAnalysisAnalyst clinicalAnalyst) {
-            return new ClinicalAnalystParam(clinicalAnalyst.getAssignee());
+        public static ClinicalAnalystParam of(ClinicalAnalyst clinicalAnalyst) {
+            return new ClinicalAnalystParam(clinicalAnalyst.getId());
         }
 
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("ClinicalAnalystParam{");
-            sb.append("assignee='").append(assignee).append('\'');
+            sb.append("id='").append(id).append('\'');
             sb.append('}');
             return sb.toString();
         }
 
-        public String getAssignee() {
-            return assignee;
+        public String getId() {
+            return id;
         }
 
-        public ClinicalAnalystParam setAssignee(String assignee) {
-            this.assignee = assignee;
+        public ClinicalAnalystParam setId(String id) {
+            this.id = id;
             return this;
         }
     }

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -52,7 +53,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     private ClinicalConsent consent;
 
-    private ClinicalAnalysisAnalyst analyst;
+    private ClinicalAnalyst analyst;
     private Enums.Priority priority;
     private List<String> flags;
 
@@ -78,7 +79,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
                             Family family, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
-                            ClinicalConsent consent, ClinicalAnalysisAnalyst analyst, Enums.Priority priority, List<String> flags,
+                            ClinicalConsent consent, ClinicalAnalyst analyst, Enums.Priority priority, List<String> flags,
                             String creationDate, String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
                             List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, Map<String, Object> attributes,
                             CustomStatus status) {
@@ -238,11 +239,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public ClinicalAnalysisAnalyst getAnalyst() {
+    public ClinicalAnalyst getAnalyst() {
         return analyst;
     }
 
-    public ClinicalAnalysis setAnalyst(ClinicalAnalysisAnalyst analyst) {
+    public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
         this.analyst = analyst;
         return this;
     }

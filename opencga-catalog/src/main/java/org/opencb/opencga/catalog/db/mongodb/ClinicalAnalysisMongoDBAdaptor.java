@@ -711,8 +711,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(PROBAND_ID.key(), queryParam.key(), queryCopy, PROBAND_ID.type(), andBsonList);
                         break;
                     case ANALYST:
-                    case ANALYST_ASSIGNEE:
-                        addAutoOrQuery(ANALYST_ASSIGNEE.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                    case ANALYST_ID:
+                        addAutoOrQuery(ANALYST_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
                     case ID:

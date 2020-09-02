@@ -226,12 +226,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setDueDate(ParamUtils.defaultObject(clinicalAnalysis.getDueDate(),
                     TimeUtils.getTime(TimeUtils.add1MonthtoDate(TimeUtils.getDate()))));
 
-            if (clinicalAnalysis.getAnalyst() != null && StringUtils.isNotEmpty(clinicalAnalysis.getAnalyst().getAssignee())) {
+            if (clinicalAnalysis.getAnalyst() != null && StringUtils.isNotEmpty(clinicalAnalysis.getAnalyst().getId())) {
                 // We obtain the users with access to the study
                 Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", token).first()
                         .getUserIds());
-                if (!users.contains(clinicalAnalysis.getAnalyst().getAssignee())) {
-                    throw new CatalogException("Cannot assign clinical analysis to " + clinicalAnalysis.getAnalyst().getAssignee()
+                if (!users.contains(clinicalAnalysis.getAnalyst().getId())) {
+                    throw new CatalogException("Cannot assign clinical analysis to " + clinicalAnalysis.getAnalyst().getId()
                             + ". User not found or with no access to the study.");
                 }
                 clinicalAnalysis.getAnalyst().setAssignedBy(userId);
@@ -1106,7 +1106,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         if (query.containsKey("analystAssignee")) {
-            query.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYST_ASSIGNEE.key(), query.get("analystAssignee"));
+            query.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYST_ID.key(), query.get("analystAssignee"));
             query.remove("analystAssignee");
         }
     }
