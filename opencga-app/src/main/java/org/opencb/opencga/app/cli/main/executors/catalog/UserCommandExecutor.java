@@ -229,7 +229,9 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 
     private void loadTemplate() throws IOException, ClientException {
         UserCommandOptions.TemplateCommandOptions options = usersCommandOptions.templateCommandOptions;
-
+        if (cliSession == null) {
+            throw new ClientException("Please, login first");
+        }
         TemplateConfiguration template = TemplateConfiguration.load(Paths.get(options.file));
         TemplateManager templateManager = new TemplateManager(clientConfiguration, options.resume, cliSession.getToken());
         Set<String> studies = null;
