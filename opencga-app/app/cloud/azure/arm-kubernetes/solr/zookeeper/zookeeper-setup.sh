@@ -6,7 +6,7 @@ export DEBIAN_FRONTEND='noninteractive'
 
 # Zookeeper IDs should have a value between 1 and 255.
 ZOO_MY_ID=$1
-VM_NAME_PREFIX=$2
+ZK_NAME_PREFIX=$2
 NUM_NODES=$3
 ZOOKEEPER_VERSION=$4
 
@@ -20,7 +20,7 @@ do
         ## Instead of having its own IP, should have 0.0.0.0
         ZOO_SERVERS="${ZOO_SERVERS} server.${i}=0.0.0.0:2888:3888"
     else
-        ZOO_SERVERS="${ZOO_SERVERS} server.${i}=${VM_NAME_PREFIX}${i}:2888:3888"
+        ZOO_SERVERS="${ZOO_SERVERS} server.${i}=${ZK_NAME_PREFIX}${i}:2888:3888"
     fi
     i=$(($i+1))
 done
