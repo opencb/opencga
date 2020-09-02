@@ -22,6 +22,7 @@ import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 
 import java.util.List;
@@ -41,7 +42,7 @@ public class ClinicalUpdateParams {
 
 //    private ProbandParam proband;
 //    private FamilyParam family;
-    private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
+    private Map<String, Family.FamiliarRelationship> roleToProband;
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
     private Interpretation interpretation;
@@ -64,7 +65,7 @@ public class ClinicalUpdateParams {
     }
 
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
-                                List<FileReferenceParam> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
+                                List<FileReferenceParam> files, Map<String, Family.FamiliarRelationship> roleToProband,
                                 ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, Interpretation interpretation,
                                 List<Interpretation> secondaryInterpretations, ClinicalAnalysisQcUpdateParams qualityControl,
                                 ClinicalConsent consent, String dueDate, List<ClinicalComment> comments, List<Alert> alerts,
@@ -199,11 +200,11 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public Map<String, ClinicalAnalysis.FamiliarRelationship> getRoleToProband() {
+    public Map<String, Family.FamiliarRelationship> getRoleToProband() {
         return roleToProband;
     }
 
-    public ClinicalUpdateParams setRoleToProband(Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband) {
+    public ClinicalUpdateParams setRoleToProband(Map<String, Family.FamiliarRelationship> roleToProband) {
         this.roleToProband = roleToProband;
         return this;
     }

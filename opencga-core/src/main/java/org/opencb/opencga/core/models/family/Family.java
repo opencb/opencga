@@ -21,13 +21,15 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pfurio on 02/05/17.
@@ -52,8 +54,79 @@ public class Family extends Annotable {
     private int version;
     private CustomStatus status;
     private FamilyInternal internal;
-    private Map<String, Map<String, ClinicalAnalysis.FamiliarRelationship>> roles;
+    private Map<String, Map<String, FamiliarRelationship>> roles;
     private Map<String, Object> attributes;
+
+    public enum FamiliarRelationship {
+        MOTHER("", "mother"),
+        FATHER("", "father"),
+        STEP_MOTHER("", "mother"),
+        STEP_FATHER("", "father"),
+        IDENTICAL_TWIN("", "twin"),
+        FRATERNAL_TWIN("", "twin"),
+        FULL_SIBLING("", "sibling"),
+        HALF_SIBLING("", "sibling"),
+        STEP_SIBLING("", "sibling"),
+        SISTER("", "sister"),
+        BROTHER("", "brother"),
+        STEP_SISTER("", "sister"),
+        STEP_BROTHER("", "brother"),
+        SON("", "son"),
+        DAUGHTER("", "daughter"),
+
+        CHILD_OF_UNKNOWN_SEX("", "child"),
+
+        UNCLE("", "uncle"),
+        AUNT("", "aunt"),
+        MATERNAL_AUNT("", "aunt"),
+        MATERNAL_UNCLE("", "uncle"),
+        PATERNAL_AUNT("", "aunt"),
+        PATERNAL_UNCLE("", "uncle"),
+        NEPHEW("", "nephew"),
+        NIECE("", "niece"),
+        GRANDFATHER("", "grandfather"),
+        GRANDMOTHER("", "grandmother"),
+        MATERNAL_GRANDMOTHER("", "grandmother"),
+        PATERNAL_GRANDMOTHER("", "grandmother"),
+        MATERNAL_GRANDFATHER("", "grandfather"),
+        PATERNAL_GRANDFATHER("", "grandfather"),
+        GREAT_GRANDFATHER("", "great-grandfather"),
+        GREAT_GRANDMOTHER("", "great-grandmother"),
+        DOUBLE_FIRST_COUSING("", "cousin"),
+        COUSIN("", "cousin"),
+        MALE_COUSIN("", "cousin"),
+        FEMALE_COUSIN("", "cousin"),
+        SECOND_COUSIN("", "cousin"),
+        MALE_SECOND_COUSIN("", "cousin"),
+        FEMALE_SECOND_COUSIN("", "cousin"),
+        SPOUSE("", "spouse"),
+        HUSBAND("", "husband"),
+        OTHER("", "other"),
+        UNKNOWN("", "unknown"),
+        UNRELATED("", "unrelated"),
+
+        PROBAND("", "proband");
+
+        private final String snomedCtId;
+        private final String isA;
+
+        FamiliarRelationship(String snomedCtId, String isA) {
+            this.snomedCtId = snomedCtId;
+            this.isA = isA;
+        }
+
+        public String getId() {
+            return this.name();
+        }
+
+        public String getSnomedCtId() {
+            return snomedCtId;
+        }
+
+        public String getIsA() {
+            return isA;
+        }
+    }
 
     public Family() {
     }
@@ -66,7 +139,7 @@ public class Family extends Annotable {
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String creationDate, String description, int expectedSize, int release, int version, List<AnnotationSet> annotationSets,
-                  CustomStatus status, FamilyInternal internal, Map<String, Map<String, ClinicalAnalysis.FamiliarRelationship>> roles,
+                  CustomStatus status, FamilyInternal internal, Map<String, Map<String, FamiliarRelationship>> roles,
                   Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -256,11 +329,11 @@ public class Family extends Annotable {
         return this;
     }
 
-    public Map<String, Map<String, ClinicalAnalysis.FamiliarRelationship>> getRoles() {
+    public Map<String, Map<String, FamiliarRelationship>> getRoles() {
         return roles;
     }
 
-    public Family setRoles(Map<String, Map<String, ClinicalAnalysis.FamiliarRelationship>> roles) {
+    public Family setRoles(Map<String, Map<String, FamiliarRelationship>> roles) {
         this.roles = roles;
         return this;
     }

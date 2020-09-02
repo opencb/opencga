@@ -1011,14 +1011,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         // Role -> list of individuals
-        Map<ClinicalAnalysis.FamiliarRelationship, List<Individual>> roleToProband = new HashMap<>();
-        roleToProband.put(ClinicalAnalysis.FamiliarRelationship.PROBAND, Collections.singletonList(clinicalAnalysis.getProband()));
+        Map<Family.FamiliarRelationship, List<Individual>> roleToProband = new HashMap<>();
+        roleToProband.put(Family.FamiliarRelationship.PROBAND, Collections.singletonList(clinicalAnalysis.getProband()));
         for (Individual member : family.getMembers()) {
             if (member.getId().equals(probandId)) {
                 continue;
             }
 
-            ClinicalAnalysis.FamiliarRelationship role = family.getRoles().get(probandId).get(member.getId());
+            Family.FamiliarRelationship role = family.getRoles().get(probandId).get(member.getId());
             if (role == null) {
                 return false;
             }
@@ -1029,20 +1029,20 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         List<Individual> members = new ArrayList<>(family.getMembers().size());
-        if (roleToProband.containsKey(ClinicalAnalysis.FamiliarRelationship.PROBAND)) {
-            members.add(roleToProband.get(ClinicalAnalysis.FamiliarRelationship.PROBAND).get(0));
-            roleToProband.remove(ClinicalAnalysis.FamiliarRelationship.PROBAND);
+        if (roleToProband.containsKey(Family.FamiliarRelationship.PROBAND)) {
+            members.add(roleToProband.get(Family.FamiliarRelationship.PROBAND).get(0));
+            roleToProband.remove(Family.FamiliarRelationship.PROBAND);
         }
-        if (roleToProband.containsKey(ClinicalAnalysis.FamiliarRelationship.FATHER)) {
-            members.add(roleToProband.get(ClinicalAnalysis.FamiliarRelationship.FATHER).get(0));
-            roleToProband.remove(ClinicalAnalysis.FamiliarRelationship.FATHER);
+        if (roleToProband.containsKey(Family.FamiliarRelationship.FATHER)) {
+            members.add(roleToProband.get(Family.FamiliarRelationship.FATHER).get(0));
+            roleToProband.remove(Family.FamiliarRelationship.FATHER);
         }
-        if (roleToProband.containsKey(ClinicalAnalysis.FamiliarRelationship.MOTHER)) {
-            members.add(roleToProband.get(ClinicalAnalysis.FamiliarRelationship.MOTHER).get(0));
-            roleToProband.remove(ClinicalAnalysis.FamiliarRelationship.MOTHER);
+        if (roleToProband.containsKey(Family.FamiliarRelationship.MOTHER)) {
+            members.add(roleToProband.get(Family.FamiliarRelationship.MOTHER).get(0));
+            roleToProband.remove(Family.FamiliarRelationship.MOTHER);
         }
         // Add the rest of the members
-        for (ClinicalAnalysis.FamiliarRelationship role : roleToProband.keySet()) {
+        for (Family.FamiliarRelationship role : roleToProband.keySet()) {
             for (Individual individual : roleToProband.get(role)) {
                 members.add(individual);
             }
