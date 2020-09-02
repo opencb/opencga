@@ -300,6 +300,11 @@ db.clinical.update({}, {"$unset": {
     }}
 );
 
+db.clinical.update({"comments": null}, {"$set": {"comments": []}}, {"multi": true});
+db.clinical.update({"alerts": null}, {"$set": {"alerts": []}}, {"multi": true});
+
+// # Issue 1642
+db.clinical.update({"locked": {"$exists": false}}, {"$set": {"locked": false}}, {"multi": true});
 
 print("\nFixing user indexes...")
 db.user.createIndex({"projects.uid": 1, "id": 1}, {"unique": true, "background": true});

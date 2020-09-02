@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -138,7 +139,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
                 .getResults()
                 .stream()
                 .flatMap(f -> f.getSamples().stream())
-                .map(Sample::getUid)
+                .map(ResourceReference::getUid)
                 .collect(Collectors.toSet());
         assertEquals(loadedSamples, allSampleIds);
 

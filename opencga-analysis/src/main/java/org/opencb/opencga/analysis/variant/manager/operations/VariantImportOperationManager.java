@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
@@ -138,10 +139,10 @@ public class VariantImportOperationManager extends OperationManager {
                     String fileName = entry.getKey();
                     Integer oldFileId = entry.getValue();
 
-                    List<Sample> samples = studyConfiguration.getSamplesInFiles()
+                    List<ResourceReference> samples = studyConfiguration.getSamplesInFiles()
                             .get(oldFileId)
                             .stream()
-                            .map(integer -> new Sample().setUid(((long) integer)))
+                            .map(integer -> new ResourceReference().setUid(((long) integer)))
                             .collect(Collectors.toList());
 
                     File file = new File(fileName, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, fileName,

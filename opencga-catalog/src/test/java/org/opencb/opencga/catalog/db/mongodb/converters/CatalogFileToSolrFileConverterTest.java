@@ -21,6 +21,7 @@ import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.opencga.catalog.stats.solr.FileSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -47,7 +48,7 @@ public class CatalogFileToSolrFileConverterTest {
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         File file = new File("name", File.Type.FILE, File.Format.BAM, File.Bioformat.MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
                 "test/base", null, "convertorTest", FileInternal.initialize(), 1111L, 2);
-        file.setUid(111).setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2")))
+        file.setUid(111).setSamples(Arrays.asList(new ResourceReference().setId("1"), new ResourceReference().setId("2")))
                 .setSoftware(new Software().setName("Software"));
         file.setAnnotationSets(AnnotationHelper.createAnnotation());
 

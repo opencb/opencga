@@ -280,6 +280,31 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return privateProjet.getString(PRIVATE_ID);
     }
 
+    int getCurrentRelease(ClientSession clientSession, long studyUid) throws CatalogDBException {
+        Query query = new Query(QueryParams.UID.key(), studyUid);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.FQN.key());
+        OpenCGAResult<Study> studyResult = get(clientSession, query, options);
+
+        if (studyResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study uid '" + studyUid + "' not found.");
+        }
+
+        String[] split = StringUtils.split(StringUtils.split(studyResult.first().getFqn(), ":")[0], "@");
+        String userId = split[0];
+        String projectId = split[1];
+
+        query = new Query()
+                .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
+                .append(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+        options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
+        OpenCGAResult<Project> projectResult = dbAdaptorFactory.getCatalogProjectDbAdaptor().get(clientSession, query, options);
+        if (projectResult.getNumResults() == 0) {
+            throw new CatalogDBException("Project id '" + projectId + "' from user '" + userId + "' not found.");
+        }
+
+        return projectResult.first().getCurrentRelease();
+    }
+
     private Document getPrivateProject(long studyUid) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), studyUid);
         QueryOptions queryOptions = new QueryOptions("include", FILTER_ROUTE_STUDIES + PRIVATE_PROJECT_UID);
@@ -1545,7 +1570,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return get(null, query, options);
     }
 
-    private OpenCGAResult<Study> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    OpenCGAResult<Study> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         OpenCGAResult<Study> studyDataResult;
         try (DBIterator<Study> dbIterator = iterator(clientSession, query, options)) {
@@ -1556,7 +1581,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
         return studyDataResult;
     }
-
 
     @Override
     public OpenCGAResult<Study> get(Query query, QueryOptions options, String user)

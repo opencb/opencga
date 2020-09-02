@@ -33,7 +33,6 @@ public class InterpretationUpdateParams {
 
     private String id;
     private String description;
-    private String clinicalAnalysisId;
     private Analyst analyst;
     private List<InterpretationMethod> methods;
     private String creationDate;
@@ -45,12 +44,11 @@ public class InterpretationUpdateParams {
     public InterpretationUpdateParams() {
     }
 
-    public InterpretationUpdateParams(String id, String description, String clinicalAnalysisId, Analyst analyst,
-                                      List<InterpretationMethod> methods, String creationDate, List<ClinicalVariant> primaryFindings,
-                                      List<ClinicalVariant> secondaryFindings, List<Comment> comments, Map<String, Object> attributes) {
+    public InterpretationUpdateParams(String id, String description, Analyst analyst, List<InterpretationMethod> methods,
+                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
+                                      List<Comment> comments, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
-        this.clinicalAnalysisId = clinicalAnalysisId;
         this.analyst = analyst;
         this.methods = methods;
         this.creationDate = creationDate;
@@ -70,7 +68,6 @@ public class InterpretationUpdateParams {
         final StringBuilder sb = new StringBuilder("InterpretationUpdateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
         sb.append(", analyst=").append(analyst);
         sb.append(", methods=").append(methods);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -97,15 +94,6 @@ public class InterpretationUpdateParams {
 
     public InterpretationUpdateParams setDescription(String description) {
         this.description = description;
-        return this;
-    }
-
-    public String getClinicalAnalysisId() {
-        return clinicalAnalysisId;
-    }
-
-    public InterpretationUpdateParams setClinicalAnalysisId(String clinicalAnalysisId) {
-        this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
 

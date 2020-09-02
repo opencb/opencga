@@ -25,11 +25,17 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.common.ResourceReference;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -164,5 +170,41 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
      * @throws CatalogException if there is any database error.
      */
     OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+
+    @Deprecated
+    default Sample initialiseNewSample(ResourceReference resourceReference) throws CatalogParameterException {
+        Sample sample = new Sample()
+                .setId(resourceReference.getId())
+                .setUuid(resourceReference.getUuid())
+                .setUid(resourceReference.getUid())
+                .setStudyUid(resourceReference.getStudyUid());
+        initialiseNewSample(sample);
+        return sample;
+    }
+
+    default void initialiseNewSample(Sample sample) throws CatalogParameterException {
+        ParamUtils.checkAlias(sample.getId(), "id");
+        sample.setUuid(ParamUtils.defaultString(sample.getUuid(), ""));
+        sample.setProcessing(ParamUtils.defaultObject(sample.getProcessing(), SampleProcessing::new));
+        sample.setCollection(ParamUtils.defaultObject(sample.getCollection(), SampleCollection::new));
+        sample.setQualityControl(ParamUtils.defaultObject(sample.getQualityControl(), SampleQualityControl::new));
+
+        sample.setRelease(ParamUtils.defaultObject(sample.getRelease(), 1));
+        sample.setVersion(1);
+        sample.setCreationDate(ParamUtils.defaultString(sample.getCreationDate(), TimeUtils.getTime()));
+        sample.setModificationDate(TimeUtils.getTime());
+        sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
+        sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
+
+        sample.setIndividualId(ParamUtils.defaultObject(sample.getIndividualId(), ""));
+        sample.setFileIds(ParamUtils.defaultObject(sample.getFileIds(), Collections.emptyList()));
+
+        sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
+        sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::new));
+        sample.getInternal().setStatus(new Status());
+        sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
+
+        sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
+    }
 
 }

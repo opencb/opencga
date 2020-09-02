@@ -28,7 +28,6 @@ import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -76,6 +75,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         SOFTWARE_VERSION("software.version", TEXT, ""),
         SOFTWARE_COMMIT("software.commit", TEXT, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
+        SAMPLE_IDS("samples.id", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
@@ -278,16 +278,6 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      */
     OpenCGAResult rename(long fileId, String filePath, String fileUri, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    /**
-     * Add the samples to the array of samples in the file entry.
-     *
-     * @param fileId file id corresponding to the file being updated.
-     * @param samples List of samples to be added to the array.
-     * @return OpenCGAResult object.
-     * @throws CatalogDBException CatalogDBException.
-     */
-    OpenCGAResult addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

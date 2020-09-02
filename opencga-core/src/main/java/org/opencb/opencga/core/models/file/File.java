@@ -22,7 +22,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.common.ResourceReference;
 
 import java.net.URI;
 import java.util.Collections;
@@ -67,7 +67,7 @@ public class File extends Annotable {
     private long size;
     private Software software;
     private FileExperiment experiment;
-    private List<Sample> samples;
+    private List<ResourceReference> samples;
     private String jobId;
     private List<String> tags;
     private List<FileRelatedFile> relatedFiles;
@@ -89,7 +89,8 @@ public class File extends Annotable {
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileInternal internal, long size,
-                List<Sample> samples, Software software, String jobId, Map<String, Object> stats, Map<String, Object> attributes) {
+                List<ResourceReference> samples, Software software, String jobId, Map<String, Object> stats,
+                Map<String, Object> attributes) {
         this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
                 false, size, software, new FileExperiment(), samples, Collections.emptyList(), jobId, -1, Collections.emptyList(), stats,
                 new CustomStatus(), internal, attributes);
@@ -97,8 +98,9 @@ public class File extends Annotable {
 
     public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum, String creationDate,
                 String modificationDate, String description, boolean external, long size, Software software, FileExperiment experiment,
-                List<Sample> samples, List<FileRelatedFile> relatedFiles, String jobId, int release, List<AnnotationSet> annotationSets,
-                Map<String, Object> stats, CustomStatus status, FileInternal internal, Map<String, Object> attributes) {
+                List<ResourceReference> samples, List<FileRelatedFile> relatedFiles, String jobId, int release,
+                List<AnnotationSet> annotationSets, Map<String, Object> stats, CustomStatus status, FileInternal internal,
+                Map<String, Object> attributes) {
         this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
         this.type = type;
@@ -398,11 +400,11 @@ public class File extends Annotable {
         return this;
     }
 
-    public List<Sample> getSamples() {
+    public List<ResourceReference> getSamples() {
         return samples;
     }
 
-    public File setSamples(List<Sample> samples) {
+    public File setSamples(List<ResourceReference> samples) {
         this.samples = samples;
         return this;
     }

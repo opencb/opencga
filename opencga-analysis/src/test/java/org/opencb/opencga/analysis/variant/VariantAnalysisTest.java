@@ -48,6 +48,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -154,13 +155,14 @@ public class VariantAnalysisTest {
                 }
             }
 
-            catalogManager.getCohortManager().create(STUDY, "c1", null, null, file.getSamples().subList(0, 2), null, null, token);
-            catalogManager.getCohortManager().create(STUDY, "c2", null, null, file.getSamples().subList(2, 4), null, null, token);
+            List<Sample> samples = file.getSamples().subList(0, 2).stream().map(ResourceReference::toSample).collect(Collectors.toList());
+            catalogManager.getCohortManager().create(STUDY, "c1", null, null, samples, null, null, token);
+            samples = file.getSamples().subList(2, 4).stream().map(ResourceReference::toSample).collect(Collectors.toList());
+            catalogManager.getCohortManager().create(STUDY, "c2", null, null, samples, null, null, token);
 
             Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
             Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
             List<Individual> individuals = new ArrayList<>(4);
-            List<String> sampleIds = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
 
             String father = "NA19661";
             String mother = "NA19660";
@@ -228,7 +230,7 @@ public class VariantAnalysisTest {
         ObjectMap executorParams = new ObjectMap();
         Path outDir = Paths.get(opencga.createTmpOutdir("_variant_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        List<String> samples = file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList());
 
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
@@ -279,7 +281,7 @@ public class VariantAnalysisTest {
         ObjectMap executorParams = new ObjectMap();
         Path outDir = Paths.get(opencga.createTmpOutdir("_variant_stats_chr22"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        List<String> samples = file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList());
 
         String region = "22";
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
@@ -315,7 +317,7 @@ public class VariantAnalysisTest {
     public void testSampleStats() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_sample_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        List<String> samples = file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList());
         SampleVariantStatsAnalysisParams params = new SampleVariantStatsAnalysisParams()
                 .setSample(samples)
                 .setVariantQuery(new AnnotationVariantQueryParams().setRegion("1,2"))
@@ -341,7 +343,7 @@ public class VariantAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
-        List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        List<String> samples = file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList());
         analysis.setStudy(STUDY)
                 .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 3)));
         checkExecutionResult(analysis.start(), storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
@@ -382,7 +384,7 @@ public class VariantAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas"));
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
-        List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        List<String> samples = file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList());
         analysis.setStudy(STUDY)
                 .setCaseCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 2)))
                 .setControlCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(2, 4)));
@@ -413,8 +415,10 @@ public class VariantAnalysisTest {
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
-        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(file.getSamples().subList(0, 2)), new QueryOptions(), token);
-        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CONTROL").setSamples(file.getSamples().subList(2, 4)), new QueryOptions(), token);
+        List<Sample> samples = file.getSamples().subList(0, 2).stream().map(ResourceReference::toSample).collect(Collectors.toList());
+        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(samples), new QueryOptions(), token);
+        samples = file.getSamples().subList(2, 4).stream().map(ResourceReference::toSample).collect(Collectors.toList());
+        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CONTROL").setSamples(samples), new QueryOptions(), token);
 
         analysis.setStudy(STUDY)
                 .setCaseCohort("CASE")
@@ -438,7 +442,7 @@ public class VariantAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes"));
         System.out.println("outDir = " + outDir);
         KnockoutAnalysisParams params = new KnockoutAnalysisParams();
-        params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        params.setSample(file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList()));
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
         checkExecutionResult(er, false);
@@ -449,7 +453,7 @@ public class VariantAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_specific_genes"));
         System.out.println("outDir = " + outDir);
         KnockoutAnalysisParams params = new KnockoutAnalysisParams();
-        params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        params.setSample(file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList()));
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, token);
@@ -463,7 +467,7 @@ public class VariantAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_specific_genes_bt_protein_coding"));
         System.out.println("outDir = " + outDir);
         KnockoutAnalysisParams params = new KnockoutAnalysisParams();
-        params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        params.setSample(file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList()));
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
         params.setBiotype(VariantAnnotationUtils.PROTEIN_CODING);
 
@@ -478,7 +482,7 @@ public class VariantAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_specific_genes_bt_NMD"));
         System.out.println("outDir = " + outDir);
         KnockoutAnalysisParams params = new KnockoutAnalysisParams();
-        params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        params.setSample(file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList()));
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
         params.setBiotype("nonsense_mediated_decay");
 
@@ -493,7 +497,7 @@ public class VariantAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_by_biotype"));
         System.out.println("outDir = " + outDir);
         KnockoutAnalysisParams params = new KnockoutAnalysisParams();
-        params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        params.setSample(file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList()));
         params.setBiotype("miRNA,rRNA");
 //        params.setBiotype("processed_transcript"
 //                + "," + "processed_pseudogene"
