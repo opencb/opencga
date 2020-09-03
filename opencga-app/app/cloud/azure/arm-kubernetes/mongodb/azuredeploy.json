@@ -321,7 +321,7 @@
                 "name": "mongo-rs",
                 "count": "[parameters('clusterSize')]"
             },
-            "condition": "[parameter('LogAnalyticsActive')]",
+            "condition": "[parameters('LogAnalyticsActive')]",
             "dependsOn": [
                 "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'), copyIndex(), '/extensions/CheckCloudInit')]"
             ],

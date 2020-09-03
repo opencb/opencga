@@ -33,15 +33,27 @@ spAzudeDeployParameters=$(realpath "${spAzudeDeployParameters}")
 # Don't move the PWD until we found out the realpath. It could be a relative path.
 cd "$(dirname "$0")"
 
-templateContainer="templates"
-location=$(jq -r '.parameters.rgLocation.value' "${azudeDeployParameters}")
-rgName=$(jq -r '.parameters.rgPrefix.value' "${azudeDeployParameters}")
-storageAccountName=$(echo "${rgName}artifacts" | tr '[:upper:]' '[:lower:]' | tr -d "_-")
+# Location parameter is mandatory in the parameters file.
+location=$(jq -r '.parameters.location.value' "${azudeDeployParameters}")
+
+# Set account subscription
+az account set --subscription "${subscriptionName}"
+
+# Run validation to get final parameters.
+finalParameters=$(az deployment sub validate \
+    --template-file <(jq '{parameters:.parameters, "$schema":."$schema" , resources:[], contentVersion:.contentVersion}' azuredeploy.json) \
+    --parameters @"${azudeDeployParameters}"  \
+    --parameters @"${spAzudeDeployParameters}"  \
+    --parameters _artifactsLocation="_artifactsLocation"   \
+    --parameters _artifactsLocationSasToken="?_artifactsLocationSasToken" < /dev/null | jq .properties.parameters)
+
 deploymentOut="$(dirname "${azudeDeployParameters}")/deployment-outputs-$(date "+%Y%m%d%H%M%S").json"
 deployId=${rgName}-$(date "+%Y-%m-%d-%H.%M.%S")-R${RANDOM}
+rgName=$(jq -r '.rgPrefix.value' <<< ${finalParameters})
+storageNamePrefix=$(jq -r '.storageNamePrefix.value' <<< ${finalParameters})
+storageAccountName=$(echo "${storageNamePrefix}artifacts" | tr '[:upper:]' '[:lower:]' | tr -d "_-")
+templateContainer="templates"
 
-
-az account set --subscription "${subscriptionName}"
 az group create --name "${rgName}" --location "${location}"
 
 echo "# Uploading file templates"
