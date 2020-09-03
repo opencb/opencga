@@ -353,8 +353,8 @@
       "name": "[concat(variables('vmNames')[copyIndex()].vmName,'/CheckCloudInit')]",
       "apiVersion": "2019-12-01",
       "copy": {
-        "name": "mongo-rs",
-        "count": "[parameters('clusterSize')]"
+        "name": "solr-rs",
+        "count": "[variables('scaleNumber')]"
       },
       "dependsOn": [
         "[variables('vmNames')[copyIndex()].vmName]"

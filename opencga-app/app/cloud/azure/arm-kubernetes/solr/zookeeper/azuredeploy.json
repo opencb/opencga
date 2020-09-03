@@ -257,8 +257,8 @@
       "name": "[concat(variables('vmNames')[copyIndex()].vmName,'/CheckCloudInit')]",
       "apiVersion": "2019-12-01",
       "copy": {
-        "name": "mongo-rs",
-        "count": "[parameters('clusterSize')]"
+        "name": "zookeeper-rs",
+        "count": "[parameters('scaleNumber')]"
       },
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', variables('vmNames')[copyIndex()].vmName)]"
@@ -278,7 +278,7 @@
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(variables('vmNames')[copyIndex()].vmName,'/OMSExtension')]",
       "copy": {
-        "name": "foo",
+        "name": "zookeeper-rs",
         "count": "[parameters('scaleNumber')]"
       },
       "apiVersion": "2019-12-01",
