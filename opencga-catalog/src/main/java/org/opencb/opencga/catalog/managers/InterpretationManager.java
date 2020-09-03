@@ -30,9 +30,9 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -41,6 +41,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,7 +212,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
                     userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
-            validateNewInterpretation(interpretation, clinicalAnalysis.getId());
+            validateNewInterpretation(interpretation, clinicalAnalysis.getId(), userId);
 
             OpenCGAResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, action);
             OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
@@ -229,7 +230,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
     }
 
-    void validateNewInterpretation(Interpretation interpretation, String clinicalAnalysisId) throws CatalogParameterException {
+    void validateNewInterpretation(Interpretation interpretation, String clinicalAnalysisId, String userId) throws CatalogException {
         ParamUtils.checkObj(interpretation, "Interpretation");
         ParamUtils.checkParameter(clinicalAnalysisId, "ClinicalAnalysisId");
 
@@ -243,7 +244,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setInternal(ParamUtils.defaultObject(interpretation.getInternal(), InterpretationInternal::new));
         interpretation.getInternal().setStatus(ParamUtils.defaultObject(interpretation.getInternal().getStatus(),
                 InterpretationStatus::new));
-        interpretation.setAnalyst(ParamUtils.defaultObject(interpretation.getAnalyst(), ClinicalAnalyst::new));
         interpretation.setMethods(ParamUtils.defaultObject(interpretation.getMethods(), Collections.emptyList()));
         interpretation.setPrimaryFindings(ParamUtils.defaultObject(interpretation.getPrimaryFindings(), Collections.emptyList()));
         interpretation.setSecondaryFindings(ParamUtils.defaultObject(interpretation.getSecondaryFindings(), Collections.emptyList()));
@@ -252,6 +252,22 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setVersion(1);
         interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
         interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
+
+        // Analyst
+        QueryOptions userInclude = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
+                UserDBAdaptor.QueryParams.NAME.key(), UserDBAdaptor.QueryParams.EMAIL.key()));
+        User user;
+        if (interpretation.getAnalyst() == null || StringUtils.isEmpty(interpretation.getAnalyst().getId())) {
+            user = userDBAdaptor.get(userId, userInclude).first();
+        } else {
+            // Validate user
+            OpenCGAResult<User> result = userDBAdaptor.get(interpretation.getAnalyst().getId(), userInclude);
+            if (result.getNumResults() == 0) {
+                throw new CatalogException("User '" + interpretation.getAnalyst().getId() + "' not found");
+            }
+            user = result.first();
+        }
+        interpretation.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), user.getId(), TimeUtils.getTime()));
     }
 
     public OpenCGAResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams,

@@ -304,6 +304,22 @@ db.clinical.update({}, {"$unset": {
 migrateCollection("interpretation", {"modificationDate": {"$exists": false}}, {'creationDate': 1}, function(bulk, doc) {
     bulk.find({"_id": doc._id}).updateOne({"$set": { "modificationDate": doc.creationDate }});
 });
+migrateCollection("interpretation", {"analyst.id": {"$exists": false}}, {'analyst': 1, creationDate: 1}, function(bulk, doc) {
+    var analyst = {
+        'id': '',
+        'name': '',
+        'email': '',
+        'assignedBy': '',
+        'date': doc.creationDate
+    };
+
+    if (isNotUndefinedOrNull(doc.analyst) && isNotEmpty(doc.analyst.assignee)) {
+        analyst['id'] = doc.analyst.assignee;
+        analyst['assignedBy'] = doc.analyst.assignedBy;
+    }
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": { "analyst": analyst }});
+});
 
 db.clinical.update({"comments": null}, {"$set": {"comments": []}}, {"multi": true});
 db.clinical.update({"alerts": null}, {"$set": {"alerts": []}}, {"multi": true});

@@ -477,7 +477,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             if (clinicalAnalysis.getInterpretation() != null) {
                 catalogManager.getInterpretationManager().validateNewInterpretation(clinicalAnalysis.getInterpretation(),
-                        clinicalAnalysis.getId());
+                        clinicalAnalysis.getId(), userId);
             }
 
             OpenCGAResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
