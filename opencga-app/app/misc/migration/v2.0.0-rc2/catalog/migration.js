@@ -322,7 +322,7 @@ migrateCollection("interpretation", {"analyst.id": {"$exists": false}}, {'analys
 });
 
 db.clinical.update({"comments": null}, {"$set": {"comments": []}}, {"multi": true});
-db.clinical.update({"alerts": null}, {"$set": {"alerts": []}}, {"multi": true});
+db.clinical.update({"audit": {"$exists": false}}, {"$set": {"audit": []}, "$unset": {"alerts": ""}}, {"multi": true});
 
 // # Issue 1642
 db.clinical.update({"locked": {"$exists": false}}, {"$set": {"locked": false}}, {"multi": true});
