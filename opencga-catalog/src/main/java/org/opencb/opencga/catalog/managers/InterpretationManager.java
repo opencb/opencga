@@ -251,6 +251,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setClinicalAnalysisId(clinicalAnalysisId);
 
         interpretation.setCreationDate(TimeUtils.getTime());
+        interpretation.setModificationDate(TimeUtils.getTime());
         interpretation.setDescription(ParamUtils.defaultString(interpretation.getDescription(), ""));
         interpretation.setInternal(ParamUtils.defaultObject(interpretation.getInternal(), InterpretationInternal::new));
         interpretation.getInternal().setStatus(ParamUtils.defaultObject(interpretation.getInternal().getStatus(),

@@ -258,6 +258,7 @@ function _createNewInterpretation(clinical) {
         'comments': [],
         'status': '',
         'creationDate': clinical['creationDate'],
+        'modificationDate': clinical['modificationDate'],
         'version': 1,
         'attributes': {},
         'studyUid': clinical['studyUid'],
@@ -299,6 +300,10 @@ db.clinical.update({}, {"$unset": {
         "roleToProband": ""
     }}
 );
+
+migrateCollection("interpretation", {"modificationDate": {"$exists": false}}, {'creationDate': 1}, function(bulk, doc) {
+    bulk.find({"_id": doc._id}).updateOne({"$set": { "modificationDate": doc.creationDate }});
+});
 
 
 print("\nFixing user indexes...")
