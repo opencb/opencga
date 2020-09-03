@@ -27,7 +27,7 @@
     "bootstrap-3-typeahead": "^4.0.2",
     "bootstrap-colorpicker": "2.3.6",
     "bootstrap-notify": "git://github.com/mouse0270/bootstrap-notify#master",
-    "bootstrap-select": "1.12.4",
+    "bootstrap-select": "1.13.18",
     "bootstrap-table": "1.11.1",
     "bootstrap-treeview": "1.2.0",
     "bootstrap-validator": "~0.11.9",
