@@ -101,22 +101,22 @@ spec:
       - name: conf
         azureFile:
           secretName: azure-files-secret
-          shareName: conf
+          shareName: {{ .Values.volumes.conf.shareName }}
           readOnly: true
       - name: sessions
         azureFile:
           secretName: azure-files-secret
-          shareName: sessions
+          shareName: {{ .Values.volumes.sessions.shareName }}
           readOnly: false
       - name: variants
         azureFile:
           secretName: azure-files-secret
-          shareName: variants
+          shareName: {{ .Values.volumes.variants.shareName }}
           readOnly: false
       - name: analysisconf
         azureFile:
           secretName: azure-files-secret
-          shareName: analysisconf
+          shareName: {{ .Values.volumes.analysisconf.shareName }}
           readOnly: false
       - name: docker-graph-storage
         emptyDir: {}

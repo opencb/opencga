@@ -42,10 +42,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.common.Annotable;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -132,22 +129,22 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         // First we check if we need to create any samples and update current list of samples with the ones created
         if (file.getSamples() != null && !file.getSamples().isEmpty()) {
-            List<Sample> sampleList = new ArrayList<>(file.getSamples().size());
-            for (Sample sample : file.getSamples()) {
-                if (sample.getUid() <= 0) {
-                    logger.debug("Sample '{}' needs to be created. Inserting sample...", sample.getId());
+            List<ResourceReference> sampleList = new ArrayList<>(file.getSamples().size());
+            for (ResourceReference sampleReference : file.getSamples()) {
+                if (sampleReference.getUid() <= 0) {
+                    Sample sample = sampleReference.toSample();
+                    logger.debug("Sample '{}' needs to be created. Inserting sample...", sampleReference.getId());
                     // Sample needs to be created
                     sample.setFileIds(Collections.singletonList(file.getId()));
-                    Sample newSample = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(clientSession, studyId, sample,
-                            variableSetList);
-                    sampleList.add(newSample);
+                    Sample newSample = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(clientSession, studyId, sample, variableSetList);
+                    sampleList.add(ResourceReference.of(newSample));
                 } else {
-                    logger.debug("Sample '{}' was already registered. Updating list of fileIds...", sample.getId());
+                    logger.debug("Sample '{}' was already registered. Updating list of fileIds...", sampleReference.getId());
 
                     // Update list of fileIds from sample
                     Query query = new Query()
                             .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                            .append(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid());
+                            .append(SampleDBAdaptor.QueryParams.UID.key(), sampleReference.getUid());
                     ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
                     ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), UpdateAction.ADD.name());
                     QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
@@ -158,7 +155,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                             sampleUpdateDocument.toFinalUpdateDocument(), null);
 
                     // Add sample to sampleList
-                    sampleList.add(sample);
+                    sampleList.add(sampleReference);
                 }
                 file.setSamples(sampleList);
             }
@@ -418,11 +415,11 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     private void getSampleChanges(File file, ObjectMap parameters, UpdateDocument updateDocument, UpdateAction operation) {
-        List<Sample> sampleList = parameters.getAsList(QueryParams.SAMPLES.key(), Sample.class);
+        List<ResourceReference> sampleList = parameters.getAsList(QueryParams.SAMPLES.key(), ResourceReference.class);
 
         Set<Long> currentSampleUidList = new HashSet<>();
         if (file.getSamples() != null) {
-            currentSampleUidList = file.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
+            currentSampleUidList = file.getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toSet());
         }
 
         // The file id has been altered !!!
@@ -433,7 +430,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             // We will see which of the samples are actually new
             List<Long> samplesToAdd = new ArrayList<>();
 
-            for (Sample sample : sampleList) {
+            for (ResourceReference sample : sampleList) {
                 if (!currentSampleUidList.contains(sample.getUid())) {
                     samplesToAdd.add(sample.getUid());
                 }
@@ -445,10 +442,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
             if (UpdateAction.SET.equals(operation) && file.getSamples() != null) {
                 // We also need to see which samples existed and are not currently in the new list provided by the user to take them out
-                Set<Long> newSampleUids = sampleList.stream().map(Sample::getUid).collect(Collectors.toSet());
+                Set<Long> newSampleUids = sampleList.stream().map(ResourceReference::getUid).collect(Collectors.toSet());
 
                 List<Long> samplesToRemove = new ArrayList<>();
-                for (Sample sample : file.getSamples()) {
+                for (ResourceReference sample : file.getSamples()) {
                     if (!newSampleUids.contains(sample.getUid())) {
                         samplesToRemove.add(sample.getUid());
                     }
@@ -462,7 +459,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             // We will only store the samples to be removed that are already associated to the individual
             List<Long> samplesToRemove = new ArrayList<>();
 
-            for (Sample sample : sampleList) {
+            for (ResourceReference sample : sampleList) {
                 if (currentSampleUidList.contains(sample.getUid())) {
                     samplesToRemove.add(sample.getUid());
                 }
@@ -575,13 +572,19 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             }
 
             List<Object> objectSampleList = parameters.getAsList(QueryParams.SAMPLES.key());
-            List<Sample> sampleList = new ArrayList<>();
+            List<ResourceReference> sampleList = new ArrayList<>();
             for (Object sample : objectSampleList) {
-                if (sample instanceof Sample) {
-                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(clientSession, ((Sample) sample).getUid())) {
-                        throw CatalogDBException.uidNotFound("Sample", ((Sample) sample).getUid());
+                if (sample instanceof ResourceReference) {
+                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(clientSession, ((ResourceReference) sample).getUid())) {
+                        throw CatalogDBException.uidNotFound("Sample", ((ResourceReference) sample).getUid());
                     }
-                    sampleList.add((Sample) sample);
+                    sampleList.add((ResourceReference) sample);
+                } else if (sample instanceof Sample) {
+                    throw new CatalogDBException("CACA");
+//                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(clientSession, ((Sample) sample).getUid())) {
+//                        throw CatalogDBException.uidNotFound("Sample", ((Sample) sample).getUid());
+//                    }
+//                    sampleList.add(ResourceReference.of((Sample) sample));
                 }
             }
 
@@ -1231,6 +1234,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
+                    case SAMPLES:
+                    case SAMPLE_IDS:
+                        addAutoOrQuery(QueryParams.SAMPLE_IDS.key(), queryParam.key(), myQuery, QueryParams.SAMPLE_IDS.type(), andBsonList);
+                        break;
                     case NAME:
                         String name = myQuery.getString(queryParam.key());
                         if (name.startsWith("~") && name.endsWith("$")) {
@@ -1310,28 +1317,18 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public OpenCGAResult addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException {
-        if (samples == null || samples.size() == 0) {
-            throw new CatalogDBException("No samples passed.");
-        }
-        List<Document> sampleList = fileConverter.convertSamples(samples);
-        Bson update = Updates.addEachToSet(QueryParams.SAMPLES.key(), sampleList);
-        return new OpenCGAResult(fileCollection.update(Filters.eq(PRIVATE_UID, fileId), update, QueryOptions.empty()));
-    }
-
-    @Override
     public OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
         return unmarkPermissionRule(fileCollection, studyId, permissionRuleId);
     }
 
-    void removeSampleReferences(ClientSession clientSession, long studyUid, long sampleUid)
+    void removeSampleReferences(ClientSession clientSession, long studyUid, Sample sample)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
-                .append(QueryParams.SAMPLE_UIDS.key(), sampleUid);
+                .append(QueryParams.SAMPLE_UIDS.key(), sample.getUid());
 
         ObjectMap params = new ObjectMap()
-                .append(QueryParams.SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
+                .append(QueryParams.SAMPLES.key(), Collections.singletonList(ResourceReference.of(sample)));
         // Add the the Remove action for the sample provided
         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,
                 new ObjectMap(QueryParams.SAMPLES.key(), UpdateAction.REMOVE.name()));
@@ -1346,7 +1343,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         DataResult result = fileCollection.update(clientSession, bsonQuery, update, multi);
-        logger.debug("Sample uid '" + sampleUid + "' references removed from " + result.getNumUpdated() + " out of "
+        logger.debug("Sample '" + sample.getId() + "' references removed from " + result.getNumUpdated() + " out of "
                 + result.getNumMatches() + " files");
     }
 }

@@ -207,9 +207,13 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
         YesNoAuto loadHomRef = YesNoAuto.parse(getOptions(), LOAD_HOM_REF.key());
         if (loadHomRef != YesNoAuto.AUTO) {
-            // If auto, use configuration value.
             getOptions().put(VARIANT_TABLE_LOAD_REFERENCE.key(), loadHomRef.booleanValue());
         }
+        // loadHomRef == auto;
+        // Else use configuration value.
+
+        logger.info(LOAD_HOM_REF.key() + " : "
+                + getOptions().getBoolean(VARIANT_TABLE_LOAD_REFERENCE.key(), VARIANT_TABLE_LOAD_REFERENCE.defaultValue()));
 
         MergeMode mergeMode;
         if (!studyMetadata.getAttributes().containsKey(VariantStorageOptions.MERGE_MODE.key())) {

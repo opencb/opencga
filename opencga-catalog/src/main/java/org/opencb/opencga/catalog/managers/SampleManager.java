@@ -35,18 +35,19 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SampleAclParams;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -181,20 +182,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     void validateNewSample(Study study, Sample sample, String userId) throws CatalogException {
         ParamUtils.checkAlias(sample.getId(), "id");
-        sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
-        sample.setIndividualId(ParamUtils.defaultObject(sample.getIndividualId(), ""));
-        sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
-        sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
-        sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
-        sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::new));
-        sample.getInternal().setStatus(new Status());
-        sample.setCreationDate(TimeUtils.getTime());
-        sample.setFileIds(ParamUtils.defaultObject(sample.getFileIds(), Collections.emptyList()));
-        sample.setQualityControl(ParamUtils.defaultObject(sample.getQualityControl(), SampleQualityControl::new));
-        sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
-        sample.setVersion(1);
-        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
-        sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
 
         // Check the id is not in use
         Query query = new Query()
@@ -1117,7 +1104,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 Set<String> sampleSet = new HashSet<>();
                 for (File file : fileDataResult.getResults()) {
-                    sampleSet.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+                    sampleSet.addAll(file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList()));
                 }
                 sampleStringList = new ArrayList<>();
                 sampleStringList.addAll(sampleSet);

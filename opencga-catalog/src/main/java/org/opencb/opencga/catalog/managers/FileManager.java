@@ -49,6 +49,7 @@ import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
@@ -595,7 +596,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public OpenCGAResult<File> create(String studyStr, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                      String description, long size, List<Sample> samples, Map<String, Object> stats,
+                                      String description, long size, List<ResourceReference> samples, Map<String, Object> stats,
                                       Map<String, Object> attributes, boolean parents, String content, QueryOptions options,
                                       String token) throws CatalogException {
         File file = new File(type, format, bioformat, path, description, FileInternal.initialize(), size, samples, null, "", stats,
@@ -807,7 +808,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
 
-        List<String> sampleIdList = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        List<String> sampleIdList = file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList());
         InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(), sampleIdList,
                 SampleManager.INCLUDE_SAMPLE_IDS, userId, true);
 
@@ -819,7 +820,7 @@ public class FileManager extends AnnotationSetManager<File> {
             sampleList.add(sample);
         }
 
-        file.setSamples(sampleList);
+        file.setSamples(ResourceReference.of(sampleList));
     }
 
     /**
@@ -1311,14 +1312,14 @@ public class FileManager extends AnnotationSetManager<File> {
             query.put(FileDBAdaptor.QueryParams.JOB_ID.key(), "");
         }
 
-        // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
-            OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().internalGet(study.getUid(),
-                    query.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, user, true);
-            query.put(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleDataResult.getResults().stream().map(Sample::getUid)
-                    .collect(Collectors.toList()));
-            query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
-        }
+//        // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
+//        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
+//            OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().internalGet(study.getUid(),
+//                    query.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, user, true);
+//            query.put(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleDataResult.getResults().stream().map(Sample::getUid)
+//                    .collect(Collectors.toList()));
+//            query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
+//        }
     }
 
     private void validateQueryPath(Query query, String key) {
@@ -2044,8 +2045,9 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // We obtain the numeric ids of the samples given
         if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSamples())) {
-            List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), updateParams.getSamples(),
-                    SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
+            List<ResourceReference> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), updateParams.getSamples(),
+                    SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults()
+                    .stream().map(ResourceReference::of).collect(Collectors.toList());
 
             parameters.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
         }

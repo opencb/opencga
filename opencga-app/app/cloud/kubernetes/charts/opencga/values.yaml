@@ -40,6 +40,16 @@ blobfuse:
 defaultConf:
   name: "default-conf"
 
+volumes:
+  conf:
+    shareName: conf
+  analysisconf:
+    shareName: analysisconf
+  sessions:
+    shareName: sessions
+  variants:
+    shareName: variants
+
 rest:
   name: rest
   replicaCount: 3

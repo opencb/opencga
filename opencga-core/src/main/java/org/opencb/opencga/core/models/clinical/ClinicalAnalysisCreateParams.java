@@ -21,6 +21,7 @@ import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -45,8 +46,7 @@ public class ClinicalAnalysisCreateParams {
     private FamilyParam family;
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
-    private InterpretationCreateParams interpretation;
-    private List<InterpretationCreateParams> secondaryInterpretations;
+    private EntryParam interpretation;
 
     private ClinicalConsent consent;
 
@@ -64,11 +64,10 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
-                                        InterpretationCreateParams interpretation,
-                                        List<InterpretationCreateParams> secondaryInterpretations, ClinicalConsent consent, String dueDate,
-                                        List<ClinicalComment> comments, List<ClinicalAudit> audit, Enums.Priority priority,
-                                        List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
+                                        ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, EntryParam interpretation,
+                                        ClinicalConsent consent, String dueDate, List<ClinicalComment> comments, List<ClinicalAudit> audit,
+                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes,
+                                        CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -79,7 +78,6 @@ public class ClinicalAnalysisCreateParams {
         this.analyst = analyst;
         this.internal = internal;
         this.interpretation = interpretation;
-        this.secondaryInterpretations = secondaryInterpretations;
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -101,12 +99,8 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
                 clinicalAnalysis.getInternal(),
                 clinicalAnalysis.getInterpretation() != null
-                        ? InterpretationCreateParams.of(clinicalAnalysis.getInterpretation())
+                        ? new EntryParam(clinicalAnalysis.getInterpretation().getId())
                         : null,
-                clinicalAnalysis.getSecondaryInterpretations() != null
-                        ? clinicalAnalysis.getSecondaryInterpretations().stream().map(InterpretationCreateParams::of)
-                        .collect(Collectors.toList())
-                        : Collections.emptyList(),
                 clinicalAnalysis.getConsent(), clinicalAnalysis.getDueDate(),
                 clinicalAnalysis.getComments(), clinicalAnalysis.getAudit(), clinicalAnalysis.getPriority(), clinicalAnalysis.getFlags(),
                 clinicalAnalysis.getAttributes(), CustomStatusParams.of(clinicalAnalysis.getStatus()));
@@ -125,7 +119,6 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
         sb.append(", interpretation=").append(interpretation);
-        sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
@@ -168,16 +161,9 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        Interpretation primaryInterpretation = secondaryInterpretations != null ? interpretation.toClinicalInterpretation() : null;
+        Interpretation primaryInterpretation = interpretation != null ? new Interpretation().setId(interpretation.getId()) : null;
 
-        List<Interpretation> secondaryInterpretationList =
-                secondaryInterpretations != null
-                        ? secondaryInterpretations.stream()
-                        .map(InterpretationCreateParams::toClinicalInterpretation)
-                        .collect(Collectors.toList())
-                        : new ArrayList<>();
-
-        String assignee = analyst != null ? analyst.id : "";
+        String assignee = analyst != null ? analyst.getId() : "";
 
         List<File> caFiles = new LinkedList<>();
         if (files != null) {
@@ -186,8 +172,8 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f,
-                primaryInterpretation, secondaryInterpretationList, consent, new ClinicalAnalyst(assignee, assignee, "", "",
+        return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f, false,
+                primaryInterpretation, new LinkedList<>(), consent, new ClinicalAnalyst(assignee, assignee, "", "",
                 TimeUtils.getTime()), priority, flags, null, null,  dueDate, 1, comments, audit, internal, attributes,
                 status != null ? status.toCustomStatus() : null);
     }
@@ -273,21 +259,12 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public InterpretationCreateParams getInterpretation() {
+    public EntryParam getInterpretation() {
         return interpretation;
     }
 
-    public ClinicalAnalysisCreateParams setInterpretation(InterpretationCreateParams interpretation) {
+    public ClinicalAnalysisCreateParams setInterpretation(EntryParam interpretation) {
         this.interpretation = interpretation;
-        return this;
-    }
-
-    public List<InterpretationCreateParams> getSecondaryInterpretations() {
-        return secondaryInterpretations;
-    }
-
-    public ClinicalAnalysisCreateParams setSecondaryInterpretations(List<InterpretationCreateParams> secondaryInterpretations) {
-        this.secondaryInterpretations = secondaryInterpretations;
         return this;
     }
 
@@ -489,35 +466,4 @@ public class ClinicalAnalysisCreateParams {
         }
     }
 
-    private static class ClinicalAnalystParam {
-        private String id;
-
-        public ClinicalAnalystParam() {
-        }
-
-        public ClinicalAnalystParam(String id) {
-            this.id = id;
-        }
-
-        public static ClinicalAnalystParam of(ClinicalAnalyst clinicalAnalyst) {
-            return new ClinicalAnalystParam(clinicalAnalyst.getId());
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("ClinicalAnalystParam{");
-            sb.append("id='").append(id).append('\'');
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public ClinicalAnalystParam setId(String id) {
-            this.id = id;
-            return this;
-        }
-    }
 }

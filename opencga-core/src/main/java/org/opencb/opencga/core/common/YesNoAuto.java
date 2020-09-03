@@ -12,12 +12,10 @@ public enum YesNoAuto {
 
 
     public static YesNoAuto parse(Map<String, ?> map, String key) {
-        Object value = map.get(key);
-        if (value == null ) {
+        if (map == null ) {
             return AUTO;
-        } else {
-            return parse(value);
         }
+        return parse(map.get(key));
     }
 
     public static YesNoAuto parse(Object value) {

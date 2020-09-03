@@ -35,6 +35,7 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
@@ -76,9 +77,11 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         File file = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         for (int i = 0; i < coh.length; i++) {
-            Cohort cohort = catalogManager.getCohortManager().create(studyId, "coh" + i, Enums.CohortType.CONTROL_SET, "",
-                    file.getSamples().subList(file.getSamples().size() / coh.length * i, file.getSamples().size() / coh.length * (i + 1)),
-                    null, null, sessionId).first();
+            List<Sample> samples = file.getSamples().subList(file.getSamples().size() / coh.length * i,
+                    file.getSamples().size() / coh.length * (i + 1))
+                    .stream().map(ResourceReference::toSample).collect(Collectors.toList());
+            Cohort cohort = catalogManager.getCohortManager().create(studyId, "coh" + i, Enums.CohortType.CONTROL_SET, "", samples, null,
+                    null, sessionId).first();
             coh[i] = cohort.getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);

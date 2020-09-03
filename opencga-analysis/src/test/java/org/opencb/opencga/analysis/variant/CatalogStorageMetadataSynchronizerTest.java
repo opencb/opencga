@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -128,7 +129,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         StudyMetadata studyMetadata = metadataManager.createStudy(study.getFqn());
         for (File file : files) {
             metadataManager.registerFile(studyMetadata.getId(), file.getUri().getPath(), file.getSamples().stream()
-                    .map(Sample::getId).collect(Collectors.toList()));
+                    .map(ResourceReference::getId).collect(Collectors.toList()));
         }
         metadataManager.addIndexedFiles(studyMetadata.getId(), indexedFiles.stream()
                 .map(f -> metadataManager.getFileId(studyMetadata.getId(), f))
@@ -158,7 +159,7 @@ public class CatalogStorageMetadataSynchronizerTest {
             catalogManager.getFileManager().setFileIndex(studyId, file.getPath(), fileIndex, sessionId);
             indexedFiles.add(file.getName());
             List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResults().stream().map(Sample::getId).collect(Collectors.toList());
-            samples.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+            samples.addAll(file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList()));
             catalogManager.getCohortManager().update(studyId, cohortId,
                     new CohortUpdateParams().setSamples(samples), true, null, sessionId);
         }

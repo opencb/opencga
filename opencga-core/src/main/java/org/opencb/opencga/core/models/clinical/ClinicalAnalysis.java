@@ -48,6 +48,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Individual proband;
     private Family family;
 
+    private boolean locked;
+
     private Interpretation interpretation;
     private List<Interpretation> secondaryInterpretations;
 
@@ -78,7 +80,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
-                            Family family, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
+                            Family family, boolean locked, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
                             ClinicalConsent consent, ClinicalAnalyst analyst, Enums.Priority priority, List<String> flags,
                             String creationDate, String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
                             List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, Map<String, Object> attributes,
@@ -90,6 +92,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.files = files;
         this.proband = proband;
         this.family = family;
+        this.locked = locked;
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
         this.consent = consent;
@@ -118,6 +121,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
+        sb.append(", locked=").append(locked);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
@@ -209,6 +213,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setFamily(Family family) {
         this.family = family;
+        return this;
+    }
+
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public ClinicalAnalysis setLocked(boolean locked) {
+        this.locked = locked;
         return this;
     }
 
@@ -315,7 +328,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return audit;
     }
 
-    public ClinicalAnalysis setAlerts(List<ClinicalAudit> audit) {
+    public ClinicalAnalysis setAudit(List<ClinicalAudit> audit) {
         this.audit = audit;
         return this;
     }

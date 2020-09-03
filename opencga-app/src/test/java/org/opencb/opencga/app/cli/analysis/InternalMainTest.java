@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.project.DataStore;
@@ -231,10 +232,10 @@ public class InternalMainTest {
         assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getName());
 
 
-        catalogManager.getCohortManager().create(studyId, "coh1", Enums.CohortType.CONTROL_SET, "", file1.getSamples(), null, null,
-                sessionId);
-        catalogManager.getCohortManager().create(studyId, "coh2", Enums.CohortType.CONTROL_SET, "", file2.getSamples(), null, null,
-                sessionId);
+        catalogManager.getCohortManager().create(studyId, "coh1", Enums.CohortType.CONTROL_SET, "",
+                file1.getSamples().stream().map(ResourceReference::toSample).collect(Collectors.toList()), null, null, sessionId);
+        catalogManager.getCohortManager().create(studyId, "coh2", Enums.CohortType.CONTROL_SET, "",
+                file2.getSamples().stream().map(ResourceReference::toSample).collect(Collectors.toList()), null, null, sessionId);
 
         execute("variant", "stats",
                 "--session-id", sessionId,

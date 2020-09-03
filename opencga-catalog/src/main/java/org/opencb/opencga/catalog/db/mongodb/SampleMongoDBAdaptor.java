@@ -35,11 +35,14 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.SampleCatalogMongoDBItera
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
+import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -112,9 +115,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return new OpenCGAResult(sampleCollection.insert(sampleDocument, null));
     }
 
-    Sample insert(ClientSession clientSession, long studyId, Sample sample, List<VariableSet> variableSetList)
+    Sample insert(ClientSession clientSession, long studyUid, Sample sample, List<VariableSet> variableSetList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyUid);
 
         if (StringUtils.isEmpty(sample.getId())) {
             throw new CatalogDBException("Missing sample id");
@@ -123,7 +126,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         long individualUid = -1L;
         if (StringUtils.isNotEmpty(sample.getIndividualId())) {
             Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(IndividualDBAdaptor.QueryParams.ID.key(), sample.getIndividualId());
 
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
@@ -139,7 +142,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         // Check the sample does not exist
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), sample.getId()));
-        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
+        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyUid));
 
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = sampleCollection.count(clientSession, bson);
@@ -147,16 +150,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             throw new CatalogDBException("Sample { id: '" + sample.getId() + "'} already exists.");
         }
 
-        long sampleId = getNewUid(clientSession);
-        sample.setUid(sampleId);
-        sample.setStudyUid(studyId);
+        initialiseNewSample(sample);
+
+        long sampleUid = getNewUid(clientSession);
+        sample.setUid(sampleUid);
+        sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
+        sample.setStudyUid(studyUid);
         sample.setVersion(1);
-        if (StringUtils.isEmpty(sample.getUuid())) {
-            sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
-        }
-        if (StringUtils.isEmpty(sample.getCreationDate())) {
-            sample.setCreationDate(TimeUtils.getTime());
-        }
+        sample.setRelease(dbAdaptorFactory.getCatalogStudyDBAdaptor().getCurrentRelease(clientSession, studyUid));
 
         Document sampleObject = sampleConverter.convertToStorageType(sample, variableSetList);
 
@@ -307,6 +308,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(clientSession, studyUid, sampleUid);
+        } else {
+            checkInUseInLockedClinicalAnalysis(clientSession, sampleDocument);
         }
 
         // Perform the update
@@ -359,7 +362,124 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             logger.debug("Sample {} successfully updated", sampleId);
         }
 
+        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            updateIndividualSampleReferences(clientSession, sampleDocument);
+        }
+
         return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    /**
+     * Update Sample references from any Individual where it was used.
+     *
+     * @param clientSession Client session.
+     * @param sample Sample object containing the previous version (before the version increment).
+     */
+    private void updateIndividualSampleReferences(ClientSession clientSession, Document sample)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        String sampleId = sample.getString(QueryParams.ID.key());
+        long sampleUid = sample.getLong(QueryParams.UID.key());
+        int version = sample.getInteger(QueryParams.VERSION.key());
+        long studyUid = sample.getLong(QueryParams.STUDY_UID.key());
+
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUid);
+
+        List<String> include = new ArrayList<>(IndividualManager.INCLUDE_INDIVIDUAL_IDS.getAsStringList(QueryOptions.INCLUDE));
+        include.add(IndividualDBAdaptor.QueryParams.SAMPLES.key());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, include);
+
+        DBIterator<Individual> iterator = dbAdaptorFactory.getCatalogIndividualDBAdaptor().iterator(clientSession, query, options);
+
+        while (iterator.hasNext()) {
+            Individual individual = iterator.next();
+
+            List<Sample> samples = new ArrayList<>(individual.getSamples().size());
+            for (Sample individualSample : individual.getSamples()) {
+                if (individualSample.getUid() == sampleUid) {
+                    individualSample.setVersion(version + 1);
+                }
+                samples.add(individualSample);
+            }
+
+            ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samples);
+
+            ObjectMap action = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.SET);
+            options = new QueryOptions()
+                    .append(Constants.INCREMENT_VERSION, true)
+                    .append(Constants.ACTIONS, action);
+
+            OpenCGAResult result = dbAdaptorFactory.getCatalogIndividualDBAdaptor().privateUpdate(clientSession, individual, params, null,
+                    options);
+            if (result.getNumUpdated() != 1) {
+                throw new CatalogDBException("Individual '" + individual.getId() + "' could not be updated to the latest sample version"
+                        + " of '" + sampleId + "'");
+            }
+        }
+    }
+
+    /**
+     * Checks whether the sample that is going to be updated is in use in any locked Clinical Analysis.
+     *
+     * @param clientSession Client session.
+     * @param sample Sample to be updated.
+     * @throws CatalogDBException CatalogDBException if the sample is in use in any Clinical Analysis.
+     */
+    private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Document sample)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+
+        String sampleId = sample.getString(QueryParams.ID.key());
+        long sampleUid = sample.getLong(QueryParams.UID.key());
+        int version = sample.getInteger(QueryParams.VERSION.key());
+        long studyUid = sample.getLong(QueryParams.STUDY_UID.key());
+
+        // We only need to focus on locked clinical analyses
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), sampleUid)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
+
+        OpenCGAResult<ClinicalAnalysis> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().get(clientSession, query,
+                ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
+
+        if (result.getNumResults() == 0) {
+            // No Clinical Analyses are using the sample...
+            return;
+        }
+
+        // We need to check if the sample version is being used in any of the clinical analyses manually
+        Set<String> clinicalAnalysisIds = new HashSet<>(result.getNumResults());
+        for (ClinicalAnalysis clinicalAnalysis : result.getResults()) {
+            if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getSamples() != null) {
+                for (Sample auxSample : clinicalAnalysis.getProband().getSamples()) {
+                    if (auxSample.getUid() == sampleUid && auxSample.getVersion() == version) {
+                        clinicalAnalysisIds.add(clinicalAnalysis.getId());
+                        break;
+                    }
+                }
+            }
+            if (!clinicalAnalysisIds.contains(clinicalAnalysis.getId())) {
+                if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getMembers() != null) {
+                    for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                        if (member.getSamples() != null) {
+                            for (Sample auxSample : member.getSamples()) {
+                                if (auxSample.getUid() == sampleUid && auxSample.getVersion() == version) {
+                                    clinicalAnalysisIds.add(clinicalAnalysis.getId());
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!clinicalAnalysisIds.isEmpty()) {
+            throw new CatalogDBException("Sample '" + sampleId + "' is being used in the following clinical analyses: '"
+                    + String.join("', '", clinicalAnalysisIds) + "'.");
+        }
+
     }
 
     private void updateSampleFromIndividualCollection(ClientSession clientSession, Sample sample, long individualUid,
@@ -689,7 +809,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         logger.debug("Deleting sample {} ({})", sampleId, sampleUid);
 
-        removeSampleReferences(clientSession, studyUid, sampleUid);
+        Sample sample = new Sample()
+                .setUid(sampleUid)
+                .setUuid(sampleDocument.getString(QueryParams.UUID.key()))
+                .setId(sampleId);
+        removeSampleReferences(clientSession, studyUid, sample);
 
         // Look for all the different sample versions
         Query sampleQuery = new Query()
@@ -735,11 +859,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
-    private void removeSampleReferences(ClientSession clientSession, long studyUid, long sampleUid)
+    private void removeSampleReferences(ClientSession clientSession, long studyUid, Sample sample)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        dbAdaptorFactory.getCatalogFileDBAdaptor().removeSampleReferences(clientSession, studyUid, sampleUid);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeSampleReferences(clientSession, studyUid, sampleUid);
-        individualDBAdaptor.removeSampleReferences(clientSession, studyUid, sampleUid);
+        dbAdaptorFactory.getCatalogFileDBAdaptor().removeSampleReferences(clientSession, studyUid, sample);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeSampleReferences(clientSession, studyUid, sample.getUid());
+        individualDBAdaptor.removeSampleReferences(clientSession, studyUid, sample.getUid());
     }
 
     // TODO: Check clean

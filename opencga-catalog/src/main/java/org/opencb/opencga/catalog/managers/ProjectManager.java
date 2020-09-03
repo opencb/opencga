@@ -38,6 +38,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Datastores;
@@ -720,9 +721,9 @@ public class ProjectManager extends AbstractManager {
                     // Add file information
                     fileList.add(fileDataResult.first());
 
-                    List<Sample> samples = fileDataResult.first().getSamples();
+                    List<ResourceReference> samples = fileDataResult.first().getSamples();
                     if (ListUtils.isNotEmpty(samples)) {
-                        List<Long> sampleUids = samples.stream().map(Sample::getUid).collect(Collectors.toList());
+                        List<Long> sampleUids = samples.stream().map(ResourceReference::getUid).collect(Collectors.toList());
 
                         // Look for the BAM and BIGWIG files associated to the samples (if any)
                         query = new Query()

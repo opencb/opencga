@@ -17,12 +17,15 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -54,7 +57,9 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
-        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
+        STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
+
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, "");
 
         private static Map<String, QueryParams> map;
         static {
@@ -114,8 +119,11 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
 
     OpenCGAResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Interpretation interpretation, boolean primary) throws CatalogDBException, CatalogParameterException,
-            CatalogAuthorizationException;
+    OpenCGAResult insert(long studyId, Interpretation interpretation, ParamUtils.SaveInterpretationAs action)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult update(long uid, ObjectMap parameters, ParamUtils.SaveInterpretationAs action, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

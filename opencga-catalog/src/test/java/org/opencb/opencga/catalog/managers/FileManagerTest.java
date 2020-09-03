@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
@@ -34,6 +35,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
@@ -121,7 +123,9 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(File.Bioformat.ALIGNMENT, link.first().getBioformat());
         assertEquals(referenceFile.getId(), link.first().getRelatedFiles().get(0).getFile().getId());
         assertEquals(FileRelatedFile.Relation.REFERENCE_GENOME, link.first().getRelatedFiles().get(0).getRelation());
-        assertEquals("cram_with_crai_index.cram", link.first().getSamples().get(0).getFileIds().get(0));
+
+        Sample sample = catalogManager.getSampleManager().get(studyFqn, link.first().getSamples().get(0).getId(), QueryOptions.empty(), token).first();
+        assertEquals("cram_with_crai_index.cram", sample.getFileIds().get(0));
     }
 
     @Test
@@ -327,7 +331,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         assertEquals(4, link.first().getSamples().size());
 
-        List<Long> sampleList = link.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+        List<Long> sampleList = link.first().getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList());
         Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleList);
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), token);
 
@@ -387,7 +391,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         assertEquals(4, link.first().getSamples().size());
 
-        List<Long> sampleList = link.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+        List<Long> sampleList = link.first().getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList());
         Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleList);
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), token);
 
@@ -702,9 +706,14 @@ public class FileManagerTest extends AbstractManagerTest {
 
         File file = fileManager.get(studyFqn, "test_1K.txt.gz", QueryOptions.empty(), token).first();
         assertEquals(2, file.getSamples().size());
-        assertTrue(file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("s_1", "s_2")));
-        assertTrue(file.getSamples().get(0).getFileIds().contains(file.getId()));
-        assertTrue(file.getSamples().get(1).getFileIds().contains(file.getId()));
+        assertTrue(file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("s_1", "s_2")));
+
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(studyFqn, Arrays.asList("s_1", "s_2"), QueryOptions.empty(), token);
+        assertEquals(2, sampleResult.getNumResults());
+        for (Sample sample : sampleResult.getResults()) {
+            assertTrue(sample.getFileIds().contains(file.getId()));
+        }
+
         System.out.println(file.getId());
         sample1 = catalogManager.getSampleManager().get(studyFqn, "s_1", QueryOptions.empty(), token).first();
         sample2 = catalogManager.getSampleManager().get(studyFqn, "s_2", QueryOptions.empty(), token).first();
@@ -1280,28 +1289,9 @@ public class FileManagerTest extends AbstractManagerTest {
                 token);
         assertEquals(1, fileDataResult.getNumResults());
         assertEquals(2, fileDataResult.first().getSamples().size());
-        for (Sample sample : fileDataResult.first().getSamples()) {
+        for (ResourceReference sample : fileDataResult.first().getSamples()) {
             assertTrue(sample.getUid() > 0);
-            assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(sample.getId()));
-        }
-
-        // Update the version of one of the samples
-        catalogManager.getSampleManager().update(studyFqn, sample1.getId(), new SampleUpdateParams(),
-                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
-
-        // Fetch the file again to see if we get the latest version as expected
-        fileDataResult = fileManager.get(studyFqn, "data/test/", QueryOptions.empty(),
-                token);
-        assertEquals(1, fileDataResult.getNumResults());
-        assertEquals(2, fileDataResult.first().getSamples().size());
-        for (Sample sample : fileDataResult.first().getSamples()) {
-            if (sample.getId().equals(sample1.getId())) {
-                assertEquals(2, sample.getVersion());
-            } else if (sample.getId().equals(sample2.getId())) {
-                assertEquals(1, sample.getVersion());
-            } else {
-                fail("The sample found is not sample1 or sample2");
-            }
+            assertTrue(StringUtils.isNotEmpty(sample.getId()));
         }
     }
 

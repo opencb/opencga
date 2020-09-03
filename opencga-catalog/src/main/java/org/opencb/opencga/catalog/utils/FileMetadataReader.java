@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
@@ -74,7 +75,7 @@ public class FileMetadataReader {
         file.setFormat(updateParams.getFormat() != null ? updateParams.getFormat() : file.getFormat());
         file.setAttributes(updateParams.getAttributes() != null ? updateParams.getAttributes() : file.getAttributes());
         file.setSamples(updateParams.getSamples() != null
-                ? updateParams.getSamples().stream().map(id -> new Sample().setId(id)).collect(Collectors.toList())
+                ? updateParams.getSamples().stream().map(id -> new ResourceReference().setId(id)).collect(Collectors.toList())
                 : file.getSamples());
         file.setSize(updateParams.getSize() != null ? updateParams.getSize() : file.getSize());
     }

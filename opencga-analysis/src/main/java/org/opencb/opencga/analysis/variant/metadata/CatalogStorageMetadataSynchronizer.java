@@ -34,6 +34,7 @@ import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileIndex.IndexStatus;
@@ -401,7 +402,7 @@ public class CatalogStorageMetadataSynchronizer {
                         modified = true;
                     }
                     Set<String> storageSamples = fileSamplesMap.get(file.getName());
-                    Set<String> catalogSamples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
+                    Set<String> catalogSamples = file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toSet());
                     if (storageSamples == null) {
                         storageSamples = new HashSet<>();
                         Integer fileId = metadataManager.getFileId(study.getId(), file.getName());

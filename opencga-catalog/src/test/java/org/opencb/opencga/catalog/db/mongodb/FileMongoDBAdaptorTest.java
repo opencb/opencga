@@ -28,6 +28,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
@@ -342,25 +345,29 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyUid, "sample2");
 
+        ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
+
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
-        catalogFileDBAdaptor.addSamplesToFile(file.getUid(), Arrays.asList(sample1, sample2));
+        catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+                        Arrays.asList(ResourceReference.of(sample1), ResourceReference.of(sample2))), options);
 
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(2, fileDataResult.first().getSamples().size());
         assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid()).containsAll(
-                fileDataResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
+                fileDataResult.first().getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList())));
 
-        new Status();
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setInternal(new SampleInternal(new Status())),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample3 = getSample(studyUid, "sample3");
         // Test we avoid duplicities
-        catalogFileDBAdaptor.addSamplesToFile(file.getUid(),
-                Arrays.asList(sample1, sample2, sample2, sample3));
+        catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+                        Arrays.asList(ResourceReference.of(sample1), ResourceReference.of(sample2), ResourceReference.of(sample2),
+                                ResourceReference.of(sample3))), options);
         fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(3, fileDataResult.first().getSamples().size());
         assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid(), sample3.getUid()).containsAll(
-                fileDataResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
+                fileDataResult.first().getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList())));
     }
 
     @Test
@@ -381,21 +388,28 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         List<File> files = user3.getProjects().get(0).getStudies().get(0).getFiles();
         File file = files.get(0);
         File file2 = files.get(1);
-        catalogFileDBAdaptor.addSamplesToFile(file.getUid(), Arrays.asList(sample1, sample2, sample3));
-        catalogFileDBAdaptor.addSamplesToFile(file2.getUid(), Arrays.asList(sample1, sample2, sample3));
+        ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
+
+        catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+                        Arrays.asList(ResourceReference.of(sample1), ResourceReference.of(sample2), ResourceReference.of(sample3))),
+                options);
+        catalogFileDBAdaptor.update(file2.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
+                        Arrays.asList(ResourceReference.of(sample1), ResourceReference.of(sample2), ResourceReference.of(sample3))),
+                options);
 
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(3, fileDataResult.first().getSamples().size());
         assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid(), sample3.getUid())
-                .containsAll(fileDataResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
+                .containsAll(fileDataResult.first().getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList())));
 
         fileDataResult = catalogFileDBAdaptor.get(file2.getUid(), QueryOptions.empty());
         assertEquals(3, fileDataResult.first().getSamples().size());
         assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid(), sample3.getUid())
-                .containsAll(fileDataResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
+                .containsAll(fileDataResult.first().getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList())));
 
-        catalogFileDBAdaptor.removeSampleReferences(null, studyUid, sample1.getUid());
-        catalogFileDBAdaptor.removeSampleReferences(null, studyUid, sample3.getUid());
+        catalogFileDBAdaptor.removeSampleReferences(null, studyUid, sample1);
+        catalogFileDBAdaptor.removeSampleReferences(null, studyUid, sample3);
         fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(1, fileDataResult.first().getSamples().size());
         assertTrue(fileDataResult.first().getSamples().get(0).getUid() == sample2.getUid());
