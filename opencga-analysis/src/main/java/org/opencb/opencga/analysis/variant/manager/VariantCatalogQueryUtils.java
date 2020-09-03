@@ -64,13 +64,12 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.*;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
@@ -134,54 +133,54 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             SAVED_FILTER
             );
 
-    public enum SegregationMode {
-        AUTOSOMAL_DOMINANT("monoallelic"),
-        AUTOSOMAL_RECESSIVE("biallelic"),
-        X_LINKED_DOMINANT,
-        X_LINKED_RECESSIVE,
-        Y_LINKED,
-        MITOCHONDRIAL,
-
-        DE_NOVO,
-        MENDELIAN_ERROR("me"),
-        COMPOUND_HETEROZYGOUS("ch");
-
-        private static Map<String, SegregationMode> namesMap;
-
-        static {
-            namesMap = new HashMap<>();
-            for (SegregationMode mode : values()) {
-                namesMap.put(mode.name().toLowerCase(), mode);
-                namesMap.put(mode.name().replace("_", "").toLowerCase(), mode);
-                if (mode.names != null) {
-                    for (String name : mode.names) {
-                        namesMap.put(name.toLowerCase(), mode);
-                    }
-                }
-            }
-        }
-
-        private final String[] names;
-
-        SegregationMode(String... names) {
-            this.names = names;
-        }
-
-        @Nullable
-        public static SegregationMode parseOrNull(String name) {
-            return namesMap.get(name.toLowerCase());
-        }
-
-        @Nonnull
-        public static SegregationMode parse(String name) {
-            SegregationMode segregationMode = namesMap.get(name.toLowerCase());
-            if (segregationMode == null) {
-                throw new VariantQueryException("Unknown SegregationMode value: '" + name + "'");
-            }
-            return segregationMode;
-        }
-
-    }
+//    public enum SegregationMode {
+//        AUTOSOMAL_DOMINANT("monoallelic"),
+//        AUTOSOMAL_RECESSIVE("biallelic"),
+//        X_LINKED_DOMINANT,
+//        X_LINKED_RECESSIVE,
+//        Y_LINKED,
+//        MITOCHONDRIAL,
+//
+//        DE_NOVO,
+//        MENDELIAN_ERROR("me"),
+//        COMPOUND_HETEROZYGOUS("ch");
+//
+//        private static Map<String, SegregationMode> namesMap;
+//
+//        static {
+//            namesMap = new HashMap<>();
+//            for (SegregationMode mode : values()) {
+//                namesMap.put(mode.name().toLowerCase(), mode);
+//                namesMap.put(mode.name().replace("_", "").toLowerCase(), mode);
+//                if (mode.names != null) {
+//                    for (String name : mode.names) {
+//                        namesMap.put(name.toLowerCase(), mode);
+//                    }
+//                }
+//            }
+//        }
+//
+//        private final String[] names;
+//
+//        SegregationMode(String... names) {
+//            this.names = names;
+//        }
+//
+//        @Nullable
+//        public static SegregationMode parseOrNull(String name) {
+//            return namesMap.get(name.toLowerCase());
+//        }
+//
+//        @Nonnull
+//        public static SegregationMode parse(String name) {
+//            SegregationMode segregationMode = namesMap.get(name.toLowerCase());
+//            if (segregationMode == null) {
+//                throw new VariantQueryException("Unknown SegregationMode value: '" + name + "'");
+//            }
+//            return segregationMode;
+//        }
+//
+//    }
 
     private final StudyFilterValidator studyFilterValidator;
     private final FileFilterValidator fileFilterValidator;
@@ -427,7 +426,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
 
                 String proband = query.getString(FAMILY_PROBAND.key());
-                SegregationMode segregationMode = SegregationMode.parse(query.getString(FAMILY_SEGREGATION.key()));
+                ClinicalProperty.ModeOfInheritance segregationMode = parse(query.getString(FAMILY_SEGREGATION.key()));
 
                 List<Member> children;
                 if (StringUtils.isNotEmpty(proband)) {
@@ -447,7 +446,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     children = pedigreeManager.getWithoutChildren();
                 }
 
-                if (segregationMode == SegregationMode.MENDELIAN_ERROR || segregationMode == SegregationMode.DE_NOVO) {
+                if (segregationMode == MENDELIAN_ERROR || segregationMode == DE_NOVO) {
                     List<String> childrenIds = children.stream().map(Member::getId).collect(Collectors.toList());
                     List<String> childrenSampleIds = new ArrayList<>(childrenIds.size());
 
@@ -460,12 +459,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         childrenSampleIds.add(sample.getId());
                     }
 
-                    if (segregationMode == SegregationMode.DE_NOVO) {
+                    if (segregationMode == DE_NOVO) {
                         query.put(SAMPLE_DE_NOVO.key(), childrenSampleIds);
                     } else {
                         query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenSampleIds);
                     }
-                } else if (segregationMode == SegregationMode.COMPOUND_HETEROZYGOUS) {
+                } else if (segregationMode == COMPOUND_HETEROZYGOUS) {
                     if (children.size() > 1) {
                         String childrenStr = children.stream().map(Member::getId).collect(Collectors.joining("', '", "[ '", "' ]"));
                         throw new VariantQueryException(
@@ -541,7 +540,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         individualToSample.put(entry.getKey(), samplesUidToId.get(entry.getValue()));
                     }
 
-                    String gtFilter = buildSegregationGenotypeFilter(pedigree, disorder, segregationMode, individualToSample);
+                    String gtFilter = buildMoIGenotypeFilter(pedigree, disorder, segregationMode, individualToSample);
                     if (gtFilter == null) {
                         throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, segregationMode.toString(),
                                 "Invalid segregation mode for the family '" + family.getId() + "'");
@@ -665,21 +664,21 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     private void processSampleFilter(Query query, String defaultStudyStr, String token) throws CatalogException {
         String sampleFilterValue = query.getString(SAMPLE.key());
         if (sampleFilterValue.contains(IS)) {
-            SegregationMode segregationMode = null;
+            ClinicalProperty.ModeOfInheritance moi = null;
             ParsedQuery<KeyOpValue<String, List<String>>> sampleFilter = parseGenotypeFilter(sampleFilterValue);
             for (KeyOpValue<String, List<String>> keyOpValue : sampleFilter.getValues()) {
                 for (String value : keyOpValue.getValue()) {
-                    SegregationMode aux = SegregationMode.parseOrNull(value);
+                    ClinicalProperty.ModeOfInheritance aux = ClinicalProperty.ModeOfInheritance.parseOrNull(value);
                     if (aux != null) {
-                        segregationMode = aux;
+                        moi = aux;
                     }
                 }
             }
 
-            if (segregationMode != null) {
+            if (moi != null) {
                 if (sampleFilter.getValues().size() != 1) {
                     throw VariantQueryException.malformedParam(SAMPLE, sampleFilterValue,
-                            "Only one sample is allowed when filtering by segregation mode '" + segregationMode + "'");
+                            "Only one sample is allowed when filtering by segregation mode '" + moi + "'");
                 }
                 if (sampleFilter.getValues().get(0).getValue().size() != 1) {
                     throw VariantQueryException.malformedParam(SAMPLE, sampleFilterValue,
@@ -751,16 +750,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     query.put(INCLUDE_SAMPLE.key(), includeSample);
                 }
 
-                if (segregationMode == SegregationMode.COMPOUND_HETEROZYGOUS) {
+                if (moi == ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS) {
                     String fatherId = member.getFather() != null ? member.getFather().getId() : MISSING_SAMPLE;
                     String motherId = member.getMother() != null ? member.getMother().getId() : MISSING_SAMPLE;
 
                     query.put(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(member.getId(), fatherId, motherId));
                     query.remove(SAMPLE.key());
-                } else if (segregationMode == SegregationMode.DE_NOVO) {
+                } else if (moi == ClinicalProperty.ModeOfInheritance.DE_NOVO) {
                     query.put(SAMPLE_DE_NOVO.key(), member.getId());
                     query.remove(SAMPLE.key());
-                } else if (segregationMode == SegregationMode.MENDELIAN_ERROR) {
+                } else if (moi == ClinicalProperty.ModeOfInheritance.MENDELIAN_ERROR) {
                     query.put(SAMPLE_MENDELIAN_ERROR.key(), member.getId());
                     query.remove(SAMPLE.key());
                 } else {
@@ -779,7 +778,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         throw VariantQueryException.malformedParam(SAMPLE, sampleFilterValue,
                                 "Found multiple disorders for sample '" + sampleId + "'");
                     }
-                    String genotypeFilter = buildSegregationGenotypeFilter(pedigree, individual.getDisorders().get(0), segregationMode);
+                    String genotypeFilter = buildMoIGenotypeFilter(pedigree, individual.getDisorders().get(0), moi);
                     if (genotypeFilter == null) {
                         throw VariantQueryException.malformedParam(SAMPLE, sampleFilterValue,
                                 "Invalid segregation mode for the sample '" + sampleId + "'");
@@ -804,14 +803,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     }
 
 
-    private String buildSegregationGenotypeFilter(Pedigree pedigree, Disorder disorder, SegregationMode segregationMode) {
-        return buildSegregationGenotypeFilter(pedigree, disorder, segregationMode, null);
+    private String buildMoIGenotypeFilter(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi) {
+        return buildMoIGenotypeFilter(pedigree, disorder, moi, null);
     }
 
-    private String buildSegregationGenotypeFilter(Pedigree pedigree, Disorder disorder, SegregationMode segregationMode,
-                                                  Map<String, String> pedigreeMemberToSampleId) {
+    private String buildMoIGenotypeFilter(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
+                                          Map<String, String> pedigreeMemberToSampleId) {
         Map<String, List<String>> genotypes;
-        switch (segregationMode) {
+        switch (moi) {
             case AUTOSOMAL_DOMINANT:
                 genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
@@ -837,7 +836,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
             default:
-                throw new IllegalArgumentException("Unexpected segregation mode " + segregationMode);
+                throw new IllegalArgumentException("Unexpected segregation mode " + moi);
         }
         if (ModeOfInheritance.isEmptyMapOfGenotypes(genotypes)) {
             return null;
