@@ -1683,7 +1683,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
         if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()))) {
             OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().internalGet(study.getUid(),
-                    query.getAsStringList(IndividualDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
+                    query.getAsStringList(IndividualDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, userId, true);
             query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
             query.append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleDataResult.getResults().stream().map(Sample::getUid)
                     .collect(Collectors.toList()));

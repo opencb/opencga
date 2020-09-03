@@ -130,23 +130,6 @@ public class ClinicalUpdateParams {
         }
     }
 
-    public static class ClinicalAnalystParam {
-        private String assignee;
-
-        public ClinicalAnalystParam(String assignee) {
-            this.assignee = assignee;
-        }
-
-        public String getAssignee() {
-            return assignee;
-        }
-
-        public ClinicalAnalystParam setAssignee(String assignee) {
-            this.assignee = assignee;
-            return this;
-        }
-    }
-
     public String getId() {
         return id;
     }

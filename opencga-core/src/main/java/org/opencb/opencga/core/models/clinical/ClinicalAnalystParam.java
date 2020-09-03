@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.opencga.core.common.TimeUtils;
 
 public class ClinicalAnalystParam {
 
@@ -14,7 +15,15 @@ public class ClinicalAnalystParam {
     }
 
     public static ClinicalAnalystParam of(ClinicalAnalyst clinicalAnalyst) {
-        return new ClinicalAnalystParam(clinicalAnalyst.getId());
+        if (clinicalAnalyst != null) {
+            return new ClinicalAnalystParam(clinicalAnalyst.getId());
+        } else {
+            return new ClinicalAnalystParam("");
+        }
+    }
+
+    public ClinicalAnalyst toClinicalAnalyst() {
+        return new ClinicalAnalyst(id != null ? id : "", "", "", "", TimeUtils.getTime());
     }
 
     @Override

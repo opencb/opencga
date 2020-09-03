@@ -83,6 +83,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
+        catalogManager.getUserManager().create("user2", "User Name2", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
+
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
         catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
@@ -380,15 +382,14 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("interpretation3", ca.getSecondaryInterpretations().get(1).getId());
         assertEquals("interpretation4", ca.getSecondaryInterpretations().get(2).getId());
 
-        InterpretationUpdateParams params = new InterpretationUpdateParams()
-                .setAnalyst(new ClinicalAnalyst("pfurio", "Pedro", "pedro@mail.com", "Zetta", TimeUtils.getTime()));
+        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam("user2"));
         OpenCGAResult<Interpretation> result = catalogManager.getInterpretationManager().update(STUDY, ca.getId(), "interpretation1",
                 params, null, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumUpdated());
 
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertNotNull(ca.getInterpretation().getAnalyst());
-        assertEquals("pfurio", ca.getInterpretation().getAnalyst().getId());
+        assertEquals("user2", ca.getInterpretation().getAnalyst().getId());
 
         // Update a secondary interpretation
         params = new InterpretationUpdateParams()

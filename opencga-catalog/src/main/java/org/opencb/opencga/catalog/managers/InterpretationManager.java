@@ -267,7 +267,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
             user = result.first();
         }
-        interpretation.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), user.getId(), TimeUtils.getTime()));
+        interpretation.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
     }
 
     public OpenCGAResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams,
@@ -513,6 +513,24 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 parameters = updateParams.getUpdateMap();
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not parse InterpretationUpdateParams object: " + e.getMessage(), e);
+            }
+        }
+
+        if (parameters.get(InterpretationDBAdaptor.QueryParams.ANALYST.key()) != null) {
+            if (StringUtils.isNotEmpty(updateParams.getAnalyst().getId())) {
+                QueryOptions userOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
+                        UserDBAdaptor.QueryParams.NAME.key(), UserDBAdaptor.QueryParams.EMAIL.key()));
+                // Check user exists
+                OpenCGAResult<User> userResult = userDBAdaptor.get(updateParams.getAnalyst().getId(), userOptions);
+                if (userResult.getNumResults() == 0) {
+                    throw new CatalogException("User '" + updateParams.getAnalyst().getId() + "' not found");
+                }
+                parameters.put(InterpretationDBAdaptor.QueryParams.ANALYST.key(), new ClinicalAnalyst(userResult.first().getId(),
+                        userResult.first().getName(), userResult.first().getEmail(), userId, TimeUtils.getTime()));
+            } else {
+                // Remove assignee
+                parameters.put(InterpretationDBAdaptor.QueryParams.ANALYST.key(), new ClinicalAnalyst("", "", "", userId,
+                        TimeUtils.getTime()));
             }
         }
 

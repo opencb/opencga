@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -49,6 +50,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -243,16 +245,21 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setComments(ParamUtils.defaultObject(clinicalAnalysis.getComments(), Collections.emptyList()));
             clinicalAnalysis.setAudit(ParamUtils.defaultObject(clinicalAnalysis.getAudit(), Collections.emptyList()));
 
-            if (clinicalAnalysis.getAnalyst() != null && StringUtils.isNotEmpty(clinicalAnalysis.getAnalyst().getId())) {
-                // We obtain the users with access to the study
-                Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", token).first()
-                        .getUserIds());
-                if (!users.contains(clinicalAnalysis.getAnalyst().getId())) {
-                    throw new CatalogException("Cannot assign clinical analysis to " + clinicalAnalysis.getAnalyst().getId()
-                            + ". User not found or with no access to the study.");
+            // Analyst
+            QueryOptions userInclude = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
+                    UserDBAdaptor.QueryParams.NAME.key(), UserDBAdaptor.QueryParams.EMAIL.key()));
+            User user;
+            if (clinicalAnalysis.getAnalyst() == null || StringUtils.isEmpty(clinicalAnalysis.getAnalyst().getId())) {
+                user = userDBAdaptor.get(userId, userInclude).first();
+            } else {
+                // Validate user
+                OpenCGAResult<User> result = userDBAdaptor.get(clinicalAnalysis.getAnalyst().getId(), userInclude);
+                if (result.getNumResults() == 0) {
+                    throw new CatalogException("User '" + clinicalAnalysis.getAnalyst().getId() + "' not found");
                 }
-                clinicalAnalysis.getAnalyst().setAssignedBy(userId);
+                user = result.first();
             }
+            clinicalAnalysis.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
 
             if (TimeUtils.toDate(clinicalAnalysis.getDueDate()) == null) {
                 throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
@@ -960,17 +967,24 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         if (StringUtils.isNotEmpty(updateParams.getDueDate()) && TimeUtils.toDate(updateParams.getDueDate()) == null) {
             throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
         }
-        if (updateParams.getAnalyst() != null && StringUtils.isNotEmpty(updateParams.getAnalyst().getAssignee())) {
-            // We obtain the users with access to the study
-            Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(study.getFqn(), "members", token).first()
-                    .getUserIds());
-            if (!users.contains(updateParams.getAnalyst().getAssignee())) {
-                throw new CatalogException("Cannot assign clinical analysis to " + updateParams.getAnalyst().getAssignee()
-                        + ". User not found or with no access to the study.");
-            }
 
-            Map<String, Object> map = parameters.getMap(ClinicalAnalysisDBAdaptor.QueryParams.ANALYST.key());
-            map.put("assignedBy", userId);
+        if (parameters.get(InterpretationDBAdaptor.QueryParams.ANALYST.key()) != null) {
+            if (StringUtils.isNotEmpty(updateParams.getAnalyst().getId())) {
+                QueryOptions userOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
+                        UserDBAdaptor.QueryParams.NAME.key(), UserDBAdaptor.QueryParams.EMAIL.key()));
+                // Check user exists
+                OpenCGAResult<User> userResult = userDBAdaptor.get(updateParams.getAnalyst().getId(), userOptions);
+                if (userResult.getNumResults() == 0) {
+                    throw new CatalogException("User '" + updateParams.getAnalyst().getId() + "' not found");
+                }
+
+                parameters.put(InterpretationDBAdaptor.QueryParams.ANALYST.key(), new ClinicalAnalyst(userResult.first().getId(),
+                        userResult.first().getName(), userResult.first().getEmail(), userId, TimeUtils.getTime()));
+            } else {
+                // Remove assignee
+                parameters.put(InterpretationDBAdaptor.QueryParams.ANALYST.key(), new ClinicalAnalyst("", "", "", userId,
+                        TimeUtils.getTime()));
+            }
         }
 
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {

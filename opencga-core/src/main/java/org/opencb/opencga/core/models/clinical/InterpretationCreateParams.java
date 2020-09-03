@@ -17,7 +17,6 @@
 package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
@@ -33,7 +32,7 @@ public class InterpretationCreateParams {
     private String id;
     private String description;
     private String clinicalAnalysisId;
-    private ClinicalAnalyst analyst;
+    private ClinicalAnalystParam analyst;
     private List<InterpretationMethod> methods;
     private String creationDate;
     private String modificationDate;
@@ -45,7 +44,7 @@ public class InterpretationCreateParams {
     public InterpretationCreateParams() {
     }
 
-    public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, ClinicalAnalyst analyst,
+    public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, ClinicalAnalystParam analyst,
                                       List<InterpretationMethod> methods, String creationDate, String modificationDate,
                                       List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
                                       List<ClinicalComment> comments, Map<String, Object> attributes) {
@@ -64,7 +63,7 @@ public class InterpretationCreateParams {
 
     public static InterpretationCreateParams of(Interpretation interpretation) {
         return new InterpretationCreateParams(interpretation.getId(), interpretation.getDescription(),
-                interpretation.getClinicalAnalysisId(), interpretation.getAnalyst(), interpretation.getMethods(),
+                interpretation.getClinicalAnalysisId(), ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethods(),
                 interpretation.getCreationDate(), interpretation.getModificationDate(), interpretation.getPrimaryFindings(),
                 interpretation.getSecondaryFindings(), interpretation.getComments(), interpretation.getAttributes());
     }
@@ -88,8 +87,8 @@ public class InterpretationCreateParams {
     }
 
     public Interpretation toClinicalInterpretation() {
-        return new Interpretation(id, description, clinicalAnalysisId, analyst, methods, creationDate, modificationDate, primaryFindings,
-                secondaryFindings, comments, attributes);
+        return new Interpretation(id, description, clinicalAnalysisId, analyst.toClinicalAnalyst(), methods, creationDate, modificationDate,
+                primaryFindings, secondaryFindings, comments, attributes);
     }
 
     public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {
@@ -123,11 +122,11 @@ public class InterpretationCreateParams {
         return this;
     }
 
-    public ClinicalAnalyst getAnalyst() {
+    public ClinicalAnalystParam getAnalyst() {
         return analyst;
     }
 
-    public InterpretationCreateParams setAnalyst(ClinicalAnalyst analyst) {
+    public InterpretationCreateParams setAnalyst(ClinicalAnalystParam analyst) {
         this.analyst = analyst;
         return this;
     }
