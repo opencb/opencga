@@ -52,6 +52,8 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         STATUS("status", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         VERSION("version", INTEGER, ""),
+        RELEASE("release", INTEGER, ""), //  Release where the sample was created
+        SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
         MODIFICATION_DATE("modificationDate", DATE, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

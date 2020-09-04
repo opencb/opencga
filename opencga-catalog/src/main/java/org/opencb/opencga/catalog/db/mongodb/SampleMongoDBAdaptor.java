@@ -820,39 +820,40 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(QueryParams.UID.key(), sampleUid)
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(Constants.ALL_VERSIONS, true);
-        DBIterator<Document> sampleDBIterator = nativeIterator(sampleQuery, QueryOptions.empty());
+        try (DBIterator<Document> sampleDBIterator = nativeIterator(sampleQuery, QueryOptions.empty())) {
 
-        // Delete any documents that might have been already deleted with that id
-        Bson query = new Document()
-                .append(QueryParams.ID.key(), sampleId)
-                .append(PRIVATE_STUDY_UID, studyUid);
-        deletedSampleCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
+            // Delete any documents that might have been already deleted with that id
+            Bson query = new Document()
+                    .append(QueryParams.ID.key(), sampleId)
+                    .append(PRIVATE_STUDY_UID, studyUid);
+            deletedSampleCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
 
-        while (sampleDBIterator.hasNext()) {
-            Document tmpSample = sampleDBIterator.next();
+            while (sampleDBIterator.hasNext()) {
+                Document tmpSample = sampleDBIterator.next();
 
-            // Set status to DELETED
-            nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpSample);
+                // Set status to DELETED
+                nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpSample);
 
-            int sampleVersion = tmpSample.getInteger(QueryParams.VERSION.key());
+                int sampleVersion = tmpSample.getInteger(QueryParams.VERSION.key());
 
-            // Insert the document in the DELETE collection
-            deletedSampleCollection.insert(clientSession, tmpSample, null);
-            logger.debug("Inserted sample uid '{}' version '{}' in DELETE collection", sampleUid, sampleVersion);
+                // Insert the document in the DELETE collection
+                deletedSampleCollection.insert(clientSession, tmpSample, null);
+                logger.debug("Inserted sample uid '{}' version '{}' in DELETE collection", sampleUid, sampleVersion);
 
-            // Remove the document from the main SAMPLE collection
-            query = parseQuery(new Query()
-                    .append(QueryParams.UID.key(), sampleUid)
-                    .append(QueryParams.VERSION.key(), sampleVersion));
-            DataResult remove = sampleCollection.remove(clientSession, query, null);
-            if (remove.getNumMatches() == 0) {
-                throw new CatalogDBException("Sample " + sampleId + " not found");
+                // Remove the document from the main SAMPLE collection
+                query = parseQuery(new Query()
+                        .append(QueryParams.UID.key(), sampleUid)
+                        .append(QueryParams.VERSION.key(), sampleVersion));
+                DataResult remove = sampleCollection.remove(clientSession, query, null);
+                if (remove.getNumMatches() == 0) {
+                    throw new CatalogDBException("Sample " + sampleId + " not found");
+                }
+                if (remove.getNumDeleted() == 0) {
+                    throw new CatalogDBException("Sample " + sampleId + " could not be deleted");
+                }
+
+                logger.debug("Sample uid '{}' version '{}' deleted from main SAMPLE collection", sampleUid, sampleVersion);
             }
-            if (remove.getNumDeleted() == 0) {
-                throw new CatalogDBException("Sample " + sampleId + " could not be deleted");
-            }
-
-            logger.debug("Sample uid '{}' version '{}' deleted from main SAMPLE collection", sampleUid, sampleVersion);
         }
 
         logger.debug("Sample {}({}) deleted", sampleId, sampleUid);

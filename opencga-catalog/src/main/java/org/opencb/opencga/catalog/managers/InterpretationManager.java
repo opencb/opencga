@@ -212,7 +212,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
                     userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
-            validateNewInterpretation(interpretation, clinicalAnalysis.getId(), userId);
+            validateNewInterpretation(study, interpretation, clinicalAnalysis.getId(), userId);
 
             OpenCGAResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, action);
             OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
@@ -230,7 +230,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
     }
 
-    void validateNewInterpretation(Interpretation interpretation, String clinicalAnalysisId, String userId) throws CatalogException {
+    void validateNewInterpretation(Study study, Interpretation interpretation, String clinicalAnalysisId, String userId)
+            throws CatalogException {
         ParamUtils.checkObj(interpretation, "Interpretation");
         ParamUtils.checkParameter(clinicalAnalysisId, "ClinicalAnalysisId");
 
@@ -249,6 +250,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setSecondaryFindings(ParamUtils.defaultObject(interpretation.getSecondaryFindings(), Collections.emptyList()));
         interpretation.setComments(ParamUtils.defaultObject(interpretation.getComments(), Collections.emptyList()));
         interpretation.setStatus(ParamUtils.defaultString(interpretation.getStatus(), ""));
+        interpretation.setRelease(studyManager.getCurrentRelease(study));
         interpretation.setVersion(1);
         interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
         interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));

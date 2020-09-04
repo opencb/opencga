@@ -32,6 +32,7 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     private long uid;
 
     private InterpretationInternal internal;
+    private int release;
 
     public Interpretation() {
         super();
@@ -52,37 +53,13 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
                 interpretation.getAttributes());
     }
 
-//    public Interpretation(org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
-//        this(interpretation.getId(), "", interpretation.getDescription(), interpretation.getClinicalAnalysisId(),
-//                interpretation.getAnalyst(), interpretation.getMethod(),interpretation.getPrimaryFindings(),
-//                interpretation.getSecondaryFindings(), interpretation.getComments(), interpretation.getStatus(),
-//                interpretation.getCreationDate(), interpretation.getVersion(), interpretation.getAttributes());
-//    }
-//
-//    public Interpretation(String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
-//                          Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
-//                          List<ClinicalVariant> primaryFindinds, List<ClinicalVariant> secondaryFindings,
-//                          List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
-//        super(id, "", description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings,
-//                reportedLowCoverages, comments, InterpretationStatus.NOT_REVIEWED, creationDate, 1, attributes);
-//    }
-//
-//    public Interpretation(String uuid, String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
-//                          Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
-//                          List<ClinicalVariant> primaryFindinds, List<ClinicalVariant> secondaryFindings,
-//                          List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes,
-//                          InterpretationInternal internal) {
-//        super(id, uuid, description, clinicalAnalysisId, software, analyst, dependencies, filters, panels, primaryFindinds,
-//                secondaryFindings, reportedLowCoverages, comments, InterpretationStatus.NOT_REVIEWED, creationDate, 1, attributes);
-//        this.internal = internal;
-//    }
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Interpretation{");
         sb.append("studyUid=").append(studyUid);
         sb.append(", uid=").append(uid);
         sb.append(", internal=").append(internal);
+        sb.append(", release=").append(release);
         sb.append('}');
         return sb.toString();
     }
@@ -121,6 +98,15 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
 
     public Interpretation setInternal(InterpretationInternal internal) {
         this.internal = internal;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public Interpretation setRelease(int release) {
+        this.release = release;
         return this;
     }
 }

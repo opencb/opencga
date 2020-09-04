@@ -16,33 +16,22 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.Document;
-import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-
-import java.io.UncheckedIOException;
 
 public class InterpretationConverter extends OpenCgaMongoConverter<Interpretation> {
 
-    private final ObjectMapper objectMapper;
-
     public InterpretationConverter() {
         super(Interpretation.class);
-        this.objectMapper = JacksonUtils.getDefaultObjectMapper();
     }
 
     @Override
-    public Document convertToStorageType(Interpretation object) {
-        try {
-            String json = this.objectMapper.writeValueAsString(object);
-            Document document = Document.parse(json);
-            replaceDots(document);
-            return document;
-        } catch (JsonProcessingException var4) {
-            throw new UncheckedIOException(var4);
-        }
+    public Document convertToStorageType(Interpretation interpretation) {
+        Document document = super.convertToStorageType(interpretation);
+        document.put(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), interpretation.getUid());
+        document.put(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), interpretation.getStudyUid());
+        return document;
     }
 
 }

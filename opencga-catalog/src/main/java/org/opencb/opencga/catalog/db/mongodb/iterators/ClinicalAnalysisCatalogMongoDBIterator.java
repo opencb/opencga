@@ -134,13 +134,13 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                 // Extract the interpretations
                 Document interpretationDoc = (Document) clinicalDocument.get(INTERPRETATION.key());
                 if (interpretationDoc != null && interpretationDoc.get(UID, Number.class).longValue() > 0) {
-                    interpretationSet.add(String.valueOf(interpretationDoc.get(UID)));
+                    interpretationSet.add(interpretationDoc.get(UID) + UID_VERSION_SEP + interpretationDoc.get(VERSION));
                 }
 
                 List<Document> secondaryInterpretations = (List<Document>) clinicalDocument.get(SECONDARY_INTERPRETATIONS.key());
                 if (ListUtils.isNotEmpty(secondaryInterpretations)) {
                     for (Document interpretation : secondaryInterpretations) {
-                        interpretationSet.add(String.valueOf(interpretation.get(UID)));
+                        interpretationSet.add(interpretation.get(UID) + UID_VERSION_SEP + interpretation.get(VERSION));
                     }
                 }
             }
@@ -237,16 +237,19 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
 
         Document primaryInterpretation = (Document) clinicalAnalysis.get(INTERPRETATION.key());
 
-        if (primaryInterpretation != null && interpretationMap.containsKey(String.valueOf(primaryInterpretation.get(UID)))) {
-            clinicalAnalysis.put(INTERPRETATION.key(), interpretationMap.get(String.valueOf(primaryInterpretation.get(UID))));
+        if (primaryInterpretation != null
+                && interpretationMap.containsKey(primaryInterpretation.get(UID) + UID_VERSION_SEP + primaryInterpretation.get(VERSION))) {
+            clinicalAnalysis.put(INTERPRETATION.key(),
+                    interpretationMap.get(primaryInterpretation.get(UID) + UID_VERSION_SEP + primaryInterpretation.get(VERSION)));
         }
 
         List<Document> origSecondaryInterpretations = (List<Document>) clinicalAnalysis.get(SECONDARY_INTERPRETATIONS.key());
         List<Document> secondaryInterpretations = new ArrayList<>();
         // If the interpretations have been returned... (it might have not been fetched due to permissions issues)
         for (Document origInterpretation : origSecondaryInterpretations) {
-            if (interpretationMap.containsKey(String.valueOf(origInterpretation.get(UID)))) {
-                secondaryInterpretations.add(new Document(interpretationMap.get(String.valueOf(origInterpretation.get(UID)))));
+            String interpretationId = origInterpretation.get(UID) + UID_VERSION_SEP + origInterpretation.get(VERSION);
+            if (interpretationMap.containsKey(interpretationId)) {
+                secondaryInterpretations.add(new Document(interpretationMap.get(interpretationId)));
             }
         }
         clinicalAnalysis.put(SECONDARY_INTERPRETATIONS.key(), secondaryInterpretations);
@@ -355,7 +358,18 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         }
 
         // Obtain all those interpretations
-        Query query = new Query(InterpretationDBAdaptor.QueryParams.UID.key(), interpretationSet);
+        List<Long> interpretationUids = new ArrayList<>(interpretationSet.size());
+        List<Integer> interpretationVersions = new ArrayList<>(interpretationSet.size());
+
+        for (String interpretationId : interpretationSet) {
+            String[] split = interpretationId.split(UID_VERSION_SEP);
+            interpretationUids.add(Long.parseLong(split[0]));
+            interpretationVersions.add(Integer.parseInt(split[1]));
+        }
+
+        Query query = new Query()
+                .append(InterpretationDBAdaptor.QueryParams.UID.key(), interpretationUids)
+                .append(InterpretationDBAdaptor.QueryParams.VERSION.key(), interpretationVersions);
         List<Document> interpretationList;
         try {
             if (user != null) {
@@ -370,7 +384,8 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         }
 
         // Map each interpretation uid to the interpretation entry
-        interpretationList.forEach(intepretation -> interpretationMap.put(String.valueOf(intepretation.get(UID)), intepretation));
+        interpretationList.forEach(intepretation
+                -> interpretationMap.put(intepretation.get(UID) + UID_VERSION_SEP + intepretation.get(VERSION), intepretation));
         return interpretationMap;
     }
 

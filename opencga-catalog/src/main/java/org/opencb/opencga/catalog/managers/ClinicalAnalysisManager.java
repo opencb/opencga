@@ -483,7 +483,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
 
             if (clinicalAnalysis.getInterpretation() != null) {
-                catalogManager.getInterpretationManager().validateNewInterpretation(clinicalAnalysis.getInterpretation(),
+                catalogManager.getInterpretationManager().validateNewInterpretation(study, clinicalAnalysis.getInterpretation(),
                         clinicalAnalysis.getId(), userId);
             }
 

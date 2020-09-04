@@ -264,6 +264,12 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
         interpretationObject.put(PRIVATE_MODIFICATION_DATE, interpretationObject.get(PRIVATE_CREATION_DATE));
+
+        // Versioning private parameters
+        interpretationObject.put(RELEASE_FROM_VERSION, Arrays.asList(interpretation.getRelease()));
+        interpretationObject.put(LAST_OF_VERSION, true);
+        interpretationObject.put(LAST_OF_RELEASE, true);
+
         interpretationCollection.insert(clientSession, interpretationObject, null);
 
         return interpretation;
@@ -508,10 +514,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         Query query = new Query(QueryParams.UID.key(), interpretationUid);
 
-        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            createNewVersion(clientSession, studyUid, interpretationUid);
-        }
-
         UpdateDocument updateDocument = parseAndValidateUpdateParams(clientSession, parameters, query, queryOptions);
         Document updateOperation = updateDocument.toFinalUpdateDocument();
 
@@ -522,10 +524,16 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             }
 
             if (!updateOperation.isEmpty()) {
-                Bson bsonQuery = Filters.eq(PRIVATE_UID, interpretationUid);
+                // Increment interpretation version
+                int version = createNewVersion(clientSession, studyUid, interpretationUid);
+
+                interpretation.setVersion(version);
+                updateClinicalAnalysisInterpretationReference(clientSession, interpretation);
+
+                Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), interpretation.getUid()));
                 logger.debug("Update interpretation. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
                         MongoClient.getDefaultCodecRegistry()), updateDocument);
-                DataResult update = interpretationCollection.update(bsonQuery, updateOperation, null);
+                DataResult update = interpretationCollection.update(clientSession, bsonQuery, updateOperation, null);
 
                 if (update.getNumMatches() == 0) {
                     throw CatalogDBException.uidNotFound("Interpretation", interpretationUid);
@@ -540,7 +548,49 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return OpenCGAResult.empty(Interpretation.class);
     }
 
-    private void createNewVersion(ClientSession clientSession, long studyUid, long interpretationUid) throws CatalogDBException {
+    private void updateClinicalAnalysisInterpretationReference(ClientSession clientSession, Interpretation interpretation)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), interpretation.getClinicalAnalysisId())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), interpretation.getStudyUid());
+
+        OpenCGAResult<ClinicalAnalysis> clinicalAnalysisOpenCGAResult = clinicalDBAdaptor.get(clientSession, query,
+                ClinicalAnalysisManager.INCLUDE_CLINICAL_INTERPRETATIONS);
+        if (clinicalAnalysisOpenCGAResult.getNumResults() != 1) {
+            throw new CatalogDBException("ClinicalAnalysis '" + interpretation.getClinicalAnalysisId() + "' not found.");
+        }
+        ClinicalAnalysis ca = clinicalAnalysisOpenCGAResult.first();
+
+        ObjectMap params;
+        QueryOptions options = new QueryOptions();
+
+        if (ca.getInterpretation().getUid() == interpretation.getUid()) {
+            params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
+        } else {
+            ObjectMap actions = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
+                    ParamUtils.UpdateAction.SET);
+            options.put(Constants.ACTIONS, actions);
+
+            // Interpretation must be one of the secondaries
+            List<Interpretation> interpretationList = new ArrayList<>(ca.getSecondaryInterpretations().size());
+
+            for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
+                if (secondaryInterpretation.getUid() == interpretation.getUid()) {
+                    secondaryInterpretation.setVersion(interpretation.getVersion());
+                }
+                interpretationList.add(secondaryInterpretation);
+            }
+
+            params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), interpretationList);
+        }
+
+        OpenCGAResult update = clinicalDBAdaptor.update(clientSession, ca, params, options);
+        if (update.getNumUpdated() != 1) {
+            throw new CatalogDBException("Could not update interpretation reference in Clinical Analysis to new version");
+        }
+    }
+
+    private int createNewVersion(ClientSession clientSession, long studyUid, long interpretationUid) throws CatalogDBException {
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(QueryParams.UID.key(), interpretationUid);
@@ -551,6 +601,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         createNewVersion(clientSession, interpretationCollection, queryResult.first());
+        return queryResult.first().getInteger(QueryParams.VERSION.key());
     }
 
     @Override
@@ -632,27 +683,40 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         // Obtain the native document to be deleted
         Query query = new Query()
-                .append(QueryParams.UID.key(), interpretationUid)
-                .append(QueryParams.STUDY_UID.key(), studyUid);
+                .append(QueryParams.ID.key(), interpretation.getId())
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(Constants.ALL_VERSIONS, true);
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, QueryOptions.empty())) {
+            // Delete any documents that might have been already deleted with that id
+            Bson bsonQuery = new Document()
+                    .append(QueryParams.ID.key(), interpretation.getId())
+                    .append(PRIVATE_STUDY_UID, studyUid);
+            deletedInterpretationCollection.remove(clientSession, bsonQuery, new QueryOptions(MongoDBCollection.MULTI, true));
 
-        Document interpretationDocument = nativeGet(clientSession, query, QueryOptions.empty()).first();
+            while (dbIterator.hasNext()) {
+                Document interpretationDocument = dbIterator.next();
+                int interpretationVersion = interpretationDocument.getInteger(QueryParams.VERSION.key());
 
-        // Set status
-        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InterpretationStatus(InterpretationStatus.DELETED), "status"),
-                interpretationDocument);
+                // Set status
+                nestedPut(QueryParams.INTERNAL_STATUS.key(),
+                        getMongoDBDocument(new InterpretationStatus(InterpretationStatus.DELETED), "status"), interpretationDocument);
 
-        // Insert the document in the DELETE collection
-        deletedInterpretationCollection.insert(clientSession, interpretationDocument, null);
-        logger.debug("Inserted interpretation uid '{}' in DELETE collection", interpretation.getUid());
+                // Insert the document in the DELETE collection
+                deletedInterpretationCollection.insert(clientSession, interpretationDocument, null);
+                logger.debug("Inserted interpretation uid '{}' in DELETE collection", interpretation.getUid());
 
-        // Remove the document from the main INTERPRETATION collection
-        Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), interpretation.getUid()));
-        DataResult remove = interpretationCollection.remove(clientSession, bsonQuery, null);
-        if (remove.getNumMatches() == 0) {
-            throw new CatalogDBException("Interpretation " + interpretation.getUid() + " not found");
-        }
-        if (remove.getNumDeleted() == 0) {
-            throw new CatalogDBException("Interpretation " + interpretation.getUid() + " could not be deleted");
+                // Remove the document from the main INTERPRETATION collection
+                bsonQuery = parseQuery(new Query()
+                        .append(QueryParams.UID.key(), interpretationUid)
+                        .append(QueryParams.VERSION.key(), interpretationVersion));
+                DataResult remove = interpretationCollection.remove(clientSession, bsonQuery, null);
+                if (remove.getNumMatches() == 0) {
+                    throw new CatalogDBException("Interpretation " + interpretation.getUid() + " not found");
+                }
+                if (remove.getNumDeleted() == 0) {
+                    throw new CatalogDBException("Interpretation " + interpretation.getUid() + " could not be deleted");
+                }
+            }
         }
 
         logger.debug("Interpretation '{}({})' deleted from main INTERPRETATION collection", interpretation.getId(),
@@ -686,7 +750,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return nativeIterator(null, query, options);
     }
 
-    public DBIterator nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    public DBIterator<Document> nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
@@ -766,11 +830,16 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         queryCopy.remove(SampleDBAdaptor.QueryParams.DELETED.key());
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
 
+        boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
+
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
             if (queryParam == null) {
+                if (Constants.ALL_VERSIONS.equals(entry.getKey())) {
+                    continue;
+                }
                 throw new CatalogDBException("Unexpected parameter " + entry.getKey() + ". The parameter does not exist or cannot be "
                         + "queried for.");
             }
@@ -802,6 +871,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
+                    case RELEASE:
+                    case VERSION:
                     case CLINICAL_ANALYSIS_ID:
                     case DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
@@ -812,6 +883,17 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             } catch (Exception e) {
                 logger.error("Error with " + entry.getKey() + " " + entry.getValue());
                 throw new CatalogDBException(e);
+            }
+        }
+
+        // If the user doesn't look for a concrete version...
+        if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())) {
+            if (queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
+                // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
+                andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
+            } else {
+                // Otherwise, we will always look for the latest version
+                andBsonList.add(Filters.eq(LAST_OF_VERSION, true));
             }
         }
 
