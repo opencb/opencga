@@ -246,8 +246,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                 new TieringInterpretationAnalysisParams(cliOptions.clinicalAnalysis,
                         cliOptions.panels,
                         cliOptions.penetrance,
-                        cliOptions.secondary,
-                        cliOptions.index),
+                        cliOptions.secondary),
                 getCommonParamsFromClinicalOptions(clinicalCommandOptions.tieringCommandOptions.study)
         );
     }
@@ -259,8 +258,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                 new TeamInterpretationAnalysisParams(clinicalCommandOptions.teamCommandOptions.clinicalAnalysis,
                         cliOptions.panels,
                         cliOptions.familySeggregation,
-                        cliOptions.secondary,
-                        cliOptions.index),
+                        cliOptions.secondary),
                 getCommonParamsFromClinicalOptions(clinicalCommandOptions.teamCommandOptions.study)
         );
     }
@@ -316,8 +314,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         .setCustomAnnotation(cliOptions.annotations)
                         .setPanel(cliOptions.panel)
                         .setTrait(cliOptions.trait)
-                        .setSecondary(cliOptions.secondary)
-                        .setIndex(cliOptions.index),
+                        .setSecondary(cliOptions.secondary),
                 getCommonParamsFromClinicalOptions(clinicalCommandOptions.teamCommandOptions.study)
         );
     }
@@ -329,8 +326,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                 new CancerTieringInterpretationAnalysisParams()
                         .setClinicalAnalysis(cliOptions.clinicalAnalysis)
                         .setDiscardedVariants(cliOptions.discardedVariants)
-                        .setSecondary(cliOptions.secondary)
-                        .setIndex(cliOptions.index),
+                        .setSecondary(cliOptions.secondary),
                 getCommonParamsFromClinicalOptions(clinicalCommandOptions.cancerTieringCommandOptions.study)
         );
     }

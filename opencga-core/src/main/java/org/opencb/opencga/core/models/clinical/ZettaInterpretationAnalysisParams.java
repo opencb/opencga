@@ -72,9 +72,6 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
     @JsonProperty(defaultValue = "false")
     private boolean secondary; // secondary interpretation (vs primary interpretation)
 
-    @JsonProperty(defaultValue = "true")
-    private boolean index;     // save interpretation in catalog DB
-
     public ZettaInterpretationAnalysisParams() {
     }
 
@@ -89,7 +86,7 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
                                              String populationFrequencyRef, String populationFrequencyMaf, String transcriptFlag,
                                              String geneTraitId, String go, String expression, String proteinKeyword, String drug,
                                              String functionalScore, String clinicalSignificance, String customAnnotation, String panel,
-                                             String trait, boolean secondary, boolean index) {
+                                             String trait, boolean secondary) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.id = id;
         this.region = region;
@@ -140,7 +137,6 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         this.panel = panel;
         this.trait = trait;
         this.secondary = secondary;
-        this.index = index;
     }
 
     public String getClinicalAnalysis() {
@@ -590,15 +586,6 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
 
     public ZettaInterpretationAnalysisParams setSecondary(boolean secondary) {
         this.secondary = secondary;
-        return this;
-    }
-
-    public boolean isIndex() {
-        return index;
-    }
-
-    public ZettaInterpretationAnalysisParams setIndex(boolean index) {
-        this.index = index;
         return this;
     }
 }

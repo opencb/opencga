@@ -71,9 +71,6 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
         public boolean secondary;
 
-        @Parameter(names = {"--" + INDEX_PARAM_NAME}, description = "Index interprtation by storing it in catalog DB", arity = 0)
-        public boolean index;
-
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
 
@@ -101,9 +98,6 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
         public boolean secondary;
-
-        @Parameter(names = {"--" + INDEX_PARAM_NAME}, description = "Index interprtation by storing it in catalog DB", arity = 0)
-        public boolean index;
 
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
@@ -229,9 +223,6 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
         public boolean secondary;
-
-        @Parameter(names = {"--" + INDEX_PARAM_NAME}, description = "Index interprtation by storing it in catalog DB", arity = 0)
-        public boolean index;
 
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;

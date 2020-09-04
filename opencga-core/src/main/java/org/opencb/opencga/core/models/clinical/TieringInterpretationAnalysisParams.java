@@ -16,19 +16,15 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
     @JsonProperty(defaultValue = "false")
     private boolean secondary; // secondary interpretation (vs primary interpretation)
 
-    @JsonProperty(defaultValue = "true")
-    private boolean index;     // save interpretation in catalog DB
-
     public TieringInterpretationAnalysisParams() {
     }
 
     public TieringInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, ClinicalProperty.Penetrance penetrance,
-                                               boolean secondary, boolean index) {
+                                               boolean secondary) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.panels = panels;
         this.penetrance = penetrance;
         this.secondary = secondary;
-        this.index = index;
     }
 
     public String getClinicalAnalysis() {
@@ -64,15 +60,6 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
 
     public TieringInterpretationAnalysisParams setSecondary(boolean secondary) {
         this.secondary = secondary;
-        return this;
-    }
-
-    public boolean isIndex() {
-        return index;
-    }
-
-    public TieringInterpretationAnalysisParams setIndex(boolean index) {
-        this.index = index;
         return this;
     }
 }

@@ -15,19 +15,15 @@ public class TeamInterpretationAnalysisParams extends ToolParams {
     @JsonProperty(defaultValue = "false")
     private boolean secondary; // secondary interpretation (vs primary interpretation)
 
-    @JsonProperty(defaultValue = "true")
-    private boolean index;     // save interpretation in catalog DB
-
     public TeamInterpretationAnalysisParams() {
     }
 
     public TeamInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, String familySegregation,
-                                            boolean secondary, boolean index) {
+                                            boolean secondary) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.panels = panels;
         this.familySegregation = familySegregation;
         this.secondary = secondary;
-        this.index = index;
     }
 
     public String getClinicalAnalysis() {
@@ -63,15 +59,6 @@ public class TeamInterpretationAnalysisParams extends ToolParams {
 
     public TeamInterpretationAnalysisParams setSecondary(boolean secondary) {
         this.secondary = secondary;
-        return this;
-    }
-
-    public boolean isIndex() {
-        return index;
-    }
-
-    public TeamInterpretationAnalysisParams setIndex(boolean index) {
-        this.index = index;
         return this;
     }
 }
