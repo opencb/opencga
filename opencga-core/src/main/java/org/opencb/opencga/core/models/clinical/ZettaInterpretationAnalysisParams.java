@@ -65,8 +65,7 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
 
     private String trait;
 
-    @JsonProperty(defaultValue = "false")
-    private boolean secondary; // secondary interpretation (vs primary interpretation)
+    private boolean primary; // primary interpretation (vs secondary interpretation)
 
     public ZettaInterpretationAnalysisParams() {
     }
@@ -81,7 +80,7 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
                                              String populationFrequencyRef, String populationFrequencyMaf, String transcriptFlag,
                                              String geneTraitId, String go, String expression, String proteinKeyword, String drug,
                                              String functionalScore, String clinicalSignificance, String customAnnotation, String panel,
-                                             String trait, boolean secondary) {
+                                             String trait, boolean primary) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.id = id;
         this.region = region;
@@ -127,7 +126,7 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         this.customAnnotation = customAnnotation;
         this.panel = panel;
         this.trait = trait;
-        this.secondary = secondary;
+        this.primary = primary;
     }
 
     @Override
@@ -178,7 +177,7 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         sb.append(", customAnnotation='").append(customAnnotation).append('\'');
         sb.append(", panel='").append(panel).append('\'');
         sb.append(", trait='").append(trait).append('\'');
-        sb.append(", secondary=").append(secondary);
+        sb.append(", primary=").append(primary);
         sb.append('}');
         return sb.toString();
     }
@@ -588,12 +587,12 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
-    public boolean isSecondary() {
-        return secondary;
+    public boolean isPrimary() {
+        return primary;
     }
 
-    public ZettaInterpretationAnalysisParams setSecondary(boolean secondary) {
-        this.secondary = secondary;
+    public ZettaInterpretationAnalysisParams setPrimary(boolean primary) {
+        this.primary = primary;
         return this;
     }
 }

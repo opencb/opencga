@@ -13,17 +13,27 @@ public class TeamInterpretationAnalysisParams extends ToolParams {
     private String familySegregation;
 
     @JsonProperty(defaultValue = "false")
-    private boolean secondary; // secondary interpretation (vs primary interpretation)
+    private boolean primary; // primary interpretation (vs secondary interpretation)
 
     public TeamInterpretationAnalysisParams() {
     }
 
-    public TeamInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, String familySegregation,
-                                            boolean secondary) {
+    public TeamInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, String familySegregation, boolean primary) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.panels = panels;
         this.familySegregation = familySegregation;
-        this.secondary = secondary;
+        this.primary = primary;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("TeamInterpretationAnalysisParams{");
+        sb.append("clinicalAnalysis='").append(clinicalAnalysis).append('\'');
+        sb.append(", panels=").append(panels);
+        sb.append(", familySegregation='").append(familySegregation).append('\'');
+        sb.append(", primary=").append(primary);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getClinicalAnalysis() {
@@ -53,12 +63,12 @@ public class TeamInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
-    public boolean isSecondary() {
-        return secondary;
+    public boolean isPrimary() {
+        return primary;
     }
 
-    public TeamInterpretationAnalysisParams setSecondary(boolean secondary) {
-        this.secondary = secondary;
+    public TeamInterpretationAnalysisParams setPrimary(boolean primary) {
+        this.primary = primary;
         return this;
     }
 }

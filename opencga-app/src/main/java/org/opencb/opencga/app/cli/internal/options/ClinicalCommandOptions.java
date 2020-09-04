@@ -68,8 +68,8 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + PENETRANCE_PARAM_NAME}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
         public ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
 
-        @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
-        public boolean secondary;
+        @Parameter(names = {"--" + PRIMARY_INTERPRETATION_PARAM_NAME}, description = "Primary interpretation", arity = 0)
+        public boolean primary;
 
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
@@ -96,8 +96,8 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + FAMILY_SEGREGATION_PARAM_NAME}, description = "Family segregation", arity = 1)
         public String familySeggregation;
 
-        @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
-        public boolean secondary;
+        @Parameter(names = {"--" + PRIMARY_INTERPRETATION_PARAM_NAME}, description = "Primary interpretation", arity = 0)
+        public boolean primary;
 
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
@@ -215,8 +215,8 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
 
-        @Parameter(names = {"--" + SECONDARY_INTERPRETATION_PARAM_NAME}, description = "Secondary interpretation", arity = 0)
-        public boolean secondary;
+        @Parameter(names = {"--" + PRIMARY_INTERPRETATION_PARAM_NAME}, description = "Primary interpretation", arity = 0)
+        public boolean primary;
 
 ////        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
 ////        public boolean includeUntieredVariants;
@@ -239,6 +239,9 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--" + DISCARDED_VARIANTS_PARAM_NAME}, description = "Comma separated list of variant IDs to discard", arity = 1)
         public List<String> discardedVariants;
+
+        @Parameter(names = {"--" + PRIMARY_INTERPRETATION_PARAM_NAME}, description = "Primary interpretation", arity = 0)
+        public boolean primary;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
         public String outdir;

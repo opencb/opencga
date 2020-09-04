@@ -12,15 +12,25 @@ public class CancerTieringInterpretationAnalysisParams extends ToolParams {
     private List<String> discardedVariants;
 
     @JsonProperty(defaultValue = "false")
-    private boolean secondary; // secondary interpretation (vs primary interpretation)
+    private boolean primary; // primary interpretation (vs secondary interpretation)
 
     public CancerTieringInterpretationAnalysisParams() {
     }
 
-    public CancerTieringInterpretationAnalysisParams(String clinicalAnalysis, List<String> discardedVariants, boolean secondary) {
+    public CancerTieringInterpretationAnalysisParams(String clinicalAnalysis, List<String> discardedVariants, boolean primary) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.discardedVariants = discardedVariants;
-        this.secondary = secondary;
+        this.primary = primary;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("CancerTieringInterpretationAnalysisParams{");
+        sb.append("clinicalAnalysis='").append(clinicalAnalysis).append('\'');
+        sb.append(", discardedVariants=").append(discardedVariants);
+        sb.append(", primary=").append(primary);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getClinicalAnalysis() {
@@ -41,12 +51,12 @@ public class CancerTieringInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
-    public boolean isSecondary() {
-        return secondary;
+    public boolean isPrimary() {
+        return primary;
     }
 
-    public CancerTieringInterpretationAnalysisParams setSecondary(boolean secondary) {
-        this.secondary = secondary;
+    public CancerTieringInterpretationAnalysisParams setPrimary(boolean primary) {
+        this.primary = primary;
         return this;
     }
 }

@@ -59,7 +59,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     public static final String PENETRANCE_PARAM_NAME = "penetrance";
     public final static String DISCARDED_VARIANTS_PARAM_NAME = "discarded-variants";
 
-    public final static String SECONDARY_INTERPRETATION_PARAM_NAME = "secondary";
+    public final static String PRIMARY_INTERPRETATION_PARAM_NAME = "secondary";
 
     protected ClinicalInterpretationManager clinicalInterpretationManager;
 
