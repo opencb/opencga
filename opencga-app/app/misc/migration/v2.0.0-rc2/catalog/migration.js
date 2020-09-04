@@ -328,6 +328,45 @@ migrateCollection("clinical", {"analyst.id": {"$exists": false}}, {'analyst': 1,
 db.clinical.update({"comments": null}, {"$set": {"comments": []}}, {"multi": true});
 db.clinical.update({"audit": {"$exists": false}}, {"$set": {"audit": []}, "$unset": {"alerts": ""}}, {"multi": true});
 
+// # 1649
+migrateCollection("interpretation", {"_lastOfVersion": {"$exists": false}}, {uid:1, studyUid: 1}, function(bulk, doc) {
+    var set = {
+        'release': 1,
+        'version': 1,
+        '_releaseFromVersion': [1],
+        '_lastOfVersion': true,
+        '_lastOfRelease': true,
+        'uid': NumberLong(doc.uid),
+        'studyUid': NumberLong(doc.studyUid)
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": set});
+});
+
+// # 1649
+migrateCollection("clinical", {"interpretation.version": {"$exists": false}}, {interpretation: 1, secondaryInterpretations: 1}, function(bulk, doc) {
+    var set = {};
+
+    if (isNotUndefinedOrNull(doc.interpretation) && isNotUndefinedOrNull(doc.interpretation.uid)) {
+        set['interpretation'] = {
+            'uid': doc.interpretation.uid,
+            'version': 1
+        };
+    }
+
+    if (isNotEmptyArray(doc.secondaryInterpretations)) {
+        doc.secondaryInterpretations.forEach(function (interpretation) {
+            interpretation['version'] = 1;
+        });
+        set['secondaryInterpretations'] = doc.secondaryInterpretations;
+    }
+
+    if (isNotEmpty(set)) {
+        bulk.find({"_id": doc._id}).updateOne({"$set": set});
+    }
+});
+
+
 // # Issue 1642
 db.clinical.update({"locked": {"$exists": false}}, {"$set": {"locked": false}}, {"multi": true});
 
