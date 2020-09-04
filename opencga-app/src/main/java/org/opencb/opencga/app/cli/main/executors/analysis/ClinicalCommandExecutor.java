@@ -286,8 +286,6 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         .setCohortStatsMaf(cliOptions.basicQueryOptions.maf)
                         .setCohortStatsMgf(cliOptions.mgf)
                         .setCohortStatsPass(cliOptions.cohortStatsPass)
-                        .setMissingAlleles(cliOptions.missingAlleleCount)
-                        .setMissingGenotypes(cliOptions.missingGenotypeCount)
                         .setScore(cliOptions.score)
                         .setFamily(cliOptions.family)
                         .setFamilyDisorder(cliOptions.familyPhenotype)

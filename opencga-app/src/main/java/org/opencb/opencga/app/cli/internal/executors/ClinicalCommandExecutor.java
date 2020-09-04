@@ -189,8 +189,6 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         query.putIfNotNull("cohortStatsMaf", cliOptions.basicQueryOptions.maf);
         query.putIfNotNull("cohortStatsMgf", cliOptions.mgf);
         query.putIfNotNull("cohortStatsPass", cliOptions.cohortStatsPass);
-        query.putIfNotNull("missingAlleles", cliOptions.missingAlleleCount);
-        query.putIfNotNull("missingGenotypes", cliOptions.missingGenotypeCount);
         query.putIfNotNull("score", cliOptions.score);
 
         // Annotation filters

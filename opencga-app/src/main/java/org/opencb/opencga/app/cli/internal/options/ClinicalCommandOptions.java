@@ -187,12 +187,6 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--cohort-stats-pass"}, description = STATS_PASS_FREQ_DESCR)
         public String cohortStatsPass;
 
-        @Parameter(names = {"--stats-missing-allele"}, description = MISSING_ALLELES_DESCR)
-        public String missingAlleleCount;
-
-        @Parameter(names = {"--stats-missing-genotype"}, description = MISSING_GENOTYPES_DESCR)
-        public String missingGenotypeCount;
-
         @Parameter(names = {"--annotations", "--output-vcf-info"}, description = "Set variant annotation to return in the INFO column. " +
                 "Accepted values include 'all', 'default' or a comma-separated list such as 'gene,biotype,consequenceType'", arity = 1)
         public String annotations;
