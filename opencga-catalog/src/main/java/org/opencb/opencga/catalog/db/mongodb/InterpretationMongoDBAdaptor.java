@@ -112,56 +112,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         switch (action) {
             case PRIMARY:
-                if (ca.getInterpretation() != null && StringUtils.isNotEmpty(ca.getInterpretation().getId())) {
-                    throw new CatalogDBException("Found primary interpretation '" + ca.getInterpretation().getId()
-                            + "' for clinical analysis.");
-                }
-
                 // Set interpretation in ClinicalAnalysis
                 ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
-
-                QueryOptions options = new QueryOptions();
-                for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
-                    if (secondaryInterpretation.getUid() == interpretation.getUid()) {
-                        // Remove interpretation from secondary interpretations if it was there
-                        params.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                                Collections.singletonList(interpretation));
-                        ObjectMap updateAction = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                                ParamUtils.UpdateAction.REMOVE);
-                        options.put(Constants.ACTIONS, updateAction);
-
-                        break;
-                    }
-                }
-
-                clinicalDBAdaptor.update(clientSession, ca, params, options);
-                break;
-            case PRIMARY_OVERWRITE:
-                if (ca.getInterpretation() != null && StringUtils.isNotEmpty(ca.getInterpretation().getId())) {
-                    // Delete interpretation
-                    delete(clientSession, ca.getInterpretation(), ca);
-                }
-
-                // Set interpretation in ClinicalAnalysis
-                params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
-
-                // Remove interpretation from secondary interpretations if it was there
-                options = new QueryOptions();
-                for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
-                    if (secondaryInterpretation.getUid() == interpretation.getUid()) {
-                        params.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                                Collections.singletonList(interpretation));
-                        ObjectMap updateAction = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                                ParamUtils.UpdateAction.REMOVE);
-                        options = new QueryOptions(Constants.ACTIONS, updateAction);
-                    }
-                }
-
-                clinicalDBAdaptor.update(clientSession, ca, params, options);
-                break;
-            case PRIMARY_OVERWRITE_AND_SAVE:
-                // Set interpretation in ClinicalAnalysis
-                params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
 
                 boolean isSecondary = false; // New primary interpretation is already in the array of secondary interpretations?
                 boolean existsPrimary = false; // Is there any primary interpretation to be moved to the array of secondary interpretations?
@@ -176,7 +128,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     }
                 }
 
-                options = new QueryOptions();
+                QueryOptions options = new QueryOptions();
                 if (existsPrimary && isSecondary) {
                     List<Interpretation> interpretationList = new ArrayList<>(ca.getSecondaryInterpretations().size());
 
@@ -241,7 +193,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
-        filterList.add(Filters.eq(QueryParams.INTERNAL_STATUS.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = interpretationCollection.count(clientSession, bson);

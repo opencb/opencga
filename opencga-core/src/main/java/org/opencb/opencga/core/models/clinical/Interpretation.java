@@ -109,4 +109,47 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         this.release = release;
         return this;
     }
+
+    @Override
+    public Interpretation setDescription(String description) {
+        super.setDescription(description);
+        return this;
+    }
+
+    @Override
+    public Interpretation setClinicalAnalysisId(String clinicalAnalysisId) {
+        super.setClinicalAnalysisId(clinicalAnalysisId);
+        return this;
+    }
+
+    @Override
+    public Interpretation setAnalyst(ClinicalAnalyst analyst) {
+        super.setAnalyst(analyst);
+        return this;
+    }
+
+    @Override
+    public Interpretation setMethods(List<InterpretationMethod> methods) {
+        super.setMethods(methods);
+        return this;
+    }
+
+    @Override
+    public Interpretation setPrimaryFindings(List<ClinicalVariant> primaryFindings) {
+        super.setPrimaryFindings(primaryFindings);
+        return this;
+    }
+
+    @Override
+    public Interpretation setSecondaryFindings(List<ClinicalVariant> secondaryFindings) {
+        super.setSecondaryFindings(secondaryFindings);
+        return this;
+    }
+
+    @Override
+    public Interpretation setComments(List<ClinicalComment> comments) {
+        super.setComments(comments);
+        return this;
+    }
+
 }

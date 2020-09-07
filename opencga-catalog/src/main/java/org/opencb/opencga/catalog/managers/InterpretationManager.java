@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.commons.datastore.core.Event;
@@ -34,6 +35,7 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -192,7 +194,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     public OpenCGAResult<Interpretation> create(String studyStr, String clinicalAnalysisStr, Interpretation interpretation,
-                                                ParamUtils.SaveInterpretationAs action, QueryOptions options, String token)
+                                                ParamUtils.SaveInterpretationAs saveInterpretationAs, QueryOptions options, String token)
             throws CatalogException {
         // We check if the user can create interpretations in the clinical analysis
         String userId = userManager.getUserId(token);
@@ -202,6 +204,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("study", studyStr)
                 .append("clinicalAnalysis", clinicalAnalysisStr)
                 .append("interpretation", interpretation)
+                .append("saveAs", saveInterpretationAs)
                 .append("options", options)
                 .append("token", token);
 
@@ -214,7 +217,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
             validateNewInterpretation(study, interpretation, clinicalAnalysis.getId(), userId);
 
-            OpenCGAResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, action);
+            OpenCGAResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, saveInterpretationAs);
             OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
                     QueryOptions.empty());
             queryResult.setTime(result.getTime() + queryResult.getTime());
@@ -270,6 +273,57 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             user = result.first();
         }
         interpretation.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
+    }
+
+    public OpenCGAResult<Interpretation> clear(String studyStr, String clinicalAnalysisId, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("clinicalAnalysisId", clinicalAnalysisId)
+                .append("token", token);
+
+        String interpretationId = "";
+        String interpretationUuid = "";
+
+        try {
+            OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
+                    clinicalAnalysisId, ClinicalAnalysisManager.INCLUDE_CLINICAL_INTERPRETATIONS, userId);
+            if (clinicalResult.getNumResults() == 0) {
+                throw new CatalogException("ClinicalAnalysis '" + clinicalAnalysisId + "' not found");
+            }
+            if (clinicalResult.first().getInterpretation() == null
+                    || StringUtils.isEmpty(clinicalResult.first().getInterpretation().getId())) {
+                throw new CatalogException("No primary Interpretation found for ClinicalAnalysis '" + clinicalAnalysisId + "'");
+            }
+
+            interpretationId = clinicalResult.first().getInterpretation().getId();
+            interpretationUuid = clinicalResult.first().getInterpretation().getUuid();
+
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
+            actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
+            actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.UpdateAction.SET);
+            QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+            InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
+                    Collections.emptyList(), TimeUtils.getTime(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                    new ObjectMap());
+
+            OpenCGAResult result = update(study, clinicalResult.first().getInterpretation(), params, null, options, userId);
+
+            auditManager.audit(userId, Enums.Action.CLEAR, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.CLEAR, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+
     }
 
     public OpenCGAResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams,
@@ -598,12 +652,17 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
     @Override
     public OpenCGAResult delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, ids, params, false, token);
+        throw new NotImplementedException("Use other implemented delete method");
     }
 
-    private OpenCGAResult delete(String studyStr, List<String> ids, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult delete(String studyStr, String clinicalAnalysisId, List<String> interpretationIds, String token)
             throws CatalogException {
-        if (ids == null || ListUtils.isEmpty(ids)) {
+        return delete(studyStr, clinicalAnalysisId, interpretationIds, false, token);
+    }
+
+    public OpenCGAResult delete(String studyStr, String clinicalAnalysisId, List<String> interpretationIds, boolean ignoreException,
+                                 String token) throws CatalogException {
+        if (interpretationIds == null || ListUtils.isEmpty(interpretationIds)) {
             throw new CatalogException("Missing list of interpretation ids");
         }
 
@@ -614,8 +673,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("interpretationIds", ids)
-                .append("params", params)
+                .append("clinicalAnalysisId", clinicalAnalysisId)
+                .append("interpretationIds", interpretationIds)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
 
@@ -629,9 +688,23 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             throw e;
         }
 
+        ClinicalAnalysis clinicalAnalysis;
+        try {
+            clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisId,
+                    ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
+            if (checkPermissions) {
+                authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
+                        userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+            }
+        } catch (CatalogException e) {
+            auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
         auditManager.initAuditBatch(operationId);
         OpenCGAResult result = OpenCGAResult.empty();
-        for (String id : ids) {
+        for (String id : interpretationIds) {
             String interpretationId = id;
             String interpretationUuid = "";
             try {
@@ -645,12 +718,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 interpretationId = interpretation.getId();
                 interpretationUuid = interpretation.getUuid();
 
-                ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
-                        interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_INTERPRETATIONS, userId).first();
-
-                if (checkPermissions) {
-                    authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
-                            userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE);
+                if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysis.getId())) {
+                    throw new CatalogException("Cannot delete interpretation '" + interpretationId + "': Interpretation does not belong"
+                            + " to ClinicalAnalysis '" + clinicalAnalysis.getId() + "'.");
                 }
 
                 // Check if the interpretation can be deleted
@@ -679,84 +749,84 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
     @Override
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+        throw new NotImplementedException("Use other delete implementation");
     }
-
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
-            throws CatalogException {
-        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        params = ParamUtils.defaultObject(params, ObjectMap::new);
-
-        OpenCGAResult result = OpenCGAResult.empty();
-
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-
-        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("query", new Query(query))
-                .append("params", params)
-                .append("ignoreException", ignoreException)
-                .append("token", token);
-
-        // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-        boolean checkPermissions;
-
-        // We try to get an iterator containing all the samples to be deleted
-        DBIterator<Interpretation> iterator;
-        try {
-            fixQueryObject(finalQuery);
-            finalQuery.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-            iterator = interpretationDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_INTERPRETATION_IDS, userId);
-
-            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
-        } catch (CatalogException e) {
-            auditManager.auditDelete(operationUuid, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-
-        auditManager.initAuditBatch(operationUuid);
-        while (iterator.hasNext()) {
-            Interpretation interpretation = iterator.next();
-
-            try {
-                ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
-                        interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_INTERPRETATIONS, userId).first();
-
-                if (checkPermissions) {
-                    authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
-                            userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE);
-                }
-
-                // Check if the interpretation can be deleted
-                // checkCanBeDeleted(study.getUid(), interpretation, params.getBoolean(Constants.FORCE, false));
-
-                result.append(interpretationDBAdaptor.delete(interpretation));
-
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
-                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            } catch (CatalogException e) {
-                String errorMsg = "Cannot delete interpretation " + interpretation.getId() + ": " + e.getMessage();
-
-                Event event = new Event(Event.Type.ERROR, interpretation.getId(), e.getMessage());
-                result.getEvents().add(event);
-
-                logger.error(errorMsg);
-                auditManager.auditDelete(operationUuid, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
-                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            }
-        }
-        auditManager.finishAuditBatch(operationUuid);
-
-        return endResult(result, ignoreException);
-    }
+//
+//    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+//            throws CatalogException {
+//        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+//        params = ParamUtils.defaultObject(params, ObjectMap::new);
+//
+//        OpenCGAResult result = OpenCGAResult.empty();
+//
+//        String userId = catalogManager.getUserManager().getUserId(token);
+//        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+//
+//        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+//
+//        ObjectMap auditParams = new ObjectMap()
+//                .append("study", studyStr)
+//                .append("query", new Query(query))
+//                .append("params", params)
+//                .append("ignoreException", ignoreException)
+//                .append("token", token);
+//
+//        // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+//        boolean checkPermissions;
+//
+//        // We try to get an iterator containing all the samples to be deleted
+//        DBIterator<Interpretation> iterator;
+//        try {
+//            fixQueryObject(finalQuery);
+//            finalQuery.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+//
+//            iterator = interpretationDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_INTERPRETATION_IDS, userId);
+//
+//            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+//            checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+//        } catch (CatalogException e) {
+//            auditManager.auditDelete(operationUuid, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
+//                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+//            throw e;
+//        }
+//
+//        auditManager.initAuditBatch(operationUuid);
+//        while (iterator.hasNext()) {
+//            Interpretation interpretation = iterator.next();
+//
+//            try {
+//                ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
+//                        interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_INTERPRETATIONS, userId).first();
+//
+//                if (checkPermissions) {
+//                    authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
+//                            userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE);
+//                }
+//
+//                // Check if the interpretation can be deleted
+//                // checkCanBeDeleted(study.getUid(), interpretation, params.getBoolean(Constants.FORCE, false));
+//
+//                result.append(interpretationDBAdaptor.delete(interpretation));
+//
+//                auditManager.auditDelete(operationUuid, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
+//                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
+//                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+//            } catch (CatalogException e) {
+//                String errorMsg = "Cannot delete interpretation " + interpretation.getId() + ": " + e.getMessage();
+//
+//                Event event = new Event(Event.Type.ERROR, interpretation.getId(), e.getMessage());
+//                result.getEvents().add(event);
+//
+//                logger.error(errorMsg);
+//                auditManager.auditDelete(operationUuid, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
+//                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
+//                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+//            }
+//        }
+//        auditManager.finishAuditBatch(operationUuid);
+//
+//        return endResult(result, ignoreException);
+//    }
 
     @Override
     public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)

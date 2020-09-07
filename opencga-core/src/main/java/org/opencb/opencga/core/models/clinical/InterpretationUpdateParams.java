@@ -43,6 +43,12 @@ public class InterpretationUpdateParams {
     public InterpretationUpdateParams() {
     }
 
+    public InterpretationUpdateParams(String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
+                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
+                                      List<ClinicalComment> comments, Map<String, Object> attributes) {
+        this(null, description, analyst, methods, creationDate, primaryFindings, secondaryFindings, comments, attributes);
+    }
+
     public InterpretationUpdateParams(String id, String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
                                       String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
                                       List<ClinicalComment> comments, Map<String, Object> attributes) {

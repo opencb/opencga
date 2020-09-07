@@ -179,9 +179,7 @@ public class ParamUtils {
     }
 
     public enum SaveInterpretationAs {
-        PRIMARY,                    // Write the interpretation as the primary. It should fail if there is any other acting as primary
-        PRIMARY_OVERWRITE,          // Write the interpretation as the primary and delete the current primary one (if any)
-        PRIMARY_OVERWRITE_AND_SAVE, // Write the interpretation as the primary and move the current primary one (if any) as a secondary
+        PRIMARY,                    // Write the interpretation as the primary and move the current primary one (if any) as a secondary
         SECONDARY                   // Add interpretation as a secondary one
     }
 
