@@ -3,8 +3,11 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "VMName": {
+      "type": "string"
+    },
+    "publicIPAddressDNS": {
       "type": "string",
-      "defaultValue": "[concat(resourceGroup().name, '-login01')]"
+      "defaultValue": "[concat(parameters('VMName'), '-', uniquestring(concat(resourceGroup().id, parameters('VMName'))) )]"
     },
     "VMSize": {
       "type": "string",
@@ -79,7 +82,6 @@
     "diskName": "[concat(parameters('VMName'), '-disk')]",
     "publicIPAddressName": "[concat(parameters('VMName'), '-ip')]",
     "publicIPAddressType": "Dynamic",
-    "publicIPAddressDNS": "[concat(resourceGroup().name, '-', uniquestring(concat(resourceGroup().id, parameters('VMName'))) )]",
     "cloudInitArray": [
       "#cloud-config",
       "",
@@ -102,7 +104,7 @@
       "properties": {
         "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
         "dnsSettings": {
-          "domainNameLabel": "[variables('publicIPAddressDNS')]"
+          "domainNameLabel": "[parameters('publicIPAddressDNS')]"
         }
       }
     },

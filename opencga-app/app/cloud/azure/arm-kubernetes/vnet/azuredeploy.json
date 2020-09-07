@@ -158,7 +158,8 @@
         {
             "type": "Microsoft.Network/virtualNetworks/subnets",
             "apiVersion": "2018-08-01",
-            "name": "[parameters('config').subnets.aci.name]",
+            "name": "[concat(parameters('config').name, '/', parameters('config').subnets.aci.name)]",
+            "location": "[resourceGroup().location]",
             "condition": "[parameters('createAciSubnet')]",
             "properties": {
                 "addressPrefix": "[parameters('config').subnets.aci.addressPrefix]",

@@ -27,19 +27,26 @@ function getOutput() {
   jq -r '.properties.outputs.'${1}'.value' ${deploymentOut}
 }
 
+function getParameter() {
+  jq -r '.properties.parameters.'${1}'.value' ${deploymentOut}
+}
+
 function getHelmParam() {
   # Commas must be scaped when passed as helm parameter
   getOutput ${1} | sed 's/,/\\,/g'
 }
 
-
+clusterName="$(getParameter clusterName)"
 echo "# Deploy kubernetes"
+echo "# Configuring context $clusterName"
 
 az account set --subscription "${subscriptionName}"
 # deploy opencga
-az aks get-credentials -n "$(getOutput "aksClusterName")" -g "$(getOutput "aksResourceGroupName")" --overwrite-existing
+az aks get-credentials -n "$(getOutput "aksClusterName")" -g "$(getOutput "aksResourceGroupName")" --overwrite-existing --context "$clusterName"
 
-K8S_NAMESPACE=$(getOutput "aksResourceGroupName")
+kubectl config use-context "$clusterName"
+
+K8S_NAMESPACE="$clusterName"
 # Create a namespace for opencga
 if ! kubectl get namespace $K8S_NAMESPACE; then
     kubectl create namespace $K8S_NAMESPACE

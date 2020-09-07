@@ -28,7 +28,28 @@
   },
   "variables": {
     "privateDnsZonesName": "privatelink.file.core.windows.net",
-    "privateEndpointName" : "[concat(parameters('storageAccountName'), 'privatelink')]"
+    "privateEndpointName" : "[concat(parameters('storageAccountName'), 'privatelink')]",
+    "virtualNetworkRulesBase" : [
+      {
+        "id": "[parameters('loginSubnetId')]",
+        "action": "Allow",
+        "state": "Succeeded"
+      },
+      {
+        "id": "[parameters('kubernetesSubnetId')]",
+        "action": "Allow",
+        "state": "Succeeded"
+      }
+    ],
+    "virtualNetworkRulesAci" : [
+      {
+        "id": "[parameters('aciSubnetId')]",
+        "action": "Allow",
+        "state": "Succeeded"
+      }
+    ],
+    "emptyArray" : [],
+    "virtualNetworkRules" : "[concat( variables('virtualNetworkRulesBase') , if ( equals(parameters('aciSubnetId'), ''), variables('emptyArray'), variables('virtualNetworkRulesAci') ) )]"
   },
   "resources": [
     {
@@ -39,23 +60,7 @@
       "properties": {
         "networkAcls": {
           "bypass": "AzureServices",
-          "virtualNetworkRules": [
-            {
-              "id": "[parameters('loginSubnetId')]",
-              "action": "Allow",
-              "state": "Succeeded"
-            },
-            {
-              "id": "[parameters('aciSubnetId')]",
-              "action": "Allow",
-              "state": "Succeeded"
-            },
-            {
-              "id": "[parameters('kubernetesSubnetId')]",
-              "action": "Allow",
-              "state": "Succeeded"
-            }
-          ],
+          "virtualNetworkRules": "[variables('virtualNetworkRules')]",
           "ipRules": [
           ],
           "defaultAction": "Deny"

@@ -154,7 +154,7 @@
         },
         "jobsAgentPoolOrVirtualNode": {
             "type": "string",
-             "defaultValue": "AgentPool",
+            "defaultValue": "AgentPool",
             "allowedValues": [
                 "AgentPool",
                 "VirtualNode"
@@ -183,6 +183,13 @@
             "defaultValue": "Standard_D2_v3",
             "metadata": {
                 "description": "Size of the Login Node VM"
+            }
+        },
+        "loginNodePublicIPAddressDNS": {
+            "type": "string",
+            "defaultValue": "[concat(parameters('clusterName'), '-', uniquestring(concat(parameters('location'), parameters('clusterName'))) )]",
+            "metadata": {
+                "description": "Login node public IP address DNS. There are a number of reserved words that can not be part of the DNS name, such as 'windows' or 'login'. Get more information at https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/error-reserved-resource-name"
             }
         },
         "networkCIDR": {
@@ -366,7 +373,8 @@
                 }
             }
         ],
-        "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]"
+        "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]",
+        "createAciSubnet": "[equals(parameters('jobsAgentPoolOrVirtualNode'), 'VirtualNode')]"
     },
     "resources": [
         {
@@ -395,11 +403,11 @@
                     "loginNetworkSecurityGroupName": {
                         "value" : "[parameters('loginNetworkSecurityGroupName')]"
                     },
-                    "cidr": {
+                    "config": {
                         "value" : "[parameters('networkCIDR').vnet]"
                     },
                     "createAciSubnet": {
-                        "value": "[equals(parameters('jobsAgentPoolOrVirtualNode'),'VirtualNode')]"
+                        "value": "[variables('createAciSubnet')]"
                     }
                 }
             }
@@ -455,7 +463,7 @@
                         "value" : "[reference('vnet').outputs.loginSubnetId.value]"
                     },
                     "aciSubnetId": {
-                        "value" : "[reference('vnet').outputs.aciSubnetId.value]"
+                        "value" : "[if (variables('createAciSubnet'), reference('vnet').outputs.aciSubnetId.value, '')]"
                     },
                     "kubernetesSubnetId": {
                         "value" : "[reference('vnet').outputs.kubernetesSubnetId.value]"
@@ -689,6 +697,9 @@
                     },
                     "VMSize" : {
                         "value" : "[parameters('loginNodeVMSize')]"
+                    },
+                    "publicIPAddressDNS" : {
+                        "value" : "[parameters('loginNodePublicIPAddressDNS')]"
                     },
                     "adminUsername" : {
                         "value": "[parameters('adminUsername')]"
