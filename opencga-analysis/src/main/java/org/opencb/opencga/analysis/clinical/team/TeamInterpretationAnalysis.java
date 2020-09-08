@@ -20,6 +20,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -45,6 +46,11 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
 
     private ClinicalAnalysis clinicalAnalysis;
     private List<DiseasePanel> diseasePanels;
+
+    @Override
+    protected InterpretationMethod getInterpretationMethod() {
+        return getInterpretationMethod(ID);
+    }
 
     @Override
     protected void check() throws Exception {
@@ -87,6 +93,9 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
             throw new ToolException("Disease panels not found for TEAM interpretation analysis: "
                     + StringUtils.join(diseasePanelIds, ","));
         }
+
+        // Check interpretation method
+        checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
 
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);

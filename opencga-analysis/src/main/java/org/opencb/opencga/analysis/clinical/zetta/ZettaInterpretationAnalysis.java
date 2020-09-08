@@ -18,12 +18,15 @@ package org.opencb.opencga.analysis.clinical.zetta;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -34,6 +37,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY;
@@ -53,6 +57,11 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
 
     private ClinicalAnalysis clinicalAnalysis;
     private List<DiseasePanel> diseasePanels;
+
+    @Override
+    protected InterpretationMethod getInterpretationMethod() {
+        return getInterpretationMethod(ID);
+    }
 
     @Override
     protected void check() throws Exception {
@@ -155,6 +164,9 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
                 System.out.println("tier2, num. cts = " + config.getTier2().getConsequenceTypes().size());
             }
         }
+
+        // Check interpretation method
+        checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
     }
 
     @Override
