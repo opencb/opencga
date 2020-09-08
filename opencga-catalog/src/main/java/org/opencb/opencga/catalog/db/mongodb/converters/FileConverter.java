@@ -22,14 +22,15 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
-import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 19/01/16.
@@ -42,11 +43,21 @@ public class FileConverter extends AnnotableConverter<File> {
 
     @Override
     public File convertToDataModelType(Document document, QueryOptions options) {
-        return super.convertToDataModelType(document, options);
+        File file = super.convertToDataModelType(document, options);
+
+        List<String> sampleIds;
+        if (document.get(FileMongoDBAdaptor.PRIVATE_SAMPLES) != null) {
+            List<Document> sampleDocuments = document.getList(FileMongoDBAdaptor.PRIVATE_SAMPLES, Document.class);
+            sampleIds = sampleDocuments.stream().map(d -> d.getString(SampleDBAdaptor.QueryParams.ID.key())).collect(Collectors.toList());
+        } else {
+            sampleIds = Collections.emptyList();
+        }
+        file.setSampleIds(sampleIds);
+
+        return file;
     }
 
-    @Override
-    public Document convertToStorageType(File file, List<VariableSet> variableSetList) {
+    public Document convertToStorageType(File file, List<Sample> samples, List<VariableSet> variableSetList) {
         List<FileRelatedFile> relatedFileList = file.getRelatedFiles();
         file.setRelatedFiles(null);
 
@@ -56,7 +67,9 @@ public class FileConverter extends AnnotableConverter<File> {
         document.put("uid", file.getUid());
         document.put("studyUid", file.getStudyUid());
 
-        document.put("samples", convertSamples(file.getSamples()));
+        document.put(FileMongoDBAdaptor.PRIVATE_SAMPLES, convertSamples(samples));
+        document.remove("sampleIds");
+
         document.put("relatedFiles", convertRelatedFiles(relatedFileList));
 
         document.put(FileMongoDBAdaptor.REVERSE_NAME, StringUtils.reverse(file.getName()));
@@ -64,12 +77,12 @@ public class FileConverter extends AnnotableConverter<File> {
         return document;
     }
 
-    public List<Document> convertSamples(List<ResourceReference> sampleList) {
+    public List<Document> convertSamples(List<Sample> sampleList) {
         if (sampleList == null || sampleList.isEmpty()) {
             return Collections.emptyList();
         }
         List<Document> samples = new ArrayList(sampleList.size());
-        for (ResourceReference sample : sampleList) {
+        for (Sample sample : sampleList) {
             long sampleId = sample != null ? (sample.getUid() == 0 ? -1L : sample.getUid()) : -1L;
             if (sampleId > 0) {
                 samples.add(new Document()

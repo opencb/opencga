@@ -24,7 +24,6 @@ import org.opencb.opencga.core.models.AbstractAclEntry;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -260,7 +259,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumnNumber("SIZE", File::getSize)
                 .addColumn("INDEX_STATUS", f -> f.getInternal().getIndex().getStatus().getName(), "NA")
                 .addColumn("RELATED_FILES", f -> f.getRelatedFiles().stream().map(rf -> rf.getFile().getName()).collect(Collectors.joining(",")))
-                .addColumn("SAMPLES", f -> f.getSamples().stream().map(ResourceReference::getId).collect(Collectors.joining(",")));
+                .addColumn("SAMPLES", f -> StringUtils.join(f.getSampleIds(), ","));
 
         table.printTable(unwind(queryResultList));
     }

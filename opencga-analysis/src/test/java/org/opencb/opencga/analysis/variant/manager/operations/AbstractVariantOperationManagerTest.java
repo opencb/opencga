@@ -28,8 +28,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -37,9 +37,9 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
+import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -49,7 +49,6 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
-import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -307,9 +306,8 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
         Cohort defaultCohort = getDefaultCohort(studyId);
         for (File file : expectedLoadedFiles) {
-            List<Long> samplesInFile = file.getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList());
-            List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
-            assertTrue(samplesInCohort.containsAll(samplesInFile));
+            List<String> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+            assertTrue(samplesInCohort.containsAll(file.getSampleIds()));
         }
         if (calculateStats) {
             assertEquals(CohortStatus.READY, defaultCohort.getInternal().getStatus().getName());
@@ -351,11 +349,10 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
         Cohort defaultCohort = getDefaultCohort(studyId);
         assertNotNull(defaultCohort);
-        List<Long> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+        List<String> samplesInCohort = defaultCohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         for (File file : expectedLoadedFiles) {
-            Long[] samplesInFiles = file.getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList()).toArray(new Long[0]);
 //            assertTrue(samplesInCohort.containsAll(samplesInFiles));
-            assertThat(samplesInCohort, hasItems(samplesInFiles));
+            assertThat(samplesInCohort, hasItems(file.getSampleIds().toArray(new String[0])));
         }
         if (calculateStats) {
             assertEquals(CohortStatus.READY, defaultCohort.getInternal().getStatus().getName());

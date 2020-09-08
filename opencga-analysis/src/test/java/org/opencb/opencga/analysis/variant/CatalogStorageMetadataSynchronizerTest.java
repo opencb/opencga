@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
-import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -128,8 +127,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         StudyMetadata studyMetadata = metadataManager.createStudy(study.getFqn());
         for (File file : files) {
-            metadataManager.registerFile(studyMetadata.getId(), file.getUri().getPath(), file.getSamples().stream()
-                    .map(ResourceReference::getId).collect(Collectors.toList()));
+            metadataManager.registerFile(studyMetadata.getId(), file.getUri().getPath(), file.getSampleIds());
         }
         metadataManager.addIndexedFiles(studyMetadata.getId(), indexedFiles.stream()
                 .map(f -> metadataManager.getFileId(studyMetadata.getId(), f))
@@ -159,7 +157,7 @@ public class CatalogStorageMetadataSynchronizerTest {
             catalogManager.getFileManager().setFileIndex(studyId, file.getPath(), fileIndex, sessionId);
             indexedFiles.add(file.getName());
             List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResults().stream().map(Sample::getId).collect(Collectors.toList());
-            samples.addAll(file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList()));
+            samples.addAll(file.getSampleIds());
             catalogManager.getCohortManager().update(studyId, cohortId,
                     new CohortUpdateParams().setSamples(samples), true, null, sessionId);
         }
@@ -176,7 +174,7 @@ public class CatalogStorageMetadataSynchronizerTest {
                 .stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());
-        samples.add(files.get(0).getSamples().get(0).getId());
+        samples.add(files.get(0).getSampleIds().get(0));
 
         metadataManager.registerCohorts(studyId, Collections.singletonMap(cohortId, samples));
 
@@ -211,30 +209,30 @@ public class CatalogStorageMetadataSynchronizerTest {
         catalogManager.getCohortManager().update(studyId, "ALL", new CohortUpdateParams().setSamples(Collections.singletonList("NA12878")), true, new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "REMOVE")), sessionId);
         catalogManager.getSampleManager().delete(studyId, Collections.singletonList("NA12878"), new ObjectMap(), sessionId);
 
-        assertEquals(0, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().size());
+        assertEquals(0, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
 
         studyConfigurationFactory.synchronizeCatalogStudyFromStorage(studyId, sessionId);
 
-        assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().size());
+        assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
     }
 
     @Test
     public void testWrongSamples() throws CatalogException {
 
         String fileId = files.get(1).getId();
-        String correctSampleId = files.get(1).getSamples().get(0).getId();
-        String wrongSampleId = files.get(2).getSamples().get(0).getId();
+        String correctSampleId = files.get(1).getSampleIds().get(0);
+        String wrongSampleId = files.get(2).getSampleIds().get(0);
         System.out.println("correctSampleId = " + correctSampleId);
         System.out.println("wrongSampleId = " + wrongSampleId);
 
         catalogManager.getFileManager().update(studyId, fileId, new FileUpdateParams().setSamples(Collections.singletonList(wrongSampleId)), new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "SET")), sessionId);
 
-        assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().size());
-        assertEquals(wrongSampleId, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().get(0).getId());
+        assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
+        assertEquals(wrongSampleId, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().get(0));
 
         studyConfigurationFactory.synchronizeCatalogStudyFromStorage(studyId, sessionId);
 
-        assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().size());
-        assertEquals(correctSampleId, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSamples().get(0).getId());
+        assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
+        assertEquals(correctSampleId, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().get(0));
     }
 }

@@ -253,7 +253,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                         file.setTags(Collections.emptyList());
                         file.setId(file.getPath().replace("/", ":"));
 
-                        dbAdaptorFactory.getCatalogFileDBAdaptor().insert(study.getUid(), file, null, QueryOptions.empty());
+                        dbAdaptorFactory.getCatalogFileDBAdaptor().insert(study.getUid(), file, null, null, null, QueryOptions.empty());
 
                         // Create physical folder
                         catalogManager.getIoManagerFactory().get(file.getUri()).createDirectory(file.getUri(), true);

@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
@@ -62,27 +61,27 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 FileAclEntry.FilePermissions.VIEW_CONTENT.name(), FileAclEntry.FilePermissions.VIEW_HEADER.name(),
                 FileAclEntry.FilePermissions.DELETE.name())));
         acl.push(new FileAclEntry("jmmut", Collections.emptyList()));
-        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
+        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null, null, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, "",
                 FileInternal.initialize(), 1000, 1);
-        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
+        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null, null, null));
         file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, "",
                 FileInternal.initialize(), 1000, 1);
-        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
+        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null, null, null));
         file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, "",
                 FileInternal.initialize(), 1000, 1);
 
         try {
-            System.out.println(catalogFileDBAdaptor.insert(-20, file, null, null));
+            System.out.println(catalogFileDBAdaptor.insert(-20, file, null, null, null, null));
             fail("Expected \"StudyId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
         }
 
-        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
+        System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null, null, null));
 
         try {
-            System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
+            System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null, null, null));
             fail("Expected \"File already exist\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
@@ -350,24 +349,21 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
         catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                        Arrays.asList(ResourceReference.of(sample1), ResourceReference.of(sample2))), options);
+                Arrays.asList(sample1, sample2)), options);
 
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
-        assertEquals(2, fileDataResult.first().getSamples().size());
-        assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid()).containsAll(
-                fileDataResult.first().getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList())));
+        assertEquals(2, fileDataResult.first().getSampleIds().size());
+        assertTrue(Arrays.asList(sample1.getId(), sample2.getId()).containsAll(fileDataResult.first().getSampleIds()));
 
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setInternal(new SampleInternal(new Status())),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample3 = getSample(studyUid, "sample3");
         // Test we avoid duplicities
         catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                        Arrays.asList(ResourceReference.of(sample1), ResourceReference.of(sample2), ResourceReference.of(sample2),
-                                ResourceReference.of(sample3))), options);
+                Arrays.asList(sample1, sample2, sample2, sample3)), options);
         fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
-        assertEquals(3, fileDataResult.first().getSamples().size());
-        assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid(), sample3.getUid()).containsAll(
-                fileDataResult.first().getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList())));
+        assertEquals(3, fileDataResult.first().getSampleIds().size());
+        assertTrue(Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId()).containsAll(fileDataResult.first().getSampleIds()));
     }
 
     @Test
@@ -392,31 +388,27 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
 
         catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                        Arrays.asList(ResourceReference.of(sample1), ResourceReference.of(sample2), ResourceReference.of(sample3))),
-                options);
+                        Arrays.asList(sample1, sample2, sample3)), options);
         catalogFileDBAdaptor.update(file2.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                        Arrays.asList(ResourceReference.of(sample1), ResourceReference.of(sample2), ResourceReference.of(sample3))),
-                options);
+                        Arrays.asList(sample1, sample2, sample3)), options);
 
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
-        assertEquals(3, fileDataResult.first().getSamples().size());
-        assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid(), sample3.getUid())
-                .containsAll(fileDataResult.first().getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList())));
+        assertEquals(3, fileDataResult.first().getSampleIds().size());
+        assertTrue(Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId()).containsAll(fileDataResult.first().getSampleIds()));
 
         fileDataResult = catalogFileDBAdaptor.get(file2.getUid(), QueryOptions.empty());
-        assertEquals(3, fileDataResult.first().getSamples().size());
-        assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid(), sample3.getUid())
-                .containsAll(fileDataResult.first().getSamples().stream().map(ResourceReference::getUid).collect(Collectors.toList())));
+        assertEquals(3, fileDataResult.first().getSampleIds().size());
+        assertTrue(Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId()).containsAll(fileDataResult.first().getSampleIds()));
 
         catalogFileDBAdaptor.removeSampleReferences(null, studyUid, sample1);
         catalogFileDBAdaptor.removeSampleReferences(null, studyUid, sample3);
         fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
-        assertEquals(1, fileDataResult.first().getSamples().size());
-        assertTrue(fileDataResult.first().getSamples().get(0).getUid() == sample2.getUid());
+        assertEquals(1, fileDataResult.first().getSampleIds().size());
+        assertEquals(sample2.getId(), fileDataResult.first().getSampleIds().get(0));
 
         fileDataResult = catalogFileDBAdaptor.get(file2.getUid(), QueryOptions.empty());
-        assertEquals(1, fileDataResult.first().getSamples().size());
-        assertTrue(fileDataResult.first().getSamples().get(0).getUid() == sample2.getUid());
+        assertEquals(1, fileDataResult.first().getSampleIds().size());
+        assertEquals(sample2.getId(), fileDataResult.first().getSampleIds().get(0));
     }
 
     @Test

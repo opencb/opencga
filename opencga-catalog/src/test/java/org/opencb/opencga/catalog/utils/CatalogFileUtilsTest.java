@@ -95,7 +95,7 @@ public class CatalogFileUtilsTest {
         File returnedFile;
 
         file = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", 0, null, null, null, true,
+                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", 0, null, null, true,
                 RandomStringUtils.randomAlphanumeric(100), null, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 

@@ -42,7 +42,6 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
@@ -527,18 +526,18 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     private void obtainFiles(Study study, ClinicalAnalysis clinicalAnalysis, String userId) throws CatalogException {
-        Map<Long, String> sampleMap = new HashMap<>();
+        Set<String> sampleSet = new HashSet<>();
         if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getMembers() != null) {
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
                 if (member.getSamples() != null) {
                     for (Sample sample : member.getSamples()) {
-                        sampleMap.put(sample.getUid(), sample.getId());
+                        sampleSet.add(sample.getId());
                     }
                 }
             }
         } else if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getSamples() != null) {
             for (Sample sample : clinicalAnalysis.getProband().getSamples()) {
-                sampleMap.put(sample.getUid(), sample.getId());
+                sampleSet.add(sample.getId());
             }
         }
 
@@ -547,16 +546,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleMap.keySet())
+                .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), new ArrayList<>(sampleSet))
                 .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.ALIGNMENT, File.Bioformat.VARIANT,
                         File.Bioformat.COVERAGE));
         OpenCGAResult<File> fileResults = fileDBAdaptor.get(study.getUid(), query, new QueryOptions(), userId);
 
         Map<String, List<File>> fileMap = new HashMap<>();
         for (File file : fileResults.getResults()) {
-            for (ResourceReference sample : file.getSamples()) {
-                if (sampleMap.containsKey(sample.getUid())) {
-                    String sampleId = sampleMap.get(sample.getUid());
+            for (String sampleId : file.getSampleIds()) {
+                if (sampleSet.contains(sampleId)) {
                     if (!fileMap.containsKey(sampleId)) {
                         fileMap.put(sampleId, new LinkedList<>());
                     }
@@ -609,10 +607,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         // Validate the file ids passed are related to the samples
         for (File file : clinicalAnalysis.getFiles()) {
-            if (CollectionUtils.isNotEmpty(file.getSamples())) {
+            if (CollectionUtils.isNotEmpty(file.getSampleIds())) {
                 boolean found = false;
-                for (ResourceReference sample : file.getSamples()) {
-                    if (sampleMap.containsKey(sample.getId())) {
+                for (String sampleId : file.getSampleIds()) {
+                    if (sampleMap.containsKey(sampleId)) {
                         found = true;
                         break;
                     }

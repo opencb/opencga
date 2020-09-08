@@ -38,7 +38,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Datastores;
@@ -721,13 +720,12 @@ public class ProjectManager extends AbstractManager {
                     // Add file information
                     fileList.add(fileDataResult.first());
 
-                    List<ResourceReference> samples = fileDataResult.first().getSamples();
-                    if (ListUtils.isNotEmpty(samples)) {
-                        List<Long> sampleUids = samples.stream().map(ResourceReference::getUid).collect(Collectors.toList());
+                    List<String> sampleIds = fileDataResult.first().getSampleIds();
+                    if (ListUtils.isNotEmpty(sampleIds)) {
 
                         // Look for the BAM and BIGWIG files associated to the samples (if any)
                         query = new Query()
-                                .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids)
+                                .append(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIds)
                                 .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(
                                         org.opencb.opencga.core.models.file.File.Format.BAM,
                                         org.opencb.opencga.core.models.file.File.Format.BAI,
@@ -741,27 +739,21 @@ public class ProjectManager extends AbstractManager {
                         }
 
                         // Look for the whole sample information
-                        query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleUids);
+                        query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
                         OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager()
                                 .search(studyStr, query, QueryOptions.empty(), ownerToken);
-                        if (sampleDataResult.getNumResults() == 0 || sampleDataResult.getNumResults() != sampleUids.size()) {
+                        if (sampleDataResult.getNumResults() == 0 || sampleDataResult.getNumResults() != sampleIds.size()) {
                             logger.error("Unexpected error when looking for whole sample information. Could only find {} results. "
-                                    + "Samples ids {}", sampleDataResult.getNumResults(), sampleUids);
+                                    + "Samples ids {}", sampleDataResult.getNumResults(), sampleIds);
                             continue;
                         }
 
-//                        for (Sample sample : sampleDataResult.getResults()) {
-//                            OpenCGAResult<ObjectMap> annotationSetAsMap = catalogManager.getSampleManager()
-//                                    .getAnnotationSetAsMap(String.valueOf(sample.getId()), studyStr, null, ownerToken);
-//                            // We store the annotationsets as map in the attributes field to avoid issues
-//                            sample.getAttributes().put("_annotationSets", annotationSetAsMap.getResults());
-//                        }
                         sampleList = sampleDataResult.getResults();
 
 
                         // Get the list of individuals
                         // Look for the whole sample information
-                        query = new Query(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids);
+                        query = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleIds);
                         OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager()
                                 .search(studyStr, query, QueryOptions.empty(), ownerToken);
 
@@ -775,12 +767,12 @@ public class ProjectManager extends AbstractManager {
 
 
                         if (individualDataResult.getNumResults() == 0) {
-                            logger.info("No individuals found for samples '{}'", sampleUids);
+                            logger.info("No individuals found for samples '{}'", sampleIds);
                         }
 
                         // Look for the cohorts
                         query = new Query()
-                                .append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids)
+                                .append(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleIds)
                                 .append(CohortDBAdaptor.QueryParams.ID.key(), "!=ALL");
                         OpenCGAResult<Cohort> cohortDataResult = catalogManager.getCohortManager()
                                 .search(studyStr, query, QueryOptions.empty(), ownerToken);
@@ -794,7 +786,7 @@ public class ProjectManager extends AbstractManager {
                         cohortList = cohortDataResult.getResults();
 
                         if (cohortDataResult.getNumResults() == 0) {
-                            logger.info("No cohorts found for samples {}", sampleUids);
+                            logger.info("No cohorts found for samples {}", sampleIds);
                         } else {
                             cohortList = cohortDataResult.getResults();
                         }

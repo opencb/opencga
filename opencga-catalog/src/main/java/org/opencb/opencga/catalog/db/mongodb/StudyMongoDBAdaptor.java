@@ -217,7 +217,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         studyCollection.insert(clientSession, studyObject, null);
 
         for (File file : files) {
-            dbAdaptorFactory.getCatalogFileDBAdaptor().insert(clientSession, study.getUid(), file, Collections.emptyList());
+            dbAdaptorFactory.getCatalogFileDBAdaptor().insert(clientSession, study.getUid(), file, Collections.emptyList(),
+                    Collections.emptyList(), Collections.emptyList());
         }
 
         for (Job job : jobs) {

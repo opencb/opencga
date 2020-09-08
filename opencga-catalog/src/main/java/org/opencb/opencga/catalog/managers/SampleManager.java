@@ -35,19 +35,18 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.ResourceReference;
+import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.sample.SampleAclParams;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -202,6 +201,28 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             // Just in case the user provided a uuid or other kind of individual identifier, we set again the id value
             sample.setIndividualId(individualDataResult.first().getId());
         }
+
+        sample.setProcessing(ParamUtils.defaultObject(sample.getProcessing(), SampleProcessing::new));
+        sample.setCollection(ParamUtils.defaultObject(sample.getCollection(), SampleCollection::new));
+        sample.setQualityControl(ParamUtils.defaultObject(sample.getQualityControl(), SampleQualityControl::new));
+        sample.setCreationDate(ParamUtils.defaultString(sample.getCreationDate(), TimeUtils.getTime()));
+        sample.setModificationDate(TimeUtils.getTime());
+        sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
+        sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
+
+        sample.setIndividualId(ParamUtils.defaultObject(sample.getIndividualId(), ""));
+        sample.setFileIds(ParamUtils.defaultObject(sample.getFileIds(), Collections.emptyList()));
+
+        sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
+        sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::new));
+        sample.getInternal().setStatus(new Status());
+        sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
+
+        sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
+
+        sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
+        sample.setRelease(studyManager.getCurrentRelease(study));
+        sample.setVersion(1);
 
         validateNewAnnotationSets(study.getVariableSets(), sample.getAnnotationSets());
     }
@@ -577,7 +598,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     private void checkSampleCanBeDeleted(long studyId, Sample sample, boolean force) throws CatalogException {
         // Look for files related with the sample
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
+                .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sample.getId())
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
         DBIterator<File> fileIterator = fileDBAdaptor.iterator(query, QueryOptions.empty());
         List<String> errorFiles = new ArrayList<>();
@@ -1104,7 +1125,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 Set<String> sampleSet = new HashSet<>();
                 for (File file : fileDataResult.getResults()) {
-                    sampleSet.addAll(file.getSamples().stream().map(ResourceReference::getId).collect(Collectors.toList()));
+                    sampleSet.addAll(file.getSampleIds());
                 }
                 sampleStringList = new ArrayList<>();
                 sampleStringList.addAll(sampleSet);

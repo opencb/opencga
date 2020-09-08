@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -74,9 +75,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         SOFTWARE_NAME("software.name", TEXT, ""),
         SOFTWARE_VERSION("software.version", TEXT, ""),
         SOFTWARE_COMMIT("software.commit", TEXT, ""),
+        SAMPLE_IDS("sampleIds", TEXT_ARRAY, ""),
         SAMPLES("samples", TEXT_ARRAY, ""),
-        SAMPLE_IDS("samples.id", TEXT_ARRAY, ""),
-        SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
         JOB_ID("jobId", TEXT, ""),
@@ -217,6 +217,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      *
      * @param studyId Id of the study where the file belongs to.
      * @param file The file to be inserted in the database.
+     * @param existingSamples List of existing samples to associate to the File.
+     * @param nonExistingSamples List of non-existing samples to create and associate to the File.
      * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
      * @return A OpenCGAResult object containing the time spent.
@@ -224,7 +226,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @throws CatalogParameterException if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options)
+    OpenCGAResult insert(long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
+                         List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /***

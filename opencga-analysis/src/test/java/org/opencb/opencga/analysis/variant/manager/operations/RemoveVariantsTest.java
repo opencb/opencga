@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.ResourceReference;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -131,15 +130,14 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
 
         Cohort all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
                 StudyEntry.DEFAULT_COHORT), null, sessionId).first();
-        Set<Long> allSampleIds = all.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
+        Set<String> allSampleIds = all.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
 
         assertThat(all.getInternal().getStatus().getName(), anyOf(is(CohortStatus.INVALID), is(CohortStatus.NONE)));
-        Set<Long> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key
+        Set<String> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key
                 (), FileIndex.IndexStatus.READY), null, sessionId)
                 .getResults()
                 .stream()
-                .flatMap(f -> f.getSamples().stream())
-                .map(ResourceReference::getUid)
+                .flatMap(f -> f.getSampleIds().stream())
                 .collect(Collectors.toSet());
         assertEquals(loadedSamples, allSampleIds);
 

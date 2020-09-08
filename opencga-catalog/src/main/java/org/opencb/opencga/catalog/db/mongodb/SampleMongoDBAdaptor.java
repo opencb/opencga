@@ -28,7 +28,10 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.SampleCatalogMongoDBIterator;
@@ -43,12 +46,10 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
@@ -61,7 +62,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
@@ -150,14 +150,20 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             throw new CatalogDBException("Sample { id: '" + sample.getId() + "'} already exists.");
         }
 
-        initialiseNewSample(sample);
-
         long sampleUid = getNewUid(clientSession);
         sample.setUid(sampleUid);
-        sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
         sample.setStudyUid(studyUid);
         sample.setVersion(1);
         sample.setRelease(dbAdaptorFactory.getCatalogStudyDBAdaptor().getCurrentRelease(clientSession, studyUid));
+        if (StringUtils.isEmpty(sample.getUuid())) {
+            sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
+        }
+        if (StringUtils.isEmpty(sample.getCreationDate())) {
+            sample.setCreationDate(TimeUtils.getTime());
+        }
+        if (sample.getFileIds() == null) {
+            sample.setFileIds(Collections.emptyList());
+        }
 
         Document sampleObject = sampleConverter.convertToStorageType(sample, variableSetList);
 
@@ -666,36 +672,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     @Override
     public OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) {
         return unmarkPermissionRule(sampleCollection, studyId, permissionRuleId);
-    }
-
-    @Deprecated
-    public void checkInUse(long sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        long studyId = getStudyId(sampleId);
-
-        Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleId);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FILTER_ROUTE_FILES + FileDBAdaptor
-                .QueryParams.UID.key(), FILTER_ROUTE_FILES + FileDBAdaptor.QueryParams.PATH.key()));
-        OpenCGAResult<File> fileDataResult = dbAdaptorFactory.getCatalogFileDBAdaptor().get(query, queryOptions);
-        if (fileDataResult.getNumResults() != 0) {
-            String msg = "Can't delete Sample " + sampleId + ", still in use in \"sampleId\" array of files : "
-                    + fileDataResult.getResults().stream()
-                    .map(file -> "{ id: " + file.getUid() + ", path: \"" + file.getPath() + "\" }")
-                    .collect(Collectors.joining(", ", "[", "]"));
-            throw new CatalogDBException(msg);
-        }
-
-
-        queryOptions = new QueryOptions(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId)
-                .append(QueryOptions.INCLUDE, Arrays.asList(FILTER_ROUTE_COHORTS + CohortDBAdaptor.QueryParams.UID.key(),
-                        FILTER_ROUTE_COHORTS + CohortDBAdaptor.QueryParams.ID.key()));
-        OpenCGAResult<Cohort> cohortDataResult = dbAdaptorFactory.getCatalogCohortDBAdaptor().getAllInStudy(studyId, queryOptions);
-        if (cohortDataResult.getNumResults() != 0) {
-            String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : "
-                    + cohortDataResult.getResults().stream()
-                    .map(cohort -> "{ id: " + cohort.getUid() + ", name: \"" + cohort.getId() + "\" }")
-                    .collect(Collectors.joining(", ", "[", "]"));
-            throw new CatalogDBException(msg);
-        }
     }
 
     @Override
