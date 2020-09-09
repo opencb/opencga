@@ -710,9 +710,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         SampleVariantStatsAnalysisParams toolParams = new SampleVariantStatsAnalysisParams(
                 cliOptions.sample,
-                cliOptions.family,
-                cliOptions.index,
-                cliOptions.samplesAnnotation,
+                cliOptions.individual,
                 variantQuery,
                 cliOptions.outdir);
         toolRunner.execute(SampleVariantStatsAnalysis.class, toolParams, params, Paths.get(cliOptions.outdir), token);

@@ -268,9 +268,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().runSampleStats(
                 new SampleVariantStatsAnalysisParams(
                         variantCommandOptions.sampleVariantStatsCommandOptions.sample,
-                        variantCommandOptions.sampleVariantStatsCommandOptions.family,
-                        variantCommandOptions.sampleVariantStatsCommandOptions.index,
-                        variantCommandOptions.sampleVariantStatsCommandOptions.samplesAnnotation,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.individual,
                         variantQuery,
                         variantCommandOptions.sampleVariantStatsCommandOptions.outdir),
                 getParams(variantCommandOptions.sampleVariantStatsCommandOptions.study));

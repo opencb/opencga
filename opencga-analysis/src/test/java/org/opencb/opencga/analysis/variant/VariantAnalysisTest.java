@@ -43,11 +43,9 @@ import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -319,18 +317,14 @@ public class VariantAnalysisTest {
         List<String> samples = file.getSampleIds();
         SampleVariantStatsAnalysisParams params = new SampleVariantStatsAnalysisParams()
                 .setSample(samples)
-                .setVariantQuery(new AnnotationVariantQueryParams().setRegion("1,2"))
-                .setIndex(true);
+                .setVariantQuery(new AnnotationVariantQueryParams().setRegion("1,2"));
         ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, token);
 
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
-        for (String sample : samples) {
-            AnnotationSet annotationSet = catalogManager.getSampleManager().get(STUDY, sample, null, token).first().getAnnotationSets().get(0);
-            SampleVariantStats sampleVariantStats = AvroToAnnotationConverter.convertAnnotationToAvro(annotationSet, SampleVariantStats.class);
-            System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(annotationSet));
+        List<SampleVariantStats> allStats = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class).<SampleVariantStats>readValues(outDir.resolve("sample-variant-stats.json").toFile()).readAll();
+        for (SampleVariantStats sampleVariantStats : allStats) {
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sampleVariantStats));
-
             Assert.assertEquals(new HashSet<>(Arrays.asList("1", "2")), sampleVariantStats.getChromosomeCount().keySet());
         }
     }
