@@ -366,6 +366,32 @@ migrateCollection("clinical", {"interpretation.version": {"$exists": false}}, {i
     }
 });
 
+// # Issue 1641
+var sampleMap = {};
+db.sample.find({"_lastOfVersion": true}).forEach(function(s) {
+    sampleMap[Number(s['uid'])] = {
+        'uid': s['uid'],
+        'uuid': s['uuid'],
+        'id': s['id']
+    }
+});
+migrateCollection("file", {"samples": {"$exists": true}}, {"samples": 1}, function(bulk, doc) {
+    var toSet = {
+        "_samples": []
+    };
+    var toUnset = {
+        "samples": ""
+    };
+
+   if (isNotEmptyArray(doc.samples)) {
+       for (var sample of doc.samples) {
+           toSet["_samples"].push(sampleMap[Number(sample['uid'])]);
+       }
+   }
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": toSet, "$unset": toUnset});
+});
+
 
 // # Issue 1642
 db.clinical.update({"locked": {"$exists": false}}, {"$set": {"locked": false}}, {"multi": true});
