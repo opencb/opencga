@@ -50,10 +50,6 @@
             },
             "defaultValue": "[concat('nsg-', parameters('clusterName'))]"
         },
-        "loginNetworkSecurityGroupName" : {
-            "type": "string",
-            "defaultValue": "[concat(parameters('nsgNamePrefix'), '-login')]"
-        },
         "rgPrefix": {
             "type": "string",
             "metadata": {
@@ -212,7 +208,11 @@
                         },
                         "hdinsight" : {
                             "name" : "hdinsight",
-                            "addressPrefix": "10.0.8.0/24"
+                            "addressPrefix": "10.0.8.0/24",
+                            "nsg": {
+                                "name": "[concat(parameters('nsgNamePrefix'), '-hdi')]",
+                                "serviceTag" : "HDInsight"
+                            }
                         },
                         "mongodb" : {
                             "name" : "mongodb",
@@ -224,7 +224,10 @@
                         },
                         "login" : {
                             "name" : "login",
-                            "addressPrefix": "10.0.12.0/24"
+                            "addressPrefix": "10.0.12.0/24",
+                            "nsg": {
+                                "name": "[concat(parameters('nsgNamePrefix'), '-login')]"
+                            }
                         }
                     }
                 },
@@ -400,9 +403,6 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "loginNetworkSecurityGroupName": {
-                        "value" : "[parameters('loginNetworkSecurityGroupName')]"
-                    },
                     "config": {
                         "value" : "[parameters('networkCIDR').vnet]"
                     },

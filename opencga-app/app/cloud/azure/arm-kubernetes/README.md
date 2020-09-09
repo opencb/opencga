@@ -181,7 +181,11 @@ You can deploy a custom network cidr by specifying the `networkCIDR` field in th
                         },
                         "hdinsight" : {
                             "name" : "hdinsight",
-                            "addressPrefix": "10.0.8.0/24"
+                            "addressPrefix": "10.0.8.0/24",
+                            "nsg": {
+                                "name": "nsg-hdi",
+                                "serviceTag" : "HDInsight"
+                            }
                         },
                         "mongodb" : {
                             "name" : "mongodb",
@@ -193,7 +197,10 @@ You can deploy a custom network cidr by specifying the `networkCIDR` field in th
                         },
                         "login" : {
                             "name" : "login",
-                            "addressPrefix": "10.0.12.0/24"
+                            "addressPrefix": "10.0.12.0/24",
+                            "nsg": {
+                              "name": "nsg-login"
+                            }
                         }
                     }
                 },
