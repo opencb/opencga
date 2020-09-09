@@ -73,7 +73,7 @@ public class FileMetadataReader {
         file.setBioformat(updateParams.getBioformat() != null ? updateParams.getBioformat() : file.getBioformat());
         file.setFormat(updateParams.getFormat() != null ? updateParams.getFormat() : file.getFormat());
         file.setAttributes(updateParams.getAttributes() != null ? updateParams.getAttributes() : file.getAttributes());
-        file.setSampleIds(updateParams.getSamples() != null ? updateParams.getSamples() : file.getSampleIds());
+        file.setSampleIds(updateParams.getSampleIds() != null ? updateParams.getSampleIds() : file.getSampleIds());
         file.setSize(updateParams.getSize() != null ? updateParams.getSize() : file.getSize());
     }
 
@@ -83,11 +83,11 @@ public class FileMetadataReader {
             ObjectMap updateMap = updateParams.getUpdateMap();
 
             if (!updateMap.isEmpty()) {
-                if (updateParams.getSamples() != null && !updateParams.getSamples().isEmpty()) {
+                if (updateParams.getSampleIds() != null && !updateParams.getSampleIds().isEmpty()) {
                     // Check and create missing samples
-                    List<String> missingSamples = new LinkedList<>(updateParams.getSamples());
+                    List<String> missingSamples = new LinkedList<>(updateParams.getSampleIds());
                     for (Sample sample : catalogManager.getSampleManager().search(studyId,
-                            new Query(SampleDBAdaptor.QueryParams.ID.key(), updateParams.getSamples()), new QueryOptions(), token)
+                            new Query(SampleDBAdaptor.QueryParams.ID.key(), updateParams.getSampleIds()), new QueryOptions(), token)
                             .getResults()) {
                         missingSamples.remove(sample.getId());
                     }
@@ -99,7 +99,7 @@ public class FileMetadataReader {
                 }
 
                 catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams,
-                        new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "SET")),
+                        new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")),
                         token);
                 return catalogManager.getFileManager().get(studyId, file.getUuid(), QueryOptions.empty(), token).first();
             }
@@ -179,7 +179,7 @@ public class FileMetadataReader {
         if (bioformat == File.Bioformat.ALIGNMENT || bioformat == File.Bioformat.VARIANT) {
             Map<String, String> sampleMap = file.getInternal() != null ? file.getInternal().getSampleMap() : null;
             List<String> sampleList = getFileSamples(bioformat, updateParams.getAttributes(), sampleMap);
-            updateParams.setSamples(sampleList);
+            updateParams.setSampleIds(sampleList);
         }
 
         IOManager ioManager;

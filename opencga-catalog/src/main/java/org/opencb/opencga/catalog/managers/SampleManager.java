@@ -1119,7 +1119,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             if (StringUtils.isNotEmpty(sampleAclParams.getFile())) {
 //            // Obtain the samples of the files
-                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLES.key());
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
                 OpenCGAResult<File> fileDataResult = catalogManager.getFileManager().internalGet(study.getUid(),
                         Arrays.asList(StringUtils.split(sampleAclParams.getFile(), ",")), options, user, false);
 

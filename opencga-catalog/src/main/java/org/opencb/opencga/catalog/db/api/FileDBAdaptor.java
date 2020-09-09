@@ -76,7 +76,6 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         SOFTWARE_VERSION("software.version", TEXT, ""),
         SOFTWARE_COMMIT("software.commit", TEXT, ""),
         SAMPLE_IDS("sampleIds", TEXT_ARRAY, ""),
-        SAMPLES("samples", TEXT_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
         JOB_ID("jobId", TEXT, ""),
@@ -159,7 +158,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         JOB_ID(QueryParams.JOB_ID.key()),
         SOFTWARE(QueryParams.SOFTWARE.key()),
         STATUS_NAME(QueryParams.INTERNAL_STATUS_NAME.key()),
-        SAMPLES(QueryParams.SAMPLES.key()),
+        SAMPLE_IDS(QueryParams.SAMPLE_IDS.key()),
         URI(QueryParams.URI.key()),
         SIZE(QueryParams.SIZE.key()),
         ATTRIBUTES(QueryParams.ATTRIBUTES.key()),

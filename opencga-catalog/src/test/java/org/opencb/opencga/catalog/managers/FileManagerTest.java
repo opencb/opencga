@@ -347,23 +347,23 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(4, link.first().getSampleIds().size());
 
         Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.SET.name());
-        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSamples(Collections.emptyList()),
+        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.SET.name());
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSampleIds(Collections.emptyList()),
                 new QueryOptions(Constants.ACTIONS, actionMap), token);
 
         File file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
         assertEquals(0, file.getSampleIds().size());
 
-        actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD.name());
-        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSamples(Arrays.asList("NA19660", "NA19661")),
+        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD.name());
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSampleIds(Arrays.asList("NA19660", "NA19661")),
                 new QueryOptions(Constants.ACTIONS, actionMap), token);
 
         file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
         assertEquals(2, file.getSampleIds().size());
 
 
-        actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.REMOVE.name());
-        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSamples(Arrays.asList("NA19660")),
+        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.REMOVE.name());
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSampleIds(Arrays.asList("NA19660")),
                 new QueryOptions(Constants.ACTIONS, actionMap), token);
 
         file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
@@ -696,7 +696,7 @@ public class FileManagerTest extends AbstractManagerTest {
         assertFalse(sample1.getFileIds().contains("data:test:folder:test_1K.txt.gz"));
         assertFalse(sample2.getFileIds().contains("data:test:folder:test_1K.txt.gz"));
 
-        FileUpdateParams updateParams = new FileUpdateParams().setSamples(Arrays.asList("s_1", "s_1", "s_2", "s_1"));
+        FileUpdateParams updateParams = new FileUpdateParams().setSampleIds(Arrays.asList("s_1", "s_1", "s_2", "s_1"));
         DataResult<File> updateResult = fileManager.update(studyFqn, "test_1K.txt.gz", updateParams, null, token);
         assertEquals(1, updateResult.getNumUpdated());
 
@@ -1033,7 +1033,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 .stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());
-        result = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIds), null, token);
+        result = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds), null, token);
         assertEquals(1, result.getNumResults());
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE");
@@ -1276,7 +1276,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 token).first();
 
         // Associate the two samples to the file
-        fileManager.update(studyFqn, "data/test/", new FileUpdateParams().setSamples(Arrays.asList(sample1.getId(), sample2.getId())),
+        fileManager.update(studyFqn, "data/test/", new FileUpdateParams().setSampleIds(Arrays.asList(sample1.getId(), sample2.getId())),
                 QueryOptions.empty(), token);
 
         // Fetch the file

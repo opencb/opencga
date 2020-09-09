@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -61,6 +62,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
@@ -326,7 +328,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Bson queryBson = parseQuery(tmpQuery);
         DataResult result = updateAnnotationSets(clientSession, file.getUid(), parameters, variableSetList, queryOptions, false);
 
-        UpdateDocument updateDocument = getValidatedUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
+        UpdateDocument updateDocument = getValidatedUpdateParams(clientSession, file.getStudyUid(), parameters, tmpQuery, queryOptions);
         Document fileUpdate = updateDocument.toFinalUpdateDocument();
 
         if (fileUpdate.isEmpty() && result.getNumUpdated() == 0) {
@@ -424,9 +426,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
     }
 
-    private void getSampleChanges(Document fileDocument, ObjectMap parameters, UpdateDocument updateDocument, UpdateAction operation) {
-        List<Sample> sampleList = parameters.getAsList(QueryParams.SAMPLES.key(), Sample.class);
-
+    private void getSampleChanges(Document fileDocument, List<Sample> sampleList, UpdateDocument updateDocument, UpdateAction operation) {
         String fileId = fileDocument.getString(QueryParams.ID.key());
 
         Set<Long> currentSampleUidList = new HashSet<>();
@@ -486,7 +486,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
     }
 
-    private UpdateDocument getValidatedUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query,
+    private UpdateDocument getValidatedUpdateParams(ClientSession clientSession, long studyUid, ObjectMap parameters, Query query,
                                                     QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
@@ -581,29 +581,41 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         filterLongParams(parameters, document.getSet(), acceptedLongParams);
 
         // Check if the samples exist.
-        if (parameters.containsKey(QueryParams.SAMPLES.key())) {
+        if (parameters.containsKey(QueryParams.SAMPLE_IDS.key())) {
             if (document.getSet().containsKey(QueryParams.ID.key())) {
                 throw new CatalogDBException("Updating file path/id and list of samples at the same time is forbidden.");
             }
 
-            List<Object> objectSampleList = parameters.getAsList(QueryParams.SAMPLES.key());
-            List<Sample> sampleList = new ArrayList<>();
-            for (Object sample : objectSampleList) {
-                if (sample instanceof Sample) {
-                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(clientSession, ((Sample) sample).getUid())) {
-                        throw CatalogDBException.uidNotFound("Sample", ((Sample) sample).getUid());
+            // Conver to set to remove possible duplicates
+            Set<String> sampleIdList = new HashSet<>(parameters.getAsStringList(QueryParams.SAMPLE_IDS.key()));
+            Query sampleQuery = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIdList);
+            OpenCGAResult<Sample> sampleOpenCGAResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(clientSession, sampleQuery,
+                    SampleManager.INCLUDE_SAMPLE_IDS);
+            if (sampleOpenCGAResult.getNumResults() != sampleIdList.size()) {
+                Set<String> foundSampleIds = sampleOpenCGAResult.getResults().stream()
+                        .flatMap(s -> Stream.of(s.getId(), s.getUuid()))
+                        .collect(Collectors.toSet());
+                List<String> notFoundSamples = new ArrayList<>(sampleIdList.size());
+                for (String sampleId : sampleIdList) {
+                    if (!foundSampleIds.contains(sampleId)) {
+                        notFoundSamples.add(sampleId);
                     }
-                    sampleList.add((Sample) sample);
                 }
+
+                throw new CatalogDBException("Samples '" + StringUtils.join(notFoundSamples, ",") + "' were not found.");
             }
 
+            List<Sample> sampleList = sampleOpenCGAResult.getResults();
+
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            UpdateAction operation = UpdateAction.from(actionMap, QueryParams.SAMPLES.key(), UpdateAction.ADD);
+            UpdateAction operation = UpdateAction.from(actionMap, QueryParams.SAMPLE_IDS.key(), UpdateAction.ADD);
 
             OpenCGAResult<Document> fileResult = nativeGet(clientSession, query, new QueryOptions());
             // We obtain the list of fileIds to be added/removed for each file
             for (Document fileDocument : fileResult.getResults()) {
-                getSampleChanges(fileDocument, parameters, document, operation);
+                getSampleChanges(fileDocument, sampleList, document, operation);
             }
 
             if (UpdateAction.SET.equals(operation) || !sampleList.isEmpty()) {
@@ -1247,12 +1259,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                                 Status.getPositiveStatus(FileIndex.IndexStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
-                    // Other parameter that can be queried.
                     case SAMPLE_IDS:
-                        addAutoOrQuery(PRIVATE_SAMPLES + "." + SampleDBAdaptor.QueryParams.ID.key(), queryParam.key(), myQuery,
-                                QueryParams.SAMPLE_IDS.type(), andBsonList);
-                        break;
-                    case SAMPLES:
                         List<Bson> queryList = new ArrayList<>();
                         addAutoOrQuery(PRIVATE_SAMPLES + "." + SampleDBAdaptor.QueryParams.ID.key(), queryParam.key(), myQuery,
                                 QueryParam.Type.TEXT_ARRAY, queryList);
@@ -1349,12 +1356,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 .append(QueryParams.SAMPLE_IDS.key(), sample.getId());
 
         ObjectMap params = new ObjectMap()
-                .append(QueryParams.SAMPLES.key(), Collections.singletonList(sample));
+                .append(QueryParams.SAMPLE_IDS.key(), Collections.singletonList(sample.getId()));
         // Add the the Remove action for the sample provided
         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,
-                new ObjectMap(QueryParams.SAMPLES.key(), UpdateAction.REMOVE.name()));
+                new ObjectMap(QueryParams.SAMPLE_IDS.key(), UpdateAction.REMOVE.name()));
 
-        Bson update = getValidatedUpdateParams(clientSession, params, query, queryOptions).toFinalUpdateDocument();
+        Document update = getValidatedUpdateParams(clientSession, studyUid, params, query, queryOptions).toFinalUpdateDocument();
 
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
 

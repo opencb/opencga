@@ -33,7 +33,7 @@ public class FileUpdateParams {
     private String name;
     private String description;
 
-    private List<String> samples;
+    private List<String> sampleIds;
 
     private String checksum;
     private File.Format format;
@@ -55,13 +55,13 @@ public class FileUpdateParams {
     public FileUpdateParams() {
     }
 
-    public FileUpdateParams(String name, String description, List<String> samples, String checksum, File.Format format,
+    public FileUpdateParams(String name, String description, List<String> sampleIds, String checksum, File.Format format,
                             File.Bioformat bioformat, Software software, FileExperiment experiment, List<String> tags,
                             SmallFileInternal internal, Long size, List<SmallRelatedFileParams> relatedFiles, CustomStatusParams status,
                             List<AnnotationSet> annotationSets, Map<String, Object> stats, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
-        this.samples = samples;
+        this.sampleIds = sampleIds;
         this.checksum = checksum;
         this.format = format;
         this.bioformat = bioformat;
@@ -98,7 +98,7 @@ public class FileUpdateParams {
         final StringBuilder sb = new StringBuilder("FileUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", samples=").append(samples);
+        sb.append(", sampleIds=").append(sampleIds);
         sb.append(", checksum='").append(checksum).append('\'');
         sb.append(", format=").append(format);
         sb.append(", bioformat=").append(bioformat);
@@ -134,12 +134,12 @@ public class FileUpdateParams {
         return this;
     }
 
-    public List<String> getSamples() {
-        return samples;
+    public List<String> getSampleIds() {
+        return sampleIds;
     }
 
-    public FileUpdateParams setSamples(List<String> samples) {
-        this.samples = samples;
+    public FileUpdateParams setSampleIds(List<String> sampleIds) {
+        this.sampleIds = sampleIds;
         return this;
     }
 

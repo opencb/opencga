@@ -344,12 +344,12 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyUid, "sample2");
 
-        ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD);
+        ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
 
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
-        catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                Arrays.asList(sample1, sample2)), options);
+        catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
+                Arrays.asList(sample1.getId(), sample2.getId())), options);
 
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(2, fileDataResult.first().getSampleIds().size());
@@ -359,8 +359,8 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample3 = getSample(studyUid, "sample3");
         // Test we avoid duplicities
-        catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                Arrays.asList(sample1, sample2, sample2, sample3)), options);
+        catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
+                Arrays.asList(sample1.getId(), sample2.getId(), sample2.getId(), sample3.getId())), options);
         fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(3, fileDataResult.first().getSampleIds().size());
         assertTrue(Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId()).containsAll(fileDataResult.first().getSampleIds()));
@@ -384,13 +384,13 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         List<File> files = user3.getProjects().get(0).getStudies().get(0).getFiles();
         File file = files.get(0);
         File file2 = files.get(1);
-        ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD);
+        ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
 
-        catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                        Arrays.asList(sample1, sample2, sample3)), options);
-        catalogFileDBAdaptor.update(file2.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                        Arrays.asList(sample1, sample2, sample3)), options);
+        catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
+                        Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId())), options);
+        catalogFileDBAdaptor.update(file2.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
+                        Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId())), options);
 
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(3, fileDataResult.first().getSampleIds().size());

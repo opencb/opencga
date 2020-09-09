@@ -204,9 +204,9 @@ public class CatalogStorageMetadataSynchronizerTest {
     @Test
     public void testMissingSamples() throws CatalogException {
         String fileId = files.get(1).getId();
-        catalogManager.getFileManager().update(studyId, fileId, new FileUpdateParams().setSamples(Collections.emptyList()), new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "SET")), sessionId);
+        catalogManager.getFileManager().update(studyId, fileId, new FileUpdateParams().setSampleIds(Collections.emptyList()), new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")), sessionId);
 
-        catalogManager.getCohortManager().update(studyId, "ALL", new CohortUpdateParams().setSamples(Collections.singletonList("NA12878")), true, new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "REMOVE")), sessionId);
+        catalogManager.getCohortManager().update(studyId, "ALL", new CohortUpdateParams().setSamples(Collections.singletonList("NA12878")), true, new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "REMOVE")), sessionId);
         catalogManager.getSampleManager().delete(studyId, Collections.singletonList("NA12878"), new ObjectMap(), sessionId);
 
         assertEquals(0, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
@@ -225,7 +225,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         System.out.println("correctSampleId = " + correctSampleId);
         System.out.println("wrongSampleId = " + wrongSampleId);
 
-        catalogManager.getFileManager().update(studyId, fileId, new FileUpdateParams().setSamples(Collections.singletonList(wrongSampleId)), new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "SET")), sessionId);
+        catalogManager.getFileManager().update(studyId, fileId, new FileUpdateParams().setSampleIds(Collections.singletonList(wrongSampleId)), new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")), sessionId);
 
         assertEquals(1, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
         assertEquals(wrongSampleId, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().get(0));

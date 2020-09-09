@@ -970,11 +970,11 @@ public class FileManager extends AnnotationSetManager<File> {
                     params.put(FileDBAdaptor.QueryParams.CHECKSUM.key(), file.getChecksum());
 
                     if (file.getSampleIds() != null && !file.getSampleIds().isEmpty()) {
-                        params.put(FileDBAdaptor.QueryParams.SAMPLES.key(), file.getSampleIds());
+                        params.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), file.getSampleIds());
 
                         // Set new samples
                         Map<String, Object> actionMap = new HashMap<>();
-                        actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.SET.name());
+                        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.SET.name());
                         queryOptions.put(Constants.ACTIONS, actionMap);
                     }
                     if (!file.getAttributes().isEmpty()) {
@@ -2044,12 +2044,10 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("Cannot modify root folder");
         }
 
-        // We obtain the numeric ids of the samples given
-        if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSamples())) {
-            List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), updateParams.getSamples(),
-                    SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
-
-            parameters.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
+        // We make a query to check both if the samples exists and if the user has permissions to see them
+        if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSampleIds())) {
+            catalogManager.getSampleManager().internalGet(study.getUid(), updateParams.getSampleIds(), SampleManager.INCLUDE_SAMPLE_IDS,
+                    userId, false);
         }
 
         //Name must be changed with "rename".
@@ -2100,13 +2098,11 @@ public class FileManager extends AnnotationSetManager<File> {
                 throw new CatalogException("Could not update: " + e.getMessage(), e);
             }
 
-            // We obtain the numeric ids of the samples given
-            if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
-                List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(),
-                        parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, userId,
-                        false).getResults();
-
-                parameters.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
+            // We make a query to check both if the samples exists and if the user has permissions to see them
+            if (parameters.get(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()) != null
+                    && ListUtils.isNotEmpty(parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()))) {
+                List<String> sampleIds = parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
+                catalogManager.getSampleManager().internalGet(study.getUid(), sampleIds, SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
             }
 
             //Name must be changed with "rename".

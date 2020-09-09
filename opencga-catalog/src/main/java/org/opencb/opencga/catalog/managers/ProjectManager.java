@@ -725,7 +725,7 @@ public class ProjectManager extends AbstractManager {
 
                         // Look for the BAM and BIGWIG files associated to the samples (if any)
                         query = new Query()
-                                .append(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIds)
+                                .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds)
                                 .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(
                                         org.opencb.opencga.core.models.file.File.Format.BAM,
                                         org.opencb.opencga.core.models.file.File.Format.BAI,
