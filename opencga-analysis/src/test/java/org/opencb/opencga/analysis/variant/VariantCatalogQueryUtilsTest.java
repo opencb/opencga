@@ -156,7 +156,7 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     public static File createFile(String path, boolean indexed) throws CatalogException {
-        File file = catalog.getFileManager().create("s1", File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, path, null, 10, null, null, null, true, "", null, sessionId).first();
+        File file = catalog.getFileManager().create("s1", File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, path, null, 10, null, null, true, "", null, sessionId).first();
         if (indexed) {
             int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
             catalog.getFileManager().updateFileIndexStatus(file, Status.READY, "", release, sessionId);

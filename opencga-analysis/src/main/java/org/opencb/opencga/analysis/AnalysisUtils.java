@@ -16,7 +16,7 @@ public class AnalysisUtils {
         OpenCGAResult<File> fileQueryResult;
 
         Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM)
-                .append(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
+                .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId);
         try {
             fileQueryResult = fileManager.search(studyId, query, QueryOptions.empty(), token);
         } catch (CatalogException e) {
@@ -38,7 +38,7 @@ public class AnalysisUtils {
         Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM);
         QueryOptions queryOptions = new QueryOptions();//QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key());
 
-        query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
+        query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId);
         try {
             fileQueryResult = fileManager.search(studyId, query, queryOptions, token);
         } catch (CatalogException e) {

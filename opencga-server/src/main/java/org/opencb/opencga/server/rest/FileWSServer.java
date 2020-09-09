@@ -330,7 +330,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @DefaultValue("") @QueryParam("description") String description,
             @ApiParam(value = ParamConstants.FILE_TAGS_DESCRIPTION) @QueryParam("tags") String tags,
             @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @DefaultValue("") @QueryParam("size") String size,
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("sampleIds") String samples,
             @ApiParam(value = ParamConstants.FILE_JOB_ID_DESCRIPTION) @QueryParam("jobId") String jobId,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
@@ -340,8 +340,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
 
-            if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key())
-                    && (query.get(FileDBAdaptor.QueryParams.NAME.key()) == null
+            if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key()) && (query.get(FileDBAdaptor.QueryParams.NAME.key()) == null
                     || query.getString(FileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
                 query.remove(FileDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
@@ -477,7 +476,7 @@ public class FileWSServer extends OpenCGAWSServer {
             }
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
+            actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), samplesAction.name());
             actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFilesAction);
             actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), tagsAction);
@@ -497,7 +496,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of file ids, names or paths. Paths must be separated by : instead of /")
             @PathParam(value = "files") String fileIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("sampleIdsAction") ParamUtils.UpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
             @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
@@ -511,7 +510,7 @@ public class FileWSServer extends OpenCGAWSServer {
             }
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
+            actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), samplesAction.name());
             actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFilesAction);
             actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), tagsAction);

@@ -60,10 +60,11 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         CONSENT("consent", TEXT_ARRAY, ""),
         PRIORITY("priority", TEXT, ""),
         ANALYST("analyst", TEXT_ARRAY, ""),
-        ANALYST_ASSIGNEE("analyst.assignee", TEXT, ""),
+        ANALYST_ID("analyst.id", TEXT, ""),
         ANALYST_ASSIGNED_BY("analyst.assignedBy", TEXT, ""),
         FLAGS("flags", TEXT_ARRAY, ""),
         RELEASE("release", INTEGER, ""),
+        LOCKED("locked", BOOLEAN, ""),
 
         SAMPLE("sample", TEXT_ARRAY, ""), // Alias to search for samples within proband.samples or family.members.samples
         MEMBER("member", TEXT_ARRAY, ""), // Alias to search for members from proband or family.members

@@ -18,8 +18,7 @@ package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.clinical.Comment;
-import org.opencb.biodata.models.clinical.interpretation.Analyst;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -33,24 +32,28 @@ public class InterpretationUpdateParams {
 
     private String id;
     private String description;
-    private String clinicalAnalysisId;
-    private Analyst analyst;
+    private ClinicalAnalystParam analyst;
     private List<InterpretationMethod> methods;
     private String creationDate;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
-    private List<Comment> comments;
+    private List<ClinicalComment> comments;
     private Map<String, Object> attributes;
 
     public InterpretationUpdateParams() {
     }
 
-    public InterpretationUpdateParams(String id, String description, String clinicalAnalysisId, Analyst analyst,
-                                      List<InterpretationMethod> methods, String creationDate, List<ClinicalVariant> primaryFindings,
-                                      List<ClinicalVariant> secondaryFindings, List<Comment> comments, Map<String, Object> attributes) {
+    public InterpretationUpdateParams(String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
+                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
+                                      List<ClinicalComment> comments, Map<String, Object> attributes) {
+        this(null, description, analyst, methods, creationDate, primaryFindings, secondaryFindings, comments, attributes);
+    }
+
+    public InterpretationUpdateParams(String id, String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
+                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
+                                      List<ClinicalComment> comments, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
-        this.clinicalAnalysisId = clinicalAnalysisId;
         this.analyst = analyst;
         this.methods = methods;
         this.creationDate = creationDate;
@@ -70,7 +73,6 @@ public class InterpretationUpdateParams {
         final StringBuilder sb = new StringBuilder("InterpretationUpdateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
         sb.append(", analyst=").append(analyst);
         sb.append(", methods=").append(methods);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -100,20 +102,11 @@ public class InterpretationUpdateParams {
         return this;
     }
 
-    public String getClinicalAnalysisId() {
-        return clinicalAnalysisId;
-    }
-
-    public InterpretationUpdateParams setClinicalAnalysisId(String clinicalAnalysisId) {
-        this.clinicalAnalysisId = clinicalAnalysisId;
-        return this;
-    }
-
-    public Analyst getAnalyst() {
+    public ClinicalAnalystParam getAnalyst() {
         return analyst;
     }
 
-    public InterpretationUpdateParams setAnalyst(Analyst analyst) {
+    public InterpretationUpdateParams setAnalyst(ClinicalAnalystParam analyst) {
         this.analyst = analyst;
         return this;
     }
@@ -154,11 +147,11 @@ public class InterpretationUpdateParams {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public InterpretationUpdateParams setComments(List<Comment> comments) {
+    public InterpretationUpdateParams setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }

@@ -259,7 +259,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumnNumber("SIZE", File::getSize)
                 .addColumn("INDEX_STATUS", f -> f.getInternal().getIndex().getStatus().getName(), "NA")
                 .addColumn("RELATED_FILES", f -> f.getRelatedFiles().stream().map(rf -> rf.getFile().getName()).collect(Collectors.joining(",")))
-                .addColumn("SAMPLES", f -> f.getSamples().stream().map(Sample::getId).collect(Collectors.joining(",")));
+                .addColumn("SAMPLES", f -> StringUtils.join(f.getSampleIds(), ","));
 
         table.printTable(unwind(queryResultList));
     }

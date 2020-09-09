@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -39,20 +39,18 @@ public class ClinicalUpdateParams {
 
     private List<FileReferenceParam> files;
 
+    private Boolean locked;
 //    private ProbandParam proband;
-//    private FamilyParam family;
-    private Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
+//    private FamilyParam family
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
-    private Interpretation interpretation;
-    private List<Interpretation> secondaryInterpretations;
 
     private ClinicalAnalysisQcUpdateParams qualityControl;
 
     private ClinicalConsent consent;
 
     private String dueDate;
-    private List<Comment> comments;
+    private List<ClinicalComment> comments;
     private List<Alert> alerts;
     private Enums.Priority priority;
     private List<String> flags;
@@ -64,21 +62,18 @@ public class ClinicalUpdateParams {
     }
 
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
-                                List<FileReferenceParam> files, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
-                                ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, Interpretation interpretation,
-                                List<Interpretation> secondaryInterpretations, ClinicalAnalysisQcUpdateParams qualityControl,
-                                ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
-                                Enums.Priority priority, List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
+                                List<FileReferenceParam> files, Boolean locked,  ClinicalAnalystParam analyst,
+                                ClinicalAnalysisInternal internal, ClinicalAnalysisQcUpdateParams qualityControl, ClinicalConsent consent,
+                                String dueDate, List<ClinicalComment> comments, List<Alert> alerts, Enums.Priority priority,
+                                List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
         this.disorder = disorder;
         this.files = files;
-        this.roleToProband = roleToProband;
+        this.locked = locked;
         this.analyst = analyst;
         this.internal = internal;
-        this.interpretation = interpretation;
-        this.secondaryInterpretations = secondaryInterpretations;
         this.qualityControl = qualityControl;
         this.consent = consent;
         this.dueDate = dueDate;
@@ -103,11 +98,9 @@ public class ClinicalUpdateParams {
         sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
-        sb.append(", roleToProband=").append(roleToProband);
+        sb.append(", locked=").append(locked);
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
-        sb.append(", interpretation=").append(interpretation);
-        sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
@@ -133,23 +126,6 @@ public class ClinicalUpdateParams {
 
         public SampleParams setId(String id) {
             this.id = id;
-            return this;
-        }
-    }
-
-    public static class ClinicalAnalystParam {
-        private String assignee;
-
-        public ClinicalAnalystParam(String assignee) {
-            this.assignee = assignee;
-        }
-
-        public String getAssignee() {
-            return assignee;
-        }
-
-        public ClinicalAnalystParam setAssignee(String assignee) {
-            this.assignee = assignee;
             return this;
         }
     }
@@ -199,12 +175,12 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public Map<String, ClinicalAnalysis.FamiliarRelationship> getRoleToProband() {
-        return roleToProband;
+    public Boolean getLocked() {
+        return locked;
     }
 
-    public ClinicalUpdateParams setRoleToProband(Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband) {
-        this.roleToProband = roleToProband;
+    public ClinicalUpdateParams setLocked(Boolean locked) {
+        this.locked = locked;
         return this;
     }
 
@@ -214,24 +190,6 @@ public class ClinicalUpdateParams {
 
     public ClinicalUpdateParams setAnalyst(ClinicalAnalystParam analyst) {
         this.analyst = analyst;
-        return this;
-    }
-
-    public Interpretation getInterpretation() {
-        return interpretation;
-    }
-
-    public ClinicalUpdateParams setInterpretation(Interpretation interpretation) {
-        this.interpretation = interpretation;
-        return this;
-    }
-
-    public List<Interpretation> getSecondaryInterpretations() {
-        return secondaryInterpretations;
-    }
-
-    public ClinicalUpdateParams setSecondaryInterpretations(List<Interpretation> secondaryInterpretations) {
-        this.secondaryInterpretations = secondaryInterpretations;
         return this;
     }
 
@@ -262,11 +220,11 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public ClinicalUpdateParams setComments(List<Comment> comments) {
+    public ClinicalUpdateParams setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }

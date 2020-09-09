@@ -16,14 +16,14 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.clinical.Comment;
+import org.mortbay.util.SingletonList;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -39,12 +39,15 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalUpdateParams;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -204,6 +207,128 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals("child3", familyDataResult.first().getMembers().get(1).getName());
     }
 
+    @Test
+    public void testUpdateWithLockedClinicalAnalysis() throws CatalogException {
+        Sample sample = new Sample().setId("sample1");
+        catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+
+        sample = new Sample().setId("sample2");
+        catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+
+        sample = new Sample().setId("sample3");
+        catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+
+        sample = new Sample().setId("sample4");
+        catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+
+        Individual individual = new Individual()
+                .setId("proband")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder")));
+        catalogManager.getIndividualManager().create(STUDY, individual, Arrays.asList("sample1", "sample2"), QueryOptions.empty(), sessionIdUser);
+
+        individual = new Individual().setId("father");
+        catalogManager.getIndividualManager().create(STUDY, individual, Arrays.asList("sample3"), QueryOptions.empty(), sessionIdUser);
+
+        Family family = new Family().setId("family");
+        catalogManager.getFamilyManager().create(STUDY, family, Arrays.asList("proband", "father"), QueryOptions.empty(), sessionIdUser);
+
+        family.setMembers(Arrays.asList(
+                new Individual().setId("proband").setSamples(Collections.singletonList(new Sample().setId("sample2"))),
+                new Individual().setId("father").setSamples(Collections.singletonList(new Sample().setId("sample3")))
+        ));
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("clinical")
+                .setProband(new Individual().setId("proband"))
+                .setFamily(family)
+                .setType(ClinicalAnalysis.Type.FAMILY);
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        // We will create another clinical analysis with the same information. In this test, we will not lock clinical2
+        clinicalAnalysis = new ClinicalAnalysis()
+                .setId("clinical2")
+                .setProband(new Individual().setId("proband"))
+                .setFamily(family)
+                .setType(ClinicalAnalysis.Type.FAMILY);
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        // Update family not used in Clinical Analysis
+        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams(),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+
+        Family familyResult = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(2, familyResult.getVersion());
+        assertEquals(2, familyResult.getMembers().size());
+        assertEquals(1, familyResult.getMembers().get(0).getVersion());
+        assertEquals(1, familyResult.getMembers().get(1).getVersion());
+
+        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().size());
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical2", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().size());   // proband version
+
+        // LOCK CLINICAL ANALYSIS
+        catalogManager.getClinicalAnalysisManager().update(STUDY, "clinical", new ClinicalUpdateParams().setLocked(true),
+                QueryOptions.empty(), sessionIdUser);
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
+        assertTrue(clinicalResult.isLocked());
+
+        try {
+            catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams().setDescription("My dummy description"),
+                    QueryOptions.empty(), sessionIdUser);
+            fail("We should not be able to update information that is in use in a locked clinical analysis unless the version is incremented");
+        } catch (CatalogException e) {
+            // Check nothing changed
+
+            familyResult = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser).first();
+            assertEquals(2, familyResult.getVersion());
+            assertEquals(2, familyResult.getMembers().size());
+            assertEquals(1, familyResult.getMembers().get(0).getVersion());
+            assertEquals(1, familyResult.getMembers().get(1).getVersion());
+
+            clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
+            assertEquals(1, clinicalResult.getProband().getVersion());
+            assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+            assertEquals(2, clinicalResult.getFamily().getVersion());
+            assertEquals(2, clinicalResult.getFamily().getMembers().size());
+
+            clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical2", QueryOptions.empty(), sessionIdUser).first();
+            assertEquals(1, clinicalResult.getProband().getVersion());
+            assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+            assertEquals(2, clinicalResult.getFamily().getVersion());
+            assertEquals(2, clinicalResult.getFamily().getMembers().size());   // proband version
+
+        }
+
+        // Update family with version increment
+        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams(),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+
+        familyResult = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, familyResult.getVersion());
+        assertEquals(2, familyResult.getMembers().size());
+        assertEquals(1, familyResult.getMembers().get(0).getVersion());
+        assertEquals(1, familyResult.getMembers().get(1).getVersion());
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().size());
+
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical2", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, clinicalResult.getProband().getVersion());
+        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(3, clinicalResult.getFamily().getVersion());
+        assertEquals(2, clinicalResult.getFamily().getMembers().size());
+    }
 
     @Test
     public void includeMemberIdOnly() throws CatalogException {
@@ -343,12 +468,6 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(1, child1.first().getDisorders().size());
         assertEquals(2, child1.first().getVersion());
 
-        family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
-        assertEquals(0, family.first().getDisorders().size());
-
-        // Updating the individual version from family should also update the phenotypes and disorders
-        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams(), new QueryOptions(Constants.REFRESH, true),
-                sessionIdUser);
         family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
         for (Individual member : family.first().getMembers()) {
             if (member.getId().equals(child1.first().getId())) {
@@ -571,7 +690,7 @@ public class FamilyManagerTest extends GenericTest {
         DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
         FamilyQualityControl qualityControl = new FamilyQualityControl(null, Arrays.asList("file1", "file2"),
-                Collections.singletonList(new Comment("author", "type", "message", "date")));
+                Collections.singletonList(new ClinicalComment("author", "message", Collections.singletonList("tag"), "date")));
 
         FamilyUpdateParams updateParams = new FamilyUpdateParams().setQualityControl(qualityControl);
 
@@ -583,8 +702,8 @@ public class FamilyManagerTest extends GenericTest {
         assertTrue(Arrays.asList("file1", "file2").containsAll(updatedFamily.first().getQualityControl().getFileIds()));
         assertEquals(1, updatedFamily.first().getQualityControl().getComments().size());
         assertEquals("author", updatedFamily.first().getQualityControl().getComments().get(0).getAuthor());
-        assertEquals("type", updatedFamily.first().getQualityControl().getComments().get(0).getType());
         assertEquals("message", updatedFamily.first().getQualityControl().getComments().get(0).getMessage());
+        assertEquals("tag", updatedFamily.first().getQualityControl().getComments().get(0).getTags().get(0));
         assertEquals("date", updatedFamily.first().getQualityControl().getComments().get(0).getDate());
     }
 

@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.family;
 
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 
 import java.io.Serializable;
@@ -10,13 +10,13 @@ import java.util.List;
 public class FamilyQualityControl implements Serializable {
     private List<RelatednessReport> relatedness;
     private List<String> fileIds;
-    private List<Comment> comments;
+    private List<ClinicalComment> comments;
 
     public FamilyQualityControl() {
         this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public FamilyQualityControl(List<RelatednessReport> relatedness, List<String> fileIds, List<Comment> comments) {
+    public FamilyQualityControl(List<RelatednessReport> relatedness, List<String> fileIds, List<ClinicalComment> comments) {
         this.relatedness = relatedness;
         this.fileIds = fileIds;
         this.comments = comments;
@@ -50,11 +50,11 @@ public class FamilyQualityControl implements Serializable {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public FamilyQualityControl setComments(List<Comment> comments) {
+    public FamilyQualityControl setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }

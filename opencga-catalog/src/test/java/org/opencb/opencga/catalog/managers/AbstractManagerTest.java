@@ -225,7 +225,7 @@ public class AbstractManagerTest extends GenericTest {
         s_9 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
 
         catalogManager.getFileManager().update(studyFqn, test01k.getPath(), new FileUpdateParams()
-                        .setSamples(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), token);
+                        .setSampleIds(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), token);
     }
 
 

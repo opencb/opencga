@@ -177,6 +177,9 @@ public class ParamConstants {
 
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
     public static final String CLINICAL_ANALYSES_PARAM = "clinicalAnalyses";
+    public static final String CLINICAL_ANALYSIS_CREATE_DEFAULT_PARAM = "createDefaultInterpretation";
+    public static final String CLINICAL_ANALYSIS_CREATE_DEFAULT_DESCRIPTION = "Flag to create and initialise a default primary "
+            + "interpretation (Id will be '{clinicalAnalysisId}.1')";
 
     // ---------------------------------------------
 

@@ -70,7 +70,7 @@ public class FamilyCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
         this.studyUid = studyUid;
 
         this.individualDBAdaptor = individualDBAdaptor;
-        this.individualQueryOptions = createFamilyQueryOptions();
+        this.individualQueryOptions = createIndividualQueryOptions();
 
         this.familyListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(FamilyCatalogMongoDBIterator.class);
@@ -210,8 +210,8 @@ public class FamilyCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
         }
     }
 
-    private QueryOptions createFamilyQueryOptions() {
-        QueryOptions queryOptions = new QueryOptions(NATIVE_QUERY, true);
+    private QueryOptions createIndividualQueryOptions() {
+        QueryOptions queryOptions = new QueryOptions();
 
         if (options.containsKey(QueryOptions.INCLUDE)) {
             List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);

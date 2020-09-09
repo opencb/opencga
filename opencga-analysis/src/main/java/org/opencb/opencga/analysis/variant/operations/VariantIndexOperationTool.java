@@ -21,7 +21,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -156,13 +155,11 @@ public class VariantIndexOperationTool extends OperationTool {
                 OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getCatalogManager().getFileManager()
                         .search(study,
                                 new Query(FileDBAdaptor.QueryParams.URI.key(), inputFiles),
-                                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLES.key()), getToken());
+                                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), getToken());
 
                 Set<String> samples = new HashSet<>();
                 for (org.opencb.opencga.core.models.file.File file : fileResult.getResults()) {
-                    for (Sample sample : file.getSamples()) {
-                        samples.add(sample.getId());
-                    }
+                    samples.addAll(file.getSampleIds());
                 }
 
                 variantStorageManager.familyIndexBySamples(study, samples, params, getToken());

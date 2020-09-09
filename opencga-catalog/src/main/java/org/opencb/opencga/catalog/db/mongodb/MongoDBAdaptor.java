@@ -497,6 +497,42 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return queryOptions;
     }
 
+    /**
+     * Change the projection key given by the user by the real one used internally.
+     *
+     * @param options current query options object.
+     * @param userProjectionKey Projection key provided by the user.
+     * @param realProjectionKey Real projection key we need to have..
+     * @return new QueryOptions after changing the projection key.
+     */
+    protected QueryOptions changeProjectionKey(QueryOptions options, String userProjectionKey, String realProjectionKey) {
+        QueryOptions queryOptions;
+        if (options == null) {
+            queryOptions = new QueryOptions();
+        } else {
+            queryOptions = new QueryOptions(options);
+        }
+
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+            if (includeList.contains(userProjectionKey)) {
+                includeList.remove(userProjectionKey);
+                includeList.add(realProjectionKey);
+                queryOptions.put(QueryOptions.INCLUDE, includeList);
+            }
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+            if (excludeList.contains(userProjectionKey)) {
+                excludeList.remove(userProjectionKey);
+                excludeList.add(realProjectionKey);
+                queryOptions.put(QueryOptions.INCLUDE, excludeList);
+            }
+        }
+
+        return queryOptions;
+    }
+
     protected OpenCGAResult unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
         Bson query = new Document()
                 .append(PRIVATE_STUDY_UID, studyId)

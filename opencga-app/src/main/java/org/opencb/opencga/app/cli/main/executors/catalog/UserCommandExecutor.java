@@ -175,8 +175,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 
         RestResponse<User> userQueryResponse = openCGAClient.getUserClient().info(userId, params);
         if (userQueryResponse.getResponses().size() == 1 && userQueryResponse.getResponses().get(0).getNumResults() == 1) {
-            params.put("shared", true);
-            RestResponse<Project> sharedProjects = openCGAClient.getUserClient().projects(userId, params);
+            ObjectMap projectParams = new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), "!=" + userId);
+            RestResponse<Project> sharedProjects = openCGAClient.getProjectClient().search(projectParams);
             if (sharedProjects.getResponses().size() > 0 && sharedProjects.getResponses().get(0).getNumResults() > 0) {
                 OpenCGAResult<User> userQueryResult = userQueryResponse.getResponses().get(0);
                 List<Project> newProjectList = Stream

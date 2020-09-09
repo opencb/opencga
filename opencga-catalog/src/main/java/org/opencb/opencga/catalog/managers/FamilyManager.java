@@ -1489,10 +1489,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Set<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
-        Map<String, Map<String, ClinicalAnalysis.FamiliarRelationship>> roles = new HashMap<>();
+        Map<String, Map<String, Family.FamiliarRelationship>> roles = new HashMap<>();
         for (Individual member : family.getMembers()) {
             List<Individual> individualList = catalogManager.getIndividualManager().calculateRelationship(study, member, 2, options, user);
-            Map<String, ClinicalAnalysis.FamiliarRelationship> memberRelation = new HashMap<>();
+            Map<String, Family.FamiliarRelationship> memberRelation = new HashMap<>();
             for (Individual individual : individualList) {
                 if (individualIds.contains(individual.getId())) {
                     memberRelation.put(individual.getId(), IndividualManager.extractIndividualRelation(individual));

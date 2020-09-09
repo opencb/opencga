@@ -75,8 +75,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         SOFTWARE_NAME("software.name", TEXT, ""),
         SOFTWARE_VERSION("software.version", TEXT, ""),
         SOFTWARE_COMMIT("software.commit", TEXT, ""),
-        SAMPLES("samples", TEXT_ARRAY, ""),
-        SAMPLE_UIDS("samples.uid", INTEGER_ARRAY, ""),
+        SAMPLE_IDS("sampleIds", TEXT_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
         JOB_ID("jobId", TEXT, ""),
@@ -159,7 +158,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         JOB_ID(QueryParams.JOB_ID.key()),
         SOFTWARE(QueryParams.SOFTWARE.key()),
         STATUS_NAME(QueryParams.INTERNAL_STATUS_NAME.key()),
-        SAMPLES(QueryParams.SAMPLES.key()),
+        SAMPLE_IDS(QueryParams.SAMPLE_IDS.key()),
         URI(QueryParams.URI.key()),
         SIZE(QueryParams.SIZE.key()),
         ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
@@ -217,6 +216,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      *
      * @param studyId Id of the study where the file belongs to.
      * @param file The file to be inserted in the database.
+     * @param existingSamples List of existing samples to associate to the File.
+     * @param nonExistingSamples List of non-existing samples to create and associate to the File.
      * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
      * @return A OpenCGAResult object containing the time spent.
@@ -224,7 +225,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @throws CatalogParameterException if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options)
+    OpenCGAResult insert(long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
+                         List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /***
@@ -278,16 +280,6 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      */
     OpenCGAResult rename(long fileId, String filePath, String fileUri, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    /**
-     * Add the samples to the array of samples in the file entry.
-     *
-     * @param fileId file id corresponding to the file being updated.
-     * @param samples List of samples to be added to the array.
-     * @return OpenCGAResult object.
-     * @throws CatalogDBException CatalogDBException.
-     */
-    OpenCGAResult addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

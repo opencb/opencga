@@ -93,10 +93,10 @@ public class ClinicalAnalysisUtilsTest {
                 System.out.println("\t\t\t\tNum. clinical variant evidences = " + variant.getEvidences().size());
                 for (ClinicalVariantEvidence clinicalVariantEvidence : variant.getEvidences()) {
                     System.out.print("\t\t\t\t\t(Tier, CT) = (" + clinicalVariantEvidence.getClassification().getTier() + ", ");
-                    if (CollectionUtils.isEmpty(clinicalVariantEvidence.getConsequenceTypes())) {
+                    if (CollectionUtils.isEmpty(clinicalVariantEvidence.getGenomicFeature().getConsequenceTypes())) {
                         System.out.print("EMPTY");
                     } else {
-                        System.out.print(clinicalVariantEvidence.getConsequenceTypes().stream().map(SequenceOntologyTerm::getName)
+                        System.out.print(clinicalVariantEvidence.getGenomicFeature().getConsequenceTypes().stream().map(SequenceOntologyTerm::getName)
                                 .collect(Collectors.joining(",")));
                     }
                     System.out.println(")");
