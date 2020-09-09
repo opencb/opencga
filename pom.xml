@@ -255,18 +255,6 @@
 <!--                    </exclusion>-->
                 </exclusions>
             </dependency>
-            <!-- cellbase-lib dependency required to enable direct annotation against the database using the adaptors -->
-            <dependency>
-                <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-lib</artifactId>
-                <version>${cellbase.version}</version>
-<!--                <exclusions>-->
-<!--                    <exclusion>-->
-<!--                        <groupId>org.slf4j</groupId>-->
-<!--                        <artifactId>slf4j-simple</artifactId>-->
-<!--                    </exclusion>-->
-<!--                </exclusions>-->
-            </dependency>
             <dependency>
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-datastore-mongodb</artifactId>
@@ -679,13 +667,8 @@
                 <OPENCGA.MAIL.PASSWORD></OPENCGA.MAIL.PASSWORD>
 
                 <!-- cellbase -->
-                <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
                 <OPENCGA.CELLBASE.REST.HOST>http://bioinfo.hpc.cam.ac.uk/cellbase/</OPENCGA.CELLBASE.REST.HOST>
-                <OPENCGA.CELLBASE.DB.HOST>localhost:27017</OPENCGA.CELLBASE.DB.HOST>
-                <OPENCGA.CELLBASE.DB.USER></OPENCGA.CELLBASE.DB.USER>
-                <OPENCGA.CELLBASE.DB.PASSWORD></OPENCGA.CELLBASE.DB.PASSWORD>
-                <OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE></OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE>
-                <OPENCGA.CELLBASE.DB.READ_PREFERENCE>secondaryPreferred</OPENCGA.CELLBASE.DB.READ_PREFERENCE>
+                <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
             </properties>
         </profile>
         <profile>

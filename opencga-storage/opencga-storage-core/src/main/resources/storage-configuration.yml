@@ -3,19 +3,9 @@
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
-  hosts:      ## 'remote' URL hosts to annotate variants, for example: http://bioinfo.hpc.cam.ac.uk/cellbase/
-  - "${OPENCGA.CELLBASE.REST.HOST}"
+  ## URL host to annotate variants, for example: http://bioinfo.hpc.cam.ac.uk/cellbase/
+  host: "${OPENCGA.CELLBASE.REST.HOST}"
   version: "${OPENCGA.CELLBASE.VERSION}"
-  database:   ## 'local' connection to CellBase MongoDB
-    hosts:
-    - "${OPENCGA.CELLBASE.DB.HOST}"
-    user: "${OPENCGA.CELLBASE.DB.USER}"
-    password: "${OPENCGA.CELLBASE.DB.PASSWORD}"
-    options:         ## This is intended for database specific options such as --authenticationDatabase in MongoDB
-      authenticationDatabase: "${OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE}"
-      readPreference: "${OPENCGA.CELLBASE.DB.READ_PREFERENCE}"
-      enableSSL: false
-  preferred: "remote"   ## This accept two values: 'local' and 'remote' to fetch data
 
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
 ## is launched in the specified port.
