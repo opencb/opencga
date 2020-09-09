@@ -165,6 +165,9 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
             }
         }
 
+        // Check primary
+        checkPrimaryInterpretation(clinicalAnalysis);
+
         // Check interpretation method
         checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
     }

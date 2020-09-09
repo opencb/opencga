@@ -94,6 +94,9 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
                     + StringUtils.join(diseasePanelIds, ","));
         }
 
+        // Check primary
+        checkPrimaryInterpretation(clinicalAnalysis);
+
         // Check interpretation method
         checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
 

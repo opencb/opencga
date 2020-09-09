@@ -87,6 +87,9 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
         // Check disease panels
         diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, token);
 
+        // Check primary
+        checkPrimaryInterpretation(clinicalAnalysis);
+
         // Check interpretation method
         checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
 

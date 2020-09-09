@@ -75,6 +75,9 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
 
         clinicalAnalysis = clinicalAnalysisQueryResult.first();
 
+        // Check primary
+        checkPrimaryInterpretation(clinicalAnalysis);
+
         // Check interpretation method
         checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
 

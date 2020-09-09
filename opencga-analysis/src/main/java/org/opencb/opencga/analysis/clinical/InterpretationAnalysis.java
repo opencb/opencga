@@ -63,6 +63,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
 
     public final static String PRIMARY_INTERPRETATION_PARAM_NAME = "secondary";
 
+    protected boolean primary;
     protected ClinicalInterpretationManager clinicalInterpretationManager;
 
     public InterpretationAnalysis() {
@@ -87,6 +88,12 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     @Override
     protected void check() throws Exception {
         this.clinicalInterpretationManager = getClinicalInterpretationManager(opencgaHome);
+    }
+
+    protected void checkPrimaryInterpretation(ClinicalAnalysis clinicalAnalysis) throws ToolException {
+        if (primary && clinicalAnalysis.getPriority() != null) {
+            throw new ToolException("Primary interpretation already exists");
+        }
     }
 
     protected void checkInterpretationMethod(String methodName, ClinicalAnalysis clinicalAnalysis) throws ToolException {
@@ -167,4 +174,12 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
         }
     }
 
+    public boolean isPrimary() {
+        return primary;
+    }
+
+    public InterpretationAnalysis setPrimary(boolean primary) {
+        this.primary = primary;
+        return this;
+    }
 }

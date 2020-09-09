@@ -124,6 +124,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 .setDiseasePanelIds(cliOptions.panels)
                 .setPenetrance(penetrance)
                 .setConfig(config);
+        tieringAnalysis.setPrimary(cliOptions.primary);
         tieringAnalysis.start();
     }
 
@@ -159,6 +160,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 .setDiseasePanelIds(cliOptions.panels)
                 .setMoi(moi)
                 .setConfig(config);
+        teamAnalysis.setPrimary(cliOptions.primary);
         teamAnalysis.start();
     }
 
@@ -234,6 +236,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 .setQuery(query)
                 .setQueryOptions(QueryOptions.empty())
                 .setConfig(config);
+        zettaAnalysis.setPrimary(cliOptions.primary);
         zettaAnalysis.start();
     }
 
@@ -258,6 +261,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 .setClinicalAnalysisId(cliOptions.clinicalAnalysis)
                 .setVariantIdsToDiscard(cliOptions.discardedVariants)
                 .setConfig(config);
+        cancerTieringAnalysis.setPrimary(cliOptions.primary);
         cancerTieringAnalysis.start();
     }
 }
