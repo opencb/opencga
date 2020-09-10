@@ -335,6 +335,8 @@ public class VariantRow {
 
         String getFilter();
 
+        String getFileData(int idx);
+
         String getString(int idx);
     }
 
@@ -571,6 +573,12 @@ public class VariantRow {
         public String getFilter() {
             return getString(HBaseToStudyEntryConverter.FILE_FILTER_IDX);
         }
+
+        @Override
+        public String getFileData(int fileDataField) {
+            return getString(fileDataField + HBaseToStudyEntryConverter.FILE_INFO_START_IDX);
+        }
+
     }
 
     private static class BytesStatsColumn extends BytesColumn implements StatsColumn {
