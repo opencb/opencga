@@ -34,9 +34,6 @@ class Test_init_script(unittest.TestCase):
                     "--client-config-path", "./client-configuration.yml",
                     "--storage-config-path", "./storage-configuration.yml",
                     "--search-hosts", "test-search-host1,test-search-host2",
-                    "--cellbase-mongo-hosts", "test-cellbase-host,test-cellbase-host2",
-                    "--cellbase-mongo-hosts-user", "cellbaseuser",
-                    "--cellbase-mongo-hosts-password", "cellbasepassword",
                     "--catalog-database-hosts", "test-catalog-database-host1,test-catalog-database-host2,test-catalog-database-host3",
                     "--catalog-database-user", "test-catalog-database-user",
                     "--catalog-database-password", "test-catalog-database-password",
@@ -78,23 +75,14 @@ class Test_init_script(unittest.TestCase):
         self.assertEqual(storage_config["search"]["hosts"][0], "test-search-host1")
         self.assertEqual(storage_config["search"]["hosts"][1], "test-search-host2")
         self.assertEqual(storage_config["clinical"]["hosts"][0], "test-clinical-host")
-        self.assertEqual(
-            storage_config["cellbase"]["database"]["hosts"][0], "test-cellbase-host"
-        )
-        self.assertEqual(storage_config["cellbase"]["database"]["user"], "cellbaseuser")
-        self.assertEqual(
-            storage_config["cellbase"]["database"]["password"], "cellbasepassword"
-        )
-        self.assertEqual(
-            storage_config["cellbase"]["database"]["options"]["sslEnabled"], True
-        )
+
         self.assertEqual(
             storage_config["variant"]["defaultEngine"],
             "test-variant-default-engine",
         )
         self.assertEqual(
             storage_config["variant"]["options"]["annotator"],
-            "cellbase_db_adaptor",
+            "cellbase",
         )
         self.assertEqual(
             storage_config["variant"]["engines"][1]["options"][
@@ -169,7 +157,7 @@ class Test_init_script(unittest.TestCase):
         self.assertEqual(client_config["grpc"]["host"], "test-grpc-host")
 
     def test_azure_batch_execution(self):
-      
+
         res = subprocess.run(
             [
                 "python3", "../override_yaml.py",
@@ -177,10 +165,7 @@ class Test_init_script(unittest.TestCase):
                     "--client-config-path", "./client-configuration.yml",
                     "--storage-config-path", "./storage-configuration.yml",
                     "--search-hosts", "test-search-host1,test-search-host2",
-                    "--clinical-hosts",
-                    "test-clinical-host",
-                    "--cellbase-mongo-hosts-user", "cellbaseuser",
-                    "--cellbase-mongo-hosts-password", "cellbasepassword",
+                    "--clinical-hosts", "test-clinical-host",
                     "--catalog-database-hosts", "test-catalog-database-host1,test-catalog-database-host2,test-catalog-database-host3",
                     "--catalog-database-user", "test-catalog-database-user",
                     "--catalog-database-password", "test-catalog-database-password",
@@ -241,10 +226,10 @@ class Test_init_script(unittest.TestCase):
 
         self.assertEqual(client_config["rest"]["host"], "test-rest-host")
         self.assertEqual(client_config["grpc"]["host"], "test-grpc-host")
-   
+
 
     def test_kubernetes_execution(self):
-      
+
         res = subprocess.run(
             [
                 "python3", "../override_yaml.py",
@@ -254,8 +239,6 @@ class Test_init_script(unittest.TestCase):
                     "--search-hosts", "test-search-host1,test-search-host2",
                     "--clinical-hosts",
                     "test-clinical-host",
-                    "--cellbase-mongo-hosts-user", "cellbaseuser",
-                    "--cellbase-mongo-hosts-password", "cellbasepassword",
                     "--catalog-database-hosts", "test-catalog-database-host1,test-catalog-database-host2,test-catalog-database-host3",
                     "--catalog-database-user", "test-catalog-database-user",
                     "--catalog-database-password", "test-catalog-database-password",
@@ -317,8 +300,6 @@ class Test_init_script(unittest.TestCase):
                 "./client-configuration.yml",
                 "--storage-config-path",
                 "./storage-configuration.yml",
-                "--cellbase-mongo-hosts",
-                "",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
                 "--clinical-hosts",
@@ -384,7 +365,7 @@ class Test_init_script(unittest.TestCase):
 
         self.assertEqual(
             storage_config["variant"]["options"]["annotator"],
-            "cellbase_rest",
+            "cellbase",
         )
 
     def test_cellbasedb_with_no_db_hosts(self):
@@ -464,7 +445,7 @@ class Test_init_script(unittest.TestCase):
 
         self.assertEqual(
             storage_config["variant"]["options"]["annotator"],
-            "cellbase_rest",
+            "cellbase",
         )
 
     def test_cellbase_rest_set(self):
@@ -474,9 +455,7 @@ class Test_init_script(unittest.TestCase):
                 "python3",
                 "../override_yaml.py",
                 "--cellbase-rest-url",
-                "http://test-cellbase-server1:8080, http://test-cellbase-server2:8080",
-                "--cellbase-mongo-hosts",
-                "",
+                "http://test-cellbase-server1:8080",
                 "--config-path",
                 "./configuration.yml",
                 "--client-config-path",
@@ -548,13 +527,10 @@ class Test_init_script(unittest.TestCase):
 
         self.assertEqual(
             storage_config["variant"]["options"]["annotator"],
-            "cellbase_rest",
+            "cellbase",
         )
         self.assertEqual(
-            storage_config["cellbase"]["hosts"][0], "http://test-cellbase-server1:8080"
-        )
-        self.assertEqual(
-            storage_config["cellbase"]["hosts"][1], "http://test-cellbase-server2:8080"
+            storage_config["cellbase"]["host"], "http://test-cellbase-server1:8080"
         )
 
     def test_cellbase_rest_empty_set(self):
@@ -636,10 +612,10 @@ class Test_init_script(unittest.TestCase):
 
         self.assertEqual(
             storage_config["variant"]["options"]["annotator"],
-            "cellbase_rest",
+            "cellbase",
         )
         self.assertEqual(
-            storage_config["cellbase"]["hosts"][0],
+            storage_config["cellbase"]["host"],
             "http://bioinfo.hpc.cam.ac.uk/cellbase/",
         )
 
@@ -720,10 +696,10 @@ class Test_init_script(unittest.TestCase):
 
         self.assertEqual(
             storage_config["variant"]["options"]["annotator"],
-            "cellbase_rest",
+            "cellbase",
         )
         self.assertEqual(
-            storage_config["cellbase"]["hosts"][0],
+            storage_config["cellbase"]["host"],
             "http://bioinfo.hpc.cam.ac.uk/cellbase/",
         )
 

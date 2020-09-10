@@ -11,7 +11,7 @@ catalog:
     user: "FILL_ME"
 
 cellbase:
-  hosts: "FILL_ME"
+  host: "FILL_ME"
 
 analysis:
   index:
