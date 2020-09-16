@@ -1,6 +1,6 @@
 # Home
 
-OpenCGA is an open-source project that implements a high-performance, scalable and secure platform for Genomic data analysis and visualisation.
+OpenCGA is an open source project that implements a high-performance, scalable and secure platform for Genomic data analysis and visualisation.
 
 OpenCGA provides the most advanced and complete genomic data platform. The performance, scalability and huge number features makes of OpenCGA an unique full-stack solution today. OpenCGA takes care of security and implements a high-performance query engine and analysis frameworks for _Big Data_ analysis and visualisation in current genomics. OpenCGA uses the most modern and advanced technologies, and has been designed and implemented to scale to hundreds of thousands if genomes accounting for petabytes of variant data. It is built on top of three main components: _Catalog Metadata Database_, _Variant Storage Engine_ and _Analysis Framework_.
 
