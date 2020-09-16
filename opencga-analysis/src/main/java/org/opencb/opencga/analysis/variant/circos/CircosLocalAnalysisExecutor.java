@@ -90,6 +90,32 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         return storageManager;
     }
 
+    public void run2() throws ToolException, IOException {
+        if (this.circosParams == null) {
+            throw new ToolExecutorException("");
+        }
+
+        ExecutorService threadPool = Executors.newFixedThreadPool(this.circosParams.getTracks().size());
+        List<Future<Boolean>> futureList = new ArrayList<>(this.circosParams.getTracks().size());
+        for (CircosTrack track : this.circosParams.getTracks()) {
+            // track.getType().name();
+            switch ("") {
+                case "SNV":
+                case "INDEL":
+                    futureList.add(threadPool.submit(getNamedThread("SNV", () -> variantQuery(query, track.getDisplay(), storageManager))));
+                    break;
+                case "TAINPLOT":
+                    futureList.add(threadPool.submit(getNamedThread("RAINPLOT", () -> rainPlot(query, storageManager))));
+                    break;
+                case "CNV":
+                    String data = track.getData();
+                    futureList.add(threadPool.submit(getNamedThread("CNV", () -> copyNumberQuery(query, storageManager))));
+
+                    break;
+            }
+        }
+    }
+
     @Override
     public void run() throws ToolException, IOException {
 
@@ -107,7 +133,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
         errors = new HashMap<>();
         List<Future<Boolean>> futureList = new ArrayList<>(4);
-        futureList.add(threadPool.submit(getNamedThread("SNV", () -> snvQuery(query, storageManager))));
+        futureList.add(threadPool.submit(getNamedThread("SNV", () -> rainPlot(query, storageManager))));
         futureList.add(threadPool.submit(getNamedThread("COPY_NUMBER", () -> copyNumberQuery(query, storageManager))));
         futureList.add(threadPool.submit(getNamedThread("INDEL", () -> indelQuery(query, storageManager))));
         futureList.add(threadPool.submit(getNamedThread("REARRANGEMENT", () -> rearrangementQuery(query, storageManager))));
@@ -158,6 +184,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         }
     }
 
+    private boolean variantQuery(Query query, Map<String, String> display, VariantStorageManager storageManager) {
+        return true;
+    }
+
     /**
      * Create file with SNV variants.
      *
@@ -165,7 +195,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
      * @param storageManager    Variant storage manager
      * @return True or false depending on successs
      */
-    private boolean snvQuery(Query query, VariantStorageManager storageManager) {
+    private boolean rainPlot(Query query, VariantStorageManager storageManager) {
         PrintWriter pw = null;
         PrintWriter pwOut = null;
         try {
@@ -275,8 +305,17 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 logger.info("COPY-NUMBER track, query: " + copyNumberQuery.toJson());
                 logger.info("COPY-NUMBER track, query options: " + queryOptions.toJson());
 
-                VariantDBIterator iterator = storageManager.iterator(copyNumberQuery, queryOptions, getToken());
+                String score1, score2;
+                String operator
+                if (StringUtils.isNotEmpty(data)) {
+                    // ...
+                    score1 = "TCN";
+                    score2 = "MCN";
+                }
 
+
+
+                VariantDBIterator iterator = storageManager.iterator(copyNumberQuery, queryOptions, getToken());
                 while (iterator.hasNext()) {
                     Variant v = iterator.next();
 
@@ -284,8 +323,12 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         pwOut.println(v.toString() + "\tStudies is empty");
                     } else {
                         StudyEntry studyEntry = v.getStudies().get(0);
-                        String strTcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()), "TCN");
-                        String strMcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()), "MCN");
+                        if (StringUtils.isNotEmpty(score1)) {
+                            String strTcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()), score1);
+                            if (StringUtils.isNotEmpty(score2)) {
+                                String strMcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()), score2);
+                            }
+                        }
 
                         if (StringUtils.isEmpty(strTcn)) {
                             pwOut.println(v.toString() + "\tTCN format field is empty");

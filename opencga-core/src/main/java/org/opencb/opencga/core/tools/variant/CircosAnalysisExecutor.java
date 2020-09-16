@@ -21,8 +21,8 @@ import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 public abstract class CircosAnalysisExecutor extends OpenCgaToolExecutor {
 
-    private String study;
-    private CircosAnalysisParams circosParams;
+    protected String study;
+    protected CircosAnalysisParams circosParams;
 
     public CircosAnalysisExecutor() {
     }

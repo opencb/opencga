@@ -23,15 +23,19 @@ import java.util.List;
 import java.util.Map;
 
 public class CircosAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Circos analysis params to customize the plot. These parameters include the title,  the "
-    + "plot density (i.e., the number of points to display), the general query and the list of tracks. Currently, the supported "
-    + "track types are: COPY-NUMBER, INDEL, REARRANGEMENT and SNV. In addition, each track can contain a specific query";
+
     private String title;
+    @Deprecated
     private String density; // Density plot: LOW, MEDIUM or HIGH
     private Map<String, String> query;
     private List<CircosTrack> tracks;
-
+    private Map<String, String> display;
     private String outdir;
+
+    public static final String DESCRIPTION = "Circos analysis params to customize the plot. These parameters include the title,  the "
+            + "plot density (i.e., the number of points to display), the general query and the list of tracks. Currently, the supported "
+            + "track types are: COPY-NUMBER, INDEL, REARRANGEMENT and SNV. In addition, each track can contain a specific query";
+
 
     public CircosAnalysisParams() {
         this(null, "LOW", null, null, null);
