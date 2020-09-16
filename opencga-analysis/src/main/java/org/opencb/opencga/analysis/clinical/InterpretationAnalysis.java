@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.clinical;
 
+import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
@@ -28,6 +29,7 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -59,18 +61,61 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     public static final String PENETRANCE_PARAM_NAME = "penetrance";
     public final static String DISCARDED_VARIANTS_PARAM_NAME = "discarded-variants";
 
-    public final static String SECONDARY_INTERPRETATION_PARAM_NAME = "secondary";
-    public final static String INDEX_PARAM_NAME = "index";
-//    public final static String INCLUDE_UNTIERED_VARIANTS_PARAM_NAME = "include-untiered-variants";
+    public final static String PRIMARY_INTERPRETATION_PARAM_NAME = "secondary";
 
+    protected boolean primary;
     protected ClinicalInterpretationManager clinicalInterpretationManager;
 
     public InterpretationAnalysis() {
     }
 
+    /**
+     * Method to be implemented by subclasses with the actual method of the interpretation.
+     * @throws Exception on error
+     */
+    protected abstract InterpretationMethod getInterpretationMethod() throws Exception;
+
+    protected InterpretationMethod getInterpretationMethod(String name) {
+        InterpretationMethod method = new InterpretationMethod()
+                .setName(name)
+                .setDependencies(Collections.singletonList(new Software()
+                        .setName("OpenCGA")
+                        .setVersion(GitRepositoryState.get().getBuildVersion())
+                        .setCommit(GitRepositoryState.get().getCommitId())));
+        return method;
+    }
+
     @Override
     protected void check() throws Exception {
         this.clinicalInterpretationManager = getClinicalInterpretationManager(opencgaHome);
+    }
+
+    protected void checkPrimaryInterpretation(ClinicalAnalysis clinicalAnalysis) throws ToolException {
+        if (primary && clinicalAnalysis.getPriority() != null) {
+            throw new ToolException("Primary interpretation already exists");
+        }
+    }
+
+    protected void checkInterpretationMethod(String methodName, ClinicalAnalysis clinicalAnalysis) throws ToolException {
+        if (clinicalAnalysis.getInterpretation() != null && CollectionUtils.isNotEmpty(clinicalAnalysis.getInterpretation().getMethods())) {
+            for (InterpretationMethod method : clinicalAnalysis.getInterpretation().getMethods()) {
+                if (methodName.equals(method.getName())) {
+                    throw new ToolException("Interpretation (primary) with method name '" + methodName + "' already exists");
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+            for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                if (CollectionUtils.isNotEmpty(secondaryInterpretation.getMethods())) {
+                    for (InterpretationMethod method : secondaryInterpretation.getMethods()) {
+                        if (methodName.equals(method.getName())) {
+                            throw new ToolException("Interpretation (secondary) with method name '" + methodName + "' already exists");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels, Query query,
@@ -129,4 +174,12 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
         }
     }
 
+    public boolean isPrimary() {
+        return primary;
+    }
+
+    public InterpretationAnalysis setPrimary(boolean primary) {
+        this.primary = primary;
+        return this;
+    }
 }
