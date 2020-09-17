@@ -21,12 +21,16 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -122,9 +126,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 case RAINPLOT:
                     futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> rainplotQuery(query, track))));
                     break;
-//                case GENE:
-//                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> geneQuery(track))));
-//                    break;
+                case GENE:
+                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> geneQuery(query, track))));
+                    break;
 //                case COVERAGE:
 //                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> coverageQuery(track))));
 //                    break;
@@ -377,6 +381,76 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 pwOut.close();
             }
         }
+        return true;
+    }
+
+
+    /**
+     * Create file with gene.
+     *
+     * @param query General query
+     * @param track Circos track
+     * @return True or false depending on successs
+     */
+    private boolean geneQuery(Query query, CircosTrack track) {
+        PrintWriter pw = null;
+
+        try {
+            File trackFile = getTrackFilename(track.getType().name());
+            pw = new PrintWriter(trackFile);
+            pw.println("Chromosome\tchromStart\tchromEnd");
+
+            Query variantQuery = new Query(query);
+            if (MapUtils.isNotEmpty(track.getQuery())) {
+                variantQuery.putAll(track.getQuery());
+            }
+
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,annotation");
+
+            logger.info(track.getType().name() + " track, query: " + variantQuery.toJson());
+            logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
+
+            Set<String> geneIds = new HashSet<>();
+
+            VariantDBIterator iterator = storageManager.iterator(variantQuery, queryOptions, getToken());
+            while (iterator.hasNext()) {
+                Variant v = iterator.next();
+                if (v.getAnnotation() != null && CollectionUtils.isNotEmpty(v.getAnnotation().getConsequenceTypes())) {
+                    for (ConsequenceType ct : v.getAnnotation().getConsequenceTypes()) {
+                        if (StringUtils.isNotEmpty(ct.getEnsemblGeneId())) {
+                            geneIds.add(ct.getEnsemblGeneId());
+                        }
+                    }
+                }
+            }
+
+            // Add genes from the field 'include'
+            if (CollectionUtils.isNotEmpty(track.getInclude())) {
+                geneIds.addAll(track.getInclude());
+            }
+
+            // Call CellBase in order to get gene information
+            CellBaseClient cellBaseClient = storageManager.getCellBaseUtils(study, getToken()).getCellBaseClient();
+            queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
+            QueryResponse<Gene> geneResponse = cellBaseClient.getGeneClient().get(new ArrayList<>(geneIds), queryOptions);
+
+            // Write gene info in track file
+            for (Gene gene : geneResponse.allResults()) {
+                pw.println("chr" + gene.getChromosome() + "\t" + gene.getStart() + "\t" + gene.getEnd());
+            }
+
+            // Set track file
+            track.setFile(trackFile.getAbsolutePath());
+
+        } catch (CatalogException | StorageEngineException | IOException e) {
+            errors.put(track.getType().name(), e.getMessage());
+            return false;
+        } finally {
+            if (pw != null) {
+                pw.close();
+            }
+        }
+
         return true;
     }
 
