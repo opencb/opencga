@@ -15,7 +15,7 @@ public class CircosTrack {
     private int position;
     private Map<String, String> display;
 
-    enum TrackType {
+    public enum TrackType {
         SNV, INDEL, CNV, INSERTION, DELETION, REARRANGEMENT, RAINPLOT, GENE, COVERAGE, COVERAGE_RATIO
     }
 

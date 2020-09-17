@@ -18,18 +18,19 @@ package org.opencb.opencga.analysis.variant.circos;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
@@ -37,37 +38,36 @@ import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.CircosTrack;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.variant.CircosAnalysisExecutor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.opencb.biodata.models.variant.avro.VariantType.*;
 import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_INPUT_PATH;
 import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_OUTPUT_PATH;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 @ToolExecutor(id="opencga-local", tool = CircosAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements StorageToolExecutor {
 
     public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc2";
+    private static final Pattern CNV_PATTERN = Pattern.compile("^(INFO:[a-zA-Z\\\\.]+)([ ]*[\\+\\-*\\\\][ ]*)(INFO:[a-zA-Z\\\\.]+)$");
+
     private VariantStorageManager storageManager;
-
-    private File snvsFile;
-    private File rearrsFile;
-    private File indelsFile;
-    private File cnvsFile;
-
-    private boolean plotCopynumber = false;
-    private boolean plotIndels = false;
-    private boolean plotRearrangements = false;
 
     private Map<String, String> errors;
 
@@ -90,35 +90,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         return storageManager;
     }
 
-    public void run2() throws ToolException, IOException {
-        if (this.circosParams == null) {
-            throw new ToolExecutorException("");
-        }
-
-        ExecutorService threadPool = Executors.newFixedThreadPool(this.circosParams.getTracks().size());
-        List<Future<Boolean>> futureList = new ArrayList<>(this.circosParams.getTracks().size());
-        for (CircosTrack track : this.circosParams.getTracks()) {
-            // track.getType().name();
-            switch ("") {
-                case "SNV":
-                case "INDEL":
-                    futureList.add(threadPool.submit(getNamedThread("SNV", () -> variantQuery(query, track.getDisplay(), storageManager))));
-                    break;
-                case "TAINPLOT":
-                    futureList.add(threadPool.submit(getNamedThread("RAINPLOT", () -> rainPlot(query, storageManager))));
-                    break;
-                case "CNV":
-                    String data = track.getData();
-                    futureList.add(threadPool.submit(getNamedThread("CNV", () -> copyNumberQuery(query, storageManager))));
-
-                    break;
-            }
-        }
-    }
-
-    @Override
     public void run() throws ToolException, IOException {
-
         // Create query
         Query query = new Query();
         if (MapUtils.isNotEmpty(getCircosParams().getQuery())) {
@@ -126,50 +98,63 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         }
         query.put(STUDY.key(), getStudy());
 
-        // Launch a thread per query
-        VariantStorageManager storageManager = getVariantStorageManager();
-
-        ExecutorService threadPool = Executors.newFixedThreadPool(4);
-
+        // Error management
         errors = new HashMap<>();
-        List<Future<Boolean>> futureList = new ArrayList<>(4);
-        futureList.add(threadPool.submit(getNamedThread("SNV", () -> rainPlot(query, storageManager))));
-        futureList.add(threadPool.submit(getNamedThread("COPY_NUMBER", () -> copyNumberQuery(query, storageManager))));
-        futureList.add(threadPool.submit(getNamedThread("INDEL", () -> indelQuery(query, storageManager))));
-        futureList.add(threadPool.submit(getNamedThread("REARRANGEMENT", () -> rearrangementQuery(query, storageManager))));
 
-        threadPool.shutdown();
-
-        try {
-            threadPool.awaitTermination(2, TimeUnit.MINUTES);
-            if (!threadPool.isTerminated()) {
-                for (Future<Boolean> future : futureList) {
-                    future.cancel(true);
-                }
+        // In parallel, launch a query per track
+        ExecutorService threadPool = Executors.newFixedThreadPool(this.circosParams.getTracks().size());
+        List<Future<Boolean>> futureList = new ArrayList<>(this.circosParams.getTracks().size());
+        for (CircosTrack track : this.circosParams.getTracks()) {
+            // track.getType().name();
+            switch (track.getType()) {
+                case SNV:
+                case INDEL:
+                case DELETION:
+                case INSERTION:
+                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> variantQuery(query, track))));
+                    break;
+                case CNV:
+                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> cnvQuery(query, track))));
+                    break;
+                case REARRANGEMENT:
+                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> rearrangementQuery(query, track))));
+                    break;
+                case RAINPLOT:
+                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> rainplotQuery(query, track))));
+                    break;
+//                case GENE:
+//                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> geneQuery(track))));
+//                    break;
+//                case COVERAGE:
+//                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> coverageQuery(track))));
+//                    break;
+//                case COVERAGE_RATIO:
+//                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> coverageRatioQuery(track))));
+//                    break;
             }
-        } catch (InterruptedException e) {
-            throw new ToolException("Error launching threads when executing the Circos analysis", e);
         }
 
 
         if (MapUtils.isEmpty(errors)) {
+            // Write Circos config in JSON format
+            File circosFile = getOutDir().resolve("circos.config.json").toFile();
+            FileUtils.write(circosFile, circosParams.toJson());
+
+            if (!circosFile.exists()) {
+                throw new ToolException("Error writing Circos config JSON file");
+            }
+
             // Execute R script
-            // circos.R ./snvs.tsv ./indels.tsv ./cnvs.tsv ./rearrs.tsv SampleId
+            // circos.R circos.config.json
             String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/" + getToolId();
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
             inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
                     DOCKER_OUTPUT_PATH);
-            String scriptParams = "R CMD Rscript --vanilla " + DOCKER_INPUT_PATH + "/circos.R"
-                    + (plotCopynumber ? "" : " --no_copynumber")
-                    + (plotIndels ? "" : " --no_indels")
-                    + (plotRearrangements ? "" : " --no_rearrangements")
+            String scriptParams = "R CMD Rscript --vanilla " + DOCKER_INPUT_PATH + "/circos.R "
                     + " --out_path " + DOCKER_OUTPUT_PATH
-                    + " " + DOCKER_OUTPUT_PATH + "/" + snvsFile.getName()
-                    + " " + DOCKER_OUTPUT_PATH + "/" + indelsFile.getName()
-                    + " " + DOCKER_OUTPUT_PATH + "/" + cnvsFile.getName()
-                    + " " + DOCKER_OUTPUT_PATH + "/" + rearrsFile.getName()
-                    + " " + getCircosParams().getTitle();
+                    + " --config_file " + DOCKER_OUTPUT_PATH + circosFile.getName();
+
 
             StopWatch stopWatch = StopWatch.createStarted();
             String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
@@ -184,60 +169,84 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         }
     }
 
-    private boolean variantQuery(Query query, Map<String, String> display, VariantStorageManager storageManager) {
+
+    private boolean variantQuery(Query query, CircosTrack track) {
+        PrintWriter pw = null;
+
+        try {
+            File trackFile = getTrackFilename(track.getType().name());
+            pw = new PrintWriter(trackFile);
+            pw.println("Chromosome\tchromStart\tchromEnd\tref\talt");
+
+            // Create variant query
+            Query variantQuery = new Query(query);
+            if (MapUtils.isNotEmpty(track.getQuery())) {
+                variantQuery.putAll(track.getQuery());
+            }
+
+            variantQuery.put(TYPE.key(), track.getType().name());
+
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
+
+            logger.info(track.getType().name() + " track, query: " + variantQuery.toJson());
+            logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
+
+            VariantDBIterator iterator = storageManager.iterator(variantQuery, queryOptions, getToken());
+            while (iterator.hasNext()) {
+                Variant v = iterator.next();
+                pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
+                        + v.getAlternate());
+
+            }
+
+            // Set track file
+            track.setFile(trackFile.getAbsolutePath());
+
+        } catch (CatalogException | StorageEngineException | FileNotFoundException e) {
+            errors.put(track.getType().name(), e.getMessage());
+            return false;
+        } finally {
+            if (pw != null) {
+                pw.close();
+            }
+        }
+
         return true;
     }
 
     /**
-     * Create file with SNV variants.
+     * Create file with the distance of consecutive SNV variants.
      *
      * @param query General query
-     * @param storageManager    Variant storage manager
+     * @param track Circos track
      * @return True or false depending on successs
      */
-    private boolean rainPlot(Query query, VariantStorageManager storageManager) {
+    private boolean rainplotQuery(Query query, CircosTrack track) {
         PrintWriter pw = null;
         PrintWriter pwOut = null;
         try {
-            snvsFile = getOutDir().resolve("snvs.tsv").toFile();
-            pw = new PrintWriter(snvsFile);
+            File trackFile = getTrackFilename(track.getType().name());
+
+            pw = new PrintWriter(trackFile);
             pw.println("Chromosome\tchromStart\tchromEnd\tref\talt\tlogDistPrev");
 
-            pwOut = new PrintWriter(getOutDir().resolve("snvs.discarded").toFile());
+            pwOut = new PrintWriter(new File(trackFile.getAbsoluteFile() + ".discarded"));
 
-            CircosTrack snvTrack = getCircosParams().getCircosTrackByType("SNV");
-            if (snvTrack == null) {
-                throw new ToolException("Missing SNV track");
+            // Create rainplot query
+            Query rainplotQuery = new Query(query);
+            if (MapUtils.isNotEmpty(track.getQuery())) {
+                rainplotQuery.putAll(track.getQuery());
             }
-
-            int threshold;
-
-            switch (getCircosParams().getDensity()) {
-                case "HIGH":
-                    threshold = Integer.MAX_VALUE;
-                    break;
-                case "MEDIUM":
-                    threshold = 250000;
-                    break;
-                case "LOW":
-                default:
-                    threshold = 100000;
-                    break;
-            }
-
-            Map<String, String> trackQuery = checkTrackQuery(snvTrack);
-
-            Query snvQuery = new Query(query);
-            snvQuery.putAll(trackQuery);
+            rainplotQuery.put(TYPE.key(), SNV);
 
             QueryOptions queryOptions = new QueryOptions()
                     .append(QueryOptions.INCLUDE, "id")
                     .append(QueryOptions.SORT, true);
 
-            logger.info("SNV track, query: " + snvQuery.toJson());
-            logger.info("SNV track, query options: " + queryOptions.toJson());
+            logger.info(track.getType().name() + " track, query: " + rainplotQuery.toJson());
+            logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
 
-            VariantDBIterator iterator = storageManager.iterator(snvQuery, queryOptions, getToken());
+            VariantDBIterator iterator = storageManager.iterator(rainplotQuery, queryOptions, getToken());
 
             int prevStart = 0;
             String currentChrom = "";
@@ -251,16 +260,13 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         prevStart = 0;
                         currentChrom = v.getChromosome();
                     }
-                    int dist = v.getStart() - prevStart;
-                    if (dist < threshold) {
-                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
-                                + v.getAlternate() + "\t" + Math.log10(dist));
-                    }
+                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
+                            + v.getAlternate() + "\t" + Math.log10(v.getStart() - prevStart));
                     prevStart = v.getStart();
                 }
             }
         } catch(Exception e) {
-            errors.put("SNV", e.getMessage());
+            errors.put(track.getType().name(), e.getMessage());
             return false;
         } finally {
             if (pw != null) {
@@ -277,80 +283,91 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
      * Create file with copy-number variants.
      *
      * @param query General query
-     * @param storageManager    Variant storage manager
+     * @param track Circos track
      * @return True or false depending on successs
      */
-    private boolean copyNumberQuery(Query query, VariantStorageManager storageManager) {
+    private boolean cnvQuery(Query query, CircosTrack track) {
         PrintWriter pw = null;
         PrintWriter pwOut = null;
         try {
-            cnvsFile = getOutDir().resolve("cnvs.tsv").toFile();
+            File trackFile = getTrackFilename(track.getType().name());
 
-            pw = new PrintWriter(cnvsFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tlabel\tmajorCopyNumber\tminorCopyNumber");
+            pw = new PrintWriter(trackFile);
+            pw.println("Chromosome\tchromStart\tchromEnd\tData");
 
-            pwOut = new PrintWriter(getOutDir().resolve("cnvs.discarded").toFile());
+            pwOut = new PrintWriter(new File(trackFile.getAbsoluteFile() + ".discarded"));
 
-            CircosTrack copyNumberTrack = getCircosParams().getCircosTrackByType("COPY-NUMBER");
-            if (copyNumberTrack != null) {
-                plotCopynumber = true;
+            // Create CNV query
+            Query cnvQuery = new Query(query);
+            if (MapUtils.isNotEmpty(track.getQuery())) {
+                cnvQuery.putAll(track.getQuery());
+            }
+            cnvQuery.put(TYPE.key(), CNV);
 
-                Map<String, String> trackQuery = checkTrackQuery(copyNumberTrack);
+            if (StringUtils.isEmpty(track.getData())) {
+                throw new ToolException("Field 'data' can not be empty when plotting CNV tracks");
+            }
 
-                Query copyNumberQuery = new Query(query);
-                copyNumberQuery.putAll(trackQuery);
+            String infoName1;
+            String infoName2;
+            String operator;
+            Matcher matcher = CNV_PATTERN.matcher(track.getData());
+            if (matcher.find()) {
+                infoName1 = matcher.group(1);
+                operator = matcher.group(2);
+                infoName2 = matcher.group(3);
+            } else {
+                throw new ToolException("Invalid format in field 'data' in CNV track: " + track.getData());
+            }
 
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies");
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies");
 
-                logger.info("COPY-NUMBER track, query: " + copyNumberQuery.toJson());
-                logger.info("COPY-NUMBER track, query options: " + queryOptions.toJson());
-
-                String score1, score2;
-                String operator
-                if (StringUtils.isNotEmpty(data)) {
-                    // ...
-                    score1 = "TCN";
-                    score2 = "MCN";
-                }
+            logger.info(track.getType().name() + " track, query: " + cnvQuery.toJson());
+            logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
 
 
+            VariantDBIterator iterator = storageManager.iterator(cnvQuery, queryOptions, getToken());
+            while (iterator.hasNext()) {
+                Variant v = iterator.next();
 
-                VariantDBIterator iterator = storageManager.iterator(copyNumberQuery, queryOptions, getToken());
-                while (iterator.hasNext()) {
-                    Variant v = iterator.next();
+                if (CollectionUtils.isEmpty(v.getStudies())) {
+                    pwOut.println(v.toString() + "\tStudies is empty");
+                } else {
+                    String strScore1 = null;
+                    String strScore2 = null;
 
-                    if (CollectionUtils.isEmpty(v.getStudies())) {
-                        pwOut.println(v.toString() + "\tStudies is empty");
-                    } else {
-                        StudyEntry studyEntry = v.getStudies().get(0);
-                        if (StringUtils.isNotEmpty(score1)) {
-                            String strTcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()), score1);
-                            if (StringUtils.isNotEmpty(score2)) {
-                                String strMcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()), score2);
-                            }
-                        }
-
-                        if (StringUtils.isEmpty(strTcn)) {
-                            pwOut.println(v.toString() + "\tTCN format field is empty");
-                        } else {
-                            if (StringUtils.isEmpty(strMcn)) {
-                                pwOut.println(v.toString() + "\tMCN format field is empty");
-                            } else {
-                                try {
-                                    int tcn = Integer.parseInt(strTcn);
-                                    int mcn = Integer.parseInt(strMcn);
-                                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
-                                            + (tcn - mcn) + "\t" + mcn);
-                                } catch (NumberFormatException e){
-                                    pwOut.println(v.toString() + "\tError parsing TCN/MCN: " + e.getMessage());
-                                }
-                            }
+                    StudyEntry studyEntry = v.getStudies().get(0);
+                    if (StringUtils.isNotEmpty(infoName1)) {
+                        strScore1 = studyEntry.getSampleData(cnvQuery.getString(SAMPLE.key()), infoName1.substring(5));
+                        if (StringUtils.isNotEmpty(infoName2)) {
+                            strScore2 = studyEntry.getSampleData(cnvQuery.getString(SAMPLE.key()), infoName2.substring(5));
                         }
                     }
+
+                    Number data;
+                    switch (operator) {
+                        case "+":
+                            data = Double.parseDouble(strScore1) + Double.parseDouble(strScore2);
+                            break;
+                        case "-":
+                            data = Double.parseDouble(strScore1) - Double.parseDouble(strScore2);
+                            break;
+                        case "*":
+                            data = Double.parseDouble(strScore1) * Double.parseDouble(strScore2);
+                            break;
+                        case "/":
+                            data = Double.parseDouble(strScore1) / Double.parseDouble(strScore2);
+                            break;
+                        default:
+                            data = Double.parseDouble(strScore1);
+                            break;
+                    }
+                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + data);
+
                 }
             }
         } catch (Exception e) {
-            errors.put("COPY-NUMBER", e.getMessage());
+            errors.put(track.getType().name(), e.getMessage());
             return false;
         } finally {
             if (pw != null) {
@@ -363,164 +380,167 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         return true;
     }
 
-    /**
-     * Create file with INDEL variants.
-     *
-     * @param query General query
-     * @param storageManager    Variant storage manager
-     * @return True or false depending on successs
-     */
-    private boolean indelQuery(Query query, VariantStorageManager storageManager) {
-        PrintWriter pw = null;
-        PrintWriter pwOut = null;
-        try {
-            indelsFile = getOutDir().resolve("indels.tsv").toFile();
-            pw = new PrintWriter(indelsFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\ttype\tclassification");
-
-            pwOut = new PrintWriter(getOutDir().resolve("indels.discarded").toFile());
-
-            CircosTrack indelTrack = getCircosParams().getCircosTrackByType("INDEL");
-            if (indelTrack != null) {
-                plotIndels = true;
-
-                Map<String, String> trackQuery = checkTrackQuery(indelTrack);
-
-                Query indelQuery = new Query(query);
-                indelQuery.putAll(trackQuery);
-
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
-
-                logger.info("INDEL track, query: " + indelQuery.toJson());
-                logger.info("INDEL track, query options: " + queryOptions.toJson());
-
-                VariantDBIterator iterator = storageManager.iterator(indelQuery, queryOptions, getToken());
-
-                while (iterator.hasNext()) {
-                    Variant v = iterator.next();
-                    switch (v.getType()) {
-                        case INSERTION: {
-                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
-                            break;
-                        }
-                        case DELETION: {
-                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
-                            break;
-                        }
-                        case INDEL: {
-                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
-                            break;
-                        }
-                        default: {
-                            // Sanity check
-                            pwOut.println(v.toString() + "\tInvalid type " + v.getType() + ". Valid values: " + VariantType.INSERTION
-                                    + ", " + DELETION + ", " + VariantType.INDEL);
-                            break;
-                        }
-                    }
-                }
-            }
-        } catch(Exception e){
-            errors.put("INDEL", e.getMessage());
-            return false;
-//            throw new ToolExecutorException(e);
-        } finally {
-            if (pw != null) {
-                pw.close();
-            }
-            if (pwOut != null) {
-                pwOut.close();
-            }
-        }
-        return true;
+    private File getTrackFilename(String name) {
+        return getOutDir().resolve(name + System.currentTimeMillis() + ".tsv").toFile();
     }
+
+    //
+//    /**
+//     * Create file with INDEL variants.
+//     *
+//     * @param query General query
+//     * @param storageManager    Variant storage manager
+//     * @return True or false depending on successs
+//     */
+//    private boolean indelQuery(Query query, VariantStorageManager storageManager) {
+//        PrintWriter pw = null;
+//        PrintWriter pwOut = null;
+//        try {
+//            indelsFile = getOutDir().resolve("indels.tsv").toFile();
+//            pw = new PrintWriter(indelsFile);
+//            pw.println("Chromosome\tchromStart\tchromEnd\ttype\tclassification");
+//
+//            pwOut = new PrintWriter(getOutDir().resolve("indels.discarded").toFile());
+//
+//            CircosTrack indelTrack = getCircosParams().getCircosTrackByType("INDEL");
+//            if (indelTrack != null) {
+//                plotIndels = true;
+//
+//                Map<String, String> trackQuery = checkTrackQuery(indelTrack);
+//
+//                Query indelQuery = new Query(query);
+//                indelQuery.putAll(trackQuery);
+//
+//                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
+//
+//                logger.info("INDEL track, query: " + indelQuery.toJson());
+//                logger.info("INDEL track, query options: " + queryOptions.toJson());
+//
+//                VariantDBIterator iterator = storageManager.iterator(indelQuery, queryOptions, getToken());
+//
+//                while (iterator.hasNext()) {
+//                    Variant v = iterator.next();
+//                    switch (v.getType()) {
+//                        case INSERTION: {
+//                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
+//                            break;
+//                        }
+//                        case DELETION: {
+//                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
+//                            break;
+//                        }
+//                        case INDEL: {
+//                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
+//                            break;
+//                        }
+//                        default: {
+//                            // Sanity check
+//                            pwOut.println(v.toString() + "\tInvalid type " + v.getType() + ". Valid values: " + VariantType.INSERTION
+//                                    + ", " + DELETION + ", " + VariantType.INDEL);
+//                            break;
+//                        }
+//                    }
+//                }
+//            }
+//        } catch(Exception e){
+//            errors.put("INDEL", e.getMessage());
+//            return false;
+////            throw new ToolExecutorException(e);
+//        } finally {
+//            if (pw != null) {
+//                pw.close();
+//            }
+//            if (pwOut != null) {
+//                pwOut.close();
+//            }
+//        }
+//        return true;
+//    }
 
     /**
      * Create file with rearrangement variants.
      *
      * @param query General query
-     * @param storageManager    Variant storage manager
+     * @param track Circos track
      * @return True or false depending on successs
      */
-    private boolean rearrangementQuery(Query query, VariantStorageManager storageManager) {
+    private boolean rearrangementQuery(Query query, CircosTrack track) {
         PrintWriter pw = null;
         PrintWriter pwOut = null;
         try {
-            rearrsFile = getOutDir().resolve("rearrs.tsv").toFile();
-            pw = new PrintWriter(rearrsFile);
+            File trackFile = getTrackFilename(track.getType().name());
+
+            pw = new PrintWriter(trackFile);
             pw.println("Chromosome\tchromStart\tchromEnd\tChromosome.1\tchromStart.1\tchromEnd.1\ttype");
 
-            pwOut = new PrintWriter(getOutDir().resolve("rearrs.discarded").toFile());
+            pwOut = new PrintWriter(new File(trackFile.getAbsoluteFile() + ".discarded"));
 
-            CircosTrack rearrangementTrack = getCircosParams().getCircosTrackByType("REARRANGEMENT");
-            if (rearrangementTrack != null) {
-                plotRearrangements = true;
+            // Create rainplot query
+            Query rearrangementQuery = new Query(query);
+            if (MapUtils.isNotEmpty(track.getQuery())) {
+                rearrangementQuery.putAll(track.getQuery());
+            }
+            rearrangementQuery.put(TYPE.key(), "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
 
-                Map<String, String> trackQuery = checkTrackQuery(rearrangementTrack);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
 
-                Query rearrangementQuery = new Query(query);
-                rearrangementQuery.putAll(trackQuery);
+            logger.info(track.getType().name() + " track, query: " + rearrangementQuery.toJson());
+            logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
 
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
+            VariantDBIterator iterator = storageManager.iterator(rearrangementQuery, queryOptions, getToken());
 
-                logger.info("REARRANGEMENT track, query: " + rearrangementQuery.toJson());
-                logger.info("REARRANGEMENT track, query options: " + queryOptions.toJson());
-
-                VariantDBIterator iterator = storageManager.iterator(rearrangementQuery, queryOptions, getToken());
-
-                while (iterator.hasNext()) {
-                    Variant v = iterator.next();
-                    String type = null;
-                    switch (v.getType()) {
-                        case DELETION: {
-                            type = "DEL";
-                            break;
-                        }
-                        case BREAKEND:
-                        case TRANSLOCATION: {
-                            type = "BND";
-                            break;
-                        }
-                        case DUPLICATION: {
-                            type = "DUP";
-                            break;
-                        }
-                        case INVERSION: {
-                            type = "INV";
-                            break;
-                        }
-                        default: {
-                            // Sanity check
-                            pwOut.println(v.toString() + "\tUnknown type: " + v.getType() + ". Valid values: " + DELETION + ", " + BREAKEND
-                            + ", " + TRANSLOCATION + ", " + DUPLICATION + ", " + INVERSION);
-
-                            break;
-                        }
+            while (iterator.hasNext()) {
+                Variant v = iterator.next();
+                String type = null;
+                switch (v.getType()) {
+                    case DELETION: {
+                        type = "DEL";
+                        break;
                     }
+                    case BREAKEND:
+                    case TRANSLOCATION: {
+                        type = "BND";
+                        break;
+                    }
+                    case DUPLICATION: {
+                        type = "DUP";
+                        break;
+                    }
+                    case INVERSION: {
+                        type = "INV";
+                        break;
+                    }
+                    default: {
+                        // Sanity check
+                        pwOut.println(v.toString() + "\tUnknown type: " + v.getType() + ". Valid values: " + DELETION + ", " + BREAKEND
+                                + ", " + TRANSLOCATION + ", " + DUPLICATION + ", " + INVERSION);
 
-                    if (type != null) {
-                        // Check structural variation
-                        StructuralVariation sv = v.getSv();
-                        if (sv != null) {
-                            if (sv.getBreakend() != null) {
-                                if (sv.getBreakend().getMate() != null) {
-                                    BreakendMate mate = sv.getBreakend().getMate();
-                                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
-                                            + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
-                                } else {
-                                    pwOut.println(v.toString() + "\tBreakend mate is empy (variant type: " + v.getType() + ")");
-                                }
+                        break;
+                    }
+                }
+
+                if (type != null) {
+                    // Check structural variation
+                    StructuralVariation sv = v.getSv();
+                    if (sv != null) {
+                        if (sv.getBreakend() != null) {
+                            if (sv.getBreakend().getMate() != null) {
+                                BreakendMate mate = sv.getBreakend().getMate();
+                                pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
+                                        + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
                             } else {
-                                pwOut.println(v.toString() + "\tBreakend is empy (variant type: " + v.getType() + ")");
+                                pwOut.println(v.toString() + "\tBreakend mate is empy (variant type: " + v.getType() + ")");
                             }
                         } else {
-                            pwOut.println(v.toString() + "\tSV is empy (variant type: " + v.getType() + ")");
+                            pwOut.println(v.toString() + "\tBreakend is empy (variant type: " + v.getType() + ")");
                         }
+                    } else {
+                        pwOut.println(v.toString() + "\tSV is empy (variant type: " + v.getType() + ")");
                     }
                 }
             }
         } catch (Exception e) {
-            errors.put("REARRANGEMENT", e.getMessage());
+            errors.put(track.getType().name(), e.getMessage());
             return false;
         } finally {
             if (pw != null) {
@@ -540,26 +560,26 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             return c.call();
         };
     }
-
-    private Map<String, String> checkTrackQuery(CircosTrack track) throws ToolException {
-        Map<String, String> query = new HashMap<>();
-
-        if (MapUtils.isNotEmpty(track.getQuery())) {
-            query = track.getQuery();
-        }
-
-        if ("COPY-NUMBER".equals(track.getType())) {
-            query.put("type", "CNV");
-        } else if ("INDEL".equals(track.getType())) {
-            query.put("type", "INSERTION,DELETION,INDEL");
-        } else if ("REARRANGEMENT".equals(track.getType())) {
-            query.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
-        } else if ("SNV".equals(track.getType())) {
-            query.put("type", "SNV");
-        } else {
-            throw new ToolException("Unknown Circos track type: '" + track.getType() + "'");
-        }
-
-        return query;
-    }
+//
+//    private Map<String, String> checkTrackQuery(CircosTrack track) throws ToolException {
+//        Map<String, String> query = new HashMap<>();
+//
+//        if (MapUtils.isNotEmpty(track.getQuery())) {
+//            query = track.getQuery();
+//        }
+//
+//        if ("COPY-NUMBER".equals(track.getType())) {
+//            query.put("type", "CNV");
+//        } else if ("INDEL".equals(track.getType())) {
+//            query.put("type", "INSERTION,DELETION,INDEL");
+//        } else if ("REARRANGEMENT".equals(track.getType())) {
+//            query.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
+//        } else if ("SNV".equals(track.getType())) {
+//            query.put("type", "SNV");
+//        } else {
+//            throw new ToolException("Unknown Circos track type: '" + track.getType() + "'");
+//        }
+//
+//        return query;
+//    }
 }

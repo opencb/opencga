@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.variant;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -25,42 +24,21 @@ import java.util.Map;
 public class CircosAnalysisParams extends ToolParams {
 
     private String title;
-    @Deprecated
-    private String density; // Density plot: LOW, MEDIUM or HIGH
     private Map<String, String> query;
     private List<CircosTrack> tracks;
     private Map<String, String> display;
     private String outdir;
 
-    public static final String DESCRIPTION = "Circos analysis params to customize the plot. These parameters include the title,  the "
-            + "plot density (i.e., the number of points to display), the general query and the list of tracks. Currently, the supported "
-            + "track types are: COPY-NUMBER, INDEL, REARRANGEMENT and SNV. In addition, each track can contain a specific query";
+    public static final String DESCRIPTION = "Circos analysis params to customize the plot. These parameters include the title, the "
+            + "general query, the list of tracks and the display options. Supported track types are: SNV, INDEL, CNV, INSERTION, DELETION, "
+            + "REARRANGEMENT, RAINPLOT, GENE, COVERAGE, COVERAGE_RATIO";
 
-
-    public CircosAnalysisParams() {
-        this(null, "LOW", null, null, null);
-    }
-
-    public CircosTrack getCircosTrackByType(String type) {
-        // Sanity check
-        if (tracks == null || CollectionUtils.isEmpty(tracks)) {
-            return null;
-        }
-
-        for (CircosTrack track: tracks) {
-            if (type.equals(track.getType())) {
-                // Return the first track
-                return track;
-            }
-        }
-        return null;
-    }
-
-    public CircosAnalysisParams(String title, String density, Map<String, String> query, List<CircosTrack> tracks, String outdir) {
+    public CircosAnalysisParams(String title, Map<String, String> query, List<CircosTrack> tracks, Map<String, String> display,
+                                String outdir) {
         this.title = title;
-        this.density = density;
         this.query = query;
         this.tracks = tracks;
+        this.display = display;
         this.outdir = outdir;
     }
 
@@ -68,9 +46,9 @@ public class CircosAnalysisParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("CircosAnalysisParams{");
         sb.append("title='").append(title).append('\'');
-        sb.append(", density='").append(density).append('\'');
         sb.append(", query=").append(query);
         sb.append(", tracks=").append(tracks);
+        sb.append(", display=").append(display);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -82,15 +60,6 @@ public class CircosAnalysisParams extends ToolParams {
 
     public CircosAnalysisParams setTitle(String title) {
         this.title = title;
-        return this;
-    }
-
-    public String getDensity() {
-        return density;
-    }
-
-    public CircosAnalysisParams setDensity(String density) {
-        this.density = density;
         return this;
     }
 
@@ -109,6 +78,15 @@ public class CircosAnalysisParams extends ToolParams {
 
     public CircosAnalysisParams setTracks(List<CircosTrack> tracks) {
         this.tracks = tracks;
+        return this;
+    }
+
+    public Map<String, String> getDisplay() {
+        return display;
+    }
+
+    public CircosAnalysisParams setDisplay(Map<String, String> display) {
+        this.display = display;
         return this;
     }
 

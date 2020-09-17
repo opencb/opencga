@@ -16,15 +16,18 @@
 
 package org.opencb.opencga.analysis.variant.circos;
 
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.CircosAnalysisExecutor;
 
-import java.util.HashMap;
-import java.util.Map;
+import static org.opencb.opencga.storage.core.clinical.ClinicalVariantEngine.QueryParams.SAMPLE;
 
 @Tool(id = CircosAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class CircosAnalysis extends OpenCgaTool {
@@ -46,20 +49,20 @@ public class CircosAnalysis extends OpenCgaTool {
             throw new ToolException("Missing study");
         }
 
-//        String sampleName = query.getString(SAMPLE.key());
-//        try {
-//            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
-//
-//            if (StringUtils.isNotEmpty(sampleName)) {
-//                OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, sampleName, new QueryOptions(), token);
-//                if (sampleResult.getNumResults() != 1) {
-//                    throw new ToolException("Unable to compute mutational signature analysis. Sample '" + sampleName + "' not found");
-//                }
-//            }
-//        } catch (CatalogException e) {
-//            throw new ToolException(e);
-//        }
-//
+        if (circosParams == null) {
+            throw new ToolException("Missing Circos parameters");
+        }
+
+        String sampleName = circosParams.getQuery().get(SAMPLE.key());
+        if (StringUtils.isEmpty(sampleName)) {
+            throw new ToolException("Missing sample");
+        }
+
+        study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, sampleName, new QueryOptions(), token);
+        if (sampleResult.getNumResults() != 1) {
+            throw new ToolException("Unable to plot Circos. Sample '" + sampleName + "' not found");
+        }
 //        addAttribute("sampleName", sampleName);
     }
 
