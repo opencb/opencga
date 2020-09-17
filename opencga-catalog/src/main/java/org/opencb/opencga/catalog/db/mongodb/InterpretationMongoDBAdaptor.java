@@ -360,13 +360,29 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.METHODS.key()};
+        String[] objectAcceptedParams = {QueryParams.ANALYST.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
         objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
         ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
                 ParamUtils.UpdateAction.ADD);
+        switch (operation) {
+            case SET:
+                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                break;
+            case REMOVE:
+                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                break;
+            case ADD:
+                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                break;
+            default:
+                throw new IllegalStateException("Unknown operation " + operation);
+        }
+
+        objectAcceptedParams = new String[]{QueryParams.METHODS.key()};
+        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.METHODS.key(), ParamUtils.UpdateAction.ADD);
         switch (operation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
